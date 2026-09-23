@@ -134,6 +134,10 @@ typedef enum TyFlags {
     // The fresh twin of a literal type (tsc's freshType): what a literal expression evaluates to, and the only kind of
     // literal that widens at a mutable location. On a union: some member is fresh (ty_regular() has work to do)
     TYF_FRESH_LITERAL                = 1 << 26,
+    // A fresh object literal type (tsc's ObjectFlags.FreshLiteral): what an object literal expression evaluates to, and
+    // the only kind of source that gets excess property checks. On unions and array/tuple references: one is inside
+    // (ty_widened_objects() has work to do)
+    TYF_FRESH_OBJECT                 = 1 << 27,
 
     TYF_NULLABLE = TYF_UNDEFINED | TYF_NULL,
     TYF_ES_SYMBOL_LIKE = TYF_ES_SYMBOL | TYF_UNIQUE_ES_SYMBOL,
@@ -359,6 +363,7 @@ struct Prop {
     Span const* decl_spans;
     u32 decl_span_count;
     bool name_is_value; // The name was written as a string or number literal
+    bool literal_own; // A property of an object literal written in it (not spread): see ObjectLiteralProp.own
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
     TypeNode const* asserted;
 };
@@ -494,6 +499,7 @@ typedef struct RelationCache {
 typedef struct TyReportLine {
     unsigned ts_code;
     cstr message;
+    Span span; // Where the error goes if this line heads it, invalid for "wherever the check was asked for"
 } TyReportLine;
 static inline void ty_report_line_drop(TyReportLine* me) { cstr_drop(&my message); }
 static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message = cstr_clone(me.message); return me; }
@@ -609,6 +615,10 @@ Ty const* ty_string_literal(Checker* me, csview sv);
 Ty const* ty_fresh_literal(Checker* me, Ty const* ty); // Literals (not unique symbols), else ty itself
 Ty const* ty_regular(Checker* me, Ty const* ty); // Fresh literals, and unions with fresh members member-wise
 static inline bool ty_is_fresh(Ty const* ty) { return ty->kind == TY_LITERAL && (ty->flags & TYF_FRESH_LITERAL); }
+static inline bool ty_is_fresh_object(Ty const* ty) { return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_FRESH_OBJECT); }
+// The freshness part of tsc's getWidenedType: fresh object literals (also inside unions, arrays and tuples, and in the
+// properties of the regular twin) become regular. What declarations, inferred return types and inferences hold
+Ty const* ty_widened_objects(Checker* me, Ty const* ty);
 Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl); // `symbol` if decl->key is null
 Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty); // A unique symbol at a mutable location is `symbol`
 // The type of a property name as a key: the unique symbol a `[sym]` member is named by (null if it isn't one), else
@@ -770,10 +780,15 @@ typedef struct ObjectLiteralProp {
     u32 decl_span_count;
     bool name_is_value;
     TypeNode const* asserted; // See Prop.asserted
+    bool own; // Written in the literal itself, not spread into it: only those get excess property checks
 } ObjectLiteralProp;
-// `literal`: the type of an object literal expression (tsc's ObjectFlags.ObjectLiteral), else a synthesized one
+typedef enum ObjectLiteralKind {
+    OBJECT_SYNTHETIC, // Made up by the checker
+    OBJECT_LITERAL, // The type of an object literal expression (tsc's ObjectFlags.ObjectLiteral), widened
+    OBJECT_LITERAL_FRESH, // ... as the expression evaluates to it (TYF_FRESH_OBJECT)
+} ObjectLiteralKind;
 Ty const* ty_object_literal(
-    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, bool literal
+    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind
 );
 
 // function.c
@@ -865,6 +880,7 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
 
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
+void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS1360
 // A class or interface that doesn't fit what it extends or implements: TS2416 at each of `members` (its own) that
 // doesn't fit the base's, else `ts_code` with "<what> 'D' <relation> 'B'." at `span` (tsc's issueMemberSpecificError)
 typedef struct HeritageMember {

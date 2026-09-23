@@ -1461,15 +1461,15 @@ static void words_push(WordBuf* me, u64 word) {
 // The type of an object literal expression: properties with known types, interned by shape (names, types, and where
 // each property was written, since the symbols baseline tells two literals of one shape apart)
 Ty const* ty_object_literal(
-    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, bool literal
+    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind
 ) {
     WordBuf words = {0};
     words_push(&words, KEY_STRUCTURAL);
-    words_push(&words, literal);
+    words_push(&words, kind);
     for (u32 i = 0; i < count; i++) {
         words_push(&words, 1);
         words_push(&words, (u64)(uintptr_t)props[i].name);
-        words_push(&words, props[i].flags);
+        words_push(&words, props[i].flags | (u64)props[i].own << 32);
         words_push(&words, (u64)(uintptr_t)props[i].name_span.sv.buf);
         words_push(&words, props[i].type ? props[i].type->id : (u64)(uintptr_t)props[i].accessor);
     }
@@ -1482,7 +1482,7 @@ Ty const* ty_object_literal(
     Ty const* ret = intern_get(&my links, words.data, words.len);
     if (!ret) {
         MembersBuilder builder = {0};
-        u32 flags = TYF_OBJECT;
+        u32 flags = TYF_OBJECT | (kind == OBJECT_LITERAL_FRESH ? TYF_FRESH_OBJECT : 0);
         for (u32 i = 0; i < count; i++) {
             Prop* prop = arena_new(&my arena, Prop);
             prop->name = props[i].name;
@@ -1492,6 +1492,7 @@ Ty const* ty_object_literal(
             prop->function = props[i].accessor;
             prop->name_span = props[i].name_span;
             prop->name_is_value = props[i].name_is_value;
+            prop->literal_own = props[i].own;
             prop->asserted = props[i].asserted;
             prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
@@ -1505,7 +1506,7 @@ Ty const* ty_object_literal(
         Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         fresh->anonymous.free_params_unknown = true;
-        fresh->anonymous.object_literal = literal;
+        fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         fresh->anonymous.state->members = builder_finish(me, &builder);
         fresh->anonymous.state->members_state = LAZY_STATE_DONE;
@@ -1513,6 +1514,63 @@ Ty const* ty_object_literal(
         ret = fresh;
     }
     free(words.data);
+    return ret;
+}
+
+// tsc's getRegularTypeOfObjectLiteral, and getWidenedType's walk through unions, arrays and tuples to get there
+static Ty const* widen_objects(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_UNION) {
+        TyBuf parts = {0};
+        for (u32 i = 0; i < ty->composite.types.len; i++) ty_buf_push(&parts, ty_widened_objects(me, ty->composite.types.data[i]));
+        Ty const* ret = ty_union(me, parts.data, parts.len, ty->alias, ty->alias_args);
+        ty_buf_drop(&parts);
+        return ret;
+    }
+    if (ty->kind == TY_REFERENCE) {
+        TyList args = ty_reference_args(me, ty);
+        TyBuf parts = {0};
+        for (u32 i = 0; i < args.len; i++) ty_buf_push(&parts, ty_widened_objects(me, args.data[i]));
+        Ty const* ret = ty_reference_with_this(me, ty->reference.target, (TyList){ .data = parts.data, .len = parts.len },
+            ty->reference.this_arg);
+        ty_buf_drop(&parts);
+        return ret;
+    }
+    check(ty_is_fresh_object(ty));
+    Members const* members = ty_members(me, ty);
+    ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        props[i] = (ObjectLiteralProp){
+            .name = prop->name,
+            .flags = prop->flags,
+            .type = prop->function ? nullptr : ty_widened_objects(me, prop_type(me, prop)),
+            .accessor = prop->function,
+            .name_span = prop->name_span,
+            .decl_spans = prop->decl_spans,
+            .decl_span_count = prop->decl_span_count,
+            .name_is_value = prop->name_is_value,
+            .asserted = prop->asserted,
+            .own = prop->literal_own,
+        };
+    }
+    IndexInfo index[8] = {0};
+    u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
+    for (u32 i = 0; i < index_count; i++) {
+        index[i] = members->index[i];
+        index[i].value = ty_widened_objects(me, index[i].value);
+    }
+    Ty const* ret = ty_object_literal(me, props, members->prop_count, index, index_count, OBJECT_LITERAL);
+    free(props);
+    return ret;
+}
+
+Ty const* ty_widened_objects(Checker* me, Ty const* ty) {
+    if (!(ty->flags & TYF_FRESH_OBJECT)) return ty;
+    u64 key[2] = { KEY_WIDENED_OBJECTS, (u64)(uintptr_t)ty };
+    void const* known = intern_get(&my links, key, 2);
+    if (known) return known;
+    Ty const* ret = widen_objects(me, ty);
+    *intern_slot(me, &my links, key, 2) = ret;
     return ret;
 }
 

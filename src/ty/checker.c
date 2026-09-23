@@ -438,7 +438,7 @@ static Ty const* intern_composite(
         for (u32 i = 0; i < len; i++) flags |= types[i]->flags;
         u32 member_flags = flags;
         flags = (flags | ty_list_flags(alias_args)) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
-        flags |= kind == TY_UNION ? TYF_UNION | (member_flags & TYF_FRESH_LITERAL) : TYF_INTERSECTION;
+        flags |= kind == TY_UNION ? TYF_UNION | (member_flags & (TYF_FRESH_LITERAL | TYF_FRESH_OBJECT)) : TYF_INTERSECTION;
         // Any two boolean literals, fresh or not, are `boolean` (tsc's getUnionTypeFromSortedList)
         if (kind == TY_UNION && len == 2 && (types[0]->flags & types[1]->flags & TYF_BOOLEAN_LITERAL)) {
             flags |= TYF_BOOLEAN;
@@ -815,7 +815,11 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
     if (key != stack_key) free(key);
     if (!*slot) {
         u32 flags = ty_list_flags(args) | (this_arg ? this_arg->flags : 0);
-        Ty* ret = ty_alloc(me, TY_REFERENCE, TYF_OBJECT | (flags & TYF_COULD_CONTAIN_TYPE_VARIABLES));
+        // Arrays and tuples of fresh object literals widen element-wise (tsc's getWidenedType)
+        bool widens = target == my array_target || target == my readonly_array_target ||
+            target->declared.kind == TY_DECLARED_TUPLE_TARGET;
+        u32 kept = TYF_COULD_CONTAIN_TYPE_VARIABLES | (widens ? TYF_FRESH_OBJECT : 0);
+        Ty* ret = ty_alloc(me, TY_REFERENCE, TYF_OBJECT | (flags & kept));
         ret->reference.target = target;
         ret->reference.args = ty_list_copy(me, args.data, args.len);
         ret->reference.this_arg = this_arg;

@@ -1255,7 +1255,9 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                     expr_typecheck(&my for_each_loop->variable.expr, errs);
                     ty_check_assignable(
                         checker,
-                        lazy_type_get(&my for_each_loop->var_type),
+                        // HACK: tsc checks a pattern target property by property (checkDestructuringAssignment),
+                        // so the elements get no excess property checks
+                        ty_widened_objects(checker, lazy_type_get(&my for_each_loop->var_type)),
                         expr_get_type(&my for_each_loop->variable.expr),
                         my for_each_loop->variable.expr.outer_span,
                         errs

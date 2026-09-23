@@ -322,8 +322,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   failed popTypeResolution), without TS7023.
 - `lower` TYPE_TYPEOF: `typeof x` is the type of the expression `x`, narrowed like any reference (tsc narrows type
   queries too, but only identifiers and property paths exist there).
-- `baseline_test_case_add_symbol_value`: an enum member shows as `E.x` by hand (wants fresh literal types). The
-  "written type shows as written" hack is gone (plan 04 stage 3: `out_symbol_name()`, names by accessibility from
+- The "written type shows as written" hack is gone (plan 04 stage 3: `out_symbol_name()`, names by accessibility from
   `TyDisplay.enclosing`); removing it uncovered what it hid in 10 tests: unresolved qualified names and `this` types
   lowering to `any`, alias names lost (`Pair<FooBar>` printing structurally). The enclosing scope is tracked per file
   and namespace only: function/class/block scopes aren't kept on their AST nodes, so a local declaration shadowing an
@@ -332,8 +331,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   enum object) and gives it all entries' members; it's a second `Ty` next to the unmerged one (`ty_static_type_of`,
   which is what `this` in a static member and a derived class's base static side see).
 
-- Single-member enums: `E.x` prints as `E` (right for `.types`, wrong in error messages where tsc shows the fresh
-  literal type `E.x`). Needs fresh/regular literal types. `ty_widened_literal` widens an enum member to its enum.
 
 ## Calls, inference and property access (`ty/call.c`, `ty/infer.c`, `ty/access.c`): `ty/call.c`, `ty/infer.c`, `ty/access.c`
 The algorithms are meant to stay; what's listed is where they stop short of tsc.
@@ -390,10 +387,23 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - **No evolving arrays** (`let x = []` then `x.push(1)`, tsc's autoArrayType): `initialized_binding_evaluate_assigned_type`
   gives an unannotated variable initialized with `[]` the type `any[]` under noImplicitAny. Everywhere else `[]` is
   `never[]` under strictNullChecks like in tsc.
-- **No fresh/regular literal type pairs.** Every literal type that comes out of an expression counts as fresh: it
-  widens at a mutable location (`ty_widened_for_declaration`, `check_for_mutable_location`), so `const c: 1 = 1; let x = c`
-  gives `number` where tsc says `1`. No object literal freshness either (no excess property checks, TS2353).
-  `widen_nullable` (null/undefined -> any without strictNullChecks) is shallow: top level and array elements only.
+- Fresh literals (plan 12): the `.types` side prints regular expression types, but annotation reuse is what makes
+  tsc print `(p: E.x)` / `(a: Yes)` for a parameter annotated with a single-member enum member or an alias of one;
+  tttt prints `E` / `Choice.Yes`. `check_with` doesn't strip freshness from a literal of the contextual type (tsc's
+  checkExpressionWithContextualType): harmless while relations normalise. Literal ids follow tsc only where tttt
+  makes literals in the same order (`1 | 0` vs `0 | 1` in `literalTypes2/3`: tttt makes literals outside checking).
+- Excess property checks (plan 12, `has_excess_properties` in relate.c): no elaboration (tsc's elaborateError drills
+  into the literal and reports at the nested property with a related TS6500; tttt reports the outer relation, located
+  at the nested property name). No TS2561 (spelling suggestion). The keys of a generic mapped type count as known
+  (`members->mapped`), the intersection-target re-check of nested properties (tsc's structuredTypeRelatedTo, "Nested
+  excess property") isn't there. The discriminant reduction of a union target is tsc's discriminateTypeByDiscriminableItems
+  without the key-property map. Contextual types of union members are reduced (`string | "a"` is `string`, tsc keeps
+  both with noReductions), so a discriminant can widen and pick the wrong member (`contextualTypeShouldBeLiteral`).
+  The for-of destructuring assignment check (statement.c) relates the regular element type (HACK: tsc checks a
+  pattern property by property). Binding patterns don't make an implied type (tsc's getTypeFromBindingPattern), so
+  `function f({ x, y = 0 } = { x: 0 })` has `{ x: number }` and `f({ x: 1, y: 1 })` is a spurious TS2353
+  (`destructuringWithLiteralInitializers`, also the missing optional `c1?:` in `literalTypes2`).
+- `widen_nullable` (null/undefined -> any without strictNullChecks) is shallow: top level and array elements only.
 - Expression memo (`check_with`, `LazyMemo.context`, `lazy_type_set`): the memo of an `Expr` is whatever the last check
   with a contextual type produced (overload candidates and inference passes overwrite each other; the chosen candidate
   is checked last). `kind_uses_context` decides which expressions get rechecked for a new contextual type. Correctness
@@ -469,7 +479,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `ty_resolve_enum` / `evaluate` (enums.c): no template literals or `const` variable references in initializers, members
   of ambient enums without initializer auto-increment (tsc: computed). Declaration-merged enums don't get this far
   (`declaration_init` refuses a second namespace). String-named members print as `E.b c`, not `(typeof E)["b c"]`.
-- `relate.c` gaps: no excess property checks / freshness, no weak type check, no private/protected/nominal class
+- `relate.c` gaps: no weak type check, no private/protected/nominal class
   rules, no discriminated-union decomposition of the source, no optionality of parameters (`undefined` isn't added
   under strictNullChecks), signatures/index signatures of a source intersection aren't combined (properties are).
   Array<S> -> ReadonlyArray<T> is a shortcut on the element types (`structured_related`).
@@ -525,8 +535,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   are lazier than the rest (`signature_return_type`), because they're often inferred from a body that is being checked.
 - `builder_add_interface`: index signature and mapped type operand types are lowered eagerly (property and signature
   types are lazy); computed keys that aren't string/number literals are dropped (unique symbols).
-- `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without strictNullChecks, no fresh/regular
-  literal pairs. No unique symbol types. TS2456 is only a TODO.
+- `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without strictNullChecks. TS2456 is only a TODO.
 
 ## Module resolution (`src/module_resolution.c`, `src/tsconfig.c`, plan 06)
 - A resolved `.json` module is `any` (`MODULE_REF_IS_JSON`): the file isn't parsed into a type, `path_is_script` keeps

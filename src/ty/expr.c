@@ -157,7 +157,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty) {
 Ty const* ty_widened_for_declaration(Checker* me, Ty const* ty, bool literals) {
     // Not regularised: `const e = E.x` holds the fresh `E.x`, `let x = a` with `a: "a"` the regular "a"
     if (literals) ty = ty_widened_unique_symbol(me, ty_widened_literal(me, ty));
-    return widen_nullable(me, ty);
+    return widen_nullable(me, ty_widened_objects(me, ty));
 }
 
 // Contextual types
@@ -282,7 +282,7 @@ Ty const* ty_widened_return_type(Checker* me, Ty const* ty, Ty const* contextual
     // Only a unit type widens: a function that returns 1 or "a" says so
     bool unit = ty->kind == TY_LITERAL;
     if (unit) ty = contextual && any_literal_of_contextual_type(me, ty, contextual) ? ty_regular(me, ty) : widen_literals(me, ty);
-    return widen_nullable(me, ty);
+    return widen_nullable(me, ty_widened_objects(me, ty));
 }
 
 // The signature a function expression is contextually typed by, null if there's none (or no single one)
@@ -1187,11 +1187,12 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .decl_span_count = 1,
             .name_is_value = name_is_value,
             .asserted = asserted,
+            .own = true,
         });
     }
     free(accessor_spans);
     Ty const* ret = spread_any ? ty_intrinsic(me, TY_ANY) :
-        ty_object_literal(me, builder.props, builder.count, builder.index, builder.index_count, true);
+        ty_object_literal(me, builder.props, builder.count, builder.index, builder.index_count, OBJECT_LITERAL_FRESH);
     free(builder.props);
     return ret;
 }

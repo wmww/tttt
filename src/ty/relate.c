@@ -46,6 +46,9 @@ typedef struct RelationState {
     bool reporting;
     VecTyReportLine lines; // innermost first while being collected
     u32 override_next_head; // A more specific message stands in for the next "Type S is not assignable to type T"
+    // Relating to the members of an intersection target (tsc's IntersectionState.Target): no excess property checks,
+    // the intersection as a whole had them
+    bool intersection_target;
     u64* maybe_keys;
     u32 maybe_count, maybe_cap;
     Ty const* source_stack[MAX_RELATION_DEPTH];
@@ -349,6 +352,10 @@ static void report_line(RelationState* st, unsigned ts_code, cstr message) {
         return;
     }
     vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message });
+}
+
+static void report_line_at(RelationState* st, unsigned ts_code, cstr message, Span span) {
+    vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message, .span = span });
 }
 
 static void report_truncate(RelationState* st, isize_t len) {
@@ -1374,11 +1381,13 @@ Ty const* ty_base_constraint(Checker* me, Ty const* ty) { return base_constraint
 
 static Ternary target_each_related(Checker* me, RelationState* st, Ty const* source, TyList targets, bool report) {
     Ternary result = TERNARY_TRUE;
-    for (u32 i = 0; i < targets.len; i++) {
+    bool saved = st->intersection_target;
+    st->intersection_target = true;
+    for (u32 i = 0; i < targets.len && result; i++) {
         Ternary related = is_related_to(me, st, source, targets.data[i], report);
-        if (!related) return TERNARY_FALSE;
-        result &= related;
+        result = related ? result & related : TERNARY_FALSE;
     }
+    st->intersection_target = saved;
     return result;
 }
 
@@ -1392,8 +1401,9 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     }
     bool source_is_generic = source->kind == TY_TYPE_PARAM || (source->flags & TYF_DEFERRED) != 0;
     if (target->kind == TY_UNION) {
-        // A generic source can still be related through its constraint, further down
-        Ternary related = related_to_some(me, st, source, target, report && !source_is_generic);
+        // A generic source can still be related through its constraint, further down. The members of the union don't
+        // check excess properties, the union as a whole did (tsc relates the regular object literal)
+        Ternary related = related_to_some(me, st, ty_widened_objects(me, source), target, report && !source_is_generic);
         if (related || (!source_is_generic && source->kind != TY_INTERSECTION)) return related;
     }
     if (target->kind == TY_INTERSECTION) return target_each_related(me, st, source, target->composite.types, report);
@@ -1675,6 +1685,9 @@ static bool is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth) {
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     RelationCache* cache = &my relations[st->relation];
     u64 key = relation_key(source, target);
+    // Without excess property checks the answer for a fresh object literal is another one (tsc's intersectionState
+    // is part of the key too)
+    if (st->intersection_target && (source->flags & TYF_FRESH_OBJECT)) key ^= 1ull << 63;
     unsigned cached = relation_cache_get(cache, key);
     if (cached == CACHE_SUCCEEDED) return TERNARY_TRUE;
     if (cached == CACHE_FAILED && !report) return TERNARY_FALSE;
@@ -1716,12 +1729,246 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     return result;
 }
 
+// Excess property checks (tsc's hasExcessProperties and friends)
+
+static bool union_has_member(Ty const* u, Ty const* t) {
+    for (u32 i = 0; i < u->composite.types.len; i++) {
+        if (u->composite.types.data[i] == t) return true;
+    }
+    return false;
+}
+
+static bool is_excess_property_check_target(Ty const* ty) {
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        bool any = false, all = true;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            bool is = is_excess_property_check_target(ty->composite.types.data[i]);
+            any |= is;
+            all &= is;
+        }
+        return ty->kind == TY_UNION ? any : all;
+    }
+    return (ty->flags & (TYF_OBJECT | TYF_NON_PRIMITIVE)) != 0;
+}
+
+// tsc's isEmptyObjectType
+static bool is_empty_object_type(Checker* me, Ty const* ty) {
+    if (ty->flags & TYF_NON_PRIMITIVE) return true;
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        bool any = false, all = true;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            bool is = is_empty_object_type(me, ty->composite.types.data[i]);
+            any |= is;
+            all &= is;
+        }
+        return ty->kind == TY_UNION ? any : all;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, ty);
+    return !members->mapped && !members->prop_count && !members->call_count && !members->construct_count &&
+        !members->index_count;
+}
+
+static bool is_numeric_name(Atom const* name) {
+    if (!name->len) return false;
+    char* end = nullptr;
+    char buf[64];
+    if (name->len >= sizeof(buf)) return false;
+    memcpy(buf, name->str, name->len);
+    buf[name->len] = 0;
+    double value = strtod(buf, &end);
+    if (*end) return false;
+    // tsc's isNumericLiteralName: the name is what the number prints as
+    cstr printed = cstr_null;
+    cstr_append_value_js(&printed, &(Value){ .tag = VALUE_NUMBER, .number = value });
+    csview printed_sv = cstr_sv(&printed);
+    csview name_sv = atom_sv(name);
+    bool ret = csview_eq(&printed_sv, &name_sv);
+    cstr_drop(&printed);
+    return ret;
+}
+
+// tsc's getApplicableIndexInfoForName (a string index also admits unique symbol names, for backwards compatibility)
+static bool has_index_for_name(Checker* me, Members const* members, Atom const* name) {
+    for (u32 i = 0; i < members->index_count; i++) {
+        Ty const* key = members->index[i].key;
+        if (key->flags & TYF_STRING) return true;
+        if ((key->flags & TYF_NUMBER) && is_numeric_name(name)) return true;
+        if ((key->flags & TYF_ES_SYMBOL) && ty_unique_symbol_of_name(me, name)) return true;
+        if (!(key->flags & (TYF_NUMBER | TYF_ES_SYMBOL))) return true; // (Patterns tttt doesn't have: let them through)
+    }
+    return false;
+}
+
+// tsc's isKnownProperty
+static bool is_known_property(Checker* me, Ty const* target, Atom const* name) {
+    if (target->flags & TYF_OBJECT) {
+        Members const* members = ty_members(me, target);
+        if (members->mapped) return true; // TODO: the keys of a mapped type
+        if (ty_get_prop(me, target, name) || has_index_for_name(me, members, name)) return true;
+    }
+    if ((target->kind == TY_UNION || target->kind == TY_INTERSECTION) && is_excess_property_check_target(target)) {
+        for (u32 i = 0; i < target->composite.types.len; i++) {
+            if (is_known_property(me, target->composite.types.data[i], name)) return true;
+        }
+    }
+    return false;
+}
+
+// The type of a property of an object type (its own, not Object's) or of the index signature that admits the name
+static Ty const* prop_or_index_type(Checker* me, Ty const* ty, Atom const* name) {
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) return ty_access(me, ty, ty_prop_name_literal(me, name));
+    if (!(ty->flags & TYF_OBJECT)) return nullptr;
+    Prop const* prop = ty_get_prop(me, ty, name);
+    if (prop && (prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+        Ty const* parts[2] = { prop_type(me, prop), ty_intrinsic(me, TY_UNDEFINED) };
+        return ty_union(me, parts, 2, nullptr, (TyList){0});
+    }
+    if (prop) return prop_type(me, prop);
+    Members const* members = ty_members(me, ty);
+    for (u32 i = 0; i < members->index_count; i++) {
+        Ty const* key = members->index[i].key;
+        if (((key->flags & TYF_NUMBER) && is_numeric_name(name)) ||
+            ((key->flags & TYF_ES_SYMBOL) && ty_unique_symbol_of_name(me, name))
+        ) {
+            return members->index[i].value;
+        }
+    }
+    for (u32 i = 0; i < members->index_count; i++) {
+        if (members->index[i].key->flags & TYF_STRING) return members->index[i].value;
+    }
+    return nullptr;
+}
+
+// tsc's findMatchingDiscriminantType (without the key property map) || filterPrimitivesIfContainsNonPrimitive
+static Ty const* excess_check_target_of_union(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    TyList types = target->composite.types;
+    unsigned char include_buf[64];
+    unsigned char* include = types.len <= sizeof(include_buf) ? include_buf : malloc(types.len);
+    for (u32 i = 0; i < types.len; i++) include[i] = !(types.data[i]->kind == TY_INTRINSIC || types.data[i]->kind == TY_LITERAL);
+    Members const* members = ty_members(me, source);
+    bool discriminated = false;
+    for (u32 p = 0; p < members->prop_count; p++) {
+        Prop const* prop = members->props[p];
+        if (!ty_is_discriminant_property(me, target, prop->name)) continue;
+        Ty const* prop_ty = prop_type(me, prop);
+        TyList parts = prop_ty->kind == TY_UNION ? prop_ty->composite.types : (TyList){ .data = &prop_ty, .len = 1 };
+        bool matched = false;
+        for (u32 i = 0; i < types.len; i++) {
+            if (!include[i]) continue;
+            Ty const* target_prop = prop_or_index_type(me, types.data[i], prop->name);
+            bool related = false;
+            for (u32 j = 0; target_prop && j < parts.len && !related; j++) {
+                related = is_related_to(me, st, parts.data[j], target_prop, false) != TERNARY_FALSE;
+            }
+            if (related) matched = true;
+            else include[i] = 2; // Maybe
+        }
+        for (u32 i = 0; i < types.len; i++) {
+            if (include[i] == 2) include[i] = !matched;
+        }
+    }
+    TyBuf kept = {0};
+    for (u32 i = 0; i < types.len; i++) {
+        if (include[i]) ty_buf_push(&kept, types.data[i]);
+        else discriminated = true;
+    }
+    Ty const* ret = target;
+    if (discriminated && kept.len) ret = ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
+    ty_buf_drop(&kept);
+    if (include != include_buf) free(include);
+    if (ret != target) return ret;
+    bool non_primitive = false;
+    for (u32 i = 0; i < types.len; i++) non_primitive |= (types.data[i]->flags & TYF_NON_PRIMITIVE) != 0;
+    if (!non_primitive) return target;
+    for (u32 i = 0; i < types.len; i++) {
+        if (types.data[i]->kind != TY_INTRINSIC && types.data[i]->kind != TY_LITERAL) ty_buf_push(&kept, types.data[i]);
+        else if (types.data[i]->flags & TYF_NON_PRIMITIVE) ty_buf_push(&kept, types.data[i]);
+    }
+    ret = kept.len ? ty_union(me, kept.data, kept.len, nullptr, (TyList){0}) : target;
+    ty_buf_drop(&kept);
+    return ret;
+}
+
+static bool keep_excess_check_target(Ty const* ty) { return is_excess_property_check_target(ty); }
+
+static Ty const* filter_excess_check_targets(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_UNION) return ty;
+    TyBuf kept = {0};
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (keep_excess_check_target(ty->composite.types.data[i])) ty_buf_push(&kept, ty->composite.types.data[i]);
+    }
+    Ty const* ret = kept.len == ty->composite.types.len ? ty : ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
+    ty_buf_drop(&kept);
+    return ret;
+}
+
+static bool has_excess_properties(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    if (!is_excess_property_check_target(target)) return false;
+    if (st->relation == TY_RELATION_ASSIGNABLE || st->relation == TY_RELATION_COMPARABLE ||
+        st->relation == TY_RELATION_ASSIGNABLE_STRICT_NULLS
+    ) {
+        Ty const* object = global_type(me, GLOBAL_OBJECT);
+        bool object_in_target = object && (target == object || (target->kind == TY_UNION && union_has_member(target, object)));
+        if (object_in_target || is_empty_object_type(me, target)) return false;
+    }
+    Ty const* reduced = target;
+    bool check_types = false;
+    if (target->kind == TY_UNION) {
+        reduced = excess_check_target_of_union(me, st, source, target);
+        check_types = true;
+    }
+    Members const* members = ty_members(me, source);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        if (!prop->literal_own) continue;
+        if (!is_known_property(me, reduced, prop->name)) {
+            if (report) {
+                cstr name = ty_prop_name_cstr(me, prop->name);
+                cstr target_str = display_for_report(me, filter_excess_check_targets(me, reduced), false);
+                report_line_at(st, 2353, cstr_d(
+                    "Object literal may only specify known properties, and '", name, "' does not exist in type '",
+                    target_str, "'."
+                ), prop->name_span);
+                c_drop(cstr, &name, &target_str);
+                st->override_next_head++; // (tsc's reportParentSkippedError)
+            }
+            return true;
+        }
+        if (check_types) {
+            TyList types = reduced->kind == TY_UNION ? reduced->composite.types : (TyList){ .data = &reduced, .len = 1 };
+            TyBuf parts = {0};
+            for (u32 j = 0; j < types.len; j++) {
+                Ty const* part = prop_or_index_type(me, ty_apparent_type(me, types.data[j]), prop->name);
+                ty_buf_push(&parts, part ? part : ty_intrinsic(me, TY_UNDEFINED));
+            }
+            Ty const* expected = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+            ty_buf_drop(&parts);
+            if (!is_related_to(me, st, prop_type(me, prop), expected, report)) {
+                if (report) {
+                    cstr name = ty_prop_name_cstr(me, prop->name);
+                    report_line(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
+                    cstr_drop(&name);
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     // Relations (and their caches) only see regular literals (tsc's getNormalizedType)
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
     if (is_simple_related(me, st, source, target)) return TERNARY_TRUE;
+    if (ty_is_fresh_object(source) && !st->intersection_target && is_structured(target) &&
+        has_excess_properties(me, st, source, target, report)
+    ) {
+        if (report) report_relation_error(me, st, source, target);
+        return TERNARY_FALSE;
+    }
     Ternary result = TERNARY_FALSE;
     if (st->relation == TY_RELATION_COMPARABLE && !is_structured(source) && !is_structured(target)) {
         // Comparable is looser about literals: a primitive is comparable to its literals
@@ -1750,6 +1997,7 @@ static bool check_related(
     st->reporting = report_into != nullptr;
     st->lines = (VecTyReportLine){0};
     st->override_next_head = 0;
+    st->intersection_target = false;
     st->maybe_keys = nullptr;
     st->maybe_count = st->maybe_cap = 0;
     st->depth = 0;

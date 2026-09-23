@@ -38,7 +38,11 @@ static bool check_assignable(
     Error* error;
     bool default_head = ts_code == 2322;
     TyReportLine const* natural_head = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
-    if (default_head && natural_head && natural_head->ts_code != 2322) {
+    if (natural_head && span_valid(natural_head->span)) {
+        // An error that knows exactly where it is (an excess property) replaces the head, whatever it was
+        error = error_ctx_error_s(errs, natural_head->span, natural_head->ts_code, cstr_clone(natural_head->message));
+        first_nested = 1;
+    } else if (default_head && natural_head && natural_head->ts_code != 2322) {
         // Something more specific than "not assignable" (a missing property, say) takes the place of the head
         error = error_ctx_error_s(errs, span, natural_head->ts_code, cstr_clone(natural_head->message));
         first_nested = 1;
@@ -68,9 +72,17 @@ static void report_unassignable_with_head(
     VecTyReportLine lines = {0};
     ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
     my instantiation_limit_hit = false;
-    Error* error = error_ctx_error_s(errs, span, ts_code, head);
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
+    Error* error;
+    if (natural && span_valid(natural->span)) {
+        // An error that knows exactly where it is (an excess property) replaces the head
+        cstr_drop(&head);
+        error = error_ctx_error_s(errs, natural->span, natural->ts_code, cstr_clone(natural->message));
+        first = 1;
+    } else {
+        error = error_ctx_error_s(errs, span, ts_code, head);
+    }
     if (natural && natural->ts_code == 2322 && !keep_natural_head) first = 1;
     for (isize_t i = first; error && i < vec_ty_report_line_size(&lines); i++) {
         error_sub_error_s(error, (Span){0}, TS_CODE_NONE, cstr_clone(vec_ty_report_line_at(&lines, i)->message));
@@ -122,6 +134,18 @@ void ty_check_heritage(
             base_str, "'."), false, span, errs);
     }
     c_drop(cstr, &derived_str, &base_str);
+}
+
+void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
+    if (source->flags & TYF_ANY) return;
+    if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return;
+    if (report_instantiation_limit(me, span, errs)) return;
+    cstr source_str = ty_report_source_cstr(me, source, target);
+    cstr target_str = ty_to_cstr(me, target);
+    report_unassignable_with_head(me, source, target, 1360, cstr_d(
+        "Type '", source_str, "' does not satisfy the expected type '", target_str, "'."
+    ), false, span, errs);
+    c_drop(cstr, &source_str, &target_str);
 }
 
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {

@@ -2,6 +2,15 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 12 done (fresh literals, excess property checks): real corpus 44 -> 31
+Suite: **4200 full of 13163**, errors 7308, symbols 9173, types 7367. Lost 4: jsdocAccessEnumType (JSDoc `@type`, printed
+right by accident before), destructuringWithLiteralInitializers, mappedTypeMultiInference,
+typeParameterConstModifiersWithIntersection (spurious TS2353 over pre-existing wrong types, triage.md). Real corpus:
+**31** (TS2345 15, TS2322 11, TS7022 4, TS2339 1), no TS2353. `./bench.sh` on a machine ~1.24x slower again than the
+plan 11 entry (tsc 10.52 s on the real corpus): real corpus tttt **0.99 s** vs tsgo 1.20 (tsgo single-threaded 1.96),
+typecheck 872 ms, RSS 370 MB; synthetic corpus tttt 2.35 s vs tsgo 2.40 (single-threaded 5.22), RSS 2175 MB. Scaled
+by tsc, no cost from the fresh twins (one intern lookup per literal expression) or the lazy regular object twins.
+
 ## 2026-09-22, plan 11 done (higher-order generic inference): real corpus 91 -> 44
 Suite: **4164 full of 13163**, errors 7285, symbols 9171, types 7317. Lost: badInferenceLowerPriorityThanGoodInference
 (tsc's context-free type, triage.md). Real corpus: **44** (TS2345 27, TS2322 11, TS7022 4, TS2678 1, TS2339 1; TS2558

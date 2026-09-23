@@ -490,7 +490,7 @@ static Ty const* reverse_mapped_type(Checker* me, Ty const* source, MappedInfo c
         };
     }
     if (has_string_index) string_index.value = reverse_mapped_prop_type(me, string_index.value, mapped, operand);
-    Ty const* ret = ty_object_literal(me, props, members->prop_count, &string_index, has_string_index ? 1 : 0, false);
+    Ty const* ret = ty_object_literal(me, props, members->prop_count, &string_index, has_string_index ? 1 : 0, OBJECT_SYNTHETIC);
     free(props);
     my reverse_mapped_depth--;
     return ret;
@@ -987,6 +987,7 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
         co = param->priority == INFER_PRIORITY_RETURN_TYPE ?
             ty_union(me, candidates, len, nullptr, (TyList){0}) :
             common_supertype(me, candidates, len);
+        co = ty_widened_objects(me, co); // (tsc's getWidenedType of the inference)
         free(candidates);
     }
     Ty const* contra = param->contra_len ? common_subtype(me, param->contra, param->contra_len) : nullptr;

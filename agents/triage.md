@@ -53,6 +53,23 @@ plans 11-15 or `bugs/` are gone from here; see those files.
 - An array literal that is a destructuring assignment target (`[a, b] = m`) types as an array, tsc makes it a tuple of
   the targets' types (checkArrayLiteral inDestructuringPattern); a binding pattern isn't the contextual type of its
   initializer (`var [, , [, b]] = [3, 5, [0, 1]]` gets TS2461 at ES5, declarationEmitDestructuringArrayPattern5).
+  Same root (tsc's getTypeFromBindingPattern + checkObjectLiteral's contextualTypeHasPattern): an object literal
+  initializer of a pattern gets the pattern's defaulted properties as optional ones (`function f({ x, y = 0 } = { x: 0 })`
+  takes `{ x: number; y?: number }`; `literalTypes2` f6 prints `{ c1?: false; ... }`), and pattern properties the
+  literal lacks are TS2525. Since plan 12's excess property checks, `f({ x: 1, y: 1 })` is a spurious TS2353
+  (lost destructuringWithLiteralInitializers).
+- Exposed by plan 12's excess property checks (each a spurious TS2353 over a pre-existing wrong type):
+  mappedTypeMultiInference (`K` of `...cssSets: { [P in K]?: Style }[]` inferred from the first rest argument only),
+  typeParameterConstModifiersWithIntersection (`const TConfig extends Config<T1>` inferred as its constraint instead of
+  the literal, through an intersection parameter `{ produceThing: T1 } & TConfig`), mappedTypeNotMistakenlyHomomorphic
+  (`keyof Gen<ABC.A>` misses `a`: the intersection with the conflicting-discriminant member isn't reduced before
+  `keyof`), contextualTypeShouldBeLiteral (hacks.md: contextual types of union members are reduced, `string | "done"` is
+  `string`, so the discriminant `value` widens and the wrong member is picked), bigintPropertyName (`{ 2n: x }` is
+  named `2n`, tsc names it `2`), genericMappedTypeAsClause (no template literal types: `MappedModel<'Foo'>` prints as
+  `MappedModel<Suffix>`).
+- Probe leftovers of plan 12 (`test/probes/plan12/`): semver.ts prints the parameter as `"<" | "<=" | "="` where tsc
+  reuses the annotation `Comparator["operator"]` (indexed access annotation not reused by the types printer);
+  enum_messages.ts prints `(p: E)` for `p: E.x` (same, annotation reuse of an enum member reference).
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
   without lib es2015): some circularity through error types. Probe: test/probes/plan08/alias_optional_chain.ts minus
   its `@target`.
@@ -192,6 +209,8 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   errors baseline now measures.
 
 ## Harness and tools
+- `./release/baseline_tests -f enumLiteralsSubtypeReduction -d` hangs (100 s timeout) while the same run without `-d`
+  takes 0.3 s: probably the diff of a huge output through a pipe that nobody drains. Seen in plan 12.
 - `filetest.sh` always uses `/tmp/testfile`: two agents running it at once collide (a parallel planning agent had to
   use a private copy). Take the directory from `mktemp -d` or an env var.
 - `@libFiles` is ignored (`hacks.md`): 99 of its 100 uses are `react.d.ts,lib.d.ts`, so it's worth nothing until JSX

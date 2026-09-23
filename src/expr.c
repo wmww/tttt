@@ -1102,14 +1102,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             type_typecheck(&my as_type->type, errs);
             if (my as_type->is_satisfies) {
                 Checker* checker = current_checker;
-                Ty const* source = expr_get_type(&my as_type->expr);
-                Ty const* target = ty_of_node(&my as_type->type);
-                if (!ty_is_related(checker, source, target, TY_RELATION_ASSIGNABLE)) {
-                    cstr shown = ty_report_source_cstr(checker, source, target);
-                    error_ctx_error_d(errs, my as_type->keyword_span, 1360,
-                        "Type '", shown, "' does not satisfy the expected type '", target, "'.");
-                    cstr_drop(&shown);
-                }
+                ty_check_satisfies(
+                    checker, expr_get_type(&my as_type->expr), ty_of_node(&my as_type->type), my as_type->keyword_span, errs
+                );
             }
             break;
 

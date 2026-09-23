@@ -611,7 +611,8 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             return type;
         }
         case SYMBOL_DECL_BUILTIN: return ty_from_node(me, decl->node, (LowerCtx){0});
-        case SYMBOL_DECL_EXPR: return ty_expr_type(me, decl->node);
+        // `export default e` (exportDefaultStripsFreshness)
+        case SYMBOL_DECL_EXPR: return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
         case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
         case SYMBOL_DECL_CLASS:
         case SYMBOL_DECL_ENUM:
@@ -1088,7 +1089,7 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
         case TYPE_TYPEOF:
             // Widened like tsc's getTypeFromTypeQueryNode: `typeof undefined` is any without strictNullChecks.
             // TODO: `typeof x` of an identifier is its declared type, not the narrowed one (plan 03)
-            return ty_regular(me, ty_widened_for_declaration(me, ty_expr_type(me, node->typeof_->expr), false));
+            return ty_regular(me, ty_widened_for_declaration(me, ty_expr_type(me, node->typeof_->expr), false)); // (objects too)
 
         case TYPE_TERNARY: {
             // The extends type goes before the branches, it's what declares the `infer` type parameters

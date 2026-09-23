@@ -1168,7 +1168,7 @@ const baselines = {
     'arrayCast': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayConcat2': {
         errors: true,
@@ -5956,7 +5956,7 @@ const baselines = {
         types: false,
     },
     'contextualPropertyOfGenericFilteringMappedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6183,7 +6183,7 @@ const baselines = {
     'contextualTyping12': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping13': {
         errors: true,
@@ -6206,7 +6206,7 @@ const baselines = {
         types: true,
     },
     'contextualTyping17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6221,14 +6221,14 @@ const baselines = {
         types: true,
     },
     'contextualTyping2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'contextualTyping20': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping21': {
         errors: false,
@@ -6318,7 +6318,7 @@ const baselines = {
     'contextualTyping37': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping38': {
         errors: true,
@@ -6331,7 +6331,7 @@ const baselines = {
         types: true,
     },
     'contextualTyping4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6368,7 +6368,7 @@ const baselines = {
     'contextualTyping9': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypingArrayDestructuringWithDefaults': {
         errors: false,
@@ -9691,7 +9691,7 @@ const baselines = {
         types: false,
     },
     'discriminatedUnionErrorMessage': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11076,7 +11076,7 @@ const baselines = {
         types: false,
     },
     'errorElaborationDivesIntoApparentlyPresentPropsOnly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12236,7 +12236,7 @@ const baselines = {
         types: false,
     },
     'excessPropertyCheckWithEmptyObject': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12271,12 +12271,12 @@ const baselines = {
         types: true,
     },
     'excessPropertyErrorForFunctionTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'excessPropertyErrorsSuppressed': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20321,7 +20321,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeMultiInference': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -23093,7 +23093,7 @@ const baselines = {
     'noImplicitThisBigThis': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'noImplicitThisFunctions': {
         errors: false,
@@ -23786,7 +23786,7 @@ const baselines = {
         types: false,
     },
     'objectLitStructuralTypeMismatch': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23831,7 +23831,7 @@ const baselines = {
         types: false,
     },
     'objectLiteralFreshnessWithSpread': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24192,7 +24192,7 @@ const baselines = {
     },
     'orderMattersForSignatureGroupIdentity': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'out-flag': {
@@ -30346,7 +30346,7 @@ const baselines = {
         types: true,
     },
     'typeInfer1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39156,7 +39156,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty21': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41096,7 +41096,7 @@ const baselines = {
         types: true,
     },
     'destructuringWithLiteralInitializers': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -47626,12 +47626,12 @@ const baselines = {
         types: true,
     },
     'typeSatisfaction_propNameConstraining': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeSatisfaction_propertyNameFulfillment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62601,9 +62601,9 @@ const baselines = {
         types: false,
     },
     'nonPrimitiveAndEmptyObject': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nonPrimitiveAndTypeVariables': {
         errors: false,
@@ -64236,7 +64236,7 @@ const baselines = {
         types: false,
     },
     'typeParameterConstModifiersWithIntersection': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -65618,7 +65618,7 @@ const baselines = {
     'contextualTypeWithUnionTypeMembers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeWithUnionTypeObjectLiteral': {
         errors: false,
@@ -65631,7 +65631,7 @@ const baselines = {
         types: false,
     },
     'discriminatedUnionTypes2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
