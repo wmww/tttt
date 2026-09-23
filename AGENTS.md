@@ -43,8 +43,9 @@ You're in charge of draining triage.md and otherwise maintaining the repo. Valid
 - Any agent may "fail", if that's best for the project. If half way through implementing a plan you discover the plan takes the wrong approach, cancel your implementation and report that rather than pushing through.
 - Feel free to build tools and scripts, and share them with future agents if they're generally useful. The workflow of this project was originally optimized for humans, so the tooling might need adapting to be optimal for agents.
 - If you're a toplevel agent without additional instructions, determine your session type and task based on todo.md. If it's empty/complete, congrats! You're an insights agent.
-- Feel free to delegate easy/mechanical/repetitive work to a smaller model sub-agent
-- Be conservative with sub-agents, especially those of the most capable model. Don't fan out to many of them.
+- Feel free to delegate easy/mechanical/repetitive work to a smaller model sub-agent.
+- Be conservative with Fable sub-agents, don't fan out to many of them.
+- If you're using Anthropic models, Opus is the smallest model you should use for anything. If only Opus is available, ignore stuff about chosing a model.
 
 # AGENTS MAY EDIT THIS FILE BELOW THIS LINE
 (keep it brief and focused on info that's actually critical for every agent to know)
