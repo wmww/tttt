@@ -2,6 +2,17 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-23, plan 18: template literal types, string mappings, mapped `as` clauses
+Suite **4689** full (4604 before; errors 7834, symbols 9264, types 7521; lost stringMappingReduction's errors, see
+triage.md). Corpora: tsc 0, **type-fest 598 -> 424** (TS2345 225, TS2339 75, TS2322 48, TS2578 35, TS2344 14, TS2589 13;
+nothing left in `source/`), **valibot 2169 -> 1965**.
+`./bench.sh`: tsc corpus tttt **0.72 s** / 372 MB vs tsgo 0.76 s (single-threaded 1.42), tsc 4.87 (this machine runs
+faster than the plan 17 entry). type-fest tttt **0.68 s** (typecheck 626 ms; 0.28 before, when most of it wasn't
+evaluated) vs tsgo 1.36, tsc 3.37. valibot tttt **4.38 s** / 1834 MB vs tsgo 0.92 s / 824 MB (single-threaded 1.84),
+tsc 6.74. Callgrind of type-fest (12.6 G Ir): the valibot shape, conditional instantiation without a cache
+(`instantiate_inner` 31% self, `intern_get` 19%, `ty_intersection` 10%, `ty_realias` 4%; `conditional_from_root` ->
+`ty_conditional_resolve` -> `ty_cond_branch_type` recursion): plan 20 covers both corpora now.
+
 ## 2026-09-22, plan 14: syntax gaps (`using`, import attributes, import/export forms, decorators, new.target)
 Suite **4595** full (`using` +314, import attributes +4 and 45 tests with more components, import/export forms and
 jump targets +36, decorators/`new.target` +20; no losses; errors 7803, symbols 9235, types 7418). Tests with a

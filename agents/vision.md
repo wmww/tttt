@@ -5,7 +5,14 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-22, plan 14 and plan 19 stage 0 done)
+## State (2026-09-23, plan 18 done)
+- **Plan 18 (template literal types, string mappings, mapped `as` clauses) done in one session**, all five stages:
+  suite 4604 -> 4689, type-fest 598 -> 424 (nothing left in `source/`), valibot 2169 -> 1965, tsc corpus 0. It
+  surfaced two core bugs that type-level programming depends on (conditional instantiation leaking outer `infer`
+  results into recursive instances; variadic tuples never normalized), both fixed. type-fest's check went 0.24 ->
+  0.68 s because much more of it is evaluated now: the profile is the same uncached conditional instantiation as
+  valibot's (plan 20), which is now the perf item for *both* modern corpora.
+
 - **Plan 14 (syntax gaps) done in one session**: `using`/`await using`, import attributes, import/export forms,
   break/continue targets, modifier order, decorators before computed names, `new.target`. Suite **4221 -> 4604**
   (+383, no losses); tests with a spurious syntax error 1242 -> 746, what's left is JSX and error recovery fidelity
@@ -57,7 +64,7 @@ types components) are the oracle, not the goal.
   indexed types: 8 sessions), flow graph + narrowing (plan 05), module resolution + tsconfig (plan 06), compiler
   options in one struct, multi-config tests, JS gate (`allowJs`/`checkJs`), diagnostics without a file.
   `documentation.md` describes the architecture, `hacks.md` what is approximated in each part.
-- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, template literal types, mapped `as` clauses, substitution types, reverse mapped types,
+- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, substitution types, reverse mapped types,
   decorators checking, declaration emit (out of scope). The iteration protocol, unique symbols and generators landed
   in plan 09 (`ty/iterate.c`).
 - History: every foundation plan (type core, binder, flow, modules) moved the suite by a whole category in one go and

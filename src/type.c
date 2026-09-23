@@ -334,10 +334,6 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             }
             break;
 
-        case TYPE_TEMPLATE:
-            for_each (i, vec_type, &my template_->types) {
-                type_typecheck(i, errs);
-            }
-            break;
+        case TYPE_TEMPLATE: template_type_typecheck(my template_, errs); break;
     }
 }

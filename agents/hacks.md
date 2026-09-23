@@ -348,8 +348,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 
 ## Calls, inference and property access (`ty/call.c`, `ty/infer.c`, `ty/access.c`): `ty/call.c`, `ty/infer.c`, `ty/access.c`
 The algorithms are meant to stay; what's listed is where they stop short of tsc.
-- `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), no template
-  literal inference, alias type arguments are only used for deferred types (there are no variances for aliases), no
+- `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), alias type arguments are only used for deferred types (there are no variances for aliases), no
   `InferencePriority` beyond naked-type-variable and return-type, type predicates don't exist (parser drops `x is T`).
 - `ty_union_signatures` (relate.c, tsc's getUnionSignatures): tsc's identity relation is approximated as "the same
   `Ty`, or a strict subtype both ways"; union signatures aren't cached per union type (built on every call); `this`
@@ -460,8 +459,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `check_array`: an empty array literal is `any[]` (tsc: `never[]` under strictNullChecks, evolving `any[]` for an
   unannotated variable). Spread elements of non-arrays are `any`. Tuples only from a tuple-like contextual type or
   `as const`.
-- `compute`: `typeof x` is `string` (tsc: the union of typeof results), untagged templates are `string` even in a const
-  context, tagged templates take the return type of a lone non-generic signature (no call resolution), `yield` is `any`,
+- `compute`: `typeof x` is `string` (tsc: the union of typeof results), tagged templates take the return type of a lone non-generic signature (no call resolution), `yield` is `any`,
   binary arithmetic is always `number` (no bigint; unary `-`/`~`/`++`/`--` follow tsc's getUnaryResultType), `+` goes
   by `TY_RELATION_ASSIGNABLE_STRICT_NULLS`. Bigint values are doubles (`Value.bigint`), so `2n ** 64n` literals lose
   precision.
@@ -476,15 +474,26 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   treats that as a construct signature too.
 
 ## Type core (`src/ty/`): known gaps
-- **No template literal types at all** (plan 18): the parser reads `` `a${B}` `` in a type as a string literal of the raw
-  text (`parse_type_compat_literal` -> `parse_string`), so the type is the string `"a${B}"`, an `infer X` inside is
-  never declared (TS2304 at its uses), and a nested template (`` `${F<`[${M}]`>}` ``) ends at the inner backtick (parse
-  errors). No `Uppercase<>`/`Lowercase<>`/`Capitalize<>`/`Uncapitalize<>` either.
+- Template literal types and string mappings (`template.c`, plan 18): `apply_mapping` (Uppercase & co.) maps ASCII,
+  Latin-1, basic Greek and Cyrillic only (JS's toUpperCase covers all of Unicode, some characters to several); a
+  one-character placeholder match steps one UTF-8 code point (JS: one UTF-16 unit). The cross-product cap (100k,
+  `ty_template_literal`) and the tuple cap (10k, `normalized_tuple`) return the error type without reporting
+  TS2590/TS2799/TS2800. `checkTemplateLiteralType` (TS2322 for a placeholder type that isn't string | number | bigint
+  | boolean | null | undefined, e.g. `${symbol}`) doesn't exist: such a template is silently `string`. `NoInfer<T>` is
+  plain `T` (tsc: a substitution type that inference skips), made in `intrinsic_alias_instance` (lower.c).
+- Alias renaming of a generic alias instance (`renames` in `lower`, TYPE_IDENTIFIER): tsc's rule depends on how the
+  alias body instantiates, approximated syntactically: never for `keyof` and intrinsic bodies, a conditional body only
+  if the result still carries the alias (deferred, or distributed over a union), a homomorphic mapped body only if the
+  result is a union. Unions don't have tsc's `origin` (how a union was written: `P & ("a" | "b")` prints distributed).
+- `keyof` of a generic mapped type without `as` stays a deferred `keyof` (tsc's getIndexTypeForMappedType gives the
+  constraint; doing that broke inference in localTypeParameterInferencePriority), and with `as` it isn't the `as`
+  type over the constraint either.
 - Relations to a generic mapped type (`generic_mapped_target_related`, relate.c) follow tsc's isGenericMappedType
   rule, but only a source without type variables gets its answer: a generic one that fails it falls through to the
   member-by-member comparison, which a mapped type without members passes. That permissive fallback stands in for
   mappedTypeRelatedTo (generic mapped to generic mapped), homomorphic `Readonly<T>` to `T`, and the like. The mapped
-  type parameter P gets no constraint when lowered, so `S[P]` is compared as `S[Q]`. Target `T[K]` uses the write type
+  type parameter P gets no constraint when lowered, so `S[P]` is compared as `S[Q]` (with an `as` clause a stand-in
+  P' constrained to Q is used, `mapped_key_param_mapper`, cached per MappedInfo). Target `T[K]` uses the write type
   (intersection over a union constraint of T, `write_constraint_of_indexed`).
 - `class_base`: the base class is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`); tsc
   evaluates the expression and takes the return type of its construct signatures (mixins, `extends f()`). The static
@@ -496,7 +505,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   doesn't parse, typeGuardOfFormThisMember), no TS2526 for `this` outside a class/interface, `this` in a static member
   is the static side (tsc: error), relations compare a reference with a this-argument structurally with the plain one
   (tsc: the this-argument is one more covariant type argument).
-- `ty_resolve_enum` / `evaluate` (enums.c): no template literals or `const` variable references in initializers, members
+- `ty_resolve_enum` / `evaluate` (enums.c, also the constant folding of template expressions): no property accesses of
+  `const` objects, `const` variables in another file count as constant without tsc's resolvedOtherFiles flag, members
   of ambient enums without initializer auto-increment (tsc: computed). Declaration-merged enums don't get this far
   (`declaration_init` refuses a second namespace). String-named members print as `E.b c`, not `(typeof E)["b c"]`.
 - `relate.c` gaps: no weak type check, no private/protected/nominal class

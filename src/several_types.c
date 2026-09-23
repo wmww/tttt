@@ -259,6 +259,13 @@ void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs) {
 void template_type_drop(TemplateType* me) {
     vec_cstr_drop(&my texts);
     vec_type_drop(&my types);
+    vec_span_drop(&my type_spans);
+}
+
+// TODO: tsc's checkTemplateLiteralType (TS2322 unless a placeholder is string | number | bigint | boolean | null |
+// undefined) needs substitution types first: `${K}` in the true branch of `K extends string ? ...` is fine in tsc
+void template_type_typecheck(TemplateType const* me, ErrorCtx* errs) {
+    for_each (i, vec_type, &my types) type_typecheck(i, errs);
 }
 
 // Typeof

@@ -97,9 +97,11 @@ void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs);
 typedef struct TemplateType {
     VecCStr texts;
     VecTypeNode types;
+    VecSpan type_spans; // Where each type was written
 } TemplateType;
 
 void template_type_drop(TemplateType* me);
+void template_type_typecheck(TemplateType const* me, ErrorCtx* errs);
 
 // Typeof
 

@@ -3498,7 +3498,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
     }
     p.pos++;
 
-    TemplateType template = { .texts = vec_cstr_init(), .types = vec_type_init() };
+    TemplateType template = { .texts = vec_cstr_init(), .types = vec_type_init(), .type_spans = vec_span_init() };
     cstr text = cstr_null;
     while (*p.pos && *p.pos != '`') {
         if (*p.pos == '\\' && p.pos[1]) {
@@ -3511,9 +3511,11 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
             vec_cstr_push(&template.texts, text);
             text = cstr_null;
             hop_whitespace(&p);
+            Anchor type_a = anchor(&p);
             TypeNode type;
             expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
             vec_type_push(&template.types, type);
+            vec_span_push(&template.type_spans, span_from(type_a));
             hop_whitespace(&p);
             if (!expect_char(&p, '}')) {
                 break;
@@ -3528,8 +3530,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
     vec_cstr_push(&template.texts, text);
 
     if (vec_type_is_empty(&template.types)) {
-        vec_cstr_drop(&template.texts);
-        vec_type_drop(&template.types);
+        template_type_drop(&template);
         return parse_fail(&p);
     }
 

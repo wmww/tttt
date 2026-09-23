@@ -841,6 +841,9 @@ Ty const* ty_type_param(Checker* me, Symbol const* decl) {
         // get their constraint from whoever lowers the mapped type
         InferredType const* inferred = symbol_find_node(decl, SYMBOL_DECL_INFER);
         if (inferred && inferred->extends.tag != TYPE_ANY) ret->param.state->constraint_node = &inferred->extends;
+        // The key of a mapped type is constrained by what it iterates over (as declared: instantiations share it)
+        InterfaceMember const* mapped = symbol_find_node(decl, SYMBOL_DECL_MAPPED_KEY);
+        if (mapped) ret->param.state->constraint_node = &mapped->key.mapped.in_type;
         ret->param.state->is_infer = inferred != nullptr;
         ret->param.state->item = symbol_find_node(decl, SYMBOL_DECL_TYPE_PARAMETER);
         *slot = ret;

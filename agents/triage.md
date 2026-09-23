@@ -74,8 +74,9 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   (`keyof Gen<ABC.A>` misses `a`: the intersection with the conflicting-discriminant member isn't reduced before
   `keyof`), contextualTypeShouldBeLiteral (hacks.md: contextual types of union members are reduced, `string | "done"` is
   `string`, so the discriminant `value` widens and the wrong member is picked), bigintPropertyName (`{ 2n: x }` is
-  named `2n`, tsc names it `2`), genericMappedTypeAsClause (no template literal types: `MappedModel<'Foo'>` prints as
-  `MappedModel<Suffix>`).
+  named `2n`, tsc names it `2`), genericMappedTypeAsClause (now: `{ bFoo: 'bar' }` is TS2741 where tsc elaborates to
+  TS2322 on the property, plan 16; `{ a, b }` against the generic `MappedModel<T>` is TS2322 where tsc says TS2353, the
+  excess check doesn't look at the resolved members of a generic mapped type; TS2312 missing).
 - Probe leftovers of plan 12 (`test/probes/plan12/`): semver.ts prints the parameter as `"<" | "<=" | "="` where tsc
   reuses the annotation `Comparator["operator"]` (indexed access annotation not reused by the types printer);
   enum_messages.ts prints `(p: E)` for `p: E.x` (same, annotation reuse of an enum member reference).
@@ -272,3 +273,11 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   `callgrind_annotate [--inclusive=yes]`). Worth a `./profile.sh` wrapper if more sessions need it.
 - `for (x in o)` with a non-declaration target: TS2405 ("left-hand side of a 'for...in' statement must be of type
   'string' or 'any'") is missing, tttt reports TS2322 instead (`test/probes/plan14/using_identifier.ts`, line 10).
+- Plan 18 leftovers (2026-09-23): stringMappingReduction lost its errors component (it passed while `Lowercase<T>` was
+  `any`): `EMap[C]` in the true branch of `C extends Keys ? EMap[C] : ...` needs substitution types (C & Keys).
+  mappedTypeAsClauseRelationships misses TS2208 ("This type parameter might need an `extends X` constraint", related
+  info on TS2322 against a type parameter's mapped type) and elaborates one line tsc doesn't for `+?` with a remapping
+  `as`. mappedTypeAsClauses: union `origin` display (`P & ("a" | "b")`), `keyof { [P in K]: X }` stays deferred (see
+  hacks.md). templateLiteralTypes1/3/4: see failstats (TS1125/TS1121 for escapes in template literal types, TS2590 not
+  reported, `${symbol}` not rejected). numericStringLiteralTypes: spurious TS2370 on `...values: UnwrapContainers<T>`
+  (a homomorphic mapped type over a generic tuple as a rest parameter type).

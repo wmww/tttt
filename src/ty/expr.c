@@ -256,6 +256,8 @@ static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty con
         }
         return false;
     }
+    // (Generic or not: they're primitives to tsc)
+    if (contextual->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) return (literal->flags & TYF_STRING_LITERAL) != 0;
     if (contextual->kind == TY_TYPE_PARAM || (contextual->flags & TYF_DEFERRED)) {
         // A type parameter or deferred type: what its constraint has room for. `T extends string` keeps "a"
         Ty const* constraint = ty_base_constraint(me, contextual);

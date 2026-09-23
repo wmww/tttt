@@ -18318,7 +18318,7 @@ const baselines = {
     'intersectionConstraintReduction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionOfMixinConstructorTypeAndNonConstructorType': {
         errors: true,
