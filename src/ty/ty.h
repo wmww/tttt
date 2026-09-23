@@ -671,7 +671,8 @@ bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its re
 TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
 bool signature_declared_never(Signature const* sig);
 TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function); // flow.c, null if none
-Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple); // The array a tuple also is
+Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple);
+Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow); // tsc's getQuickTypeOfExpression, null if none // The array a tuple also is
 Ty const* ty_optional_param_type(Checker* me, Ty const* type); // infer.c
 Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper); // infer.c
 Signature const* ty_combine_intersection_signatures(Checker* me, Signature const* left, Signature const* right);

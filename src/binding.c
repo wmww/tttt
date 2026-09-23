@@ -269,7 +269,10 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
         Ty const* contextual = ty_contextual_parameter_type(checker, me);
         if (contextual) return contextual;
     }
-    Ty const* ret = initialized_binding_check_value(me);
+    // A call of a single non-generic signature has its type without its arguments being checked (tsc's
+    // checkDeclarationInitializer): `const r = f(x)` doesn't depend on x, which may depend on r through a loop
+    Ty const* ret = ty_quick_expr_type(checker, &my value, false);
+    if (!ret) ret = initialized_binding_check_value(me);
     // HACK: `let x = []` is an evolving array in tsc (autoArrayType, under noImplicitAny), which grows with what is
     // pushed. Not there yet: it's any[] like before `[]` was never[]
     Symbol const* symbol = my binding.tag == BINDING_IDENTIFIER ? my binding.symbol : nullptr;

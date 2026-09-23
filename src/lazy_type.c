@@ -1,4 +1,5 @@
 #include "lazy_type.h"
+#include "display.h"
 #include "several_types.h"
 #include "expr.h"
 #include "statement.h"
@@ -64,7 +65,34 @@ void lazy_type_set(LazyType* me, Ty const* result, Ty const* context) {
     state->done = true;
 }
 
+static LazyType* dbg_stack[4096];
+static int dbg_len;
+static void dbg_print(LazyType* l) {
+    switch (l->tag) {
+        case LAZY_TYPE_EXPR: log_warn("  expr ", span_line_index(c_container_of(l, Expr, lazy_type)->outer_span)+1, " ", c_container_of(l, Expr, lazy_type)->outer_span); break;
+        case LAZY_TYPE_INITIALIZED_BINDING: log_warn("  binding ", span_line_index(c_container_of(l, InitializedBinding, lazy_type)->binding.content_span)+1, " ", c_container_of(l, InitializedBinding, lazy_type)->binding.content_span); break;
+        case LAZY_TYPE_FUNCTION: log_warn("  function ", span_line_index(c_container_of(l, FunctionImpl, lazy_type)->full_span)+1); break;
+        default: log_warn("  tag ", (i32)l->tag); break;
+    }
+}
+static Ty const* lazy_type_evaluate_inner(LazyType* me);
 Ty const* lazy_type_evaluate(LazyType* me) {
+    static int dbg = -1;
+    if (dbg < 0) dbg = getenv("TTTT_DEBUG_CYCLE") != nullptr;
+    if (!dbg) return lazy_type_evaluate_inner(me);
+    LazyMemo* st = my tag == LAZY_TYPE_EVALUATED ? nullptr : lazy_type_state(me);
+    if (st && st->evaluation_started && !st->done && my tag != LAZY_TYPE_EXPR && !st->is_self_referential) {
+        log_warn("cycle at:");
+        dbg_print(me);
+        for (int i = dbg_len - 1; i >= 0; i--) { dbg_print(dbg_stack[i]); if (dbg_stack[i] == me) break; }
+    }
+    dbg_stack[dbg_len++] = me;
+    Ty const* r = lazy_type_evaluate_inner(me);
+    dbg_len--;
+    return r;
+}
+
+static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     if (my tag == LAZY_TYPE_EVALUATED) return ty_intrinsic(current_checker, TY_ANY);
 
     // THREADSAFETY: slots belong to one checker, which belongs to one thread

@@ -9601,8 +9601,8 @@ const baselines = {
         types: true,
     },
     'discriminantNarrowingCouldBeCircular': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'discriminantPropertyCheck': {
@@ -37141,7 +37141,7 @@ const baselines = {
         types: true,
     },
     'controlFlowIterationErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

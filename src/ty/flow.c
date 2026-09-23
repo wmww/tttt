@@ -551,7 +551,46 @@ static u32 query_key(FlowQuery* q) {
 // being evaluated further up the stack (`x = f(x)` in a loop asks for x, which asks the loop, which asks for the
 // type of `f(x)`), and what it evaluates to now may depend on incomplete loop types: it is evaluated without touching
 // the memos, all the way down. Termination comes from the loop machinery, like in tsc, which memoises no expression types
+static bool in_optional_chain(Expr const* expr) {
+    for (;;) {
+        if (expr->tag == EXPR_PROPERTY) {
+            if (expr->property->optional_chain) return true;
+            expr = &expr->property->expr;
+        } else if (expr->tag == EXPR_CALL) {
+            if (expr->call->optional_chain) return true;
+            expr = &expr->call->callable;
+        } else {
+            return false;
+        }
+    }
+}
+
+// A call of a function with a single non-generic signature is what the signature returns, arguments unseen: that's
+// what lets `x = f(y)` in a loop not depend on `y`'s type (tsc's getQuickTypeOfExpression). Null: no shortcut. The
+// flow engine asks for the callee through its own cache (`in_flow`), which doesn't remember loop-incomplete types
+Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
+    if (expr->tag != EXPR_CALL) return nullptr;
+    CallExpr const* call = expr->call;
+    if (call->uses_new || call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS || in_optional_chain(expr)) {
+        return nullptr;
+    }
+    if (call->callable.tag == EXPR_IDENTIFIER) {
+        csview name = call->callable.identifier.name.sv;
+        if (csview_equals(name, "Symbol") || csview_equals(name, "require")) return nullptr;
+    }
+    Ty const* callee = in_flow ? ty_flow_expr_type(me, &call->callable) : ty_expr_type(me, &call->callable);
+    if (!(callee->flags & TYF_OBJECT)) return nullptr;
+    Members const* members = ty_members(me, callee);
+    if (members->call_count != 1 || members->construct_count || members->index_count || members->prop_count) return nullptr;
+    Signature const* sig = members->call[0];
+    signature_resolve(me, sig);
+    if (sig->type_params.len) return nullptr;
+    return signature_return_type(me, sig);
+}
+
 Ty const* ty_flow_expr_type(Checker* me, Expr const* expr) {
+    Ty const* quick = ty_quick_expr_type(me, expr, true);
+    if (quick) return quick;
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag == LAZY_TYPE_EXPR && lazy->slot) {
         LazyMemo* memo = lazy_type_state_peek(lazy);
