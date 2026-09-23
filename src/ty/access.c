@@ -152,5 +152,5 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
 }
 
 Ty const* ty_access(Checker* me, Ty const* object, Ty const* index) {
-    return access(me, object, index, 0);
+    return access(me, object, ty_regular(me, index), 0); // `o["a"]`: keys are regular
 }

@@ -1038,6 +1038,7 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
 }
 
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
+    index = ty_regular(me, index);
     Ty const* resolved = try_resolve_indexed(me, object, index);
     if (resolved) return resolved;
     u64 key[3] = { KEY_INDEXED, object->id, index->id };

@@ -2758,7 +2758,7 @@ const baselines = {
     'callExpressionWithTypeParameterConstrainedToOuterTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callOfConditionalTypeWithConcreteBranches': {
         errors: false,
@@ -22643,7 +22643,7 @@ const baselines = {
     'newExpressionWithTypeParameterConstrainedToOuterTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newFunctionImplicitAny': {
         errors: true,

@@ -929,18 +929,37 @@ static bool is_literal_candidate(Inference const* inf, Ty const* candidate) {
     return false;
 }
 
+static bool has_primitive_constraint(Checker* me, Ty const* param) {
+    Ty const* constraint = ty_param_constraint(me, param);
+    if (!constraint) return false;
+    if (constraint->kind == TY_UNION || constraint->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < constraint->composite.types.len; i++) {
+            Ty const* part = constraint->composite.types.data[i];
+            if ((part->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
+                part->kind == TY_KEYOF
+            ) {
+                return true;
+            }
+        }
+        return (constraint->flags & TYF_BOOLEAN) != 0;
+    }
+    return (constraint->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
+        constraint->kind == TY_KEYOF;
+}
+
 Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_literals) {
     InferParam* param = &inf->params[i];
     if (param->fixed) return param->fixed;
     Ty const* co = nullptr;
     if (param->co_len) {
         Ty const** candidates = malloc(sizeof(Ty const*) * param->co_len);
-        // tsc only widens fresh literal types: what the contextual return type gives (priority ReturnType) comes from
-        // annotations and never is. TODO(fresh literals): this stands in for freshness
-        bool widen = !keep_literals && param->top_level &&
-            !(param->has_priority && param->priority == INFER_PRIORITY_RETURN_TYPE);
+        // tsc's getCovariantInference: under a primitive constraint the candidates are regular, else (fresh) literals
+        // widen if every inference was at the top level and keep_literals doesn't say otherwise
+        bool primitive = has_primitive_constraint(me, param->param);
+        bool widen = !keep_literals && !primitive && param->top_level;
         for (u32 j = 0; j < param->co_len; j++) {
-            candidates[j] = widen ? ty_widened_literal(me, param->co[j]) : param->co[j];
+            Ty const* candidate = param->co[j];
+            candidates[j] = primitive ? ty_regular(me, candidate) : widen ? ty_widened_literal(me, candidate) : candidate;
         }
         // Several object literals are one candidate, their union (tsc's unionObjectAndArrayLiteralCandidates; array
         // literals aren't told apart from other arrays here)
@@ -1002,24 +1021,6 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i) {
 
 // Inferred type arguments
 
-static bool has_primitive_constraint(Checker* me, Ty const* param) {
-    Ty const* constraint = ty_param_constraint(me, param);
-    if (!constraint) return false;
-    if (constraint->kind == TY_UNION || constraint->kind == TY_INTERSECTION) {
-        for (u32 i = 0; i < constraint->composite.types.len; i++) {
-            Ty const* part = constraint->composite.types.data[i];
-            if ((part->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
-                part->kind == TY_KEYOF
-            ) {
-                return true;
-            }
-        }
-        return (constraint->flags & TYF_BOOLEAN) != 0;
-    }
-    return (constraint->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
-        constraint->kind == TY_KEYOF;
-}
-
 // The mapper for what has been inferred so far: common supertypes of the candidates, then defaults, then constraints
 // `fixing`: for the contextual type of a context-sensitive argument, which decides the type parameters it mentions
 TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing) {
@@ -1028,10 +1029,9 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     bool* inferred = calloc(params.len ? params.len : 1, sizeof(bool));
     for (u32 i = 0; i < params.len; i++) {
-        // tsc: literals widen unless the constraint is primitive, or the type parameter is at the top level of the
-        // return type and hasn't been fixed
-        bool keep_literals = has_primitive_constraint(me, params.data[i]) ||
-            (!fixing && !inf->params[i].fixed && is_param_at_top_level(return_type, params.data[i]));
+        // tsc: literals widen unless the type parameter is at the top level of the return type and hasn't been fixed
+        // (or the constraint is primitive, see inference_call_result())
+        bool keep_literals = !fixing && !inf->params[i].fixed && is_param_at_top_level(return_type, params.data[i]);
         results[i] = inference_call_result(me, inf, i, keep_literals);
         inferred[i] = results[i] != nullptr;
         if (!results[i]) results[i] = params.data[i]; // stands for itself until the defaults are in, below
