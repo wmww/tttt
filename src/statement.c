@@ -148,17 +148,19 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     } else {
         my inner_scope = scope_new(scope, SCOPE_NAMESPACE);
         if (my is_ambient_module) {
-            // In a module it augments the module it names, in a script it declares one. Either way every block goes
-            // into the one module symbol
+            // In a script it declares a module, and every block of that name goes into the one module symbol. In a
+            // module it augments the module it names: the block declares into a symbol of its own, which
+            // binder_link() merges into that module once aliases can be resolved (an augmented name may be an alias
+            // of the module, the declarations then go to its target)
             Symbol* module = nullptr;
             bool augmentation = scope->kind == SCOPE_MODULE;
-            if (augmentation && my module_ref->file) {
-                module = my module_ref->file->scope ? my module_ref->file->scope->container : nullptr;
+            if (augmentation && !my is_shorthand) {
+                module = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
+                module->name_span = my name;
+                module->exports = arena_new(&scope->binder->arena, SymbolTable);
+                binder_add_augmentation(scope->binder, me);
             }
-            if (!module) {
-                // TODO: TS2664 for an augmentation of a module nobody declares
-                module = binder_ambient_module(scope->binder, cstr_sv(&my module_ref->path), my name);
-            }
+            if (!module) module = binder_ambient_module(scope->binder, cstr_sv(&my module_ref->path), my name);
             if (my is_shorthand) module->is_shorthand_module = true;
             my symbol = module;
             my inner_scope->container = module;

@@ -687,7 +687,7 @@ const baselines = {
     },
     'ambientExternalModuleInAnotherExternalModule': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ambientExternalModuleReopen': {
@@ -1991,22 +1991,22 @@ const baselines = {
         types: false,
     },
     'augmentExportEquals3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'augmentExportEquals3_1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'augmentExportEquals4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'augmentExportEquals4_1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -2016,12 +2016,12 @@ const baselines = {
         types: false,
     },
     'augmentExportEquals6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'augmentExportEquals6_1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6976,7 +6976,7 @@ const baselines = {
         types: false,
     },
     'crossFileOverloadModifierConsistency': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7972,7 +7972,7 @@ const baselines = {
     },
     'declarationEmitForModuleImportingModuleAugmentationRetainsImport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitForTypesWhichNeedImportTypes': {
@@ -8757,7 +8757,7 @@ const baselines = {
     },
     'declarationMerging2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationNoDanglingGenerics': {
@@ -10167,7 +10167,7 @@ const baselines = {
     },
     'duplicateIdentifierRelatedSpans_moduleAugmentation': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateIdentifierShouldNotShortCircuitBaseTypeBinding': {
@@ -18572,7 +18572,7 @@ const baselines = {
     },
     'isolatedDeclarationErrorsAugmentation': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'isolatedDeclarationErrorsClasses': {
@@ -20456,8 +20456,8 @@ const baselines = {
         types: false,
     },
     'mergeMultipleInterfacesReexported': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'mergeSymbolReexportInterface': {
@@ -20527,7 +20527,7 @@ const baselines = {
     },
     'mergedDeclarations6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mergedDeclarations7': {
@@ -20707,7 +20707,7 @@ const baselines = {
     },
     'missingFunctionImplementation2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'missingImportAfterModuleImport': {
@@ -21006,12 +21006,12 @@ const baselines = {
         types: false,
     },
     'moduleAugmentationDoesNamespaceEnumMergeOfReexport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'moduleAugmentationDoesNamespaceMergeOfReexport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21102,7 +21102,7 @@ const baselines = {
     },
     'moduleAugmentationImportsAndExports1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationImportsAndExports2': {
@@ -21157,12 +21157,12 @@ const baselines = {
     },
     'moduleAugmentationInDependency': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationInDependency2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationNoNewNames': {
@@ -21182,7 +21182,7 @@ const baselines = {
     },
     'moduleAugmentationsBundledOutput1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationsImports1': {
@@ -32857,7 +32857,7 @@ const baselines = {
     },
     'ambientExternalModuleInsideNonAmbientExternalModule': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ambientExternalModuleMerging': {
@@ -49151,12 +49151,12 @@ const baselines = {
         types: false,
     },
     'umd-augmentation-3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'umd-augmentation-4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -50577,7 +50577,7 @@ const baselines = {
     },
     'jsDeclarationsClassAccessor': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsClassExtendsVisibility': {
@@ -52427,7 +52427,7 @@ const baselines = {
     },
     'selfNameModuleAugmentation': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typesVersions.ambientModules': {
@@ -52487,8 +52487,8 @@ const baselines = {
     },
     'untypedModuleImport_withAugmentation': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nodeAllowJsPackageSelfName(module=node16)': {
         errors: false,

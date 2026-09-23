@@ -2,6 +2,10 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 19 stage 0: module augmentations merged in the link phase
+Suite **4221** full (+2, +27 components, no losses). tsc corpus 0. valibot **4473 -> 2169** (TS2344 1166, TS2345 489,
+TS2578 185, TS2322 141, TS1360 86; TS2349 1742 -> 4, TS2339 608 -> 24). type-fest 598 (unchanged).
+
 ## 2026-09-22, plan 17: two modern corpora (type-fest, valibot), first numbers
 Suite: **4219 full of 13163** (+8: `@ts-expect-error`/`@ts-ignore`, bigint literal types and unary results). Lost
 promiseTry (errors: now that an unused `@ts-expect-error` is TS2578, a missing TS2554 shows; triage.md). tsc corpus: 0.

@@ -160,9 +160,13 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   by the gather symbol's declaration.
 - `declare global {}` merges into the globals wherever it is written, also inside a namespace where tsc rejects it
   (moduleAugmentationGlobal8).
-- Modules (stage 3): an augmentation of a module whose export is an *alias* (`export { get }` + `declare module "lib" {
-  export function get(): ... }`) reports TS2484 because alias and function meet in one table; tsc merges into the
-  alias' target (crossFileOverloadModifierConsistency). TS2664 (augmenting a module nobody declares), TS2649, TS1259/
+- Module augmentations (`merge_augmentations` in `scope.c`, tsc's mergeModuleAugmentation): each `declare module "m"
+  {}` block of a module declares into a symbol of its own, `binder_link` merges it into "m" (into an alias' target,
+  what comes through `export *`, what `export =` assigns) and retargets the declarations' AST nodes
+  (`retarget_decl`). Not merged: into a symbol of the shared lib program, an alias declared inside an augmentation that
+  meets an existing name. A name an augmentation *adds* through an `export *` module is added to that module's own
+  resolved table, not to the tables of modules that `export *` from it and were resolved earlier. TS2671 (augmenting
+  a non-namespace `export =`) is not reported. TS2664 (augmenting a module nobody declares), TS2649, TS1259/
   TS2497 (default/namespace import of an `export =` module without esModuleInterop) and TS2300 for a second
   `export =` are not reported. Named imports from an `export =` module only see the *namespace* side of what is
   assigned, not the properties of its type; `export = a.b` (not a plain identifier) is a variable, so it loses the type
@@ -184,8 +188,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - **Parallelism contract audit** (the contract is in `documentation.md`, "Resolve names"), what still writes to shared
   state:
   declare phase: (1) scripts and `declare global` declare straight into `Binder.globals`, ambient modules into
-  `Binder.ambient_modules`, and a module augmentation into *another file's* module symbol (all three want per-file
-  contribution tables merged in the link phase; cross-file conflicts are told from same-file ones by comparing the
+  `Binder.ambient_modules` (both want per-file contribution tables merged in the link phase, like module augmentations
+  already are; cross-file conflicts are told from same-file ones by comparing the
   source of the first declaration in `report_conflicts`); (2) every symbol, table and scope comes out of the one
   `Binder.arena`, and `binder_new_symbol` appends to `Binder.symbols` (the list `binder_link` resolves aliases from):
   per-file arenas + per-file alias lists; (3) one `ErrorCtx`.

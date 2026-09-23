@@ -631,10 +631,24 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
     if (span_valid(my name) && my symbol) {
+        // An augmentation of a file is that file's module symbol: named by its path, declared by the whole file
+        // first
+        SourceFile const* file = my symbol->is_module ? my symbol->module->file : nullptr;
+        VecSpan decls = vec_span_init();
+        cstr file_name = cstr_init();
+        if (file) {
+            vec_span_push(&decls, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
+            file_name = module_name_for_error(my symbol, nullptr, false);
+        }
+        VecSpan own = declaration_get_spans(my symbol);
+        for_each (i, vec_span, &own) vec_span_push(&decls, *i);
+        vec_span_drop(&own);
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declaration_get_spans(my symbol),
+            .declarations = decls,
             .span = my name,
+            .name = file ? sv_make_span(cstr_sv(&file_name)) : span_null,
         });
+        cstr_drop(&file_name);
         if (my symbol->flags & SYMBOL_VALUE) baseline_test_case_add_symbol_value(ctx, my name, my symbol);
     }
     Scope const* outer = ctx->enclosing;

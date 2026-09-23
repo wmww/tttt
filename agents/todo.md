@@ -2,8 +2,8 @@
 Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 08)")
 for why.
 
-1. **Execution: plan 19 stage 0** (module augmentation of an aliased export: ~2400 of valibot's 4473), a short
-   session; then **plan 14** (syntax gaps), `using` first (~330 tests). 1238 tests have a spurious parse error.
+1. **Execution: plan 14** (syntax gaps), `using` first (~330 tests). 1238 tests have a spurious parse error. (Plan 19
+   stage 0 is done: valibot 4473 -> 2169.)
 2. **Execution: plan 18** (template literal types, string mappings, mapped `as` clauses), stages 1-2.
 3. **Execution: plan 18** stages 3-4.
 4. **Execution: plan 20** (conditional instantiation cache: valibot 4.0 s vs tsgo 1.3 s).

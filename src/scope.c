@@ -9,6 +9,7 @@
 #include "class_decl.h"
 #include "interface_decl.h"
 #include "statement.h"
+#include "enum_decl.h"
 
 // Symbol tables
 
@@ -112,6 +113,7 @@ void binder_destroy(Binder* me) {
     if (!me) return;
     free(my symbols);
     free(my pattern_modules);
+    free(my augmentations);
     free(my overlays.keys);
     free(my overlays.values);
     arena_drop(&my arena);
@@ -1018,7 +1020,176 @@ Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning) {
     return nullptr;
 }
 
+// Module augmentations (tsc's mergeModuleAugmentation)
+
+void binder_add_augmentation(Binder* me, NamespaceDecl* decl) {
+    if (my augmentation_count == my augmentation_cap) {
+        my augmentation_cap = my augmentation_cap ? my augmentation_cap * 2 : 4;
+        my augmentations = realloc(my augmentations, sizeof(NamespaceDecl*) * my augmentation_cap);
+    }
+    my augmentations[my augmentation_count++] = decl;
+}
+
+// tsc's getExcludedSymbolFlags()
+static u32 excluded_flags(u32 flags) {
+    u32 ret = 0;
+    if (flags & SYMBOL_BLOCK_SCOPED_VARIABLE) ret |= SYMBOL_BLOCK_SCOPED_VARIABLE_EXCLUDES;
+    if (flags & SYMBOL_FUNCTION_SCOPED_VARIABLE) ret |= SYMBOL_FUNCTION_SCOPED_VARIABLE_EXCLUDES;
+    if (flags & SYMBOL_ENUM_MEMBER) ret |= SYMBOL_ENUM_MEMBER_EXCLUDES;
+    if (flags & SYMBOL_FUNCTION) ret |= SYMBOL_FUNCTION_EXCLUDES;
+    if (flags & SYMBOL_CLASS) ret |= SYMBOL_CLASS_EXCLUDES;
+    if (flags & SYMBOL_INTERFACE) ret |= SYMBOL_INTERFACE_EXCLUDES;
+    if (flags & SYMBOL_REGULAR_ENUM) ret |= SYMBOL_REGULAR_ENUM_EXCLUDES;
+    if (flags & SYMBOL_CONST_ENUM) ret |= SYMBOL_CONST_ENUM_EXCLUDES;
+    if (flags & SYMBOL_VALUE_MODULE) ret |= SYMBOL_VALUE_MODULE_EXCLUDES;
+    if (flags & SYMBOL_TYPE_PARAMETER) ret |= SYMBOL_TYPE_PARAMETER_EXCLUDES;
+    if (flags & SYMBOL_TYPE_ALIAS) ret |= SYMBOL_TYPE_ALIAS_EXCLUDES;
+    if (flags & SYMBOL_ALIAS) ret |= SYMBOL_ALIAS_EXCLUDES;
+    return ret;
+}
+
+// Points the AST node of a declaration at the symbol it now belongs to
+static void retarget_decl(SymbolDecl const* decl, Symbol* symbol) {
+    switch (decl->kind) {
+        case SYMBOL_DECL_VARIABLE: ((Binding*)decl->node)->symbol = symbol; return;
+        case SYMBOL_DECL_FUNCTION: ((FunctionImpl*)decl->node)->symbol = symbol; return;
+        case SYMBOL_DECL_CLASS: ((ClassDecl*)decl->node)->symbol = symbol; return;
+        case SYMBOL_DECL_INTERFACE: ((InterfaceDecl*)decl->node)->symbol = symbol; return;
+        case SYMBOL_DECL_ENUM: ((EnumDecl*)decl->node)->symbol = symbol; return;
+        case SYMBOL_DECL_ENUM_MEMBER: ((EnumCase*)decl->node)->symbol = symbol; return;
+        case SYMBOL_DECL_TYPE_ALIAS: ((TypeDecl*)decl->node)->symbol = symbol; return;
+        case SYMBOL_DECL_NAMESPACE: ((NamespaceDecl*)decl->node)->symbol = symbol; return;
+        default: impossible;
+    }
+}
+
+static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbol* source, ErrorCtx* errs);
+
+// tsc's mergeSymbol(): source's declarations (and exports) move to target, whose nodes then point at target. Source is
+// left behind with target's exports, so that the blocks declared into it see everything
+static void merge_symbol(Binder* binder, Symbol* target, Symbol* source, ErrorCtx* errs) {
+    if (target == source) return;
+    if (target->binder != binder || source->flags & SYMBOL_ALIAS) {
+        // TODO: augmenting a symbol of the shared lib program (wants clone_parent_symbol() and a table to put the
+        // clone in), and an alias inside an augmentation that meets an existing name
+        return;
+    }
+    if (target->flags & excluded_flags(source->flags)) {
+        report_conflicts(errs, target, source->decls[0].name, source->flags);
+        for (u32 i = 1; i < source->decl_count; i++) report_conflict(errs, source->decls[i].name, 2300);
+        return;
+    }
+    target->decl_flags_before = target->flags;
+    target->flags |= source->flags;
+    target->is_ambient |= source->is_ambient;
+    for (u32 i = 0; i < source->decl_count; i++) {
+        symbol_add_decl(target, source->decls[i]);
+        retarget_decl(&source->decls[i], target);
+    }
+    if (source->exports) {
+        symbol_ensure_exports(target);
+        u32 count;
+        SymbolEntry* entries = symbol_table_collect(source->exports, &count);
+        for (u32 i = 0; i < count; i++) merge_into_exports(binder, target, entries[i].name, entries[i].symbol, errs);
+        free(entries);
+        source->exports = target->exports;
+    }
+}
+
+// Adds source to the exports of owner under name, merging it into what is there already: into the target of an alias,
+// into what comes through `export *`
+static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbol* source, ErrorCtx* errs) {
+    u64 hash = symbol_name_hash(name);
+    Symbol* existing = symbol_table_get_own(owner->exports, name, hash);
+    if (!existing && owner->is_module && owner->module->export_star_count) {
+        existing = (Symbol*)symbol_table_lookup(module_resolved_exports(owner), name, hash);
+    }
+    if (!existing) {
+        symbol_table_insert(owner->exports, &binder->arena, name, hash, source);
+        if (owner->is_module && owner->module->resolved_exports_state == ALIAS_DONE) {
+            symbol_table_insert(owner->module->resolved_exports, &binder->arena, name, hash, source);
+        }
+        source->parent = owner;
+        return;
+    }
+    if (symbol_is_pure_alias(existing)) {
+        existing = symbol_resolve_alias(existing);
+        if (!existing || existing->is_placeholder) return;
+    }
+    merge_symbol(binder, existing, source, errs);
+}
+
+// Whether merging an augmentation's name needs aliases resolved: then it waits until the others are merged, so that
+// what resolves through the module sees them
+static bool augmentation_entry_needs_resolving(Symbol const* module, csview name) {
+    Symbol const* existing = symbol_table_get(module->exports, name);
+    if (existing) return (existing->flags & SYMBOL_ALIAS) != 0;
+    return module->is_module && module->module->export_star_count;
+}
+
+// The module an augmentation adds to (the module symbol itself, not its `export =`)
+static Symbol* augmented_module(Binder* me, NamespaceDecl* decl) {
+    ModuleRef* ref = decl->module_ref;
+    Symbol* ret = nullptr;
+    if (ref->file) ret = ref->file->scope ? ref->file->scope->container : nullptr;
+    if (!ret) {
+        ret = binder_module_of_ref(me, ref);
+        if (ret && ret->is_module && !ret->module->file && memchr(ret->name.buf, '*', (size_t)ret->name.size)) ret = nullptr;
+    }
+    // TODO: TS2664 for an augmentation of a module nobody declares
+    if (!ret) ret = binder_ambient_module(me, cstr_sv(&ref->path), decl->name);
+    return ret;
+}
+
+static void merge_augmentations(Binder* me) {
+    // First what merges without resolving anything, then (in the same order) what needs aliases or `export *`
+    // resolved, and augmentations of an `export =` module, which go into what it assigns
+    for (int pass = 0; pass < 2; pass++) {
+        for (u32 i = 0; i < my augmentation_count; i++) {
+            NamespaceDecl* decl = my augmentations[i];
+            Symbol* augmentation = decl->symbol;
+            Symbol* module = augmented_module(me, decl);
+            ErrorCtx* errs = decl->inner_scope->errs;
+            bool export_equals = symbol_table_get(module->exports, c_sv("export=")) != nullptr;
+            if (export_equals) {
+                if (pass == 0) continue;
+                Symbol* assigned = module_export_equals(module);
+                // TODO: TS2671 when it isn't a namespace
+                if (!assigned || assigned->is_placeholder || !(assigned->flags & SYMBOL_NAMESPACE)) continue;
+                if (assigned->binder != me) continue; // TODO: a namespace of the shared lib program
+                module = assigned;
+                symbol_ensure_exports(module);
+            }
+            u32 count;
+            SymbolEntry* entries = symbol_table_collect(augmentation->exports, &count);
+            for (u32 j = 0; j < count; j++) {
+                bool late = export_equals || augmentation_entry_needs_resolving(module, entries[j].name);
+                if (late != (pass == 1)) continue;
+                merge_into_exports(me, module, entries[j].name, entries[j].symbol, errs);
+            }
+            free(entries);
+        }
+    }
+    // Every block of an augmentation sees the module's exports, and `declare module "m"` is the module
+    for (u32 i = 0; i < my augmentation_count; i++) {
+        NamespaceDecl* decl = my augmentations[i];
+        Symbol* module = augmented_module(me, decl);
+        Symbol* assigned = module_export_equals(module);
+        if (assigned && assigned != module && !assigned->is_placeholder && assigned->flags & SYMBOL_NAMESPACE &&
+            assigned->binder == me
+        ) {
+            module = assigned;
+        }
+        decl->symbol->exports = module->exports;
+        decl->symbol = module;
+        symbol_add_decl(module, (SymbolDecl){
+            .kind = SYMBOL_DECL_NAMESPACE, .node = decl, .name = decl->name, .full = decl->full_span,
+        });
+    }
+}
+
 void binder_link(Binder* me) {
+    merge_augmentations(me);
     // Resolving makes placeholder symbols: by index
     for (u32 i = 0; i < my symbol_count; i++) {
         Symbol* symbol = my symbols[i];

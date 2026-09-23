@@ -14,6 +14,7 @@ typedef struct Symbol Symbol;
 typedef struct Scope Scope;
 typedef struct Binder Binder;
 typedef struct FlowBuilder FlowBuilder; // flow.h
+typedef struct NamespaceDecl NamespaceDecl; // statement.h
 
 // tsc's SymbolFlags, bit for bit where they exist here
 typedef enum SymbolFlags {
@@ -275,20 +276,28 @@ typedef struct Binder {
     Symbol** symbols; // malloc'd, all of them: aliases get resolved eagerly
     u32 symbol_count;
     u32 symbol_cap;
+    // `declare module "m" {}` blocks in modules, in declaration order: each declares into a symbol of its own, which
+    // binder_link() merges into the module it names (tsc's mergeModuleAugmentation)
+    NamespaceDecl** augmentations; // malloc'd
+    u32 augmentation_count;
+    u32 augmentation_cap;
 } Binder;
 
 Binder* binder_new(ErrorCtx* errs);
 void binder_destroy(Binder* me);
 // Makes the globals of `parent` (which must outlive me and not change anymore) visible, without copying them
 void binder_set_parent(Binder* me, Binder const* parent);
-// Resolves every alias, so that nothing writes to a symbol afterwards, and reports import conflicts
+// Merges module augmentations, resolves every alias, so that nothing writes to a symbol afterwards, and reports
+// import conflicts
 void binder_link(Binder* me);
+// A `declare module "m" {}` in a module, whose declarations binder_link() merges into "m"
+void binder_add_augmentation(Binder* me, NamespaceDecl* decl);
 Symbol* binder_new_symbol(Binder* me, csview name, u32 flags);
 Symbol* binder_new_module_symbol(Binder* me, SourceFile* file);
 // `globalThis`: a namespace whose exports are the globals
 void binder_declare_global_this(Binder* me);
 // The ambient module of that name (no quotes), made if it doesn't exist yet: every `declare module "m"` block and
-// every augmentation of it declare into the same symbol
+// every augmentation of it (binder_link()) declare into the same symbol
 Symbol* binder_ambient_module(Binder* me, csview name, Span name_span);
 // The module a string names: an ambient module, the file the program found for it if that is a module, a pattern
 // ambient module. Null if there is none (module_ref_is_missing() tells "not found" from "not a module")
