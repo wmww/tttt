@@ -3172,8 +3172,8 @@ const baselines = {
     },
     'checkJsFiles_skipDiagnostics': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'checkJsObjectLiteralHasCheckedKeyof': {
         errors: false,
@@ -7551,12 +7551,12 @@ const baselines = {
         types: true,
     },
     'declarationEmitCastReusesTypeNode5(strictnullchecks=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitCastReusesTypeNode5(strictnullchecks=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10426,12 +10426,12 @@ const baselines = {
         types: true,
     },
     'elementAccessExpressionInternalComments': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'elidedEmbeddedStatementsReplacedWithSemicolon': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18602,7 +18602,7 @@ const baselines = {
     },
     'isolatedDeclarationErrorsExpressions': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'isolatedDeclarationErrorsFunctionDeclarations': {
@@ -18646,8 +18646,8 @@ const baselines = {
         types: true,
     },
     'isolatedDeclarationsLiterals': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'isolatedDeclarationsRequiresDeclaration': {
@@ -22381,8 +22381,8 @@ const baselines = {
         types: true,
     },
     'narrowingUnionToUnion': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'narrowingUnionWithBang': {
@@ -23587,7 +23587,7 @@ const baselines = {
     },
     'numberVsBigIntOperations': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'numericClassMembers1': {
@@ -25571,7 +25571,7 @@ const baselines = {
         types: false,
     },
     'promiseTry': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -37811,7 +37811,7 @@ const baselines = {
         types: true,
     },
     'ts-expect-error-js': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37827,13 +37827,13 @@ const baselines = {
     },
     'ts-expect-error': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ts-ignore': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importCallExpression1ES2020': {
         errors: true,
@@ -38541,9 +38541,9 @@ const baselines = {
         types: true,
     },
     'constructBigint': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es2020IntlAPIs': {
         errors: false,
@@ -38556,7 +38556,7 @@ const baselines = {
         types: false,
     },
     'localesObjectArgument': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51886,9 +51886,9 @@ const baselines = {
         types: true,
     },
     'tsNoCheckForTypescriptComments2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeParameterExtendsUnionConstraintDistributed': {
         errors: false,
@@ -59318,7 +59318,7 @@ const baselines = {
     'recursiveInitializer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'awaitUsingDeclarations.1(target=es2015)': {
         errors: false,

@@ -5,7 +5,15 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-22, plan 08 done)
+## State (2026-09-22, plan 17 done)
+- **Two modern corpora (plan 17)**, `thirdparty/ensure-corpora.sh`, `./realworld.py --corpus type-fest|valibot`, both
+  clean under tsc 5.8: type-fest **598** diagnostics, valibot **4473**. Ranked causes: module augmentation of an
+  aliased export (vitest's `expect`, ~2400 of valibot's: plan 19 stage 0), template literal types / string mappings /
+  `as` clauses (plan 18: type-fest's arithmetic utilities, expect-type's messages), then a long tail (plan 19 loop).
+- **valibot is the first corpus where tttt is slower than tsgo**: 4.0 s / 1.7 GB vs 1.3 s / 0.8 GB, 93% instantiating
+  conditional types during overload inference with no instantiation cache (plan 20). tsc corpus and type-fest are
+  still well ahead (0.74 vs 1.02 s; 0.28 vs 1.37 s, though type-fest's check is incomplete).
+- Suite 4219. Plan 17 also added `@ts-expect-error`/`@ts-ignore` (+TS2578) and bigint literal types.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
   under tsc): **0 diagnostics** (1751 at the start of plan 08; plans 09-12 took the category-sized buckets, the last
   plan 08 session the 31 singles: ~20 root causes, each a tsc rule tttt didn't have, see the git log).
@@ -140,9 +148,9 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type *printing* (alias preservation, union
   ordering by type id, truncation). Union order by creation id is something an interned design can mimic and a
   tree design cannot. Keep this in mind when designing ids.
-- Perf: **now a result on one real project** (0.88 s vs tsgo 1.02 s, both doing all the work). One corpus is one
-  corpus: a second real project (different style: heavy generics, JSX, or a library with deep conditional types)
-  would tell whether the narrowing/relation costs scale. The profile has had the same top entries since plan 09.
+- Perf: ahead of tsgo on tsc's compiler (0.74 vs 1.02 s), **behind on valibot** (4.0 vs 1.3 s, conditional type
+  instantiation during overload inference: plan 20). Deep generic code is where tsc's caches matter, and tttt skipped
+  some of them.
 - Parser robustness: error recovery paths are barely exercised under valgrind (plan 03's heap corruption turned out
   to be the error *printer*, `span_line_start` on a span starting at a newline, not the parser).
 - Single-threaded design. tsgo's win is largely parallel parse/bind + multiple checkers. Arena/interning design
@@ -161,8 +169,9 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
    diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
 4b. ~~Real corpus to zero diagnostics (plan 08), then bench + profile it~~ done (with plans 09-12): 0 diagnostics,
    0.88 s vs tsgo 1.02 s.
-4c. Second real corpus (modern, type-heavy: plan 17) and the type-core features it needs (template literal types,
-   key remapping, substitution types). Suite plans 13-16 alongside.
+4c. ~~Second real corpus (plan 17)~~ done (type-fest + valibot). Now the type-core features they need (plan 18:
+   template literal types, key remapping), valibot's perf (plan 20), the corpora to zero (plan 19). Suite plans 13-16
+   alongside.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.

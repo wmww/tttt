@@ -607,6 +607,71 @@ static void program_validate_options(Program* me) {
     }
 }
 
+// tsc's getDiagnosticsWithPrecedingDirectives: a semantic diagnostic (of `phase`, resolving names or typechecking) that
+// a @ts-expect-error/@ts-ignore precedes isn't reported. Starting from the line before the diagnostic's, lines that
+// are blank or only a `//` comment are passed over on the way up to the directive. Parse errors stay
+static void program_apply_comment_directives(Program* me, ErrorPhase phase) {
+    bool any = false;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        if ((*i)->comment_directive_count) {
+            any = true;
+            break;
+        }
+    }
+    if (!any) return;
+
+    VecError* errors = &my errs->errors;
+    intptr_t kept = 0;
+    for (intptr_t i = 0; i < vec_error_size(errors); i++) {
+        Error* error = vec_error_at_mut(errors, i);
+        SourceFile* source = (SourceFile*)error->span.source;
+        bool suppressed = false;
+        if (error->phase == phase && source && source->comment_directive_count && !source->unchecked) {
+            const char* text = source_file_start(source);
+            const char* text_end = text + cstr_size(&source->contents);
+            for (intptr_t line = (intptr_t)source_file_line_index(source, error->span.sv.buf) - 1; line >= 0; line--) {
+                CommentDirective* directive = source_file_comment_directive_at_line(source, (u32)line);
+                if (directive) {
+                    directive->used = true;
+                    suppressed = true;
+                    break;
+                }
+                const char* c = text + source->line_starts[line];
+                const char* end = line + 1 < source->line_count ? text + source->line_starts[line + 1] : text_end;
+                while (c < end && (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n' || *c == '\v' || *c == '\f')) c++;
+                if (c < end && !(c + 1 < end && c[0] == '/' && c[1] == '/')) break;
+            }
+        }
+        if (suppressed) {
+            error_drop(error);
+        } else {
+            if (kept != i) errors->data[kept] = *error;
+            kept++;
+        }
+    }
+    errors->size = kept;
+}
+
+// TS2578 for every @ts-expect-error nothing was reported under, once all semantic diagnostics are in
+static void program_report_unused_expect_errors(Program* me) {
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
+        if (source->unchecked || source->is_stdlib) continue;
+        for (u32 j = 0; j < source->comment_directive_count; j++) {
+            CommentDirective const* directive = &source->comment_directives[j];
+            // Of two directives on one line only the last one counts
+            bool shadowed = j + 1 < source->comment_directive_count &&
+                source->comment_directives[j + 1].line == directive->line;
+            if (directive->expect_error && !directive->used && !shadowed) {
+                error_ctx_error_d(
+                    my errs, span_make(source, directive->start, directive->end), 2578,
+                    "Unused '@ts-expect-error' directive."
+                );
+            }
+        }
+    }
+}
+
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     program_validate_options(me);
@@ -649,6 +714,7 @@ void program_resolve_names(Program* me) {
     }
 
     error_ctx_remove_unchecked(my errs);
+    program_apply_comment_directives(me, ERROR_PHASE_RESOLVE_NAMES);
 
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;
@@ -686,6 +752,8 @@ void program_typecheck(Program* me) {
         }
     }
     error_ctx_remove_unchecked(my errs);
+    program_apply_comment_directives(me, ERROR_PHASE_TYPECHECK);
+    program_report_unused_expect_errors(me);
 
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;

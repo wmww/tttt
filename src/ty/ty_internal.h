@@ -124,9 +124,17 @@ typedef struct Inference {
     u64* visited;
     u32 visited_cap;
     u32 visited_len;
+    // tsc's invokeOnce: the object pairs being walked, and whether each side is expanding (the same recursion identity
+    // three times, ever newer: an infinitely expanding generic). With both expanding, inference stops going deeper
+    Ty const* object_sources[INFER_MAX_DEPTH];
+    Ty const* object_targets[INFER_MAX_DEPTH];
+    u32 object_depth;
+    unsigned expanding;
 } Inference;
 
 void inference_init(Inference* inf, TyList params);
+// tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
+bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth);
 void inference_drop(Inference* inf);
 void inference_collect_infer_params(Checker* me, Inference* inf, Ty const* target);
 void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority);

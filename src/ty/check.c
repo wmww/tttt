@@ -316,6 +316,7 @@ bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpanne
     Ty const* constraint = ty_param_constraint(me, params.data[index]);
     if (!constraint) return true;
     // The constraint can mention the other type parameters, which stand for the arguments here
-    TyMapper mapper = { .len = len, .sources = params.data, .targets = lowered };
-    return ty_is_related(me, lowered[index], ty_instantiate(me, constraint, &mapper), TY_RELATION_ASSIGNABLE);
+    // Arena-allocated: instantiation can keep the mapper (deferred conditional and object types)
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = params.data, .len = len }, (TyList){ .data = lowered, .len = len });
+    return ty_is_related(me, lowered[index], ty_instantiate(me, constraint, mapper), TY_RELATION_ASSIGNABLE);
 }

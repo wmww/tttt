@@ -830,7 +830,17 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             if (apparent != source && !(source->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) source = apparent;
         }
         if ((source->flags & (TYF_OBJECT | TYF_INTERSECTION)) && visited_add(inf, source, target)) {
-            infer_from_objects(me, inf, source, target);
+            unsigned saved_expanding = inf->expanding;
+            if (!(inf->expanding & 1) && ty_is_deeply_nested(source, inf->object_sources, inf->object_depth)) inf->expanding |= 1;
+            if (!(inf->expanding & 2) && ty_is_deeply_nested(target, inf->object_targets, inf->object_depth)) inf->expanding |= 2;
+            if (inf->expanding != 3) {
+                inf->object_sources[inf->object_depth] = source;
+                inf->object_targets[inf->object_depth] = target;
+                inf->object_depth++;
+                infer_from_objects(me, inf, source, target);
+                inf->object_depth--;
+            }
+            inf->expanding = saved_expanding;
         }
     }
     inf->depth--;

@@ -6,8 +6,17 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
   ./realworld.py                 # tttt -p thirdparty/tsc/src/compiler (its tsconfig.json)
   ./realworld.py path/to/entry.ts --options '--strict' -n 40
   ./realworld.py --code TS1005   # list the places a code is reported
+  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot)
 """
 import argparse, collections, re, resource, subprocess, sys, time
+
+# The corpora besides tsc's compiler (plan 17): modern, type-heavy code, clean under tsc 5.8, fetched by
+# thirdparty/ensure-corpora.sh
+CORPORA = {
+    'tsc': 'thirdparty/tsc/src/compiler',
+    'type-fest': 'thirdparty/corpora/type-fest',
+    'valibot': 'thirdparty/corpora/valibot/library',
+}
 
 KEYWORDS = set('''else in of as is asserts new function catch export import type default case satisfies this void
 typeof instanceof get set static abstract declare namespace let const var for do while return throw class extends
@@ -18,8 +27,9 @@ def main():
     # Without entry files the corpus' own tsconfig says everything: files, target/lib es2020, strict, nodenext,
     # types: ["node"]
     ap.add_argument('entry', nargs='*', default=[])
-    ap.add_argument('--options', default='-p thirdparty/tsc/src/compiler',
-                    help='options passed to tttt (the project, or compiler options when entry files are given)')
+    ap.add_argument('--corpus', choices=CORPORA, default='tsc', help='which project to check (default: tsc)')
+    ap.add_argument('--options', help='options passed to tttt (the project, or compiler options when entry files are '
+                    'given); overrides --corpus')
     ap.add_argument('-n', type=int, default=25, help='rows per table')
     ap.add_argument('--code', help='list every place this code is reported')
     ap.add_argument('--no-build', action='store_true')
@@ -27,6 +37,10 @@ def main():
     ap.add_argument('--mem-gb', type=int, default=12)
     args = ap.parse_args()
 
+    if args.options is None:
+        args.options = '-p ' + CORPORA[args.corpus]
+        if args.corpus != 'tsc':
+            subprocess.run(['thirdparty/ensure-corpora.sh'], check=True)
     if not args.no_build:
         subprocess.run(['ninja', '-C', 'release', 'tttt'], check=True, stdout=subprocess.DEVNULL)
     limit = args.mem_gb << 30

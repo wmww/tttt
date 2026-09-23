@@ -1149,6 +1149,7 @@ bool statements_any_return(VecStatement const* statements, bool (*pred)(Expr con
 }
 
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
+    current_checker->instantiation_count = 0; // tsc's checkSourceElement
     // What the builder couldn't know: code after a call that never returns or an exhaustive switch (tsc's
     // checkSourceElement(); an error only when allowUnreachableCode is explicitly false)
     if (my flow && compiler_options()->is_set[COMPILER_OPTION_allow_unreachable_code] &&

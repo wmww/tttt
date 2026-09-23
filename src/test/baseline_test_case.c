@@ -107,13 +107,16 @@ static bool parse_tag(csview line, csview* key, csview* value) {
     }
     const char* p = line.buf + 2;
     const char* end = csview_end_ptr(line);
-    while (p < end && *p == ' ') p++;
+    while (p < end && (*p == ' ' || *p == '\t')) p++;
     if (*p != '@') {
         return false;
     }
+    // tsc's harness: /^\/{2}\s*@(\w+)\s*:\s*([^\r\n]*)/, so `// @ts-ignore: why` is no option
     const char* key_start = p + 1;
-    while (p < end && *p != ':') p++;
-    if (p < end) {
+    p++;
+    while (p < end && (isalnum((unsigned char)*p) || *p == '_')) p++;
+    while (p < end && (*p == ' ' || *p == '\t')) p++;
+    if (p < end && *p == ':') {
         *key = csview_trim_whitespace(csview_from_n(key_start, p - key_start));
         p++;
         *value = csview_trim_whitespace(csview_from_n(p, end - p));

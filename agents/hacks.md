@@ -27,6 +27,13 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `error_ctx_global_error_s`: diagnostics without a file are `Error`s with a null span, sorted first (by code, then
   message, like tsc), shown by the harness before the first file (`formatted_global_errors`). The CLI's
   `display_error` prints them as `[unkown file]:2`. `error_ctx_error_s` still drops errors with an invalid span.
+- `program_apply_comment_directives` (`@ts-expect-error`/`@ts-ignore`): suppression goes by tttt's error *phase*,
+  not tsc's diagnostic kind. Only RESOLVE_NAMES/TYPECHECK errors are suppressed, so a tsc checker grammar error
+  (`checkGrammar*`, TS1xxx) that tttt reports while parsing is not, and a tsc parse error that tttt reports while
+  typechecking wrongly is. In-file program diagnostics (tsc's `getProgramDiagnostics`, eg a bad `/// <reference>`)
+  aren't suppressed at all. Line breaks are `\n` only (tsc: also lone `\r`, U+2028/9) and `\s` is ASCII only.
+  Directives are recorded by `hop_comment` (deduplicated in `source_file_add_comment_directive`), so this relies on
+  every comment going through it and nothing that isn't a comment (JSX text) going through it.
 - `SourceFile.unchecked` + `error_ctx_remove_unchecked`: the JS gate is a *filter* run after name resolution and
   after typechecking (semantic errors in an unchecked file are removed from the ErrorCtx), not a skip: names are
   still resolved (imports from an unchecked file need its exports) and `block_typecheck` is skipped only for the
@@ -451,7 +458,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   `as const`.
 - `compute`: `typeof x` is `string` (tsc: the union of typeof results), untagged templates are `string` even in a const
   context, tagged templates take the return type of a lone non-generic signature (no call resolution), `yield` is `any`,
-  arithmetic is always `number` (no bigint), `+` goes by `TY_RELATION_ASSIGNABLE_STRICT_NULLS`.
+  binary arithmetic is always `number` (no bigint; unary `-`/`~`/`++`/`--` follow tsc's getUnaryResultType), `+` goes
+  by `TY_RELATION_ASSIGNABLE_STRICT_NULLS`. Bigint values are doubles (`Value.bigint`), so `2n ** 64n` literals lose
+  precision.
   `satisfies` contextually types its operand but the result isn't narrowed by it.
 - `ty_apply_type_arguments` (instantiation expressions): maps the type parameters of every signature that takes at
   least that many type arguments; signatures that don't fit aren't dropped, and nothing reports TS2635.
@@ -463,6 +472,10 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   treats that as a construct signature too.
 
 ## Type core (`src/ty/`): known gaps
+- **No template literal types at all** (plan 18): the parser reads `` `a${B}` `` in a type as a string literal of the raw
+  text (`parse_type_compat_literal` -> `parse_string`), so the type is the string `"a${B}"`, an `infer X` inside is
+  never declared (TS2304 at its uses), and a nested template (`` `${F<`[${M}]`>}` ``) ends at the inner backtick (parse
+  errors). No `Uppercase<>`/`Lowercase<>`/`Capitalize<>`/`Uncapitalize<>` either.
 - Relations to a generic mapped type (`generic_mapped_target_related`, relate.c) follow tsc's isGenericMappedType
   rule, but only a source without type variables gets its answer: a generic one that fails it falls through to the
   member-by-member comparison, which a mapped type without members passes. That permissive fallback stands in for

@@ -120,7 +120,6 @@ plans 11-15 or `bugs/` are gone from here; see those files.
 - The symbols of mapped-type properties (`Mutable<A>`'s `flags`: tsc `Symbol(flags, Decl(...))`, we `Symbol(A.flags)`)
   and of union properties (tsc lists every member's declaration, we print `Symbol(flags)`); probe
   `test/probes/plan08/mutable_union.ts`.
-- Bigint literal types (`type A = 1n`) don't parse in type position (TS1005).
 - T_1-style renaming of clashing type parameter names is missing in display: overload lists (`{ <A>(...): ...; <A_1>(...):
   ... }`) and a generic signature shown inside a scope that has a type parameter of the same name (`createMCache :
   <T_1>() => MCache<T_1>` inside `function per<T>`: the types components of probes plan11/memoizeOne.ts and
@@ -238,6 +237,17 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   and `key.expr.owned`/`ref` into one pointer each; drop `LAZY_TYPE_FUNCTION` (`hacks.md`).
 - Idea: cache call resolutions per `CallExpr` in the checker (each call resolves twice today); variances for type
   aliases (inference and relations both want them).
+
+- `tttt` only works when run from the repo root: the lib is looked up as `thirdparty/lib/esnext.d.ts` relative to
+  the cwd (`cd corpus && tttt -p .` fails with "File 'thirdparty/lib/esnext.d.ts' not found" and checks nothing,
+  exit 0). Resolve it relative to the executable (or an install prefix) like tsc does with its `lib` directory.
+
+- `@ts-expect-error` now reports TS2578 when unused, which exposes checks tttt misses: `promiseTry` (errors
+  component lost: `Promise.try(cb, ...args)` with `U extends unknown[]` inferred from both the callback's parameters and
+  the rest arguments gets no TS2554 arity error in tttt) and the corpora (valibot 167 TS2578, eg TS2352 on
+  `dataset as SuccessDataset<TOutput>` and writes to readonly `schema['~run']`; type-fest 35, eg `EmptyObject`
+  assignments, abstract members missing in `class X extends withBar(Bar) {}`). Each is a missing check, `grep -A3
+  TS2578 /tmp/realworld.txt` after `./realworld.py --corpus X` lists them.
 
 ## Perf (see `measurements.md` for numbers)
 - Corpus profile after plan 05: `is_simple_related` + `check_related` 24% (3.9 M `ty_is_comparable_either_way` from

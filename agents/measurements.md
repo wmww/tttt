@@ -2,6 +2,26 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 17: two modern corpora (type-fest, valibot), first numbers
+Suite: **4219 full of 13163** (+8: `@ts-expect-error`/`@ts-ignore`, bigint literal types and unary results). Lost
+promiseTry (errors: now that an unused `@ts-expect-error` is TS2578, a missing TS2554 shows; triage.md). tsc corpus: 0.
+`thirdparty/ensure-corpora.sh` pins type-fest v4.26.1 and valibot v1.0.0 (`library/`), both 0 under tsc 5.8.
+- `./realworld.py --corpus type-fest`: **598** (TS2345 274, TS2304 87, TS2339 75, TS2322 39, TS2578 35, TS2589 26, TS2349
+  26, TS2344 23; one parse error: a nested template literal type in `get.d.ts`).
+- `./realworld.py --corpus valibot`: **4473** (TS2349 1742, TS2344 1166, TS2339 608, TS2345 489, TS2578 167, TS2322 141,
+  TS1360 86, TS2769 28; parse errors: expect-type's nested template in a mapped `as` clause).
+- Root causes: plan 18 (template literal types, string mappings, `as` clauses) and plan 19 (module augmentation of an
+  aliased export: the ~2400 TS2349/TS2339 on vitest's `expect`, then the loop).
+
+`./bench.sh` (same machine as the plan 08 entry: tsc 6.19 s on the tsc corpus): tsc corpus tttt **0.74 s** vs tsgo
+1.02 (single-threaded 1.72); synthetic 1.67 vs 1.78. type-fest: tttt 0.28 s (incomplete check) vs tsgo 1.37, tsc 3.90.
+**valibot: tttt 4.01 s, 1672 MB vs tsgo 1.29 s / 825 MB (single-threaded 2.79), tsc 6.84**: typecheck 5.4 s, the
+first corpus where tttt loses to tsgo, even with the checks it skips. Callgrind (51 G Ir): 93% under `resolve_call` ->
+`infer_from_signature_lists` -> `infer_from_returns` -> `ty_instantiate` of conditional types (`conditional_from_root`
+83% incl., `compose_mappers` 73% incl., `instantiate_inner` 18% self, `infer_from` 19% self, `ty_is_deeply_nested`
+4.4% self). tttt has no instantiation cache for conditional types (tsc's `root.instantiations`, keyed by the outer type
+parameters' mapped values) and composes mappers on every step: plan 20.
+
 ## 2026-09-22, plan 08 done: real corpus 31 -> 0, the first honest perf comparison
 Suite: **4211 full of 13163**, errors 7328, symbols 9180, types 7382; nothing lost over the session. Real corpus (`./realworld.py`): **0 diagnostics**, clean
 in several check orders (a relation bug once showed up only when the files were checked in another order).

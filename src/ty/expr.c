@@ -927,6 +927,16 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
     return binary_result(me, left, binary->op, right);
 }
 
+// tsc's getUnaryResultType: -, ~, ++ and -- of a bigint are a bigint
+static Ty const* unary_result_type(Checker* me, Ty const* operand) {
+    if (!(operand->flags & (TYF_BIGINT | TYF_BIGINT_LITERAL))) return ty_intrinsic(me, TY_NUMBER);
+    if (operand->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) {
+        Ty const* parts[2] = { ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_BIGINT) };
+        return ty_union(me, parts, 2, nullptr, (TyList){0});
+    }
+    return ty_intrinsic(me, TY_BIGINT);
+}
+
 static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
     Expr const* operand = &unary->expr;
     switch (unary->op) {
@@ -945,7 +955,7 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
             return ty_union(me, types, c_arraylen(names), nullptr, (TyList){0});
         }
         case UNARY_OP_VOID: return ty_intrinsic(me, TY_UNDEFINED);
-        case UNARY_OP_TILDE: return ty_intrinsic(me, TY_NUMBER);
+        case UNARY_OP_TILDE: return unary_result_type(me, ty_expr_type(me, operand));
         case UNARY_OP_DELETE: return ty_intrinsic(me, TY_BOOLEAN);
         case UNARY_OP_AWAIT: return ty_awaited(me, ty_expr_type(me, operand));
 
@@ -959,13 +969,20 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
                 Value value = value_number(unary->op == UNARY_OP_PLUS ? operand->literal.number : -operand->literal.number);
                 return ty_fresh_literal(me, ty_literal(me, &value));
             }
-            return ty_intrinsic(me, TY_NUMBER);
+            if (unary->op == UNARY_OP_MINUS && !expr_is_perenthisized(operand) && operand->tag == EXPR_LITERAL &&
+                operand->literal.tag == VALUE_BIGINT
+            ) {
+                Value value = { .tag = VALUE_BIGINT, .bigint = -operand->literal.bigint };
+                return ty_fresh_literal(me, ty_literal(me, &value));
+            }
+            if (unary->op == UNARY_OP_PLUS) return ty_intrinsic(me, TY_NUMBER);
+            return unary_result_type(me, ty_expr_type(me, operand));
 
         case UNARY_OP_LEFT_PLUS_PLUS:
         case UNARY_OP_LEFT_MINUS_MINUS:
         case UNARY_OP_RIGHT_PLUS_PLUS:
         case UNARY_OP_RIGHT_MINUS_MINUS:
-            return ty_intrinsic(me, TY_NUMBER);
+            return unary_result_type(me, ty_expr_type(me, operand));
 
         case UNARY_OP_RIGHT_BANG:
             return ty_non_nullable(me, ty_expr_type(me, operand));
@@ -1498,6 +1515,8 @@ static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx)
 }
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
+    // tsc's checkExpression: the instantiation limit is per expression, not per program
+    my instantiation_count = 0;
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return any_type(me);
         case EXPR_LITERAL: return ty_fresh_literal(me, ty_literal(me, &expr->literal));

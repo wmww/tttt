@@ -228,8 +228,9 @@ static TyList lower_type_args(
             Ty const* fallback = ty_param_default(me, params.data[i]);
             if (fallback) {
                 // A default can mention the parameters before it
-                TyMapper mapper = { .len = i, .sources = params.data, .targets = args };
-                fallback = ty_instantiate(me, fallback, &mapper);
+                // Arena-allocated: instantiation can keep the mapper (deferred conditional and object types)
+                TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = params.data, .len = i }, (TyList){ .data = args, .len = i });
+                fallback = ty_instantiate(me, fallback, mapper);
             }
             // TODO: TS2314 when there's no default. tsc fills in the error type too
             args[i] = fallback ? fallback : ty_intrinsic(me, written_len ? TY_ERROR : TY_ANY);

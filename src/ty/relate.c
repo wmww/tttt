@@ -1853,7 +1853,7 @@ static Ty const* recursion_identity(Ty const* ty) {
 
 // tsc's isDeeplyNestedType: `ty` (about to go on the stack) and at least two types further up with the same recursion
 // identity, each newer (a higher id) than the previous one
-static bool is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth) {
+bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth) {
     Ty const* identity = recursion_identity(ty);
     if (!identity || depth < 2) return false;
     u32 count = 0;
@@ -1891,8 +1891,8 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     }
     st->maybe_keys[st->maybe_count++] = key;
     unsigned saved_expanding = st->expanding;
-    if (!(st->expanding & 1) && is_deeply_nested(source, st->source_stack, st->depth)) st->expanding |= 1;
-    if (!(st->expanding & 2) && is_deeply_nested(target, st->target_stack, st->depth)) st->expanding |= 2;
+    if (!(st->expanding & 1) && ty_is_deeply_nested(source, st->source_stack, st->depth)) st->expanding |= 1;
+    if (!(st->expanding & 2) && ty_is_deeply_nested(target, st->target_stack, st->depth)) st->expanding |= 2;
     st->source_stack[st->depth] = source;
     st->target_stack[st->depth] = target;
     st->depth++;

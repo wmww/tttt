@@ -2,15 +2,13 @@
 Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 08)")
 for why.
 
-1. **Planning + setup: plan 17**, a second real corpus of modern, type-heavy TypeScript: pick, pin, wire into
-   `realworld.py`/`bench.sh`, measure, profile, rank root causes, write the follow-up plan (likely plan 18: template
-   literal types, mapped `as` clauses, substitution types).
-2. **Execution: plan 14** (syntax gaps), `using` first (~330 tests), then import attributes and import/export forms.
-   1238 tests have a spurious parse error today. Likely 1-2 sessions.
-3. **Execution: plan 18** (or whatever plan 17 ranks first). If plan 17 found the corpus mostly works, swap in plan 13
-   here instead.
-4. **Execution: plan 13** (member modifiers), stages 1-3 (access checks, readonly writes).
-5. **Planning: plan 16** (error elaboration) from the stub: measure, decide the hook points, write it up.
-6. **Execution: plan 13** stages 4-5 (private names, nominal relations) or plan 16, whichever is ready.
+1. **Execution: plan 19 stage 0** (module augmentation of an aliased export: ~2400 of valibot's 4473), a short
+   session; then **plan 14** (syntax gaps), `using` first (~330 tests). 1238 tests have a spurious parse error.
+2. **Execution: plan 18** (template literal types, string mappings, mapped `as` clauses), stages 1-2.
+3. **Execution: plan 18** stages 3-4.
+4. **Execution: plan 20** (conditional instantiation cache: valibot 4.0 s vs tsgo 1.3 s).
+5. **Execution: plan 13** (member modifiers), stages 1-3 (access checks, readonly writes).
+6. **Planning: plan 16** (error elaboration) from the stub.
 7. **Triage.** Plan 12 left a batch of "exposed by excess property checks" items, the end of plan 08 a few display
-   and check gaps; plans 14/17 will add more (triage.md is 256 lines: consolidate). Then insights.
+   and check gaps, plan 17 the TS2578-exposed missing checks (triage.md is ~270 lines: consolidate). Then insights,
+   which should decide how much of plan 19's loop (corpora to zero) to interleave with the suite plans.

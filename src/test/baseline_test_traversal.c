@@ -227,7 +227,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
         case TYPE_VALUE: {
             // tsc's walk sees `true`, `false` and `-1` (and its `1`) as expressions, not other literal types
             if (!span_valid(my value_span)) break;
-            bool negative = my value.tag == VALUE_NUMBER && my value_span.sv.size && my value_span.sv.buf[0] == '-';
+            bool negative = (my value.tag == VALUE_NUMBER || my value.tag == VALUE_BIGINT) && my value_span.sv.size && my value_span.sv.buf[0] == '-';
             if (my value.tag != VALUE_BOOLEAN && !negative) break;
             baseline_test_case_add_type_node(ctx, my value_span, me);
             if (negative) {
@@ -238,7 +238,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     operand.sv.buf++;
                     operand.sv.size--;
                 }
-                Value positive = value_number(-my value.number);
+                Value positive = my value.tag == VALUE_BIGINT ? (Value){ .tag = VALUE_BIGINT, .bigint = -my value.bigint }
+                                                              : value_number(-my value.number);
                 baseline_test_case_add_type(ctx, operand, ty_literal(current_checker, &positive));
             }
         }   break;

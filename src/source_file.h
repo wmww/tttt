@@ -40,6 +40,17 @@ typedef struct ModuleRef {
     AliasState module_state;
 } ModuleRef;
 
+// A `// @ts-expect-error` or `// @ts-ignore` comment (tsc's CommentDirective): the diagnostics that start on the next
+// line (blank lines and `//` comment lines in between don't count) are not reported. An unused @ts-expect-error is
+// TS2578. See program_apply_comment_directives()
+typedef struct CommentDirective {
+    const char* start; // tsc's range: the whole `//` comment, the last line of a `/* */` comment
+    const char* end;
+    u32 line; // The line the comment ends on, which is what the directive is looked up by
+    bool expect_error;
+    bool used;
+} CommentDirective;
+
 typedef struct SourceFile {
     cstr canonical_path; // The canonical path of this file relative to the current working directory
     cstr contents;
@@ -69,12 +80,20 @@ typedef struct SourceFile {
     u32 module_ref_count;
     u32 module_ref_cap;
     SourceFile* index_file; // The index(.d).ts file in the same directory as this file
+    CommentDirective* comment_directives; // Owned, sorted by position (and so by line), recorded by the parser
+    u32 comment_directive_count;
+    u32 comment_directive_cap;
 } SourceFile;
 
 SourceFile source_file_make(cstr canonical_path, cstr contents);
 void source_file_drop(SourceFile* me);
 // Takes path
 ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span);
+
+// Records a directive comment the parser came across (again, possibly: backtracking parses hop comments repeatedly)
+void source_file_add_comment_directive(SourceFile* me, const char* start, const char* end, bool expect_error);
+// The directive that the comment ending on `line` is, if any. Two on one line: the last one, like tsc's map by line
+CommentDirective* source_file_comment_directive_at_line(SourceFile* me, u32 line);
 
 // How messages name the file: the way the test wrote it under the harness, else the canonical path
 static inline csview source_file_display_path(SourceFile const* me) {

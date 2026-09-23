@@ -206,6 +206,7 @@ static bool parse_function_args(
     FunctionImpl* ret
 );
 static bool parse_number(Parser* parent, double* ret);
+static bool parse_numeric_value(Parser* parent, Value* ret);
 static bool parse_string(Parser* parent, cstr* ret);
 static bool parse_template(Parser* parent, VecExpr* ret);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
@@ -441,12 +442,26 @@ static inline bool expect_identifier(Parser* parent, Span* ret) {
     }
 }
 
+static inline bool is_js_ascii_space(char c) {
+    return c == ' ' || c == '\t' || c == '\v' || c == '\f' || c == '\r' || c == '\n';
+}
+
+// `at` is the `@` a comment directive would start with (tsc's commentDirectiveRegExSingleLine/MultiLine matched up to
+// there): records a `@ts-expect-error`/`@ts-ignore` (no word boundary after it in tsc either)
+static void note_comment_directive(Parser* parent, const char* start, const char* at, const char* end) {
+    csview rest = csview_from_range(at + 1, end);
+    bool expect_error = csview_starts_with(rest, "ts-expect-error");
+    if (!expect_error && !csview_starts_with(rest, "ts-ignore")) return;
+    source_file_add_comment_directive((SourceFile*)parent->shared->source, start, end, expect_error);
+}
+
 static inline bool hop_comment(Parser* parent) {
     if (*parent->pos != '/') {
         return false;
     }
+    const char* start = parent->pos;
     switch (*(parent->pos + 1)) {
-        case '/':
+        case '/': {
             (parent->pos) += 2;
             while (*parent->pos && *parent->pos != '\n') {
                 (parent->pos)++;
@@ -454,17 +469,23 @@ static inline bool hop_comment(Parser* parent) {
             if (parent->whitespace == WHITESPACE_NONE) {
                 parent->whitespace = WHITESPACE_PARSED;
             }
-            break;
+            // /^\/\/\/?\s*@(ts-expect-error|ts-ignore)/
+            const char* c = start + 2;
+            if (*c == '/') c++;
+            while (c < parent->pos && is_js_ascii_space(*c)) c++;
+            if (*c == '@' && c < parent->pos) note_comment_directive(parent, start, c, parent->pos);
+        }   break;
 
         case '*': {
             if (parent->whitespace == WHITESPACE_NONE) {
                 parent->whitespace = WHITESPACE_PARSED;
             }
             const char* pos = parent->pos;
+            const char* last_line_start = pos;
             pos += 2;
             while (*(pos - 1) != '*' || *pos != '/') {
                 switch (*pos) {
-                    case '\n': parent->whitespace = WHITESPACE_NEWLINE; break;
+                    case '\n': parent->whitespace = WHITESPACE_NEWLINE; last_line_start = pos + 1; break;
                     case '\0': return false;
                     default: break;
                 }
@@ -472,6 +493,12 @@ static inline bool hop_comment(Parser* parent) {
             }
             pos++;
             parent->pos = pos;
+            // The last line, trimmed, against /^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)/
+            const char* c = last_line_start;
+            while (is_js_ascii_space(*c)) c++;
+            while (*c == '/' || *c == '*') c++;
+            while (c < pos && is_js_ascii_space(*c)) c++;
+            if (*c == '@' && c < pos) note_comment_directive(parent, last_line_start, c, pos);
         }   break;
 
         default: return false;
@@ -1080,7 +1107,13 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     while (hop_char(&p, '.')) {
         vec_span_push(&namespaces, name);
         hop_whitespace(&p);
-        expect_identifier(&p, &name);
+        // After the dot any identifier name goes, keywords too (`AtRule.default`)
+        Anchor member = anchor(&p);
+        if (parse_identifier_or_keyword(&p, nullptr)) {
+            name = span_from(member);
+        } else {
+            expect_identifier(&p, &name);
+        }
         end = p.pos;
         hop_whitespace(&p);
     }
@@ -1327,10 +1360,10 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         ret->value_span = span_from(value_anchor);
     } else if (hop_start(&p, "-")) {
         hop_whitespace(&p);
-        if (parse_number(&p, &ret->value.number)) {
+        if (parse_numeric_value(&p, &ret->value)) {
             ret->tag = TYPE_VALUE;
-            ret->value.tag = VALUE_NUMBER;
-            ret->value.number = -ret->value.number;
+            if (ret->value.tag == VALUE_NUMBER) ret->value.number = -ret->value.number;
+            else ret->value.bigint = -ret->value.bigint;
             ret->value_span = span_from(value_anchor);
         } else {
             return parse_fail(&p);
@@ -3054,6 +3087,7 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
     if (!expect_expr(&p, expr_ctx_null, ret)) {
         return parse_success(&p);
     }
+    hop_whitespace(&p);
 
     if (!expect_char(&p, ']')) {
         return parse_success(&p);
@@ -3286,6 +3320,19 @@ static bool parse_number(Parser* parent, double* ret) {
     }
 }
 
+// A number or, with an `n` suffix, a bigint literal (its value is kept as a double, see Value)
+static bool parse_numeric_value(Parser* parent, Value* ret) {
+    double number;
+    if (!parse_number(parent, &number)) return false;
+    if (*parent->pos == 'n' && !is_identifier_char(parent->pos[1])) {
+        parent->pos++;
+        *ret = (Value){ .tag = VALUE_BIGINT, .bigint = number };
+    } else {
+        *ret = (Value){ .tag = VALUE_NUMBER, .number = number };
+    }
+    return true;
+}
+
 static bool parse_string(Parser* parent, cstr* ret) {
     Parser p = parser(parent);
 
@@ -3368,8 +3415,7 @@ static bool parse_type_compat_literal(Parser* parent, Value* ret) {
         *ret = value_boolean(true);
     } else if (hop_start_if_ends_on_word_break(&p, "false")) {
         *ret = value_boolean(false);
-    } else if (parse_number(&p, &ret->number)) {
-        ret->tag = VALUE_NUMBER;
+    } else if (parse_numeric_value(&p, ret)) {
     } else if (parse_string(&p, &ret->string)) {
         ret->tag = VALUE_STRING;
     } else {

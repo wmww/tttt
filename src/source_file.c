@@ -53,6 +53,49 @@ void source_file_drop(SourceFile* me) {
         free(my module_refs[i]);
     }
     free(my module_refs);
+    free(my comment_directives);
+}
+
+void source_file_add_comment_directive(SourceFile* me, const char* start, const char* end, bool expect_error) {
+    // Almost always past every directive seen so far: an append
+    u32 index = my comment_directive_count;
+    if (index && my comment_directives[index - 1].start >= start) {
+        u32 low = 0;
+        while (low < index) {
+            u32 mid = low + (index - low) / 2;
+            if (my comment_directives[mid].start < start) low = mid + 1;
+            else index = mid;
+        }
+        if (my comment_directives[index].start == start) return;
+    }
+    if (my comment_directive_count == my comment_directive_cap) {
+        my comment_directive_cap = my comment_directive_cap ? my comment_directive_cap * 2 : 8;
+        my comment_directives = realloc(my comment_directives, sizeof(CommentDirective) * my comment_directive_cap);
+    }
+    memmove(
+        my comment_directives + index + 1, my comment_directives + index,
+        sizeof(CommentDirective) * (my comment_directive_count - index)
+    );
+    my comment_directives[index] = (CommentDirective){
+        .start = start,
+        .end = end,
+        .line = source_file_line_index(me, end),
+        .expect_error = expect_error,
+    };
+    my comment_directive_count++;
+}
+
+CommentDirective* source_file_comment_directive_at_line(SourceFile* me, u32 line) {
+    // The first directive past the line, the one before it is the last one on the line or before
+    u32 low = 0;
+    u32 high = my comment_directive_count;
+    while (low < high) {
+        u32 mid = low + (high - low) / 2;
+        if (my comment_directives[mid].line <= line) low = mid + 1;
+        else high = mid;
+    }
+    if (low && my comment_directives[low - 1].line == line) return &my comment_directives[low - 1];
+    return nullptr;
 }
 
 ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span) {
