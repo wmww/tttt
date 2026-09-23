@@ -27,9 +27,11 @@ static const LowerCtx expr_lower_ctx = { .generic = true };
 typedef struct ExprCtx {
     Ty const* contextual; // may be null
     bool is_const; // inside `as const`
+    bool template_context; // The index of an element access (a template literal there is a template type)
 } ExprCtx;
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx);
+static Ty const* check_template(Checker* me, Expr const* expr, ExprCtx ctx);
 
 static Ty const* any_type(Checker* me) { return ty_intrinsic(me, TY_ANY); }
 
@@ -43,6 +45,7 @@ static bool kind_uses_context(Expr const* expr) {
         case EXPR_TERNARY:
         case EXPR_CALL:
         case EXPR_AS_TYPE:
+        case EXPR_TEMPLATE:
             return true;
         case EXPR_UNARY_OP:
             return expr->unary_op->op == UNARY_OP_RIGHT_BANG;
@@ -86,12 +89,12 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
     LazyMemo* memo = lazy_type_state_peek(lazy);
-    if (memo && memo->done && !ctx.is_const) {
+    if (memo && memo->done && !ctx.is_const && !ctx.template_context) {
         if (!ctx.contextual || memo->context == ctx.contextual || !(kind_uses_context(expr) || identifier_uses_context(me, expr))) {
             return memo->evaluated;
         }
     }
-    if (!ctx.contextual && !ctx.is_const) return ty_expr_type(me, expr); // through the LazyType, which detects cycles
+    if (!ctx.contextual && !ctx.is_const && !ctx.template_context) return ty_expr_type(me, expr); // through the LazyType, which detects cycles
     Ty const* ret = compute(me, expr, ctx);
     if (my flow_uncached) return ret;
     // (What such a reference is while type arguments are inferred isn't what it is once they are)
@@ -1543,7 +1546,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_PROPERTY: {
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
-            Ty const* ret = ty_access(me, object, ty_expr_type(me, &expr->property->prop));
+            Ty const* ret = ty_access(me, object, ty_element_index_type(me, &expr->property->prop));
             if (!ret) return any_type(me);
             ret = access_flow_type(me, expr, ret);
             return optional ? optional_type(me, ret) : ret;
@@ -1593,7 +1596,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_REGEX: return ty_global_regexp_type(me);
 
         case EXPR_TEMPLATE: {
-            if (!expr->template_->tag) return ty_intrinsic(me, TY_STRING);
+            if (!expr->template_->tag) return check_template(me, expr, ctx);
             // TODO: a tagged template is a call (overloads, generics, argument checks). For now only the return type
             // of a plain function is used
             Signature const* sig = single_call_signature(me, ty_apparent_type(me, ty_expr_type(me, expr->template_->tag)));
@@ -1608,6 +1611,71 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
     }
     impossible;
+}
+
+// tsc's isTemplateLiteralContextualType
+static bool is_template_contextual(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (is_template_contextual(me, ty->composite.types.data[i])) return true;
+        }
+        return false;
+    }
+    if (ty->flags & (TYF_STRING_LITERAL | TYF_TEMPLATE_LITERAL)) return true;
+    if (ty->kind == TY_TYPE_PARAM || ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL) {
+        Ty const* constraint = ty_base_constraint(me, ty);
+        if (!constraint) return false;
+        TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+        for (u32 i = 0; i < parts.len; i++) {
+            if (parts.data[i]->flags & TYF_STRING_LIKE) return true;
+        }
+    }
+    return false;
+}
+
+// tsc's checkTemplateExpression: a constant is a (fresh) string literal, in a const context, an element access or with a
+// string literal / template contextual type a template literal type, else string
+static Ty const* check_template(Checker* me, Expr const* expr, ExprCtx ctx) {
+    TemplateExpr const* template = expr->template_;
+    u32 len = (u32)vec_expr_size(&template->substitutions);
+    Ty const* allowed = nullptr;
+    Ty const** types = malloc(sizeof(Ty const*) * (len ? len : 1));
+    panic_if(!types, "out of memory");
+    for_each (i, vec_expr, &template->substitutions) {
+        Ty const* type = ty_expr_type(me, i);
+        if (!allowed) {
+            // tsc's templateConstraintType
+            Ty const* parts[6] = {
+                ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_BIGINT),
+                ty_intrinsic(me, TY_BOOLEAN), ty_intrinsic(me, TY_NULL), ty_intrinsic(me, TY_UNDEFINED),
+            };
+            allowed = ty_union(me, parts, 6, nullptr, (TyList){0});
+        }
+        types[i_index] = ty_is_related(me, type, allowed, TY_RELATION_ASSIGNABLE) ? ty_regular(me, type) : ty_intrinsic(me, TY_STRING);
+    }
+    Ty const* ret = nullptr;
+    cstr evaluated = cstr_null;
+    if (ty_evaluate_string(me, expr, &evaluated)) {
+        ret = ty_fresh_literal(me, ty_string_literal(me, cstr_sv(&evaluated)));
+        cstr_drop(&evaluated);
+    } else if (ctx.is_const || ctx.template_context || (ctx.contextual && is_template_contextual(me, ctx.contextual))) {
+        Atom const** texts = malloc(sizeof(Atom const*) * (len + 1));
+        panic_if(!texts, "out of memory");
+        for_each (i, vec_cstr, &template->texts) texts[i_index] = checker_atom(me, cstr_sv(i));
+        ret = ty_template_literal(me, texts, types, len);
+        free(texts);
+    } else {
+        ret = ty_intrinsic(me, TY_STRING);
+    }
+    free(types);
+    return ret;
+}
+
+// The type of the index of an element access: a template literal there is typed as a template (tsc's
+// isTemplateLiteralContext)
+Ty const* ty_element_index_type(Checker* me, Expr const* index) {
+    if (index->tag == EXPR_TEMPLATE && !index->template_->tag) return check_with(me, index, (ExprCtx){ .template_context = true });
+    return ty_expr_type(me, index);
 }
 
 // What the LazyType of an expression evaluates to: nobody checked it with a contextual type first

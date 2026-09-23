@@ -252,6 +252,7 @@ void expr_drop(Expr* me) {
             }
             vec_expr_drop(&my template_->substitutions);
             cstr_drop(&my template_->plain_string);
+            vec_cstr_drop(&my template_->texts);
             free(my template_);
             break;
     }
@@ -1108,7 +1109,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             ty_check_property_access(
                 current_checker,
                 expr_type,
-                expr_get_type(&my property->prop),
+                ty_element_index_type(current_checker, &my property->prop),
                 my property->expr.outer_span,
                 my property->prop.outer_span,
                 expr_is_entity_name(&my property->expr),

@@ -1,6 +1,8 @@
 #include "ty/ty_internal.h"
 #include "enum_decl.h"
 #include "scope.h"
+#include "binding.h"
+#include "expr.h"
 #include <math.h>
 
 // Enums. The type of an enum is the union of the types of its members (with the enum as the union's alias, which is
@@ -80,7 +82,23 @@ static EnumValue evaluate_binary(Checker* me, BinaryOpExpr const* op, u32 depth)
     return ret;
 }
 
-// tsc's evaluator for enum initializers, minus template literals and references to `const` variables
+// A `const` variable without a type annotation whose initializer evaluates, declared before `use` in its file
+static EnumValue const_variable_value(Checker* me, Symbol const* symbol, Span use, u32 depth) {
+    if (!symbol || !symbol->is_const || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) {
+        return enum_value_unknown;
+    }
+    Binding const* binding = symbol->decls[0].node;
+    if (binding->parent || binding->has_explicit_type || !binding->source || binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING) {
+        return enum_value_unknown;
+    }
+    if (symbol->name_span.source == use.source && span_start_ptr(symbol->name_span) >= span_start_ptr(use)) {
+        return enum_value_unknown;
+    }
+    InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
+    return evaluate(me, &initialized->value, depth);
+}
+
+// tsc's evaluator (enum initializers, template literal expressions)
 static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
     if (depth > 64) return enum_value_unknown;
     depth++;
@@ -113,9 +131,31 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
             if (!expr->identifier.target || !(expr->identifier.target->flags & SYMBOL_ENUM_MEMBER)) {
                 if (csview_equals(expr->identifier.name.sv, "NaN")) return enum_value_number(NAN);
                 if (csview_equals(expr->identifier.name.sv, "Infinity")) return enum_value_number(INFINITY);
-                return enum_value_unknown;
+                return const_variable_value(me, expr->identifier.target, expr->identifier.name, depth);
             }
             return member_value(me, expr->identifier.target);
+
+        case EXPR_TEMPLATE: {
+            TemplateExpr const* template = expr->template_;
+            if (template->tag || !vec_cstr_size(&template->texts)) return enum_value_unknown;
+            cstr joined = cstr_clone(*vec_cstr_at(&template->texts, 0));
+            for_each (i, vec_expr, &template->substitutions) {
+                EnumValue part = evaluate(me, i, depth);
+                if (!part.known) {
+                    cstr_drop(&joined);
+                    return enum_value_unknown;
+                }
+                if (part.is_string) {
+                    cstr_append_sv(&joined, cstr_sv(&part.string));
+                } else {
+                    Value number = { .tag = VALUE_NUMBER, .number = part.number };
+                    cstr_append_value_js(&joined, &number);
+                }
+                cstr_drop(&part.string);
+                cstr_append_sv(&joined, cstr_sv(vec_cstr_at(&template->texts, i_index + 1)));
+            }
+            return (EnumValue){ .known = true, .is_string = true, .string = joined };
+        }
 
         case EXPR_PROPERTY: {
             // `E.A` and `E["A"]`
@@ -139,6 +179,17 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
         default:
             return enum_value_unknown;
     }
+}
+
+// The value of a template literal expression whose parts are all constants (tsc's evaluate()), false if it has none
+bool ty_evaluate_string(Checker* me, Expr const* expr, cstr* out) {
+    EnumValue value = evaluate(me, expr, 0);
+    if (!value.known || !value.is_string) {
+        cstr_drop(&value.string);
+        return false;
+    }
+    *out = value.string;
+    return true;
 }
 
 Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {

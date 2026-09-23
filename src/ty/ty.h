@@ -769,6 +769,7 @@ Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx
 
 // enums.c
 Ty const* ty_resolve_enum(Checker* me, Symbol const* decl); // Only ty_declared_type_of() should call this
+bool ty_evaluate_string(Checker* me, Expr const* expr, cstr* out); // enums.c, tsc's evaluate() of a constant string
 Ty const* ty_enum_of_member(Checker* me, Ty const* member); // The enum type an enum literal belongs to
 bool ty_is_enum_union(Ty const* ty);
 
@@ -798,6 +799,7 @@ Ty const* ty_access(Checker* me, Ty const* object, Ty const* index);
 // type the expression got from the parent that knew its context.
 Ty const* ty_check_expr(Checker* me, Expr const* expr, Ty const* contextual);
 Ty const* ty_expr_type(Checker* me, Expr const* expr); // The memo, else checked without a contextual type
+Ty const* ty_element_index_type(Checker* me, Expr const* index); // `index` of `x[index]`
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr
 // Every reference to a variable, parameter, function, class... gets its type here (plan 03: narrowing goes here)
 Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identifier);

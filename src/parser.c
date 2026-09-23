@@ -213,7 +213,7 @@ static bool parse_function_args(
 static bool parse_number(Parser* parent, double* ret);
 static bool parse_numeric_value(Parser* parent, Value* ret);
 static bool parse_string(Parser* parent, cstr* ret);
-static bool parse_template(Parser* parent, VecExpr* ret);
+static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
 static bool parse_decorators(Parser* parent, VecExpr* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
@@ -3594,7 +3594,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && *p.pos == '`') {
         Anchor template_a = anchor(&p);
         cstr plain_string = cstr_null;
-        if (!parse_template(&p, &parsed.args)) {
+        if (!parse_template(&p, &parsed.args, nullptr)) {
             parsed.args = vec_expr_init();
             parse_string(&p, &plain_string);
         }
@@ -3772,9 +3772,9 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
     return parsed_commas ? parse_success(&p) : parse_fail(&p);
 }
 
-// A template literal with substitutions. Only the substitutions are kept, the text between them doesn't matter to the
-// checker. Fails if there are no substitutions, a plain template is a string literal (see parse_string())
-static bool parse_template(Parser* parent, VecExpr* ret) {
+// A template literal with substitutions, and if `texts` isn't null the cooked texts around them (one more than there
+// are substitutions). Fails if there are no substitutions, a plain template is a string literal (see parse_string())
+static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
     Parser p = parser(parent);
 
     if (*p.pos != '`') {
@@ -3783,10 +3783,17 @@ static bool parse_template(Parser* parent, VecExpr* ret) {
     p.pos++;
 
     VecExpr substitutions = vec_expr_init();
+    VecCStr cooked = vec_cstr_init();
+    cstr text = cstr_null;
     while (*p.pos && *p.pos != '`') {
         if (*p.pos == '\\' && p.pos[1]) {
-            p.pos += 2;
+            p.pos++;
+            parse_string_escape(&p, &text); // (An invalid escape is fine in a tagged template, TODO: TS1125 otherwise)
+        } else if (*p.pos == '\r') {
+            p.pos++;
         } else if (p.pos[0] == '$' && p.pos[1] == '{') {
+            vec_cstr_push(&cooked, text);
+            text = cstr_null;
             p.pos += 2;
             hop_whitespace(&p);
             Expr expr;
@@ -3799,14 +3806,18 @@ static bool parse_template(Parser* parent, VecExpr* ret) {
                 break;
             }
         } else {
+            cstr_append_n(&text, p.pos, 1);
             p.pos++;
         }
     }
+    vec_cstr_push(&cooked, text);
 
     if (vec_expr_is_empty(&substitutions)) {
         vec_expr_drop(&substitutions);
+        vec_cstr_drop(&cooked);
         return parse_fail(&p);
     }
+    if (texts) *texts = cooked; else vec_cstr_drop(&cooked);
 
     if (*p.pos == '`') {
         p.pos++;
@@ -3887,10 +3898,12 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     bool inner_span_set = false;
 
     VecExpr substitutions;
-    if (parse_template(&p, &substitutions)) {
+    VecCStr texts;
+    if (parse_template(&p, &substitutions, &texts)) {
         *ret = expr_template(span_from(a), c_new(TemplateExpr, {
             .template_span = span_from(a),
             .substitutions = substitutions,
+            .texts = texts,
         }));
     } else if (parse_literal(&p, &ret->literal)) {
         ret->tag = EXPR_LITERAL;

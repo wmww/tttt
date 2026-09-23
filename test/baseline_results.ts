@@ -9616,9 +9616,9 @@ const baselines = {
         types: false,
     },
     'discriminantUsingEvaluatableTemplateExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminantsAndNullOrUndefined': {
         errors: true,
@@ -24823,7 +24823,7 @@ const baselines = {
     'parseReplacementCharacter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseShortform': {
         errors: true,
@@ -29528,7 +29528,7 @@ const baselines = {
     'templateLiteralConstantEvaluation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralEscapeSequence': {
         errors: false,
@@ -29541,14 +29541,14 @@ const baselines = {
         types: false,
     },
     'templateLiteralIntersection2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'templateLiteralIntersection3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralIntersection4': {
         errors: true,
@@ -29568,7 +29568,7 @@ const baselines = {
     'templateLiteralsSourceMap': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringsArrayTypeDefinedInES5Mode': {
         errors: true,
@@ -38283,7 +38283,7 @@ const baselines = {
     'enumConstantMemberWithTemplateLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumConstantMemberWithTemplateLiteralsEmitDeclaration': {
         errors: true,
@@ -42528,7 +42528,7 @@ const baselines = {
     'taggedTemplateStringsPlainCharactersThatArePartsOfEscapes02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsPlainCharactersThatArePartsOfEscapes02_ES6': {
         errors: true,
@@ -42548,12 +42548,12 @@ const baselines = {
     'taggedTemplateStringsWithIncompatibleTypedTags': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithIncompatibleTypedTagsES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithManyCallAndMemberExpressions': {
         errors: true,
@@ -42608,12 +42608,12 @@ const baselines = {
     'taggedTemplateStringsWithTagsTypedAsAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithTagsTypedAsAnyES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithTypeErrorInFunctionExpressionsInSubstitutionExpression': {
         errors: true,
@@ -42628,12 +42628,12 @@ const baselines = {
     'taggedTemplateStringsWithTypedTags': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithTypedTagsES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateUntypedTagCall01': {
         errors: true,
@@ -42663,22 +42663,22 @@ const baselines = {
     'templateStringBinaryOperations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringBinaryOperationsES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringBinaryOperationsES6Invalid': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringBinaryOperationsInvalid': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringControlCharacterEscapes01': {
         errors: true,
@@ -42723,7 +42723,7 @@ const baselines = {
     'templateStringInArray': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInArrowFunction': {
         errors: true,
@@ -42738,57 +42738,57 @@ const baselines = {
     'templateStringInCallExpression': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInCallExpressionES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInConditional': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInConditionalES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInDeleteExpression': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInDeleteExpressionES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInDivision': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInEqualityChecks': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInEqualityChecksES6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInFunctionExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInFunctionExpressionES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInFunctionParameterType': {
         errors: false,
@@ -42803,12 +42803,12 @@ const baselines = {
     'templateStringInInOperator': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInInOperatorES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInIndexExpression': {
         errors: true,
@@ -42823,12 +42823,12 @@ const baselines = {
     'templateStringInInstanceOf': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInInstanceOfES6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'templateStringInModuleName': {
         errors: false,
@@ -42843,42 +42843,42 @@ const baselines = {
     'templateStringInModulo': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInModuloES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInMultiplication': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInMultiplicationES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInNewExpression': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInNewExpressionES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInNewOperator': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInNewOperatorES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInObjectLiteral': {
         errors: false,
@@ -42893,22 +42893,22 @@ const baselines = {
     'templateStringInParentheses': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInParenthesesES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInPropertyAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInPropertyAssignmentES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInPropertyName1': {
         errors: false,
@@ -42931,14 +42931,14 @@ const baselines = {
         types: false,
     },
     'templateStringInSwitchAndCase': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInSwitchAndCaseES6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInTaggedTemplate': {
         errors: false,
@@ -42953,42 +42953,42 @@ const baselines = {
     'templateStringInTypeAssertion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInTypeAssertionES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInTypeOf': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInTypeOfES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInUnaryPlus': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInUnaryPlusES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInWhile': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInWhileES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInYieldKeyword': {
         errors: true,
@@ -43038,12 +43038,12 @@ const baselines = {
     'templateStringPlainCharactersThatArePartsOfEscapes02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringPlainCharactersThatArePartsOfEscapes02_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringTermination1': {
         errors: true,
@@ -43178,17 +43178,17 @@ const baselines = {
     'templateStringWithCommentsInArrowFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedAddition': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedAdditionES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedArray': {
         errors: true,
@@ -43213,12 +43213,12 @@ const baselines = {
     'templateStringWithEmbeddedComments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedCommentsES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedConditional': {
         errors: true,
@@ -43233,12 +43233,12 @@ const baselines = {
     'templateStringWithEmbeddedDivision': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedDivisionES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedFunctionExpression': {
         errors: true,
@@ -43273,22 +43273,22 @@ const baselines = {
     'templateStringWithEmbeddedModulo': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedModuloES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedMultiplication': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedMultiplicationES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedNewOperator': {
         errors: true,
@@ -43313,12 +43313,12 @@ const baselines = {
     'templateStringWithEmbeddedTemplateString': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedTemplateStringES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedTypeAssertionOnAddition': {
         errors: true,
@@ -43363,32 +43363,32 @@ const baselines = {
     'templateStringWithEmptyLiteralPortions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmptyLiteralPortionsES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithOpenCommentInStringPortion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithOpenCommentInStringPortionES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithPropertyAccess': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithPropertyAccessES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringsWithTypeErrorInFunctionExpressionsInSubstitutionExpression': {
         errors: true,
@@ -44033,12 +44033,12 @@ const baselines = {
     'unicodeExtendedEscapesInTemplates20(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates20(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'VariableDeclaration10_es6': {
         errors: true,
@@ -45963,7 +45963,7 @@ const baselines = {
     'asOperator3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asOperator4': {
         errors: true,
@@ -62166,7 +62166,7 @@ const baselines = {
         types: false,
     },
     'templateLiteralTypes2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -63641,9 +63641,9 @@ const baselines = {
         types: true,
     },
     'stringLiteralTypesWithTemplateStrings02': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesWithVariousOperators01': {
         errors: true,
