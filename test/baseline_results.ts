@@ -37046,7 +37046,7 @@ const baselines = {
         types: true,
     },
     'controlFlowComputedPropertyNames': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

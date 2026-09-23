@@ -447,6 +447,15 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     return ty_property_name_of_key(me, ty_flow_expr_type(me, key), &is_number);
 }
 
+// `x[k]` where k has no literal type but always names the same thing: a const, or a parameter or `let` never assigned
+// (tsc's isConstantVariable || isParameterOrMutableLocalVariable && !isSymbolAssigned). Null otherwise
+static Symbol const* access_key_symbol(PropertyExpr const* access) {
+    Expr const* key = &access->prop;
+    if (access->form != PROPERTY_EXPR_BRACKET || key->tag != EXPR_IDENTIFIER || key->identifier.keyword) return nullptr;
+    Symbol const* symbol = key->identifier.target;
+    return symbol && (symbol->is_const || !symbol->is_assigned) ? symbol : nullptr;
+}
+
 static bool is_matching_reference(Checker* me, Expr const* source, Expr const* target) {
     source = skip_reference_wrappers(source);
     target = skip_reference_wrappers(target);
@@ -467,7 +476,12 @@ static bool is_matching_reference(Checker* me, Expr const* source, Expr const* t
             return source->identifier.target && source->identifier.target == target->identifier.target;
         case EXPR_PROPERTY: {
             Atom const* source_name = access_name(me, source->property);
-            if (!source_name || source_name != access_name(me, target->property)) return false;
+            if (source_name) {
+                if (source_name != access_name(me, target->property)) return false;
+            } else {
+                Symbol const* key = access_key_symbol(source->property);
+                if (!key || key != access_key_symbol(target->property)) return false;
+            }
             return is_matching_reference(me, &source->property->expr, &target->property->expr);
         }
         default:
@@ -525,8 +539,9 @@ static u32 reference_key_words(Checker* me, Expr const* expr, u64* words, u32 ca
         case EXPR_PROPERTY: {
             u32 count = reference_key_words(me, &expr->property->expr, words, cap);
             Atom const* name = access_name(me, expr->property);
-            if (!count || !name || count == cap) return 0;
-            words[count] = (u64)(uintptr_t)name;
+            Symbol const* key = name ? nullptr : access_key_symbol(expr->property);
+            if (!count || !(name || key) || count == cap) return 0;
+            words[count] = name ? (u64)(uintptr_t)name : (u64)(uintptr_t)key | 1;
             return count + 1;
         }
         default:
