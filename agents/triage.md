@@ -8,11 +8,16 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   `@allowJs` tests now mostly fail *quietly*: they need JSDoc types (`@param`, `@type`, `@typedef`), `module.exports`
   / `require` as declarations, expando assignments (`f.x = 1`, `this.x = 1`, prototype assignments), TS2306 on
   CommonJS files that aren't modules. Needs its own plan; JSDoc is big. `check_access()` still lets JS files through.
-- **Syntax gaps**: plan 14 takes the feature-sized shapes (`using`, import attributes, import/export forms, labels,
-  shebang, `new.target`, ...). Left out of it: JSX (whole feature, needs its own plan: ~100 tests just in
-  `failstats.py --syntax`, more behind `@jsx`), recovery-fidelity shapes (`''`, `'};'`, `'{'`, ~100 tests), TS1161 for
-  an unterminated regex (`parse_regex` just fails), TS1263/1264 misplaced `let x!`, `const c;` in ambient files,
-  `override`/TS4112+, overloads of `*()`-style nameless members, TS2303 "Circular definition of import alias".
+- **Syntax gaps after plan 14** (done 2026-09-22, plan deleted: 746 tests still have a spurious syntax error, from
+  1242): JSX (whole feature, needs its own plan: ~100 tests in `failstats.py --syntax`, more behind `@jsx`), recovery
+  fidelity shapes (`''`, `'};'`, `'{'`, `'];'`), among them parameter-list recovery after `a = yield =>` (tsc: "','
+  expected" and the function survives; tttt loses the function: FunctionDeclaration10_es6 & ~27 more) and malformed
+  import types (nodeModulesImport*DeclarationEmitErrors). Plan 14 leftovers: the import attributes' type against the
+  global `ImportAttributes` (TS2322), `new.target`'s symbol in anonymous functions (`(Anonymous function)`) and an
+  error type as a computed key (should act like any: invalidNewTarget types), TS2339/TS2488 on destructuring `null`
+  (`const {a} = null`, not only `using`), TS1432 top-level `for await`. Older: TS1161 for an unterminated regex
+  (`parse_regex` just fails), TS1263/1264 misplaced `let x!`, `const c;` in ambient files, `override`/TS4112+,
+  overloads of `*()`-style nameless members, TS2303 "Circular definition of import alias".
 - **Parser recovery fidelity now matters more**: the harness typechecks next to parse errors like tsc (since the
   triage after plan 06). parserGreaterThanTokenAmbiguity12-19 (`1 >> = 2` parses as an assignment and gets TS2364)
   and restParamModifier (TS1014 on top of tsc's error) regressed honestly. tsc's baseline for a file with syntax

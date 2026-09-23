@@ -5,7 +5,16 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-22, plan 17 done)
+## State (2026-09-22, plan 14 and plan 19 stage 0 done)
+- **Plan 14 (syntax gaps) done in one session**: `using`/`await using`, import attributes, import/export forms,
+  break/continue targets, modifier order, decorators before computed names, `new.target`. Suite **4221 -> 4604**
+  (+383, no losses); tests with a spurious syntax error 1242 -> 746, what's left is JSX and error recovery fidelity
+  (triage.md). Grammar errors now have tsc's "not in a file with parse errors" rule (`error_ctx_grammar_error_d`), used
+  by the new checks only.
+- **Plan 19 stage 0**: module augmentations merge in `binder_link` (into alias targets, `export *`, `export =`),
+  valibot 4473 -> 2169; its top buckets are now expect-type's `toEqualTypeOf` constraint (TS2344 1166) and `Omit<>`
+  over unions (TS2345), see plan 19.
+
 - **Two modern corpora (plan 17)**, `thirdparty/ensure-corpora.sh`, `./realworld.py --corpus type-fest|valibot`, both
   clean under tsc 5.8: type-fest **598** diagnostics, valibot **4473**. Ranked causes: module augmentation of an
   aliased export (vitest's `expect`, ~2400 of valibot's: plan 19 stage 0), template literal types / string mappings /
@@ -30,7 +39,7 @@ types components) are the oracle, not the goal.
   context of the target instead of unifying positionally / erasing to `any`, and instantiated generic signatures get
   fresh type parameters (bounded ones) instead of sharing them with their target.
 - **Suite gaps are now mostly absent features, not wrong answers** (triage after plan 10): ~1250 tests hit a syntax
-  error tsc doesn't have (`using` alone ~330: plan 14); dozens of checks don't exist at all (`./unimplemented_codes.sh`:
+  error tsc doesn't have (plan 14 took ~500 of them); dozens of checks don't exist at all (`./unimplemented_codes.sh`:
   unused locals, property vs index signature, used-before-declaration, operand checks, grammar/regex checks: plan 15);
   no accessibility/readonly/private-name checks (plan 13), no error elaboration (plan 16 stub). These are
   cheap per test compared with the type core work, and ready to schedule now that the corpus is done.

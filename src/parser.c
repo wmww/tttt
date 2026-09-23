@@ -34,6 +34,7 @@ typedef struct ParserShared {
     bool in_generator;
     int function_depth;
     bool in_static_block; // Directly in a class `static {}` block, not in a function inside it
+    bool in_parameters; // In the parameter list of the current function: `yield`/`await` there are TS2523/TS2524
 } ParserShared;
 
 typedef struct FunctionFlags {
@@ -47,6 +48,7 @@ typedef struct FunctionCtx {
     bool in_async;
     bool in_generator;
     bool in_static_block;
+    bool in_parameters;
 } FunctionCtx;
 
 void parser_shared_drop(ParserShared* me) {
@@ -1830,7 +1832,25 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
     return parse_success(&p);
 }
 
+static bool parse_function_args_inner(
+    Parser* parent, bool parse_abstract_and_new, bool parse_type_return_syntax, bool parse_ret_type, FunctionImpl* ret
+);
+
 static bool parse_function_args(
+    Parser* parent,
+    bool parse_abstract_and_new,
+    bool parse_type_return_syntax,
+    bool parse_ret_type,
+    FunctionImpl* ret
+) {
+    bool outer = parent->shared->in_parameters;
+    parent->shared->in_parameters = true;
+    bool success = parse_function_args_inner(parent, parse_abstract_and_new, parse_type_return_syntax, parse_ret_type, ret);
+    parent->shared->in_parameters = outer;
+    return success;
+}
+
+static bool parse_function_args_inner(
     Parser* parent,
     bool parse_abstract_and_new,
     bool parse_type_return_syntax,
@@ -2010,9 +2030,10 @@ drop_and_fail:
 static FunctionCtx function_ctx_enter(Parser* p, FunctionFlags flags) {
     FunctionCtx saved = {
         .in_async = p->shared->in_async, .in_generator = p->shared->in_generator,
-        .in_static_block = p->shared->in_static_block,
+        .in_static_block = p->shared->in_static_block, .in_parameters = p->shared->in_parameters,
     };
     p->shared->in_static_block = false;
+    p->shared->in_parameters = false;
     p->shared->in_async = flags.is_async;
     p->shared->in_generator = flags.is_generator;
     p->shared->function_depth++;
@@ -2023,6 +2044,7 @@ static void function_ctx_leave(Parser* p, FunctionCtx saved) {
     p->shared->in_async = saved.in_async;
     p->shared->in_generator = saved.in_generator;
     p->shared->in_static_block = saved.in_static_block;
+    p->shared->in_parameters = saved.in_parameters;
     p->shared->function_depth--;
 }
 
@@ -3306,7 +3328,11 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     const char* op_end = p.pos;
     hop_whitespace(&p);
 
-    if (op == UNARY_OP_AWAIT && !p.shared->in_async && p.shared->function_depth > 0) {
+    if (p.shared->in_parameters && (op == UNARY_OP_YIELD || op == UNARY_OP_YIELD_STAR)) {
+        parse_error(&p, op_span, 2523, "'yield' expressions cannot be used in a parameter initializer.");
+    } else if (p.shared->in_parameters && op == UNARY_OP_AWAIT) {
+        parse_error(&p, op_span, 2524, "'await' expressions cannot be used in a parameter initializer.");
+    } else if (op == UNARY_OP_AWAIT && !p.shared->in_async && p.shared->function_depth > 0) {
         parse_error(&p, op_span, 1308,
             "'await' expressions are only allowed within async functions and at the top levels of modules.");
     }
@@ -3315,14 +3341,11 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     ctx.min_precedence = unary_op_get_precedence(op);
     bool bare_yield = false;
     if (op == UNARY_OP_YIELD) {
-        switch (*p.pos) {
-            case ')': case ']': case '}': case ',': case ';': case ':': case '\0':
-                bare_yield = true;
-                break;
-            default:
-                bare_yield = p.whitespace == WHITESPACE_NEWLINE;
-                break;
-        }
+        // tsc's parseYieldExpression(): an operand if one starts on the same line (isStartOfExpression)
+        char c = *p.pos;
+        bool starts_expression = is_identifier_start_char(c) || is_number_start_char(c) || (unsigned char)c >= 0x80 ||
+            strchr("\"'`([{!~+-/<@#", c) != nullptr;
+        bare_yield = !c || !starts_expression || p.whitespace == WHITESPACE_NEWLINE;
     }
     if (bare_yield) {
         p.pos = op_end;

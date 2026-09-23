@@ -32956,12 +32956,12 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction6_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asyncArrowFunction7_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33171,7 +33171,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration6_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33236,12 +33236,12 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction6_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asyncArrowFunction7_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33486,7 +33486,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration6_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33551,12 +33551,12 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction6_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asyncArrowFunction7_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33816,7 +33816,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration6_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41861,12 +41861,12 @@ const baselines = {
         types: true,
     },
     'FunctionDeclaration6_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'FunctionDeclaration7_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
