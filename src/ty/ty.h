@@ -588,6 +588,10 @@ struct Checker {
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     bool variance_unreliable; // structurally: set when they go through something that isn't (relate.c)
     struct IterationState const* iteration; // The lib's iteration interfaces, looked up on first use (iterate.c)
+    // `Disposable | null | undefined` and `AsyncDisposable | Disposable | null | undefined`, what a `using` / `await
+    // using` initializer must be (ty_check_using_initializer()), made on first use. Null: not yet
+    Ty const* disposable_targets[2];
+    bool disposable_looked_up[2];
 };
 
 // checker.c
@@ -897,6 +901,8 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
 
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
+// A `using` (TS2850) or `await using` (TS2851) initializer: disposable, null or undefined
+void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Span span, ErrorCtx* errs);
 void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS1360
 // A class or interface that doesn't fit what it extends or implements: TS2416 at each of `members` (its own) that
 // doesn't fit the base's, else `ts_code` with "<what> 'D' <relation> 'B'." at `span` (tsc's issueMemberSpecificError)

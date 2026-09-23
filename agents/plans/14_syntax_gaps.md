@@ -18,6 +18,15 @@ The corpus has none of these (it parses), so this is suite work; it's cheap per 
 whole test files, so the payoff is large. JSX (~100 tests with `<div>` shapes) is **not** in scope: it's a feature
 plan of its own (parse + JSX namespace types + intrinsic elements).
 
+## Progress
+- **`using` / `await using`: done** (4221 -> 4535 full; tests with a spurious syntax error 1242 -> 916). Parser
+  (`using_declaration_follows`, tsc's lookahead; `for (await using of x)` is an empty list), `VAR_INIT_USING`/
+  `VAR_INIT_AWAIT_USING` bind as const, checks TS2850/2851 (`ty_check_using_initializer`), TS1492, TS1493/1494,
+  TS1491/1495 (modifiers, in the parser), TS2852/2853/2854/1309, TS18054, and TS1156 for every block-scoped
+  declaration in an `if`/loop body. Left in the `using` tests: TS2339/TS2488 on destructuring `null` (general, not
+  `using`), TS2448/TS2354/TS7018, TS1432 (top-level `for await`, not implemented for any loop).
+- Next: import attributes/assertions, then the import/export forms.
+
 ## How
 Parser work driven by the list, largest shape first, like plan 08's loop:
 1. `./failstats.py` then `./failstats.py --syntax -n 60`; pick the top shape, read 2-3 of its tests' tsc baselines.

@@ -19,10 +19,10 @@ void variable_statement_drop(VariableStatement* me) {
 void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported, bool declared) {
     for_each (i, vec_initialized_binding, &my initializers) {
         initialized_binding_add_names(i, scope, (BindingAddNamesProps){
-            .abstract_literals = my keyword != VAR_INIT_CONST,
+            .abstract_literals = !variable_statement_is_const(me),
             .exported = exported,
             .function_scoped = my keyword == VAR_INIT_VAR,
-            .is_const = my keyword == VAR_INIT_CONST,
+            .is_const = variable_statement_is_const(me),
             .is_ambient = declared,
         });
     }
@@ -34,18 +34,66 @@ void variable_statement_resolve_names(VariableStatement* me, Scope* names, Error
     }
 }
 
-void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs) {
+// The grammar of `using` declarations: tsc's checkGrammarVariableDeclarationList(), checkAwaitGrammar() and the using
+// part of checkGrammarVariableDeclaration()
+static void variable_statement_check_using(VariableStatement* me, bool for_in, ErrorCtx* errs) {
+    bool is_await = my keyword == VAR_INIT_AWAIT_USING;
+    if (!is_await && my keyword != VAR_INIT_USING) return;
+    if (vec_initialized_binding_is_empty(&my initializers)) return; // The parser reported it
+    if (for_in) {
+        if (is_await) {
+            error_ctx_error_d(errs, my span, 1494,
+                "The left-hand side of a 'for...in' statement cannot be an 'await using' declaration.");
+        } else {
+            error_ctx_error_d(errs, my span, 1493,
+                "The left-hand side of a 'for...in' statement cannot be a 'using' declaration.");
+        }
+        return;
+    }
+    if (is_await && my in_static_block) {
+        error_ctx_error_d(errs, my span, 18054, "'await using' statements cannot be used inside a class static block.");
+    } else if (is_await && my at_top_level) {
+        SourceFile const* file = my await_span.source;
+        CompilerOptions const* options = compiler_options();
+        if (!file->is_module) {
+            error_ctx_error_d(errs, my await_span, 2853,
+                "'await using' statements are only allowed at the top level of a file when that file is a module, but "
+                "this file has no imports or exports. Consider adding an empty 'export {}' to make this file a module.");
+        }
+        bool node = options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18 ||
+            options->module == MODULE_KIND_NODENEXT;
+        bool es = options->module == MODULE_KIND_ES2022 || options->module == MODULE_KIND_ESNEXT ||
+            options->module == MODULE_KIND_PRESERVE || options->module == MODULE_KIND_SYSTEM;
+        if (node && !file->is_esm) {
+            error_ctx_error_d(errs, my await_span, 1309,
+                "The current file is a CommonJS module and cannot use 'await' at the top level.");
+        } else if (!(node || es) || options->target < SCRIPT_TARGET_ES2017) {
+            error_ctx_error_d(errs, my await_span, 2854,
+                "Top-level 'await using' statements are only allowed when the 'module' option is set to 'es2022', "
+                "'esnext', 'system', 'node16', 'node18', 'nodenext', or 'preserve', and the 'target' option is set to "
+                "'es2017' or higher.");
+        }
+    }
     for_each (i, vec_initialized_binding, &my initializers) {
-        if (my keyword == VAR_INIT_CONST &&
+        if (i->binding.tag == BINDING_IDENTIFIER) continue;
+        error_ctx_error_d(errs, i->binding.content_span, 1492,
+            "'", variable_statement_keyword_str(me), "' declarations may not have binding patterns.");
+    }
+}
+
+void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs) {
+    variable_statement_check_using(me, false, errs);
+    for_each (i, vec_initialized_binding, &my initializers) {
+        if (variable_statement_is_const(me) &&
             i->value.tag == EXPR_IMPLICIT_ANY &&
             !declared
         ) {
             error_ctx_error_d(errs, i->binding.content_span, 1155,
-                "'const' declarations must be initialized.");
+                "'", variable_statement_keyword_str(me), "' declarations must be initialized.");
         } else if (declared &&
             i->value.tag != EXPR_IMPLICIT_ANY
         ) {
-            if (i->binding.has_explicit_type || my keyword != VAR_INIT_CONST) {
+            if (i->binding.has_explicit_type || !variable_statement_is_const(me)) {
                 error_ctx_error_d(errs, i->value.outer_span, 1039,
                     "Initializers are not allowed in ambient contexts.");
             } else {
@@ -72,6 +120,12 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
             }
         }
         initialized_binding_typecheck(i, errs);
+        if ((my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING) && i->value.tag != EXPR_IMPLICIT_ANY) {
+            // tsc widens it first: no excess property checks
+            Ty const* type = ty_widened_objects(current_checker, expr_get_type(&i->value));
+            ty_check_using_initializer(current_checker, type, my keyword == VAR_INIT_AWAIT_USING,
+                i->value.outer_span, errs);
+        }
     }
 }
 
@@ -1159,9 +1213,12 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     ) {
         error_ctx_error_d(errs, my span, 7027, "Unreachable code detected.");
     }
+    bool body = ctx.body;
+    ctx.body = false;
     switch (my tag) {
         case STATEMENT_LABELED:
             ctx.inside_label = true;
+            ctx.body = body;
             statement_typecheck(my labeled.body, ctx, errs);
             break;
 
@@ -1183,6 +1240,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                 // Conditions do not have to be booleans
                 expr_typecheck(i, errs);
             }
+            ctx.body = true;
             for_each (i, vec_statement, &my if_else.statements) {
                 statement_typecheck(i, ctx, errs);
             }
@@ -1195,6 +1253,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             expr_typecheck(&my for_loop->afterthought, errs);
             ctx.break_allowed = true;
             ctx.continue_allowed = true;
+            ctx.body = true;
             statement_typecheck(&my for_loop->body, ctx, errs);
             break;
         }
@@ -1203,6 +1262,10 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             Checker* checker = current_checker;
             Ty const* iterable_type = ty_expr_type(checker, &my for_each_loop->iterable);
 
+            if (my for_each_loop->variable.tag == FOR_EACH_LOOP_STATEMENT) {
+                variable_statement_check_using(&my for_each_loop->variable.statement,
+                    my for_each_loop->keyword == FOR_EACH_LOOP_IN, errs);
+            }
             switch (my for_each_loop->keyword) {
                 case FOR_EACH_LOOP_IN:
                     switch (my for_each_loop->variable.tag) {
@@ -1270,6 +1333,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
             ctx.break_allowed = true;
             ctx.continue_allowed = true;
+            ctx.body = true;
             statement_typecheck(&my for_each_loop->body, ctx, errs);
         }   break;
 
@@ -1347,6 +1411,11 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
         case STATEMENT_IMPORT_EXPORT: break;
 
         case STATEMENT_DECL_VARIABLE:
+            if (body && my decl.variable.keyword != VAR_INIT_VAR) {
+                // tsc's checkGrammarForDisallowedBlockScopedVariableStatement()
+                error_ctx_error_d(errs, my span, 1156,
+                    "'", variable_statement_keyword_str(&my decl.variable), "' declarations can only be declared inside a block.");
+            }
             variable_statement_typecheck(&my decl.variable, my decl.props.declared || ctx.ambient, errs);
             break;
 

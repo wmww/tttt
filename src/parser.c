@@ -33,6 +33,7 @@ typedef struct ParserShared {
     bool in_async;
     bool in_generator;
     int function_depth;
+    bool in_static_block; // Directly in a class `static {}` block, not in a function inside it
 } ParserShared;
 
 typedef struct FunctionFlags {
@@ -45,6 +46,7 @@ static const FunctionFlags function_flags_null = {0};
 typedef struct FunctionCtx {
     bool in_async;
     bool in_generator;
+    bool in_static_block;
 } FunctionCtx;
 
 void parser_shared_drop(ParserShared* me) {
@@ -1976,7 +1978,11 @@ drop_and_fail:
 
 // Call before parsing a function's arguments and body, and function_ctx_leave() after (on success and failure)
 static FunctionCtx function_ctx_enter(Parser* p, FunctionFlags flags) {
-    FunctionCtx saved = { .in_async = p->shared->in_async, .in_generator = p->shared->in_generator };
+    FunctionCtx saved = {
+        .in_async = p->shared->in_async, .in_generator = p->shared->in_generator,
+        .in_static_block = p->shared->in_static_block,
+    };
+    p->shared->in_static_block = false;
     p->shared->in_async = flags.is_async;
     p->shared->in_generator = flags.is_generator;
     p->shared->function_depth++;
@@ -1986,6 +1992,7 @@ static FunctionCtx function_ctx_enter(Parser* p, FunctionFlags flags) {
 static void function_ctx_leave(Parser* p, FunctionCtx saved) {
     p->shared->in_async = saved.in_async;
     p->shared->in_generator = saved.in_generator;
+    p->shared->in_static_block = saved.in_static_block;
     p->shared->function_depth--;
 }
 
@@ -2663,12 +2670,12 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     bool (*parse_function_fn)(Parser* parent, FunctionFlags flags, FunctionImpl* ret) =
         is_type ? parse_function_header : parse_non_arrow_function;
 
-    if (
-        !is_type &&
-        !name_is_value &&
-        span_equals(name_span, "static") &&
-        parse_block(&p, false, &ret->static_block)
-    ) {
+    bool outer_static_block = p.shared->in_static_block;
+    p.shared->in_static_block = true;
+    bool static_block = !is_type && !name_is_value && span_equals(name_span, "static") &&
+        parse_block(&p, false, &ret->static_block);
+    p.shared->in_static_block = outer_static_block;
+    if (static_block) {
         modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_MODIFIERS_NOT_ALLOWED);
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
     } else if (span_valid(name_span)) {
@@ -4454,15 +4461,64 @@ static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, 
     }
 }
 
-static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatement* ret) {
+// ECMAScript's reserved words: never a binding identifier (strict mode ones are, with a grammar error)
+static bool is_reserved_word(csview word) {
+    static const char* const words[] = {
+        "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else", "enum",
+        "export", "extends", "false", "finally", "for", "function", "if", "import", "in", "instanceof", "new", "null",
+        "return", "super", "switch", "this", "throw", "true", "try", "typeof", "var", "void", "while", "with",
+    };
+    for (size_t i = 0; i < sizeof(words) / sizeof(*words); i++) {
+        if (csview_equals(word, words[i])) return true;
+    }
+    return false;
+}
+
+// After `using`: a declaration if a binding identifier or `{` follows on the same line (tsc's
+// nextTokenIsBindingIdentifierOrStartOfDestructuringOnSameLine; `[` would be an element access)
+static bool using_declaration_follows(Parser const* parent, bool disallow_of) {
+    Parser p = parser((Parser*)parent);
+    hop_whitespace(&p);
+    bool ret = false;
+    Span word;
+    if (p.whitespace == WHITESPACE_NEWLINE) {
+        ret = false;
+    } else if (*p.pos == '{') {
+        ret = true;
+    } else if (parse_identifier_or_keyword(&p, &word)) {
+        ret = !is_reserved_word(word.sv) && !(disallow_of && span_equals(word, "of"));
+    }
+    parse_fail(&p);
+    return ret;
+}
+
+// in_for: the declaration of a `for` loop, where `using of` is `for (using of x)`
+static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, VariableStatement* ret) {
     Parser p = parser(parent);
 
+    Anchor start = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "var")) {
         ret->keyword = VAR_INIT_VAR;
     } else if (hop_start_if_ends_on_word_break(&p, "let")) {
         ret->keyword = VAR_INIT_LET;
     } else if (hop_start_if_ends_on_word_break(&p, "const")) {
         ret->keyword = VAR_INIT_CONST;
+    } else if (hop_start_if_ends_on_word_break(&p, "using") && using_declaration_follows(&p, in_for)) {
+        ret->keyword = VAR_INIT_USING;
+    } else if (hop_start_if_ends_on_word_break(&p, "await")) {
+        hop_whitespace(&p);
+        // Unlike `for (using of x)`, `for (await using of x)` declares nothing (tsc: TS1123)
+        if (!hop_start_if_ends_on_word_break(&p, "using") || !using_declaration_follows(&p, false)) {
+            return parse_fail(&p);
+        }
+        ret->keyword = VAR_INIT_AWAIT_USING;
+        ret->await_span = (Span){ .source = p.shared->source, .sv = csview_from_n(start.start, 5) };
+        ret->at_top_level = p.shared->function_depth == 0;
+        ret->in_static_block = p.shared->in_static_block;
+        if (!p.shared->in_async && p.shared->function_depth > 0) {
+            parse_error(&p, ret->await_span, 2852,
+                "'await using' statements are only allowed within async functions and at the top levels of modules.");
+        }
     } else {
         return parse_fail(&p);
     }
@@ -4478,8 +4534,20 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
     InitializedBinding initializer = {0};
     ret->initializers = vec_initialized_binding_init();
 
+    // `for (await using of x)`: `of` is the loop's (tsc's canFollowContextualOfKeyword)
+    bool empty_for_of = false;
+    if (in_for && ret->keyword == VAR_INIT_AWAIT_USING && starts_with_followed_by_word_break(&p, "of")) {
+        Parser ahead = parser(&p);
+        hop_start(&ahead, "of");
+        hop_whitespace(&ahead);
+        empty_for_of = parse_identifier(&ahead, nullptr);
+        hop_whitespace(&ahead);
+        empty_for_of = empty_for_of && *ahead.pos == ')';
+        parse_fail(&ahead);
+    }
+
     while (true) {
-        if (!parse_binding_content(&p, &initializer.binding)) {
+        if (empty_for_of || !parse_binding_content(&p, &initializer.binding)) {
             if (span_valid(comma_span)) {
                 parse_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(comma_span);
@@ -4552,6 +4620,8 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
         hop_whitespace(&p);
     }
 
+    ret->span = span_from(start);
+    while (ret->span.sv.size && is_js_ascii_space(ret->span.sv.buf[ret->span.sv.size - 1])) ret->span.sv.size--;
     return parse_success(&p);
 }
 
@@ -4649,7 +4719,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     Statement body;
     bool keyword_is_in = false;
 
-    if (parse_variable_statement(&p, (ExprCtx){.reject_in_operator = true}, &statement.decl.variable)) {
+    if (parse_variable_statement(&p, (ExprCtx){.reject_in_operator = true}, true, &statement.decl.variable)) {
         statement.decl.props.exported = DECL_EXPORTED_NO;
         statement.tag = STATEMENT_DECL_VARIABLE;
     } else if (parse_expr(&p, (ExprCtx){.reject_in_operator = true}, &statement.expr)) {
@@ -5282,8 +5352,19 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     );
 
     if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
-        parse_variable_statement(&p, expr_ctx_null, &parsed.variable)
+        parse_variable_statement(&p, expr_ctx_null, false, &parsed.variable)
     ) {
+        bool is_using = parsed.variable.keyword == VAR_INIT_USING || parsed.variable.keyword == VAR_INIT_AWAIT_USING;
+        for_each (i, vec_spanned_modifier, &modifiers.spanned) {
+            if (!is_using || (i->tag != MODIFIER_EXPORT && i->tag != MODIFIER_DECLARE)) continue;
+            // tsc's checkGrammarModifiers(): the first one
+            if (parsed.variable.keyword == VAR_INIT_USING) {
+                parse_error(&p, i->span, 1491, "'", i->span, "' modifier cannot appear on a 'using' declaration.");
+            } else {
+                parse_error(&p, i->span, 1495, "'", i->span, "' modifier cannot appear on an 'await using' declaration.");
+            }
+            break;
+        }
         *ret = (Statement) {
             .tag = STATEMENT_DECL_VARIABLE,
             .decl = {

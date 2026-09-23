@@ -33,11 +33,31 @@ typedef struct VariableStatement {
         VAR_INIT_VAR,
         VAR_INIT_LET,
         VAR_INIT_CONST,
+        VAR_INIT_USING,
+        VAR_INIT_AWAIT_USING,
     } keyword;
     VecInitializedBinding initializers;
+    Span span; // From the keyword to the end of the last declaration
+    Span await_span; // `await using`: the `await`
+    bool at_top_level; // `await using` outside of any function
+    bool in_static_block; // `await using` in a class `static {}` block
 } VariableStatement;
 
 void variable_statement_drop(VariableStatement* me);
+// const, using and await using (tsc's isVarConstLike)
+static inline bool variable_statement_is_const(VariableStatement const* me) {
+    return my keyword == VAR_INIT_CONST || my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING;
+}
+static inline char const* variable_statement_keyword_str(VariableStatement const* me) {
+    switch (my keyword) {
+        case VAR_INIT_VAR: return "var";
+        case VAR_INIT_LET: return "let";
+        case VAR_INIT_CONST: return "const";
+        case VAR_INIT_USING: return "using";
+        case VAR_INIT_AWAIT_USING: return "await using";
+    }
+    return "";
+}
 void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported, bool declared);
 void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs);

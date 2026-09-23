@@ -2,6 +2,10 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 14: `using` declarations
+Suite **4535** full (+314, no losses; errors 7665, symbols 9210, types 7392). Tests with a spurious syntax error:
+1242 -> 916. Corpora unchanged (tsc 0, valibot 2169, type-fest 598).
+
 ## 2026-09-22, plan 19 stage 0: module augmentations merged in the link phase
 Suite **4221** full (+2, +27 components, no losses). tsc corpus 0. valibot **4473 -> 2169** (TS2344 1166, TS2345 489,
 TS2578 185, TS2322 141, TS1360 86; TS2349 1742 -> 4, TS2339 608 -> 24). type-fest 598 (unchanged).

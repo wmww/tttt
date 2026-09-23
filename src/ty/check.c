@@ -3,6 +3,7 @@
 #include "display.h"
 #include "error.h"
 #include "source_file.h"
+#include "program.h"
 
 // Checks the statement/expression walk asks of the new core, and how their errors are worded.
 
@@ -150,6 +151,40 @@ void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span sp
 
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
     check_assignable(me, "Type", source, "type", target, 2322, span, errs);
+}
+
+// tsc's getGlobalDisposableType(/*reportErrors*/ true) & co: TS2318 once when the lib doesn't have it
+static Ty const* global_disposable_type(Checker* me, char const* name, ErrorCtx* errs) {
+    Symbol const* symbol = program_get_global(my program, csview_from(name), SYMBOL_TYPE);
+    if (symbol && symbol->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) return ty_declared_type_of(me, symbol);
+    error_ctx_global_error_d(errs, 2318, "Cannot find global type '", name, "'.");
+    return nullptr;
+}
+
+void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Span span, ErrorCtx* errs) {
+    if (!my disposable_looked_up[is_await]) {
+        my disposable_looked_up[is_await] = true;
+        Ty const* async_disposable = is_await ? global_disposable_type(me, "AsyncDisposable", errs) : nullptr;
+        Ty const* disposable = global_disposable_type(me, "Disposable", errs);
+        if (disposable && (!is_await || async_disposable)) {
+            Ty const* parts[4];
+            u32 count = 0;
+            if (is_await) parts[count++] = async_disposable;
+            parts[count++] = disposable;
+            parts[count++] = ty_intrinsic(me, TY_NULL);
+            parts[count++] = ty_intrinsic(me, TY_UNDEFINED);
+            my disposable_targets[is_await] = ty_union(me, parts, count, nullptr, (TyList){0});
+        }
+    }
+    Ty const* target = my disposable_targets[is_await];
+    if (!target || source->flags & TYF_ANY) return;
+    if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return;
+    if (report_instantiation_limit(me, span, errs)) return;
+    report_unassignable_with_head(me, source, target, is_await ? 2851 : 2850, is_await ?
+        cstr_lit("The initializer of an 'await using' declaration must be either an object with a "
+            "'[Symbol.asyncDispose]()' or '[Symbol.dispose]()' method, or be 'null' or 'undefined'.") :
+        cstr_lit("The initializer of a 'using' declaration must be either an object with a '[Symbol.dispose]()' "
+            "method, or be 'null' or 'undefined'."), false, span, errs);
 }
 
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {

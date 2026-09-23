@@ -265,3 +265,5 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   (release) already; long term, arenas.
 - No `perf` on the dev box; callgrind works (`valgrind --tool=callgrind ./release/tttt -q files...`, then
   `callgrind_annotate [--inclusive=yes]`). Worth a `./profile.sh` wrapper if more sessions need it.
+- `for (x in o)` with a non-declaration target: TS2405 ("left-hand side of a 'for...in' statement must be of type
+  'string' or 'any'") is missing, tttt reports TS2322 instead (`test/probes/plan14/using_identifier.ts`, line 10).

@@ -1104,6 +1104,8 @@ static void display_variable_statement(Display d, VariableStatement const* me) {
         case VAR_INIT_VAR: display_lit(d, "var "); break;
         case VAR_INIT_LET: display_lit(d, "let "); break;
         case VAR_INIT_CONST: display_lit(d, "const "); break;
+        case VAR_INIT_USING: display_lit(d, "using "); break;
+        case VAR_INIT_AWAIT_USING: display_lit(d, "await using "); break;
     }
     for_each (i, vec_initialized_binding, &my initializers) {
         if (i_index != 0) {
