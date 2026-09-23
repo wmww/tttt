@@ -18341,7 +18341,7 @@ const baselines = {
         types: false,
     },
     'intersectionSatisfiesConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22371,7 +22371,7 @@ const baselines = {
         types: true,
     },
     'narrowingTypeofUndefined2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

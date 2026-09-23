@@ -1398,6 +1398,30 @@ static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty) {
     return is_tuple(ty) && !ty->reference.target->declared.tuple->readonly;
 }
 
+// An intersection with type variables, with their constraints in their place. Null if it has none
+static Ty const* intersection_constraint(Checker* me, Ty const* ty) {
+    TyList members = ty->composite.types;
+    bool any = false;
+    for (u32 i = 0; i < members.len && !any; i++) any = members.data[i]->kind == TY_TYPE_PARAM || (members.data[i]->flags & TYF_DEFERRED);
+    if (!any) return nullptr;
+    TyBuf parts = {0};
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        if (member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED)) {
+            Ty const* constraint = base_constraint(me, member, 0);
+            if (!constraint || constraint == member) {
+                ty_buf_drop(&parts);
+                return nullptr;
+            }
+            member = constraint;
+        }
+        ty_buf_push(&parts, member);
+    }
+    Ty const* ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret == ty ? nullptr : ret;
+}
+
 // `[...T]` with T generic (tsc's isSingleElementGenericTupleType)
 static bool is_single_generic_tuple(Checker* me, Ty const* ty) {
     if (!is_tuple(ty)) return false;
@@ -1426,6 +1450,13 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     if (source->kind == TY_INTERSECTION) {
         Ternary related = some_related(me, st, source->composite.types, target);
         if (related) return related;
+        // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
+        // `T extends Node | undefined` is a Node
+        Ty const* constraint = intersection_constraint(me, source);
+        if (constraint) {
+            related = is_related_to(me, st, constraint, target, false);
+            if (related) return related;
+        }
         // Otherwise the members may still add up to the target, property by property (below)
     }
     // `[...T]` is T
