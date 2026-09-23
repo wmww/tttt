@@ -1205,6 +1205,39 @@ bool statements_any_return(VecStatement const* statements, bool (*pred)(Expr con
     return false;
 }
 
+// tsc's checkGrammarBreakOrContinueStatement()
+static void statement_check_jump(Statement const* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
+    bool is_break = my tag == STATEMENT_BREAK;
+    bool labeled = span_valid(my jump_label);
+    if (labeled) {
+        for (TypecheckLabel const* i = ctx.labels; i; i = i->outer) {
+            if (!csview_equals_sv(i->name.sv, my jump_label.sv)) continue;
+            if (!is_break && !i->is_iteration) {
+                error_ctx_grammar_error_d(errs, my span, 1115,
+                    "A 'continue' statement can only jump to a label of an enclosing iteration statement.");
+            }
+            return;
+        }
+    } else if (is_break ? ctx.break_allowed : ctx.continue_allowed) {
+        return;
+    }
+    if (ctx.in_function) {
+        error_ctx_grammar_error_d(errs, my span, 1107, "Jump target cannot cross function boundary.");
+    } else if (labeled && is_break) {
+        error_ctx_grammar_error_d(errs, my span, 1116,
+            "A 'break' statement can only jump to a label of an enclosing statement.");
+    } else if (labeled) {
+        error_ctx_grammar_error_d(errs, my span, 1115,
+            "A 'continue' statement can only jump to a label of an enclosing iteration statement.");
+    } else if (is_break) {
+        error_ctx_grammar_error_d(errs, my span, 1105,
+            "A 'break' statement can only be used within an enclosing iteration or switch statement.");
+    } else {
+        error_ctx_grammar_error_d(errs, my span, 1104,
+            "A 'continue' statement can only be used within an enclosing iteration statement.");
+    }
+}
+
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     current_checker->instantiation_count = 0; // tsc's checkSourceElement
     // What the builder couldn't know: code after a call that never returns or an exhaustive switch (tsc's
@@ -1217,11 +1250,19 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     bool body = ctx.body;
     ctx.body = false;
     switch (my tag) {
-        case STATEMENT_LABELED:
+        case STATEMENT_LABELED: {
+            Statement const* labeled = my labeled.body;
+            while (labeled->tag == STATEMENT_LABELED) labeled = labeled->labeled.body;
+            TypecheckLabel label = {
+                .name = my labeled.name,
+                .is_iteration = labeled->tag == STATEMENT_FOR_LOOP || labeled->tag == STATEMENT_FOR_EACH_LOOP,
+                .outer = ctx.labels,
+            };
+            ctx.labels = &label;
             ctx.inside_label = true;
             ctx.body = body;
             statement_typecheck(my labeled.body, ctx, errs);
-            break;
+        }   break;
 
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
@@ -1379,18 +1420,8 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_BREAK:
-            // TODO: check the label actually exists (TS1116)
-            if (!ctx.break_allowed && !(span_valid(my jump_label) && ctx.inside_label)) {
-                error_ctx_error_d(errs, my keyword_span, 1105,
-                    "A 'break' statement can only be used within an enclosing iteration or switch statement.");
-            }
-            break;
-
         case STATEMENT_CONTINUE:
-            if (!ctx.continue_allowed) {
-                error_ctx_error_d(errs, my keyword_span, 1104,
-                    "A 'continue' statement can only be used within an enclosing iteration statement.");
-            }
+            statement_check_jump(me, ctx, errs);
             break;
 
         case STATEMENT_EXPR:

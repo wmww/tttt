@@ -8,6 +8,13 @@ typedef struct ErrorCtx ErrorCtx;
 
 g_declare_vec(Statement, statement);
 
+// The labels around a statement, innermost first (within the function)
+typedef struct TypecheckLabel {
+    Span name;
+    bool is_iteration; // Labels a loop (maybe through more labels): `continue` can target it
+    struct TypecheckLabel const* outer;
+} TypecheckLabel;
+
 typedef struct BlockTypecheckCtx {
     TypeNode const* specified_return;
     bool break_allowed;
@@ -15,6 +22,8 @@ typedef struct BlockTypecheckCtx {
     bool inside_label; // Labeled breaks are allowed
     bool ambient; // Inside a `declare namespace`/`declare module`, where every statement is implicitly declared
     bool body; // The statement is the body of an `if` or a loop (through labels): no `let`, `const` or `using`
+    bool in_function; // In a function body or class static block: a jump that finds no target crosses its boundary
+    TypecheckLabel const* labels;
 } BlockTypecheckCtx;
 
 typedef struct Block {

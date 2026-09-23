@@ -33,8 +33,13 @@ plan of its own (parse + JSX namespace types + intrinsic elements).
   error recovery of malformed import types (nodeModulesImport*DeclarationEmitErrors), TS2343 (tslib helpers).
 - New facility: `error_ctx_grammar_error_d` (tsc's grammarErrorOnNode: nothing in a file with parse errors,
   `SourceFile.has_parse_errors`). Only the checks added in this plan use it so far (hacks.md).
-- Next: the import/export forms (`export { x as "" }`, `export * as default`, `import d, * as ns`), then the rest of
-  the list.
+- **Import/export forms and small shapes: done** (4539 -> 4575): `import d, * as ns` (the namespace import is an
+  item), string specifier names (`port_item_name()` strips the quotes for table keys), `export * as default`,
+  `export import x from` (TS1191), shebang lines, tsc's pairwise modifier order rules (`static async` was TS1029),
+  break/continue targets (TS1107 across function/static block boundaries, TS1115/1116 by a label stack in
+  `BlockTypecheckCtx`).
+- Next (`./failstats.py --syntax`): `@dec ["computed"]` fields and `static declare` (16), `new.target` (6),
+  `export default x satisfies T` (5), `async #m()`, `*() {}` members, `yield`/`await` in parameter defaults (36).
 
 ## How
 Parser work driven by the list, largest shape first, like plan 08's loop:

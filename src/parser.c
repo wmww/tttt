@@ -3994,6 +3994,19 @@ static void parse_source_directives(Parser* parent, VecStatement* ret) {
     }
 }
 
+// An import/export specifier's name (tsc's parseModuleExportName): any identifier name, or a string literal (kept with
+// its quotes, see port_item_name())
+static bool parse_module_export_name(Parser* parent, Span* ret) {
+    if (parse_identifier_or_keyword(parent, ret)) return true;
+    if (*parent->pos != '"' && *parent->pos != '\'') return false;
+    Anchor a = anchor(parent);
+    cstr ignored = cstr_null;
+    bool parsed = parse_string(parent, &ignored);
+    cstr_drop(&ignored);
+    if (parsed) *ret = span_from(a);
+    return parsed;
+}
+
 static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
     Parser p = parser(parent);
     ret->items = vec_port_item_init();
@@ -4015,12 +4028,12 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
         }
 
         // Any identifier name will do: `default as a`, `a as default`
-        if (parse_identifier_or_keyword(&p, &item.source_name) || expect_identifier(&p, &item.source_name)) {
+        if (parse_module_export_name(&p, &item.source_name) || expect_identifier(&p, &item.source_name)) {
             hop_whitespace(&p);
 
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
-                if (!parse_identifier_or_keyword(&p, &item.decl_name)) {
+                if (!parse_module_export_name(&p, &item.decl_name)) {
                     expect_identifier(&p, &item.decl_name);
                 }
             } else {
@@ -4217,6 +4230,12 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             }
         }
         parse_fail(&import_p);
+        if (starts_with_followed_by_word_break(&p, "import")) {
+            // `export import x from "m"`: an import declaration with a modifier (tsc's checkGrammarModifiers)
+            parse_error(&p, statement.keyword_span, 1191, "An import declaration cannot have modifiers.");
+            if (parse_import_export_statement(&p, ret)) return parse_success(&p);
+            return parse_fail(&p);
+        }
     } else if (parse_import_equals(&p, a, &statement)) {
         goto done;
     } else if (*p.pos == '"' || *p.pos == '\'') {
@@ -4253,7 +4272,10 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         if (is_export) {
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
-                expect_identifier(&p, &statement.main.decl_name);
+                // `export * as default from`, `export * as "x" from`
+                if (!parse_module_export_name(&p, &statement.main.decl_name)) {
+                    expect_identifier(&p, &statement.main.decl_name);
+                }
             } else {
                 statement.main.tag = PORT_REEXPORT_SPLAT;
             }
@@ -4280,7 +4302,18 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         if (hop_char(&p, ',')) {
             hop_whitespace(&p);
 
-            if (!parse_import_item_list(&p, &statement)) {
+            Anchor gather = anchor(&p);
+            if (hop_char(&p, '*')) {
+                // `import d, * as ns from "m"`: the namespace import rides along with the (named) items
+                hop_whitespace(&p);
+                if (!hop_start_if_ends_on_word_break(&p, "as")) expected_token_error(&p, "as");
+                hop_whitespace(&p);
+                PortItem item = { .tag = PORT_IMPORT_GATHER, .type_only = statement.main.type_only };
+                expect_identifier(&p, &item.decl_name);
+                item.full_span = span_from(gather);
+                statement.items = vec_port_item_init();
+                vec_port_item_push(&statement.items, item);
+            } else if (!parse_import_item_list(&p, &statement)) {
                 statement.items = vec_port_item_init();
                 expected_token_error(&p, "{");
             }
@@ -4320,7 +4353,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         statement.requires_target ? PORT_REEXPORT_SPECIFIC : PORT_EXPORT_SPECIFIC
     ) : PORT_IMPORT_SPECIFIC;
     for_each (i, vec_port_item, &statement.items) {
-        i->tag = item_tag;
+        if (i->tag != PORT_IMPORT_GATHER) i->tag = item_tag;
     }
 
     statement.main.full_span = span_from(a);
@@ -5664,6 +5697,10 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     };
 
     p.pos = file_start_excluding_bom(p.pos);
+    if (p.pos[0] == '#' && p.pos[1] == '!') {
+        // A shebang line is trivia (tsc's scanShebangTrivia)
+        while (*p.pos && *p.pos != '\n') p.pos++;
+    }
     parse_source_directives(&p, &source->ast.statements);
     hop_whitespace(&p);
 

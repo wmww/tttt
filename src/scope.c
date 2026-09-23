@@ -541,7 +541,7 @@ void scope_add_port(Scope* me, PortItem* item) {
             if (my kind != SCOPE_MODULE || !my container) return;
             bool merged;
             Symbol* symbol = declare_symbol(
-                me, &my binder->globals, item->decl_name.sv, item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
+                me, &my binder->globals, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
             );
             if (merged) return;
             symbol->name_span = item->decl_name;
@@ -588,7 +588,7 @@ void scope_add_port(Scope* me, PortItem* item) {
     SymbolTable* table = scope_declaration_table(me, exported);
     bool merged;
     Symbol* symbol = declare_symbol(
-        me, table, item->decl_name.sv, item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
+        me, table, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
     );
     if (!merged) {
         symbol->parent = my container;
@@ -852,7 +852,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
 // there through symbol accessibility, plan 04 stage 3)
 static Symbol* make_gather_target(Symbol* me, Symbol* module) {
     PortItem* item = my alias->item;
-    Symbol* ret = binder_new_symbol(my binder, item->decl_name.sv, SYMBOL_VALUE_MODULE);
+    Symbol* ret = binder_new_symbol(my binder, port_item_name(item->decl_name), SYMBOL_VALUE_MODULE);
     ret->name_span = item->decl_name;
     ret->gather_module = module;
     symbol_add_decl(ret, (SymbolDecl){
@@ -905,12 +905,12 @@ static Symbol* resolve_alias_target(Symbol* me) {
     switch (item->tag) {
         case PORT_IMPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC: {
-            Symbol* found = symbol_get_export(module, item->source_name.sv);
+            Symbol* found = symbol_get_export(module, port_item_name(item->source_name));
             if (!found && assigned) {
                 if (assigned->is_placeholder) return nullptr;
                 // TODO: properties of the type of what is assigned are importable too
                 Symbol const* container = symbol_for_meaning(assigned, SYMBOL_NAMESPACE);
-                if (container) found = symbol_get_export(container, item->source_name.sv);
+                if (container) found = symbol_get_export(container, port_item_name(item->source_name));
                 if (!found) return nullptr;
             }
             if (!found) {

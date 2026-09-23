@@ -365,7 +365,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_STATIC_BLOCK:
-                block_typecheck(&i->static_block, (BlockTypecheckCtx){0}, errs);
+                block_typecheck(&i->static_block, (BlockTypecheckCtx){ .in_function = true }, errs);
                 break;
         }
     }

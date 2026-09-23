@@ -14,21 +14,24 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
     modifier_is_error = true; \
     has_modifier_error = true \
 
-    // Modifier order:
-    // (private|protected|public) (static|accessor) readonly
-    static const int modifier_ordering[MODIFIER_ENUM_CAP] = {
-        [MODIFIER_READONLY]     = 2,
-        [MODIFIER_ABSTRACT]     = 0,
-        [MODIFIER_STATIC]       = 1,
-        [MODIFIER_ACCESSOR]     = 1,
-        [MODIFIER_EXPORT]       = 0,
-        [MODIFIER_ASYNC]        = 0,
-        [MODIFIER_DECLARE]      = 0,
-        [MODIFIER_OVERRIDE]     = 0,
-        [MODIFIER_PRIVATE]      = 0,
-        [MODIFIER_PROTECTED]    = 0,
-        [MODIFIER_PUBLIC]       = 0,
-        [MODIFIER_CONST]        = 0,
+    // What each modifier must precede, in the order tsc's checkGrammarModifiers() tests them: an error when one of these
+    // came first
+    static const int must_precede[MODIFIER_ENUM_CAP][7] = {
+        [MODIFIER_OVERRIDE] = { MODIFIER_READONLY, MODIFIER_ACCESSOR, MODIFIER_ASYNC, -1 },
+        [MODIFIER_PUBLIC] = {
+            MODIFIER_OVERRIDE, MODIFIER_STATIC, MODIFIER_ACCESSOR, MODIFIER_READONLY, MODIFIER_ASYNC, MODIFIER_ABSTRACT, -1,
+        },
+        [MODIFIER_PRIVATE] = {
+            MODIFIER_OVERRIDE, MODIFIER_STATIC, MODIFIER_ACCESSOR, MODIFIER_READONLY, MODIFIER_ASYNC, MODIFIER_ABSTRACT, -1,
+        },
+        [MODIFIER_PROTECTED] = {
+            MODIFIER_OVERRIDE, MODIFIER_STATIC, MODIFIER_ACCESSOR, MODIFIER_READONLY, MODIFIER_ASYNC, MODIFIER_ABSTRACT, -1,
+        },
+        [MODIFIER_STATIC] = { MODIFIER_READONLY, MODIFIER_ASYNC, MODIFIER_ACCESSOR, MODIFIER_OVERRIDE, -1 },
+        [MODIFIER_EXPORT] = { MODIFIER_DECLARE, MODIFIER_ABSTRACT, MODIFIER_ASYNC, -1 },
+        [MODIFIER_ABSTRACT] = { MODIFIER_OVERRIDE, MODIFIER_ACCESSOR, -1 },
+        [MODIFIER_READONLY] = { -1 }, [MODIFIER_ACCESSOR] = { -1 }, [MODIFIER_EXPORT_DEFAULT] = { -1 },
+        [MODIFIER_ASYNC] = { -1 }, [MODIFIER_DECLARE] = { -1 }, [MODIFIER_CONST] = { -1 },
     };
 
     bool already_seen[MODIFIER_ENUM_CAP] = {0};
@@ -94,12 +97,17 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
                 impossible;
         }
 
-        if (index &&
-            modifier_ordering[vec_spanned_modifier_at(&my spanned, index - 1)->tag] > modifier_ordering[i->tag]
-        ) {
-            MODIFIER_ERROR(errs, i->span, 1029,
-                "'", i->span, "' modifier must precede '",
-                vec_spanned_modifier_at(&my spanned, index - 1)->span, "' modifier.");
+        for (int j = 0; index && must_precede[i->tag][j] >= 0; j++) {
+            SpannedModifier const* earlier = nullptr;
+            for (intptr_t k = 0; k < index; k++) {
+                if ((int)vec_spanned_modifier_at(&my spanned, k)->tag == must_precede[i->tag][j]) {
+                    earlier = vec_spanned_modifier_at(&my spanned, k);
+                    break;
+                }
+            }
+            if (!earlier) continue;
+            MODIFIER_ERROR(errs, i->span, 1029, "'", i->span, "' modifier must precede '", earlier->span, "' modifier.");
+            break;
         }
 
         if (BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER)) {

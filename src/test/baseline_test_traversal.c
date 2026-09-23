@@ -446,6 +446,10 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
     }
     for_each (i, vec_port_item, &my items) {
         if (!i->symbol) continue;
+        if (i->tag == PORT_IMPORT_GATHER) { // `import d, * as ns`
+            port_item_add_alias(i, ctx);
+            continue;
+        }
         if (i->decl_name.sv.buf != i->source_name.sv.buf) {
             if (i->source_symbol) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
