@@ -613,8 +613,9 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         if (mapped->modifiers_type && mapped->template->kind == TY_INDEXED &&
             mapped->template->indexed.object == mapped->modifiers_type && mapped->template->indexed.index == mapped->type_param
         ) {
-            // A plain homomorphic `T[K]` template (Partial, Readonly...): the source itself is the candidate
-            infer_from(me, inf, source, mapped->modifiers_type);
+            // A plain homomorphic `T[K]` template (Partial, Readonly...): the source itself is the candidate, as the
+            // reverse mapped type it stands for (so a naked T elsewhere wins: tsc's inferToMappedType)
+            infer_with_priority(me, inf, source, mapped->modifiers_type, INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE);
         } else if (!mapped->name_type) {
             infer_to_mapped(me, inf, source, mapped, mapped->constraint);
         }
