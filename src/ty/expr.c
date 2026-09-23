@@ -94,6 +94,8 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     if (!ctx.contextual && !ctx.is_const) return ty_expr_type(me, expr); // through the LazyType, which detects cycles
     Ty const* ret = compute(me, expr, ctx);
     if (my flow_uncached) return ret;
+    // (What such a reference is while type arguments are inferred isn't what it is once they are)
+    if (my inferential_depth && identifier_uses_context(me, expr)) return ret;
     lazy_type_set(lazy, ret, ctx.contextual);
     return ret;
 }
