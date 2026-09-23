@@ -103,8 +103,7 @@ plans 11-15 or `bugs/` are gone from here; see those files.
 - T_1-style renaming of clashing type parameter names is missing in display: overload lists (`{ <A>(...): ...; <A_1>(...):
   ... }`) and a generic signature shown inside a scope that has a type parameter of the same name (`createMCache :
   <T_1>() => MCache<T_1>` inside `function per<T>`: the types components of probes plan11/memoizeOne.ts and
-  nestedReturnContext.ts). (The uninstantiated constraint in instantiated signatures, `<S extends T>` for
-  `Array<number | null>.filter`, should be gone since plan 11's fresh type parameters: verify.)
+  nestedReturnContext.ts).
 - Spreading a rest parameter of type parameter type: `(...args: A) => new cf(...args)` with `A extends any[]` gives
   TS2345 "Argument of type '[...any[]]' is not assignable to parameter of type 'A'" (genericFunctionInference1): the
   spread should pass `A` itself.
