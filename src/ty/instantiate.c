@@ -45,10 +45,16 @@ static TyMapper const* compose_mappers(Checker* me, TyMapper const* inner, TyMap
 // A conditional type's own `infer` type parameters aren't mapped by whoever instantiates it (tsc's conditional root
 // maps its outer type parameters only): the recursive `Split<B, D>` in the true branch of `S extends `${infer A}.${infer
 // B}` ? [A, ...Split<B, D>] : [S]` gets the outer B for its check type, not for its own `infer B`
-static TyMapper const* without_own_infers(Checker* me, Ty const* root, TyMapper const* mapper) {
+TyList ty_conditional_own_infers(Checker* me, Ty const* root) {
     u64 key[2] = { KEY_CONDITIONAL_INFERS, root->id };
     TyList const* infers = intern_get(&my links, key, 2);
-    if (!infers || !mapper) return mapper;
+    return infers ? *infers : (TyList){0};
+}
+
+static TyMapper const* without_own_infers(Checker* me, Ty const* root, TyMapper const* mapper) {
+    TyList own = ty_conditional_own_infers(me, root);
+    TyList const* infers = &own;
+    if (!infers->len || !mapper) return mapper;
     u32 dropped = 0;
     for (u32 i = 0; i < mapper->len; i++) {
         for (u32 j = 0; j < infers->len; j++) dropped += mapper->sources[i] == infers->data[j];

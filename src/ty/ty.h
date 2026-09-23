@@ -695,6 +695,7 @@ Ty const* ty_conditional(
     bool distributive
 );
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
+TyList ty_conditional_own_infers(Checker* me, Ty const* root); // The `infer` type parameters its extends type declares
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
 Ty const* ty_without_undefined(Checker* me, Ty const* ty); // Removes undefined only (tsc's getTypeWithFacts(NEUndefined))
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch);
@@ -1000,6 +1001,7 @@ typedef struct TyDisplay {
     // mentions them is reused inside of it
     TyList fresh_params;
     bool unique_symbols; // Print unique symbol types as `unique symbol` rather than `typeof sym` (types baseline)
+    TyList infer_params; // Inside the extends type of a conditional type: its own `infer` type parameters
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);

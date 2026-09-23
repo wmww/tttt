@@ -8873,7 +8873,7 @@ const baselines = {
     'decoratorMetadataConditionalType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorMetadataElidedImport(module=commonjs)': {
         errors: true,
@@ -28671,7 +28671,7 @@ const baselines = {
         types: false,
     },
     'stringMappingAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29563,7 +29563,7 @@ const baselines = {
     'templateLiteralsInTypes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralsSourceMap': {
         errors: true,
@@ -62096,7 +62096,7 @@ const baselines = {
         types: true,
     },
     'stringLiteralsAssignedToStringMappings': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62151,7 +62151,7 @@ const baselines = {
         types: true,
     },
     'stringMappingOverPatternLiterals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

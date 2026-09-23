@@ -222,6 +222,11 @@ static bool could_have_singletons(Checker* me, Ty const* ty) {
         Ty const* constraint = ty_param_constraint(me, ty);
         return constraint && constraint != ty && could_have_singletons(me, constraint);
     }
+    if (ty->kind == TY_STRING_MAPPING) {
+        // Through its constraint, like any instantiable type: Uppercase<string> is some string
+        Ty const* constraint = ty_base_constraint(me, ty);
+        if (constraint && constraint != ty) return could_have_singletons(me, constraint);
+    }
     return ty->kind == TY_LITERAL ||
         (ty->flags & (TYF_DEFERRED | TYF_UNDEFINED | TYF_NULL | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) != 0;
 }
@@ -1388,8 +1393,15 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             Ty const* ret = nullptr;
             for (u32 i = 0; i < len && !ret; i++) {
                 Ty const* t = ty->template_literal.types.data[i];
-                constraints[i] = t->kind == TY_TYPE_PARAM || (t->flags & TYF_DEFERRED) ? base_constraint(me, t, depth + 1) : t;
-                if (!constraints[i]) ret = ty_intrinsic(me, TY_STRING);
+                if (t->kind == TY_TYPE_PARAM || (t->flags & TYF_DEFERRED)) {
+                    constraints[i] = base_constraint(me, t, depth + 1);
+                    if (!constraints[i]) ret = ty_intrinsic(me, TY_STRING);
+                } else if (t->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) {
+                    Ty const* constraint = base_constraint(me, t, depth + 1);
+                    constraints[i] = constraint ? constraint : t;
+                } else {
+                    constraints[i] = t;
+                }
             }
             if (!ret) ret = ty_template_literal(me, ty->template_literal.texts, constraints, len);
             free(constraints);

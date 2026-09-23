@@ -178,7 +178,15 @@ static void display_template_text(TyDisplay d, csview sv) {
             case '`': out_lit(d, "\\`"); break;
             case '\\': out_lit(d, "\\\\"); break;
             case '\n': out_lit(d, "\n"); break;
-            case '\r': out_lit(d, "\\r"); break;
+            case '\r':
+                // (A newline on its own stays, after a carriage return it's escaped too)
+                if (i + 1 < sv.size && sv.buf[i + 1] == '\n') {
+                    out_lit(d, "\\r\\n");
+                    i++;
+                } else {
+                    out_lit(d, "\\r");
+                }
+                break;
             case '\t': out_lit(d, "\\t"); break;
             case '\v': out_lit(d, "\\v"); break;
             case '\f': out_lit(d, "\\f"); break;
@@ -892,9 +900,18 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             }
             break;
 
-        case TY_TYPE_PARAM:
+        case TY_TYPE_PARAM: {
+            bool declared_here = false;
+            for (u32 i = 0; i < d.infer_params.len; i++) declared_here |= d.infer_params.data[i] == ty;
+            if (declared_here) out_lit(d, "infer ");
             out(d, atom_sv(ty->param.name));
-            break;
+            if (declared_here && ty->param.state->constraint_node) {
+                out_lit(d, " extends ");
+                TyDisplay inner = d;
+                inner.infer_params = (TyList){0};
+                ty_display(me, inner, ty_param_constraint(me, ty));
+            }
+        }   break;
 
         case TY_DECLARED:
             switch (ty->declared.kind) {
@@ -995,7 +1012,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 is_function_like(me, ty->conditional.check) || ty->conditional.check->kind == TY_CONDITIONAL
             );
             out_lit(d, " extends ");
-            display_parenthesized_if(me, d, ty->conditional.extends, ty->conditional.extends->kind == TY_CONDITIONAL);
+            TyDisplay extends_d = d;
+            extends_d.infer_params = ty_conditional_own_infers(me, ty->conditional.root);
+            display_parenthesized_if(me, extends_d, ty->conditional.extends, ty->conditional.extends->kind == TY_CONDITIONAL);
             out_lit(d, " ? ");
             ty_display(me, d, ty_conditional_branch(me, ty, true));
             out_lit(d, " : ");
