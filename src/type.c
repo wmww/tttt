@@ -228,11 +228,15 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
         case TYPE_IDENTIFIER: identifier_type_lookup_names(my identifier, names, errs); break;
         case TYPE_CALLABLE: callable_type_resolve_names(my callable, names, errs); break;
 
-        case TYPE_INTERFACE:
+        case TYPE_INTERFACE: {
+            // The members of a type literal are what a `this` type in them would be about (tsc's getThisContainer),
+            // and they have none
+            Scope* literal_scope = scope_new(names, SCOPE_BLOCK);
+            literal_scope->this_ref = (ThisRef){ .kind = THIS_TYPE_LITERAL };
             for_each (i, vec_interface_member, &my interface.members) {
-                interface_member_lookup_names(i, names, errs);
+                interface_member_lookup_names(i, literal_scope, errs);
             }
-            break;
+        }   break;
 
         case TYPE_ARRAY:
             type_lookup_names(my array.element, names, errs);

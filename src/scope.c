@@ -1111,8 +1111,12 @@ ThisRef scope_get_this(Scope const* me, bool type_else_value) {
     for (Scope const* scope = me; scope; scope = scope->parent) {
         ThisKind kind = scope->this_ref.kind;
         if (!kind) continue;
-        bool is_class = kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC || kind == THIS_INTERFACE;
+        bool is_class = kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC || kind == THIS_INTERFACE ||
+            kind == THIS_TYPE_LITERAL;
         if (!type_else_value || is_class) return scope->this_ref;
+        // A `this` type in a function that isn't a method of a class (tsc's getThisContainer stops there) has nothing
+        // to be about
+        if (scope->this_ref.type_boundary) return (ThisRef){ .kind = THIS_TYPE_LITERAL };
     }
     return (ThisRef){0};
 }

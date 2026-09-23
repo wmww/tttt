@@ -73,7 +73,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     function_scope->flow = &flow;
     function_scope->function = me;
 
-    if (this_is_any) function_scope->this_ref = (ThisRef){ .kind = THIS_ANY, .function = me };
+    if (this_is_any) function_scope->this_ref = (ThisRef){ .kind = THIS_ANY, .function = me, .type_boundary = true };
 
     // Loop through all arguments and add them to the scope
     for_each (i, vec_function_arg, &my args) {
@@ -86,7 +86,9 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         if (i->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(i->initializer.binding.content_span, "this")
         ) {
-            function_scope->this_ref = (ThisRef){ .kind = THIS_PARAMETER, .symbol = i->initializer.binding.symbol };
+            function_scope->this_ref = (ThisRef){
+                .kind = THIS_PARAMETER, .symbol = i->initializer.binding.symbol, .type_boundary = this_is_any,
+            };
         }
     }
 
@@ -295,6 +297,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     }
 
     function_impl_typecheck_signature(me, false, errs);
+    if (my ret_explicit) type_typecheck(&my ret, errs);
 
     if (my newline_before_arrow) {
         error_ctx_error_d(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");

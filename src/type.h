@@ -39,6 +39,7 @@ typedef enum ThisKind {
     THIS_GLOBAL,         // The top level of a script: `typeof globalThis`
     THIS_NAMESPACE,      // The body of a namespace: TS2331, any
     THIS_ENUM,           // An enum member's initializer: TS2332, any
+    THIS_TYPE_LITERAL,   // A `this` type in a member of a type literal: TS2526 (its members are `this` containers)
 } ThisKind;
 
 typedef struct ThisRef {
@@ -46,6 +47,7 @@ typedef struct ThisRef {
     Symbol const* symbol;
     struct InterfaceDecl* interface; // THIS_INTERFACE: the declaration, which learns that it mentions `this`
     struct FunctionImpl const* function; // THIS_ANY: the function whose `this` it is (contextually typed, maybe)
+    bool type_boundary; // A function that isn't a method: a `this` *type* in it has nothing to be about (TS2526)
 } ThisRef;
 g_declare_vec(TupleElement, tuple_element);
 

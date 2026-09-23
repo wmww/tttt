@@ -176,7 +176,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
             if (my symbol) {
                 Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
                 if ((type->flags & TYF_ERROR) && type == ty_intrinsic(current_checker, TY_ERROR) &&
-                    compiler_options()->no_implicit_any
+                    compiler_options()->no_implicit_any && !my has_explicit_type
                 ) {
                     error_ctx_error_d(errs, my content_span, 7022,
                         "'", my content_span, "' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in "

@@ -198,6 +198,9 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     for_each (i, vec_spanned_type, &my generic_params) {
         type_typecheck(&i->type, errs);
     }
+    if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE) {
+        error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
+    }
     if (my target) {
         /*
         //This can be enabled once we're parsing the standard library

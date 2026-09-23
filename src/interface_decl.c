@@ -38,7 +38,10 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     for_each (i, vec_spanned_type, &my extends) {
         type_lookup_names(&i->type, names, errs);
     }
-    type_lookup_names(&my type, names, errs);
+    // The body's members directly: it isn't a type literal (whose `this` would be invalid)
+    for_each (i, vec_interface_member, &my type.interface.members) {
+        interface_member_lookup_names(i, names, errs);
+    }
 }
 
 // tsc's checkInterfaceDeclaration, once per symbol (at its first declaration): the interface (with its own `this`) has to

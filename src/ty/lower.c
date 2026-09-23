@@ -291,7 +291,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     }
     Ty const* args_buf[MAX_TYPE_ARGS];
 
-    if (identifier->this_kind == THIS_CLASS_STATIC) return ty_static_type_of(me, decl);
+    if (identifier->this_kind == THIS_CLASS_STATIC) return ty_intrinsic(me, TY_ERROR); // TS2526: no `this` type in statics
 
     Ty const* declared = ty_declared_type_of(me, decl);
     if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
