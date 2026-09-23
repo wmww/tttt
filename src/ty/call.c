@@ -371,6 +371,24 @@ static bool returns_single_signature(Checker* me, Signature const* sig) {
     return !ret->type_params.len;
 }
 
+// A context-sensitive function argument's annotated parameters say something about the type parameters before the
+// others are typed by what is inferred (tsc's inferFromAnnotatedParameters): `reduce(xs, (a: T | undefined, b) => ...)`
+static void infer_from_annotated_params(Checker* me, Inference* inf, FunctionImpl const* function, Ty const* param_type) {
+    Signature const* contextual = ty_function_contextual_signature(me, function, param_type);
+    if (!contextual) return;
+    signature_resolve(me, contextual);
+    for_each (i, vec_function_arg, &function->args) {
+        if (i->rest) break;
+        Binding const* binding = &i->initializer.binding;
+        if (!binding->has_explicit_type) continue;
+        Ty const* target = ty_signature_param_type_at(me, contextual, (u32)i_index);
+        if (!target) break;
+        Ty const* source = ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
+        if (i->explicit_optional) source = ty_optional_param_type(me, source);
+        infer_types(me, inf, source, target, INFER_PRIORITY_NORMAL);
+    }
+}
+
 // `*inferred_out`: the type parameters of generic function arguments that the return type is now generic in
 static TyMapper const* infer_type_arguments(
     Checker* me, Signature const* sig, Args* args, Ty const* contextual, Ty const* this_arg, bool skip_sensitive,
@@ -484,8 +502,11 @@ static TyMapper const* infer_type_arguments(
             continue;
         }
         if (!arg->context_sensitive || arg->generic_function || skip_sensitive) continue;
-        TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
         Ty const* param_type = shape_type_at(&shape, i);
+        if (param_type && arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread) {
+            infer_from_annotated_params(me, &inf, arg->expr->function, param_type);
+        }
+        TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
         for (u32 j = 0; j < inf.len; j++) {
             if ((inf.params[j].co_len || inf.params[j].contra_len) && fixed_by_argument(me, arg, param_type, sig->type_params.data[j])) {
                 inf.params[j].fixed = so_far->targets[j];

@@ -61756,8 +61756,8 @@ const baselines = {
         types: true,
     },
     'partiallyAnnotatedFunctionInferenceWithTypeParameter': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'partiallyAnnotatedFunctionWitoutTypeParameter': {

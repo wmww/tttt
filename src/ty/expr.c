@@ -464,6 +464,10 @@ Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function) {
 
 // A function expression meets a contextual type. Its unannotated parameters take their types from the contextual
 // signature, once: the first contextual signature decides (tsc's ContextChecked)
+Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual) {
+    return contextual_signature(me, contextual, function, 0);
+}
+
 static void assign_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual) {
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2)) return;

@@ -581,6 +581,8 @@ static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
     return nullptr;
 }
 
+Ty const* ty_signature_param_type_at(Checker* me, Signature const* sig, u32 i) { return param_type_at(me, sig, i); }
+
 // How many parameters a signature has, with a rest tuple of fixed length counted as its elements
 static u32 param_count_of(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return sig->param_count;
