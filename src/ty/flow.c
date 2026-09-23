@@ -238,7 +238,7 @@ static u32 type_facts(Checker* me, Ty const* ty, u32 mask) {
         return primitive_facts(TF_TYPEOF_EQ_BIGINT, !zero, zero);
     }
     if (flags & TYF_BOOLEAN_LITERAL) {
-        bool is_false = ty == ty_intrinsic(me, TY_FALSE);
+        bool is_false = !ty->literal.value.boolean;
         return primitive_facts(TF_TYPEOF_EQ_BOOLEAN, !is_false, is_false);
     }
     if (flags & TYF_OBJECT) {
@@ -584,10 +584,17 @@ static bool assigned_is_assignable(Checker* me, Ty const* member, void const* ar
     return ty_is_related(me, assigned, member, TY_RELATION_ASSIGNABLE);
 }
 
+static Ty const* map_fresh(Checker* me, Ty const* ty, void const* arg) {
+    (void)arg;
+    return ty_fresh_literal(me, ty);
+}
+
 // What is left of a declared union type after `assigned` was assigned to it
 static Ty const* assignment_reduced_type(Checker* me, Ty const* declared, Ty const* assigned) {
     if (declared == assigned || (assigned->flags & TYF_NEVER)) return assigned;
     Ty const* reduced = filter_type(me, declared, assigned_is_assignable, assigned);
+    // `flag = true` leaves a fresh `true`, which widens again: `let copy = flag` is boolean
+    if (ty_is_fresh(assigned) && (assigned->flags & TYF_BOOLEAN_LITERAL)) reduced = map_type(me, reduced, map_fresh, nullptr);
     // (An erroneous assignment doesn't narrow)
     return ty_is_related(me, assigned, reduced, TY_RELATION_ASSIGNABLE) ? reduced : declared;
 }
@@ -717,6 +724,12 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
         Ty const* declared = q->declared;
         if (assign->kind == FLOW_ASSIGN_EXPR && assign->assignment->binary_op->op != BINARY_OP_EQUAL) {
             declared = base_type_of_literal(me, declared); // `x ||= e`
+        } else if (assign->kind == FLOW_ASSIGN_EXPR) {
+            // `x = x + 1` (tsc's isInCompoundLikeAssignment)
+            Expr const* left = &assign->assignment->binary_op->left;
+            bool compound_like = (left->tag == EXPR_IDENTIFIER && left->identifier.compound_like_target) ||
+                (left->tag == EXPR_PROPERTY && left->property->compound_like_target);
+            if (compound_like) declared = base_type_of_literal(me, declared);
         }
         if (declared->kind == TY_UNION) {
             // Only a union can be narrowed by what is assigned, so only then is the assigned type asked for
@@ -1601,10 +1614,10 @@ static u32 switch_case_count(SwitchStatement const* switch_) {
     return (u32)vec_switch_case_size(&switch_->cases);
 }
 
-// The type of every case expression, never for `default`
+// The (regular) type of every case expression, never for `default`
 static void switch_clause_types(Checker* me, SwitchStatement const* switch_, TyBuf* out) {
     for_each (i, vec_switch_case, &switch_->cases) {
-        ty_buf_push(out, i->is_pattern ? ty_flow_expr_type(me, &i->pattern) : ty_intrinsic(me, TY_NEVER));
+        ty_buf_push(out, i->is_pattern ? ty_regular(me, ty_flow_expr_type(me, &i->pattern)) : ty_intrinsic(me, TY_NEVER));
     }
 }
 
@@ -1616,9 +1629,8 @@ static bool buf_contains(TyBuf const* buf, Ty const* ty) {
 }
 
 static bool is_not_case_unit(Checker* me, Ty const* member, void const* arg) {
-    (void)me;
     TyBuf const* switch_types = arg;
-    Ty const* unit = member;
+    Ty const* unit = ty_regular(me, member);
     if (member->kind == TY_INTERSECTION) {
         // `"a" & Tag`
         for (u32 i = 0; i < member->composite.types.len; i++) {
@@ -1777,7 +1789,7 @@ static bool is_exhaustive_switch(Checker* me, SwitchStatement const* switch_) {
             }
         }
     } else {
-        Ty const* type = ty_flow_expr_type(me, needle);
+        Ty const* type = ty_regular(me, ty_flow_expr_type(me, needle));
         if (is_literal_type(type) || (type->flags & TYF_BOOLEAN)) {
             TyBuf switch_types = {0};
             switch_clause_types(me, switch_, &switch_types);

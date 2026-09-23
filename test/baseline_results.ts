@@ -2078,7 +2078,7 @@ const baselines = {
     'augmentedTypesEnum3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentedTypesExternalModule1': {
         errors: true,
@@ -4178,7 +4178,7 @@ const baselines = {
     'collisionCodeGenEnumWithEnumMemberConflict': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'collisionCodeGenModuleWithAccessorChildren': {
         errors: true,
@@ -4193,7 +4193,7 @@ const baselines = {
     'collisionCodeGenModuleWithEnumMemberConflict': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'collisionCodeGenModuleWithFunctionChildren': {
         errors: true,
@@ -5683,12 +5683,12 @@ const baselines = {
     'constEnumToStringNoComments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constEnumToStringWithComments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constEnums': {
         errors: true,
@@ -10838,7 +10838,7 @@ const baselines = {
     'enumBasics1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumBasics2': {
         errors: true,
@@ -10906,9 +10906,9 @@ const baselines = {
         types: true,
     },
     'enumLiteralUnionNotWidened': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumLiteralsSubtypeReduction': {
         errors: true,
@@ -11023,17 +11023,17 @@ const baselines = {
     'enumWithoutInitializerAfterComputedMember': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'enumsWithMultipleDeclarations1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumsWithMultipleDeclarations2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumsWithMultipleDeclarations3': {
         errors: true,
@@ -17633,7 +17633,7 @@ const baselines = {
     'initializersInAmbientEnums': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'inlineConditionalHasSimilarAssignability': {
         errors: false,
@@ -19468,7 +19468,7 @@ const baselines = {
     'jsdocAccessEnumType': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'jsdocArrayObjectPromiseImplicitAny': {
         errors: true,
@@ -20143,7 +20143,7 @@ const baselines = {
     'literalWideningWithCompoundLikeAssignments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'literals-negative': {
         errors: false,
@@ -20538,7 +20538,7 @@ const baselines = {
     'mergedEnumDeclarationCodeGen': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'mergedInstantiationAssignment': {
         errors: true,
@@ -23813,7 +23813,7 @@ const baselines = {
     'objectLiteralComputedNameNoDeclarationError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralDeclarationGeneration1': {
         errors: true,
@@ -24006,7 +24006,7 @@ const baselines = {
         types: false,
     },
     'operatorAddNullUndefined': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24553,7 +24553,7 @@ const baselines = {
     'overshifts': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'paramPropertiesInSignatures': {
         errors: false,
@@ -25143,7 +25143,7 @@ const baselines = {
     'preserveConstEnums': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'preserveUnusedImports': {
         errors: true,
@@ -27968,7 +27968,7 @@ const baselines = {
     'sourceMapValidationEnums': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationExportAssignment': {
         errors: true,
@@ -28201,7 +28201,7 @@ const baselines = {
         types: false,
     },
     'spreadBooleanRespectsFreshness': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31038,7 +31038,7 @@ const baselines = {
     'typeofUnknownSymbol': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofUsedBeforeBlockScoped': {
         errors: true,
@@ -32838,7 +32838,7 @@ const baselines = {
     'ambientEnumDeclaration1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ambientEnumDeclaration2': {
         errors: true,
@@ -34683,7 +34683,7 @@ const baselines = {
     'classStaticBlockUseBeforeDef3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlockUseBeforeDef4': {
         errors: true,
@@ -36938,7 +36938,7 @@ const baselines = {
     'constEnum1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constEnum2': {
         errors: false,
@@ -36973,7 +36973,7 @@ const baselines = {
     'constEnumPropertyAccess3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importElisionConstEnumMerge1': {
         errors: true,
@@ -38268,7 +38268,7 @@ const baselines = {
     'enumClassification': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'enumConstantMemberWithString': {
         errors: true,
@@ -38313,12 +38313,12 @@ const baselines = {
     'enumMerging': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'enumMergingErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumShadowedInfinityNaN': {
         errors: false,
@@ -38373,12 +38373,12 @@ const baselines = {
     'useSharedArrayBuffer4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'useSharedArrayBuffer5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'useSharedArrayBuffer6': {
         errors: true,
@@ -46368,7 +46368,7 @@ const baselines = {
     'logicalOrOperatorWithEveryType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalOrOperatorWithTypeParameters': {
         errors: true,
@@ -47903,12 +47903,12 @@ const baselines = {
     'typeofOperatorWithAnyOtherType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofOperatorWithBooleanType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofOperatorWithEnumType': {
         errors: false,
@@ -47918,12 +47918,12 @@ const baselines = {
     'typeofOperatorWithNumberType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofOperatorWithStringType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'voidOperatorInvalidOperations': {
         errors: false,
@@ -54638,12 +54638,12 @@ const baselines = {
     'parserEnumDeclaration5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserEnumDeclaration6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserInterfaceKeywordInEnum': {
         errors: true,
@@ -57538,7 +57538,7 @@ const baselines = {
     'parserRealSource3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserRealSource4': {
         errors: false,
@@ -62016,7 +62016,7 @@ const baselines = {
         types: false,
     },
     'literalTypeWidening': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -62143,7 +62143,7 @@ const baselines = {
     'stringLiteralsWithTypeAssertions01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringMappingDeferralInConditionalTypes': {
         errors: true,
@@ -63516,9 +63516,9 @@ const baselines = {
         types: true,
     },
     'stringLiteralTypesAndLogicalOrExpressions01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesAndParenthesizedExpressions01': {
         errors: true,
@@ -63548,15 +63548,15 @@ const baselines = {
     'stringLiteralTypesAsTypeParameterConstraint01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesAsTypeParameterConstraint02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesInUnionTypes01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -63566,7 +63566,7 @@ const baselines = {
         types: true,
     },
     'stringLiteralTypesInUnionTypes03': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -63633,7 +63633,7 @@ const baselines = {
     'stringLiteralTypesTypePredicates01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesWithTemplateStrings01': {
         errors: true,
@@ -63656,9 +63656,9 @@ const baselines = {
         types: true,
     },
     'typeArgumentsWithStringLiteralTypes01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualThisType': {
         errors: true,

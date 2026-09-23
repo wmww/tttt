@@ -315,7 +315,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         TyList args = lower_type_args(me, params, &identifier->generic_params, ctx, args_buf);
         return alias_instance(me, decl, declared, params, args);
     }
-    return declared;
+    return ty_regular(me, declared); // `E.x` as a type: an enum member's declared type is fresh
 }
 
 // Free type parameters of a node, see Ty.anonymous.free_params
@@ -1029,7 +1029,12 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
         case TYPE_SYMBOL: return ty_intrinsic(me, TY_ES_SYMBOL);
         case TYPE_UNIQUE_SYMBOL: return ty_unique_symbol(me, &node->unique_symbol);
         case TYPE_BIGINT: return ty_intrinsic(me, TY_BIGINT);
-        case TYPE_VALUE: return ty_literal(me, &node->value);
+        case TYPE_VALUE: {
+            // tsc checks the literal as an expression, which makes the fresh twin too (it's in the id order)
+            Ty const* ret = ty_literal(me, &node->value);
+            ty_fresh_literal(me, ret);
+            return ret;
+        }
         case TYPE_IDENTIFIER: {
             Ty const* ret = lower_identifier(me, node->identifier, ctx);
             Symbol const* decl = node->identifier->target;
@@ -1083,7 +1088,7 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
         case TYPE_TYPEOF:
             // Widened like tsc's getTypeFromTypeQueryNode: `typeof undefined` is any without strictNullChecks.
             // TODO: `typeof x` of an identifier is its declared type, not the narrowed one (plan 03)
-            return ty_widened_for_declaration(me, ty_expr_type(me, node->typeof_->expr), false);
+            return ty_regular(me, ty_widened_for_declaration(me, ty_expr_type(me, node->typeof_->expr), false));
 
         case TYPE_TERNARY: {
             // The extends type goes before the branches, it's what declares the `infer` type parameters

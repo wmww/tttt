@@ -731,7 +731,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 expr_compile_test_info(&my property->prop, ctx);
             } else if (!csview_starts_with(my property->prop.outer_span.sv, "#")) {
                 ctx->any_keeps_underline = true;
-                baseline_test_case_add_type(ctx, my property->prop.outer_span, expr_get_type((Expr*)me));
+                baseline_test_case_add_type(ctx, my property->prop.outer_span, ty_regular(current_checker, expr_get_type((Expr*)me)));
             }
         }   break;
 
@@ -877,7 +877,8 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
     } else if (my tag == EXPR_GENERIC_PARAMS) {
     } else {
-        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, expr_get_type(me));
+        // tsc prints an expression's regular type (getRegularTypeOfExpression)
+        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, ty_regular(current_checker, expr_get_type(me)));
     }
 
     expr_compile_test_info_inner(me, ctx);

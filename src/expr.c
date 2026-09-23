@@ -378,6 +378,13 @@ static void identifier_mark_assigned(IdentifierExpr const* me, Scope const* name
     if (end > symbol->last_assignment_end) symbol->last_assignment_end = end;
 }
 
+// tsc's isCompoundLikeAssignment: what is assigned is a shift, additive, multiplicative or exponentiation expression
+static bool is_compound_like(Expr const* right) {
+    if (right->tag != EXPR_BINARY_OP) return false;
+    BinaryOp op = right->binary_op->op;
+    return op >= BINARY_OP_STAR_STAR && op <= BINARY_OP_GREATER_GREATER_GREATER;
+}
+
 static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
     FlowBuilder* flow = names->flow;
     BinaryOp op = my binary_op->op;
@@ -462,6 +469,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     FlowNode* false_target = flow->false_target;
     bool chain_continues = flow->chain_continues;
     uint8_t assignment_target = flow->assignment_target;
+    bool compound_like_target = flow->compound_like_target;
+    flow->compound_like_target = false;
     bool nullish_condition = flow->nullish_condition;
     flow->nullish_condition = false;
     flow->true_target = nullptr;
@@ -477,6 +486,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             identifier_expr_lookup_names(&my identifier, names, errs);
             my identifier.flow = flow_builder_reference(flow, my identifier.name);
             my identifier.assignment_target = assignment_target;
+            my identifier.compound_like_target = compound_like_target;
             my identifier.assume_initialized = flow->in_type_query;
             if (flow->binding_root && my identifier.target) {
                 // `const { a = "0", b = +a } = obj`
@@ -522,6 +532,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             } else if (binary_op_is_assignment(op)) {
                 // `a = 1` as an element of a pattern is a target with a default: whoever walks the pattern assigns
                 flow->assignment_target = op == BINARY_OP_EQUAL ? FLOW_TARGET_DEFINITE : FLOW_TARGET_COMPOUND;
+                flow->compound_like_target = op == BINARY_OP_EQUAL && is_compound_like(right);
                 expr_lookup_names(left, names, errs);
                 expr_lookup_names(right, names, errs);
                 if (!assignment_target) {
@@ -595,6 +606,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             // Also when it can't be narrowed (`f().x`): the checker finds out when it makes the reference key
             my property->flow = flow_builder_reference(flow, my outer_span);
             my property->assignment_target = assignment_target;
+            my property->compound_like_target = compound_like_target;
             if (my property->expr.tag == EXPR_IDENTIFIER &&
                 (my property->form == PROPERTY_EXPR_DOT || my property->prop.tag == EXPR_LITERAL)
             ) {
@@ -779,6 +791,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Er
         case EXPR_IDENTIFIER:
             if (source && target->identifier.target) {
                 Ty const* declared = ty_type_of_symbol(checker, target->identifier.target);
+                if (target->identifier.compound_like_target) declared = ty_base_type_of_literal(checker, declared);
                 ty_check_assignable(checker, source, declared, target->outer_span, errs);
             }
             return;

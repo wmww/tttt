@@ -37,6 +37,9 @@ typedef struct IdentifierExpr {
     uint8_t keyword; // KeywordIdentifier
     uint8_t this_kind; // ThisKind
     uint8_t assignment_target; // FlowAssignmentKind: the reference is being assigned to, so it has its declared type
+    // The target of `x = <a shift, additive or multiplicative expression>` (tsc's isInCompoundLikeAssignment): it
+    // has the base type of its declared type, so `let s = empty; s = s + "a"` is fine with `empty: ""`
+    bool compound_like_target;
     // Never "used before assigned": part of `typeof x` written as a type, or inside the binding pattern that declares it
     bool assume_initialized;
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
@@ -320,6 +323,7 @@ typedef struct PropertyExpr {
     } form;
     bool optional_chain;
     uint8_t assignment_target; // FlowAssignmentKind
+    bool compound_like_target; // Like IdentifierExpr.compound_like_target
     FlowNode* flow; // Like IdentifierExpr.flow
 } PropertyExpr;
 

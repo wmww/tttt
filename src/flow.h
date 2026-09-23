@@ -165,6 +165,7 @@ typedef struct FlowBuilder {
     FlowStatementFrame const* statements;
     // The next expression walked is assigned to (FlowAssignmentKind). Taken like the targets
     uint8_t assignment_target;
+    bool compound_like_target; // ...by `x = x + 1` (see IdentifierExpr.compound_like_target)
     bool next_function_is_iife;
     bool ambient;
     // The `yield` expressions of the container (a generator), in source order. malloc'd, the function takes them

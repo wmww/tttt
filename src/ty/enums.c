@@ -168,8 +168,8 @@ Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
             } else {
                 type = ty_enum_computed_member(me, decl, member);
             }
-            // Members of the same name (TS2300) are symbols of their own
-            if (member) ty_set_declared_type(me, member, type);
+            // Members of the same name (TS2300) are symbols of their own. A member's type is fresh, the enum's are regular
+            if (member) ty_set_declared_type(me, member, ty_fresh_literal(me, type));
             if (count == cap) {
                 cap = cap ? cap * 2 : 16;
                 members = realloc(members, sizeof(Ty const*) * cap);

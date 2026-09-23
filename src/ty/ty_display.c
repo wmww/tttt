@@ -704,9 +704,22 @@ static void display_parenthesized_if(Checker* me, TyDisplay d, Ty const* ty, boo
     if (parens) out_lit(d, ")");
 }
 
+// A union of every member of one enum (and nothing else) prints as the enum, see display_union()
+static bool is_whole_enum(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_UNION) return false;
+    Ty const* first = ty->composite.types.data[0];
+    if (first->kind != TY_LITERAL || !first->literal.enum_decl) return false;
+    Ty const* enum_type = ty_enum_of_member(me, first);
+    if (enum_type->kind != TY_UNION || enum_type->composite.types.len != ty->composite.types.len) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty_regular(me, ty->composite.types.data[i]) != enum_type->composite.types.data[i]) return false;
+    }
+    return true;
+}
+
 static bool needs_parens_in_array(Checker* me, Ty const* ty) {
     if (ty->alias) return false;
-    if (ty->flags & TYF_BOOLEAN) return false;
+    if ((ty->flags & TYF_BOOLEAN) || is_whole_enum(me, ty)) return false;
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || ty->kind == TY_CONDITIONAL || ty->kind == TY_KEYOF ||
         is_function_like(me, ty);
 }

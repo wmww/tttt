@@ -131,28 +131,10 @@ static Ty const* optional_type(Checker* me, Ty const* ty) {
     return ty_union(me, parts, 2, nullptr, (TyList){0});
 }
 
-static Ty const* widen_enum_literals(Checker* me, Ty const* ty) {
-    if (ty->kind == TY_LITERAL && (ty->flags & TYF_ENUM_LITERAL)) return ty_enum_of_member(me, ty);
-    if (ty->kind == TY_UNION && !ty->alias && !(ty->flags & TYF_BOOLEAN)) {
-        bool any = false;
-        for (u32 i = 0; i < ty->composite.types.len; i++) any |= (ty->composite.types.data[i]->flags & TYF_ENUM_LITERAL) != 0;
-        if (!any) return ty;
-        u32 len = ty->composite.types.len;
-        Ty const** parts = malloc(sizeof(Ty const*) * len);
-        u32 count = 0;
-        for (u32 i = 0; i < len; i++) {
-            Ty const* part = widen_enum_literals(me, ty->composite.types.data[i]);
-            if (!count || parts[count - 1] != part) parts[count++] = part; // Members of one enum are neighbours
-        }
-        Ty const* ret = ty_union(me, parts, count, nullptr, (TyList){0});
-        free(parts);
-        return ret;
-    }
-    return ty;
-}
-
+// tsc's getWidenedLiteralLikeTypeForContextualType without the context: fresh literals and unique symbols widen, and what
+// is left is regular (a mutable location holds regular literals)
 static Ty const* widen_literals(Checker* me, Ty const* ty) {
-    return ty_widened_unique_symbol(me, widen_enum_literals(me, ty_widened_literal(me, ty)));
+    return ty_regular(me, ty_widened_unique_symbol(me, ty_widened_literal(me, ty)));
 }
 
 // Without strictNullChecks `null` and `undefined` widen to `any`
@@ -173,7 +155,8 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty) {
 }
 
 Ty const* ty_widened_for_declaration(Checker* me, Ty const* ty, bool literals) {
-    if (literals) ty = widen_literals(me, ty);
+    // Not regularised: `const e = E.x` holds the fresh `E.x`, `let x = a` with `a: "a"` the regular "a"
+    if (literals) ty = ty_widened_unique_symbol(me, ty_widened_literal(me, ty));
     return widen_nullable(me, ty);
 }
 
@@ -291,14 +274,14 @@ static bool any_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* 
 // tsc's checkExpressionForMutableLocation: the type a property or element gets from its initializer
 static Ty const* check_for_mutable_location(Checker* me, Expr const* expr, ExprCtx ctx) {
     Ty const* type = check_with(me, expr, ctx);
-    if (ctx.is_const || any_literal_of_contextual_type(me, type, ctx.contextual)) return type;
+    if (ctx.is_const || any_literal_of_contextual_type(me, type, ctx.contextual)) return ty_regular(me, type);
     return widen_literals(me, type);
 }
 
 Ty const* ty_widened_return_type(Checker* me, Ty const* ty, Ty const* contextual) {
     // Only a unit type widens: a function that returns 1 or "a" says so
     bool unit = ty->kind == TY_LITERAL;
-    if (unit && !(contextual && any_literal_of_contextual_type(me, ty, contextual))) ty = widen_literals(me, ty);
+    if (unit) ty = contextual && any_literal_of_contextual_type(me, ty, contextual) ? ty_regular(me, ty) : widen_literals(me, ty);
     return widen_nullable(me, ty);
 }
 
@@ -662,7 +645,10 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, bool* used_
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
     }
     if (!symbol || identifier->keyword || !(symbol->flags & SYMBOL_VARIABLE)) return type;
-    if (identifier->assignment_target == FLOW_TARGET_DEFINITE || !identifier->flow) return type;
+    if (identifier->assignment_target == FLOW_TARGET_DEFINITE) {
+        return identifier->compound_like_target ? base_type_of_literal(me, type) : type;
+    }
+    if (!identifier->flow) return type;
     Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
     // Where nothing says otherwise, a variable is `undefined` until something is assigned to it
     bool assume_initialized = symbol->is_parameter || symbol->is_ambient || !compiler_options()->strict_null_checks ||
@@ -714,6 +700,7 @@ static bool is_narrowable_access(Expr const* expr) {
 // tsc's getFlowTypeOfAccessExpression()
 static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type) {
     PropertyExpr const* access = expr->property;
+    if (access->assignment_target == FLOW_TARGET_DEFINITE && access->compound_like_target) return base_type_of_literal(me, type);
     if (!access->flow || access->assignment_target == FLOW_TARGET_DEFINITE) return type;
     if (!is_narrowable_access(expr)) return type;
     // Methods don't narrow
@@ -886,7 +873,8 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
             Ty const* type = ty_expr_type(me, operand);
             bool truthy = ty_can_be_truthy(me, type);
             bool falsy = ty_can_be_falsy(me, type);
-            return ty_intrinsic(me, truthy && !falsy ? TY_FALSE : falsy && !truthy ? TY_TRUE : TY_BOOLEAN);
+            if (truthy != falsy) return ty_fresh_literal(me, ty_intrinsic(me, truthy ? TY_FALSE : TY_TRUE));
+            return ty_intrinsic(me, TY_BOOLEAN);
         }
         case UNARY_OP_TYPEOF: {
             ty_expr_type(me, operand); // Evaluated like any operand: a circular reference through it is one
@@ -908,7 +896,7 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
         case UNARY_OP_MINUS:
             if (!expr_is_perenthisized(operand) && operand->tag == EXPR_LITERAL && operand->literal.tag == VALUE_NUMBER) {
                 Value value = value_number(unary->op == UNARY_OP_PLUS ? operand->literal.number : -operand->literal.number);
-                return ty_literal(me, &value);
+                return ty_fresh_literal(me, ty_literal(me, &value));
             }
             return ty_intrinsic(me, TY_NUMBER);
 
@@ -1450,7 +1438,7 @@ static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx)
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return any_type(me);
-        case EXPR_LITERAL: return ty_literal(me, &expr->literal);
+        case EXPR_LITERAL: return ty_fresh_literal(me, ty_literal(me, &expr->literal));
         case EXPR_IDENTIFIER: {
             bool used_before_assigned = false; // Reported by the typecheck walk
             return identifier_flow_type(me, expr, &used_before_assigned);

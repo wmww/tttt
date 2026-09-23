@@ -187,9 +187,23 @@ Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty) {
     return ty;
 }
 
-// tsc's getWidenedLiteralType: what a literal becomes at a mutable location. TODO(plan 12 stage 2): fresh literals only
+// tsc's getWidenedLiteralType: what a literal becomes at a mutable location. Only fresh literals widen: a regular one
+// was written as a type (or came from one)
 Ty const* ty_widened_literal(Checker* me, Ty const* ty) {
-    return ty_base_type_of_literal(me, ty);
+    if (ty_is_fresh(ty)) return ty_base_type_of_literal(me, ty);
+    if (ty->kind == TY_UNION && (ty->flags & TYF_FRESH_LITERAL) && !(ty->flags & TYF_BOOLEAN)) {
+        TyBuf widened = {0};
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* part = ty_widened_literal(me, ty->composite.types.data[i]);
+            // Members of one enum all widen to the same (possibly huge) union: once is enough
+            if (!widened.len || widened.data[widened.len - 1] != part) ty_buf_push(&widened, part);
+        }
+        Ty const* ret = ty_union(me, widened.data, widened.len, nullptr, (TyList){0});
+        ty_buf_drop(&widened);
+        return ret;
+    }
+    if (ty->kind == TY_UNION && (ty->flags & TYF_FRESH_LITERAL)) return ty_intrinsic(me, TY_BOOLEAN);
+    return ty;
 }
 
 // tsc's typeCouldHaveTopLevelSingletonTypes: if so, a literal source is shown as it is
@@ -353,6 +367,7 @@ static bool report_widens(Checker* me, Ty const* target) {
 }
 
 cstr ty_report_source_cstr(Checker* me, Ty const* source, Ty const* target) {
+    source = ty_regular(me, source); // Messages see normalised types, like the relation
     bool widen = report_widens(me, target);
     return display_for_report(me, widen ? ty_base_type_of_literal(me, source) : source, widen);
 }
