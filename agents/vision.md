@@ -7,7 +7,7 @@ types components) are the oracle, not the goal.
 
 ## State (2026-09-23, plan 18 done)
 - **Plan 18 (template literal types, string mappings, mapped `as` clauses) done in one session**, all five stages:
-  suite 4604 -> 4689, type-fest 598 -> 424 (nothing left in `source/`), valibot 2169 -> 1965, tsc corpus 0. It
+  suite 4604 -> 4690, type-fest 598 -> 424 (nothing left in `source/`), valibot 2169 -> 1835, tsc corpus 0. It
   surfaced two core bugs that type-level programming depends on (conditional instantiation leaking outer `infer`
   results into recursive instances; variadic tuples never normalized), both fixed. type-fest's check went 0.24 ->
   0.68 s because much more of it is evaluated now: the profile is the same uncached conditional instantiation as

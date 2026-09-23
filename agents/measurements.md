@@ -3,9 +3,9 @@ Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append fore
 date and commit. History is in git.
 
 ## 2026-09-23, plan 18: template literal types, string mappings, mapped `as` clauses
-Suite **4689** full (4604 before; errors 7834, symbols 9264, types 7521; lost stringMappingReduction's errors, see
+Suite **4690** full (4604 before; errors 7834, symbols 9264, types 7522; lost stringMappingReduction's errors, see
 triage.md). Corpora: tsc 0, **type-fest 598 -> 424** (TS2345 225, TS2339 75, TS2322 48, TS2578 35, TS2344 14, TS2589 13;
-nothing left in `source/`), **valibot 2169 -> 1965**.
+nothing left in `source/`), **valibot 2169 -> 1835** (1965 before the literal widening fix).
 `./bench.sh`: tsc corpus tttt **0.72 s** / 372 MB vs tsgo 0.76 s (single-threaded 1.42), tsc 4.87 (this machine runs
 faster than the plan 17 entry). type-fest tttt **0.68 s** (typecheck 626 ms; 0.28 before, when most of it wasn't
 evaluated) vs tsgo 1.36, tsc 3.37. valibot tttt **4.38 s** / 1834 MB vs tsgo 0.92 s / 824 MB (single-threaded 1.84),

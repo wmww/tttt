@@ -3,7 +3,7 @@ Sessions in order. Delete entries as they complete. See `vision.md` ("Course cor
 for why.
 
 (Done since the last insights: plan 19 stage 0, valibot 4473 -> 2169; plan 14, suite 4221 -> 4604, spurious syntax
-errors 1242 -> 746 tests; plan 18 in one session, suite -> 4689, type-fest 598 -> 424, valibot -> 1965.)
+errors 1242 -> 746 tests; plan 18 in one session, suite -> 4690, type-fest 598 -> 424, valibot -> 1835.)
 
 1. **Execution: plan 20** (conditional instantiation cache: valibot 4.4 s vs tsgo 0.9 s; type-fest's 0.68 s is the
    same profile since plan 18).
