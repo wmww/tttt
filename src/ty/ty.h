@@ -100,6 +100,10 @@ typedef enum TyKind {
     TY_KEYOF,       // The rest are deferred types: they only exist while an operand is generic (or, for now, while
     TY_INDEXED,     // the new core lacks the machinery to resolve them)
     TY_CONDITIONAL,
+    // String-like types (template.c). Not TYF_DEFERRED unless generic: a pattern like `a${string}` is as concrete as a
+    // primitive
+    TY_TEMPLATE_LITERAL,
+    TY_STRING_MAPPING,
 } TyKind;
 
 // tsc-like TypeFlags, plus a few cached facts
@@ -138,11 +142,22 @@ typedef enum TyFlags {
     // the only kind of source that gets excess property checks. On unions and array/tuple references: one is inside
     // (ty_widened_objects() has work to do)
     TYF_FRESH_OBJECT                 = 1 << 27,
+    TYF_TEMPLATE_LITERAL             = 1 << 28, // `a${B}` (TY_TEMPLATE_LITERAL)
+    TYF_STRING_MAPPING               = 1 << 29, // Uppercase<T> & co. (TY_STRING_MAPPING)
 
     TYF_NULLABLE = TYF_UNDEFINED | TYF_NULL,
     TYF_ES_SYMBOL_LIKE = TYF_ES_SYMBOL | TYF_UNIQUE_ES_SYMBOL,
     TYF_LITERAL = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_BIGINT_LITERAL | TYF_BOOLEAN_LITERAL,
+    TYF_STRING_LIKE = TYF_STRING | TYF_STRING_LITERAL | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING,
 } TyFlags;
+
+// The intrinsic string mapping aliases of the lib (`type Uppercase<S extends string> = intrinsic`)
+typedef enum TyStringMapping {
+    TY_MAPPING_UPPERCASE,
+    TY_MAPPING_LOWERCASE,
+    TY_MAPPING_CAPITALIZE,
+    TY_MAPPING_UNCAPITALIZE,
+} TyStringMapping;
 
 typedef enum TyDeclaredKind {
     TY_DECLARED_INTERFACE,
@@ -305,6 +320,15 @@ struct Ty {
             Ty const* root;
             TyMapper const* mapper;
         } conditional;
+        struct {
+            Atom const* const* texts; // types.len + 1 of them, around the types
+            TyList types; // Each a type variable or a pattern placeholder (string, number, bigint, any, a pattern...)
+        } template_literal;
+        struct {
+            TyStringMapping mapping;
+            Symbol const* symbol; // The lib alias, for display. May be null
+            Ty const* type; // A type variable, string, any, or a pattern
+        } string_mapping;
     };
 };
 
@@ -651,6 +675,19 @@ Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg);
 Ty const* ty_array(Checker* me, Ty const* element, bool readonly);
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
 Ty const* ty_keyof(Checker* me, Ty const* operand);
+// template.c: template literal types and string mappings (tsc's getTemplateLiteralType, getStringMappingType)
+Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* const* types, u32 len);
+Ty const* ty_string_mapping(Checker* me, TyStringMapping mapping, Symbol const* symbol, Ty const* type);
+bool ty_is_pattern_literal(Ty const* ty); // A template or mapping of nothing but placeholders: `a${string}`
+bool ty_is_pattern_placeholder(Ty const* ty); // Something a pattern can be made of: string, number, a pattern...
+// tsc's isTypeMatchedByTemplateLiteralType, isMemberOfStringMapping, templateLiteralTypesDefinitelyUnrelated
+bool ty_template_matches(Checker* me, Ty const* source, Ty const* target);
+bool ty_string_mapping_contains(Checker* me, Ty const* source, Ty const* target);
+bool ty_templates_definitely_unrelated(Ty const* source, Ty const* target);
+// tsc's inferTypesFromTemplateLiteralType: what each placeholder of `target` matched in `source`, false if it doesn't
+// match. `out` has room for target's types
+bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty const** out);
+Ty const* ty_template_literal_for_constraint(Checker* me, Ty const* source, Ty const* constraint);
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index);
 Ty const* ty_conditional(
     Checker* me, Ty const* check, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,

@@ -169,6 +169,37 @@ static void display_string_literal(TyDisplay d, csview sv) {
     out_lit(d, "\"");
 }
 
+// The text of a template literal as tsc's printer writes it: escapeString() with a backtick (newlines stay), and `${`
+// escaped
+static void display_template_text(TyDisplay d, csview sv) {
+    for (isize_t i = 0; i < sv.size; i++) {
+        unsigned char c = (unsigned char)sv.buf[i];
+        switch (c) {
+            case '`': out_lit(d, "\\`"); break;
+            case '\\': out_lit(d, "\\\\"); break;
+            case '\n': out_lit(d, "\n"); break;
+            case '\r': out_lit(d, "\\r"); break;
+            case '\t': out_lit(d, "\\t"); break;
+            case '\v': out_lit(d, "\\v"); break;
+            case '\f': out_lit(d, "\\f"); break;
+            case '\b': out_lit(d, "\\b"); break;
+            case '$':
+                if (i + 1 < sv.size && sv.buf[i + 1] == '{') out_lit(d, "\\$");
+                else out_lit(d, "$");
+                break;
+            default:
+                if (c < 0x20) {
+                    char buf[8];
+                    snprintf(buf, sizeof buf, "\\u%04X", c);
+                    out(d, csview_from(buf));
+                } else {
+                    out(d, csview_from_n(&sv.buf[i], 1));
+                }
+                break;
+        }
+    }
+}
+
 static bool is_identifier_name(csview sv) {
     if (!sv.size || (sv.buf[0] >= '0' && sv.buf[0] <= '9')) return false;
     for (isize_t i = 0; i < sv.size; i++) {
@@ -970,6 +1001,27 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             out_lit(d, " : ");
             ty_display(me, d, ty_conditional_branch(me, ty, false));
             break;
+
+        case TY_TEMPLATE_LITERAL:
+            out_lit(d, "`");
+            for (u32 i = 0; i <= ty->template_literal.types.len; i++) {
+                if (i) {
+                    out_lit(d, "${");
+                    ty_display(me, d, ty->template_literal.types.data[i - 1]);
+                    out_lit(d, "}");
+                }
+                display_template_text(d, atom_sv(ty->template_literal.texts[i]));
+            }
+            out_lit(d, "`");
+            break;
+
+        case TY_STRING_MAPPING: {
+            static char const* const names[] = { "Uppercase", "Lowercase", "Capitalize", "Uncapitalize" };
+            out(d, csview_from(names[ty->string_mapping.mapping]));
+            out_lit(d, "<");
+            ty_display(me, d, ty->string_mapping.type);
+            out_lit(d, ">");
+        }   break;
     }
 }
 

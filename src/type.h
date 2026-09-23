@@ -12,6 +12,7 @@ typedef struct KeyofType KeyofType;
 typedef struct TypeofType TypeofType;
 typedef struct CallableType CallableType;
 typedef struct TupleElement TupleElement;
+typedef struct TemplateType TemplateType;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct Scope Scope;
 typedef struct Generic Generic;
@@ -85,6 +86,7 @@ typedef struct TypeNode {
         TYPE_UNION,
         TYPE_INTERSECTION,
         TYPE_UNIQUE_SYMBOL,
+        TYPE_TEMPLATE,
     } tag;
     bool parsed : 1;
     union {
@@ -114,6 +116,7 @@ typedef struct TypeNode {
         TernaryType* ternary;
         VecTypeNode composite; // used for both TYPE_UNION and TYPE_INTERSECTION
         UniqueSymbolDecl unique_symbol;
+        TemplateType* template_;
     };
 } TypeNode;
 

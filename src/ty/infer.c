@@ -120,6 +120,14 @@ static void collect_infer_params(Checker* me, Inference* inf, Ty const* target, 
             collect_infer_params(me, inf, target->indexed.object, depth + 1);
             collect_infer_params(me, inf, target->indexed.index, depth + 1);
             break;
+        case TY_TEMPLATE_LITERAL:
+            for (u32 i = 0; i < target->template_literal.types.len; i++) {
+                collect_infer_params(me, inf, target->template_literal.types.data[i], depth + 1);
+            }
+            break;
+        case TY_STRING_MAPPING:
+            collect_infer_params(me, inf, target->string_mapping.type, depth + 1);
+            break;
         default: break;
     }
 }
@@ -207,6 +215,7 @@ typedef struct InferStep {
 } InferStep;
 
 static void infer_types_from(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority, bool contravariant);
+static void infer_to_template(Checker* me, Inference* inf, Ty const* source, Ty const* target);
 
 static void infer_step(Checker* me, Inference* inf, InferStep step, Ty const* source, Ty const* target) {
     if (step.top) infer_types_from(me, inf, source, target, step.priority, step.contravariant);
@@ -814,6 +823,12 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             infer_from(me, inf, source->indexed.object, target->indexed.object);
             infer_from(me, inf, source->indexed.index, target->indexed.index);
         }
+    } else if (source->kind == TY_STRING_MAPPING && target->kind == TY_STRING_MAPPING) {
+        if (source->string_mapping.mapping == target->string_mapping.mapping) {
+            infer_from(me, inf, source->string_mapping.type, target->string_mapping.type);
+        }
+    } else if (target->kind == TY_TEMPLATE_LITERAL) {
+        infer_to_template(me, inf, source, target);
     } else if (target->kind == TY_CONDITIONAL) {
         if (source->kind == TY_CONDITIONAL) {
             infer_from(me, inf, source->conditional.check, target->conditional.check);
@@ -844,6 +859,35 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         }
     }
     inf->depth--;
+}
+
+// tsc's inferToTemplateLiteralType: what each placeholder matched. A target of placeholders only that doesn't match
+// infers never for each, so that the result doesn't match either (rather than everything collapsing to `string`)
+static void infer_to_template(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
+    u32 len = target->template_literal.types.len;
+    Ty const* stack_buf[16];
+    Ty const** matches = len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * len);
+    panic_if(!matches, "out of memory");
+    bool matched = ty_infer_from_template(me, source, target, matches);
+    bool all_empty = true;
+    for (u32 i = 0; i <= len && all_empty; i++) all_empty = target->template_literal.texts[i]->len == 0;
+    if (matched || all_empty) {
+        for (u32 i = 0; i < len; i++) {
+            Ty const* s = matched ? matches[i] : ty_intrinsic(me, TY_NEVER);
+            Ty const* t = target->template_literal.types.data[i];
+            if (s->kind == TY_LITERAL && (s->flags & TYF_STRING_LITERAL) && t->kind == TY_TYPE_PARAM) {
+                InferParam* param = inference_param(inf, t);
+                Ty const* constraint = param ? ty_base_constraint(me, param->param) : nullptr;
+                Ty const* literal = constraint ? ty_template_literal_for_constraint(me, s, constraint) : nullptr;
+                if (literal) {
+                    infer_from(me, inf, literal, t);
+                    continue;
+                }
+            }
+            infer_from(me, inf, s, t);
+        }
+    }
+    if (matches != stack_buf) free(matches);
 }
 
 void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority) {

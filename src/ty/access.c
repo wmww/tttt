@@ -30,14 +30,16 @@ static Ty const* access_index_infos(Checker* me, Ty const* object, Ty const* ind
         return nullptr;
     }
     Members const* members = ty_members(me, object);
-    bool stringish = (index->flags & (TYF_STRING | TYF_STRING_LITERAL)) != 0;
+    bool stringish = (index->flags & TYF_STRING_LIKE) != 0;
     bool numeric = (index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
-    // A numeric index signature is more specific than a string one
+    // A numeric index signature is more specific than a string one, and a pattern (`[k: `data-${string}`]`) than both
     for (u32 pass = 0; pass < 2; pass++) {
         for (u32 i = 0; i < members->index_count; i++) {
             IndexInfo const* info = &members->index[i];
             bool applies = pass == 0 ?
-                ((info->key->flags & TYF_NUMBER) && numeric) || ((info->key->flags & TYF_ES_SYMBOL) && (index->flags & TYF_ES_SYMBOL_LIKE)) :
+                ((info->key->flags & TYF_NUMBER) && numeric) || ((info->key->flags & TYF_ES_SYMBOL) && (index->flags & TYF_ES_SYMBOL_LIKE)) ||
+                    ((info->key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) && stringish &&
+                        ty_is_related(me, index, info->key, TY_RELATION_ASSIGNABLE)) :
                 (info->key->flags & TYF_STRING) && (stringish || numeric);
             if (applies) return info->value;
         }
@@ -63,7 +65,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     if (object->flags & TYF_ANY) return object;
     if (object->flags & TYF_NEVER) return object;
     if (index->flags & TYF_ANY) return ty_intrinsic(me, TY_ANY);
-    bool simple = (index->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
+    bool simple = (index->flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
     if (!simple) return nullptr;
 
     if (object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {

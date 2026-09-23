@@ -42,6 +42,35 @@ static TyMapper const* compose_mappers(Checker* me, TyMapper const* inner, TyMap
     return ret;
 }
 
+// A conditional type's own `infer` type parameters aren't mapped by whoever instantiates it (tsc's conditional root
+// maps its outer type parameters only): the recursive `Split<B, D>` in the true branch of `S extends `${infer A}.${infer
+// B}` ? [A, ...Split<B, D>] : [S]` gets the outer B for its check type, not for its own `infer B`
+static TyMapper const* without_own_infers(Checker* me, Ty const* root, TyMapper const* mapper) {
+    u64 key[2] = { KEY_CONDITIONAL_INFERS, root->id };
+    TyList const* infers = intern_get(&my links, key, 2);
+    if (!infers || !mapper) return mapper;
+    u32 dropped = 0;
+    for (u32 i = 0; i < mapper->len; i++) {
+        for (u32 j = 0; j < infers->len; j++) dropped += mapper->sources[i] == infers->data[j];
+    }
+    if (!dropped) return mapper;
+    Ty const** pairs = malloc(sizeof(Ty const*) * mapper->len * 2);
+    panic_if(!pairs, "out of memory");
+    Ty const** sources = pairs;
+    Ty const** targets = pairs + mapper->len;
+    u32 len = 0;
+    for (u32 i = 0; i < mapper->len; i++) {
+        bool own = false;
+        for (u32 j = 0; j < infers->len; j++) own |= mapper->sources[i] == infers->data[j];
+        if (own) continue;
+        sources[len] = mapper->sources[i];
+        targets[len++] = mapper->targets[i];
+    }
+    TyMapper const* ret = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
+    free(pairs);
+    return ret;
+}
+
 // The mapper with one more (or one replaced) mapping
 static TyMapper const* mapper_with(Checker* me, TyMapper const* mapper, Ty const* source, Ty const* target) {
     u32 cap = mapper->len + 1;
@@ -385,6 +414,20 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
         case TY_KEYOF:
             return ty_keyof(me, ty_instantiate(me, ty->keyof.operand, mapper));
 
+        case TY_TEMPLATE_LITERAL: {
+            TyList types = ty->template_literal.types;
+            Ty const** buf = types.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * types.len);
+            TyList mapped = instantiate_list(me, types, mapper, buf, types.len);
+            Ty const* ret = mapped.data == types.data ? ty : ty_template_literal(me, ty->template_literal.texts, mapped.data, mapped.len);
+            if (buf != stack_buf) free(buf);
+            return ret;
+        }
+
+        case TY_STRING_MAPPING:
+            return ty_string_mapping(
+                me, ty->string_mapping.mapping, ty->string_mapping.symbol, ty_instantiate(me, ty->string_mapping.type, mapper)
+            );
+
         case TY_INDEXED: {
             Ty const* ret = ty_indexed(
                 me,
@@ -397,7 +440,7 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
         case TY_CONDITIONAL: {
             // Start over from the conditional type as written, with everything that has happened to it since
             Ty const* root = ty->conditional.root;
-            TyMapper const* combined = compose_mappers(me, ty->conditional.mapper, mapper);
+            TyMapper const* combined = without_own_infers(me, root, compose_mappers(me, ty->conditional.mapper, mapper));
             Ty const* check_type = ty_instantiate(me, root->conditional.check, combined);
             if (root->conditional.distributive && root->conditional.check->kind == TY_TYPE_PARAM &&
                 check_type != root->conditional.check

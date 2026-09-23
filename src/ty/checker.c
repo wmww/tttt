@@ -453,6 +453,29 @@ static Ty const* intern_composite(
     return *slot;
 }
 
+// String literals that a pattern in the same union already has (tsc's removeStringLiteralsMatchedByTemplateLiterals):
+// `"ab" | `a${string}`` is `a${string}`. Returns the new length
+static u32 remove_literals_matched_by_patterns(Checker* me, Ty const** types, u32 len) {
+    bool any_pattern = false;
+    for (u32 i = 0; i < len && !any_pattern; i++) any_pattern = ty_is_pattern_literal(types[i]);
+    if (!any_pattern) return len;
+    u32 out = 0;
+    for (u32 i = 0; i < len; i++) {
+        Ty const* t = types[i];
+        bool matched = false;
+        if (t->kind == TY_LITERAL && (t->flags & TYF_STRING_LITERAL)) {
+            for (u32 j = 0; j < len && !matched; j++) {
+                Ty const* pattern = types[j];
+                if (!ty_is_pattern_literal(pattern)) continue;
+                matched = pattern->kind == TY_TEMPLATE_LITERAL ?
+                    ty_template_matches(me, t, pattern) : ty_string_mapping_contains(me, t, pattern);
+            }
+        }
+        if (!matched) types[out++] = t;
+    }
+    return out;
+}
+
 // Only the cheap reductions: flatten, dedupe, absorb any/unknown/never, drop literals next to their primitive.
 // Subtype reduction is a separate operation (TODO, the legacy type_composite() does its own through the relation).
 Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
@@ -497,6 +520,7 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
             if (t->kind == TY_INTRINSIC && (t->flags & TYF_NEVER)) continue;
             // Without strictNullChecks null and undefined are in every type, so a union doesn't keep them
             if (!strict_null_checks && (t->flags & TYF_NULLABLE)) continue;
+            if ((t->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) && (includes & TYF_STRING)) continue;
             if (t->kind == TY_LITERAL && (
                 ((t->flags & TYF_STRING_LITERAL) && (includes & TYF_STRING)) ||
                 ((t->flags & TYF_NUMBER_LITERAL) && (includes & TYF_NUMBER)) ||
@@ -504,6 +528,9 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
                 ((t->flags & TYF_UNIQUE_ES_SYMBOL) && (includes & TYF_ES_SYMBOL))
             )) continue;
             buf.data[out++] = t;
+        }
+        if ((includes & TYF_STRING_LITERAL) && (includes & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING))) {
+            out = remove_literals_matched_by_patterns(me, buf.data, out);
         }
         if (out == 0) {
             // Nothing but null and undefined (without strictNullChecks): null wins, like in tsc's getUnionType
@@ -671,6 +698,22 @@ static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u
     return conflict;
 }
 
+// The templates and mappings of an intersection with the string literal `literal` go if the literal is one of theirs,
+// true if a pattern doesn't have it (the intersection is empty)
+static bool extract_redundant_templates(Checker* me, Ty const** types, u32* len, Ty const* literal) {
+    u32 out = 0;
+    for (u32 i = 0; i < *len; i++) {
+        Ty const* t = types[i];
+        if (t->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) {
+            if (ty_is_related(me, literal, t, TY_RELATION_STRICT_SUBTYPE)) continue;
+            if (ty_is_pattern_literal(t)) return true;
+        }
+        types[out++] = t;
+    }
+    *len = out;
+    return false;
+}
+
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
     if (len == 1) return types[0];
     TyBuf buf = {0};
@@ -746,6 +789,19 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
                 buf.data[kept++] = buf.data[i];
             }
             out = kept;
+        }
+        if (!is_never && (includes & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING))) {
+            // A template or mapping and a primitive of another family is never, and one next to `string` is itself
+            u32 kept = 0;
+            for (u32 i = 0; i < out && !is_never; i++) {
+                u32 f = primitive_family(buf.data[i]);
+                if (f && f != TYF_STRING) is_never = true;
+                if (buf.data[i]->kind == TY_INTRINSIC && f == TYF_STRING) continue;
+                buf.data[kept++] = buf.data[i];
+            }
+            out = kept;
+            // `get${string}` & "getX" is "getX", and with "setX" never (tsc's extractRedundantTemplateLiterals)
+            if (literal && !is_never) is_never = extract_redundant_templates(me, buf.data, &out, literal);
         }
         // Nothing is both an object and null or undefined
         if (compiler_options()->strict_null_checks && (includes & TYF_NULLABLE) && (includes & (TYF_OBJECT | TYF_NON_PRIMITIVE))) {
@@ -825,11 +881,17 @@ Ty const* ty_this_type_param(Checker* me, Ty const* declared) {
 
 // References
 
+static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args);
+
 Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty const* this_arg) {
     check(target->kind == TY_DECLARED);
     if (!target->declared.this_param) this_arg = nullptr;
     if (!target->declared.type_params.len && !this_arg) return target;
     check(args.len == target->declared.type_params.len);
+    if (target->declared.kind == TY_DECLARED_TUPLE_TARGET) {
+        Ty const* normalized = normalized_tuple(me, target, args);
+        if (normalized) return normalized;
+    }
     u64 stack_key[32];
     u32 count = 3 + args.len;
     u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
@@ -853,6 +915,130 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
         *slot = ret;
     }
     return *slot;
+}
+
+// A spread element whose type isn't known yet stays a spread (tsc's Variadic element)
+static bool is_generic_spread(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return true;
+    return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, ty)->mapped;
+}
+
+typedef struct TupleBuilder {
+    Ty const** types;
+    unsigned char* flags;
+    Atom const** names;
+    u32 len, cap;
+    bool any_name;
+    i32 last_required, first_rest, last_optional_or_rest;
+} TupleBuilder;
+
+static void tuple_builder_add(Checker* me, TupleBuilder* b, Ty const* type, unsigned char flags, Atom const* name) {
+    if (b->len == b->cap) {
+        b->cap = b->cap ? b->cap * 2 : 8;
+        b->types = realloc(b->types, sizeof(Ty const*) * b->cap);
+        b->flags = realloc(b->flags, b->cap);
+        b->names = realloc(b->names, sizeof(Atom const*) * b->cap);
+        panic_if(!b->types || !b->flags || !b->names, "out of memory");
+    }
+    bool rest = (flags & TUPLE_ELEMENT_REST) && !is_generic_spread(me, type);
+    if (!(flags & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) b->last_required = (i32)b->len;
+    if (rest && b->first_rest < 0) b->first_rest = (i32)b->len;
+    if ((flags & TUPLE_ELEMENT_OPTIONAL) || rest) b->last_optional_or_rest = (i32)b->len;
+    b->types[b->len] = type;
+    b->flags[b->len] = flags;
+    b->names[b->len++] = name;
+    b->any_name |= name != nullptr;
+}
+
+// tsc's createNormalizedTupleType: spreads of tuples are spliced in, a spread of a union is a union of tuples, and
+// everything from the first rest element to the last optional or rest one is one rest element. Null if there's
+// nothing to do
+static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
+    TupleShape const* shape = target->declared.tuple;
+    bool needed = false;
+    for (u32 i = 0; i < shape->arity && !needed; i++) {
+        if (!(shape->flags[i] & TUPLE_ELEMENT_REST)) continue;
+        Ty const* arg = args.data[i];
+        needed = ty_is_tuple(arg) || (arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET) ||
+            (arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) || (arg->flags & TYF_NEVER);
+    }
+    if (!needed) return nullptr;
+    for (u32 i = 0; i < shape->arity; i++) {
+        Ty const* arg = args.data[i];
+        if (!(shape->flags[i] & TUPLE_ELEMENT_REST) || !((arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) || (arg->flags & TYF_NEVER))) {
+            continue;
+        }
+        // [A, ...(X | Y)] is [A, ...X] | [A, ...Y]
+        if (arg->flags & TYF_NEVER) return arg;
+        Ty const** replaced = malloc(sizeof(Ty const*) * args.len);
+        panic_if(!replaced, "out of memory");
+        memcpy(replaced, args.data, sizeof(Ty const*) * args.len);
+        TyBuf results = {0};
+        for (u32 m = 0; m < arg->composite.types.len; m++) {
+            replaced[i] = arg->composite.types.data[m];
+            ty_buf_push(&results, ty_reference(me, target, (TyList){ .data = replaced, .len = args.len }));
+        }
+        Ty const* ret = ty_union(me, results.data, results.len, nullptr, (TyList){0});
+        ty_buf_drop(&results);
+        free(replaced);
+        return ret;
+    }
+    TupleBuilder b = { .last_required = -1, .first_rest = -1, .last_optional_or_rest = -1 };
+    for (u32 i = 0; i < shape->arity; i++) {
+        Ty const* arg = args.data[i];
+        Atom const* name = shape->names ? shape->names[i] : nullptr;
+        if (!(shape->flags[i] & TUPLE_ELEMENT_REST)) {
+            tuple_builder_add(me, &b, arg, shape->flags[i], name);
+        } else if (ty_is_tuple(arg)) {
+            TupleShape const* inner = arg->reference.target->declared.tuple;
+            if (b.len + inner->arity >= 10000) {
+                // TODO: TS2799 "Type produces a tuple type that is too large to represent." (TS2800 for expressions)
+                free(b.types);
+                free(b.flags);
+                free(b.names);
+                return ty_intrinsic(me, TY_ERROR);
+            }
+            TyList elements = ty_reference_args(me, arg);
+            for (u32 j = 0; j < inner->arity; j++) {
+                tuple_builder_add(me, &b, elements.data[j], inner->flags[j], inner->names ? inner->names[j] : nullptr);
+            }
+        } else if (!(arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET)) {
+            tuple_builder_add(me, &b, arg, TUPLE_ELEMENT_REST, name);
+        }
+    }
+    for (i32 i = 0; i < b.last_required; i++) b.flags[i] &= ~TUPLE_ELEMENT_OPTIONAL;
+    if (b.first_rest >= 0 && b.first_rest < b.last_optional_or_rest) {
+        TyBuf merged = {0};
+        for (i32 i = b.first_rest; i <= b.last_optional_or_rest; i++) {
+            Ty const* t = b.types[i];
+            if (b.flags[i] & TUPLE_ELEMENT_REST) {
+                t = is_generic_spread(me, t) ? ty_indexed(me, t, ty_intrinsic(me, TY_NUMBER)) : ty_rest_element_type(me, t);
+            }
+            ty_buf_push(&merged, t);
+        }
+        b.types[b.first_rest] = ty_array(me, ty_union(me, merged.data, merged.len, nullptr, (TyList){0}), false);
+        b.flags[b.first_rest] = TUPLE_ELEMENT_REST;
+        ty_buf_drop(&merged);
+        u32 removed = (u32)(b.last_optional_or_rest - b.first_rest);
+        for (u32 i = (u32)b.first_rest + 1; i + removed < b.len; i++) {
+            b.types[i] = b.types[i + removed];
+            b.flags[i] = b.flags[i + removed];
+            b.names[i] = b.names[i + removed];
+        }
+        b.len -= removed;
+    }
+    TupleShape normalized = {
+        .arity = b.len,
+        .readonly = shape->readonly,
+        .flags = b.flags,
+        .names = b.any_name ? b.names : nullptr,
+    };
+    Ty const* new_target = ty_tuple_target(me, &normalized);
+    Ty const* ret = b.len ? ty_reference(me, new_target, (TyList){ .data = b.types, .len = b.len }) : new_target;
+    free(b.types);
+    free(b.flags);
+    free(b.names);
+    return ret;
 }
 
 Ty const* ty_reference(Checker* me, Ty const* target, TyList args) {

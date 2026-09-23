@@ -217,6 +217,7 @@ static bool parse_template(Parser* parent, VecExpr* ret);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
 static bool parse_decorators(Parser* parent, VecExpr* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
+static bool parse_template_type(Parser* parent, TypeNode* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_binding_content(Parser* parent, Binding* ret);
@@ -1389,6 +1390,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
             .expr = c_new(Expr, expr),
             .owns_expr = true,
         }));
+    } else if (parse_template_type(&p, ret)) {
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
         ret->value_span = span_from(value_anchor);
@@ -3483,6 +3485,61 @@ static bool parse_type_compat_literal(Parser* parent, Value* ret) {
         return parse_fail(&p);
     }
 
+    return parse_success(&p);
+}
+
+// A template literal type with substitutions (`a${B}c`): the texts are cooked like a string's, the substitutions are
+// types (which can be templates again). Fails if there are none, a plain template is a string literal type
+static bool parse_template_type(Parser* parent, TypeNode* ret) {
+    Parser p = parser(parent);
+
+    if (*p.pos != '`') {
+        return parse_fail(&p);
+    }
+    p.pos++;
+
+    TemplateType template = { .texts = vec_cstr_init(), .types = vec_type_init() };
+    cstr text = cstr_null;
+    while (*p.pos && *p.pos != '`') {
+        if (*p.pos == '\\' && p.pos[1]) {
+            p.pos++;
+            if (!parse_string_escape(&p, &text)) {
+                parse_error(&p, span_from_pos(&p), 1125, "Hexadecimal digit expected.");
+            }
+        } else if (p.pos[0] == '$' && p.pos[1] == '{') {
+            p.pos += 2;
+            vec_cstr_push(&template.texts, text);
+            text = cstr_null;
+            hop_whitespace(&p);
+            TypeNode type;
+            expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
+            vec_type_push(&template.types, type);
+            hop_whitespace(&p);
+            if (!expect_char(&p, '}')) {
+                break;
+            }
+        } else if (*p.pos == '\r') {
+            p.pos++; // CRLF is LF in a template
+        } else {
+            cstr_append_n(&text, p.pos, 1);
+            p.pos++;
+        }
+    }
+    vec_cstr_push(&template.texts, text);
+
+    if (vec_type_is_empty(&template.types)) {
+        vec_cstr_drop(&template.texts);
+        vec_type_drop(&template.types);
+        return parse_fail(&p);
+    }
+
+    if (*p.pos == '`') {
+        p.pos++;
+    } else {
+        parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
+    }
+
+    *ret = (TypeNode){ .tag = TYPE_TEMPLATE, .template_ = c_new(TemplateType, template) };
     return parse_success(&p);
 }
 

@@ -222,7 +222,8 @@ static bool could_have_singletons(Checker* me, Ty const* ty) {
         Ty const* constraint = ty_param_constraint(me, ty);
         return constraint && constraint != ty && could_have_singletons(me, constraint);
     }
-    return ty->kind == TY_LITERAL || (ty->flags & (TYF_DEFERRED | TYF_UNDEFINED | TYF_NULL)) != 0;
+    return ty->kind == TY_LITERAL ||
+        (ty->flags & (TYF_DEFERRED | TYF_UNDEFINED | TYF_NULL | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) != 0;
 }
 
 // Enums
@@ -281,7 +282,7 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     if ((tf & (TYF_ANY | TYF_UNKNOWN)) || (sf & TYF_NEVER)) return true;
     if (tf & TYF_NEVER) return false;
     if (sf & TYF_ANY) return st->relation != TY_RELATION_STRICT_SUBTYPE;
-    if ((sf & TYF_STRING_LITERAL) && (tf & TYF_STRING)) return true;
+    if ((sf & TYF_STRING_LIKE) && (tf & TYF_STRING)) return true;
     if ((sf & TYF_NUMBER_LITERAL) && (tf & TYF_NUMBER)) return true;
     if ((sf & TYF_BIGINT_LITERAL) && (tf & TYF_BIGINT)) return true;
     if ((sf & TYF_BOOLEAN_LITERAL) && (tf & TYF_BOOLEAN)) return true;
@@ -340,7 +341,8 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
 
 // Whether there's any structure to look at. If neither side has any, the simple relation was the answer
 static bool is_structured(Ty const* ty) {
-    return ty->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
+    return ty->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_TEMPLATE_LITERAL |
+        TYF_STRING_MAPPING);
 }
 
 // Reporting
@@ -446,6 +448,10 @@ static Ty const* apparent_type(Checker* me, Ty const* ty) {
     }
     if (f & TYF_ENUM) {
         global = global_type(me, GLOBAL_NUMBER);
+        return global ? global : global_type(me, GLOBAL_EMPTY_OBJECT);
+    }
+    if (f & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) {
+        global = global_type(me, GLOBAL_STRING);
         return global ? global : global_type(me, GLOBAL_EMPTY_OBJECT);
     }
     return ty;
@@ -1374,6 +1380,28 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             }
             return ty_union(me, parts, 2, nullptr, (TyList){0});
         }
+        case TY_TEMPLATE_LITERAL: {
+            // The template of the constraints, string if one has none
+            u32 len = ty->template_literal.types.len;
+            Ty const** constraints = malloc(sizeof(Ty const*) * len);
+            panic_if(!constraints, "out of memory");
+            Ty const* ret = nullptr;
+            for (u32 i = 0; i < len && !ret; i++) {
+                Ty const* t = ty->template_literal.types.data[i];
+                constraints[i] = t->kind == TY_TYPE_PARAM || (t->flags & TYF_DEFERRED) ? base_constraint(me, t, depth + 1) : t;
+                if (!constraints[i]) ret = ty_intrinsic(me, TY_STRING);
+            }
+            if (!ret) ret = ty_template_literal(me, ty->template_literal.texts, constraints, len);
+            free(constraints);
+            return ret == ty ? nullptr : ret;
+        }
+        case TY_STRING_MAPPING: {
+            Ty const* inner = ty->string_mapping.type;
+            Ty const* constraint = inner->kind == TY_TYPE_PARAM || (inner->flags & TYF_DEFERRED) ? base_constraint(me, inner, depth + 1) : nullptr;
+            if (!constraint || constraint == inner) return ty_intrinsic(me, TY_STRING);
+            Ty const* ret = ty_string_mapping(me, ty->string_mapping.mapping, ty->string_mapping.symbol, constraint);
+            return ret == ty ? nullptr : ret;
+        }
         default:
             return nullptr;
     }
@@ -1666,6 +1694,19 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
             if (related) return related;
         }   break;
 
+        case TY_TEMPLATE_LITERAL:
+            if (source->kind == TY_TEMPLATE_LITERAL) {
+                if (comparable) return ty_templates_definitely_unrelated(source, target) ? TERNARY_FALSE : TERNARY_TRUE;
+                // `foo-${number}` is related to `foo-${string}` though number isn't related to string
+                if (my variance_depth) my variance_unreliable = true;
+            }
+            if (ty_template_matches(me, source, target)) return TERNARY_TRUE;
+            break;
+
+        case TY_STRING_MAPPING:
+            if (source->kind != TY_STRING_MAPPING && ty_string_mapping_contains(me, source, target)) return TERNARY_TRUE;
+            break;
+
         default: break;
     }
 
@@ -1718,6 +1759,30 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
             if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), target, report);
             return related;
         }
+
+        case TY_TEMPLATE_LITERAL:
+            if (!(target->flags & (TYF_OBJECT | TYF_TEMPLATE_LITERAL))) {
+                Ty const* constraint = base_constraint(me, source, 0);
+                if (constraint && constraint != source) {
+                    Ternary related = is_related_to(me, st, constraint, target, report);
+                    if (related) return related;
+                }
+            }
+            break;
+
+        case TY_STRING_MAPPING:
+            if (target->kind == TY_STRING_MAPPING) {
+                if (source->string_mapping.mapping != target->string_mapping.mapping) return TERNARY_FALSE;
+                Ternary related = is_related_to(me, st, source->string_mapping.type, target->string_mapping.type, report);
+                if (related) return related;
+            } else {
+                Ty const* constraint = base_constraint(me, source, 0);
+                if (constraint && constraint != source) {
+                    Ternary related = is_related_to(me, st, constraint, target, report);
+                    if (related) return related;
+                }
+            }
+            break;
 
         default: break;
     }
@@ -1842,6 +1907,7 @@ static Ty const* recursion_identity(Ty const* ty) {
     switch ((TyKind)ty->kind) {
         case TY_REFERENCE: return ty->reference.target;
         case TY_ANONYMOUS: return ty->anonymous.target;
+        case TY_CONDITIONAL: return ty->conditional.root;
         case TY_INDEXED: {
             Ty const* object = ty;
             while (object->kind == TY_INDEXED) object = object->indexed.object;

@@ -27,6 +27,9 @@ enum {
     KEY_FRESH_LITERAL, // regular literal -> its fresh twin
     KEY_REGULAR_UNION, // union with fresh members -> ty_regular() of it
     KEY_WIDENED_OBJECTS, // type with fresh object literals -> ty_widened_objects() of it
+    KEY_TEMPLATE_LITERAL,
+    KEY_STRING_MAPPING,
+    KEY_CONDITIONAL_INFERS, // root conditional type id -> TyList* of the `infer` type parameters its extends type declares
     // First word of every key in Checker.links
     KEY_TYPE_PARAM,     // Symbol -> Ty
     KEY_SYMBOL_LINKS,   // Symbol -> SymbolLinks

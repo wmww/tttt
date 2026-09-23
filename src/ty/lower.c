@@ -137,6 +137,13 @@ static Ty const* enum_member_type(Checker* me, Symbol const* symbol) {
     return nullptr;
 }
 
+// `type X = intrinsic` (the lib's Uppercase<S> & co.): the builtin name, not a type called `intrinsic`
+static bool is_intrinsic_body(TypeNode const* body) {
+    return body->tag == TYPE_IDENTIFIER && body->identifier->target && !vec_span_size(&body->identifier->namespaces) &&
+        csview_equals(body->identifier->name.sv, "intrinsic") &&
+        symbol_find_decl(body->identifier->target, SYMBOL_DECL_BUILTIN);
+}
+
 // The type a symbol stands for in a type position: the symbol must be the one that has the type meaning (what
 // identifiers keep as `target`). Everything about a placeholder is any
 Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
@@ -174,11 +181,9 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
             TyList params = ty_type_params_of(me, &type_decl->generic);
             LowerCtx ctx = { .generic = params.len > 0, .in_alias = true };
             TypeNode const* body = &type_decl->type;
-            if (body->tag == TYPE_IDENTIFIER && body->identifier->target && !vec_span_size(&body->identifier->namespaces) &&
-                csview_equals(body->identifier->name.sv, "intrinsic") &&
-                symbol_find_decl(body->identifier->target, SYMBOL_DECL_BUILTIN)
-            ) {
-                // `type X = intrinsic`: what the checker makes of the name. TODO: Uppercase<S> & co. are any
+            if (is_intrinsic_body(body)) {
+                // `type X = intrinsic`: what the checker makes of the name. The string mappings and NoInfer are made
+                // where they're referenced (lower_identifier()), this is what the bare name is
                 bool undefined = csview_equals(symbol->name, "BuiltinIteratorReturn") &&
                     compiler_options()->strict_builtin_iterator_return;
                 ret = ty_intrinsic(me, undefined ? TY_UNDEFINED : TY_ANY);
@@ -257,6 +262,29 @@ static Ty const* alias_instance(Checker* me, Symbol const* decl, Ty const* body,
 
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx);
 
+// The body of a type alias as written (the last declaration, like ty_declared_type_of()). Null if there's none
+static TypeNode const* alias_body_node(Symbol const* decl) {
+    TypeNode const* ret = nullptr;
+    for (u32 i = 0; decl && i < decl->decl_count; i++) {
+        if (decl->decls[i].kind == SYMBOL_DECL_TYPE_ALIAS) ret = &((TypeDecl const*)decl->decls[i].node)->type;
+    }
+    return ret;
+}
+
+// A reference to one of the lib's intrinsic generic aliases: `Uppercase<T>` & co. are string mappings (tsc's
+// getStringMappingType). Null if the alias isn't one
+static Ty const* intrinsic_alias_instance(Checker* me, Symbol const* decl, Ty const* arg) {
+    static char const* const mappings[] = { "Uppercase", "Lowercase", "Capitalize", "Uncapitalize" };
+    TypeNode const* body = alias_body_node(decl);
+    if (!body || !is_intrinsic_body(body)) return nullptr;
+    for (u32 i = 0; i < c_arraylen(mappings); i++) {
+        if (csview_equals(decl->name, mappings[i])) return ty_string_mapping(me, (TyStringMapping)i, decl, arg);
+    }
+    // HACK: NoInfer<T> is T (tsc: a substitution type that inference doesn't look into)
+    if (csview_equals(decl->name, "NoInfer")) return arg;
+    return nullptr;
+}
+
 static bool symbol_is_generic_alias(Symbol const* symbol) {
     return symbol->flags & SYMBOL_TYPE_ALIAS && !symbol->is_placeholder && symbol_type_generic(symbol);
 }
@@ -314,6 +342,10 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     if (symbol_is_generic_alias(decl)) {
         TyList params = ty_type_params_of(me, symbol_type_generic(decl));
         TyList args = lower_type_args(me, params, &identifier->generic_params, ctx, args_buf);
+        if (declared == ty_intrinsic(me, TY_ANY) && args.len == 1) {
+            Ty const* intrinsic = intrinsic_alias_instance(me, decl, args.data[0]);
+            if (intrinsic) return intrinsic;
+        }
         return alias_instance(me, decl, declared, params, args);
     }
     return ty_regular(me, declared); // `E.x` as a type: an enum member's declared type is fresh
@@ -465,6 +497,12 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             for_each (i, vec_type, &node->composite) {
+                collect_free_params(me, i, out);
+            }
+            break;
+
+        case TYPE_TEMPLATE:
+            for_each (i, vec_type, &node->template_->types) {
                 collect_free_params(me, i, out);
             }
             break;
@@ -867,6 +905,11 @@ static bool node_reaches_alias_in_flight_deep(Checker* me, TypeNode const* node)
                 if (node_reaches_alias_in_flight_deep(me, i)) return true;
             }
             return false;
+        case TYPE_TEMPLATE:
+            for_each (i, vec_type, &node->template_->types) {
+                if (node_reaches_alias_in_flight_deep(me, i)) return true;
+            }
+            return false;
         default: return false;
     }
 }
@@ -1087,6 +1130,50 @@ static bool is_naked_type_param_node(TypeNode const* node) {
 
 static bool node_reaches_alias_in_flight_deep(Checker* me, TypeNode const* node);
 
+// The `infer` type parameters a type node declares (what type_add_inferred_names() declares for an extends type)
+static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* out) {
+    switch (node->tag) {
+        case TYPE_IDENTIFIER:
+            for_each (i, vec_spanned_type, &node->identifier->generic_params) collect_declared_infers(me, &i->type, out);
+            break;
+        case TYPE_INFERRED:
+            if (node->inferred->symbol_ref) ty_buf_push(out, ty_type_param(me, node->inferred->symbol_ref));
+            break;
+        case TYPE_CALLABLE:
+            for_each (i, vec_function_arg, &node->callable->function->args) {
+                if (i->initializer.binding.has_explicit_type) collect_declared_infers(me, &i->initializer.binding.explicit_type, out);
+            }
+            collect_declared_infers(me, &node->callable->function->ret, out);
+            break;
+        case TYPE_INTERFACE:
+            for_each (i, vec_interface_member, &node->interface.members) collect_declared_infers(me, &i->type, out);
+            break;
+        case TYPE_ARRAY: collect_declared_infers(me, node->array.element, out); break;
+        case TYPE_TUPLE:
+            for_each (i, vec_tuple_element, &node->tuple.elements) collect_declared_infers(me, &i->type, out);
+            break;
+        case TYPE_INDEXED:
+            collect_declared_infers(me, &node->indexed->interface, out);
+            collect_declared_infers(me, &node->indexed->index, out);
+            break;
+        case TYPE_KEYOF: collect_declared_infers(me, &node->keyof->interface, out); break;
+        case TYPE_TERNARY:
+            collect_declared_infers(me, &node->ternary->maybe_sub, out);
+            collect_declared_infers(me, &node->ternary->maybe_super, out);
+            collect_declared_infers(me, &node->ternary->if_true, out);
+            collect_declared_infers(me, &node->ternary->if_false, out);
+            break;
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) collect_declared_infers(me, i, out);
+            break;
+        case TYPE_TEMPLATE:
+            for_each (i, vec_type, &node->template_->types) collect_declared_infers(me, i, out);
+            break;
+        default: break;
+    }
+}
+
 static TyCondBranch lower_branch(Checker* me, TypeNode const* node, LowerCtx ctx) {
     if (node_reaches_alias_in_flight_deep(me, node)) {
         ctx.in_alias = false;
@@ -1120,7 +1207,12 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             Ty const* ret = lower_identifier(me, node->identifier, ctx);
             Symbol const* decl = node->identifier->target;
             // The body of an alias is an instantiation of a generic alias: it goes by the new name
-            if (alias && decl && symbol_is_generic_alias(decl)) {
+            // Not when a conditional type resolved (`type C = Chars<"ab">` is the union made along the way, tsc's
+            // getConditionalType only names a deferred one or a distribution over a union), nor for an intrinsic (`type H = Uppercase<"a" | "b">`)
+            // (Syntactically: the alias may be being resolved)
+            TypeNode const* body = alias && decl && symbol_is_generic_alias(decl) ? alias_body_node(canonical(me, decl)) : nullptr;
+            bool renames = body && !is_intrinsic_body(body) && (body->tag != TYPE_TERNARY || ret->alias == canonical(me, decl));
+            if (renames) {
                 ret = ty_realias(me, ret, alias, alias_args);
             }
             return ret;
@@ -1197,6 +1289,21 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             TyCondBranch if_false = lower_branch(me, &node->ternary->if_false, ctx);
             bool distributive = is_naked_type_param_node(&node->ternary->maybe_sub);
             Ty const* ret = ty_conditional(me, check_type, extends, &if_true, &if_false, nullptr, nullptr, distributive);
+            if (ret->kind == TY_CONDITIONAL && ret->conditional.root == ret) {
+                // Instantiation must leave them alone: they're this conditional type's own, whatever an outer one of
+                // the same declaration inferred (`Split<B, D>` in the true branch of Split, see instantiate.c)
+                u64 key[2] = { KEY_CONDITIONAL_INFERS, ret->id };
+                if (!intern_get(&my links, key, 2)) {
+                    TyBuf infers = {0};
+                    collect_declared_infers(me, extends_node, &infers);
+                    if (infers.len) {
+                        TyList* list = arena_new(&my arena, TyList);
+                        *list = ty_list_copy(me, infers.data, infers.len);
+                        *intern_slot(me, &my links, key, 2) = list;
+                    }
+                    ty_buf_drop(&infers);
+                }
+            }
             return alias && ret->kind == TY_CONDITIONAL ? ty_realias(me, ret, alias, alias_args) : ret;
         }
 
@@ -1219,6 +1326,27 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
                 ty_union(me, types, len, alias, alias_args) :
                 ty_intersection(me, types, len, alias, alias_args);
             free(types);
+            return ret;
+        }
+
+        case TYPE_TEMPLATE: {
+            TemplateType const* template = node->template_;
+            u32 len = (u32)vec_type_size(&template->types);
+            Ty const** types = malloc(sizeof(Ty const*) * len);
+            Atom const** texts = malloc(sizeof(Atom const*) * (len + 1));
+            panic_if(!types || !texts, "out of memory");
+            for_each (i, vec_type, &template->types) {
+                types[i_index] = ty_from_node(me, i, ctx);
+                // `infer X` right in a placeholder is implicitly constrained to `string`
+                if (i->tag == TYPE_INFERRED && types[i_index]->kind == TY_TYPE_PARAM && !ty_param_constraint(me, types[i_index])) {
+                    types[i_index]->param.state->constraint = ty_intrinsic(me, TY_STRING);
+                    types[i_index]->param.state->constraint_state = LAZY_STATE_DONE;
+                }
+            }
+            for_each (i, vec_cstr, &template->texts) texts[i_index] = checker_atom(me, cstr_sv(i));
+            Ty const* ret = ty_template_literal(me, texts, types, len);
+            free(types);
+            free(texts);
             return ret;
         }
 

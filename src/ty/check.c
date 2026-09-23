@@ -245,7 +245,7 @@ static void check_access(
         return;
     }
     if (index->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) return; // TODO: TS2536 against `keyof` of the object
-    if (!(index->flags & (TYF_ANY | TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) {
+    if (!(index->flags & (TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL))) {
         cstr index_str = ty_to_cstr(me, index);
         error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
         cstr_drop(&index_str);

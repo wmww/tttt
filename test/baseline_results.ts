@@ -3383,7 +3383,7 @@ const baselines = {
     'circularMappedTypeConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularModuleImports': {
         errors: false,
@@ -8277,17 +8277,17 @@ const baselines = {
     },
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks4': {
@@ -12232,7 +12232,7 @@ const baselines = {
     },
     'excessPropertyCheckIntersectionWithRecursiveType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'excessPropertyCheckWithEmptyObject': {
@@ -14972,8 +14972,8 @@ const baselines = {
     },
     'genericMappedTypeAsClause': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'genericMemberFunction': {
         errors: true,
@@ -15522,7 +15522,7 @@ const baselines = {
     },
     'hugeDeclarationOutputGetsTruncatedWithError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'i3': {
@@ -16563,7 +16563,7 @@ const baselines = {
     'importedAliasedConditionalTypeInstantiation': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importedAliasesInTypePositions': {
         errors: true,
@@ -18338,7 +18338,7 @@ const baselines = {
     'intersectionReductionGenericStringLikeType': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'intersectionSatisfiesConstraint': {
         errors: true,
@@ -20256,9 +20256,9 @@ const baselines = {
         types: false,
     },
     'mappedTypeAsStringTemplate': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mappedTypeCircularReferenceInAccessor': {
         errors: true,
@@ -22302,7 +22302,7 @@ const baselines = {
     },
     'narrowingNoInfer1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'narrowingOfDottedNames': {
@@ -25103,7 +25103,7 @@ const baselines = {
     'pickOfLargeObjectUnionWorks': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'pinnedComments1': {
         errors: true,
@@ -26141,13 +26141,13 @@ const baselines = {
         types: false,
     },
     'recursiveConditionalCrash3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'recursiveConditionalCrash4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'recursiveConditionalEvaluationNonInfinite': {
@@ -26617,7 +26617,7 @@ const baselines = {
     },
     'relationComplexityError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'relationalOperatorComparable': {
@@ -28198,7 +28198,7 @@ const baselines = {
     'spliceTuples': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadBooleanRespectsFreshness': {
         errors: true,
@@ -28673,7 +28673,7 @@ const baselines = {
     'stringMappingAssignability': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringMatchAll': {
         errors: true,
@@ -29451,8 +29451,8 @@ const baselines = {
         types: false,
     },
     'tailRecursiveConditionalTypes': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'targetEs6DecoratorMetadataImportNotElided': {
@@ -29537,23 +29537,23 @@ const baselines = {
     },
     'templateLiteralIntersection': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateLiteralIntersection2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateLiteralIntersection3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateLiteralIntersection4': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateLiteralsAndDecoratorMetadata': {
         errors: true,
@@ -37683,7 +37683,7 @@ const baselines = {
     'decoratorOnClassProperty12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorOnClassProperty13': {
         errors: true,
@@ -38991,7 +38991,7 @@ const baselines = {
         types: false,
     },
     'intlNumberFormatES2023': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46466,9 +46466,9 @@ const baselines = {
         types: false,
     },
     'arrayLiteralExpressionContextualTyping': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionExpressionContextualTyping1': {
         errors: true,
@@ -62067,7 +62067,7 @@ const baselines = {
     },
     'numericStringLiteralTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'stringEnumLiteralTypes1': {
@@ -62098,7 +62098,7 @@ const baselines = {
     'stringLiteralsAssignedToStringMappings': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralsWithEqualityChecks01': {
         errors: true,
@@ -62147,17 +62147,17 @@ const baselines = {
     },
     'stringMappingDeferralInConditionalTypes': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'stringMappingOverPatternLiterals': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'stringMappingReduction': {
-        errors: true,
-        symbols: false,
+        errors: false,
+        symbols: true,
         types: false,
     },
     'templateLiteralTypes1': {
@@ -62167,7 +62167,7 @@ const baselines = {
     },
     'templateLiteralTypes2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateLiteralTypes3': {
@@ -62182,33 +62182,33 @@ const baselines = {
     },
     'templateLiteralTypes5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateLiteralTypes6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'templateLiteralTypes7': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'templateLiteralTypes8': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'templateLiteralTypesPatterns': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'templateLiteralTypesPatternsPrefixSuffixAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'localTypes1': {
         errors: true,
@@ -62242,12 +62242,12 @@ const baselines = {
     },
     'mappedTypeAsClauseRelationships': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mappedTypeAsClauses': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeConstraints': {
@@ -62257,7 +62257,7 @@ const baselines = {
     },
     'mappedTypeConstraints2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeErrors': {
@@ -65638,7 +65638,7 @@ const baselines = {
     'discriminatedUnionTypes3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeCallSignatures': {
         errors: false,
@@ -65672,8 +65672,8 @@ const baselines = {
     },
     'unionTypeCallSignatures7': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unionTypeConstructSignatures': {
         errors: false,

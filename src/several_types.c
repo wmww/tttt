@@ -254,6 +254,13 @@ void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs) {
     type_typecheck(&my interface, errs);
 }
 
+// Template literal type
+
+void template_type_drop(TemplateType* me) {
+    vec_cstr_drop(&my texts);
+    vec_type_drop(&my types);
+}
+
 // Typeof
 
 void typeof_type_drop(TypeofType* me) {

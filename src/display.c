@@ -625,6 +625,19 @@ static void display_type_inner(Display d, TypeNode const* me) {
             display_expr(d, my typeof_->expr);
             break;
 
+        case TYPE_TEMPLATE:
+            display_lit(d, "`");
+            for (isize_t i = 0; i < vec_cstr_size(&my template_->texts); i++) {
+                if (i) {
+                    display_lit(d, "${");
+                    display_type(d, vec_type_at(&my template_->types, i - 1));
+                    display_lit(d, "}");
+                }
+                display_sv(d, cstr_sv(vec_cstr_at(&my template_->texts, i)));
+            }
+            display_lit(d, "`");
+            break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             d = display_set_parsed(d, false);

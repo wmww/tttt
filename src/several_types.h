@@ -91,6 +91,16 @@ void keyof_type_drop(KeyofType* me);
 void keyof_type_lookup_names(KeyofType* me, Scope* names, ErrorCtx* errs);
 void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs);
 
+// Template literal type
+
+// `a${B}c`: the texts (cooked) around the substitutions, one more of them than of types
+typedef struct TemplateType {
+    VecCStr texts;
+    VecTypeNode types;
+} TemplateType;
+
+void template_type_drop(TemplateType* me);
+
 // Typeof
 
 typedef struct TypeofType {

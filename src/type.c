@@ -118,6 +118,11 @@ void type_drop(TypeNode* me) {
         case TYPE_INTERSECTION:
             vec_type_drop(&my composite);
             break;
+
+        case TYPE_TEMPLATE:
+            template_type_drop(my template_);
+            free(my template_);
+            break;
     }
     my tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
@@ -206,6 +211,12 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
             }
             break;
 
+        case TYPE_TEMPLATE:
+            for_each (i, vec_type, &my template_->types) {
+                type_add_inferred_names(i, scope);
+            }
+            break;
+
     }
 }
 
@@ -269,6 +280,12 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
                 type_lookup_names(i, names, errs);
             }
             break;
+
+        case TYPE_TEMPLATE:
+            for_each (i, vec_type, &my template_->types) {
+                type_lookup_names(i, names, errs);
+            }
+            break;
     }
 }
 
@@ -313,6 +330,12 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             for_each (i, vec_type, &my composite) {
+                type_typecheck(i, errs);
+            }
+            break;
+
+        case TYPE_TEMPLATE:
+            for_each (i, vec_type, &my template_->types) {
                 type_typecheck(i, errs);
             }
             break;

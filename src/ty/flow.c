@@ -193,6 +193,9 @@ static bool is_function_object(Checker* me, Ty const* ty) {
 static u32 type_facts(Checker* me, Ty const* ty, u32 mask) {
     bool strict = compiler_options()->strict_null_checks;
     u32 flags = ty->flags;
+    // Generic or not, like tsc's getTypeFacts: a mapping can be empty, a template like a non-empty literal
+    if (flags & TYF_STRING_MAPPING) return primitive_facts(TF_TYPEOF_EQ_STRING, true, true);
+    if (flags & TYF_TEMPLATE_LITERAL) return primitive_facts(TF_TYPEOF_EQ_STRING, true, false);
     if (flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
         Ty const* constraint = ty_base_constraint(me, ty);
         if (!constraint || constraint == ty || (constraint->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) {

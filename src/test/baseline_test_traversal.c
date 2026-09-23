@@ -353,6 +353,11 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             }
             break;
 
+        case TYPE_TEMPLATE:
+            for_each (i, vec_type, &my template_->types) {
+                type_compile_test_info(i, ctx);
+            }
+            break;
     }
 }
 
