@@ -40,11 +40,31 @@ types components) are the oracle, not the goal.
   indexed types: 8 sessions), flow graph + narrowing (plan 05), module resolution + tsconfig (plan 06), compiler
   options in one struct, multi-config tests, JS gate (`allowJs`/`checkJs`), diagnostics without a file.
   `documentation.md` describes the architecture, `hacks.md` what is approximated in each part.
-- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, contextual `this`, reverse mapped types,
+- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, template literal types, mapped `as` clauses, substitution types, reverse mapped types,
   decorators checking, declaration emit (out of scope). The iteration protocol, unique symbols and generators landed
   in plan 09 (`ty/iterate.c`).
 - History: every foundation plan (type core, binder, flow, modules) moved the suite by a whole category in one go and
   made it faster. Per-plan numbers are in `measurements.md` and the git log.
+
+## Course correction (insights after plan 08, 2026-09-22)
+- **The first corpus has told us what it can.** It is tsc's own code: ES5-era style, classes and unions, almost no
+  type-level programming. The type core has no **template literal types** (`` `a${B}` ``, `Uppercase<>` & co., infer
+  from templates), no mapped type **`as` clauses** (key remapping), no **substitution types**, no reverse mapped types.
+  The suite underweights those too (~80 tests), but every modern library and a lot of app code leans on them. Zero
+  diagnostics on one old-style project is not "the language works". **Plan 17: a second real corpus of modern,
+  type-heavy TypeScript** (pick, pin, wire into `realworld.py`/`bench.sh`, measure, rank root causes), next session.
+  Expect it to spawn a type-core plan (template literals + key remapping + substitution types); that's type-core
+  work, which goes before the suite plans when the corpus asks for it.
+- **Then the suite plans, cheapest-per-test first.** 1238 tests have a spurious parse error that kills all three
+  components (plan 14: `using` alone ~330). Plan 13 (member modifiers), plan 16 (elaboration: needs planning; 101
+  tests differ only in a column and much of TS2322 missing/spurious is misplacement), plan 15 (a loop). Unplanned and
+  deliberately later: JS/JSDoc (~900 tests: big, and not "the TypeScript language"), JSX (needs its own plan after
+  the second corpus says how much real code needs it), decorators.
+- **No perf plan yet.** tttt is ahead of multi-threaded tsgo on one corpus while single-threaded; the profile's top
+  (narrowing -> relations, union building) hasn't changed since plan 09 but hasn't grown either. Revisit with the
+  second corpus's profile: if that one is slower than tsgo, *that* is the perf plan.
+- Process health: plans 09-12 each finished in one session, within budget, no redesigns. The hack list grows mostly in
+  "Type core: known gaps", which is now the feature list for the plan 17 follow-up.
 
 ## Course correction (insights, 2026-09-22)
 - **The corpus is stalling while the suite rises.** 1750 / 1752 / 1751 diagnostics across plan 05, plan 06 and the
@@ -127,7 +147,8 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
   to be the error *printer*, `span_line_start` on a span starting at a newline, not the parser).
 - Single-threaded design. tsgo's win is largely parallel parse/bind + multiple checkers. Arena/interning design
   must not preclude per-file parallel parse/bind and ideally sharded checking (the type core doesn't, see above;
-  plan 04 must cover bind). Parse + bind are now 4x the typecheck phase on the bench: they're where the time is.
+  plan 04 must cover bind). On the real corpus typecheck is 567 of 880 ms, load+parse 192, resolve 102: all three
+  shard naturally per file, bind is the one with shared tables.
 - JS files, JSX, JSDoc, project references, declaration emit: all absent (tsconfig and module resolution exist
   since plan 06). Declaration/JS emit is out of scope for now (typechecker only, `--noEmit` semantics).
 
@@ -139,7 +160,9 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; ~~module resolution~~ done (plan 06); ~~JS gate,
    diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
 4b. ~~Real corpus to zero diagnostics (plan 08), then bench + profile it~~ done (with plans 09-12): 0 diagnostics,
-   0.88 s vs tsgo 1.02 s. Next: the suite plans 13-16 and the unplanned features, and/or a second real corpus.
+   0.88 s vs tsgo 1.02 s.
+4c. Second real corpus (modern, type-heavy: plan 17) and the type-core features it needs (template literal types,
+   key remapping, substitution types). Suite plans 13-16 alongside.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.
