@@ -228,9 +228,12 @@ static void infer_from_params(
             }
             break;
         }
-        if (i >= source->param_count) break;
-        Ty const* source_type = source->params[i].rest ?
-            ty_rest_element_type(me, source->params[i].type) : source->params[i].type;
+        // A source rest parameter stands for every position from its own on
+        bool source_rest = source->param_count && source->params[source->param_count - 1].rest;
+        u32 at = i < source->param_count ? i : source->param_count - 1;
+        if (i >= source->param_count && !source_rest) break;
+        Ty const* source_type = source->params[at].rest ?
+            ty_rest_element_type(me, source->params[at].type) : source->params[at].type;
         infer_step(me, inf, step, ty_instantiate(me, source_type, mapper), target_param->type);
     }
 }

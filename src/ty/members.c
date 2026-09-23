@@ -1516,6 +1516,26 @@ Ty const* ty_object_literal(
     return ret;
 }
 
+Ty const* ty_signature_type(Checker* me, Signature const* sig) {
+    u64 key[2] = { KEY_SIGNATURE_TYPE, (u64)(uintptr_t)sig };
+    void const** slot = intern_slot(me, &my links, key, 2);
+    if (*slot) return *slot;
+    MembersBuilder builder = {0};
+    if (sig->flags & SIGNATURE_CONSTRUCT) {
+        builder_push(&builder, construct, (Signature*)sig);
+    } else {
+        builder_push(&builder, call, (Signature*)sig);
+    }
+    Ty* ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | TYF_COULD_CONTAIN_TYPE_VARIABLES);
+    ret->anonymous.ctx = (LowerCtx){ .generic = true };
+    ret->anonymous.free_params_unknown = true;
+    ret->anonymous.state = arena_new(&my arena, TyObjectState);
+    ret->anonymous.state->members = builder_finish(me, &builder);
+    ret->anonymous.state->members_state = LAZY_STATE_DONE;
+    *slot = ret;
+    return ret;
+}
+
 Ty const* ty_param_constraint(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;

@@ -5156,9 +5156,9 @@ const baselines = {
         types: false,
     },
     'compositeGenericFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compositeWithNodeModulesSourceFile': {
         errors: true,
@@ -6023,7 +6023,7 @@ const baselines = {
     'contextualSignatureInstantiation4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualSignatureInstantiationWithTypeParameterConstrainedToOuterTypeParameter': {
         errors: true,
@@ -8001,7 +8001,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitHigherOrderRetainedGenerics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17223,12 +17223,12 @@ const baselines = {
     'inferentialTypingWithFunctionType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferentialTypingWithFunctionType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferentialTypingWithFunctionTypeNested': {
         errors: true,
@@ -17236,14 +17236,14 @@ const baselines = {
         types: false,
     },
     'inferentialTypingWithFunctionTypeSyntacticScenarios': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferentialTypingWithFunctionTypeZip': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferentialTypingWithObjectLiteralProperties': {
         errors: true,
@@ -28803,7 +28803,7 @@ const baselines = {
     'subtypeRelationForNever': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingTransitivity': {
         errors: true,
@@ -31216,7 +31216,7 @@ const baselines = {
         types: true,
     },
     'underscoreMapFirst': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

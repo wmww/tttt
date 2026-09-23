@@ -21,6 +21,9 @@ typedef struct Arg {
     bool part_of_spread; // An element of a spread tuple: `type` is all there is, `expr` is the whole spread
     bool spread; // `...xs` of something that isn't a fixed tuple: stands for any number of arguments of this type
     bool context_sensitive;
+    // A generic function where the parameter wants a non-generic one: inferred from once instantiated in the context
+    // of that signature, in the second pass (tsc's instantiateTypeWithSingleGenericCallSignature). Set per candidate
+    bool generic_function;
 } Arg;
 
 typedef struct Args {
@@ -280,8 +283,39 @@ static bool fixed_by_argument(Checker* me, Arg const* arg, Ty const* param_type,
     if (!param_type) return false;
     Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
     TyMapper const* probe = ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &unknown, .len = 1 });
-    // (Only a function argument returns what the contextual return type says)
-    return fixed_by_type(me, param_type, probe, true, arg->expr->tag == EXPR_FUNCTION ? 0 : 8);
+    // (Only a function argument returns what the contextual return type says; a generic function argument is
+    // instantiated in the context of the parameters alone)
+    bool follow_returns = arg->expr->tag == EXPR_FUNCTION && !arg->generic_function;
+    return fixed_by_type(me, param_type, probe, true, follow_returns ? 0 : 8);
+}
+
+// tsc's getSingleSignature: the one call (or construct) signature of an object type that has none of the other kind.
+// `allow_members`: properties and index signatures may be there too
+static Signature const* single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members) {
+    if (!(ty->flags & TYF_OBJECT)) return nullptr;
+    Members const* members = ty_members(me, ty);
+    if (!allow_members && (members->prop_count || members->index_count)) return nullptr;
+    if (construct) return members->construct_count == 1 && !members->call_count ? members->construct[0] : nullptr;
+    return members->call_count == 1 && !members->construct_count ? members->call[0] : nullptr;
+}
+
+// The generic signature of a generic function argument whose parameter wants a single non-generic signature of the
+// same kind (the one in `*contextual`), else null
+static Signature const* generic_function_argument(Checker* me, Ty const* arg_type, Ty const* param_type, Signature const** contextual) {
+    if (!arg_type || !param_type) return nullptr;
+    for (u32 construct = 0; construct < 2; construct++) {
+        Signature const* sig = single_signature(me, arg_type, construct, true);
+        if (!sig) continue;
+        signature_resolve(me, sig);
+        if (!sig->type_params.len) return nullptr;
+        Signature const* wanted = single_signature(me, ty_non_nullable(me, param_type), construct, false);
+        if (!wanted) return nullptr;
+        signature_resolve(me, wanted);
+        if (wanted->type_params.len) return nullptr;
+        *contextual = wanted;
+        return sig;
+    }
+    return nullptr;
 }
 
 // `contextual`: the contextual type of the call, which the return type is inferred from at a low priority
@@ -333,13 +367,39 @@ static TyMapper const* infer_type_arguments(
         // as it checks the argument)
         if (arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread) ty_argument_return_type(me, arg->expr->function);
         my outer_inference = nullptr;
+        Signature const* contextual = nullptr;
+        arg->generic_function = !arg->spread && !arg->part_of_spread &&
+            generic_function_argument(me, arg->type, shape_type_at(&shape, i), &contextual);
+        if (arg->generic_function) {
+            any_sensitive = true;
+            continue;
+        }
         infer_from_arg(me, &inf, &shape, args, i);
     }
-    // Second pass: each context-sensitive argument sees what is known by then, which is thereby decided
-    for (u32 i = 0; any_sensitive && !skip_sensitive && i < args->len; i++) {
+    // Second pass: each context-sensitive argument sees what is known by then, which is thereby decided. So does each
+    // generic function argument, instantiated in the context of its parameter's signature (tsc's
+    // instantiateSignatureInContextOf with the fixing mapper) and inferred from like that
+    for (u32 i = 0; any_sensitive && i < args->len; i++) {
         Arg* arg = &args->data[i];
         if (i >= shape.count && shape.rest_variadic) break;
-        if (!arg->context_sensitive) continue;
+        if (arg->generic_function) {
+            Ty const* param_type = shape_type_at(&shape, i);
+            Signature const* contextual = nullptr;
+            Signature const* generic = generic_function_argument(me, arg->type, param_type, &contextual);
+            // (A rest parameter of type parameter type isn't fixed: tsc's nonFixingMapper)
+            bool variadic = contextual->param_count && contextual->params[contextual->param_count - 1].rest &&
+                contextual->params[contextual->param_count - 1].type->kind == TY_TYPE_PARAM;
+            TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
+            for (u32 j = 0; j < inf.len && !variadic; j++) {
+                if ((inf.params[j].co_len || inf.params[j].contra_len) && fixed_by_argument(me, arg, param_type, sig->type_params.data[j])) {
+                    inf.params[j].fixed = so_far->targets[j];
+                }
+            }
+            Signature const* instantiated = ty_instantiate_signature_in_context_of(me, generic, contextual, so_far);
+            infer_types(me, &inf, ty_signature_type(me, instantiated), param_type, INFER_PRIORITY_NORMAL);
+            continue;
+        }
+        if (!arg->context_sensitive || skip_sensitive) continue;
         TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
         Ty const* param_type = shape_type_at(&shape, i);
         for (u32 j = 0; j < inf.len; j++) {

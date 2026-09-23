@@ -56,6 +56,7 @@ enum {
     KEY_SYNTHETIC_ACCESS, // Binding (an element of an object pattern) -> Expr `init.name`, see destructured_flow_type()
     KEY_DISCRIMINANT_CONFLICT, // (intersection member ids) -> 1 + whether they have conflicting discriminants
     KEY_SIGNATURE_INSTANCE, // (Signature, type argument ids) -> ty_signature_instantiation()
+    KEY_SIGNATURE_TYPE, // Signature -> ty_signature_type()
 };
 
 // Doesn't insert, unlike intern_slot()
@@ -133,6 +134,8 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
 // `sig` with its type parameters replaced by `args` and dropped (tsc's getSignatureInstantiationWithoutFillingIn
 // TypeArguments), memoised
 Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, TyList args);
+// The object type whose only member is `sig` (tsc's getOrCreateTypeFromSignature), one per signature
+Ty const* ty_signature_type(Checker* me, Signature const* sig);
 // tsc's instantiateSignatureInContextOf: `sig`'s type parameters inferred from the parameter types of `contextual`
 // (instantiated with `context_mapper`, the inference of an enclosing call, if any), without one also from its return
 // type

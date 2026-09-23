@@ -1,5 +1,19 @@
 # Plan 11: generic functions as arguments (context instantiation, higher-order inference)
 
+## Progress
+- **Stages 0-2 done** (session 1): suite 4129 -> 4150, corpus 91 -> 83 (moduleNameResolver.ts 1080,
+  parenthesizerRules.ts 662, tsbuildPublic.ts 945 gone). What landed beyond the plan: instantiated generic signatures
+  get fresh type parameters (`clone_type_params`, bounded ones only; `instantiate_outer` deleted), because the
+  constraint check in `ty_instantiate_signature_in_context_of` saw uninstantiated constraints otherwise; a
+  context-sensitive function expression takes a generic contextual signature's type parameters; mapped-to-mapped
+  inference; a contextual rest parameter covers every later position in `infer_from_params`. Constraint checks inside
+  a relation go through the relation in progress (`ty_is_related_within`). The generic-argument pass is folded into
+  pass 2 (`Arg.generic_function`), in argument order like tsc's second round. `ty_signature_type` exists (no display
+  work was needed: it prints from its members). Corpus wall unchanged.
+- Lost `badInferenceLowerPriorityThanGoodInference` to stage 0 (tsc's context-free type, triage.md).
+- Named tests still failing after stage 2: mostly types-only, waiting on stage 3 (`<K>(a: string[]) => number[]` in
+  contextualSignatureInstantiation1) or display (`typeof a` reuse in genericCallWithGenericSignatureArguments).
+
 ## Why
 ~50 of the 91 corpus diagnostics come from a generic function type meeting a non-generic signature, in three places
 where tttt erases the source's type parameters (to their constraint when inferring, to `any` when relating) instead
