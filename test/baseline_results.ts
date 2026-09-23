@@ -14806,7 +14806,7 @@ const baselines = {
         types: true,
     },
     'genericFunctionInference1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

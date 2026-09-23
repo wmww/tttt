@@ -121,9 +121,6 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   ... }`) and a generic signature shown inside a scope that has a type parameter of the same name (`createMCache :
   <T_1>() => MCache<T_1>` inside `function per<T>`: the types components of probes plan11/memoizeOne.ts and
   nestedReturnContext.ts).
-- Spreading a rest parameter of type parameter type: `(...args: A) => new cf(...args)` with `A extends any[]` gives
-  TS2345 "Argument of type '[...any[]]' is not assignable to parameter of type 'A'" (genericFunctionInference1): the
-  spread should pass `A` itself.
 - tsc elaborates a lambda argument that doesn't fit at its return expression (TS2322 inside the body,
   genericCallWithGenericSignatureArguments2), we report TS2345 on the whole argument. Same family as the object
   literal elaboration below.

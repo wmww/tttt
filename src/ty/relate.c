@@ -1391,6 +1391,20 @@ static Ternary target_each_related(Checker* me, RelationState* st, Ty const* sou
     return result;
 }
 
+static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_REFERENCE && ty->reference.target == my array_target) return true;
+    return is_tuple(ty) && !ty->reference.target->declared.tuple->readonly;
+}
+
+// `[...T]` with T generic (tsc's isSingleElementGenericTupleType)
+static bool is_single_generic_tuple(Checker* me, Ty const* ty) {
+    if (!is_tuple(ty)) return false;
+    TupleShape const* shape = ty->reference.target->declared.tuple;
+    if (shape->arity != 1 || !(shape->flags[0] & TUPLE_ELEMENT_REST)) return false;
+    Ty const* element = ty_reference_args(me, ty).data[0];
+    return element->kind == TY_TYPE_PARAM || (element->flags & TYF_DEFERRED);
+}
+
 static Ternary structured_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     bool comparable = st->relation == TY_RELATION_COMPARABLE;
 
@@ -1411,6 +1425,19 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
         Ternary related = some_related(me, st, source->composite.types, target);
         if (related) return related;
         // Otherwise the members may still add up to the target, property by property (below)
+    }
+    // `[...T]` is T
+    if (is_single_generic_tuple(me, source) && !source->reference.target->declared.tuple->readonly) {
+        Ternary related = is_related_to(me, st, ty_reference_args(me, source).data[0], target, false);
+        if (related) return related;
+    }
+    if (is_single_generic_tuple(me, target)) {
+        Ty const* constraint = base_constraint(me, source, 0);
+        if (!constraint) constraint = source;
+        if (target->reference.target->declared.tuple->readonly || is_mutable_array_or_tuple(me, constraint)) {
+            Ternary related = is_related_to(me, st, source, ty_reference_args(me, target).data[0], false);
+            if (related) return related;
+        }
     }
 
     // Generic targets

@@ -20,6 +20,7 @@ typedef struct Arg {
     Ty const* type; // As last checked, see check_args()
     bool part_of_spread; // An element of a spread tuple: `type` is all there is, `expr` is the whole spread
     bool spread; // `...xs` of something that isn't a fixed tuple: stands for any number of arguments of this type
+    Ty const* variadic; // `...args` of a generic array type (`T extends unknown[]`): the type spread, kept as `[...T]`
     bool context_sensitive;
     // A generic function where the parameter wants a non-generic one: inferred from once instantiated in the context
     // of that signature, in the second pass (tsc's instantiateTypeWithSingleGenericCallSignature). Set per candidate
@@ -92,8 +93,14 @@ static Args collect_args(Checker* me, CallExpr const* call) {
             }
             Ty const* element = ty_is_array(me, operand) || ty_is_tuple(operand) ?
                 ty_rest_element_type(me, operand) : ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr);
+            // A generic array-like stays itself, a variadic element (tsc's getSpreadArgumentType)
+            Ty const* variadic = nullptr;
+            if (operand->kind == TY_TYPE_PARAM || (operand->flags & TYF_DEFERRED)) {
+                Ty const* constraint = ty_base_constraint(me, operand);
+                if (constraint && (ty_is_array(me, constraint) || ty_is_tuple(constraint))) variadic = operand;
+            }
             if (args.spread_index < 0) args.spread_index = (i32)args.len;
-            args_push(&args, (Arg){ .expr = i, .type = element, .spread = true });
+            args_push(&args, (Arg){ .expr = i, .type = element, .spread = true, .variadic = variadic });
         } else {
             bool context_sensitive = ty_expr_is_context_sensitive(i);
             args_push(&args, (Arg){
@@ -210,7 +217,7 @@ static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool w
         Arg const* arg = &args->data[from + i];
         if (arg->spread) {
             flags[i] = TUPLE_ELEMENT_REST;
-            elements[i] = ty_array(me, arg->type, false);
+            elements[i] = arg->variadic ? arg->variadic : ty_array(me, arg->type, false);
         } else {
             Ty const* type = arg->type ? arg->type : ty_expr_type(me, arg->expr);
             elements[i] = widen ? ty_widened_literal(me, type) : type;
