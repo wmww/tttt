@@ -9018,7 +9018,7 @@ const baselines = {
     'decoratorsOnComputedProperties': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'decrementAndIncrementOperators': {
         errors: false,
@@ -25122,7 +25122,7 @@ const baselines = {
     },
     'predicateSemantics': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'prefixIncrementAsOperandOfPlusExpression': {
@@ -37556,9 +37556,9 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethod13': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'decoratorOnClassMethod14': {
         errors: true,
@@ -37611,19 +37611,19 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethod4': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'decoratorOnClassMethod5': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'decoratorOnClassMethod6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'decoratorOnClassMethod7': {
         errors: true,
@@ -42236,27 +42236,27 @@ const baselines = {
         types: true,
     },
     'invalidNewTarget.es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'invalidNewTarget.es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'newTarget.es5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'newTarget.es6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'newTargetNarrowing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -45266,42 +45266,42 @@ const baselines = {
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStatic(target=es2015,usedefineforclassfields=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStatic(target=es2015,usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStatic(target=es2022,usedefineforclassfields=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStatic(target=es2022,usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStatic(target=es5,usedefineforclassfields=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStatic(target=es5,usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStatic(target=esnext,usedefineforclassfields=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStatic(target=esnext,usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45356,22 +45356,22 @@ const baselines = {
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStaticAmbient(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStaticAmbient(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStaticAmbient(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-nonStaticAmbient(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45461,22 +45461,22 @@ const baselines = {
         types: true,
     },
     'esDecorators-classDeclaration-fields-staticAmbient(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-staticAmbient(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-staticAmbient(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-fields-staticAmbient(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45511,22 +45511,22 @@ const baselines = {
         types: true,
     },
     'esDecorators-classDeclaration-methods-nonStatic(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-methods-nonStatic(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-methods-nonStatic(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-methods-nonStatic(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

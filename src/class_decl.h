@@ -52,6 +52,7 @@ typedef struct ClassItem {
             bool is_readonly;
             bool is_optional;
             bool is_abstract;
+            bool is_declare; // `declare x: T`: nothing is emitted, so it can't be decorated
             cstr name_string; // See method.name_string
             Span name_span;
             bool name_is_value;

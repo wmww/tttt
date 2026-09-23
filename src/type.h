@@ -263,4 +263,5 @@ typedef enum KeywordIdentifier {
     KEYWORD_IDENTIFIER_THIS,
     KEYWORD_IDENTIFIER_SUPER,
     KEYWORD_IDENTIFIER_IMPORT, // `import("./a")` and `import.meta`
+    KEYWORD_IDENTIFIER_NEW_TARGET, // `new.target`, the name spans all of it. target: the class or function it is
 } KeywordIdentifier;

@@ -64,6 +64,7 @@ typedef struct ExprCtx {
     bool reject_in_operator;
     bool reject_operators;
     bool entity_name; // The operand of a `typeof` type: `a.b.c<T>`, no calls and no `[i]` (that is an indexed access type)
+    bool decorator; // `@dec [x]`: the `[` starts a computed member name, not an element access (tsc's inDecoratorContext)
     bool is_parsing_ternary;
     int min_precedence;
 } ExprCtx;
@@ -1246,6 +1247,19 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     }
     identifier.import_span = span_from(a);
     *ret = type_identifier(c_new(IdentifierType, identifier));
+    return parse_success(&p);
+}
+
+// `new.target` (tsc's MetaProperty), as one keyword identifier
+static bool parse_new_target(Parser* parent, Expr* ret) {
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+    if (!hop_start_if_ends_on_word_break(&p, "new")) return parse_fail(&p);
+    hop_whitespace(&p);
+    if (!hop_char(&p, '.')) return parse_fail(&p);
+    hop_whitespace(&p);
+    if (!hop_start_if_ends_on_word_break(&p, "target")) return parse_fail(&p);
+    *ret = expr_identifier((IdentifierExpr){ .name = span_from(a), .keyword = KEYWORD_IDENTIFIER_NEW_TARGET });
     return parse_success(&p);
 }
 
@@ -2752,6 +2766,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 .tag = CLASS_ITEM_FIELD,
                 .field = {
                     .is_readonly = modifiers.includes[MODIFIER_READONLY],
+                    .is_declare = modifiers.includes[MODIFIER_DECLARE],
                     .is_static = modifiers.includes[MODIFIER_STATIC],
                     .is_optional = optional,
                     .name_string = cstr_move(&name_string),
@@ -3528,7 +3543,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (!ctx.entity_name && parse_bracket_prop(&p, &parsed.expr_a)) {
+    if (!ctx.entity_name && !(ctx.decorator && !optional_chain) && parse_bracket_prop(&p, &parsed.expr_a)) {
         *left_and_ret = expr_property(
             span_from(a),
             c_new(PropertyExpr, {
@@ -3735,6 +3750,7 @@ static bool parse_decorators(Parser* parent, VecExpr* ret) {
         // Member accesses and calls, anything more has to be in parentheses
         ExprCtx ctx = expr_ctx_null;
         ctx.reject_operators = true;
+        ctx.decorator = true;
         Expr expr;
         if (expect_expr(&p, ctx, &expr)) {
             vec_expr_push(ret, expr);
@@ -3806,6 +3822,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ret->tag = EXPR_ARRAY;
     } else if (parse_class_decl(&p, &parsed.class_decl)) {
         *ret = expr_class_decl(span_from(a), c_new(ClassDecl, parsed.class_decl));
+    } else if (parse_new_target(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "new")) {
         hop_whitespace(&p);
         ExprCtx sub_ctx = ctx;

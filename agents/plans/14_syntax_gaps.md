@@ -38,8 +38,13 @@ plan of its own (parse + JSX namespace types + intrinsic elements).
   `export import x from` (TS1191), shebang lines, tsc's pairwise modifier order rules (`static async` was TS1029),
   break/continue targets (TS1107 across function/static block boundaries, TS1115/1116 by a label stack in
   `BlockTypecheckCtx`).
-- Next (`./failstats.py --syntax`): `@dec ["computed"]` fields and `static declare` (16), `new.target` (6),
-  `export default x satisfies T` (5), `async #m()`, `*() {}` members, `yield`/`await` in parameter defaults (36).
+- **Decorators before computed names, `new.target`: done** (4575 -> 4595; tests with a spurious syntax error now 746,
+  from 1242 at the start of the plan). `ExprCtx.decorator` stops `@dec [x]` from being an element access (tsc's
+  inDecoratorContext); TS1206 for decorators on `declare`/abstract fields without experimentalDecorators;
+  `new.target` is a KEYWORD_IDENTIFIER_NEW_TARGET resolved to the constructor's class or the function (TS17013
+  elsewhere). Left: its symbol for anonymous functions (`(Anonymous function)`), error type as a computed key.
+- Next (`./failstats.py --syntax`): `yield`/`await` in parameter defaults (~36: `'{'`, `'async function id'`), then
+  the recovery shapes are what's left at the top (`''`, `'};'`, `'];'`: recovery fidelity, see Risks).
 
 ## How
 Parser work driven by the list, largest shape first, like plan 08's loop:

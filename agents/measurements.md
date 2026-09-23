@@ -2,10 +2,10 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
-## 2026-09-22, plan 14: `using` declarations, import attributes
-Suite **4575** full (`using` +314, import attributes +4 and 45 tests with more components, import/export forms and
-jump targets +36; no losses; errors 7775, symbols 9234, types 7413). Tests with a spurious syntax error:
-1242 -> 916. Corpora unchanged (tsc 0, valibot 2169, type-fest 598).
+## 2026-09-22, plan 14: syntax gaps (`using`, import attributes, import/export forms, decorators, new.target)
+Suite **4595** full (`using` +314, import attributes +4 and 45 tests with more components, import/export forms and
+jump targets +36, decorators/`new.target` +20; no losses; errors 7803, symbols 9235, types 7418). Tests with a
+spurious syntax error 1242 -> 746. Corpora unchanged (tsc 0, valibot 2169, type-fest 598).
 
 ## 2026-09-22, plan 19 stage 0: module augmentations merged in the link phase
 Suite **4221** full (+2, +27 components, no losses). tsc corpus 0. valibot **4473 -> 2169** (TS2344 1166, TS2345 489,

@@ -685,6 +685,19 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_IDENTIFIER:
             identifier_expr_compile_test_info(&my identifier, ctx);
+            if (my identifier.keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
+                // tsc shows the `target` of `new.target` too, like the name of a property access
+                Span target = my identifier.name;
+                target.sv = csview_from_n(span_end_ptr(target) - 6, 6);
+                if (my identifier.target) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = symbol_declaration_spans(my identifier.target),
+                        .span = target,
+                        .name = my identifier.target->name_span,
+                    });
+                }
+                baseline_test_case_add_type(ctx, target, ty_regular(current_checker, expr_get_type(me)));
+            }
             break;
 
         case EXPR_BINARY_OP:

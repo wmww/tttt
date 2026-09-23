@@ -312,6 +312,14 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         expr_typecheck(i, errs);
     }
     for_each (i, vec_class_item, &my items) {
+        if (i->tag == CLASS_ITEM_FIELD && (i->field.is_declare || i->field.is_abstract) &&
+            vec_expr_size(&i->decorators) && !compiler_options()->experimental_decorators
+        ) {
+            // tsc's checkGrammarModifiers via nodeCanBeDecorated(), at the `@` of the first decorator
+            Span at = i->span;
+            at.sv = csview_from_n(span_start_ptr(i->span), 1);
+            error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
+        }
         for_each (decorator, vec_expr, &i->decorators) {
             expr_typecheck(decorator, errs);
         }

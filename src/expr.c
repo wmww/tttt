@@ -42,6 +42,25 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                 if (file->kind == SCOPE_NAMESPACE) my this_kind = THIS_NAMESPACE;
                 if (file->kind == SCOPE_ENUM) my this_kind = THIS_ENUM;
             }
+        } else if (my keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
+            // tsc's getNewTargetContainer(): the nearest function that isn't an arrow function, which must be a
+            // constructor (the class), a function declaration or a function expression
+            Scope const* scope = names;
+            while (scope && scope->kind != SCOPE_STATIC_BLOCK &&
+                !(scope->kind == SCOPE_FUNCTION && scope->function && !span_valid(scope->function->arrow_span))
+            ) {
+                scope = scope->parent;
+            }
+            FunctionImpl const* function = scope && scope->kind == SCOPE_FUNCTION ? scope->function : nullptr;
+            if (function && function->is_constructor) {
+                my target = function->constructed_class;
+            } else if (function && !function->is_method && !function->accessor && !span_valid(function->member_name)) {
+                my target = function->symbol;
+                my this_function = function;
+            } else {
+                error_ctx_error_d(errs, my name, 17013, "Meta-property 'new.target' is only allowed in the body of a "
+                    "function declaration, function expression, or constructor.");
+            }
         } else if (my keyword == KEYWORD_IDENTIFIER_IMPORT && my module_ref) {
             // `import("./a")`
             if (my module_ref->file) {

@@ -592,6 +592,11 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
             return declared;
         }
     }
+    if (identifier->keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
+        // tsc's checkNewTargetMetaProperty(): the class of a constructor, else the function
+        if (decl) return ty_type_of_symbol(me, decl);
+        return identifier->this_function ? ty_function_type(me, identifier->this_function) : ty_intrinsic(me, TY_ERROR);
+    }
     if (!decl && !identifier->keyword && span_equals(identifier->name, "arguments")) {
         Symbol const* arguments = program_get_global(my program, c_sv("IArguments"), SYMBOL_TYPE);
         return arguments ? ty_declared_type_of(me, arguments) : any_type(me);
