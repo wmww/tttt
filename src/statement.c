@@ -1277,7 +1277,9 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                 if (i->is_pattern) {
                     expr_typecheck(&i->pattern, errs);
                     Ty const* pattern_type = expr_get_type(&i->pattern);
-                    if (!ty_is_comparable_either_way(current_checker, needle_type, pattern_type)) {
+                    // tsc's isTypeEqualityComparableTo: a nullable case type is always fine
+                    if (!(pattern_type->flags & TYF_NULLABLE)
+                        && !ty_is_comparable_either_way(current_checker, needle_type, pattern_type)) {
                         error_ctx_error_d(errs, i->pattern.outer_span, 2678,
                             "Type '", pattern_type, "' is not comparable to type '", needle_type, "'.");
                     }

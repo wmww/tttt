@@ -62021,7 +62021,7 @@ const baselines = {
         types: false,
     },
     'literalTypes1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
