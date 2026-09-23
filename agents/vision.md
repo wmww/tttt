@@ -5,14 +5,19 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-22, after plan 09)
+## State (2026-09-22, triage after plan 10)
 - **Suite: `./fasttest.sh` 4129 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
   a real measurement of type *printing*; plans 08-10 moved the suite by +633 on the side.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
   under tsc): **0 parse, 0 name, 91 type diagnostics** (1751 at the start of plan 08, flat for three plans before;
   plan 09 took the iteration bucket, 203 -> 109, plan 10 the `this` cascades and skipLibCheck, -> 91). What is left
-  is mostly two category-sized gaps (higher-order generic function inference TS2558 38 + ~10, fresh/regular literals
-  semver.ts ~14: plan 11) plus a tail of ~25 singles (plan 08 "Progress").
+  is two planned category-sized gaps (higher-order generic inference ~45: plan 11; fresh/regular literals, semver.ts
+  14: plan 12) plus ~34 singles (plan 08 "Progress").
+- **Suite gaps are now mostly absent features, not wrong answers** (triage after plan 10): ~1250 tests hit a syntax
+  error tsc doesn't have (`using` alone ~330: plan 14); dozens of checks don't exist at all (`./unimplemented_codes.sh`:
+  unused locals, property vs index signature, used-before-declaration, operand checks, grammar/regex checks: plan 15);
+  no accessibility/readonly/private-name checks (plan 13), no excess property checks (plan 12 stage 4). These are
+  cheap per test compared with the type core work, and ready to schedule once the corpus is done.
 - `this` types (plan 10: polymorphic `this`, contextual `this`, class heritage checks) and the iteration protocol +
   unique symbols + generators (plan 09) landed, both done in one long session each without a redesign.
 - ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole
@@ -121,7 +126,8 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
    diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
 4b. **Real corpus to zero diagnostics (plan 08)**, then bench + profile it: the first honest perf comparison. What
    plan 08's loop can't do is category-sized and planned: ~~iteration protocol + unique symbols + generators (plan
-   09)~~ done, ~~`this` types (plan 10)~~ done, fresh literals + higher-order generic inference (plan 11, a sketch).
+   09)~~ done, ~~`this` types (plan 10)~~ done, higher-order generic inference (plan 11),
+   fresh literals + excess property checks (plan 12). Then the suite plans 13-15.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.

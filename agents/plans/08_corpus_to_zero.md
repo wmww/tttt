@@ -59,17 +59,24 @@ undefined-returning functions, optional spreads, returnMapper for argument conte
 
 **Plan 10 stage 1 (`this` types): 109 -> 95.** The `this` cascades are gone (resolutionCache.ts, builder.ts).
 
-What is left (95), by root cause, biggest first:
-- **Higher-order generic function inference** (TS2558 38, nodeFactory.ts `memoizeOne(<T>(kind: T["kind"]) => ...)`,
-  plus the nodeFactory.ts/parenthesizerRules.ts object-literal-with-generic-methods TS2322s): plan 11 (sketch).
-- TS7022 x4 (binder.ts 3398, checker.ts 4415/16469/47011): unexplored, were hidden among the `this` ones.
-- **Fresh vs regular literal types** (semver.ts 13 TS2345 + TS2678): plan 11 (sketch).
-- Unexplored singles (~25): substitution types (TS2370 x4 in @types/node events.d.ts, `(...args: T[K]) => void` in
-  the true branch of `T[K] extends unknown[]`, triage.md); `Mutable<T>`/`T & {...}` generic relations in nodeFactory.ts
-  5073-7176; NodeArray<Node> vs NodeArray<ModifierLike> (parser.ts 3557/7976/9676, checker.ts 7968/50523: likely a
-  `visitNodes`/`createNodeArray` inference); `Type | undefined` not narrowed (checker.ts 14692/18877/13348,
-  moduleSpecifiers.ts 418/428); core.ts 2467 `[...any[]]` to T; commandLineParser.ts 4277; parser.ts 2414;
-  classThis.ts 138; IdentifierNameMap `add` (MultiMap-style intersection); checker.ts 32308 reduceLeft overloads.
+**Plan 10 done: 95 -> 91** (skipLibCheck took the 4 TS2370 in @types/node).
+
+What is left (91, 2026-09-22 triage), by root cause:
+- **Plan 11** (higher-order generic inference): TS2558 38 + nodeFactory.ts 502/507/509/512, parenthesizerRules.ts 662,
+  tsbuildPublic.ts 945 (generic arguments instantiated in context), moduleNameResolver.ts 1080 (its stage 0).
+- **Plan 12** (fresh literals): semver.ts 13 TS2345 + TS2678.
+- The singles (~34), for a plan 08 session after 11/12 (some may fall out of them; the `unknown`s smell like weak
+  inference):
+  - TS7022 x4: binder.ts 3398, checker.ts 4415/16469/47011. Unexplored.
+  - `X | undefined` not narrowed (7): checker.ts 13348/14692/18877 (`return links[k]` / `t.cache` after an
+    assignment through an element access or a `??=`?), 16721/16726, moduleSpecifiers.ts 418/428.
+  - `NodeArray<Node>` where a `NodeArray<ModifierLike>`/`NonNullable<T>` is wanted (6): checker.ts 7968/50523,
+    parser.ts 3557 x2/7976/9676: likely `visitNodes`/`createNodeArray`/`factory.createNodeArray(filter(...))` inference.
+  - Generic intersection / `Mutable<T>` relations (7): nodeFactory.ts 5073/5093/5094/5103/5104/7175/7176.
+  - `unknown` inferred: program.ts 4735, utilities.ts 9417 (`MultiMap<unknown, unknown>`), classFields.ts 2745 x2
+    (`PrivateEnvironment<..., unknown>`).
+  - core.ts 2467/2478 (`[...unknown[]]` to `T`), checker.ts 32308 (reduceLeft overloads), classThis.ts 138,
+    transformers/utilities.ts 310 (`IdentifierNameMap` `add`: a MultiMap-style intersection).
 
 ## How
 This is a loop, not a design. Each iteration:

@@ -1,6 +1,6 @@
 # Triage
-Uninvestigated items. Triage sessions drain this. Everything here was re-checked on 2026-09-21 (triage after plan
-06); items fixed by plans 04-06 or verified fixed by probe are gone.
+Uninvestigated items. Triage sessions drain this. Last drained 2026-09-22 (triage after plan 10): items now owned by
+plans 11-15 or `bugs/` are gone from here; see those files.
 
 ## Category-sized (worth a plan or a whole session)
 - **JS files: JSDoc types, CommonJS**. Since the triage after plan 06 `.js` files load only with `allowJs`, semantic
@@ -8,80 +8,48 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   `@allowJs` tests now mostly fail *quietly*: they need JSDoc types (`@param`, `@type`, `@typedef`), `module.exports`
   / `require` as declarations, expando assignments (`f.x = 1`, `this.x = 1`, prototype assignments), TS2306 on
   CommonJS files that aren't modules. Needs its own plan; JSDoc is big. `check_access()` still lets JS files through.
-- **Spurious TS2304 for `import`, `export`, `using`, `const`, `module`, `exports`, `with`, `of`** (thousands of
-  diagnostics): parser recovery turns keywords it can't place into identifier expressions; `using` declarations and
-  the import/export forms below don't parse. `./failstats.py --syntax` has the shapes. Remaining syntax gaps (test
-  suite only, the corpus has none): `for await (... of ...)`, `export { a as default } from`, `import { default as
-  b }`, `import d, * as ns from`, `export import`, `new.target`, `**=`, shebang line, labeled `continue`/`break`
-  target validation, `const c;` in ambient files, JSX (whole feature, needs its own plan), `accessor` fields,
-  `override`/TS4112+, overloads of `*()`-style nameless members (error recovery), TS1161 for an unterminated regex
-  (`parse_regex` just fails), TS6188/6189 misplaced numeric separators, TS1263/1264 misplaced `let x!`, `export { x
-  as "y" }` string export names / `import cjs = require` in `.d.cts` (TS1003/TS1005 in nodeModulesPackagePatternExports*),
-  TS2303 "Circular definition of import alias".
+- **Syntax gaps**: plan 14 takes the feature-sized shapes (`using`, import attributes, import/export forms, labels,
+  shebang, `new.target`, ...). Left out of it: JSX (whole feature, needs its own plan: ~100 tests just in
+  `failstats.py --syntax`, more behind `@jsx`), recovery-fidelity shapes (`''`, `'};'`, `'{'`, ~100 tests), TS1161 for
+  an unterminated regex (`parse_regex` just fails), TS1263/1264 misplaced `let x!`, `const c;` in ambient files,
+  `override`/TS4112+, overloads of `*()`-style nameless members, TS2303 "Circular definition of import alias".
 - **Parser recovery fidelity now matters more**: the harness typechecks next to parse errors like tsc (since the
   triage after plan 06). parserGreaterThanTokenAmbiguity12-19 (`1 >> = 2` parses as an assignment and gets TS2364)
   and restParamModifier (TS1014 on top of tsc's error) regressed honestly. tsc's baseline for a file with syntax
   errors includes its type errors, so recovery has to produce the same AST shape.
-- **Contextual signatures of nested function expressions in generic calls**: `foo("", function () { return x =>
-  x.length }, p => undefined)` with `fun: () => (x: T) => U` checks the inner lambda against the *uninstantiated*
-  `(x: T) => U` (TS2345 "Type 'string' is not assignable to type 'T'"). tsc instantiates contextual signatures with
-  the inference context's nonFixingMapper (instantiateContextualType, ContextFlags.Signature). generatorTypeCheck45/46
-  lost their errors component to this once generators were typed (plan 09).
+- **Substitution types** don't exist: in the true branch of `T[K] extends unknown[] ? (...args: T[K]) => void : never`
+  tsc knows `T[K]` is an array (getSubstitutionType / getImpliedConstraint); tttt reports TS2370 there (@types/node
+  events.d.ts x4 in the corpus, hidden by skipLibCheck since plan 10) and presumably mis-relates such types
+  elsewhere. Category-sized-ish: needs a Ty kind or a flag on indexed/type-param references made in a conditional's
+  true branch.
+- `this` leftovers (plan 10 done, deleted): TS2526 for `this` in static property initializers (`static y =
+  <this>undefined`) and a few other contexts (thisTypeErrors, 7 missing); TS7041 (`this` captured by a top-level arrow);
+  TS7017 (`typeof globalThis` has no index signature); TS2417 (class static side); `ThisType<T>` arguments aren't
+  instantiated with the inference in progress (Vue-style `defineComponent` options); awaitUnionPromise lost a types
+  component to union order when the `this` type parameters moved type ids (union printing order follows ids).
+- **Target-gated diagnostics** now possible (`compiler_options()->target` exists): TS2705/TS2468 (async needs
+  `Promise`), TS1375/TS1378 (top-level await), TS2802 (iteration needs `downlevelIteration`), TS1056 (accessors, ES3).
+  TS18028 is in plan 13, the "Cannot find name" flavours (TS2583/TS2584/TS2580/TS2582/TS2550) in plan 15.
+
+## Checker gaps (each verified still open by probe)
 - `expandoFunctionSymbolProperty`: `f[symb] = ...` on a function declaration isn't an expando property (only `f.x =`
   is?), so `f` misses `[symb]` (TS2741). Found by plan 09.
-- **TS2430 (interface incorrectly extends) is implemented but off** (`interface_heritage_typecheck`, on with
-  `TTTT_INTERFACE_HERITAGE=1`): in the corpus, checking `CallChainRoot extends CallChain` (types.ts) early makes six
-  annotated bindings in binder.ts/utilities.ts TS7022, i.e. some alias gets resolved from inside a relation while it is
-  already being resolved further up and memoises the error type (an alias -> conditional type -> relation -> member
-  -> same alias cycle that the usual evaluation order never hits). Find the alias (bisect with the heritage check on
-  one interface at a time), then make alias resolution order-independent (tsc defers conditional types more lazily).
-  167 missing TS2430 in 40 tests wait on it. complexRecursiveCollections has 6 more spurious TS2430s from the overload
-  relation bug below (`Seq<K, M>` vs `Collection<K, M>`: overloaded generic `filter`).
-- Private names (`#x`) are plain names: tsc gives each class its own, so a derived class redeclaring its base's `#x`
-  isn't a conflict (the heritage check skips such classes, a HACK in `class_heritage_typecheck`), and `#x` of another
-  class isn't accessible (TS18013).
 - `silentNeverPropagation` (lost to plan 10 stage 2 when object literal methods became context sensitive, like in
   tsc): `convert(createModule({ a: 12 }, { foo() { return true } }))` infers the inner TActions from the return type
   context `ModuleWithState<{a}> & {foo(): boolean}` and fixes it before the method's own candidate is seen. tsc only
   fixes what a contextual *signature's parameters* mention (the method has none).
-- `asyncYieldStarContextualType`: `promise.then(mapper)` with a generic `mapper` is higher-order inference (plan 11).
 - Late bound index signatures (TS 5.x): `[k]: T` in a class/interface with an entity-name key of type string/number/
   symbol is an index signature in tsc (getIndexInfosOfIndexSymbol); tttt drops the member (hacks.md "Computed member
   names"). overrideLateBindableIndexSignature1 and friends.
 - An array literal that is a destructuring assignment target (`[a, b] = m`) types as an array, tsc makes it a tuple of
   the targets' types (checkArrayLiteral inDestructuringPattern); a binding pattern isn't the contextual type of its
   initializer (`var [, , [, b]] = [3, 5, [0, 1]]` gets TS2461 at ES5, declarationEmitDestructuringArrayPattern5).
-- **Member accessibility is not checked at all**: `private`/`protected` members and constructors are ordinary ones
-  (no TS2341 in 36 tests, TS2445 22, TS2673/TS2674 8). `new C()` on a private constructor should be an error whose
-  result is `any`: typesWithPrivateConstructor/typesWithProtectedConstructor lost their symbols component when
-  `Object` members started resolving (`c.constructor` now finds `Object.constructor`, tsc has `any`), an honest loss.
-- **Writes to readonly properties aren't checked** (TS2540, see the count in the commit that added this line; readonly
-  mapped types only became readonly with plan 08 session 3, so the flags are now there to check).
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
   without lib es2015): some circularity through error types. Probe: test/probes/plan08/alias_optional_chain.ts minus
   its `@target`.
-- **Substitution types** don't exist: in the true branch of `T[K] extends unknown[] ? (...args: T[K]) => void : never`
-  tsc knows `T[K]` is an array (getSubstitutionType / getImpliedConstraint); tttt reports TS2370 there (@types/node
-  events.d.ts x4 in the corpus) and presumably mis-relates such types elsewhere. Category-sized-ish: needs a Ty kind
-  or a flag on indexed/type-param references made in a conditional's true branch.
-- `this` leftovers (plan 10 done, deleted): TS2526 for `this` in static property initializers (`static y =
-  <this>undefined`) and a few other contexts (thisTypeErrors, 7 missing); TS7041 (`this` captured by a top-level arrow);
-  TS7017 (`typeof globalThis` has no index signature); TS2417 (class static side); `ThisType<T>` arguments aren't
-  instantiated with the inference in progress (Vue-style `defineComponent` options); awaitUnionPromise lost a types
-  component to union order when the `this` type parameters moved type ids (union printing order follows ids).
-- Overloaded methods with callback parameters that mention the other type (typedArraysCrossAssignability01, lost to plan
-  10 because `array: this` now resolves): `interface A<T> { reduce(cb: (p: number, array: A<T>) => number): number;
-  reduce(cb: (p: number, array: A<T>) => number, init: number): number; readonly [Symbol.toStringTag]: "a" }` and the
-  same `B` with "b": `a = b` blames `reduce` (tsc: `[Symbol.toStringTag]`, reduce is related through the in-progress
-  B -> A pair). One overload works, two don't: something in the N x M signature comparison (erasure? caching of a
-  result that depended on a maybe?) loses the assumption.
-- **Target-gated diagnostics** now possible (`compiler_options()->target` exists): TS18028 (private identifiers <
-  ES2015), TS2705/TS2468 (async needs `Promise`), TS1375/TS1378 (top-level await), TS2802 (iteration needs
-  `downlevelIteration`), TS1056 (accessors, ES3), TS2583/TS2584/TS2580/TS2582/TS2581 "Cannot find name" flavours
-  picked by name (`Map`/`Promise` with an old lib: 116; `require`/`process`: 88; `describe`/`it`: 24; `$`; `console`
-  /`document`): a table in `identifier_expr_lookup_names`. Check counts with `./failstats.py --code`.
-
-## Checker gaps (each verified still open by probe)
+- Intersection reduction of conflicting discriminants (`has_conflicting_discriminants`) runs at construction and
+  only for non-generic object members; tsc does it lazily in getReducedType, so a generic intersection instantiated
+  later isn't re-checked.
 - genericClassExpressionInFunction: `s.genericVar = 12` on an instance of a class extending a generic class expression
   gives "not assignable to type 'V'" (the base class's type parameter is not instantiated), exposed when property
   assignments started being checked (plan 08).
@@ -101,19 +69,18 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   instantiating a node that mentions no type parameter returns the node's type, alias arguments and all.
 - tsc prints string-named enum members as `(typeof E)["b c"]`; we print `E.b c`. Members of ambient non-const enums
   without initializer should be computed (no value); `ty_resolve_enum` auto-increments.
-- Intersection reduction: conflicting discriminants reduce to `never` since plan 08 (`has_conflicting_discriminants`,
-  at construction and only for non-generic object members; tsc does it lazily in getReducedType, so a generic
-  intersection instantiated later isn't re-checked). Conflicting privates don't reduce, and TS2339's "The intersection
-  'A & B' was reduced to 'never' because..." message doesn't exist (intersectionWithConflictingPrivates).
 - Optional chaining has no semantics beyond stripping null/undefined from the receiver (`a?.b`, `a?.[i]`, `f?.()`):
   the result doesn't get `| undefined`, and the rest of the chain isn't short-circuited.
 - `check_with()` (ty/expr.c) computes an expression with a contextual type without going through the LazyType, so it
   has no cycle detection (`let [x = x] = []` used to recurse forever; `lower_binding_access` avoids it, other
   contextual self-references can still overflow the stack).
 - `super.x` is `any`: `super` has no target symbol and no type (`super.throw()` isn't a never call).
-- No fresh/regular literal types (plan 11 sketch): `[x]` with `x: string | false` gives `(string | boolean)[]`
-  (spreadBooleanRespectsFreshness); a union filtered to the members of an alias prints `string | false` where tsc
-  says `FooBase`.
+- Union *origins* aren't tracked: tsc remembers the aliases a union was written with and narrowing/filtering keeps
+  them (`FooBase[]` where we print `string | false`: spreadBooleanRespectsFreshness, literalFreshnessPropagationOnNarrowing).
+  Plan 12 gets the literals right but not this.
+- Found by plan 12's research: `[F.a, fa]` prints `(F)[]` instead of `F[]`; `type AB = "a" | "b"` declared before
+  `r ? "b" : "a"` prints `"b" | "a"` (tsc `"a" | "b"`: alias bodies not resolved in statement order?); a getter-only
+  object literal property isn't `readonly`; auto-typed `let x;` (type from later assignments) isn't implemented.
 - Type predicates: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion
   callee without explicit types), TS1225 (no such parameter), `x is T` where the
   function returns a non-boolean (TS2322 on return).
@@ -207,6 +174,8 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   errors baseline now measures.
 
 ## Harness and tools
+- `filetest.sh` always uses `/tmp/testfile`: two agents running it at once collide (a parallel planning agent had to
+  use a private copy). Take the directory from `mktemp -d` or an env var.
 - `@libFiles` is ignored (`hacks.md`): 99 of its 100 uses are `react.d.ts,lib.d.ts`, so it's worth nothing until JSX
   exists. `@baselineFile`, `@fullEmitPaths` too. Bad option values are ignored (tsc's harness throws).
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there.

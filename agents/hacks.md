@@ -100,7 +100,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   no check that getter and setter types agree, readonly only means "no setter". Interface/type-literal accessors are
   converted to properties in `parse_interface`.
 - Private names (`#x`): the `#` is just part of the member name string. No TS18028 target check, no "not accessible
-  outside class" (TS18013), no `#x in obj`.
+  outside class" (TS18013), no `#x in obj` (plan 13).
 - `p!: T` / `let x!: T`: the `!` is hopped and forgotten (class fields only; `let resp!: T` still doesn't parse).
 - Generators (`infer_generator_type`, `check_yield`): no next type is inferred from what the `yield`s are used as
   (tsc's `nextTypes` from the yield's contextual type): it's the contextual/declared TNext or `unknown`. No TS7055/TS7057
@@ -447,7 +447,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `class_base`: the base class is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`); tsc
   evaluates the expression and takes the return type of its construct signatures (mixins, `extends f()`). The static
   side inherits properties from the base's static side and, without a constructor of its own, its construct signatures.
-- `builder_add_class_items`: no accessibility (private/protected are ordinary members).
+- `builder_add_class_items`: no accessibility (private/protected are ordinary members; plan 13).
 - `this` types (plan 10 stage 1): `Prop.thisless` follows tsc's syntactic isThisless* rules, so every class member
   without annotations is instantiated once per class (and per derived class: inherited members are the base's with
   this-argument = the derived `this`). No `this is T` as a *property* type (`isFSO: this is FileSystemObject`
