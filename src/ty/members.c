@@ -1347,8 +1347,9 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         sig->ret = sig->class_instance;
         sig->ret_state = LAZY_STATE_DONE;
     }
-    if (sig->target && sig->target->class_instance && sig->mapper) {
-        // An instantiated construct signature of a class
+    if (!sig->class_instance && sig->target && sig->target->class_instance && sig->mapper) {
+        // An instantiated construct signature of a class (not one a derived class without a constructor inherits: that
+        // makes the derived class)
         sig->ret = ty_instantiate(me, sig->target->class_instance, sig->mapper);
         sig->ret_state = LAZY_STATE_DONE;
     }

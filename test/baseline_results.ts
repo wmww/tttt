@@ -17181,7 +17181,7 @@ const baselines = {
         types: false,
     },
     'inferenceOuterResultNotIncorrectlyInstantiatedWithInnerResult': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26073,7 +26073,7 @@ const baselines = {
     'recursiveBaseCheck3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveBaseCheck4': {
         errors: false,
