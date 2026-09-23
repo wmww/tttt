@@ -346,6 +346,12 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   some member has no signatures of the kind (tsc: TS2349 "Not all constituents of type ... are callable").
 - `report_arity`: no "An argument for 'x' was not provided" related info; the span for too few arguments is the
   callee's `inner_span`, not tsc's name-of-the-property-access rule.
+- Heritage checks (`ty_check_heritage`, `class_heritage_typecheck`): no TS2417 (static side), no TS2320 (inherited
+  properties of several bases that aren't identical), no tsc-specific elaborations ("The types returned by 'toSeq()'
+  are incompatible between these types", "'X' is assignable to the constraint of type 'this', but..."); interface
+  heritage (TS2430) is off (triage.md).
+- `skipLibCheck` makes declaration files `unchecked` (their semantic diagnostics are dropped, like tsc's
+  skipTypeChecking); `skipDefaultLibCheck` isn't looked at.
 - Contextual `this` (`ty_contextual_this_type`, plan 10 stage 2): the object literal's contextual type is remembered
   when it is checked (`KEY_LITERAL_CONTEXT`, the last one wins) and so is its enclosing literal (`KEY_LITERAL_PARENT`),
   since there are no parent pointers; a `this` asked for before the literal was checked falls back to the literal's

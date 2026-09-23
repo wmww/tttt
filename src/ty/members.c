@@ -710,6 +710,21 @@ bool ty_has_unresolved_base(Checker* me, Ty const* ty) {
     return has_unresolved_base(me, ty, static_side, 0);
 }
 
+Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl) {
+    Ty const* base = nullptr;
+    Symbol const* base_decl = nullptr;
+    Ty const* declared = class_decl->symbol ? ty_declared_type_of(me, class_decl->symbol) : nullptr;
+    LowerCtx ctx = { .generic = declared && declared->kind == TY_DECLARED &&
+        (declared->declared.type_params.len || declared->declared.this_param) };
+    return class_base(me, class_decl, ctx, &base, &base_decl) ? base : nullptr;
+}
+
+Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* computed_key) {
+    if (!computed_key) return checker_atom(me, cstr_sv(name_string));
+    bool is_number = false;
+    return ty_property_name_of_key(me, ty_expr_type(me, computed_key), &is_number);
+}
+
 static Members const* resolve_tuple_members(Checker* me, Ty const* tuple);
 
 // The members as declared: own members, then what the bases add. For a type with a `this` type these mention it, and

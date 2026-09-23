@@ -29,6 +29,17 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   lost their errors component to this once generators were typed (plan 09).
 - `expandoFunctionSymbolProperty`: `f[symb] = ...` on a function declaration isn't an expando property (only `f.x =`
   is?), so `f` misses `[symb]` (TS2741). Found by plan 09.
+- **TS2430 (interface incorrectly extends) is implemented but off** (`interface_heritage_typecheck`, on with
+  `TTTT_INTERFACE_HERITAGE=1`): in the corpus, checking `CallChainRoot extends CallChain` (types.ts) early makes six
+  annotated bindings in binder.ts/utilities.ts TS7022, i.e. some alias gets resolved from inside a relation while it is
+  already being resolved further up and memoises the error type (an alias -> conditional type -> relation -> member
+  -> same alias cycle that the usual evaluation order never hits). Find the alias (bisect with the heritage check on
+  one interface at a time), then make alias resolution order-independent (tsc defers conditional types more lazily).
+  167 missing TS2430 in 40 tests wait on it. complexRecursiveCollections has 6 more spurious TS2430s from the overload
+  relation bug below (`Seq<K, M>` vs `Collection<K, M>`: overloaded generic `filter`).
+- Private names (`#x`) are plain names: tsc gives each class its own, so a derived class redeclaring its base's `#x`
+  isn't a conflict (the heritage check skips such classes, a HACK in `class_heritage_typecheck`), and `#x` of another
+  class isn't accessible (TS18013).
 - `silentNeverPropagation` (lost to plan 10 stage 2 when object literal methods became context sensitive, like in
   tsc): `convert(createModule({ a: 12 }, { foo() { return true } }))` infers the inner TActions from the return type
   context `ModuleWithState<{a}> & {foo(): boolean}` and fixes it before the method's own candidate is seen. tsc only

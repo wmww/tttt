@@ -33,11 +33,14 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             if (!this_ref.kind) {
                 // At the top level: of a script `typeof globalThis`, of a module `undefined`; in a namespace an error
                 Scope const* file = names;
-                while (file->parent && file->kind != SCOPE_MODULE && file->kind != SCOPE_SCRIPT && file->kind != SCOPE_NAMESPACE) {
+                while (file->parent && file->kind != SCOPE_MODULE && file->kind != SCOPE_SCRIPT && file->kind != SCOPE_NAMESPACE &&
+                    file->kind != SCOPE_ENUM
+                ) {
                     file = file->parent;
                 }
                 if (file->kind == SCOPE_SCRIPT) my this_kind = THIS_GLOBAL;
                 if (file->kind == SCOPE_NAMESPACE) my this_kind = THIS_NAMESPACE;
+                if (file->kind == SCOPE_ENUM) my this_kind = THIS_ENUM;
             }
         } else if (my keyword == KEYWORD_IDENTIFIER_IMPORT && my module_ref) {
             // `import("./a")`
@@ -87,6 +90,9 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_NAMESPACE) {
         error_ctx_error_d(errs, my name, 2331, "'this' cannot be referenced in a module or namespace body.");
+    }
+    if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ENUM) {
+        error_ctx_error_d(errs, my name, 2332, "'this' cannot be referenced in current location.");
     }
     // `this` in a function nothing says the `this` of (tsc's checkThisExpression)
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ANY && compiler_options()->no_implicit_this &&

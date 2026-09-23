@@ -38,6 +38,7 @@ typedef enum ThisKind {
     THIS_INTERFACE,      // symbol: the interface (only a `this` type means something there)
     THIS_GLOBAL,         // The top level of a script: `typeof globalThis`
     THIS_NAMESPACE,      // The body of a namespace: TS2331, any
+    THIS_ENUM,           // An enum member's initializer: TS2332, any
 } ThisKind;
 
 typedef struct ThisRef {

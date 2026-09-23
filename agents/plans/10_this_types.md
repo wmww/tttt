@@ -54,7 +54,14 @@ TS2331 in namespaces; non-arrow functions without a `this` parameter are context
 generatorTypeCheck45/46); object literal accessors are typed lazily (their bodies can ask for the literal's type).
 Signatures already printed and checked their `this` parameters (TS2684), the notes saying otherwise were stale.
 Left: TS7041, TS7017, the ThisType argument isn't instantiated with the inference in progress; lost
-silentNeverPropagation (triage.md). Stage 3 not started.
+silentNeverPropagation (triage.md).
+
+**Stage 3 (2026-09-22)**: class heritage checks (TS2415/TS2416/TS2420/TS2720 with tsc's member-specific errors),
+suite 4110 -> 4129, corpus 95 -> 91 (skipLibCheck, which the corpus sets, was ignored: 7 diagnostics in @types/node).
+TS2430 is written but off (triage.md). Fixed on the way: variances being measured recursively are Ternary.Unknown
+like tsc (complexRecursiveCollections ran away), tsc's isDeeplyNestedType counting, hasCovariantVoidArgument, the
+source's own index signature for a key before an applicable one, `typeof undefined` widening, spreading `any`, TS2332
+for `this` in enums. Lost awaitUnionPromise (union member order follows type ids, which moved).
 
 ## Stage 1: the `this` type parameter and this-arguments
 1. `Ty.declared` gets a `this_param` (a `TY_TYPE_PARAM` flagged as a this type, printing `this`) for classes and

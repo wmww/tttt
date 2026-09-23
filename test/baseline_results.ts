@@ -888,7 +888,7 @@ const baselines = {
     'anyAndUnknownHaveFalsyComponents': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'anyAsReturnTypeForNewOnCall': {
         errors: true,
@@ -2203,7 +2203,7 @@ const baselines = {
     'awaitUnionPromise': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'awaitedType': {
         errors: false,
@@ -3103,7 +3103,7 @@ const baselines = {
     'checkDestructuringShorthandAssigment2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkForObjectTooStrict': {
         errors: false,
@@ -4006,7 +4006,7 @@ const baselines = {
         types: true,
     },
     'classWithMultipleBaseClasses': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8806,7 +8806,7 @@ const baselines = {
         types: true,
     },
     'declareClassInterfaceImplementation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15131,7 +15131,7 @@ const baselines = {
         types: true,
     },
     'genericSpecializations3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17741,7 +17741,7 @@ const baselines = {
         types: true,
     },
     'instanceSubtypeCheck2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -17976,7 +17976,7 @@ const baselines = {
         types: false,
     },
     'interfaceInheritance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20613,7 +20613,7 @@ const baselines = {
     'metadataOfUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'metadataOfUnionWithNull': {
         errors: true,
@@ -24922,7 +24922,7 @@ const baselines = {
     },
     'partiallyDiscriminantedUnions': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'pathMappingBasedModuleResolution1_amd': {
@@ -28431,7 +28431,7 @@ const baselines = {
         types: true,
     },
     'staticMismatchBecauseOfPrototype': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -29791,9 +29791,9 @@ const baselines = {
         types: true,
     },
     'this_inside-enum-should-not-be-allowed': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'this_inside-object-literal-getters-and-setters': {
         errors: true,
@@ -30716,7 +30716,7 @@ const baselines = {
         types: true,
     },
     'typePredicateInherit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31033,7 +31033,7 @@ const baselines = {
     'typeofUndefined': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofUnknownSymbol': {
         errors: true,
@@ -31393,12 +31393,12 @@ const baselines = {
     'unionTypeWithRecursiveSubtypeReduction1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeWithRecursiveSubtypeReduction2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeWithRecursiveSubtypeReduction3': {
         errors: true,
@@ -34141,7 +34141,7 @@ const baselines = {
         types: true,
     },
     'classIsSubtypeOfBaseType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -39171,7 +39171,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty24': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40521,12 +40521,12 @@ const baselines = {
         types: false,
     },
     'computedPropertyNamesContextualType7_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'computedPropertyNamesContextualType7_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -40868,7 +40868,7 @@ const baselines = {
     'destructuringObjectBindingPatternAndAssignment5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringObjectBindingPatternAndAssignment6(target=es5)': {
         errors: true,
@@ -46238,7 +46238,7 @@ const baselines = {
     'comparisonOperatorWithOneOperandIsUndefined': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'comparisonOperatorWithSubtypeEnumAndNumber': {
         errors: true,
@@ -47018,7 +47018,7 @@ const baselines = {
     'elementAccessChain.3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'elementAccessChain': {
         errors: true,
@@ -47123,7 +47123,7 @@ const baselines = {
     'propertyAccessChain.3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyAccessChain': {
         errors: true,
@@ -47283,7 +47283,7 @@ const baselines = {
     'typeGuardFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardFunctionErrors': {
         errors: false,
@@ -61603,7 +61603,7 @@ const baselines = {
     'assignEveryTypeToAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowExceptionVariableInCatchClause': {
         errors: false,
@@ -63091,19 +63091,19 @@ const baselines = {
         types: false,
     },
     'invalidUndefinedValues': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'validUndefinedAssignments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'validUndefinedValues': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidAssignmentsToVoid': {
         errors: false,
@@ -64838,7 +64838,7 @@ const baselines = {
     'nullIsSubtypeOfEverythingButUndefined': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypeIsSubtypeOfString': {
         errors: true,
@@ -65083,7 +65083,7 @@ const baselines = {
     'undefinedIsSubtypeOfEverything': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionSubtypeIfEveryConstituentTypeIsSubtype': {
         errors: false,

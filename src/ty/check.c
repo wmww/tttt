@@ -58,6 +58,72 @@ static bool check_assignable(
     return false;
 }
 
+// An error whose head says something of its own (`head`, taken), followed by why source isn't assignable to target.
+// `keep_natural_head`: the elaboration starts with "Type 'S' is not assignable to type 'T'." (tsc's containing message
+// chain) rather than having it replaced (tsc's head message)
+static void report_unassignable_with_head(
+    Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head, Span span,
+    ErrorCtx* errs
+) {
+    VecTyReportLine lines = {0};
+    ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
+    my instantiation_limit_hit = false;
+    Error* error = error_ctx_error_s(errs, span, ts_code, head);
+    isize_t first = 0;
+    TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
+    if (natural && natural->ts_code == 2322 && !keep_natural_head) first = 1;
+    for (isize_t i = first; error && i < vec_ty_report_line_size(&lines); i++) {
+        error_sub_error_s(error, (Span){0}, TS_CODE_NONE, cstr_clone(vec_ty_report_line_at(&lines, i)->message));
+        error = vec_error_back_mut(&error->sub_errors);
+    }
+    vec_ty_report_line_drop(&lines);
+}
+
+static Ty const* heritage_prop_type(Checker* me, Prop const* prop) {
+    Ty const* type = prop_type(me, prop);
+    if ((prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+        Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+        type = ty_union(me, parts, 2, nullptr, (TyList){0});
+    }
+    return type;
+}
+
+void ty_check_heritage(
+    Checker* me, Ty const* derived, Ty const* base, HeritageMember const* members, u32 count, unsigned ts_code,
+    char const* what, char const* relation, Span span, ErrorCtx* errs
+) {
+    if ((derived->flags | base->flags) & TYF_ANY) return;
+    if (ty_is_related(me, derived, base, TY_RELATION_ASSIGNABLE)) return;
+    if (report_instantiation_limit(me, span, errs)) return;
+    cstr derived_str = ty_to_cstr(me, derived);
+    cstr base_str = ty_to_cstr(me, base);
+    // Each of the type's own members that doesn't fit the base's (tsc's issueMemberSpecificError), else the whole type
+    bool issued = false;
+    Ty const* derived_apparent = ty_apparent_type(me, derived);
+    Ty const* base_apparent = ty_apparent_type(me, base);
+    for (u32 i = 0; members && i < count; i++) {
+        if (!members[i].name || !(derived_apparent->flags & TYF_OBJECT) || !(base_apparent->flags & TYF_OBJECT)) continue;
+        Prop const* prop = ty_get_prop(me, derived_apparent, members[i].name);
+        Prop const* base_prop = ty_get_prop(me, base_apparent, members[i].name);
+        if (!prop || !base_prop) continue;
+        Ty const* source = heritage_prop_type(me, prop);
+        Ty const* target = heritage_prop_type(me, base_prop);
+        if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) continue;
+        cstr name = ty_prop_name_cstr(me, members[i].name);
+        report_unassignable_with_head(me, source, target, 2416, cstr_d(
+            "Property '", name, "' in type '", derived_str, "' is not assignable to the same property in base type '",
+            base_str, "'."
+        ), true, members[i].span, errs);
+        cstr_drop(&name);
+        issued = true;
+    }
+    if (!issued) {
+        report_unassignable_with_head(me, derived, base, ts_code, cstr_d(what, " '", derived_str, "' ", relation, " '",
+            base_str, "'."), false, span, errs);
+    }
+    c_drop(cstr, &derived_str, &base_str);
+}
+
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
     check_assignable(me, "Type", source, "type", target, 2322, span, errs);
 }

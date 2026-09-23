@@ -1,4 +1,5 @@
 #include "class_decl.h"
+#include "scope.h"
 #include "binding.h"
 #include "flow.h"
 #include "ty/ty.h"
@@ -251,6 +252,56 @@ static void class_computed_key_typecheck(ClassItem* item, ErrorCtx* errs) {
     }
 }
 
+// tsc's checkClassLikeDeclaration: the class (with its own `this`) has to fit what it extends and implements, with
+// that `this`
+static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    if (!my symbol) return;
+    Ty const* declared = ty_declared_type_of(checker, my symbol);
+    if (declared->kind != TY_DECLARED || !declared->declared.this_param) return;
+    Ty const* this_param = declared->declared.this_param;
+    Ty const* type_with_this = ty_with_this_arg(checker, declared, this_param);
+    HeritageMember* members = malloc(sizeof(HeritageMember) * (vec_class_item_size(&my items) + 1));
+    u32 count = 0;
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag == CLASS_ITEM_FIELD && !i->field.is_static) {
+            members[count++] = (HeritageMember){
+                ty_member_name(checker, &i->field.name_string, i->field.computed_key), i->field.name_span,
+            };
+        } else if (i->tag == CLASS_ITEM_METHOD && !i->method.is_static) {
+            members[count++] = (HeritageMember){
+                ty_member_name(checker, &i->method.name_string, i->method.computed_key), i->method.name_span,
+            };
+        }
+    }
+    Span span = span_valid(my name) ? my name : my full_span;
+    Ty const* base = my extends.tag != EXPR_IMPLICIT_ANY ? ty_class_base_instance(checker, me) : nullptr;
+    // HACK: `#x` is a name of its own per class in tsc (the base's is still there, unrelated), a plain name here, so a
+    // class redeclaring one of its base's private names can't be compared with it
+    for (u32 i = 0; base && i < count; i++) {
+        Atom const* name = members[i].name;
+        if (name && name->len && name->str[0] == '#' && (base->flags & TYF_OBJECT) && ty_get_prop(checker, ty_apparent_type(checker, base), name)) {
+            base = nullptr;
+        }
+    }
+    // A class that extends itself through its bases is TS2506 in tsc, and nothing is compared
+    if (base && ty_has_base_type(checker, base, declared)) base = nullptr;
+    if (base && (base->flags & TYF_OBJECT)) {
+        ty_check_heritage(checker, type_with_this, ty_with_this_arg(checker, base, this_param), members, count, 2415,
+            "Class", "incorrectly extends base class", span, errs);
+    }
+    for_each (i, vec_type, &my implements) {
+        Ty const* implemented = ty_of_node(i);
+        if (!(implemented->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+        Ty const* target = implemented->kind == TY_REFERENCE ? implemented->reference.target : implemented;
+        bool is_class = target->kind == TY_DECLARED && target->declared.symbol && (target->declared.symbol->flags & SYMBOL_CLASS);
+        ty_check_heritage(checker, type_with_this, ty_with_this_arg(checker, implemented, this_param), members, count,
+            is_class ? 2720 : 2420, "Class",
+            is_class ? "incorrectly implements class" : "incorrectly implements interface", span, errs);
+    }
+    free(members);
+}
+
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (my has_typechecked) {
         return;
@@ -282,6 +333,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             ty_call_typecheck(current_checker, extends_type, &call_expr, nullptr, my extends.outer_span, errs);
         }
     }
+
+    class_heritage_typecheck(me, errs);
 
     int constructor_count = 0; // Implementations
     for_each (i, vec_class_item, &my items) {

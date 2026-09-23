@@ -883,7 +883,11 @@ static Ternary index_signatures_related(Checker* me, RelationState* st, Ty const
     for (u32 i = 0; i < target_members->index_count; i++) {
         IndexInfo const* target_info = &target_members->index[i];
         if (target_has_string_index && (target_info->value->flags & TYF_ANY)) continue;
+        // The source's signature for the same key, else one that applies (a string index covers numbers)
         IndexInfo const* source_info = nullptr;
+        for (u32 j = 0; j < source_members->index_count && !source_info; j++) {
+            if (source_members->index[j].key == target_info->key) source_info = &source_members->index[j];
+        }
         for (u32 j = 0; j < source_members->index_count && !source_info; j++) {
             if (index_key_applies(&source_members->index[j], target_info)) source_info = &source_members->index[j];
         }
@@ -1031,7 +1035,22 @@ static Ty const* marker_reference(Checker* me, Ty const* target, u32 index, Ty c
     return ret;
 }
 
-// Null while the variances are being measured (the caller compares structurally then, like tsc)
+// A reference made by marker_reference() (tsc's isMarkerType): what variances are measured with
+static bool is_marker_reference(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_REFERENCE || ty->reference.deferred || ty->reference.this_arg) return false;
+    TyList params = ty->reference.target->declared.type_params;
+    TyList args = ty_reference_args(me, ty);
+    u32 markers = 0;
+    for (u32 i = 0; i < args.len && i < params.len; i++) {
+        if (args.data[i] == params.data[i]) continue;
+        Ty const* arg = args.data[i];
+        if (arg != variance_marker(me, 0) && arg != variance_marker(me, 1) && arg != variance_marker(me, 2)) return false;
+        markers++;
+    }
+    return markers == 1;
+}
+
+// Null while the variances are being measured (the caller then goes by Ternary Unknown, like tsc)
 static Variances const* get_variances(Checker* me, Ty const* target) {
     u64 key[2] = { KEY_VARIANCES, target->id };
     Variances* variances = (Variances*)intern_get(&my links, key, 2);
@@ -1506,17 +1525,49 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     }
     if (source_is_tuple) source = tuple_as_array(me, source);
 
-    if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE) {
-        Ty const* source_target = source->reference.target;
-        Ty const* target_target = target->reference.target;
+    // A class or interface with a `this` type is a reference to itself (tsc: its declared type is one)
+    bool source_self = source->kind == TY_DECLARED && source->declared.this_param;
+    bool target_self = target->kind == TY_DECLARED && target->declared.this_param;
+    if ((source->kind == TY_REFERENCE || source_self) && (target->kind == TY_REFERENCE || target_self)) {
+        Ty const* source_target = source_self ? source : source->reference.target;
+        Ty const* target_target = target_self ? target : target->reference.target;
         if (source_target == target_target) {
             Variances const* variances = get_variances(me, source_target);
+            // A recursive measurement of the same variances: tsc assumes related (Ternary.Unknown), which measures
+            // variance only from occurrences that aren't nested in recursive instantiations of the type
+            if (!variances && !is_marker_reference(me, source) && !is_marker_reference(me, target) &&
+                !is_array_target(me, source_target) && source_target->declared.kind != TY_DECLARED_TUPLE_TARGET
+            ) {
+                return TERNARY_MAYBE;
+            }
             if (variances) {
                 bool unreliable;
                 isize_t saved = vec_ty_report_line_size(&st->lines);
-                Ternary related = type_args_related(
-                    me, st, variances, ty_reference_args(me, source), ty_reference_args(me, target), report, &unreliable
-                );
+                TyList source_args = source_self ? source->declared.type_params : ty_reference_args(me, source);
+                TyList target_args = target_self ? target->declared.type_params : ty_reference_args(me, target);
+                isize_t args_saved = vec_ty_report_line_size(&st->lines);
+                Ternary related = type_args_related(me, st, variances, source_args, target_args, false, &unreliable);
+                // A covariant `void` type argument of the target (`B<number>` to `B<void>`) falls back to comparing
+                // structurally, where a `void` return takes anything (tsc's hasCovariantVoidArgument)
+                if (!related) {
+                    for (u32 i = 0; i < target_args.len && i < variances->len; i++) {
+                        if ((variances->data[i] & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT)) == VARIANCE_COVARIANT &&
+                            (target_args.data[i]->flags & TYF_VOID)
+                        ) {
+                            unreliable = true;
+                        }
+                    }
+                }
+                if (!related && report && !unreliable) {
+                    report_truncate(st, args_saved);
+                    related = type_args_related(me, st, variances, source_args, target_args, true, &unreliable);
+                }
+                // The this-argument is one more covariant type argument (a reference without one is its own)
+                Ty const* source_this = source->kind == TY_REFERENCE ? source->reference.this_arg : nullptr;
+                Ty const* target_this = target->kind == TY_REFERENCE ? target->reference.this_arg : nullptr;
+                if (related && source_target->declared.this_param && (source_this || target_this) && source_this != target_this) {
+                    related &= is_related_to(me, st, source_this ? source_this : source, target_this ? target_this : target, report);
+                }
                 if (related || !unreliable) return related;
                 report_truncate(st, saved);
             }
@@ -1581,17 +1632,18 @@ static Ty const* recursion_identity(Ty const* ty) {
     }
 }
 
+// tsc's isDeeplyNestedType: `ty` (about to go on the stack) and at least two types further up with the same recursion
+// identity, each newer (a higher id) than the previous one
 static bool is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth) {
     Ty const* identity = recursion_identity(ty);
-    if (!identity || depth < 3) return false;
+    if (!identity || depth < 2) return false;
     u32 count = 0;
     u32 last_id = 0;
-    for (u32 i = 0; i < depth; i++) {
-        Ty const* other = stack[i];
-        if (recursion_identity(other) == identity && other->id >= last_id) {
-            if (++count >= 3) return true;
-            last_id = other->id;
-        }
+    for (u32 i = 0; i <= depth; i++) {
+        Ty const* other = i < depth ? stack[i] : ty;
+        if (recursion_identity(other) != identity) continue;
+        if (other->id >= last_id && ++count >= 3) return true;
+        last_id = other->id;
     }
     return false;
 }
@@ -1622,6 +1674,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     st->source_stack[st->depth] = source;
     st->target_stack[st->depth] = target;
     st->depth++;
+
     Ternary result = st->expanding == 3 ? TERNARY_MAYBE : structured_related(me, st, source, target, report);
     st->depth--;
     st->expanding = saved_expanding;

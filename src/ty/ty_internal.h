@@ -131,7 +131,6 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i);
 Ty const* ty_global_regexp_type(Checker* me);
 Ty const* ty_global_function_type(Checker* me); // Null without a lib
 Ty const* ty_global_object_type(Checker* me); // Null without a lib
-bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_empty_object_type(Checker* me); // `{}`
 // The property name a string or number literal type stands for, null for other types
 Atom const* ty_literal_name(Checker* me, Ty const* literal);

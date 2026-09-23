@@ -24,6 +24,7 @@ typedef struct TyMapper TyMapper;
 typedef struct TyCondBranch TyCondBranch;
 typedef struct GenericItem GenericItem;
 typedef struct Program Program;
+typedef struct ClassDecl ClassDecl;
 
 // Arena
 
@@ -843,6 +844,19 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
 
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
+// A class or interface that doesn't fit what it extends or implements: TS2416 at each of `members` (its own) that
+// doesn't fit the base's, else `ts_code` with "<what> 'D' <relation> 'B'." at `span` (tsc's issueMemberSpecificError)
+typedef struct HeritageMember {
+    Atom const* name;
+    Span span;
+} HeritageMember;
+Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl); // What it extends, null if nothing
+bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target); // `source` is, extends or inherits from `target`
+Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* computed_key); // Null: not a known name
+void ty_check_heritage(
+    Checker* me, Ty const* derived, Ty const* base, HeritageMember const* members, u32 count, unsigned ts_code,
+    char const* what, char const* relation, Span span, ErrorCtx* errs
+);
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2345
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);

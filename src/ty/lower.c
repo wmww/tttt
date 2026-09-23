@@ -1081,8 +1081,9 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             return ty_keyof(me, ty_from_node(me, &node->keyof->interface, ctx));
 
         case TYPE_TYPEOF:
+            // Widened like tsc's getTypeFromTypeQueryNode: `typeof undefined` is any without strictNullChecks.
             // TODO: `typeof x` of an identifier is its declared type, not the narrowed one (plan 03)
-            return ty_expr_type(me, node->typeof_->expr);
+            return ty_widened_for_declaration(me, ty_expr_type(me, node->typeof_->expr), false);
 
         case TYPE_TERNARY: {
             // The extends type goes before the branches, it's what declares the `infer` type parameters

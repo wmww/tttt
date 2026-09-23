@@ -572,7 +572,7 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
         case THIS_CLASS_STATIC: return ty_static_type_of(me, decl);
         case THIS_INTERFACE: return any_type(me);
         case THIS_GLOBAL: return my binder->global_this ? ty_type_of_symbol(me, my binder->global_this) : any_type(me);
-        case THIS_NAMESPACE: return any_type(me);
+        case THIS_NAMESPACE: case THIS_ENUM: return any_type(me);
         case THIS_CLASS_INSTANCE: {
             // The class's `this` type (else the instance type, for a generic class applied to its own parameters)
             Ty const* declared = ty_declared_type_of(me, decl);
@@ -1046,12 +1046,14 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
     }
     LiteralBuilder builder = {0};
+    bool spread_any = false;
     // Accessor pairs share a property: the declarations of both halves
     Span* accessor_spans = nullptr;
 
     for_each (i, vec_object_expr_item, object) {
         if (i->tag == OBJECT_ITEM_SPREAD) {
             Ty const* spread = ty_apparent_type(me, ty_expr_type(me, &i->value));
+            if (spread->flags & TYF_ANY) spread_any = true; // The whole literal is any (tsc's getSpreadType)
             if (spread->flags & TYF_OBJECT) {
                 Members const* members = ty_members(me, spread);
                 for (u32 j = 0; j < members->prop_count; j++) {
@@ -1191,7 +1193,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         });
     }
     free(accessor_spans);
-    Ty const* ret = ty_object_literal(me, builder.props, builder.count, builder.index, builder.index_count, true);
+    Ty const* ret = spread_any ? ty_intrinsic(me, TY_ANY) :
+        ty_object_literal(me, builder.props, builder.count, builder.index, builder.index_count, true);
     free(builder.props);
     return ret;
 }
