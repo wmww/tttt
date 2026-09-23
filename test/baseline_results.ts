@@ -6008,7 +6008,7 @@ const baselines = {
     'contextualSignatureInstantiation1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualSignatureInstantiation2': {
         errors: true,
@@ -11146,7 +11146,7 @@ const baselines = {
         types: true,
     },
     'errorMessagesIntersectionTypes03': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14241,7 +14241,7 @@ const baselines = {
         types: true,
     },
     'functionTypeArgumentAssignmentCompat': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14548,7 +14548,7 @@ const baselines = {
     'genericCallInferenceConditionalType1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallInferenceConditionalType2': {
         errors: true,
@@ -14796,7 +14796,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionCallSignatureReturnTypeMismatch': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -14896,7 +14896,7 @@ const baselines = {
         types: true,
     },
     'genericImplements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15236,7 +15236,7 @@ const baselines = {
         types: true,
     },
     'genericTypeWithNonGenericBaseMisMatch': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15271,7 +15271,7 @@ const baselines = {
         types: true,
     },
     'genericWithOpenTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17026,9 +17026,9 @@ const baselines = {
         types: true,
     },
     'inferFromGenericFunctionReturnTypes2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'inferFromGenericFunctionReturnTypes3': {
         errors: false,
@@ -30181,7 +30181,7 @@ const baselines = {
         types: true,
     },
     'typeArgumentsOnFunctionsWithNoTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61753,7 +61753,7 @@ const baselines = {
     'partiallyAnnotatedFunctionInferenceError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'partiallyAnnotatedFunctionInferenceWithTypeParameter': {
         errors: false,
@@ -64416,7 +64416,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatWithGenericCallSignatures4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64501,7 +64501,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithStringIndexer3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64576,7 +64576,7 @@ const baselines = {
         types: true,
     },
     'enumAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64771,7 +64771,7 @@ const baselines = {
         types: false,
     },
     'infiniteExpansionThroughInstantiation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64976,7 +64976,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithNumericIndexer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -65061,7 +65061,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithStringIndexer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -65338,7 +65338,7 @@ const baselines = {
     'contextualSignatureInstantiation': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminatedUnionInference': {
         errors: false,
@@ -65516,7 +65516,7 @@ const baselines = {
         types: true,
     },
     'genericContextualTypes1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

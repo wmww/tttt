@@ -25,6 +25,7 @@ void inference_drop(Inference* inf) {
     free(inf->params);
     free(inf->visited);
     free(inf->array_literals);
+    free(inf->inferred_type_params);
     *inf = (Inference){0};
 }
 
@@ -202,11 +203,32 @@ Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from,
 typedef struct InferStep {
     bool top;
     u32 priority;
+    bool contravariant; // (top only) starting in a contravariant position
 } InferStep;
 
+static void infer_types_from(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority, bool contravariant);
+
 static void infer_step(Checker* me, Inference* inf, InferStep step, Ty const* source, Ty const* target) {
-    if (step.top) infer_types(me, inf, source, target, step.priority);
+    if (step.top) infer_types_from(me, inf, source, target, step.priority, step.contravariant);
     else infer_from(me, inf, source, target);
+}
+
+// The type of parameter position i of `sig` instantiated with `mapper` (tsc's getTypeAtPosition, without optionality):
+// a rest parameter stands for every position from its own on, a rest tuple for its elements. Null past the end
+static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapper const* mapper) {
+    if (i < sig->param_count && !sig->params[i].rest) return ty_instantiate(me, sig->params[i].type, mapper);
+    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
+    Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
+    if (ty_is_tuple(rest)) {
+        TupleShape const* shape = rest->reference.target->declared.tuple;
+        TyList elements = ty_reference_args(me, rest);
+        u32 j = i + 1 - sig->param_count;
+        bool ends_in_rest = shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
+        if (j >= shape->arity) return ends_in_rest ? ty_rest_element_type(me, elements.data[shape->arity - 1]) : nullptr;
+        if (shape->flags[j] & TUPLE_ELEMENT_REST) return ty_rest_element_type(me, elements.data[j]);
+        return elements.data[j];
+    }
+    return ty_rest_element_type(me, rest);
 }
 
 // From the `this` and parameter types of `source` (instantiated with `mapper`) to those of `target` (tsc's
@@ -228,13 +250,9 @@ static void infer_from_params(
             }
             break;
         }
-        // A source rest parameter stands for every position from its own on
-        bool source_rest = source->param_count && source->params[source->param_count - 1].rest;
-        u32 at = i < source->param_count ? i : source->param_count - 1;
-        if (i >= source->param_count && !source_rest) break;
-        Ty const* source_type = source->params[at].rest ?
-            ty_rest_element_type(me, source->params[at].type) : source->params[at].type;
-        infer_step(me, inf, step, ty_instantiate(me, source_type, mapper), target_param->type);
+        Ty const* source_type = source_type_at(me, source, i, mapper);
+        if (!source_type) break;
+        infer_step(me, inf, step, source_type, target_param->type);
     }
 }
 
@@ -292,6 +310,107 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
     *slot = ret;
     signature_resolve(me, ret);
     ret->type_params = (TyList){0};
+    return ret;
+}
+
+static bool has_candidates(InferParam const* param) {
+    return param->co_len || param->contra_len;
+}
+
+static bool names_type_param(Ty const* const* list, u32 len, Atom const* name) {
+    for (u32 i = 0; i < len; i++) {
+        if (list[i]->param.name == name) return true;
+    }
+    return false;
+}
+
+// tsc's getUniqueTypeParameters: the type parameters of `sig`, those whose name is taken by one propagated already (or
+// an earlier one of the list) replaced by a copy named `T_1`, `T_2`... whose constraint refers to the renamed ones
+static TyList unique_type_params(Checker* me, Inference* inf, TyList params) {
+    Ty const** ret = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    Ty const** all = malloc(sizeof(Ty const*) * (inf->inferred_type_param_count + params.len + 1));
+    panic_if(!all, "out of memory");
+    memcpy(all, inf->inferred_type_params, sizeof(Ty const*) * inf->inferred_type_param_count);
+    u32 all_len = inf->inferred_type_param_count;
+    Ty const** old = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    Ty const** renamed = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    u32 renamed_count = 0;
+    for (u32 i = 0; i < params.len; i++) {
+        Ty const* param = params.data[i];
+        Atom const* name = param->param.name;
+        if (names_type_param(all, all_len, name)) {
+            Atom const* fresh_name = name;
+            for (u32 n = 1; names_type_param(all, all_len, fresh_name); n++) {
+                cstr text = cstr_d(atom_sv(name), "_", n);
+                fresh_name = checker_atom(me, cstr_sv(&text));
+                cstr_drop(&text);
+            }
+            old[renamed_count] = param;
+            param = renamed[renamed_count++] = ty_clone_type_param(me, param, nullptr, fresh_name);
+        }
+        ret[i] = param;
+        all[all_len++] = param;
+    }
+    free(all);
+    if (renamed_count) {
+        TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = old, .len = renamed_count }, (TyList){ .data = renamed, .len = renamed_count });
+        for (u32 i = 0; i < renamed_count; i++) ((Ty*)renamed[i])->param.state->clone_mapper = mapper;
+    }
+    return (TyList){ .data = ret, .len = params.len };
+}
+
+Signature const* inference_propagate_generic(Checker* me, Inference* inf, Signature const* sig, Signature const* contextual) {
+    signature_resolve(me, sig);
+    signature_resolve(me, contextual);
+    TyList unique = unique_type_params(me, inf, sig->type_params);
+    Signature const* instantiated = ty_signature_instantiation(me, sig, unique);
+    // From the instantiated parameters to the contextual ones, into a fresh set of candidates (contravariantly: the
+    // contextual signature's parameters receive what the argument's accept)
+    Ty const** params = malloc(sizeof(Ty const*) * (inf->len ? inf->len : 1));
+    panic_if(!params, "out of memory");
+    for (u32 i = 0; i < inf->len; i++) params[i] = inf->params[i].param;
+    Inference fresh;
+    inference_init(&fresh, (TyList){ .data = params, .len = inf->len });
+    free(params);
+    infer_from_params(me, &fresh, (InferStep){ .top = true, .priority = INFER_PRIORITY_NORMAL, .contravariant = true },
+        instantiated, contextual, nullptr);
+    bool any = false;
+    for (u32 i = 0; i < fresh.len; i++) any |= has_candidates(&fresh.params[i]);
+    Signature const* ret = nullptr;
+    if (any) {
+        // One or more of the contextual signature's type parameters are in its parameters: the returns too
+        infer_from_returns(me, &fresh, (InferStep){ .top = true, .priority = INFER_PRIORITY_NORMAL }, instantiated, contextual, nullptr);
+        bool overlap = false;
+        for (u32 i = 0; i < fresh.len; i++) overlap |= has_candidates(&inf->params[i]) && has_candidates(&fresh.params[i]);
+        if (!overlap) {
+            // tsc's mergeInferences
+            for (u32 i = 0; i < fresh.len; i++) {
+                if (has_candidates(&inf->params[i]) || !has_candidates(&fresh.params[i])) continue;
+                free(inf->params[i].co);
+                free(inf->params[i].contra);
+                inf->params[i] = fresh.params[i];
+                fresh.params[i].co = fresh.params[i].contra = nullptr;
+                fresh.params[i].co_len = fresh.params[i].contra_len = 0;
+            }
+            u32 count = inf->inferred_type_param_count + unique.len;
+            inf->inferred_type_params = realloc(inf->inferred_type_params, sizeof(Ty const*) * (count ? count : 1));
+            panic_if(!inf->inferred_type_params, "out of memory");
+            memcpy(inf->inferred_type_params + inf->inferred_type_param_count, unique.data, sizeof(Ty const*) * unique.len);
+            inf->inferred_type_param_count = count;
+            ret = instantiated;
+        }
+    }
+    inference_drop(&fresh);
+    return ret;
+}
+
+Signature const* ty_signature_with_type_params(Checker* me, Signature const* sig, TyList type_params) {
+    signature_resolve(me, sig);
+    signature_return_type(me, sig);
+    signature_predicate(me, sig);
+    Signature* ret = arena_new(&my arena, Signature);
+    *ret = *sig;
+    ret->type_params = type_params;
     return ret;
 }
 
@@ -637,6 +756,14 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         }
         return;
     }
+    if (source == target && (source->kind == TY_UNION || source->kind == TY_INTERSECTION)) {
+        // The same union or intersection: each member to itself (a generic signature related to its own instantiation
+        // infers `T` from `T | undefined`)
+        for (u32 i = 0; i < source->composite.types.len; i++) {
+            infer_from(me, inf, source->composite.types.data[i], source->composite.types.data[i]);
+        }
+        return;
+    }
     if ((target->flags & TYF_DEFERRED) && source->alias && source->alias == target->alias &&
         source->alias_args.len == target->alias_args.len
     ) {
@@ -709,8 +836,12 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
 }
 
 void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority) {
+    infer_types_from(me, inf, source, target, priority, false);
+}
+
+static void infer_types_from(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority, bool contravariant) {
     inf->priority = priority;
-    inf->contravariant = false;
+    inf->contravariant = contravariant;
     inf->original_target = target;
     inf->depth = 0;
     if (inf->visited_len) {

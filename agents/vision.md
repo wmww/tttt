@@ -5,14 +5,17 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-22, triage after plan 10)
-- **Suite: `./fasttest.sh` 4129 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
-  a real measurement of type *printing*; plans 08-10 moved the suite by +633 on the side.
+## State (2026-09-22, plan 11 done)
+- **Suite: `./fasttest.sh` 4164 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
+  a real measurement of type *printing*; plans 08-11 moved the suite by +668 on the side.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
-  under tsc): **0 parse, 0 name, 91 type diagnostics** (1751 at the start of plan 08, flat for three plans before;
-  plan 09 took the iteration bucket, 203 -> 109, plan 10 the `this` cascades and skipLibCheck, -> 91). What is left
-  is two planned category-sized gaps (higher-order generic inference ~45: plan 11; fresh/regular literals, semver.ts
-  14: plan 12) plus ~34 singles (plan 08 "Progress").
+  under tsc): **0 parse, 0 name, 44 type diagnostics** (1751 at the start of plan 08; plan 09 took the iteration
+  bucket, 203 -> 109, plan 10 the `this` cascades and skipLibCheck, -> 91, plan 11 higher-order generic inference,
+  -> 44). What is left is one planned category (fresh/regular literals, semver.ts 14: plan 12) plus ~30 singles
+  (plan 08 "Progress").
+- Plan 11 removed the last big approximation in the generic core: relations instantiate a generic source in the
+  context of the target instead of unifying positionally / erasing to `any`, and instantiated generic signatures get
+  fresh type parameters (bounded ones) instead of sharing them with their target.
 - **Suite gaps are now mostly absent features, not wrong answers** (triage after plan 10): ~1250 tests hit a syntax
   error tsc doesn't have (`using` alone ~330: plan 14); dozens of checks don't exist at all (`./unimplemented_codes.sh`:
   unused locals, property vs index signature, used-before-declaration, operand checks, grammar/regex checks: plan 15);
@@ -126,7 +129,7 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
    diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
 4b. **Real corpus to zero diagnostics (plan 08)**, then bench + profile it: the first honest perf comparison. What
    plan 08's loop can't do is category-sized and planned: ~~iteration protocol + unique symbols + generators (plan
-   09)~~ done, ~~`this` types (plan 10)~~ done, higher-order generic inference (plan 11),
+   09)~~ done, ~~`this` types (plan 10)~~ done, ~~higher-order generic inference (plan 11)~~ done,
    fresh literals + excess property checks (plan 12). Then the suite plans 13-15.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.

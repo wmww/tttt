@@ -24,6 +24,9 @@ typedef struct Arg {
     // A generic function where the parameter wants a non-generic one: inferred from once instantiated in the context
     // of that signature, in the second pass (tsc's instantiateTypeWithSingleGenericCallSignature). Set per candidate
     bool generic_function;
+    // A call of a generic function that returns a function (`pipe(box)`): checked in the second pass, when the outer
+    // call knows more (tsc's isGenericFunctionReturningFunction under SkipGenericFunctions)
+    bool generic_call;
 } Arg;
 
 typedef struct Args {
@@ -51,6 +54,22 @@ static bool is_empty_tuple(Ty const* ty) {
     return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
 }
 
+// tsc's isGenericFunctionReturningFunction for some call signature of the callee of `expr`, a call without type arguments
+static bool calls_generic_function_returning_function(Checker* me, Expr const* expr) {
+    if (expr->tag != EXPR_CALL || expr->call->uses_new || expr->call->is_extends) return false;
+    if (expr->call->callable.tag == EXPR_GENERIC_PARAMS) return false;
+    Ty const* callee = ty_apparent_type(me, ty_expr_type(me, &expr->call->callable));
+    if (!(callee->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, callee);
+    for (u32 i = 0; i < members->call_count; i++) {
+        signature_resolve(me, members->call[i]);
+        if (!members->call[i]->type_params.len) continue;
+        Ty const* ret = signature_return_type(me, members->call[i]);
+        if ((ret->flags & TYF_OBJECT) && ty_members(me, ret)->call_count) return true;
+    }
+    return false;
+}
+
 static Args collect_args(Checker* me, CallExpr const* call) {
     Args args = { .spread_index = -1 };
     for_each (i, vec_expr, &call->args) {
@@ -76,7 +95,12 @@ static Args collect_args(Checker* me, CallExpr const* call) {
             if (args.spread_index < 0) args.spread_index = (i32)args.len;
             args_push(&args, (Arg){ .expr = i, .type = element, .spread = true });
         } else {
-            args_push(&args, (Arg){ .expr = i, .context_sensitive = ty_expr_is_context_sensitive(i) });
+            bool context_sensitive = ty_expr_is_context_sensitive(i);
+            args_push(&args, (Arg){
+                .expr = i,
+                .context_sensitive = context_sensitive,
+                .generic_call = !context_sensitive && calls_generic_function_returning_function(me, i),
+            });
         }
     }
     return args;
@@ -156,11 +180,17 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
     arg->type = ty_check_expr(me, arg->expr, shape_type_at(shape, i));
 }
 
+// What a round without the context-sensitive arguments leaves out: them, and the generic calls that should see what
+// they infer first
+static bool waits_for_sensitive(Arg const* arg) {
+    return arg->context_sensitive || arg->generic_call;
+}
+
 // `skip_sensitive`: leave out the context-sensitive arguments, which a contextual type would type for good (tsc's
 // CheckMode.SkipContextSensitive, while it's not known yet which overload they'll be checked against)
 static void check_args(Checker* me, ParamShape const* shape, Args* args, bool skip_sensitive) {
     for (u32 i = 0; i < args->len; i++) {
-        if (!skip_sensitive || !args->data[i].context_sensitive) check_arg(me, shape, args, i);
+        if (!skip_sensitive || !waits_for_sensitive(&args->data[i])) check_arg(me, shape, args, i);
     }
 }
 
@@ -319,8 +349,25 @@ static Signature const* generic_function_argument(Checker* me, Ty const* arg_typ
 }
 
 // `contextual`: the contextual type of the call, which the return type is inferred from at a low priority
+// tsc's getSingleCallOrConstructSignature, without other members
+static Signature const* single_call_or_construct(Checker* me, Ty const* ty) {
+    Signature const* ret = single_signature(me, ty, false, false);
+    return ret ? ret : single_signature(me, ty, true, false);
+}
+
+// Whether `sig` returns a single non-generic call or construct signature: what a generic function argument's type
+// parameters can be propagated to
+static bool returns_single_signature(Checker* me, Signature const* sig) {
+    Signature const* ret = single_call_or_construct(me, signature_return_type(me, sig));
+    if (!ret) return false;
+    signature_resolve(me, ret);
+    return !ret->type_params.len;
+}
+
+// `*inferred_out`: the type parameters of generic function arguments that the return type is now generic in
 static TyMapper const* infer_type_arguments(
-    Checker* me, Signature const* sig, Args* args, Ty const* contextual, Ty const* this_arg, bool skip_sensitive
+    Checker* me, Signature const* sig, Args* args, Ty const* contextual, Ty const* this_arg, bool skip_sensitive,
+    bool skip_generic, TyList* inferred_out
 ) {
     Inference inf;
     inference_init(&inf, sig->type_params);
@@ -339,7 +386,17 @@ static TyMapper const* infer_type_arguments(
     if (contextual && !(contextual->flags & TYF_ANY)) {
         Ty const* return_type = signature_return_type(me, sig);
         if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
-            infer_types(me, &inf, contextual, return_type, INFER_PRIORITY_RETURN_TYPE);
+            // A generic function type is instantiated with its own type parameters, which can then be inferred as
+            // they are instead of being erased: `const f: <A>(a: A[]) => A[] = arrayMap(x => x)` gives `x: A`
+            Signature const* contextual_sig = single_signature(me, contextual, false, false);
+            Ty const* source = contextual;
+            if (contextual_sig) {
+                signature_resolve(me, contextual_sig);
+                if (contextual_sig->type_params.len) {
+                    source = ty_signature_type(me, ty_signature_instantiation(me, contextual_sig, contextual_sig->type_params));
+                }
+            }
+            infer_types(me, &inf, source, return_type, INFER_PRIORITY_RETURN_TYPE);
             return_mapper = return_inference_mapper(me, sig, &inf);
         }
     }
@@ -351,7 +408,7 @@ static TyMapper const* infer_type_arguments(
     for (u32 i = 0; i < args->len; i++) {
         Arg* arg = &args->data[i];
         if (i >= shape.count && shape.rest_variadic) break;
-        if (arg->context_sensitive) {
+        if (arg->context_sensitive || arg->generic_call) {
             any_sensitive = true;
             continue;
         }
@@ -382,10 +439,21 @@ static TyMapper const* infer_type_arguments(
     for (u32 i = 0; any_sensitive && i < args->len; i++) {
         Arg* arg = &args->data[i];
         if (i >= shape.count && shape.rest_variadic) break;
-        if (arg->generic_function) {
+        if (arg->generic_function && !skip_generic) {
             Ty const* param_type = shape_type_at(&shape, i);
             Signature const* contextual = nullptr;
             Signature const* generic = generic_function_argument(me, arg->type, param_type, &contextual);
+            // Higher order: if the call returns a function and not everything is inferred yet, the argument's type
+            // parameters can become the result's (`pipe(list, box)` is `<T>(a: T) => { value: T[] }`)
+            if (returns_single_signature(me, sig)) {
+                bool all_inferred = true;
+                for (u32 j = 0; j < inf.len; j++) all_inferred &= inf.params[j].co_len || inf.params[j].contra_len;
+                Signature const* propagated = all_inferred ? nullptr : inference_propagate_generic(me, &inf, generic, contextual);
+                if (propagated) {
+                    infer_types(me, &inf, ty_signature_type(me, propagated), param_type, INFER_PRIORITY_NORMAL);
+                    continue;
+                }
+            }
             // (A rest parameter of type parameter type isn't fixed: tsc's nonFixingMapper)
             bool variadic = contextual->param_count && contextual->params[contextual->param_count - 1].rest &&
                 contextual->params[contextual->param_count - 1].type->kind == TY_TYPE_PARAM;
@@ -399,7 +467,16 @@ static TyMapper const* infer_type_arguments(
             infer_types(me, &inf, ty_signature_type(me, instantiated), param_type, INFER_PRIORITY_NORMAL);
             continue;
         }
-        if (!arg->context_sensitive || skip_sensitive) continue;
+        if (arg->generic_call) {
+            if (skip_generic || skip_sensitive) continue;
+            // Checked like in the first pass, but now the calls in it see what the other arguments inferred
+            my outer_inference = &self;
+            check_arg(me, &shape, args, i);
+            my outer_inference = nullptr;
+            infer_from_arg(me, &inf, &shape, args, i);
+            continue;
+        }
+        if (!arg->context_sensitive || arg->generic_function || skip_sensitive) continue;
         TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
         Ty const* param_type = shape_type_at(&shape, i);
         for (u32 j = 0; j < inf.len; j++) {
@@ -423,6 +500,7 @@ static TyMapper const* infer_type_arguments(
     free(shape.types);
 
     TyMapper const* mapper = inference_mapper(me, sig, &inf, false);
+    *inferred_out = ty_list_copy(me, inf.inferred_type_params, inf.inferred_type_param_count);
     inference_drop(&inf);
     my outer_inference = outer;
     return mapper;
@@ -438,7 +516,7 @@ static i32 first_unfit_argument(
 ) {
     for (u32 i = 0; i < args->len; i++) {
         Arg const* arg = &args->data[i];
-        if (skip_sensitive && arg->context_sensitive) {
+        if (skip_sensitive && waits_for_sensitive(arg)) {
             if (i >= shape->count && shape->rest_variadic) break;
             continue;
         }
@@ -471,6 +549,7 @@ static i32 first_unfit_argument(
 typedef struct Candidate {
     Signature const* sig;
     TyMapper const* mapper; // inferred type arguments, null if the signature isn't generic
+    TyList inferred_type_params; // what the returned function is generic in, see infer_type_arguments()
 } Candidate;
 
 typedef struct Resolution {
@@ -490,7 +569,14 @@ typedef struct CallInfo {
 } CallInfo;
 
 static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) {
-    return ty_instantiate(me, signature_return_type(me, candidate->sig), candidate->mapper);
+    Ty const* ret = ty_instantiate(me, signature_return_type(me, candidate->sig), candidate->mapper);
+    if (candidate->inferred_type_params.len) {
+        // A function generic in the type parameters propagated from generic function arguments (tsc's
+        // getSignatureInstantiation with inferredTypeParameters)
+        Signature const* returned = single_call_or_construct(me, ret);
+        if (returned) ret = ty_signature_type(me, ty_signature_with_type_params(me, returned, candidate->inferred_type_params));
+    }
+    return ret;
 }
 
 static Span span_of_args(Args const* args, u32 from, u32 to) {
@@ -684,12 +770,15 @@ static bool check_type_argument_constraints(
     return satisfied;
 }
 
-static TyMapper const* candidate_mapper(
-    Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive
+// `skip_generic`: generic function arguments aren't inferred from either (tsc's SkipGenericFunctions)
+static Candidate make_candidate(
+    Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic
 ) {
-    if (!sig->type_params.len) return nullptr;
-    return info->type_arg_nodes ? explicit_type_arguments(me, sig, info) :
-        infer_type_arguments(me, sig, args, info->contextual, info->this_arg, skip_sensitive);
+    Candidate ret = { .sig = sig };
+    if (!sig->type_params.len) return ret;
+    ret.mapper = info->type_arg_nodes ? explicit_type_arguments(me, sig, info) :
+        infer_type_arguments(me, sig, args, info->contextual, info->this_arg, skip_sensitive, skip_generic, &ret.inferred_type_params);
+    return ret;
 }
 
 static Resolution resolve_with_signatures(
@@ -719,7 +808,7 @@ static Resolution resolve_with_signatures(
             bool arity_ok = has_correct_arity(&uninstantiated, args);
             free(uninstantiated.types);
             if (!arity_ok) continue;
-            Candidate candidate = { .sig = sig, .mapper = candidate_mapper(me, sig, args, info, skip_sensitive) };
+            Candidate candidate = make_candidate(me, sig, args, info, skip_sensitive, false);
             ParamShape shape = param_shape(me, sig, candidate.mapper);
             check_args(me, &shape, args, skip_sensitive);
             Ty const* arg_type;
@@ -729,7 +818,7 @@ static Resolution resolve_with_signatures(
                 // Again with everything, for this candidate and the ones after it
                 skip_sensitive = false;
                 free(shape.types);
-                candidate.mapper = candidate_mapper(me, sig, args, info, false);
+                candidate = make_candidate(me, sig, args, info, false, false);
                 shape = param_shape(me, sig, candidate.mapper);
                 check_args(me, &shape, args, false);
                 fits = first_unfit_argument(me, &shape, args, rounds[round], false, &arg_type, &param_type) < 0;
@@ -759,7 +848,17 @@ static Resolution resolve_with_signatures(
         }
         // What the call is taken to return anyway: the candidate that got furthest, or every possibility
         if (unfit_count) {
-            ret.ret = candidate_return_type(me, &unfit[unfit_count - 1]);
+            // Inferred again from what doesn't depend on the candidate: context-sensitive and generic function
+            // arguments left out (tsc's inferSignatureInstantiationForOverloadFailure)
+            Candidate fallback = unfit[unfit_count - 1];
+            if (fallback.sig->type_params.len && !info->type_arg_nodes) {
+                fallback = make_candidate(me, fallback.sig, args, info, true, true);
+                // (The arguments are left as checked against the candidate, which is what the types baseline shows)
+                ParamShape shape = param_shape(me, unfit[unfit_count - 1].sig, unfit[unfit_count - 1].mapper);
+                check_args(me, &shape, args, false);
+                free(shape.types);
+            }
+            ret.ret = candidate_return_type(me, &fallback);
         } else if (count == 1 && !signatures[0]->type_params.len) {
             ret.ret = signature_return_type(me, signatures[0]);
         } else {
@@ -768,7 +867,7 @@ static Resolution resolve_with_signatures(
             for (u32 i = 0; i < count; i++) {
                 signature_resolve(me, signatures[i]);
                 if (signatures[i]->type_params.len && has_correct_type_argument_arity(me, signatures[i], info)) {
-                    Candidate candidate = { .sig = signatures[i], .mapper = candidate_mapper(me, signatures[i], args, info, false) };
+                    Candidate candidate = make_candidate(me, signatures[i], args, info, false, false);
                     return_types[len++] = candidate_return_type(me, &candidate);
                 } else if (!signatures[i]->type_params.len) {
                     return_types[len++] = signature_return_type(me, signatures[i]);

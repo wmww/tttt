@@ -1259,7 +1259,7 @@ static void clone_type_params(Checker* me, Signature* sig) {
     for (u32 i = 0; i < params.len; i++) {
         bool mapped = false;
         for (u32 j = 0; j < outer->len; j++) mapped |= outer->sources[j] == params.data[i];
-        fresh[i] = mapped ? params.data[i] : ty_clone_type_param(me, params.data[i], nullptr);
+        fresh[i] = mapped ? params.data[i] : ty_clone_type_param(me, params.data[i], nullptr, nullptr);
         if (fresh[i] == params.data[i]) continue;
         sources[len] = params.data[i];
         targets[len] = fresh[i];

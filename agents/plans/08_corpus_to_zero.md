@@ -61,12 +61,13 @@ undefined-returning functions, optional spreads, returnMapper for argument conte
 
 **Plan 10 done: 95 -> 91** (skipLibCheck took the 4 TS2370 in @types/node).
 
-What is left (91, 2026-09-22 triage), by root cause:
-- **Plan 11** (higher-order generic inference): TS2558 38 + nodeFactory.ts 502/507/509/512, parenthesizerRules.ts 662,
-  tsbuildPublic.ts 945 (generic arguments instantiated in context), moduleNameResolver.ts 1080 (its stage 0).
+**Plan 11 done: 91 -> 44** (higher-order generic inference: TS2558 38 -> 0, nodeFactory.ts 502-512,
+parenthesizerRules.ts 662, tsbuildPublic.ts 945, moduleNameResolver.ts 1080).
+
+What is left (44 after plan 11), by root cause:
 - **Plan 12** (fresh literals): semver.ts 13 TS2345 + TS2678.
-- The singles (~34), for a plan 08 session after 11/12 (some may fall out of them; the `unknown`s smell like weak
-  inference):
+- The singles (~31), for a plan 08 session after 12 (some may fall out of it); new since plan 11: core.ts 2467/2478
+  (`[...unknown[]]` not assignable to `T`: spreading a rest parameter of type parameter type, triage.md):
   - TS7022 x4: binder.ts 3398, checker.ts 4415/16469/47011. Unexplored.
   - `X | undefined` not narrowed (7): checker.ts 13348/14692/18877 (`return links[k]` / `t.cache` after an
     assignment through an element access or a `??=`?), 16721/16726, moduleSpecifiers.ts 418/428.

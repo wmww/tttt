@@ -100,9 +100,19 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   and of union properties (tsc lists every member's declaration, we print `Symbol(flags)`); probe
   `test/probes/plan08/mutable_union.ts`.
 - Bigint literal types (`type A = 1n`) don't parse in type position (TS1005).
-- A type parameter's constraint prints uninstantiated in instantiated signatures (`<S extends T>` where tsc prints
-  `<S extends number | null>` for `Array<number | null>.filter`); T_1-style renaming of clashing type parameter names
-  in overload lists is missing.
+- T_1-style renaming of clashing type parameter names is missing in display: overload lists (`{ <A>(...): ...; <A_1>(...):
+  ... }`) and a generic signature shown inside a scope that has a type parameter of the same name (`createMCache :
+  <T_1>() => MCache<T_1>` inside `function per<T>`: the types components of probes plan11/memoizeOne.ts and
+  nestedReturnContext.ts). (The uninstantiated constraint in instantiated signatures, `<S extends T>` for
+  `Array<number | null>.filter`, should be gone since plan 11's fresh type parameters: verify.)
+- Spreading a rest parameter of type parameter type: `(...args: A) => new cf(...args)` with `A extends any[]` gives
+  TS2345 "Argument of type '[...any[]]' is not assignable to parameter of type 'A'" (genericFunctionInference1): the
+  spread should pass `A` itself.
+- tsc elaborates a lambda argument that doesn't fit at its return expression (TS2322 inside the body,
+  genericCallWithGenericSignatureArguments2), we report TS2345 on the whole argument. Same family as the object
+  literal elaboration below.
+- TS2403 ("Subsequent variable declarations must have the same type") doesn't exist (`lower.c` TODO); visible in
+  contextualSignatureInstantiation now that failed calls return `unknown` like tsc.
 - Destructured parameters without a type annotation don't get the type the pattern implies (`({ a = 1 }) => a` is
   `{ a?: number }` in tsc, `any` here), and computed keys in patterns miss their symbol lines (probe
   `binding_pattern_display.ts`).

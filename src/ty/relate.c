@@ -357,8 +357,31 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         return;
     }
     bool widen = report_widens(me, target);
-    cstr source_str = display_for_report(me, widen ? ty_widened_literal(me, source) : source, widen);
+    Ty const* generalized = widen ? ty_widened_literal(me, source) : source;
+    cstr source_str = display_for_report(me, generalized, widen);
     cstr target_str = display_for_report(me, target, false);
+    if (target->kind == TY_TYPE_PARAM && !target->param.state->is_this) {
+        // What a type parameter target could be (tsc's reportRelationError), below the head reported next
+        Ty const* constraint = target;
+        for (u32 depth = 0; constraint && constraint->kind == TY_TYPE_PARAM && depth < 16; depth++) {
+            constraint = ty_param_constraint(me, constraint);
+        }
+        bool generalized_fits = constraint && ty_is_related(me, generalized, constraint, TY_RELATION_ASSIGNABLE);
+        bool original_fits = constraint && !generalized_fits && ty_is_related(me, source, constraint, TY_RELATION_ASSIGNABLE);
+        if (generalized_fits || original_fits) {
+            cstr shown = original_fits ? display_for_report(me, source, false) : cstr_clone(source_str);
+            cstr constraint_str = display_for_report(me, constraint, false);
+            report_line(st, 5075, cstr_d(
+                "'", shown, "' is assignable to the constraint of type '", target_str, "', but '", target_str,
+                "' could be instantiated with a different subtype of constraint '", constraint_str, "'."
+            ));
+            c_drop(cstr, &shown, &constraint_str);
+        } else {
+            report_line(st, 5082, cstr_d(
+                "'", target_str, "' could be instantiated with an arbitrary type which could be unrelated to '", source_str, "'."
+            ));
+        }
+    }
     if (st->relation == TY_RELATION_COMPARABLE) {
         report_line(st, 2678, cstr_d("Type '", source_str, "' is not comparable to type '", target_str, "'."));
     } else {

@@ -2,6 +2,15 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 11 done (higher-order generic inference): real corpus 91 -> 44
+Suite: **4164 full of 13163**, errors 7285, symbols 9171, types 7317. Lost: badInferenceLowerPriorityThanGoodInference
+(tsc's context-free type, triage.md). Real corpus: **44** (TS2345 27, TS2322 11, TS7022 4, TS2678 1, TS2339 1; TS2558
+38 -> 0). `./bench.sh` ran on a machine ~1.7x slower than for the entries below (tsc 8.51 s on the real corpus, was
+4.87), so compare ratios: real corpus tttt **0.90 s** vs tsgo 1.18 (tsgo single-threaded 2.00, tsc 8.51), typecheck
+707 ms, RSS 366 MB; synthetic corpus (746 files) tttt 2.17 s vs tsgo 2.18 (single-threaded 4.74), RSS 2137 MB.
+Against the plan 11 stage 0 build back to back on the same files: real corpus 0.91 vs 0.91 s, synthetic 2.15 vs
+2.09-2.15 s (typecheck 828 vs 838 ms): no cost from inference in relations or fresh type parameters.
+
 ## 2026-09-22, plan 10 done (stages 2-3 + TS2526): real corpus 95 -> 91
 Suite: **4129 full of 13163**, errors 7259, symbols 9171, types 7291. Real corpus: **91** (TS2558 38, TS2345 31,
 TS2322 16, TS7022 4, TS2678 1, TS2339 1): skipLibCheck dropped the 4 TS2370 in @types/node. `./bench.sh`: real

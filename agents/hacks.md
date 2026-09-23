@@ -362,6 +362,13 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   cloneTypeParameter) only for those with a constraint or default (`ty_param_is_bounded`); unbounded ones stay shared
   with the target (indistinguishable, and keeps `Box<A>.map` vs `Box<B>.map` a plain comparison instead of an
   inference). Something that relies on two instantiations *not* sharing an unbounded type parameter would notice.
+- Higher-order inference (plan 11, `call.c` pass 2, `infer.c: inference_propagate_generic`): tsc's two rounds per
+  candidate are tttt's two passes; generic function arguments (`Arg.generic_function`) and calls of generic functions
+  returning functions (`Arg.generic_call`, decided once per call in `collect_args` from the callee's apparent type) go
+  to pass 2 in argument order, and a round that skips context-sensitive arguments skips them too
+  (`waits_for_sensitive`). A failed call's return type is re-inferred without them (tsc's
+  inferSignatureInstantiationForOverloadFailure), after which the arguments are checked against the failed candidate
+  once more only to put their memos back (the types baseline prints the last check).
 - Function expressions take the contextual signature's type parameters (`signature_resolve`, via `KEY_CONTEXT_DONE`)
   only if the signature is resolved after the context was assigned; tsc does it in assignContextualParameterTypes.
 - `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name.

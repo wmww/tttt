@@ -1,6 +1,6 @@
 # Plan 12: fresh/regular literal types, object literal freshness and excess property checks
 
-The literal half of the plan 11 sketch (the higher-order inference half is planned separately). Probes:
+The literal half of the plan 11 sketch (the higher-order inference half was plan 11, done). Probes:
 `test/probes/plan12/*.ts`, run with `FAST=1 ./filetest.sh test/probes/plan12/X.ts -d` (tsc's side:
 `./tscbaseline.sh`). All of them fail today, each for the reason in its header comment.
 
@@ -145,7 +145,7 @@ Not freshness, found on the way: semver.ts's TS2678 (`switch (s: string) { case 
 - tttt re-checks literals per contextual type (`kind_uses_context`, hacks.md "Expression memo"): fresh/regular
   must not depend on which overload candidate checked last.
 - Keep passing: `typeofStripsFreshness`, `exportDefaultStripsFreshness`, `strictNullChecksNoWidening`,
-  `freshLiteralTypesInIntersections`, `literalTypesWidenInParameterPosition` (pass today by the positional rule).
+  `freshLiteralTypesInIntersections`, `literalTypesWidenInParameterPosition` (they survived plan 11 replacing the positional signature unification).
 - Excess property checks will surface spurious errors wherever tttt's contextual typing or discriminant reduction
   is weak (TS2353 is only right when the target type is right): expect a spurious tail; the corpus is the guard.
 

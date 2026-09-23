@@ -611,8 +611,9 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
 Ty const* ty_synthetic_type_param(Checker* me, csview name);
-// A fresh type parameter like `param` whose constraint and default are instantiated with `mapper` (set later if null)
-Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper);
+// A fresh type parameter like `param` whose constraint and default are instantiated with `mapper` (set later if null),
+// named `name` (null: the same name)
+Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper, Atom const* name);
 // Whether a type parameter says anything about itself (a constraint or a default): only those need cloning
 bool ty_param_is_bounded(Ty const* param);
 Ty const* ty_this_type_param(Checker* me, Ty const* declared); // Only make_declared() should call this

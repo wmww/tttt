@@ -100,6 +100,10 @@ typedef struct Inference {
     u32 cap;
     bool collect_infer_params; // conditional types: every `infer X` met in the target becomes a parameter
     bool within_relation; // Constraints are checked by the relation in progress (tsc's InferenceContext.compareTypes)
+    // Type parameters of generic function arguments that the call's return type is generic in (tsc's
+    // InferenceContext.inferredTypeParameters, see inference_propagate_generic()). Malloc'd
+    Ty const** inferred_type_params;
+    u32 inferred_type_param_count;
     // Walk state
     u32 priority;
     u32 hit_priority; // The best priority an inference was made at since it was last reset (tsc's inferencePriority)
@@ -142,6 +146,15 @@ Ty const* ty_signature_type(Checker* me, Signature const* sig);
 Signature const* ty_instantiate_signature_in_context_of(
     Checker* me, Signature const* sig, Signature const* contextual, TyMapper const* context_mapper
 );
+// tsc's higher-order inference (the first branch of instantiateTypeWithSingleGenericCallSignature): a generic function
+// `sig` passed where the non-generic `contextual` is wanted (in terms of the type parameters `inf` infers) is
+// instantiated with its own type parameters (renamed `T_1` on a clash with ones already propagated), and what that
+// says about the contextual signature's type parameters is adopted if they have no inferences yet. The instantiated
+// signature if so (its type parameters are then in inf->inferred_type_params), else null
+Signature const* inference_propagate_generic(Checker* me, Inference* inf, Signature const* sig, Signature const* contextual);
+// `sig` (resolved) with other type parameters: tsc's cloneSignature + typeParameters, how a call returns a generic
+// function (getSignatureInstantiation with inferredTypeParameters)
+Signature const* ty_signature_with_type_params(Checker* me, Signature const* sig, TyList type_params);
 
 // relate.c
 // Assignability asked from inside the relation in progress, on its state (its assumptions hold, so a recursive

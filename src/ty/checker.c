@@ -704,8 +704,8 @@ Ty const* ty_synthetic_type_param(Checker* me, csview name) {
     return make_type_param(me, nullptr, checker_atom(me, name));
 }
 
-Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper) {
-    Ty* ret = (Ty*)make_type_param(me, param->param.symbol, param->param.name);
+Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper, Atom const* name) {
+    Ty* ret = (Ty*)make_type_param(me, param->param.symbol, name ? name : param->param.name);
     ret->param.state->clone_of = param;
     ret->param.state->clone_mapper = mapper;
     ret->param.state->is_infer = param->param.state->is_infer;
