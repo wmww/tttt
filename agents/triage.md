@@ -250,6 +250,7 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   TS2578 /tmp/realworld.txt` after `./realworld.py --corpus X` lists them.
 
 ## Perf (see `measurements.md` for numbers)
+- `./bench.sh`'s "stdlib only" section prints ~0 ms for every phase (seen after plan 17): probably checks nothing.
 - Corpus profile after plan 05: `is_simple_related` + `check_related` 24% (3.9 M `ty_is_comparable_either_way` from
   discriminant/equality narrowing: tsc has a key property map for unions of 10+ members, `narrow_by_discriminant()`
   asks every member every query), `ty_enum_of_member` -> `ty_declared_type_of` -> `intern_slot` 9% (cache the enum
