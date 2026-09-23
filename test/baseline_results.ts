@@ -9591,7 +9591,7 @@ const baselines = {
         types: false,
     },
     'discriminableUnionWithIntersectedMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26606,12 +26606,12 @@ const baselines = {
         types: false,
     },
     'relatedViaDiscriminatedTypeNoError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'relatedViaDiscriminatedTypeNoError2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31346,7 +31346,7 @@ const baselines = {
         types: false,
     },
     'unionRelationshipCheckPasses': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

@@ -1431,6 +1431,126 @@ static bool is_single_generic_tuple(Checker* me, Ty const* ty) {
     return element->kind == TY_TYPE_PARAM || (element->flags & TYF_DEFERRED);
 }
 
+// A source whose discriminants are unions is related to a union if each combination of their members is related to
+// some member, and those members are related in the rest (tsc's typeRelatedToDiscriminatedType):
+// `{ kind: A | B, x: X }` to `{ kind: A, x: X } | { kind: B, x: X }`
+static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    enum { MAX_COMBINATIONS = 25, MAX_DISCRIMINANTS = 8 };
+    Ty const* apparent = apparent_type(me, source);
+    if (!(apparent->flags & TYF_OBJECT)) return TERNARY_FALSE;
+    // The object members of the target
+    TyBuf objects = {0};
+    for (u32 i = 0; i < target->composite.types.len; i++) {
+        Ty const* member = target->composite.types.data[i];
+        if (member->flags & (TYF_OBJECT | TYF_INTERSECTION)) ty_buf_push(&objects, member);
+    }
+    Ty const* object_target = objects.len >= 2 ? ty_union(me, objects.data, objects.len, nullptr, (TyList){0}) : nullptr;
+    ty_buf_drop(&objects);
+    if (!object_target || object_target->kind != TY_UNION) return TERNARY_FALSE;
+
+    Members const* source_members = ty_members(me, apparent);
+    Prop const* discriminants[MAX_DISCRIMINANTS];
+    TyList values[MAX_DISCRIMINANTS];
+    u32 count = 0;
+    u32 combinations = 1;
+    for (u32 i = 0; i < source_members->prop_count; i++) {
+        Prop const* prop = source_members->props[i];
+        if (!ty_is_discriminant_property(me, object_target, prop->name)) continue;
+        if (count == MAX_DISCRIMINANTS) return TERNARY_FALSE;
+        Ty const* type = prop_type(me, prop);
+        if (type->kind == TY_UNION) {
+            values[count] = type->composite.types;
+        } else {
+            Ty const** one = arena_new_n(&my arena, Ty const*, 1);
+            one[0] = type;
+            values[count] = (TyList){ .data = one, .len = 1 };
+        }
+        combinations *= values[count].len;
+        if (combinations > MAX_COMBINATIONS) return TERNARY_FALSE;
+        discriminants[count++] = prop;
+    }
+    if (!count) return TERNARY_FALSE;
+
+    TyList members = object_target->composite.types;
+    bool* matching = calloc(members.len, sizeof(bool));
+    panic_if(!matching, "out of memory");
+    Ternary result = TERNARY_TRUE;
+    for (u32 c = 0; c < combinations && result; c++) {
+        bool has_match = false;
+        for (u32 m = 0; m < members.len; m++) {
+            bool fits = true;
+            u32 rest = c;
+            for (u32 d = 0; d < count && fits; d++) {
+                Ty const* value = values[d].data[rest % values[d].len];
+                rest /= values[d].len;
+                FoundProp target_prop = find_prop(me, members.data[m], discriminants[d]->name, 0);
+                if (!target_prop.found) {
+                    fits = false;
+                    break;
+                }
+                fits = is_related_to(me, st, value, target_prop.type, false) != TERNARY_FALSE;
+            }
+            if (fits) {
+                matching[m] = true;
+                has_match = true;
+            }
+        }
+        if (!has_match) result = TERNARY_FALSE;
+    }
+    // The rest of each matching member (the discriminants are related whatever their type, by the above). The
+    // properties of an intersection member are those of its parts, as the intersection has them
+    for (u32 m = 0; m < members.len && result; m++) {
+        if (!matching[m]) continue;
+        Ty const* member = members.data[m];
+        TyList parts = member->kind == TY_INTERSECTION ? member->composite.types : (TyList){ .data = &members.data[m], .len = 1 };
+        TyBuf seen = {0}; // Names already compared, as literal types
+        for (u32 p = 0; p < parts.len && result; p++) {
+            Ty const* part = apparent_type(me, parts.data[p]);
+            if (!(part->flags & TYF_OBJECT)) continue;
+            Members const* part_members = ty_members(me, part);
+            for (u32 i = 0; i < part_members->prop_count && result; i++) {
+                Atom const* name = part_members->props[i]->name;
+                bool skip = false;
+                for (u32 d = 0; d < count; d++) skip |= discriminants[d]->name == name;
+                Ty const* name_type = ty_prop_name_literal(me, name);
+                for (u32 j = 0; j < seen.len && !skip; j++) skip = seen.data[j] == name_type;
+                if (skip) continue;
+                ty_buf_push(&seen, name_type);
+                FoundProp target_prop = find_prop(me, member, name, 0);
+                if (!target_prop.found) continue;
+                FoundProp source_prop = find_prop(me, apparent, name, 0);
+                if (!source_prop.found) {
+                    if (!(target_prop.flags & PROP_OPTIONAL)) result = TERNARY_FALSE;
+                    continue;
+                }
+                if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop.flags & PROP_OPTIONAL) && st->relation != TY_RELATION_COMPARABLE) {
+                    result = TERNARY_FALSE;
+                    continue;
+                }
+                Ty const* target_type = target_prop.type;
+                Ty const* source_type = source_prop.type;
+                if ((target_prop.flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+                    Ty const* target_parts[2] = { target_type, ty_intrinsic(me, TY_UNDEFINED) };
+                    target_type = ty_union(me, target_parts, 2, nullptr, (TyList){0});
+                    if (source_prop.flags & PROP_OPTIONAL) {
+                        Ty const* source_parts[2] = { source_type, ty_intrinsic(me, TY_UNDEFINED) };
+                        source_type = ty_union(me, source_parts, 2, nullptr, (TyList){0});
+                    }
+                }
+                result &= is_related_to(me, st, source_type, target_type, false);
+            }
+            if (result) {
+                result &= signatures_related(me, st, apparent, part, false, false);
+                if (result) result &= signatures_related(me, st, apparent, part, true, false);
+                if (result && !(is_tuple(apparent) && is_tuple(part))) result &= index_signatures_related(me, st, apparent, part, false);
+            }
+        }
+        ty_buf_drop(&seen);
+    }
+    free(matching);
+    return result;
+}
+
 static Ternary structured_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     bool comparable = st->relation == TY_RELATION_COMPARABLE;
 
@@ -1443,7 +1563,12 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     if (target->kind == TY_UNION) {
         // A generic source can still be related through its constraint, further down. The members of the union don't
         // check excess properties, the union as a whole did (tsc relates the regular object literal)
+        isize_t saved = vec_ty_report_line_size(&st->lines);
         Ternary related = related_to_some(me, st, ty_widened_objects(me, source), target, report && !source_is_generic);
+        if (!related && (source->flags & TYF_OBJECT)) {
+            related = related_to_discriminated(me, st, source, target);
+            if (related) report_truncate(st, saved);
+        }
         if (related || (!source_is_generic && source->kind != TY_INTERSECTION)) return related;
     }
     if (target->kind == TY_INTERSECTION) return target_each_related(me, st, source, target->composite.types, report);

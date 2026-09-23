@@ -483,7 +483,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   of ambient enums without initializer auto-increment (tsc: computed). Declaration-merged enums don't get this far
   (`declaration_init` refuses a second namespace). String-named members print as `E.b c`, not `(typeof E)["b c"]`.
 - `relate.c` gaps: no weak type check, no private/protected/nominal class
-  rules, no discriminated-union decomposition of the source, no optionality of parameters (`undefined` isn't added
+  rules, no optionality of parameters (`undefined` isn't added
   under strictNullChecks), signatures/index signatures of a source intersection aren't combined (properties are).
   Array<S> -> ReadonlyArray<T> is a shortcut on the element types (`structured_related`).
 - `has_conflicting_discriminants` (checker.c): tsc reduces an intersection with disjoint discriminants to never lazily
