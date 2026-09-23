@@ -900,7 +900,10 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
     Ty const* right;
     switch (binary->op) {
         case BINARY_OP_EQUAL:
-            // The target contextually types what is assigned to it
+        case BINARY_OP_OR_OR_EQUAL:
+        case BINARY_OP_AND_AND_EQUAL:
+        case BINARY_OP_EH_EH_EQUAL:
+            // The target contextually types what is assigned to it (tsc's getContextualTypeForBinaryOperand)
             left = ty_expr_type(me, &binary->left);
             right = ty_check_expr(me, &binary->right, left->flags & TYF_ANY ? nullptr : left);
             break;
