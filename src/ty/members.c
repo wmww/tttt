@@ -1236,6 +1236,43 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     return type;
 }
 
+// A generic signature instantiated by an outer mapper (a method of `Box<number>`) gets fresh type parameters whose
+// constraints and defaults are instantiated too (tsc's instantiateSignature). Type parameters that have neither are
+// shared with the target, which is indistinguishable and cheaper. The ones the mapper replaces are being instantiated
+// away (see ty_signature_instantiation()) and stay
+static void clone_type_params(Checker* me, Signature* sig) {
+    TyList params = sig->type_params;
+    TyMapper const* outer = sig->mapper;
+    bool any = false;
+    for (u32 i = 0; i < params.len && !any; i++) {
+        bool mapped = false;
+        for (u32 j = 0; j < outer->len; j++) mapped |= outer->sources[j] == params.data[i];
+        any = !mapped && ty_param_is_bounded(params.data[i]);
+    }
+    if (!any) return;
+    Ty const** fresh = arena_new_n(&my arena, Ty const*, params.len);
+    Ty const** sources = arena_new_n(&my arena, Ty const*, outer->len + params.len);
+    Ty const** targets = arena_new_n(&my arena, Ty const*, outer->len + params.len);
+    memcpy(sources, outer->sources, sizeof(Ty const*) * outer->len);
+    memcpy(targets, outer->targets, sizeof(Ty const*) * outer->len);
+    u32 len = outer->len;
+    for (u32 i = 0; i < params.len; i++) {
+        bool mapped = false;
+        for (u32 j = 0; j < outer->len; j++) mapped |= outer->sources[j] == params.data[i];
+        fresh[i] = mapped ? params.data[i] : ty_clone_type_param(me, params.data[i], nullptr);
+        if (fresh[i] == params.data[i]) continue;
+        sources[len] = params.data[i];
+        targets[len] = fresh[i];
+        len++;
+    }
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
+    for (u32 i = 0; i < params.len; i++) {
+        if (fresh[i] != params.data[i]) ((Ty*)fresh[i])->param.state->clone_mapper = mapper;
+    }
+    sig->mapper = mapper;
+    sig->type_params = (TyList){ .data = fresh, .len = params.len };
+}
+
 void signature_resolve(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     if (sig->state != LAZY_STATE_NOT_STARTED) return;
@@ -1243,7 +1280,6 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
     if (sig->target) {
         Signature const* target = sig->target;
         signature_resolve(me, target);
-        // TODO: a generic signature keeps its type parameters when instantiated, tsc makes fresh ones
         sig->type_params = target->type_params;
         if (sig->drops_mapped_type_params && sig->type_params.len) {
             Ty const** kept = arena_new_n(&my arena, Ty const*, sig->type_params.len);
@@ -1255,6 +1291,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             }
             sig->type_params = (TyList){ .data = kept, .len = kept_count };
         }
+        if (sig->mapper) clone_type_params(me, sig);
         SigParam* params = arena_new_n(&my arena, SigParam, target->param_count);
         for (u32 i = 0; i < target->param_count; i++) {
             params[i] = target->params[i];
@@ -1268,6 +1305,13 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
     if (!sig->target && sig->function) {
         FunctionImpl const* function = sig->function;
         sig->type_params = ty_type_params_of(me, &function->generic);
+        if (!sig->type_params.len && function->is_expression && ty_function_is_context_sensitive(function)) {
+            // A function expression typed by a generic contextual signature is generic in its type parameters, which
+            // its parameters were typed with (tsc's assignContextualParameterTypes): `x => x` for `<S>(x: S) => T`
+            u64 key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
+            Signature const* contextual = intern_get(&my links, key, 2);
+            if (contextual) sig->type_params = contextual->type_params;
+        }
         LowerCtx ctx = sig->ctx;
         // A function can be anywhere, a function type is lowered knowing whether some type parameter is in scope
         ctx.generic |= !function->is_type || sig->type_params.len > 0;
@@ -1475,6 +1519,12 @@ Ty const* ty_object_literal(
 Ty const* ty_param_constraint(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
+    if (state->constraint_state == LAZY_STATE_NOT_STARTED && state->clone_of) {
+        state->constraint_state = LAZY_STATE_IN_FLIGHT;
+        Ty const* constraint = ty_param_constraint(me, state->clone_of);
+        state->constraint = constraint ? ty_instantiate(me, constraint, state->clone_mapper) : nullptr;
+        state->constraint_state = LAZY_STATE_DONE;
+    }
     if (state->constraint_state == LAZY_STATE_NOT_STARTED) {
         state->constraint_state = LAZY_STATE_IN_FLIGHT;
         TypeNode const* node = state->constraint_node;
@@ -1491,6 +1541,12 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
 Ty const* ty_param_default(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
+    if (state->fallback_state == LAZY_STATE_NOT_STARTED && state->clone_of) {
+        state->fallback_state = LAZY_STATE_IN_FLIGHT;
+        Ty const* fallback = ty_param_default(me, state->clone_of);
+        state->fallback = fallback ? ty_instantiate(me, fallback, state->clone_mapper) : nullptr;
+        state->fallback_state = LAZY_STATE_DONE;
+    }
     if (state->fallback_state == LAZY_STATE_NOT_STARTED) {
         state->fallback_state = LAZY_STATE_IN_FLIGHT;
         if (state->item && state->item->fallback_explicit) {

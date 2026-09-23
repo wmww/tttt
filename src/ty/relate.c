@@ -547,34 +547,15 @@ static bool has_rest(Checker* me, Signature const* sig) {
     return shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
 }
 
-static Signature const* instantiate_signature(Checker* me, Signature const* sig, TyList targets) {
-    Signature* ret = arena_new(&my arena, Signature);
-    *ret = (Signature){
-        .flags = sig->flags,
-        .target = sig,
-        .mapper = ty_mapper_new(me, sig->type_params, targets),
-    };
-    signature_resolve(me, ret);
-    ret->type_params = (TyList){0};
-    return ret;
-}
-
 static Ternary compare_signatures(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, bool report
 ) {
     signature_resolve(me, source);
     signature_resolve(me, target);
+    // A generic source is instantiated in the context of the target (whose type parameters, if any, are canonical
+    // already: instantiations share them)
     if (source->type_params.len && source->type_params.data != target->type_params.data) {
-        // TODO(inference): tsc instantiates the source in the context of the target. Unifying same-length type
-        // parameter lists covers identical generic signatures, anything else has its type parameters erased
-        Ty const* stack_buf[16];
-        u32 len = source->type_params.len;
-        if (len <= c_arraylen(stack_buf)) {
-            for (u32 i = 0; i < len; i++) {
-                stack_buf[i] = target->type_params.len == len ? target->type_params.data[i] : ty_intrinsic(me, TY_ANY);
-            }
-            source = instantiate_signature(me, source, (TyList){ .data = stack_buf, .len = len });
-        }
+        source = ty_instantiate_signature_in_context_of(me, source, target, nullptr);
     }
 
     u32 target_count = param_count_of(target);
@@ -682,14 +663,13 @@ static Ternary compare_signatures(
 static Signature const* erased_signature(Checker* me, Signature const* sig) {
     signature_resolve(me, sig);
     if (!sig->type_params.len) return sig;
-    u64 key[2] = { KEY_ERASED_SIGNATURE, (u64)(uintptr_t)sig };
-    void const** slot = intern_slot(me, &my links, key, 2);
-    if (!*slot) {
-        Ty const** anys = arena_new_n(&my arena, Ty const*, sig->type_params.len);
-        for (u32 i = 0; i < sig->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
-        *slot = instantiate_signature(me, sig, (TyList){ .data = anys, .len = sig->type_params.len });
-    }
-    return *slot;
+    Ty const* stack_anys[16];
+    Ty const** anys = sig->type_params.len <= c_arraylen(stack_anys) ? stack_anys : malloc(sizeof(Ty const*) * sig->type_params.len);
+    panic_if(!anys, "out of memory");
+    for (u32 i = 0; i < sig->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
+    Signature const* ret = ty_signature_instantiation(me, sig, (TyList){ .data = anys, .len = sig->type_params.len });
+    if (anys != stack_anys) free(anys);
+    return ret;
 }
 
 static Ternary signatures_related(
@@ -1774,6 +1754,13 @@ bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b) {
     return ty_is_related(me, a, b, TY_RELATION_COMPARABLE) || ty_is_related(me, b, a, TY_RELATION_COMPARABLE);
 }
 
+bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target) {
+    RelationState* st = my relating;
+    if (!st) return ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
+    if ((source->flags | target->flags) & TYF_ERROR) return true;
+    return is_related_to(me, st, source, target, false) != TERNARY_FALSE;
+}
+
 bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation) {
     return check_related(me, source, target, relation, nullptr);
 }
@@ -1829,7 +1816,7 @@ static bool signatures_identical(
                 return false;
             }
         }
-        source = instantiate_signature(me, source, target->type_params);
+        source = ty_signature_instantiation(me, source, target->type_params);
     }
     if (source->this_type && target->this_type &&
         !union_types_compare(me, source->this_type, target->this_type, partial)

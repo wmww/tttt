@@ -358,8 +358,12 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   own type. `ThisType<T>` is recognised by name (a global `ThisType`), and its argument isn't instantiated with the
   inference in progress (tsc: getMapperFromContext(getInferenceContext(literal))). No TS7041 (`this` captured by an
   arrow function at the top level), no TS7017 on `typeof globalThis`.
-- `instantiate_outer` (call.c): an instantiated generic signature shares its type parameters with its target (the TODO
-  in `signature_resolve`), so constraints and defaults have to be pushed through the signature's mapper chain by hand.
+- `clone_type_params` (members.c, plan 11): an instantiated generic signature gets fresh type parameters (tsc's
+  cloneTypeParameter) only for those with a constraint or default (`ty_param_is_bounded`); unbounded ones stay shared
+  with the target (indistinguishable, and keeps `Box<A>.map` vs `Box<B>.map` a plain comparison instead of an
+  inference). Something that relies on two instantiations *not* sharing an unbounded type parameter would notice.
+- Function expressions take the contextual signature's type parameters (`signature_resolve`, via `KEY_CONTEXT_DONE`)
+  only if the signature is resolved after the context was assigned; tsc does it in assignContextualParameterTypes.
 - `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name.
 - `ty_access`: `null`/`undefined`
   members of a union object are skipped silently (TS18047/18048 aren't reported), optional chaining isn't known here.
@@ -406,8 +410,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   identifiers by the resolve walk (`IdentifierExpr.constraint_position`); property access chains (`a.b.c` with a
   generic `a.b`) and the "contextual type without generic types" trigger are missing.
 - `infer_type_arguments` second pass: a type parameter is fixed before a context-sensitive argument if the contextual
-  signature's parameter types mention it (`fixed_by_argument`: probed by instantiating with `unknown`; anything that
-  isn't a single-signature object type fixes everything it mentions). Inference from the contextual return type only
+  signature's parameter types mention it, or those of a function its return type returns, for a function argument
+  (`fixed_by_argument`: probed by instantiating with `unknown`; anything that isn't a single-signature object type
+  fixes everything it mentions). tsc fixes lazily, when a contextual parameter type is actually asked for. Inference from the contextual return type only
   happens when that type has no type variables (no outer inference context, no return mapper). Still no reverse mapped
   types: `contravariantOnlyInferenceFromAnnotatedFunction`, `reverseMappedTypeInferenceSameSource1` and friends used to
   pass because object literal arguments only had to be *comparable*; that mitigation is gone.
@@ -459,9 +464,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   (`declaration_init` refuses a second namespace). String-named members print as `E.b c`, not `(typeof E)["b c"]`.
 - `relate.c` gaps: no excess property checks / freshness, no weak type check, no private/protected/nominal class
   rules, no discriminated-union decomposition of the source, no optionality of parameters (`undefined` isn't added
-  under strictNullChecks), signatures/index signatures of a source intersection aren't combined (properties are),
-  `compare_signatures`: generic source signatures are unified positionally with same-arity generic
-  targets, else erased to `any` (tsc instantiates the source in the context of the target; needs inference).
+  under strictNullChecks), signatures/index signatures of a source intersection aren't combined (properties are).
   Array<S> -> ReadonlyArray<T> is a shortcut on the element types (`structured_related`).
 - `get_variances`: arrays, tuples and synthetic targets are hardcoded covariant (tsc does the same for arrays and
   tuples). `VARIANCE_UNRELIABLE` is set from a checker-wide flag whenever a deferred type or mapped type is compared

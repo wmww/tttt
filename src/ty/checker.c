@@ -704,6 +704,21 @@ Ty const* ty_synthetic_type_param(Checker* me, csview name) {
     return make_type_param(me, nullptr, checker_atom(me, name));
 }
 
+Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper) {
+    Ty* ret = (Ty*)make_type_param(me, param->param.symbol, param->param.name);
+    ret->param.state->clone_of = param;
+    ret->param.state->clone_mapper = mapper;
+    ret->param.state->is_infer = param->param.state->is_infer;
+    return ret;
+}
+
+bool ty_param_is_bounded(Ty const* param) {
+    TyParamState const* state = param->param.state;
+    if (state->clone_of || state->is_this) return true;
+    if (state->item) return state->item->extends_explicit || state->item->fallback_explicit;
+    return state->constraint_node || state->constraint || state->fallback;
+}
+
 // The `this` type of a class or interface: constrained to the type as seen from inside (applied to its own type
 // parameters)
 Ty const* ty_this_type_param(Checker* me, Ty const* declared) {

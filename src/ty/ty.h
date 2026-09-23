@@ -188,6 +188,10 @@ typedef struct TyParamState {
     Ty const* fallback;
     bool is_infer; // declared by `infer X` in the extends type of a conditional type
     bool is_this; // The `this` type of a class or interface (Ty.declared.this_param), prints as `this`
+    // A fresh copy made when a generic signature is instantiated (tsc's cloneTypeParameter): its constraint and default
+    // are those of `clone_of` instantiated with `clone_mapper`
+    Ty const* clone_of;
+    TyMapper const* clone_mapper;
 } TyParamState;
 
 struct Ty {
@@ -607,6 +611,10 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
 Ty const* ty_synthetic_type_param(Checker* me, csview name);
+// A fresh type parameter like `param` whose constraint and default are instantiated with `mapper` (set later if null)
+Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper);
+// Whether a type parameter says anything about itself (a constraint or a default): only those need cloning
+bool ty_param_is_bounded(Ty const* param);
 Ty const* ty_this_type_param(Checker* me, Ty const* declared); // Only make_declared() should call this
 Ty const* ty_reference(Checker* me, Ty const* target, TyList args);
 Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty const* this_arg);
@@ -734,6 +742,7 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function); //
 // The type of an object literal accessor property: the getter's widened return type, else the setter's parameter
 Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* accessor, bool getter);
 bool ty_expr_is_context_sensitive(Expr const* expr);
+bool ty_function_is_context_sensitive(FunctionImpl const* function);
 // The type of the property an item of an object literal made (what the `.types` baseline shows at its name)
 Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectExprItem const* item);
 // `x as const`

@@ -6468,7 +6468,7 @@ const baselines = {
     'contextualTypingWithGenericSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypeArgumentsKeyword': {
         errors: true,
@@ -6498,7 +6498,7 @@ const baselines = {
     'contextuallyTypedGenericAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedJsxAttribute': {
         errors: false,
@@ -14526,7 +14526,7 @@ const baselines = {
         types: false,
     },
     'genericAssignmentCompatOfFunctionSignatures1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14803,7 +14803,7 @@ const baselines = {
     'genericFunctionHasFreshTypeArgs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericFunctionInference1': {
         errors: false,
@@ -14853,7 +14853,7 @@ const baselines = {
     'genericFunctionsNotContextSensitive': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericFunctionsWithOptionalParameters1': {
         errors: true,
@@ -15168,7 +15168,7 @@ const baselines = {
     'genericTypeAssertions3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericTypeAssertions4': {
         errors: false,
@@ -17141,7 +17141,7 @@ const baselines = {
         types: true,
     },
     'inferenceExactOptionalProperties2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20186,7 +20186,7 @@ const baselines = {
         types: false,
     },
     'localTypeParameterInferencePriority': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20418,7 +20418,7 @@ const baselines = {
     'maxConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'maxNodeModuleJsDepthDefaultsToZero': {
         errors: false,
@@ -20853,7 +20853,7 @@ const baselines = {
     'modularizeLibrary_Dom.asynciterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'modularizeLibrary_Dom.iterable': {
         errors: true,
@@ -20913,7 +20913,7 @@ const baselines = {
     'modularizeLibrary_Worker.asynciterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'modularizeLibrary_Worker.iterable': {
         errors: true,
@@ -25598,7 +25598,7 @@ const baselines = {
     'promiseVoidErrorCallback': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'promiseWithResolvers': {
         errors: true,
@@ -26438,7 +26438,7 @@ const baselines = {
     'redefineArray': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reducibleIndexedAccessTypes': {
         errors: true,
@@ -29973,7 +29973,7 @@ const baselines = {
     'truthinessPromiseCoercion': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tryCatchFinally': {
         errors: true,
@@ -30531,7 +30531,7 @@ const baselines = {
         types: true,
     },
     'typeParameterConstrainedToOuterTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64401,7 +64401,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithGenericCallSignatures': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64903,7 +64903,7 @@ const baselines = {
     'subtypingWithCallSignatures4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithCallSignaturesA': {
         errors: true,
@@ -64943,7 +64943,7 @@ const baselines = {
     'subtypingWithConstructSignatures4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithConstructSignatures5': {
         errors: true,

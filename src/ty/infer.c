@@ -198,6 +198,58 @@ Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from,
     return ret;
 }
 
+// `top`: a walk of its own at that priority (tsc's inferTypes()), else a step of the walk in progress
+typedef struct InferStep {
+    bool top;
+    u32 priority;
+} InferStep;
+
+static void infer_step(Checker* me, Inference* inf, InferStep step, Ty const* source, Ty const* target) {
+    if (step.top) infer_types(me, inf, source, target, step.priority);
+    else infer_from(me, inf, source, target);
+}
+
+// From the `this` and parameter types of `source` (instantiated with `mapper`) to those of `target` (tsc's
+// applyToParameterTypes)
+static void infer_from_params(
+    Checker* me, Inference* inf, InferStep step, Signature const* source, Signature const* target, TyMapper const* mapper
+) {
+    if (source->this_type && target->this_type) {
+        infer_step(me, inf, step, ty_instantiate(me, source->this_type, mapper), target->this_type);
+    }
+    for (u32 i = 0; i < target->param_count; i++) {
+        SigParam const* target_param = &target->params[i];
+        if (target_param->rest) {
+            // `(...args: A) => any`: the rest of the source's parameters as a tuple
+            if (i < source->param_count && source->params[i].rest && i + 1 == source->param_count) {
+                infer_step(me, inf, step, ty_instantiate(me, source->params[i].type, mapper), target_param->type);
+            } else {
+                infer_step(me, inf, step, ty_signature_params_tuple(me, source, i, mapper), target_param->type);
+            }
+            break;
+        }
+        if (i >= source->param_count) break;
+        Ty const* source_type = source->params[i].rest ?
+            ty_rest_element_type(me, source->params[i].type) : source->params[i].type;
+        infer_step(me, inf, step, ty_instantiate(me, source_type, mapper), target_param->type);
+    }
+}
+
+// From the return type (or type predicate) of `source` to that of `target` (tsc's applyToReturnTypes)
+static void infer_from_returns(
+    Checker* me, Inference* inf, InferStep step, Signature const* source, Signature const* target, TyMapper const* mapper
+) {
+    TyPredicate const* source_predicate = signature_predicate(me, source);
+    TyPredicate const* target_predicate = signature_predicate(me, target);
+    if (source_predicate && target_predicate && source_predicate->type && target_predicate->type &&
+        source_predicate->is_this == target_predicate->is_this && source_predicate->asserts == target_predicate->asserts
+    ) {
+        infer_step(me, inf, step, ty_instantiate(me, source_predicate->type, mapper), target_predicate->type);
+        return;
+    }
+    infer_step(me, inf, step, ty_instantiate(me, signature_return_type(me, source), mapper), signature_return_type(me, target));
+}
+
 static void infer_from_signatures(Checker* me, Inference* inf, Signature const* source, Signature const* target) {
     signature_resolve(me, source);
     signature_resolve(me, target);
@@ -206,35 +258,56 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
     // bivariantly, and tsc infers as if they were covariant
     bool flip = compiler_options()->strict_function_types && !(target->flags & SIGNATURE_METHOD);
     if (flip) inf->contravariant = !inf->contravariant;
-    if (source->this_type && target->this_type) {
-        infer_from(me, inf, ty_instantiate(me, source->this_type, base), target->this_type);
-    }
-    for (u32 i = 0; i < target->param_count; i++) {
-        SigParam const* target_param = &target->params[i];
-        if (target_param->rest) {
-            // `(...args: A) => any`: the rest of the source's parameters as a tuple
-            if (i < source->param_count && source->params[i].rest && i + 1 == source->param_count) {
-                infer_from(me, inf, ty_instantiate(me, source->params[i].type, base), target_param->type);
-            } else {
-                infer_from(me, inf, ty_signature_params_tuple(me, source, i, base), target_param->type);
-            }
-            break;
-        }
-        if (i >= source->param_count) break;
-        Ty const* source_type = source->params[i].rest ?
-            ty_rest_element_type(me, source->params[i].type) : source->params[i].type;
-        infer_from(me, inf, ty_instantiate(me, source_type, base), target_param->type);
-    }
+    infer_from_params(me, inf, (InferStep){0}, source, target, base);
     if (flip) inf->contravariant = !inf->contravariant;
-    TyPredicate const* source_predicate = signature_predicate(me, source);
-    TyPredicate const* target_predicate = signature_predicate(me, target);
-    if (source_predicate && target_predicate && source_predicate->type && target_predicate->type &&
-        source_predicate->is_this == target_predicate->is_this && source_predicate->asserts == target_predicate->asserts
-    ) {
-        infer_from(me, inf, ty_instantiate(me, source_predicate->type, base), target_predicate->type);
-        return;
+    infer_from_returns(me, inf, (InferStep){0}, source, target, base);
+}
+
+// Signature instantiation
+
+Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, TyList args) {
+    signature_resolve(me, sig);
+    check(args.len == sig->type_params.len);
+    u64 stack_key[18];
+    u32 key_len = 2 + args.len;
+    u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
+    panic_if(!key, "out of memory");
+    key[0] = KEY_SIGNATURE_INSTANCE;
+    key[1] = (u64)(uintptr_t)sig;
+    for (u32 i = 0; i < args.len; i++) key[2 + i] = args.data[i]->id;
+    void const** slot = intern_slot(me, &my links, key, key_len);
+    if (key != stack_key) free(key);
+    if (*slot) return *slot;
+    Ty const** targets = arena_new_n(&my arena, Ty const*, args.len ? args.len : 1);
+    memcpy(targets, args.data, sizeof(Ty const*) * args.len);
+    Signature* ret = arena_new(&my arena, Signature);
+    *ret = (Signature){
+        .flags = sig->flags,
+        .target = sig,
+        .mapper = ty_mapper_new(me, sig->type_params, (TyList){ .data = targets, .len = args.len }),
+    };
+    *slot = ret;
+    signature_resolve(me, ret);
+    ret->type_params = (TyList){0};
+    return ret;
+}
+
+Signature const* ty_instantiate_signature_in_context_of(
+    Checker* me, Signature const* sig, Signature const* contextual, TyMapper const* context_mapper
+) {
+    signature_resolve(me, sig);
+    signature_resolve(me, contextual);
+    Inference inf;
+    inference_init(&inf, sig->type_params);
+    inf.within_relation = true;
+    // (Parameters to parameters, covariantly: the contextual signature's parameter types are what `sig`'s receive)
+    infer_from_params(me, &inf, (InferStep){ .top = true, .priority = INFER_PRIORITY_NORMAL }, contextual, sig, context_mapper);
+    if (!context_mapper) {
+        infer_from_returns(me, &inf, (InferStep){ .top = true, .priority = INFER_PRIORITY_RETURN_TYPE }, contextual, sig, nullptr);
     }
-    infer_from(me, inf, ty_instantiate(me, signature_return_type(me, source), base), signature_return_type(me, target));
+    TyMapper const* mapper = inference_mapper(me, sig, &inf, false);
+    inference_drop(&inf);
+    return ty_signature_instantiation(me, sig, (TyList){ .data = mapper->targets, .len = sig->type_params.len });
 }
 
 static void infer_from_signature_lists(
@@ -397,6 +470,22 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
     if (is_empty_tuple(source) && ty_is_array(me, target)) return;
 
     Members const* target_members = ty_members(me, target);
+    Members const* source_mapped_members = source->kind == TY_ANONYMOUS ? ty_members(me, source) : nullptr;
+    if (target_members->mapped && source_mapped_members && source_mapped_members->mapped &&
+        (source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
+    ) {
+        // Two generic mapped types `{ [P in S]: X }` and `{ [P in T]: Y }`: S to T and X to Y (tsc's
+        // inferFromObjectTypes). What tsc infers to the target like to any mapped type after that is of a lower
+        // priority, and the shortcuts below aren't
+        MappedInfo const* source_mapped = source_mapped_members->mapped;
+        MappedInfo const* target_mapped = target_members->mapped;
+        infer_from(me, inf, source_mapped->constraint, target_mapped->constraint);
+        infer_from(me, inf, source_mapped->template, target_mapped->template);
+        if (source_mapped->name_type && target_mapped->name_type) {
+            infer_from(me, inf, source_mapped->name_type, target_mapped->name_type);
+        }
+        return;
+    }
     if (target_members->mapped) {
         MappedInfo const* mapped = target_members->mapped;
         if (mapped->modifiers_type && mapped->template->kind == TY_INDEXED &&
@@ -775,4 +864,71 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i) {
     if (param->co_len) return ty_union(me, param->co, param->co_len, nullptr, (TyList){0});
     if (param->contra_len) return ty_intersection(me, param->contra, param->contra_len, nullptr, (TyList){0});
     return nullptr;
+}
+
+// Inferred type arguments
+
+static bool has_primitive_constraint(Checker* me, Ty const* param) {
+    Ty const* constraint = ty_param_constraint(me, param);
+    if (!constraint) return false;
+    if (constraint->kind == TY_UNION || constraint->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < constraint->composite.types.len; i++) {
+            Ty const* part = constraint->composite.types.data[i];
+            if ((part->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
+                part->kind == TY_KEYOF
+            ) {
+                return true;
+            }
+        }
+        return (constraint->flags & TYF_BOOLEAN) != 0;
+    }
+    return (constraint->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
+        constraint->kind == TY_KEYOF;
+}
+
+// The mapper for what has been inferred so far: common supertypes of the candidates, then defaults, then constraints
+// `fixing`: for the contextual type of a context-sensitive argument, which decides the type parameters it mentions
+TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing) {
+    TyList params = sig->type_params;
+    Ty const* return_type = signature_return_type(me, sig);
+    Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    bool* inferred = calloc(params.len ? params.len : 1, sizeof(bool));
+    for (u32 i = 0; i < params.len; i++) {
+        // tsc: literals widen unless the constraint is primitive, or the type parameter is at the top level of the
+        // return type and hasn't been fixed
+        bool keep_literals = has_primitive_constraint(me, params.data[i]) ||
+            (!fixing && !inf->params[i].fixed && is_param_at_top_level(return_type, params.data[i]));
+        results[i] = inference_call_result(me, inf, i, keep_literals);
+        inferred[i] = results[i] != nullptr;
+        if (!results[i]) results[i] = params.data[i]; // stands for itself until the defaults are in, below
+    }
+    TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+    for (u32 i = 0; i < params.len; i++) {
+        if (inferred[i]) continue;
+        Ty const* fallback = ty_param_default(me, params.data[i]);
+        results[i] = fallback ? ty_instantiate(me, fallback, mapper) : ty_intrinsic(me, TY_UNKNOWN_);
+        if (results[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+            // A default that mentions a type parameter that has none itself
+            bool self = false;
+            for (u32 j = 0; j < params.len; j++) self |= !inferred[j] && results[i] == params.data[j];
+            if (self) results[i] = ty_intrinsic(me, TY_UNKNOWN_);
+        }
+        mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+    }
+    // An inference that doesn't satisfy the constraint is replaced by it, and the argument check reports the rest
+    bool changed = false;
+    for (u32 i = 0; i < params.len; i++) {
+        Ty const* constraint = ty_param_constraint(me, params.data[i]);
+        if (!constraint || constraint == params.data[i]) continue;
+        Ty const* instantiated = ty_instantiate(me, constraint, mapper);
+        bool fits = inf->within_relation ? ty_is_related_within(me, results[i], instantiated) :
+            ty_is_related(me, results[i], instantiated, TY_RELATION_ASSIGNABLE);
+        if (!fits) {
+            results[i] = instantiated;
+            changed = true;
+        }
+    }
+    if (changed) mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+    free(inferred);
+    return mapper;
 }

@@ -55,7 +55,7 @@ enum {
     KEY_FLOW_LOOP,      // (loop label FlowNode, reference key id) -> Ty at the top of the loop
     KEY_SYNTHETIC_ACCESS, // Binding (an element of an object pattern) -> Expr `init.name`, see destructured_flow_type()
     KEY_DISCRIMINANT_CONFLICT, // (intersection member ids) -> 1 + whether they have conflicting discriminants
-    KEY_ERASED_SIGNATURE, // Signature -> the signature with its type parameters replaced by any (relate.c)
+    KEY_SIGNATURE_INSTANCE, // (Signature, type argument ids) -> ty_signature_instantiation()
 };
 
 // Doesn't insert, unlike intern_slot()
@@ -98,6 +98,7 @@ typedef struct Inference {
     u32 len;
     u32 cap;
     bool collect_infer_params; // conditional types: every `infer X` met in the target becomes a parameter
+    bool within_relation; // Constraints are checked by the relation in progress (tsc's InferenceContext.compareTypes)
     // Walk state
     u32 priority;
     u32 hit_priority; // The best priority an inference was made at since it was last reset (tsc's inferencePriority)
@@ -126,8 +127,23 @@ void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target
 Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_literals);
 // What a conditional type infers: union of the covariant candidates, else intersection of the contravariant ones
 Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i);
+// What `inf` (over sig's type parameters) has inferred for them: call results, then defaults, then unknown; one that
+// doesn't satisfy its constraint is the constraint. `fixing`: for the contextual type of a context-sensitive argument
+TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing);
+// `sig` with its type parameters replaced by `args` and dropped (tsc's getSignatureInstantiationWithoutFillingIn
+// TypeArguments), memoised
+Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, TyList args);
+// tsc's instantiateSignatureInContextOf: `sig`'s type parameters inferred from the parameter types of `contextual`
+// (instantiated with `context_mapper`, the inference of an enclosing call, if any), without one also from its return
+// type
+Signature const* ty_instantiate_signature_in_context_of(
+    Checker* me, Signature const* sig, Signature const* contextual, TyMapper const* context_mapper
+);
 
 // relate.c
+// Assignability asked from inside the relation in progress, on its state (its assumptions hold, so a recursive
+// question ends); a plain ty_is_related() outside of one
+bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_global_regexp_type(Checker* me);
 Ty const* ty_global_function_type(Checker* me); // Null without a lib
 Ty const* ty_global_object_type(Checker* me); // Null without a lib

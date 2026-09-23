@@ -193,45 +193,9 @@ static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool w
 
 // Type argument inference
 
-static bool has_primitive_constraint(Checker* me, Ty const* param) {
-    Ty const* constraint = ty_param_constraint(me, param);
-    if (!constraint) return false;
-    if (constraint->kind == TY_UNION || constraint->kind == TY_INTERSECTION) {
-        for (u32 i = 0; i < constraint->composite.types.len; i++) {
-            Ty const* part = constraint->composite.types.data[i];
-            if ((part->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
-                part->kind == TY_KEYOF
-            ) {
-                return true;
-            }
-        }
-        return (constraint->flags & TYF_BOOLEAN) != 0;
-    }
-    return (constraint->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
-        constraint->kind == TY_KEYOF;
-}
-
-static bool is_param_at_top_level(Ty const* type, Ty const* param) {
-    if (type == param) return true;
-    if (type->kind == TY_UNION || type->kind == TY_INTERSECTION) {
-        for (u32 i = 0; i < type->composite.types.len; i++) {
-            if (is_param_at_top_level(type->composite.types.data[i], param)) return true;
-        }
-    }
-    return false;
-}
-
 static Signature const* last_call_signature(Checker* me, Ty const* ty) {
     Members const* members = ty_members(me, ty);
     return members->call_count ? members->call[members->call_count - 1] : nullptr;
-}
-
-// An instantiated signature shares its type parameters with its target (see signature_resolve()), so what they say
-// about themselves (constraint, default) is still in terms of the outer type parameters that were instantiated away
-static Ty const* instantiate_outer(Checker* me, Signature const* sig, Ty const* ty) {
-    if (!ty || !sig->target) return ty;
-    ty = instantiate_outer(me, sig->target, ty);
-    return sig->mapper ? ty_instantiate(me, ty, sig->mapper) : ty;
 }
 
 // A generic call inferring from its arguments, as the calls nested in them see it (tsc's getInferenceContext)
@@ -282,51 +246,6 @@ static Ty const* instantiate_instantiable(Checker* me, Ty const* type, TyMapper 
         ty_union(me, mapped, parts.len, nullptr, (TyList){0}) : ty_intersection(me, mapped, parts.len, nullptr, (TyList){0});
     free(mapped);
     return ret;
-}
-
-// The mapper for what has been inferred so far: common supertypes of the candidates, then defaults, then constraints
-// `fixing`: for the contextual type of a context-sensitive argument, which decides the type parameters it mentions
-static TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing) {
-    TyList params = sig->type_params;
-    Ty const* return_type = signature_return_type(me, sig);
-    Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
-    bool* inferred = calloc(params.len ? params.len : 1, sizeof(bool));
-    for (u32 i = 0; i < params.len; i++) {
-        // tsc: literals widen unless the constraint is primitive, or the type parameter is at the top level of the
-        // return type and hasn't been fixed
-        bool keep_literals = has_primitive_constraint(me, params.data[i]) ||
-            (!fixing && !inf->params[i].fixed && is_param_at_top_level(return_type, params.data[i]));
-        results[i] = inference_call_result(me, inf, i, keep_literals);
-        inferred[i] = results[i] != nullptr;
-        if (!results[i]) results[i] = params.data[i]; // stands for itself until the defaults are in, below
-    }
-    TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
-    for (u32 i = 0; i < params.len; i++) {
-        if (inferred[i]) continue;
-        Ty const* fallback = instantiate_outer(me, sig, ty_param_default(me, params.data[i]));
-        results[i] = fallback ? ty_instantiate(me, fallback, mapper) : ty_intrinsic(me, TY_UNKNOWN_);
-        if (results[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
-            // A default that mentions a type parameter that has none itself
-            bool self = false;
-            for (u32 j = 0; j < params.len; j++) self |= !inferred[j] && results[i] == params.data[j];
-            if (self) results[i] = ty_intrinsic(me, TY_UNKNOWN_);
-        }
-        mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
-    }
-    // An inference that doesn't satisfy the constraint is replaced by it, and the argument check reports the rest
-    bool changed = false;
-    for (u32 i = 0; i < params.len; i++) {
-        Ty const* constraint = instantiate_outer(me, sig, ty_param_constraint(me, params.data[i]));
-        if (!constraint || constraint == params.data[i]) continue;
-        Ty const* instantiated = ty_instantiate(me, constraint, mapper);
-        if (!ty_is_related(me, results[i], instantiated, TY_RELATION_ASSIGNABLE)) {
-            results[i] = instantiated;
-            changed = true;
-        }
-    }
-    if (changed) mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
-    free(inferred);
-    return mapper;
 }
 
 static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape, Args const* args, u32 i) {
@@ -656,7 +575,7 @@ static TyMapper const* explicit_type_arguments(Checker* me, Signature const* sig
     for (u32 i = 0; i < params.len; i++) results[i] = i < info->type_args.len ? info->type_args.data[i] : params.data[i];
     TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
     for (u32 i = info->type_args.len; i < params.len; i++) {
-        Ty const* fallback = instantiate_outer(me, sig, ty_param_default(me, params.data[i]));
+        Ty const* fallback = ty_param_default(me, params.data[i]);
         results[i] = fallback ? ty_instantiate(me, fallback, mapper) : ty_intrinsic(me, TY_UNKNOWN_);
         mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
     }
@@ -690,7 +609,7 @@ static bool check_type_argument_constraints(
 ) {
     bool satisfied = true;
     for (u32 i = 0; i < info->type_args.len && i < sig->type_params.len; i++) {
-        Ty const* constraint = instantiate_outer(me, sig, ty_param_constraint(me, sig->type_params.data[i]));
+        Ty const* constraint = ty_param_constraint(me, sig->type_params.data[i]);
         if (!constraint) continue;
         constraint = ty_instantiate(me, constraint, mapper);
         if (ty_is_related(me, info->type_args.data[i], constraint, TY_RELATION_ASSIGNABLE)) continue;

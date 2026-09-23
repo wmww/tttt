@@ -395,7 +395,10 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
         if (i) out_lit(d, ", ");
         // The name of a declared type parameter is always reused, the constraint like any annotation (tsc never reuses
         // the default)
-        GenericItem const* item = params.data[i]->kind == TY_TYPE_PARAM ? params.data[i]->param.state->item : nullptr;
+        // (A clone made by instantiating the signature has its original's declaration)
+        Ty const* declared = params.data[i];
+        while (declared->kind == TY_TYPE_PARAM && declared->param.state->clone_of) declared = declared->param.state->clone_of;
+        GenericItem const* item = declared->kind == TY_TYPE_PARAM ? declared->param.state->item : nullptr;
         ty_display(me, reused_if(d, d.reused || item), params.data[i]);
         Ty const* constraint = ty_param_constraint(me, params.data[i]);
         if (constraint) {

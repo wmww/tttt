@@ -524,28 +524,29 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
     }
 }
 
+bool ty_function_is_context_sensitive(FunctionImpl const* function) {
+    if (vec_generic_item_size(&function->generic.items)) return false;
+    for_each (i, vec_function_arg, &function->args) {
+        if (!i->initializer.binding.has_explicit_type) return true;
+    }
+    // A function expression's `this` is contextually typed too, unless it declares one (tsc's
+    // hasContextSensitiveParameters)
+    if (!span_valid(function->arrow_span)) {
+        FunctionArg const* first = vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
+        if (!(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
+            span_equals(first->initializer.binding.content_span, "this"))
+        ) {
+            return true;
+        }
+    }
+    // So is one whose returned expression is (tsc's hasContextSensitiveReturnExpression): `() => x => x.length`
+    return !function->ret_explicit && function->has_body &&
+        statements_any_return(&function->body.statements, ty_expr_is_context_sensitive);
+}
+
 bool ty_expr_is_context_sensitive(Expr const* expr) {
     switch (expr->tag) {
-        case EXPR_FUNCTION: {
-            FunctionImpl const* function = expr->function;
-            if (vec_generic_item_size(&function->generic.items)) return false;
-            for_each (i, vec_function_arg, &function->args) {
-                if (!i->initializer.binding.has_explicit_type) return true;
-            }
-            // A function expression's `this` is contextually typed too, unless it declares one (tsc's
-            // hasContextSensitiveParameters)
-            if (!span_valid(function->arrow_span)) {
-                FunctionArg const* first = vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
-                if (!(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
-                    span_equals(first->initializer.binding.content_span, "this"))
-                ) {
-                    return true;
-                }
-            }
-            // So is one whose returned expression is (tsc's hasContextSensitiveReturnExpression): `() => x => x.length`
-            return !function->ret_explicit && function->has_body &&
-                statements_any_return(&function->body.statements, ty_expr_is_context_sensitive);
-        }
+        case EXPR_FUNCTION: return ty_function_is_context_sensitive(expr->function);
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &expr->object) {
                 if (ty_expr_is_context_sensitive(&i->value)) return true;
