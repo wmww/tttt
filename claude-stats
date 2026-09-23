@@ -9,7 +9,7 @@ printf \
    $((~/playground/personal/tools/cc-usage \
        | awk '/Session/ {print $4} /Weekly, all models/ {print $5}') \
        || echo - -) \
-    "$(tokei -t C,'C Header' ~/tttt/ \
+    "$(tokei -e thirdparty -t C,'C Header' ~/tttt/ \
         | awk '/Total/ {print $3}')" \
     "$(echo \
         "$(("$(cat test/baseline_results.ts | grep true | wc -l)" * 10000 \
