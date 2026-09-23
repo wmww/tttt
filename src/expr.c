@@ -131,7 +131,7 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
         if (!constraint || ty_type_argument_satisfies_constraint(checker, sig->type_params, &my params, i)) continue;
         SpannedType const* arg = vec_spanned_type_at(&my params, i);
         error_ctx_error_d(errs, arg->span, 2344,
-            "Type '", ty_widened_literal(checker, ty_of_node(&arg->type)), "' does not satisfy the constraint '", constraint, "'.");
+            "Type '", ty_base_type_of_literal(checker, ty_of_node(&arg->type)), "' does not satisfy the constraint '", constraint, "'.");
     }
 }
 

@@ -24,6 +24,8 @@ enum {
     KEY_CONDITIONAL,
     KEY_ANONYMOUS_INSTANCE,
     KEY_UNIQUE_SYMBOL,
+    KEY_FRESH_LITERAL, // regular literal -> its fresh twin
+    KEY_REGULAR_UNION, // union with fresh members -> ty_regular() of it
     // First word of every key in Checker.links
     KEY_TYPE_PARAM,     // Symbol -> Ty
     KEY_SYMBOL_LINKS,   // Symbol -> SymbolLinks

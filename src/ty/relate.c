@@ -158,7 +158,8 @@ static bool is_empty_tuple(Ty const* ty) {
 
 // Literals
 
-Ty const* ty_widened_literal(Checker* me, Ty const* ty) {
+// tsc's getBaseTypeOfLiteralType: the primitive (or enum) a literal belongs to, fresh or not
+Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty) {
     if (ty->kind == TY_LITERAL) {
         if (ty->flags & TYF_ENUM_LITERAL) return ty_enum_of_member(me, ty);
         if (ty->flags & TYF_STRING_LITERAL) return ty_intrinsic(me, TY_STRING);
@@ -175,7 +176,7 @@ Ty const* ty_widened_literal(Checker* me, Ty const* ty) {
             // Members of one enum all widen to the same (possibly huge) union: once is enough
             u32 count = 0;
             for (u32 i = 0; i < len; i++) {
-                Ty const* part = ty_widened_literal(me, ty->composite.types.data[i]);
+                Ty const* part = ty_base_type_of_literal(me, ty->composite.types.data[i]);
                 if (!count || widened[count - 1] != part) widened[count++] = part;
             }
             Ty const* ret = ty_union(me, widened, count, nullptr, (TyList){0});
@@ -184,6 +185,11 @@ Ty const* ty_widened_literal(Checker* me, Ty const* ty) {
         }
     }
     return ty;
+}
+
+// tsc's getWidenedLiteralType: what a literal becomes at a mutable location. TODO(plan 12 stage 2): fresh literals only
+Ty const* ty_widened_literal(Checker* me, Ty const* ty) {
+    return ty_base_type_of_literal(me, ty);
 }
 
 // tsc's typeCouldHaveTopLevelSingletonTypes: if so, a literal source is shown as it is
@@ -348,7 +354,7 @@ static bool report_widens(Checker* me, Ty const* target) {
 
 cstr ty_report_source_cstr(Checker* me, Ty const* source, Ty const* target) {
     bool widen = report_widens(me, target);
-    return display_for_report(me, widen ? ty_widened_literal(me, source) : source, widen);
+    return display_for_report(me, widen ? ty_base_type_of_literal(me, source) : source, widen);
 }
 
 static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
@@ -357,7 +363,7 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         return;
     }
     bool widen = report_widens(me, target);
-    Ty const* generalized = widen ? ty_widened_literal(me, source) : source;
+    Ty const* generalized = widen ? ty_base_type_of_literal(me, source) : source;
     cstr source_str = display_for_report(me, generalized, widen);
     cstr target_str = display_for_report(me, target, false);
     if (target->kind == TY_TYPE_PARAM && !target->param.state->is_this) {
@@ -1696,12 +1702,15 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
 }
 
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    // Relations (and their caches) only see regular literals (tsc's getNormalizedType)
+    source = ty_regular(me, source);
+    target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
     if (is_simple_related(me, st, source, target)) return TERNARY_TRUE;
     Ternary result = TERNARY_FALSE;
     if (st->relation == TY_RELATION_COMPARABLE && !is_structured(source) && !is_structured(target)) {
         // Comparable is looser about literals: a primitive is comparable to its literals
-        Ty const* widened = ty_widened_literal(me, target);
+        Ty const* widened = ty_base_type_of_literal(me, target);
         if (widened != target && widened == source) result = TERNARY_TRUE;
     } else if (is_structured(source) || is_structured(target)) {
         isize_t saved = vec_ty_report_line_size(&st->lines);
@@ -1717,6 +1726,8 @@ static bool check_related(
 ) {
     // The error type is related to everything, in both directions: whatever made it was reported already
     if ((source->flags | target->flags) & TYF_ERROR) return true;
+    source = ty_regular(me, source);
+    target = ty_regular(me, target);
     // The stacks are big and only ever read below `depth`, so the state isn't zeroed wholesale
     RelationState state;
     RelationState* st = &state;
@@ -1734,7 +1745,7 @@ static bool check_related(
     if (!st->reporting && !is_structured(source) && !is_structured(target)) {
         // Nothing to look into (narrowing asks this about every member of big literal unions): see is_related_to()
         if (relation != TY_RELATION_COMPARABLE || source->kind != TY_INTRINSIC) return false;
-        Ty const* widened = ty_widened_literal(me, target);
+        Ty const* widened = ty_base_type_of_literal(me, target);
         return widened != target && widened == source;
     }
     my relating = st;

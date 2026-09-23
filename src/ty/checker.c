@@ -187,6 +187,12 @@ static Ty const* make_intrinsic(Checker* me, char const* name, u32 flags) {
     return ret;
 }
 
+static void swap_twin_ids(Ty const* fresh, Ty const* regular) {
+    u32 id = fresh->id;
+    ((Ty*)fresh)->id = regular->id;
+    ((Ty*)regular)->id = id;
+}
+
 Checker* checker_new(Program* program) {
     Checker* me = calloc(1, sizeof(Checker));
     panic_if(!me, "out of memory");
@@ -203,8 +209,12 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_BIGINT] = make_intrinsic(me, "bigint", TYF_BIGINT);
     Value false_value = { .tag = VALUE_BOOLEAN, .boolean = false };
     Value true_value = { .tag = VALUE_BOOLEAN, .boolean = true };
+    // tsc makes each fresh boolean before its regular twin (only those are intrinsics): the ids are swapped to match,
+    // which is fine before anything else refers to them
     my intrinsics[TY_FALSE] = ty_literal(me, &false_value);
+    swap_twin_ids(ty_fresh_literal(me, my intrinsics[TY_FALSE]), my intrinsics[TY_FALSE]);
     my intrinsics[TY_TRUE] = ty_literal(me, &true_value);
+    swap_twin_ids(ty_fresh_literal(me, my intrinsics[TY_TRUE]), my intrinsics[TY_TRUE]);
     my intrinsics[TY_BOOLEAN] = ty_union(me, &my intrinsics[TY_FALSE], 2, nullptr, (TyList){0});
     my intrinsics[TY_ES_SYMBOL] = make_intrinsic(me, "symbol", TYF_ES_SYMBOL);
     my intrinsics[TY_VOID] = make_intrinsic(me, "void", TYF_VOID);
@@ -346,6 +356,45 @@ Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty) {
     return ty;
 }
 
+Ty const* ty_fresh_literal(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_LITERAL || (ty->flags & (TYF_FRESH_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return ty;
+    u64 key[2] = { KEY_FRESH_LITERAL, (u64)(uintptr_t)ty };
+    void const** slot = intern_slot(me, &my types, key, 2);
+    if (!*slot) {
+        Ty* ret = ty_alloc(me, TY_LITERAL, ty->flags | TYF_FRESH_LITERAL);
+        ret->literal = ty->literal;
+        ret->literal.regular = ty;
+        *slot = ret;
+    }
+    return *slot;
+}
+
+Ty const* ty_regular(Checker* me, Ty const* ty) {
+    if (!(ty->flags & TYF_FRESH_LITERAL)) return ty;
+    if (ty->kind == TY_LITERAL) return ty->literal.regular;
+    check(ty->kind == TY_UNION);
+    u64 key[2] = { KEY_REGULAR_UNION, (u64)(uintptr_t)ty };
+    void const* known = intern_get(&my types, key, 2);
+    if (known) return known;
+    TyList members = ty->composite.types;
+    TyBuf buf = {0};
+    for (u32 i = 0; i < members.len; i++) ty_buf_push(&buf, ty_regular(me, members.data[i]));
+    Ty const* ret = ty_union(me, buf.data, buf.len, ty->alias, ty->alias_args);
+    ty_buf_drop(&buf);
+    *intern_slot(me, &my types, key, 2) = ret;
+    return ret;
+}
+
+static bool sorted_contains(TyBuf const* buf, u32 len, Ty const* t) {
+    u32 lo = 0, hi = len;
+    while (lo < hi) {
+        u32 mid = lo + (hi - lo) / 2;
+        if (buf->data[mid]->id == t->id) return buf->data[mid] == t;
+        if (buf->data[mid]->id < t->id) lo = mid + 1; else hi = mid;
+    }
+    return false;
+}
+
 Ty const* ty_string_literal(Checker* me, csview sv) {
     Value value = { .tag = VALUE_STRING, .string = cstr_from_sv(sv) };
     Ty const* ret = ty_literal(me, &value);
@@ -387,9 +436,11 @@ static Ty const* intern_composite(
     if (!*slot) {
         u32 flags = 0;
         for (u32 i = 0; i < len; i++) flags |= types[i]->flags;
+        u32 member_flags = flags;
         flags = (flags | ty_list_flags(alias_args)) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
-        flags |= kind == TY_UNION ? TYF_UNION : TYF_INTERSECTION;
-        if (kind == TY_UNION && len == 2 && types[0] == my intrinsics[TY_FALSE] && types[1] == my intrinsics[TY_TRUE]) {
+        flags |= kind == TY_UNION ? TYF_UNION | (member_flags & TYF_FRESH_LITERAL) : TYF_INTERSECTION;
+        // Any two boolean literals, fresh or not, are `boolean` (tsc's getUnionTypeFromSortedList)
+        if (kind == TY_UNION && len == 2 && (types[0]->flags & types[1]->flags & TYF_BOOLEAN_LITERAL)) {
             flags |= TYF_BOOLEAN;
         }
         Ty* ret = ty_alloc(me, kind, flags);
@@ -425,6 +476,19 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
         for (u32 i = 1; i < buf.len && sorted; i++) sorted = ty_cmp_id(&buf.data[i - 1], &buf.data[i]) <= 0;
         if (!sorted) qsort(buf.data, buf.len, sizeof(Ty const*), ty_cmp_id);
         bool strict_null_checks = compiler_options()->strict_null_checks;
+        if (includes & TYF_FRESH_LITERAL) {
+            // Drop fresh literals whose regular twin is here too, before the rest compacts the (sorted) buffer
+            // (tsc's removeRedundantLiteralTypes)
+            bool* drop = calloc(buf.len, sizeof(bool));
+            panic_if(!drop, "out of memory");
+            for (u32 i = 0; i < buf.len; i++) {
+                drop[i] = ty_is_fresh(buf.data[i]) && sorted_contains(&buf, buf.len, buf.data[i]->literal.regular);
+            }
+            u32 kept = 0;
+            for (u32 i = 0; i < buf.len; i++) if (!drop[i]) buf.data[kept++] = buf.data[i];
+            buf.len = kept;
+            free(drop);
+        }
         u32 out = 0;
         for (u32 i = 0; i < buf.len; i++) {
             Ty const* t = buf.data[i];
@@ -585,6 +649,8 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
     if (len == 1) return types[0];
     TyBuf buf = {0};
     ty_buf_add_flattened(&buf, TY_INTERSECTION, types, len);
+    // The members of an intersection are regular (freshLiteralTypesInIntersections)
+    for (u32 i = 0; i < buf.len; i++) buf.data[i] = ty_regular(me, buf.data[i]);
     intersect_unions_of_primitives(me, &buf);
     if (buf.len == 1) {
         Ty const* only = buf.data[0];

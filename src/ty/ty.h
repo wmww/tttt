@@ -131,7 +131,9 @@ typedef enum TyFlags {
     // Cached facts
     TYF_ERROR                        = 1 << 24, // the `any` that stands for "an error was already reported"
     TYF_COULD_CONTAIN_TYPE_VARIABLES = 1 << 25, // if unset, instantiate() is the identity
-    TYF_FRESH_LITERAL                = 1 << 26, // TODO: fresh/regular literal pairs for widening
+    // The fresh twin of a literal type (tsc's freshType): what a literal expression evaluates to, and the only kind of
+    // literal that widens at a mutable location. On a union: some member is fresh (ty_regular() has work to do)
+    TYF_FRESH_LITERAL                = 1 << 26,
 
     TYF_NULLABLE = TYF_UNDEFINED | TYF_NULL,
     TYF_ES_SYMBOL_LIKE = TYF_ES_SYMBOL | TYF_UNIQUE_ES_SYMBOL,
@@ -215,6 +217,7 @@ struct Ty {
             // Unique symbols (TYF_UNIQUE_ES_SYMBOL): the declaration. `string` is the escaped property name its
             // members are keyed by (tsc's `__@name@id`)
             UniqueSymbolDecl const* unique;
+            Ty const* regular; // TYF_FRESH_LITERAL: the regular twin. Null for regular literals
         } literal;
         struct {
             Symbol const* symbol; // null for synthesized ones
@@ -601,6 +604,11 @@ Ty const* ty_literal(Checker* me, Value const* value);
 Ty const* ty_enum_literal(Checker* me, Value const* value, Symbol const* enum_decl, Symbol const* member);
 Ty const* ty_enum_computed_member(Checker* me, Symbol const* enum_decl, Symbol const* member);
 Ty const* ty_string_literal(Checker* me, csview sv);
+// Fresh/regular literal types (tsc's getFreshTypeOfLiteralType / getRegularTypeOfLiteralType). ty_literal() and friends
+// make regular literals; literal expressions and enum member values are fresh. Relations only ever see regular ones
+Ty const* ty_fresh_literal(Checker* me, Ty const* ty); // Literals (not unique symbols), else ty itself
+Ty const* ty_regular(Checker* me, Ty const* ty); // Fresh literals, and unions with fresh members member-wise
+static inline bool ty_is_fresh(Ty const* ty) { return ty->kind == TY_LITERAL && (ty->flags & TYF_FRESH_LITERAL); }
 Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl); // `symbol` if decl->key is null
 Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty); // A unique symbol at a mutable location is `symbol`
 // The type of a property name as a key: the unique symbol a `[sym]` member is named by (null if it isn't one), else

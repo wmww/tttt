@@ -745,7 +745,9 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
         }
         if (!first) out_lit(d, " | ");
         first = false;
-        if (t == ty_intrinsic(me, TY_FALSE) && i + 1 < types.len && types.data[i + 1] == ty_intrinsic(me, TY_TRUE)) {
+        if (ty_regular(me, t) == ty_intrinsic(me, TY_FALSE) && i + 1 < types.len &&
+            ty_regular(me, types.data[i + 1]) == ty_intrinsic(me, TY_TRUE)
+        ) {
             out_lit(d, "boolean");
             i++;
             continue;
@@ -755,7 +757,9 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
             Ty const* enum_type = ty_enum_of_member(me, t);
             if (enum_type->kind == TY_UNION) {
                 u32 count = enum_type->composite.types.len;
-                if (i + count <= types.len && types.data[i + count - 1] == enum_type->composite.types.data[count - 1]) {
+                if (i + count <= types.len &&
+                    ty_regular(me, types.data[i + count - 1]) == enum_type->composite.types.data[count - 1]
+                ) {
                     ty_display(me, d, enum_type);
                     i += count - 1;
                     continue;
@@ -811,7 +815,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             if (d.widen_literals && !ty->literal.enum_decl) {
                 TyDisplay widened = d;
                 widened.widen_literals = false;
-                ty_display(me, widened, ty_widened_literal(me, ty));
+                ty_display(me, widened, ty_base_type_of_literal(me, ty));
                 break;
             }
             if (ty->flags & TYF_UNIQUE_ES_SYMBOL) {
