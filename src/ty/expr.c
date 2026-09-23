@@ -637,7 +637,7 @@ static Ty const* narrowable_type(Checker* me, IdentifierExpr const* identifier, 
 }
 
 // The tail of tsc's checkIdentifier(): a variable or parameter has the type control flow gives it where it is read
-static Ty const* identifier_flow_type(Checker* me, Expr const* expr, bool* used_before_assigned) {
+static Ty const* identifier_flow_type(Checker* me, Expr const* expr, IdentifierFlowIssue* issue) {
     IdentifierExpr const* identifier = &expr->identifier;
     Ty const* type = narrowable_type(me, identifier, ty_identifier_reference_type(me, identifier));
     Symbol const* symbol = identifier->target;
@@ -650,6 +650,15 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, bool* used_
     }
     if (!identifier->flow) return type;
     Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
+    if (type == ty_intrinsic(me, TY_AUTO)) {
+        // Undefined until something is assigned. From a closure it is assumed to be assigned, to something control
+        // flow may not know: any unless every path leads to an assignment in the closure (tsc's checkIdentifier)
+        Ty const* initial = identifier->outer_reference && symbol->is_assigned ? type : ty_intrinsic(me, TY_UNDEFINED);
+        Ty const* flow_type = ty_flow_type(me, expr, type, initial, identifier->flow);
+        if (flow_type != type) return identifier->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
+        *issue = IDENTIFIER_FLOW_IMPLICIT_ANY;
+        return ty_intrinsic(me, TY_ANY);
+    }
     // Where nothing says otherwise, a variable is `undefined` until something is assigned to it
     bool assume_initialized = symbol->is_parameter || symbol->is_ambient || !compiler_options()->strict_null_checks ||
         (type->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID)) || !binding || binding->definitely_assigned ||
@@ -662,14 +671,14 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, bool* used_
     }
     Ty const* flow_type = ty_flow_type(me, expr, type, initial, identifier->flow);
     if (!assume_initialized && includes_undefined(flow_type)) {
-        *used_before_assigned = true;
+        *issue = IDENTIFIER_FLOW_UNASSIGNED;
         return type;
     }
     return identifier->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
 }
 
-bool ty_identifier_used_before_assigned(Checker* me, IdentifierExpr const* identifier) {
-    bool ret = false;
+IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* identifier) {
+    IdentifierFlowIssue ret = IDENTIFIER_FLOW_OK;
     identifier_flow_type(me, c_container_of(identifier, Expr, identifier), &ret);
     return ret;
 }
@@ -1441,8 +1450,8 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_IMPLICIT_ANY: return any_type(me);
         case EXPR_LITERAL: return ty_fresh_literal(me, ty_literal(me, &expr->literal));
         case EXPR_IDENTIFIER: {
-            bool used_before_assigned = false; // Reported by the typecheck walk
-            return identifier_flow_type(me, expr, &used_before_assigned);
+            IdentifierFlowIssue issue = IDENTIFIER_FLOW_OK; // Reported by the typecheck walk
+            return identifier_flow_type(me, expr, &issue);
         }
         case EXPR_BINARY_OP: return check_binary(me, expr->binary_op, ctx);
         case EXPR_UNARY_OP:

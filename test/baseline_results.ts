@@ -1833,7 +1833,7 @@ const baselines = {
     'assignmentNestedInLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentNonObjectTypeConstraints': {
         errors: true,
@@ -2408,7 +2408,7 @@ const baselines = {
     'binaryArithmeticControlFlowGraphNotTooLarge': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bind1': {
         errors: true,
@@ -6701,8 +6701,8 @@ const baselines = {
         types: false,
     },
     'controlFlowArrays': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'controlFlowAutoAccessor1': {
@@ -6776,9 +6776,9 @@ const baselines = {
         types: false,
     },
     'controlFlowForStatementContinueIntoIncrementor1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowInitializedDestructuringVariables': {
         errors: true,
@@ -6816,9 +6816,9 @@ const baselines = {
         types: true,
     },
     'controlFlowNoImplicitAny': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowNullTypeAndLiteral': {
         errors: true,
@@ -6848,7 +6848,7 @@ const baselines = {
     'controlFlowSelfReferentialLoop': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowUnionContainingTypeParameter1': {
         errors: true,
@@ -15688,7 +15688,7 @@ const baselines = {
     'implicitAnyDeclareVariablesWithoutTypeAndInit': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implicitAnyFromCircularInference': {
         errors: false,
@@ -15698,7 +15698,7 @@ const baselines = {
     'implicitAnyFunctionInvocationWithAnyArguements': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implicitAnyFunctionOverloadWithImplicitAnyReturnType': {
         errors: false,
@@ -22321,7 +22321,7 @@ const baselines = {
         types: true,
     },
     'narrowingPastLastAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22966,9 +22966,9 @@ const baselines = {
         types: false,
     },
     'noImplicitAnyLoopCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noImplicitAnyMissingGetAccessor': {
         errors: false,

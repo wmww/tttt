@@ -509,6 +509,7 @@ static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message = 
 typedef enum TyIntrinsic {
     // Creation order copies tsc's, since union members print in id order
     TY_ANY,
+    TY_AUTO, // The declared type of `let x;` under noImplicitAny: any, but typed by control flow (tsc's autoType)
     TY_ERROR,
     TY_UNKNOWN_,
     TY_UNDEFINED,
@@ -821,7 +822,12 @@ Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, T
 // The type of an expression for the flow engine: never through an unfinished memo
 Ty const* ty_flow_expr_type(Checker* me, Expr const* expr);
 // TS2454: a variable that is read where it may not have been assigned yet
-bool ty_identifier_used_before_assigned(Checker* me, IdentifierExpr const* identifier);
+typedef enum IdentifierFlowIssue {
+    IDENTIFIER_FLOW_OK,
+    IDENTIFIER_FLOW_UNASSIGNED, // TS2454
+    IDENTIFIER_FLOW_IMPLICIT_ANY, // A `let x;` whose type control flow can't tell here: TS7034 + TS7005
+} IdentifierFlowIssue;
+IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* identifier);
 // Type facts, for the operators
 Ty const* ty_truthy_part(Checker* me, Ty const* ty); // What is left of x where `x` was truthy
 Ty const* ty_non_nullish_part(Checker* me, Ty const* ty);

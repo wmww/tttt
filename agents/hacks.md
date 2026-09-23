@@ -255,9 +255,12 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   still possible; here always with `{}`.
 - No `getNarrowableTypeForReference()` (substituting constraints for generic references in narrowable positions), no
   `x!` rule of `getFlowTypeOfReference()` (declared type when the narrowed type has nothing non-nullish left), no
-  auto types (`let x;`, evolving arrays), no TS2563 at flow depth 2000 (the query answers the error type silently).
+  evolving arrays (`let x = []` and `x = []` on an auto-typed `let x;` are `any[]`), no TS2563 at flow depth 2000 (the query answers the error type silently).
 - `pattern_path_type()`: the assigned type of a target in a destructuring *assignment* is looked up with `ty_access()`
   by index / name; rest elements, computed keys and iterables fall back to the declared type (no narrowing).
+- Auto types (`let x;` under noImplicitAny, `TY_AUTO`): `IdentifierExpr.outer_reference` is decided by the resolve
+  walk (a hoisted `var` declared after the closure isn't outer), and tsc's isNeverInitialized (outer, but never
+  definitely assigned) is approximated by `!symbol->is_assigned`.
 - The "outer variable is assumed initialized" rule is decided when the walk reaches a start node
   (`Symbol.flow_start` vs the node, `FlowQuery.left_container`), not up front like tsc: same answers, but an inlined
   IIFE's locals belong to the flow around it, which is what tsc says too.

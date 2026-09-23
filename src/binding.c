@@ -259,6 +259,22 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
     return ty_check_expr(checker, &my value, contextual);
 }
 
+// `let x;` and `let x = null` under noImplicitAny: the type comes from what is assigned, as control flow sees it
+// (tsc's autoType in getWidenedTypeForVariableLikeDeclaration)
+static bool is_auto_typed(InitializedBinding const* me) {
+    if (my binding.has_explicit_type || my binding.tag != BINDING_IDENTIFIER || !compiler_options()->no_implicit_any) {
+        return false;
+    }
+    Symbol const* symbol = my binding.symbol;
+    if (!symbol || !(symbol->flags & SYMBOL_VARIABLE) || symbol->is_parameter || symbol->is_const || symbol->is_ambient ||
+        symbol->exported || symbol->parent
+    ) {
+        return false;
+    }
+    if (my value.tag == EXPR_IMPLICIT_ANY) return !my getter;
+    return my value.tag == EXPR_LITERAL && (my value.literal.tag == VALUE_NULL || my value.literal.tag == VALUE_UNDEFINED);
+}
+
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     Checker* checker = current_checker;
     if (my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type && my getter) {
@@ -269,6 +285,7 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
         Ty const* contextual = ty_contextual_parameter_type(checker, me);
         if (contextual) return contextual;
     }
+    if (is_auto_typed(me)) return ty_intrinsic(checker, TY_AUTO);
     // A call of a single non-generic signature has its type without its arguments being checked (tsc's
     // checkDeclarationInitializer): `const r = f(x)` doesn't depend on x, which may depend on r through a loop
     Ty const* ret = ty_quick_expr_type(checker, &my value, false);

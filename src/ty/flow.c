@@ -776,6 +776,17 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
             return true;
         }
         Ty const* declared = q->declared;
+        if (declared == ty_intrinsic(me, TY_AUTO)) {
+            // `let x;` is what was assigned last (tsc's autoType). HACK: `x = []` makes an evolving array in tsc, which
+            // isn't there: any[], like `let x = []` (hacks.md)
+            Expr const* right = assign->kind == FLOW_ASSIGN_EXPR ? &assign->assignment->binary_op->right : nullptr;
+            if (right && right->tag == EXPR_ARRAY && !vec_expr_size(&right->array)) {
+                *out = (FlowType){ ty_array(me, ty_intrinsic(me, TY_ANY), false), false };
+                return true;
+            }
+            *out = (FlowType){ ty_widened_literal(me, initial_or_assigned_type(q, assign)), false };
+            return true;
+        }
         if (assign->kind == FLOW_ASSIGN_EXPR && assign->assignment->binary_op->op != BINARY_OP_EQUAL) {
             declared = base_type_of_literal(me, declared); // `x ||= e`
         } else if (assign->kind == FLOW_ASSIGN_EXPR) {

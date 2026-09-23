@@ -42,6 +42,9 @@ typedef struct IdentifierExpr {
     bool compound_like_target;
     // Never "used before assigned": part of `typeof x` written as a type, or inside the binding pattern that declares it
     bool assume_initialized;
+    // A variable referenced from another flow container (function) than the one it's declared in (tsc's
+    // isOuterVariable), as far as the resolve walk knows (a `var` whose declaration comes later isn't)
+    bool outer_reference;
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
     bool constraint_position;

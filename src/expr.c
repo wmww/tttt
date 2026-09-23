@@ -54,6 +54,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     }
     my target = scope_get_value(names, my name.sv, &my symbol);
     if (my target) {
+        my outer_reference = my target->flow_start && names->flow && names->flow->start != my target->flow_start;
     } else if (span_equals(my name, "arguments") && scope_has_function(names)) {
         // No symbol: ty_identifier_reference_type() makes it IArguments. TODO: not in arrow functions (TS2496)
     } else if (scope_get_type(names, my name.sv, nullptr)) {
@@ -85,8 +86,17 @@ static bool plausible_operand(Ty const* ty) {
 }
 
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
-    if (ty_identifier_used_before_assigned(current_checker, me)) {
-        error_ctx_error_d(errs, my name, 2454, "Variable '", my name, "' is used before being assigned.");
+    switch (ty_identifier_flow_issue(current_checker, me)) {
+        case IDENTIFIER_FLOW_OK: break;
+        case IDENTIFIER_FLOW_UNASSIGNED:
+            error_ctx_error_d(errs, my name, 2454, "Variable '", my name, "' is used before being assigned.");
+            break;
+        case IDENTIFIER_FLOW_IMPLICIT_ANY: {
+            Binding const* binding = symbol_find_node(my target, SYMBOL_DECL_VARIABLE);
+            error_ctx_error_d(errs, binding->content_span, 7034,
+                "Variable '", my name, "' implicitly has type 'any' in some locations where its type cannot be determined.");
+            error_ctx_error_d(errs, my name, 7005, "Variable '", my name, "' implicitly has an 'any' type.");
+        }   break;
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_NAMESPACE) {
         error_ctx_error_d(errs, my name, 2331, "'this' cannot be referenced in a module or namespace body.");
