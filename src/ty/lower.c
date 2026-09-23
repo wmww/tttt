@@ -262,6 +262,17 @@ static Ty const* alias_instance(Checker* me, Symbol const* decl, Ty const* body,
 
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx);
 
+// `{ [P in keyof T]: X }` with T a type parameter: instantiating it keeps the name it was written with (tsc's
+// instantiateMappedType maps the constituents without the new alias), only a union made of it takes the new one
+static bool is_homomorphic_mapped_node(TypeNode const* node) {
+    if (node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return false;
+    InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
+    if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return false;
+    TypeNode const* operand = &member->key.mapped.in_type.keyof->interface;
+    return operand->tag == TYPE_IDENTIFIER && operand->identifier->target &&
+        (operand->identifier->target->flags & SYMBOL_TYPE_PARAMETER);
+}
+
 // The body of a type alias as written (the last declaration, like ty_declared_type_of()). Null if there's none
 static TypeNode const* alias_body_node(Symbol const* decl) {
     TypeNode const* ret = nullptr;
@@ -1211,7 +1222,9 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             // getConditionalType only names a deferred one or a distribution over a union), nor for an intrinsic (`type H = Uppercase<"a" | "b">`)
             // (Syntactically: the alias may be being resolved)
             TypeNode const* body = alias && decl && symbol_is_generic_alias(decl) ? alias_body_node(canonical(me, decl)) : nullptr;
-            bool renames = body && !is_intrinsic_body(body) && (body->tag != TYPE_TERNARY || ret->alias == canonical(me, decl));
+            bool renames = body && !is_intrinsic_body(body) && body->tag != TYPE_KEYOF &&
+                (body->tag != TYPE_TERNARY || ret->alias == canonical(me, decl)) &&
+                (!is_homomorphic_mapped_node(body) || ret->kind == TY_UNION);
             if (renames) {
                 ret = ty_realias(me, ret, alias, alias_args);
             }

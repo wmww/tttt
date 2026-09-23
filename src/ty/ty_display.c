@@ -990,7 +990,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             for (u32 i = 0; i < ty->composite.types.len; i++) {
                 Ty const* t = ty->composite.types.data[i];
                 if (i) out_lit(d, " & ");
-                display_parenthesized_if(me, d, t, !t->alias && (t->kind == TY_UNION || is_function_like(me, t)));
+                display_parenthesized_if(me, d, t, !t->alias && (t->kind == TY_UNION || t->kind == TY_CONDITIONAL || is_function_like(me, t)));
             }
             break;
 

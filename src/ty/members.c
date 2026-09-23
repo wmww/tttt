@@ -998,15 +998,15 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
         for (u32 i = 0; i < source->index_count; i++) member_keys[key_count++] = source->index[i].key;
         keys = member_keys;
     }
-    u32 const usable = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL_LIKE;
-    for (u32 i = 0; i < key_count; i++) {
-        Ty const* name_type = mapped_key_name(me, mapped, keys[i]);
-        if (name_type->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_ANY | TYF_DEFERRED)) return members;
-        Ty const* const* names;
-        u32 name_count;
-        union_members(&name_type, &names, &name_count);
-        for (u32 j = 0; j < name_count; j++) {
-            if (!(names[j]->flags & usable)) return members;
+    if (mapped->name_type) {
+        // A mapped type whose `as` clause is generic in more than its key is generic (tsc's isGenericMappedType):
+        // `{ [K in keyof M as `${K}${Suffix}`]: ... }`
+        Ty const* names = mapped_key_name(me, mapped, constraint);
+        Ty const* const* parts;
+        u32 part_count;
+        union_members(&names, &parts, &part_count);
+        for (u32 i = 0; i < part_count; i++) {
+            if (parts[i]->kind == TY_TYPE_PARAM || (parts[i]->flags & TYF_DEFERRED)) return members;
         }
     }
     Ty const* modifiers = mapped->modifiers_type;
@@ -1072,6 +1072,15 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                 }
                 builder_push(&builder, props, prop);
             } else {
+                // Primitives and patterns (`data-${string}`) are index signatures, what else a name can be (generic,
+                // a symbol, an object) makes nothing (tsc's addMemberForKeyTypeWorker)
+                if (prop_name->flags & (TYF_ANY | TYF_STRING)) {
+                    prop_name = ty_intrinsic(me, TY_STRING);
+                } else if (prop_name->flags & (TYF_NUMBER | TYF_ENUM)) {
+                    prop_name = ty_intrinsic(me, TY_NUMBER);
+                } else if (!(prop_name->flags & TYF_ES_SYMBOL) && !ty_is_pattern_literal(prop_name)) {
+                    continue;
+                }
                 Ty const* value = ty_instantiate(me, mapped->template, mapper);
                 IndexInfo* existing = nullptr;
                 for (u32 k = 0; k < builder.index_count; k++) {

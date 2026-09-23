@@ -1256,6 +1256,19 @@ static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed) {
 // A mapped type whose keys aren't known yet as the target (tsc's isGenericMappedType branch of
 // structuredTypeRelatedTo): S is related to `{ [P in Q]: T }` if Q is related to keyof S and S[Q] to T, to
 // `{ [P in Q]: X[P] }` if S is related to X. With `?`, the keys S has in common with Q are enough
+// A mapper from the key type parameter of a mapped type to one constrained by the mapped type's constraint
+static TyMapper const* mapped_key_param_mapper(Checker* me, MappedInfo const* mapped) {
+    u64 key[2] = { KEY_MAPPED_KEY_PARAM, (u64)(uintptr_t)mapped };
+    TyMapper const* ret = intern_get(&my links, key, 2);
+    if (ret) return ret;
+    Ty const* param = ty_synthetic_type_param(me, atom_sv(mapped->type_param->param.name));
+    param->param.state->constraint = mapped->constraint;
+    param->param.state->constraint_state = LAZY_STATE_DONE;
+    ret = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &param, .len = 1 });
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
+}
+
 static Ternary generic_mapped_target_related(
     Checker* me, RelationState* st, Ty const* source, MappedInfo const* mapped, bool report
 ) {
@@ -1268,6 +1281,20 @@ static Ternary generic_mapped_target_related(
     if (mapped->optional < 0 || (source->kind == TY_ANONYMOUS && ty_members(me, source)->mapped)) return TERNARY_FALSE;
     Ty const* target_keys = mapped->name_type ? mapped->name_type : mapped->constraint;
     Ty const* source_keys = ty_keyof(me, source);
+    TyMapper const* keyed = nullptr;
+    if (mapped->name_type) {
+        // The key as a type parameter constrained by what it iterates over (tsc's mapped type parameter): `T[P]
+        // extends Function ? P : never` is some of `keyof T`
+        keyed = mapped_key_param_mapper(me, mapped);
+        target_keys = ty_instantiate(me, target_keys, keyed);
+    }
+    if (mapped->optional > 0 && keyed) {
+        // The keys that apply: S[those] against the template
+        Ty const* both[2] = { target_keys, source_keys };
+        Ty const* common = ty_intersection(me, both, 2, nullptr, (TyList){0});
+        if (common->flags & TYF_NEVER) return TERNARY_FALSE;
+        return is_related_to(me, st, ty_indexed(me, source, common), ty_instantiate(me, template, keyed), report);
+    }
     if (mapped->optional > 0) {
         Ty const* both[2] = { target_keys, source_keys };
         Ty const* common = ty_intersection(me, both, 2, nullptr, (TyList){0});
@@ -1295,6 +1322,7 @@ static Ternary generic_mapped_target_related(
         return related;
     }
     if (!is_related_to(me, st, target_keys, source_keys, false)) return TERNARY_FALSE;
+    if (keyed) return is_related_to(me, st, ty_indexed(me, source, target_keys), ty_instantiate(me, template, keyed), report);
     if (!mapped->name_type && template->kind == TY_INDEXED && template->indexed.index == mapped->type_param) {
         return is_related_to(me, st, source, template->indexed.object, report);
     }

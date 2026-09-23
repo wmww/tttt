@@ -20403,7 +20403,7 @@ const baselines = {
     'mappedTypeWithNameClauseAppliedToArrayType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'matchReturnTypeInAllBranches': {
         errors: false,
@@ -62273,7 +62273,7 @@ const baselines = {
     'mappedTypeIndexSignatureModifiers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeInferenceErrors': {
         errors: false,
