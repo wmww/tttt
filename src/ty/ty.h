@@ -568,6 +568,7 @@ struct Checker {
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null
     struct OuterInference const* outer_inference;
+    u32 inferential_depth; // Arguments are being checked to infer type arguments from (tsc's CheckMode.Inferential)
     // Control flow (flow.c). While flow_uncached is set expressions are evaluated without reading unfinished memos or
     // writing any: what they evaluate to may depend on the incomplete types of a loop, see ty_flow_expr_type()
     u32 flow_uncached;

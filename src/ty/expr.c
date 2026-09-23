@@ -73,12 +73,23 @@ Ty const* ty_expr_type(Checker* me, Expr const* expr) {
     return lazy_type_get(lazy); // Detects cycles
 }
 
+static bool has_generic_with_union_constraint(Checker* me, Ty const* ty);
+
+// A reference whose type has a type variable with a union constraint is narrowed as the constraint where the
+// contextual type isn't generic (see narrowable_type())
+static bool identifier_uses_context(Checker* me, Expr const* expr) {
+    if (expr->tag != EXPR_IDENTIFIER || expr->identifier.keyword || !expr->identifier.target) return false;
+    return has_generic_with_union_constraint(me, ty_identifier_reference_type(me, &expr->identifier));
+}
+
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
     LazyMemo* memo = lazy_type_state_peek(lazy);
     if (memo && memo->done && !ctx.is_const) {
-        if (!ctx.contextual || memo->context == ctx.contextual || !kind_uses_context(expr)) return memo->evaluated;
+        if (!ctx.contextual || memo->context == ctx.contextual || !(kind_uses_context(expr) || identifier_uses_context(me, expr))) {
+            return memo->evaluated;
+        }
     }
     if (!ctx.contextual && !ctx.is_const) return ty_expr_type(me, expr); // through the LazyType, which detects cycles
     Ty const* ret = compute(me, expr, ctx);
@@ -618,19 +629,37 @@ static Ty const* base_constraint_or_type(Checker* me, Ty const* ty) {
     return constraint ? constraint : ty;
 }
 
-// tsc's getNarrowableTypeForReference: in a constraint position, a generic type with a union constraint is narrowed as
-// its constraint (`c && c.flags` with `c: T extends Ctx | undefined` reads `flags` of Ctx)
-static Ty const* narrowable_type(Checker* me, IdentifierExpr const* identifier, Ty const* type) {
-    if (!identifier->constraint_position) return type;
+static bool has_generic_with_union_constraint(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_UNION) return is_generic_with_union_constraint(me, ty);
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (is_generic_with_union_constraint(me, ty->composite.types.data[i])) return true;
+    }
+    return false;
+}
+
+// tsc's isGenericType: a type variable at the top, or a union or intersection with one
+static bool is_generic_type(Ty const* ty) {
+    if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return true;
+    if (ty->kind != TY_UNION && ty->kind != TY_INTERSECTION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (is_generic_type(ty->composite.types.data[i])) return true;
+    }
+    return false;
+}
+
+// tsc's getNarrowableTypeForReference: in a constraint position, or where the contextual type isn't generic, a generic
+// type with a union constraint is narrowed as its constraint (`c && c.flags` with `c: T extends Ctx | undefined` reads
+// `flags` of Ctx; `isA(x) ? takesA(x) : takesB(x)` with `x: T extends A | B`)
+static Ty const* narrowable_type(Checker* me, IdentifierExpr const* identifier, Ty const* type, Ty const* contextual) {
+    bool substitute = identifier->constraint_position ||
+        (contextual && !my inferential_depth && !is_generic_type(contextual));
+    if (!substitute || !has_generic_with_union_constraint(me, type)) return type;
     Ty const* const* members = &type;
     u32 count = 1;
     if (type->kind == TY_UNION) {
         members = type->composite.types.data;
         count = type->composite.types.len;
     }
-    bool some = false;
-    for (u32 i = 0; i < count && !some; i++) some = is_generic_with_union_constraint(me, members[i]);
-    if (!some) return type;
     if (count == 1) return base_constraint_or_type(me, type);
     Ty const** mapped = malloc(sizeof(Ty const*) * count);
     panic_if(!mapped, "out of memory");
@@ -641,9 +670,9 @@ static Ty const* narrowable_type(Checker* me, IdentifierExpr const* identifier, 
 }
 
 // The tail of tsc's checkIdentifier(): a variable or parameter has the type control flow gives it where it is read
-static Ty const* identifier_flow_type(Checker* me, Expr const* expr, IdentifierFlowIssue* issue) {
+static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* contextual, IdentifierFlowIssue* issue) {
     IdentifierExpr const* identifier = &expr->identifier;
-    Ty const* type = narrowable_type(me, identifier, ty_identifier_reference_type(me, identifier));
+    Ty const* type = narrowable_type(me, identifier, ty_identifier_reference_type(me, identifier), contextual);
     Symbol const* symbol = identifier->target;
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
@@ -697,7 +726,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, IdentifierF
 
 IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* identifier) {
     IdentifierFlowIssue ret = IDENTIFIER_FLOW_OK;
-    identifier_flow_type(me, c_container_of(identifier, Expr, identifier), &ret);
+    identifier_flow_type(me, c_container_of(identifier, Expr, identifier), nullptr, &ret);
     return ret;
 }
 
@@ -1469,7 +1498,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_LITERAL: return ty_fresh_literal(me, ty_literal(me, &expr->literal));
         case EXPR_IDENTIFIER: {
             IdentifierFlowIssue issue = IDENTIFIER_FLOW_OK; // Reported by the typecheck walk
-            return identifier_flow_type(me, expr, &issue);
+            return identifier_flow_type(me, expr, ctx.contextual, &issue);
         }
         case EXPR_BINARY_OP: return check_binary(me, expr->binary_op, ctx);
         case EXPR_UNARY_OP:

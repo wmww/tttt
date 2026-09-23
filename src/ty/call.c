@@ -406,6 +406,7 @@ static TyMapper const* infer_type_arguments(
         contextual = ty_instantiate(me, contextual, outer_inference_mapper(me, outer));
     }
     OuterInference self = { .sig = sig, .inf = &inf };
+    my inferential_depth++;
 
     TyMapper const* return_mapper = nullptr;
     if (contextual && !(contextual->flags & TYF_ANY)) {
@@ -531,6 +532,7 @@ static TyMapper const* infer_type_arguments(
     *inferred_out = ty_list_copy(me, inf.inferred_type_params, inf.inferred_type_param_count);
     inference_drop(&inf);
     my outer_inference = outer;
+    my inferential_depth--;
     return mapper;
 }
 

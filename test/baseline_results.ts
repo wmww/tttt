@@ -1838,7 +1838,7 @@ const baselines = {
     'assignmentNonObjectTypeConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentRestElementWithErrorSourceType': {
         errors: false,
@@ -23456,9 +23456,9 @@ const baselines = {
         types: false,
     },
     'nonNullParameterExtendingStringAssignableToString': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonNullReferenceMatching': {
         errors: true,
@@ -30588,12 +30588,12 @@ const baselines = {
     'typeParameterExtendingUnion1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeParameterExtendingUnion2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeParameterExtendsPrimitive': {
         errors: true,
