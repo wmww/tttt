@@ -1,3 +1,4 @@
+// @strict: true
 // tsc's getQuickTypeOfExpression: the type of `f(x)` with a single non-generic signature doesn't need x
 interface Sym { name: string }
 interface Typ { flags: number }

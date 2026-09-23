@@ -605,6 +605,15 @@ static bool is_literal_like(Ty const* t) {
     return t->kind == TY_LITERAL || (t->kind == TY_INTRINSIC && (t->flags & TYF_NULLABLE));
 }
 
+static bool prop_judgeable(Checker* me, Prop const* prop) {
+    while (prop->type_state == LAZY_STATE_NOT_STARTED && prop->target) prop = prop->target;
+    if (prop->type_state == LAZY_STATE_IN_FLIGHT) return false;
+    if (prop->type_state == LAZY_STATE_DONE || !prop->node || prop->lazy || prop->function || prop->overload_count || prop->symbol) {
+        return true;
+    }
+    return !ty_node_reaches_alias_in_flight(me, prop->node);
+}
+
 // Object types that both have a required property whose types are disjoint, one of them a literal (`{ kind: "a" }
 // & { kind: "b" }`): the intersection is never (tsc's isDiscriminantWithNeverType, via getReducedType). Remembered
 // per member list, since it looks at every property
@@ -620,6 +629,10 @@ static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u
     if (*slot) return (uintptr_t)*slot == 2;
     *slot = (void const*)1; // (While working it out: no conflict)
     bool conflict = false;
+    // HACK: tsc reduces lazily (getReducedType), this runs when the intersection is made, which can be while one of
+    // the properties or an alias it names is being lowered (`type B = X & { e: A }; type A = I | B`): that property
+    // can't be judged yet, and its type mustn't be asked for (it would be the error type for good)
+    bool skipped = false;
     for (u32 i = 0; i < len && !conflict; i++) {
         Ty const* a = types[i];
         if (!(a->flags & TYF_OBJECT) || (a->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
@@ -627,12 +640,20 @@ static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u
         for (u32 p = 0; p < members->prop_count && !conflict; p++) {
             Prop const* prop = members->props[p];
             if (prop->flags & PROP_OPTIONAL) continue;
+            if (!prop_judgeable(me, prop)) {
+                skipped = true;
+                continue;
+            }
             Ty const* a_type = prop_type(me, prop);
             for (u32 j = i + 1; j < len && !conflict; j++) {
                 Ty const* b = types[j];
                 if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
                 Prop const* other = ty_get_prop(me, b, prop->name);
                 if (!other || (other->flags & PROP_OPTIONAL)) continue;
+                if (!prop_judgeable(me, other)) {
+                    skipped = true;
+                    continue;
+                }
                 Ty const* b_type = prop_type(me, other);
                 if (!is_literal_like(a_type) && !is_literal_like(b_type)) continue;
                 Ty const* both[2] = { a_type, b_type };
@@ -641,6 +662,10 @@ static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u
         }
     }
     // (The slot may have moved while the members were resolved)
+    if (skipped && !conflict) {
+        *intern_slot(me, &my links, key, 1 + len) = nullptr; // Asked again once the property is done
+        return false;
+    }
     *intern_slot(me, &my links, key, 1 + len) = (void const*)(uintptr_t)(conflict ? 2 : 1);
     return conflict;
 }

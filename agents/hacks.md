@@ -483,6 +483,12 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   rules, no discriminated-union decomposition of the source, no optionality of parameters (`undefined` isn't added
   under strictNullChecks), signatures/index signatures of a source intersection aren't combined (properties are).
   Array<S> -> ReadonlyArray<T> is a shortcut on the element types (`structured_related`).
+- `has_conflicting_discriminants` (checker.c): tsc reduces an intersection with disjoint discriminants to never lazily
+  (getReducedType), tttt when the intersection is made. That can be in the middle of lowering one of the properties
+  or an alias its type names (`type B = X & { e: A }; type A = I | B`, the corpus' BindableStatic*Expression), so a
+  property that is in flight or whose node reaches an alias in flight (through unresolved aliases,
+  `ty_node_reaches_alias_in_flight`) isn't judged, and the answer isn't remembered. The intersection itself is
+  interned with that answer. The real fix is a lazy reduced view of intersections.
 - `get_variances`: arrays, tuples and synthetic targets are hardcoded covariant (tsc does the same for arrays and
   tuples). `VARIANCE_UNRELIABLE` is set from a checker-wide flag whenever a deferred type or mapped type is compared
   while *any* variance is being measured; cached sub-results don't set it. No alias variances: instantiated
