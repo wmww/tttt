@@ -449,7 +449,9 @@ struct Members {
     u32 construct_count;
     IndexInfo const* index;
     u32 index_count;
-    MappedInfo const* mapped; // non-null for a mapped type, which then has no other members (yet, see hacks.md)
+    // Non-null for a mapped type whose keys aren't known. It has no other members, except `{ [K in keyof T]: X }` with T
+    // generic: a property per property of T's constraint (see expand_generic_homomorphic())
+    MappedInfo const* mapped;
 };
 
 // sources[i] -> targets[i]. Always flat in stage 1 (composition builds a new flat mapper).

@@ -9523,7 +9523,7 @@ const baselines = {
     'destructuringWithConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringWithGenericParameter': {
         errors: true,
@@ -28587,12 +28587,12 @@ const baselines = {
     },
     'strictNullNotNullIndexTypeNoLib': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'strictNullNotNullIndexTypeShouldWork': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'strictOptionalProperties1': {
@@ -28793,7 +28793,7 @@ const baselines = {
     'substitutionTypesInIndexedAccessTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypeReductionUnionConstraints': {
         errors: true,
@@ -30597,7 +30597,7 @@ const baselines = {
     },
     'typeParameterExtendsPrimitive': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterFixingWithConstraints': {
@@ -32607,7 +32607,7 @@ const baselines = {
     },
     'voidReturnIndexUnionInference': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'voidReturnLambdaValue': {
@@ -64231,7 +64231,7 @@ const baselines = {
         types: false,
     },
     'typeParameterConstModifiersReverseMappedTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

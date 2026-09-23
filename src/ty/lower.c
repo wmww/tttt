@@ -991,6 +991,39 @@ static Ty const* destructured_flow_type(Checker* me, Binding const* binding, Ty 
     return ty_flow_type(me, access, declared, declared, flow);
 }
 
+
+static bool is_generic_with_undefined_constraint(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_TYPE_PARAM && !(ty->flags & TYF_DEFERRED)) return false;
+    Ty const* constraint = ty_base_constraint(me, ty);
+    if (!constraint || constraint == ty) return false;
+    if (constraint->flags & TYF_UNDEFINED) return true;
+    if (constraint->kind != TY_UNION) return false;
+    for (u32 i = 0; i < constraint->composite.types.len; i++) {
+        if (constraint->composite.types.data[i]->flags & TYF_UNDEFINED) return true;
+    }
+    return false;
+}
+
+// Without undefined, a generic type whose constraint has it being its constraint (tsc's getNonUndefinedType):
+// `const { a = 1 } = p` with `p: Readonly<P>` and `P extends { a?: number }` makes a number
+static Ty const* non_undefined_type(Checker* me, Ty const* ty) {
+    TyList members = ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
+    bool some = false;
+    for (u32 i = 0; i < members.len && !some; i++) some = is_generic_with_undefined_constraint(me, members.data[i]);
+    if (some) {
+        TyBuf mapped = {0};
+        for (u32 i = 0; i < members.len; i++) {
+            Ty const* member = members.data[i];
+            bool generic = member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED);
+            Ty const* constraint = generic ? ty_base_constraint(me, member) : nullptr;
+            ty_buf_push(&mapped, constraint ? constraint : member);
+        }
+        ty = ty_union(me, mapped.data, mapped.len, nullptr, (TyList){0});
+        ty_buf_drop(&mapped);
+    }
+    return ty_without_undefined(me, ty);
+}
+
 // What is assigned to a binding: the initializer for the root of a pattern, for an element the property or element
 // of what its pattern is assigned
 Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
@@ -1023,7 +1056,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         // (unless it can be undefined itself), else the two are a subtype-reduced union (tsc's getTypeForBindingElement)
         Binding const* root = parent;
         while (root->parent) root = root->parent;
-        Ty const* types[2] = { ty_without_undefined(me, ret), nullptr };
+        Ty const* types[2] = { non_undefined_type(me, ret), nullptr };
         if (root->has_explicit_type) {
             Ty const* default_type = ty_expr_type(me, binding->default_value);
             if (compiler_options()->strict_null_checks && !(default_type->flags & (TYF_ANY | TYF_UNKNOWN)) &&

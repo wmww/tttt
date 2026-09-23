@@ -931,6 +931,51 @@ static void union_members(Ty const* const* ty_ref, Ty const* const** out, u32* c
     }
 }
 
+// `{ [K in keyof T]: X }` with T generic stays a mapped type, but has a property per property of T's apparent type (its
+// constraint), X with K the property's name, with T's modifiers (tsc's resolveMappedTypeMembers, whose modifiers type
+// is the apparent type): `Mutable<T>` with `T extends Node` has `pos: T["pos"]`
+static Members const* expand_generic_homomorphic(Checker* me, Members const* members) {
+    MappedInfo const* mapped = members->mapped;
+    if (!mapped->keyof_constraint || mapped->name_type || !mapped->modifiers_type) return members;
+    Ty const* apparent = ty_apparent_type(me, mapped->modifiers_type);
+    if (apparent == mapped->modifiers_type || !(apparent->flags & TYF_OBJECT) || (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        return members;
+    }
+    Members const* source = ty_members(me, apparent);
+    if (source->mapped || !source->prop_count) return members;
+    Prop* template = arena_new(&my arena, Prop);
+    template->type = mapped->template;
+    template->type_state = LAZY_STATE_DONE;
+    MembersBuilder builder = { .mapped = mapped };
+    for (u32 i = 0; i < source->prop_count; i++) {
+        Prop const* from = source->props[i];
+        Ty const* key = ty_prop_name_literal(me, from->name);
+        TyMapper const* mapper = ty_mapper_new(
+            me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
+        );
+        u32 flags = from->flags & (PROP_OPTIONAL | PROP_READONLY);
+        if (mapped->optional > 0) flags |= PROP_OPTIONAL;
+        if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
+            flags &= ~(u32)PROP_OPTIONAL;
+            if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
+        }
+        if (mapped->readonly > 0) flags |= PROP_READONLY;
+        if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
+        Prop* prop = arena_new(&my arena, Prop);
+        *prop = (Prop){ .name = from->name, .flags = flags, .target = template, .mapper = mapper };
+        Prop const* declared = from;
+        while (declared && declared->target && !declared->decl_span_count) declared = declared->target;
+        if (declared) {
+            prop->name_span = declared->name_span;
+            prop->decl_spans = declared->decl_spans;
+            prop->decl_span_count = declared->decl_span_count;
+            prop->name_is_value = declared->name_is_value;
+        }
+        builder_push(&builder, props, prop);
+    }
+    return builder_finish(me, &builder);
+}
+
 // A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
 // clause maps a key to), an index signature per primitive key. Returns the members unchanged while the key type is
 // generic (or something this can't expand yet)
@@ -938,7 +983,7 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
     MappedInfo const* mapped = members->mapped;
     if (!mapped) return members;
     Ty const* constraint = mapped->constraint;
-    if (constraint->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_ANY | TYF_DEFERRED)) return members;
+    if (constraint->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_ANY | TYF_DEFERRED)) return expand_generic_homomorphic(me, members);
     Ty const* const* keys;
     u32 key_count;
     union_members(&constraint, &keys, &key_count);
