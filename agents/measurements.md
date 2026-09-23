@@ -2,6 +2,22 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 08 done: real corpus 31 -> 0, the first honest perf comparison
+Suite: **4211 full of 13163**, errors 7328, symbols 9180, types 7382; nothing lost over the session. Real corpus (`./realworld.py`): **0 diagnostics**, clean
+in several check orders (a relation bug once showed up only when the files were checked in another order).
+`./bench.sh` (machine ~1.65x faster than for the plan 12 entry: tsc 6.36 s on the real corpus, was 10.52):
+real corpus tttt **0.88 s** vs tsgo **1.02 s** (tsgo single-threaded 1.72, tsc 6.36), load+parse 192 ms, resolve
+102 ms, typecheck 567 ms, RSS 370 MB (tsgo 425). Synthetic corpus 1.58 s vs tsgo 1.87 (single-threaded 3.68), RSS
+2121 MB (tsgo 1798). Against tsgo the ratios are what they were with 31-1751 diagnostics: finishing the checks that
+used to fail early cost next to nothing. **Single-threaded tttt is ~2x faster than single-threaded tsgo on real code,
+and ~15% faster than multi-threaded tsgo.**
+
+Callgrind of the real corpus: 6.6 G Ir (6.2 G at plan 09 with 109 diagnostics), typecheck 77%, parse ~15%. Same
+shape as the plan 09 profile below: `type_at_flow_node` 44% inclusive (narrowing), 4.3 M top-level `ty_is_related`
+calls (22% inclusive, `check_related` 26% with `ty_is_comparable_either_way`), `is_simple_related` 9.4% self,
+`ty_union` 15% inclusive (qsort 3.3%), `ty_call_return_type` 27% inclusive. The candidates listed under plan 09 still
+stand.
+
 ## 2026-09-22, plan 12 done (fresh literals, excess property checks): real corpus 44 -> 31
 Suite: **4200 full of 13163**, errors 7308, symbols 9173, types 7367. Lost 4: jsdocAccessEnumType (JSDoc `@type`, printed
 right by accident before), destructuringWithLiteralInitializers, mappedTypeMultiInference,
@@ -49,23 +65,6 @@ from `narrowed_type` (tsc's getNarrowedType relates every union member to the ca
 `ty_is_enum_union`/`compiler_options()` on every pair); `ty_union` 15% inclusive with qsort 3.3% (member sorting).
 Candidates for a perf session: a per-(member, candidate) cache or tsc's `narrowedTypes` cache in narrowing, a cheaper
 `is_simple_related` prefix, sorted-merge instead of qsort for unions built from sorted inputs.
-
-## 2026-09-22, plan 08 session 3 (the small tail): real corpus 239 -> 203
-Suite: **3714 full of 13163** (was 3607), errors 7060+, symbols 8871+, types 6525+. Real corpus: **203 type
-diagnostics** (plan 08 "Progress"). `./bench.sh`: real corpus wall **0.63 s** (tsgo 0.76, tsgo single-threaded 1.29,
-tsc 4.76), load+parse 148 ms, resolve 78 ms, typecheck 399 ms, RSS 356 MB. Synthetic corpus 1.33 s (tsgo 1.51).
-
-## 2026-09-22, plan 08 session 2: real corpus 365 -> 239
-Suite: **3607 full of 13163** (was 3573), errors 7039+, symbols 8796+, types 6464+. Real corpus: **239 type
-diagnostics** (plan 08 "Progress" has what's left). `./bench.sh`: real corpus wall **0.62 s** (tsgo 0.74, tsgo
-single-threaded 1.26, tsc 4.74), load+parse 150 ms, resolve 78 ms, typecheck 398 ms (381 at 440 diagnostics),
-RSS 353 MB. Synthetic corpus 1.25 s (tsgo 1.42). Still not the result: ~240 checks stop early.
-
-## 2026-09-22, plan 08 session 1: real corpus 1751 -> 365
-Suite: **3573 full of 13163** (was 3496). Real corpus: **365 type diagnostics** (1751; bench below taken at 440), see plan 08 "Progress" for
-what's left. `./bench.sh`: real corpus wall **0.61 s** (tsgo 0.73, tsgo single-threaded 1.35, tsc 4.87), load+parse
-152 ms, resolve 78 ms, typecheck 381 ms (373 in plan 06: the ~1300 calls and bodies that no longer fail early cost
-almost nothing), RSS 341 MB. Synthetic corpus 1.15 s (tsgo 1.39). Not a result yet: 440 checks still stop early.
 
 ## 2026-09-22, plan 07: types baseline underlines
 Suite: **3496 full of 13163** (was 1971), errors 6907, symbols 8787, **types 6364** (3974). 0 tests lost a component.

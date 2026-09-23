@@ -31,6 +31,10 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   `Promise`), TS1375/TS1378 (top-level await), TS2802 (iteration needs `downlevelIteration`), TS1056 (accessors, ES3).
   TS18028 is in plan 13, the "Cannot find name" flavours (TS2583/TS2584/TS2580/TS2582/TS2550) in plan 15.
 
+- **Evolving arrays** (tsc's autoArrayType: `let x = []` / `x = []` on an auto-typed `let x;`, then `x.push(v)`,
+  `x[i] = v` grow the element type; needs FLOW_ARRAY_MUTATION nodes in the builder). Auto types (`let x;`) landed at
+  the end of plan 08, the array half is `any[]` (hacks.md "Narrowing"). controlFlowArrays and friends.
+
 ## Checker gaps (each verified still open by probe)
 - `expandoFunctionSymbolProperty`: `f[symb] = ...` on a function declaration isn't an expando property (only `f.x =`
   is?), so `f` misses `[symb]` (TS2741). Found by plan 09.
@@ -197,6 +201,13 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   ones that don't. With a tsconfig tsc puts option diagnostics on the option's span in the json; we skip them.
 - TS2688 for a type reference directive / `types` entry that resolves for us but not for tsc (typingsLookup3,
   tripleSlashTypesReferenceWithMissingExports, resolutionModeTripleSlash4): our resolution finds a file tsc rejects.
+- Found at the end of plan 08, not investigated: TS7005 for `declare var foo;` without a type
+  (implicitAnyDeclareVariablesWithoutTypeAndInit); `u += 1` with `u: undefined` is TS18048 in tsc (checkNonNullType on
+  `+` operands when neither is string-like), TS2365 here (plan 15's operand checks).
+- Types baseline display, found at the end of plan 08: the expression of `class C extends Base<V[]>` prints as
+  `typeof Base` (tsc: the instance type `Base<V[]>`); a distributed intersection keeps its origin for display in tsc
+  (`LeftHandSideExpression & BindableStaticNameExpression`, tttt prints the distributed union); the second overload of
+  a function whose overloads share a type parameter name prints `<T_1 ...>` in tsc.
 
 ## Parser
 - `parse_label` should refuse reserved words (`default:`/`case x:` are fine today only because of parse order).

@@ -65,6 +65,7 @@ You will use scripts to help you run tests, but some scripts and options are mor
 - `./resultdiff.py [--lost|--gained] [--names]`: After `./fasttest.sh -s`, which test components changed compared to git HEAD's saved results (plain text, unlike the coloured `--summary`). `./failstats.py --code X` reuses the last full `./failstats.py` run: rerun that first
 - `./findcrash.py [prefix]`: When the release suite dies (crash, hang, memory runaway: it runs each probe under `ulimit -v` and `timeout`), bisects on test name prefixes and prints the tests responsible
 - `TTTT_DEBUG_RELATE=1` logs every top-level type relation query (source, target, ids, result), handy with `./run.sh` or `./release/tttt` on a small file
+- `TTTT_DEBUG_CYCLE=1` prints the chain of declarations/expressions whenever a declaration's type evaluation reaches itself (where TS7022-style circularity comes from)
 - `./bench.sh`: Perf benchmark against tsc and tsgo (wall time, peak RSS, tttt phase split). Rerun and update `agents/measurements.md` after perf-relevant changes
 - `./tscbaseline.sh path/to/file.ts [types|symbols|errors.txt]`: Prints what tsc says about a file (the expected side of `./filetest.sh`), handy when writing probes
 - `./run.sh path/to/file.ts`: Runs the typechecker as a user would. This produces type errors, but not the detailed information of the tests. It also doesn't run tsc against the file, so generally the test scripts are more useful

@@ -29,21 +29,3 @@ TS2353 alone, located at the property, because elaboration relates the nested li
   declaration, skipped for lib declarations: `hasNoDefaultLib`).
 - `TyReportLine.span` (plan 12) already lets a line relocate the error; `Error` needs related info (check how TS2728
   "'x' is declared here" is emitted today and reuse it).
-</content>
-</invoke>
-<invoke name="Bash">
-<parameter name="command">cd /home/ai/tttt && git rm -q agents/plans/12_fresh_literals.md && python3 - <<'EOF'
-def sub(path, old, new, count=1):
-    s=open(path).read()
-    assert s.count(old)>=1, (path, old)
-    s=s.replace(old,new,count)
-    open(path,'w').write(s)
-p='agents/plans/08_corpus_to_zero.md'
-sub(p, """What is left (44 after plan 11), by root cause:
-- **Plan 12** (fresh literals): semver.ts 13 TS2345 + TS2678.
-- The singles (~31), for a plan 08 session after 12 (some may fall out of it); new since plan 11: core.ts 2467/2478""", """**Plan 12 done: 44 -> 31** (fresh literals: semver.ts clean; excess property checks added no diagnostic).
-
-What is left (31 after plan 12), by root cause:
-- The singles, for a plan 08 session; new since plan 11: core.ts 2467/2478""")
-EOF
-cat agents/todo.md | head -3

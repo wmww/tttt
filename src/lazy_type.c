@@ -65,31 +65,52 @@ void lazy_type_set(LazyType* me, Ty const* result, Ty const* context) {
     state->done = true;
 }
 
-static LazyType* dbg_stack[4096];
-static int dbg_len;
-static void dbg_print(LazyType* l) {
-    switch (l->tag) {
-        case LAZY_TYPE_EXPR: log_warn("  expr ", span_line_index(c_container_of(l, Expr, lazy_type)->outer_span)+1, " ", c_container_of(l, Expr, lazy_type)->outer_span); break;
-        case LAZY_TYPE_INITIALIZED_BINDING: log_warn("  binding ", span_line_index(c_container_of(l, InitializedBinding, lazy_type)->binding.content_span)+1, " ", c_container_of(l, InitializedBinding, lazy_type)->binding.content_span); break;
-        case LAZY_TYPE_FUNCTION: log_warn("  function ", span_line_index(c_container_of(l, FunctionImpl, lazy_type)->full_span)+1); break;
-        default: log_warn("  tag ", (i32)l->tag); break;
+// TTTT_DEBUG_CYCLE=1: when a declaration's evaluation reaches itself again (the TS7022 kind of cycle), print the
+// LazyTypes on the way, innermost first. Only LazyTypes: what is evaluated without one in between isn't shown
+typedef struct CycleTrace {
+    LazyType* stack[4096];
+    u32 len;
+} CycleTrace;
+static thread_local CycleTrace cycle_trace;
+
+static void cycle_trace_print(LazyType* lazy) {
+    switch (lazy->tag) {
+        case LAZY_TYPE_EXPR: {
+            Span span = c_container_of(lazy, Expr, lazy_type)->outer_span;
+            log_warn("  expression, line ", span_line_index(span) + 1, ": ", span);
+        }   break;
+        case LAZY_TYPE_INITIALIZED_BINDING: {
+            Span span = c_container_of(lazy, InitializedBinding, lazy_type)->binding.content_span;
+            log_warn("  binding, line ", span_line_index(span) + 1, ": ", span);
+        }   break;
+        case LAZY_TYPE_FUNCTION:
+            log_warn("  function, line ", span_line_index(c_container_of(lazy, FunctionImpl, lazy_type)->full_span) + 1);
+            break;
+        default:
+            log_warn("  LazyType tag ", (i32)lazy->tag);
+            break;
     }
 }
+
 static Ty const* lazy_type_evaluate_inner(LazyType* me);
+
 Ty const* lazy_type_evaluate(LazyType* me) {
-    static int dbg = -1;
-    if (dbg < 0) dbg = getenv("TTTT_DEBUG_CYCLE") != nullptr;
-    if (!dbg) return lazy_type_evaluate_inner(me);
-    LazyMemo* st = my tag == LAZY_TYPE_EVALUATED ? nullptr : lazy_type_state(me);
-    if (st && st->evaluation_started && !st->done && my tag != LAZY_TYPE_EXPR && !st->is_self_referential) {
-        log_warn("cycle at:");
-        dbg_print(me);
-        for (int i = dbg_len - 1; i >= 0; i--) { dbg_print(dbg_stack[i]); if (dbg_stack[i] == me) break; }
+    static int enabled = -1;
+    if (enabled < 0) enabled = getenv("TTTT_DEBUG_CYCLE") != nullptr;
+    if (!enabled || cycle_trace.len == c_arraylen(cycle_trace.stack)) return lazy_type_evaluate_inner(me);
+    LazyMemo* state = my tag == LAZY_TYPE_EVALUATED ? nullptr : lazy_type_state(me);
+    if (state && state->evaluation_started && !state->done && my tag != LAZY_TYPE_EXPR && !state->is_self_referential) {
+        log_warn("cycle:");
+        cycle_trace_print(me);
+        for (u32 i = cycle_trace.len; i--;) {
+            cycle_trace_print(cycle_trace.stack[i]);
+            if (cycle_trace.stack[i] == me) break;
+        }
     }
-    dbg_stack[dbg_len++] = me;
-    Ty const* r = lazy_type_evaluate_inner(me);
-    dbg_len--;
-    return r;
+    cycle_trace.stack[cycle_trace.len++] = me;
+    Ty const* ret = lazy_type_evaluate_inner(me);
+    cycle_trace.len--;
+    return ret;
 }
 
 static Ty const* lazy_type_evaluate_inner(LazyType* me) {

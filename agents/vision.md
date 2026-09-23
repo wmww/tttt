@@ -5,13 +5,16 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-22, plan 12 done)
-- **Suite: `./fasttest.sh` 4200 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
-  a real measurement of type *printing*; plans 08-12 moved the suite by +704 on the side.
+## State (2026-09-22, plan 08 done)
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
-  under tsc): **0 parse, 0 name, 31 type diagnostics** (1751 at the start of plan 08; plan 09 took the iteration
-  bucket, 203 -> 109, plan 10 the `this` cascades and skipLibCheck, -> 91, plan 11 higher-order generic inference,
-  -> 44, plan 12 fresh literals -> 31). What is left is ~31 singles (plan 08 "Progress"), no planned category.
+  under tsc): **0 diagnostics** (1751 at the start of plan 08; plans 09-12 took the category-sized buckets, the last
+  plan 08 session the 31 singles: ~20 root causes, each a tsc rule tttt didn't have, see the git log).
+- **The first honest perf comparison** (`measurements.md`): with every check done, tttt checks the corpus in **0.88 s
+  vs tsgo 1.02 s** (tsgo single-threaded 1.72 s, tsc 6.36 s), RSS 370 vs 425 MB. Single-threaded tttt is ~2x
+  single-threaded tsgo. Finishing the checks that used to fail early cost next to nothing. Typecheck is 567 ms of the
+  880, and its profile is narrowing -> relations (`ty_is_related` 4.3 M calls) and union building.
+- **Suite: `./fasttest.sh` 4211 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
+  a real measurement of type *printing*; plans 08-12 moved the suite by +715 on the side.
 - Plan 12 gave literals tsc's fresh/regular twins and object literals freshness + excess property checks (TS2353),
   done in one session. It exposed the next missing piece of error *reporting*: tsc's elaborateError (errors located
   at the offending property/element of a literal, plan 16 stub).
@@ -22,7 +25,13 @@ types components) are the oracle, not the goal.
   error tsc doesn't have (`using` alone ~330: plan 14); dozens of checks don't exist at all (`./unimplemented_codes.sh`:
   unused locals, property vs index signature, used-before-declaration, operand checks, grammar/regex checks: plan 15);
   no accessibility/readonly/private-name checks (plan 13), no error elaboration (plan 16 stub). These are
-  cheap per test compared with the type core work, and ready to schedule once the corpus is done.
+  cheap per test compared with the type core work, and ready to schedule now that the corpus is done.
+- The last plan 08 session added tsc rules the corpus needed: getQuickTypeOfExpression (declaration cycles through
+  loops), auto types (`let x;` typed by control flow; evolving arrays still `any[]`), symbol-keyed element access
+  references, removeOptionalityFromDeclaredType, inferFromAnnotatedParameters, hasContextualTypeWithNoGenericTypes,
+  members of generic homomorphic mapped types, getEffectiveConstraintOfIntersection, typeRelatedToDiscriminatedType.
+  One new hack on an old one: the eager discriminant-conflict reduction of intersections now skips properties it would
+  have to lower mid-cycle (tsc reduces lazily, `hacks.md`); that area produced the only order-dependent result seen.
 - `this` types (plan 10: polymorphic `this`, contextual `this`, class heritage checks) and the iteration protocol +
   unique symbols + generators (plan 09) landed, both done in one long session each without a redesign.
 - ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole
@@ -42,7 +51,8 @@ types components) are the oracle, not the goal.
   triage. That's the pattern the previous course correction (below) warned about. The suite work was not wasted
   (module resolution was needed), but the corpus is now the next thing: plan 08 works it down root cause by root
   cause, with the suite as a regression check, and ends with the first bench/profile where tttt does all of the
-  work tsgo does. Until then the perf headline stays "no evidence of a deficit", not "faster".
+  work tsgo does. Until then the perf headline stays "no evidence of a deficit", not "faster". *(Done: corpus at 0,
+  tttt 0.88 s vs tsgo 1.02 s.)*
 - **Plan 07 (underlines)** done in one session (1971 -> 3496 full), within budget: the reuse rule is fitted to
   probes, not a port of tsc's node builder (`hacks.md`).
 - The spread of the corpus count is smaller than it looks: rank buckets by root cause, not by code (one mapped type
@@ -110,10 +120,9 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type *printing* (alias preservation, union
   ordering by type id, truncation). Union order by creation id is something an interned design can mimic and a
   tree design cannot. Keep this in mind when designing ids.
-- Perf: on real code tttt is at 0.6-0.7 s next to tsgo's 0.72 s, parse + bind healthy. **Not a result yet**: tttt
-  still fails ~1750 checks early (a failed call skips work), tsgo does all the work and reports nothing. Fix correctness on the corpus first, re-profile
-  when the error count is down (the first profile paid for itself at once), and don't trust the synthetic 0.6 s
-  headline for anything.
+- Perf: **now a result on one real project** (0.88 s vs tsgo 1.02 s, both doing all the work). One corpus is one
+  corpus: a second real project (different style: heavy generics, JSX, or a library with deep conditional types)
+  would tell whether the narrowing/relation costs scale. The profile has had the same top entries since plan 09.
 - Parser robustness: error recovery paths are barely exercised under valgrind (plan 03's heap corruption turned out
   to be the error *printer*, `span_line_start` on a span starting at a newline, not the parser).
 - Single-threaded design. tsgo's win is largely parallel parse/bind + multiple checkers. Arena/interning design
@@ -129,10 +138,8 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 3b. ~~Persistent symbols / new binder (plan 04)~~ done, then bind-time flow graph + narrowing (plan 05).
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; ~~module resolution~~ done (plan 06); ~~JS gate,
    diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
-4b. **Real corpus to zero diagnostics (plan 08)**, then bench + profile it: the first honest perf comparison. What
-   plan 08's loop can't do is category-sized and planned: ~~iteration protocol + unique symbols + generators (plan
-   09)~~ done, ~~`this` types (plan 10)~~ done, ~~higher-order generic inference (plan 11)~~ done,
-   ~~fresh literals + excess property checks (plan 12)~~ done. Then the suite plans 13-16.
+4b. ~~Real corpus to zero diagnostics (plan 08), then bench + profile it~~ done (with plans 09-12): 0 diagnostics,
+   0.88 s vs tsgo 1.02 s. Next: the suite plans 13-16 and the unplanned features, and/or a second real corpus.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.
