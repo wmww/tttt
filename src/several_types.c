@@ -14,6 +14,7 @@ void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
     vec_symbol_cptr_drop(&my namespace_symbols);
     vec_spanned_type_drop(&my generic_params);
+    import_attributes_free(my import_attributes);
 }
 
 // Member of a namespace by meaning, TS2694 if there is none. *found is the member as declared (maybe an alias)
@@ -195,6 +196,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
 }
 
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
+    if (my import_attributes) import_attributes_resolution_mode(my import_attributes, errs); // tsc's checkImportType
     for_each (i, vec_spanned_type, &my generic_params) {
         type_typecheck(&i->type, errs);
     }

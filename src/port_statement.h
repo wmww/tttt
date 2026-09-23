@@ -3,6 +3,7 @@
 #include "statement.h"
 #include "lazy_type.h"
 #include "scope.h"
+#include "import_attributes.h"
 
 // Covers both import and export statements
 
@@ -86,8 +87,10 @@ typedef struct PortStatement {
     cstr target_path; // Path of the module to import from
     Span target_path_span; // Span of the path string
     ModuleRef* module_ref; // Made by the parser when there is a target path
+    ImportAttributes* attributes; // Owned, null if there are none
 } PortStatement;
 
 void port_statement_drop(PortStatement* me);
 void port_statement_add_names(PortStatement* me, Scope* scope);
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs);
+void port_statement_typecheck(PortStatement const* me, ErrorCtx* errs);

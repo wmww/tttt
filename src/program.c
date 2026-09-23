@@ -1,4 +1,5 @@
 #include "program.h"
+#include "import_attributes.h"
 #include "parser.h"
 #include "block.h"
 #include <cleat/filesystem.h>
@@ -164,6 +165,8 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     // The conditions `exports` are read with: by syntax, else the format of the importing file
     ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_COMMONJS :
         ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
+    if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
+    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_COMMONJS;
     ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
     if (my options.no_resolve) {
         // Nothing is added to the program, but a name may still mean a file that is part of it

@@ -217,6 +217,7 @@ static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_binding_content(Parser* parent, Binding* ret);
+static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
 static bool parse_binding_element(Parser* parent, Binding* ret);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
@@ -1195,11 +1196,25 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     }
     hop_whitespace(&p);
     if (hop_char(&p, ',')) {
-        // Import attributes: `{ with: { "resolution-mode": "import" } }`
+        // Import attributes: `{ with: { "resolution-mode": "import" } }` (tsc's parseImportType)
         hop_whitespace(&p);
-        TypeNode attributes;
-        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &attributes)) {
-            type_drop(&attributes);
+        if (expect_char(&p, '{')) {
+            hop_whitespace(&p);
+            Anchor keyword = anchor(&p);
+            bool is_assert = hop_start_if_ends_on_word_break(&p, "assert");
+            if (!is_assert && !hop_start_if_ends_on_word_break(&p, "with")) expected_token_error(&p, "with");
+            ImportAttributes* attributes = c_new(ImportAttributes, {
+                .keyword = span_from(keyword), .is_assert = is_assert, .elements = vec_import_attribute_init(),
+            });
+            hop_whitespace(&p);
+            expect_char(&p, ':');
+            hop_whitespace(&p);
+            Anchor body = anchor(&p);
+            parse_import_attributes_body(&p, attributes);
+            attributes->span = span_from(body);
+            identifier.import_attributes = attributes;
+            hop_whitespace(&p);
+            expect_char(&p, '}');
         }
         hop_whitespace(&p);
     }
@@ -1225,6 +1240,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
 
     if (has_path) {
         identifier.import_ref = add_module_ref(&p, path, path_span);
+        identifier.import_ref->resolution_override = import_attributes_resolution_mode(identifier.import_attributes, nullptr);
     } else {
         cstr_drop(&path);
     }
@@ -4107,6 +4123,59 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
     return parse_success(&p);
 }
 
+// The `{ type: "json" }` of import attributes, into ret->elements (tsc's parseImportAttributes)
+static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret) {
+    Parser* p = parent;
+    if (!expect_char(p, '{')) return;
+    hop_whitespace(p);
+    while (*p->pos && *p->pos != '}') {
+        ImportAttribute attribute = {0};
+        Anchor name_anchor = anchor(p);
+        cstr ignored = cstr_null;
+        if (*p->pos == '"' || *p->pos == '\'') {
+            parse_string(p, &ignored);
+            cstr_drop(&ignored);
+        } else if (!parse_identifier_or_keyword(p, nullptr)) {
+            parse_error(p, span_from_token(p), 1003, "Identifier expected.");
+            break;
+        }
+        attribute.name = span_from(name_anchor);
+        hop_whitespace(p);
+        expect_char(p, ':');
+        hop_whitespace(p);
+        expect_expr(p, expr_ctx_null, &attribute.value);
+        vec_import_attribute_push(&ret->elements, attribute);
+        hop_whitespace(p);
+        if (*p->pos == '}' || !expect_char(p, ',')) break;
+        hop_whitespace(p);
+    }
+    expect_char(p, '}');
+}
+
+// `with { type: "json" }` / `assert { ... }` after a module specifier, on the same line
+static ImportAttributes* parse_import_attributes(Parser* parent) {
+    Parser p = parser(parent);
+    hop_whitespace(&p);
+    Anchor a = anchor(&p);
+    bool is_assert = false;
+    if (p.whitespace == WHITESPACE_NEWLINE) {
+        parse_fail(&p);
+        return nullptr;
+    } else if (hop_start_if_ends_on_word_break(&p, "assert")) {
+        is_assert = true;
+    } else if (!hop_start_if_ends_on_word_break(&p, "with")) {
+        parse_fail(&p);
+        return nullptr;
+    }
+    ImportAttributes* ret = c_new(ImportAttributes, { .keyword = span_from(a), .is_assert = is_assert });
+    ret->elements = vec_import_attribute_init();
+    hop_whitespace(&p);
+    parse_import_attributes_body(&p, ret);
+    ret->span = span_from(a);
+    parse_success(&p);
+    return ret;
+}
+
 static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -4161,6 +4230,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 statement.requires_target = true;
                 statement.target_path = cstr_move(&path.string);
                 statement.target_path_span = span_from(path_anchor);
+                statement.attributes = parse_import_attributes(&p);
                 statement.main.full_span = span_from(a);
                 value_drop(&path);
                 goto done;
@@ -4242,6 +4312,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 parse_error(&p, path_expr.inner_span, 1141, "String literal expected.");
             }
             expr_drop(&path_expr);
+            statement.attributes = parse_import_attributes(&p);
         }
     }
 
@@ -4259,6 +4330,9 @@ done:
         statement.module_ref = add_module_ref(&p, cstr_clone(statement.target_path), statement.target_path_span);
         if (statement.is_import_require) statement.module_ref->syntax = MODULE_REF_REQUIRE;
         statement.main.module_ref = statement.module_ref;
+        if (statement.main.type_only) {
+            statement.module_ref->resolution_override = import_attributes_resolution_mode(statement.attributes, nullptr);
+        }
         for_each (i, vec_port_item, &statement.items) {
             i->module_ref = statement.module_ref;
         }
@@ -5603,6 +5677,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         }
     }
 
+    source->has_parse_errors = vec_error_size(&shared.errors) > 0;
     for_each (i, vec_error, &shared.errors) {
         error_ctx_append_error(errs, *i);
         *i = (Error){0};

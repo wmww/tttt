@@ -196,6 +196,14 @@ void error_ctx_remove_unchecked(ErrorCtx* me) {
     my errors.size = kept;
 }
 
+Error* error_ctx_grammar_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
+    if (span.source && span.source->has_parse_errors) {
+        cstr_drop(&message);
+        return nullptr;
+    }
+    return error_ctx_error_s(me, span, ts_code, message);
+}
+
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
     if (!span_valid(span) || !span.source || span.source->is_stdlib) {
         log_error("Error added with invalid span: TS", ts_code, ": ", message);

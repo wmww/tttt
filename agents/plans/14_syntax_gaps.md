@@ -25,7 +25,16 @@ plan of its own (parse + JSX namespace types + intrinsic elements).
   TS1491/1495 (modifiers, in the parser), TS2852/2853/2854/1309, TS18054, and TS1156 for every block-scoped
   declaration in an `if`/loop body. Left in the `using` tests: TS2339/TS2488 on destructuring `null` (general, not
   `using`), TS2448/TS2354/TS7018, TS1432 (top-level `for await`, not implemented for any loop).
-- Next: import attributes/assertions, then the import/export forms.
+- **Import attributes/assertions: done** (+4 full, +45 tests with gained components). `ImportAttributes`
+  (`import_attributes.h`) on import/export statements and import types; tsc's checkImportAttributes
+  (`port_statement_typecheck`: TS2821/2823/2880/2836/2856/2822/2857/1454) and getResolutionModeOverride
+  (TS1453/1455/1456/1463/1464), and `resolution-mode` of type-only imports and import types now picks the resolution
+  conditions (`ModuleRef.resolution_override`). Not done: the attributes' type against the global `ImportAttributes`,
+  error recovery of malformed import types (nodeModulesImport*DeclarationEmitErrors), TS2343 (tslib helpers).
+- New facility: `error_ctx_grammar_error_d` (tsc's grammarErrorOnNode: nothing in a file with parse errors,
+  `SourceFile.has_parse_errors`). Only the checks added in this plan use it so far (hacks.md).
+- Next: the import/export forms (`export { x as "" }`, `export * as default`, `import d, * as ns`), then the rest of
+  the list.
 
 ## How
 Parser work driven by the list, largest shape first, like plan 08's loop:

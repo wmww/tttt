@@ -626,3 +626,7 @@ could be split into a small common case; `CallableType`/`FunctionImpl` two alloc
 on; `error_cmp` orders by span only (a TODO says "by file first"; files are separate ErrorCtx passes in practice).
 `engine.c` (used by the harness to read `test/baseline_results.ts`, nothing else): no let/const/var distinction,
 property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant unless it grows a second user.
+- Grammar errors vs parse errors (`error_ctx_grammar_error_d`, `SourceFile.has_parse_errors`): tsc drops checker grammar
+  errors in a file with parse errors. Only the `using`/import attribute checks go through it; the older checker grammar
+  errors (TS1155, TS1039, TS1254, modifier checks...) still report regardless. Conversely tttt's *parser* reports some
+  of tsc's grammar errors (TS1308, TS2852, TS1491/1495), and those count as parse errors for `has_parse_errors`.

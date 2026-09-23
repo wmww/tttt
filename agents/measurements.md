@@ -2,8 +2,9 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
-## 2026-09-22, plan 14: `using` declarations
-Suite **4535** full (+314, no losses; errors 7665, symbols 9210, types 7392). Tests with a spurious syntax error:
+## 2026-09-22, plan 14: `using` declarations, import attributes
+Suite **4539** full (`using` +314, import attributes +4 and 45 tests with more components; no losses; errors 7695,
+symbols 9228, types 7396). Tests with a spurious syntax error:
 1242 -> 916. Corpora unchanged (tsc 0, valibot 2169, type-fest 598).
 
 ## 2026-09-22, plan 19 stage 0: module augmentations merged in the link phase

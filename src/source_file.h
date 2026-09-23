@@ -32,6 +32,8 @@ typedef struct ModuleRef {
     // `declare module "m" {}`: an ambient module (script) or an augmentation (module), not an import
     bool is_declaration;
     ModuleRefSyntax syntax;
+    // ImportResolutionOverride (import_attributes.h): `resolution-mode` of a type-only import or an import type
+    uint8_t resolution_override;
     SourceFile* file; // What the program's module resolution found, may be null
     ModuleRefFailure failure; // Without a file
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
@@ -63,6 +65,9 @@ typedef struct SourceFile {
     bool is_stdlib;
     bool is_module;
     bool is_declaration;
+    // The parser reported something (tsc's hasParseDiagnostics): grammar errors aren't reported then, see
+    // error_ctx_grammar_error_d()
+    bool has_parse_errors;
     // A .js/.jsx/.mjs/.cjs file: only part of a program with `allowJs`
     bool is_js;
     // Semantic diagnostics (names, types) inside this file aren't reported: JavaScript without `checkJs` or a leading

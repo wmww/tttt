@@ -2,6 +2,7 @@
 
 #include "type.h"
 #include "lazy_type.h"
+#include "import_attributes.h"
 
 // Identifier
 
@@ -21,6 +22,7 @@ typedef struct IdentifierType {
     // `import("./a").A.B<T>`: names are looked up in the module's exports instead of the scope. `name` is null for a
     // bare `import("./a")`. With import_typeof it is a value (`typeof import("./a").x`)
     ModuleRef* import_ref;
+    ImportAttributes* import_attributes; // Owned, `import("./a", { with: { ... } })`
     bool import_typeof;
     Span import_span;
     // `typeof import("./a").A.foo`: from this index on (namespaces, then name) the names are properties of the type of
