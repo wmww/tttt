@@ -665,6 +665,20 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, IdentifierF
         identifier->assume_initialized ||
         includes_undefined(type);
     Ty const* initial = type;
+    if (symbol->is_parameter && binding && binding->has_explicit_type && compiler_options()->strict_null_checks &&
+        includes_undefined(type) && binding->source && binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING
+    ) {
+        // `(o: T | undefined = {})` is a T in the body unless the default can be undefined (tsc's
+        // removeOptionalityFromDeclaredType)
+        InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
+        // (Not from inside the default itself: `(x: number | undefined = x > 0 ? x : 0)`)
+        LazyMemo const* memo = lazy_type_state_peek((LazyType*)&initialized->value.lazy_type);
+        bool in_flight = memo && memo->evaluation_started && !memo->done;
+        Ty const* value = initialized->value.tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, &initialized->value);
+        if (value && !includes_undefined(value) && !(value->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID))) {
+            initial = ty_without_undefined(me, type);
+        }
+    }
     if (!assume_initialized) {
         Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
         initial = ty_union(me, types, 2, nullptr, (TyList){0});

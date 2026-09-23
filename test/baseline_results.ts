@@ -9176,7 +9176,7 @@ const baselines = {
         types: true,
     },
     'defaultParameterAddsUndefinedWithStrictNullChecks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
