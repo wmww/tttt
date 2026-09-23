@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 10 done (stages 2-3 + TS2526): real corpus 95 -> 91
+Suite: **4129 full of 13163**, errors 7259, symbols 9171, types 7291. Real corpus: **91** (TS2558 38, TS2345 31,
+TS2322 16, TS7022 4, TS2678 1, TS2339 1): skipLibCheck dropped the 4 TS2370 in @types/node. `./bench.sh`: real
+corpus wall **0.65 s** (tsgo 0.77, tsgo single-threaded 1.33, tsc 4.87), typecheck 437 ms (424: class heritage checks
+relate every class to its base), RSS 366 MB. Synthetic corpus 1.48 s (tsgo 1.66).
+
 ## 2026-09-22, plan 10 stage 1: `this` types: real corpus 109 -> 95
 Suite: **4107 full of 13163** (was 3935), errors 7234, symbols 9168, types 7233 (+336). Lost: typedArraysCrossAssignability01
 (a pre-existing overload relation bug `this` now reaches, triage.md). Real corpus: **95 type diagnostics** (TS2558 38,

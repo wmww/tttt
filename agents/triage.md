@@ -64,7 +64,11 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   tsc knows `T[K]` is an array (getSubstitutionType / getImpliedConstraint); tttt reports TS2370 there (@types/node
   events.d.ts x4 in the corpus) and presumably mis-relates such types elsewhere. Category-sized-ish: needs a Ty kind
   or a flag on indexed/type-param references made in a conditional's true branch.
-- **`this` types**: `plans/10_this_types.md` stages 2-3 (contextual `this`, TS2683/TS2684, class/interface checks).
+- `this` leftovers (plan 10 done, deleted): TS2526 for `this` in static property initializers (`static y =
+  <this>undefined`) and a few other contexts (thisTypeErrors, 7 missing); TS7041 (`this` captured by a top-level arrow);
+  TS7017 (`typeof globalThis` has no index signature); TS2417 (class static side); `ThisType<T>` arguments aren't
+  instantiated with the inference in progress (Vue-style `defineComponent` options); awaitUnionPromise lost a types
+  component to union order when the `this` type parameters moved type ids (union printing order follows ids).
 - Overloaded methods with callback parameters that mention the other type (typedArraysCrossAssignability01, lost to plan
   10 because `array: this` now resolves): `interface A<T> { reduce(cb: (p: number, array: A<T>) => number): number;
   reduce(cb: (p: number, array: A<T>) => number, init: number): number; readonly [Symbol.toStringTag]: "a" }` and the

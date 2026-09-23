@@ -6,14 +6,15 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-22, after plan 09)
-- **Suite: `./fasttest.sh` 4107 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
-  a real measurement of type *printing*; plans 08-10's corpus fixes moved the suite by +611 on the side.
+- **Suite: `./fasttest.sh` 4129 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
+  a real measurement of type *printing*; plans 08-10 moved the suite by +633 on the side.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
-  under tsc): **0 parse, 0 name, 95 type diagnostics** (1751 at the start of plan 08, flat for three plans before;
-  plan 09 took the iteration bucket, 203 -> 109, plan 10 stage 1 the `this` cascades, -> 95). What is left is mostly
-  two category-sized gaps (higher-order generic function inference, fresh/regular literals: plan 08 "Progress") plus
-  a tail of ~25 singles.
-- `this` types (plan 10) landed in stage 1 (+172 full passes); contextual `this` (stage 2) is next.
+  under tsc): **0 parse, 0 name, 91 type diagnostics** (1751 at the start of plan 08, flat for three plans before;
+  plan 09 took the iteration bucket, 203 -> 109, plan 10 the `this` cascades and skipLibCheck, -> 91). What is left
+  is mostly two category-sized gaps (higher-order generic function inference TS2558 38 + ~10, fresh/regular literals
+  semver.ts ~14: plan 11) plus a tail of ~25 singles (plan 08 "Progress").
+- `this` types (plan 10: polymorphic `this`, contextual `this`, class heritage checks) and the iteration protocol +
+  unique symbols + generators (plan 09) landed, both done in one long session each without a redesign.
 - ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole
   corpus), binder (tsc-shaped symbols, persistent scopes, aliases, lib overlay: plan 04), the `Ty` type core
   (interned, id-keyed relations, mapper instantiation, two-pass inference, contextual typing, conditional/mapped/
@@ -120,7 +121,7 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
    diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
 4b. **Real corpus to zero diagnostics (plan 08)**, then bench + profile it: the first honest perf comparison. What
    plan 08's loop can't do is category-sized and planned: ~~iteration protocol + unique symbols + generators (plan
-   09)~~ done, `this` types (plan 10), fresh literals + higher-order generic inference (plan 11, a sketch).
+   09)~~ done, ~~`this` types (plan 10)~~ done, fresh literals + higher-order generic inference (plan 11, a sketch).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.
