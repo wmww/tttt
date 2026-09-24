@@ -813,15 +813,17 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    // Modifiers: `const T`, `in T`, `out T`, `in out T`. TODO: variance annotations and const type parameters are
-    // parsed and dropped
+    // Modifiers: `const T`, `in T`, `out T`, `in out T`. TODO: variance annotations are parsed and dropped
+    bool is_const = false;
     while (true) {
         Parser modifier_p = parser(&p);
+        bool modifier_const = false;
         if ((hop_start_if_ends_on_word_break(&modifier_p, "in") ||
              hop_start_if_ends_on_word_break(&modifier_p, "out") ||
-             hop_start_if_ends_on_word_break(&modifier_p, "const")) &&
+             (modifier_const = hop_start_if_ends_on_word_break(&modifier_p, "const"))) &&
             (hop_whitespace(&modifier_p), is_identifier_start_char(*modifier_p.pos))
         ) {
+            is_const |= modifier_const;
             parse_success(&modifier_p);
         } else {
             parse_fail(&modifier_p);
@@ -858,6 +860,7 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     *ret = (GenericItem){
         .name = name,
         .full_span = span_from(a),
+        .is_const = is_const,
         .extends_explicit = extends_explicit,
         .extends = extends,
         .fallback_explicit = fallback_explicit,

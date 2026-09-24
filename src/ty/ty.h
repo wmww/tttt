@@ -688,6 +688,8 @@ Ty const* ty_synthetic_type_param(Checker* me, csview name);
 Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper, Atom const* name);
 // Whether a type parameter says anything about itself (a constraint or a default): only those need cloning
 bool ty_param_is_bounded(Ty const* param);
+bool ty_is_const_type_variable(Checker* me, Ty const* ty, u32 depth);
+bool ty_some_mutable_array_like(Checker* me, Ty const* ty);
 Ty const* ty_this_type_param(Checker* me, Ty const* declared); // Only make_declared() should call this
 Ty const* ty_reference(Checker* me, Ty const* target, TyList args);
 Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty const* this_arg);
@@ -861,6 +863,7 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
 // `x as const`
 typedef struct AsTypeExpr AsTypeExpr;
 bool as_type_is_const(AsTypeExpr const* as_type);
+Ty const* ty_check_expr_in_const(Checker* me, Expr const* expr, Ty const* contextual, bool is_const);
 // `f<A, B>` as a value: the type arguments applied to the signatures that take that many
 Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args);
 

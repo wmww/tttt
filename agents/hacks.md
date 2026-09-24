@@ -86,12 +86,16 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   in `BlockTypecheckCtx` just permits any labeled `break` inside any labeled statement.
 - `run_baseline_test_case: path_is_script`: virtual files that aren't TS/JS by extension are left out of the program
   entirely. Right for package.json/tsconfig.json, wrong for `.json` modules under `resolveJsonModule` (5 tests).
+- `const` type parameters (`ty_is_const_type_variable`, `in_const_context` in expr.c): no mapped/conditional/variadic
+  tuple cases of tsc's isConstTypeVariable. Array literals nested in an argument count as array literal candidates by
+  walking the argument's syntax (`add_nested_array_literals`, call.c) because tuples are interned and can't carry
+  tsc's ObjectFlags.ArrayLiteral. The rest arguments of `...args: T` get `T[i]` as contextual type only when const.
 - `EnumDecl.is_const`: only decides the symbol flag (a const enum doesn't merge with a namespace); no TS2475 etc.
 - `parse_import_type`: import attributes (`{ with: { "resolution-mode": ... } }`) are parsed and dropped, on import
   declarations too: `ModuleRef.syntax` only knows import / require / dynamic, so an override never reaches
   `program_load_module_ref()` (resolutionMode* tests, TS1454-1456, TS2836/2841...).
 - `parse_type_predicate`: `x is T` / `asserts x is T` become `boolean` / `void`, the predicate is dropped (plan 05).
-  `parse_generic_decl_item` likewise parses and drops `in`/`out`/`const` type parameter modifiers, and
+  `parse_generic_decl_item` likewise parses and drops `in`/`out` type parameter modifiers (`const` is kept), and
   `parse_variable_statement` drops the `!` of `let x!: T`.
 - Destructuring (`binding.c`, `lower_binding_access`): pattern elements are still `TYPE_INDEXED` link nodes with
   `rest` / `default_value` bolted on (the default is a non-owning `Expr*` into the `Binding`). Object rest returns the

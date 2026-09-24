@@ -98,7 +98,7 @@ static void push_symbol_path(VecSpan* out, Symbol const* symbol) {
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     for_each (i, vec_generic_item, &my items) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i->name });
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i->name, .declarations = vec_span_single(i->full_span) });
         type_compile_test_info(&i->extends, ctx);
         if (i->fallback_explicit) {
             type_compile_test_info(&i->fallback, ctx);

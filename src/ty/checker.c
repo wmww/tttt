@@ -890,6 +890,47 @@ bool ty_param_is_bounded(Ty const* param) {
     return state->constraint_node || state->constraint || state->fallback;
 }
 
+// tsc's isConstTypeVariable: a `const` type parameter, or a type built on one that stays generic, where an argument's
+// literals are checked as if under `as const`
+bool ty_is_const_type_variable(Checker* me, Ty const* ty, u32 depth) {
+    if (!ty || depth >= 5) return false;
+    switch (ty->kind) {
+        case TY_TYPE_PARAM: {
+            while (ty->param.state->clone_of) ty = ty->param.state->clone_of;
+            return ty->param.state->item && ty->param.state->item->is_const;
+        }
+        case TY_UNION:
+        case TY_INTERSECTION:
+            for (u32 i = 0; i < ty->composite.types.len; i++) {
+                if (ty_is_const_type_variable(me, ty->composite.types.data[i], depth)) return true;
+            }
+            return false;
+        case TY_INDEXED:
+            return ty_is_const_type_variable(me, ty->indexed.object, depth + 1);
+        default:
+            return false;
+    }
+}
+
+// tsc's someType(ty, isMutableArrayLikeType): whether some member is assignable to `any[]` (null: false)
+static bool ty_some_mutable_array_like_at(Checker* me, Ty const* ty, u32 depth) {
+    if (!ty) return false;
+    if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (ty_some_mutable_array_like_at(me, ty->composite.types.data[i], depth)) return true;
+        }
+        return false;
+    }
+    if (ty->flags & (TYF_NULL | TYF_UNDEFINED | TYF_ANY)) return (ty->flags & TYF_ANY) != 0;
+    // (Of the apparent type: a type parameter's constraint)
+    if (ty->kind == TY_TYPE_PARAM) return depth < 8 && ty_some_mutable_array_like_at(me, ty_param_constraint(me, ty), depth + 1);
+    return ty_is_related(me, ty, ty_array(me, ty_intrinsic(me, TY_ANY), false), TY_RELATION_ASSIGNABLE);
+}
+
+bool ty_some_mutable_array_like(Checker* me, Ty const* ty) {
+    return ty_some_mutable_array_like_at(me, ty, 0);
+}
+
 // The `this` type of a class or interface: constrained to the type as seen from inside (applied to its own type
 // parameters)
 Ty const* ty_this_type_param(Checker* me, Ty const* declared) {

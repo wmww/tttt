@@ -85,7 +85,30 @@ static bool identifier_uses_context(Checker* me, Expr const* expr) {
     return has_generic_with_union_constraint(me, ty_identifier_reference_type(me, &expr->identifier));
 }
 
+// tsc's isValidConstAssertionArgument, as far as a const context changes what these check to
+static bool is_const_context_kind(Expr const* expr) {
+    switch (expr->tag) {
+        case EXPR_LITERAL:
+        case EXPR_TEMPLATE:
+        case EXPR_ARRAY:
+        case EXPR_OBJECT:
+            return true;
+        case EXPR_UNARY_OP:
+            return expr->unary_op->op == UNARY_OP_MINUS || expr->unary_op->op == UNARY_OP_PLUS;
+        default:
+            return false;
+    }
+}
+
+// tsc's isConstContext: inside `as const`, or the contextual type is a `const` type parameter (an argument of
+// `f<const T>(t: T)`)
+static bool in_const_context(Checker* me, Expr const* expr, ExprCtx ctx) {
+    return ctx.is_const || (ctx.contextual && (ctx.contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+        is_const_context_kind(expr) && ty_is_const_type_variable(me, ctx.contextual, 0));
+}
+
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
+    ctx.is_const = in_const_context(me, expr, ctx);
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
     LazyMemo* memo = lazy_type_state_peek(lazy);
@@ -105,6 +128,11 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
 
 Ty const* ty_check_expr(Checker* me, Expr const* expr, Ty const* contextual) {
     return check_with(me, expr, (ExprCtx){ .contextual = contextual });
+}
+
+// `is_const`: in a const context whatever the contextual type (it was instantiated from a const type parameter)
+Ty const* ty_check_expr_in_const(Checker* me, Expr const* expr, Ty const* contextual, bool is_const) {
+    return check_with(me, expr, (ExprCtx){ .contextual = contextual, .is_const = is_const && is_const_context_kind(expr) });
 }
 
 // Unions and widening
@@ -292,7 +320,7 @@ static bool any_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* 
 // tsc's checkExpressionForMutableLocation: the type a property or element gets from its initializer
 static Ty const* check_for_mutable_location(Checker* me, Expr const* expr, ExprCtx ctx) {
     Ty const* type = check_with(me, expr, ctx);
-    if (ctx.is_const || any_literal_of_contextual_type(me, type, ctx.contextual)) return ty_regular(me, type);
+    if (in_const_context(me, expr, ctx) || any_literal_of_contextual_type(me, type, ctx.contextual)) return ty_regular(me, type);
     return widen_literals(me, type);
 }
 
@@ -1369,7 +1397,8 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
 
     Ty const* ret;
     if (as_tuple) {
-        ret = tuple_of(me, elements, flags, count, ctx.is_const);
+        // (A const type parameter constrained to a mutable array gets a mutable tuple)
+        ret = tuple_of(me, elements, flags, count, ctx.is_const && !ty_some_mutable_array_like(me, ctx.contextual));
     } else {
         // Without strictNullChecks null and undefined elements don't show next to others
         bool strict = compiler_options()->strict_null_checks;
@@ -1621,7 +1650,8 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_AS_TYPE: {
             AsTypeExpr const* as_type = expr->as_type;
-            if (as_type_is_const(as_type)) return check_with(me, &as_type->expr, (ExprCtx){ .is_const = true });
+            // (tsc's checkAssertion: the regular literal type, which no longer widens)
+            if (as_type_is_const(as_type)) return ty_regular(me, check_with(me, &as_type->expr, (ExprCtx){ .is_const = true }));
             Ty const* type = ty_from_node(me, &as_type->type, expr_lower_ctx);
             // The type of `e as T` doesn't depend on e, which is checked when the statement walk gets there (tsc defers
             // it too): `const data = get(id) as Data` in a loop that assigns id from data isn't circular

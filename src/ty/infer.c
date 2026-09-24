@@ -959,7 +959,8 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
         Ty const** candidates = malloc(sizeof(Ty const*) * param->co_len);
         // tsc's getCovariantInference: under a primitive constraint the candidates are regular, else (fresh) literals
         // widen if every inference was at the top level and keep_literals doesn't say otherwise
-        bool primitive = has_primitive_constraint(me, param->param);
+        // (So does a `const` type parameter)
+        bool primitive = has_primitive_constraint(me, param->param) || ty_is_const_type_variable(me, param->param, 0);
         bool widen = !keep_literals && !primitive && param->top_level;
         for (u32 j = 0; j < param->co_len; j++) {
             Ty const* candidate = param->co[j];

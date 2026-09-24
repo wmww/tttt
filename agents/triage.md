@@ -283,3 +283,9 @@ here when there's something to know beyond the code.
   (release) already; long term, arenas.
 - No `perf` on the dev box; callgrind works (`valgrind --tool=callgrind ./release/tttt -q files...`, then
   `callgrind_annotate [--inclusive=yes]`). Worth a `./profile.sh` wrapper if more sessions need it.
+- valibot `keyof(objectSchema)` (methods/keyof/keyof.test-d.ts) gives `PicklistSchema<[], ...>`-like types where tsc
+  has `['foo', 'bar', 'baz']`: valibot's union-to-tuple conversion (overloaded function intersection inference?).
+  Unreduced, ~5 TS2344.
+- Without strictNullChecks, a written `W["_i"] | undefined` constraint displays as `W["_i"]` (tsc keeps the
+  `| undefined` in the display). Probe: `declare function eo<const W, const D extends W | undefined>(w: W, d: D): D;`
+- `() => 'foo' as const` returns `"foo"` now, but tsc's underline reuses the `"foo"` (it prints `^^^^^^     `).

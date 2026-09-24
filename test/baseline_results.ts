@@ -1476,8 +1476,8 @@ const baselines = {
         types: false,
     },
     'assertionFunctionsCanNarrowByDiscriminant': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'assign1': {
@@ -5193,7 +5193,7 @@ const baselines = {
     'computedEnumTypeWidening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertiesInDestructuring1': {
         errors: false,
@@ -5713,7 +5713,7 @@ const baselines = {
     'constantEnumAssert': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constantOverloadFunction': {
         errors: true,
@@ -8232,7 +8232,7 @@ const baselines = {
     },
     'declarationEmitNestedAnonymousMappedType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitNestedGenerics': {
@@ -13673,12 +13673,12 @@ const baselines = {
     'forwardRefInTypeDeclaration(strict=false)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'forwardRefInTypeDeclaration(strict=true)': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'freshLiteralInference': {
         errors: true,
@@ -22196,22 +22196,22 @@ const baselines = {
         types: true,
     },
     'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=false,nouncheckedindexedaccess=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=false,nouncheckedindexedaccess=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=true,nouncheckedindexedaccess=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=true,nouncheckedindexedaccess=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22703,7 +22703,7 @@ const baselines = {
     'noAsConstNameLookup': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noBundledEmitFromNodeModules': {
         errors: true,
@@ -27167,7 +27167,7 @@ const baselines = {
     },
     'reverseMappedTypeIntersectionConstraint': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reverseMappedTypeLimitedConstraint': {
@@ -28282,7 +28282,7 @@ const baselines = {
     },
     'spreadsAndContextualTupleTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spuriousCircularityOnTypeImport': {
@@ -32492,7 +32492,7 @@ const baselines = {
     },
     'varianceAnnotationValidation': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'varianceCallbacksAndIndexedAccesses': {
@@ -32522,7 +32522,7 @@ const baselines = {
     },
     'varianceReferences': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'varianceRepeatedlyPropegatesWithUnreliableFlag': {
@@ -36366,7 +36366,7 @@ const baselines = {
         types: true,
     },
     'accessorsOverrideProperty8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -37033,7 +37033,7 @@ const baselines = {
     'controlFlowBindingElement': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'controlFlowBindingPatternOrder': {
         errors: false,
@@ -42392,7 +42392,7 @@ const baselines = {
     },
     'arraySpreadInCall': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'iteratorSpreadInArray': {
@@ -47238,7 +47238,7 @@ const baselines = {
     'constAssertionOnEnum': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constAssertions': {
         errors: false,
@@ -47613,7 +47613,7 @@ const baselines = {
     'typeSatisfaction_errorLocations1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeSatisfaction_js': {
         errors: false,
@@ -64232,13 +64232,13 @@ const baselines = {
     },
     'typeParameterConstModifiersReverseMappedTypes': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterConstModifiersWithIntersection': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeParameterDirectlyConstrainedToItself': {
         errors: false,

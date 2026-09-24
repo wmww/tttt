@@ -210,7 +210,7 @@ static bool has_correct_arity(ParamShape const* shape, Args const* args) {
 }
 
 // The arguments from `from` on, as the tuple a variadic rest parameter receives
-static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool widen) {
+static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool widen, bool readonly) {
     u32 arity = args->len > from ? args->len - from : 0;
     unsigned char* flags = calloc(arity ? arity : 1, 1);
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
@@ -224,7 +224,7 @@ static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool w
             elements[i] = widen ? ty_widened_literal(me, type) : type;
         }
     }
-    TupleShape tuple = { .arity = arity, .flags = flags };
+    TupleShape tuple = { .arity = arity, .flags = flags, .readonly = readonly };
     Ty const* target = ty_tuple_target(me, &tuple);
     Ty const* ret = arity ? ty_reference(me, target, (TyList){ .data = elements, .len = arity }) : target;
     free(flags);
@@ -289,14 +289,45 @@ static Ty const* instantiate_instantiable(Checker* me, Ty const* type, TyMapper 
     return ret;
 }
 
+static void add_array_literal(Inference* inf, Ty const* type) {
+    inf->array_literals = realloc(inf->array_literals, sizeof(Ty const*) * (inf->array_literal_count + 1));
+    panic_if(!inf->array_literals, "out of memory");
+    inf->array_literals[inf->array_literal_count++] = type;
+}
+
+// The tuples of the array literals nested in an argument's object and array literals (tsc flags array literal types
+// ObjectFlags.ArrayLiteral; tuples are interned here, so the inference remembers them instead)
+static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* expr, u32 depth) {
+    if (depth > 4) return;
+    if (expr->tag == EXPR_ARRAY) {
+        for_each (i, vec_expr, &expr->array) {
+            if (i->tag != EXPR_ARRAY) {
+                if (i->tag == EXPR_OBJECT) add_nested_array_literals(me, inf, i, depth + 1);
+                continue;
+            }
+            Ty const* type = ty_expr_type(me, i);
+            if (ty_is_tuple(type)) add_array_literal(inf, type);
+            add_nested_array_literals(me, inf, i, depth + 1);
+        }
+    } else if (expr->tag == EXPR_OBJECT) {
+        for_each (i, vec_object_expr_item, &expr->object) {
+            if (i->tag != OBJECT_ITEM_PROPERTY || (i->value.tag != EXPR_ARRAY && i->value.tag != EXPR_OBJECT)) continue;
+            if (i->value.tag == EXPR_ARRAY) {
+                Ty const* type = ty_expr_type(me, &i->value);
+                if (ty_is_tuple(type)) add_array_literal(inf, type);
+            }
+            add_nested_array_literals(me, inf, &i->value, depth + 1);
+        }
+    }
+}
+
 static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape, Args const* args, u32 i) {
     Ty const* param_type = shape_type_at(shape, i);
     Arg const* arg = &args->data[i];
     if (arg->type && !arg->spread && !arg->part_of_spread && arg->expr->tag == EXPR_ARRAY && ty_is_array(me, arg->type)) {
-        inf->array_literals = realloc(inf->array_literals, sizeof(Ty const*) * (inf->array_literal_count + 1));
-        panic_if(!inf->array_literals, "out of memory");
-        inf->array_literals[inf->array_literal_count++] = arg->type;
+        add_array_literal(inf, arg->type);
     }
+    if (arg->type && !arg->spread && !arg->part_of_spread) add_nested_array_literals(me, inf, arg->expr, 0);
     if (param_type && args->data[i].type) infer_types(me, inf, args->data[i].type, param_type, INFER_PRIORITY_NORMAL);
 }
 
@@ -443,7 +474,8 @@ static TyMapper const* infer_type_arguments(
         if (return_mapper && !arg->spread && !arg->part_of_spread) {
             // What the return type says about the type parameters helps type the argument (a tuple, a literal)
             Ty const* param_type = shape_type_at(&shape, i);
-            arg->type = ty_check_expr(me, arg->expr, param_type ? instantiate_instantiable(me, param_type, return_mapper) : nullptr);
+            arg->type = ty_check_expr_in_const(me, arg->expr, param_type ? instantiate_instantiable(me, param_type, return_mapper) : nullptr,
+                ty_is_const_type_variable(me, param_type, 0));
         } else {
             check_arg(me, &shape, args, i);
         }
@@ -520,11 +552,19 @@ static TyMapper const* infer_type_arguments(
     // A variadic rest parameter takes the remaining arguments as a tuple
     if (shape.rest_variadic) {
         u32 from = shape.count < args->len ? shape.count : args->len;
+        // (Under `...args: T` with a `const T`, each argument is in a const context: its contextual type is `T[i]`)
+        bool is_const = ty_is_const_type_variable(me, shape.rest_variadic, 0);
         for (u32 i = from; i < args->len; i++) {
-            if (!args->data[i].type) args->data[i].type = ty_check_expr(me, args->data[i].expr, nullptr);
+            if (args->data[i].type) continue;
+            Ty const* contextual = nullptr;
+            if (is_const && args->spread_index < 0) {
+                Value index = value_number((double)(i - from));
+                contextual = ty_indexed(me, shape.rest_variadic, ty_literal(me, &index));
+            }
+            args->data[i].type = ty_check_expr_in_const(me, args->data[i].expr, contextual, is_const);
         }
         if (args->len > shape.count || args->spread_index < 0) {
-            infer_types(me, &inf, rest_args_tuple(me, args, from, true), shape.rest_variadic, INFER_PRIORITY_NORMAL);
+            infer_types(me, &inf, rest_args_tuple(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape.rest_variadic)), shape.rest_variadic, INFER_PRIORITY_NORMAL);
         }
     }
     free(shape.types);
@@ -558,7 +598,7 @@ static i32 first_unfit_argument(
         } else if (shape->rest_element) {
             target = shape->rest_element;
         } else if (shape->rest_variadic) {
-            source = rest_args_tuple(me, args, i, false);
+            source = rest_args_tuple(me, args, i, false, false);
             target = shape->rest_variadic;
         } else {
             break;
