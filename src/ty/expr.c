@@ -574,11 +574,16 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
 
 // Identifiers
 
-// tsc's checkSuperExpression for a property access: the base class instance with `this` as this-argument, in a static
-// member the base constructor
+// tsc's checkSuperExpression: for a property access the base class instance with `this` as this-argument, in a static
+// member the base constructor; the callee of `super(...)` is the base constructor
 static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
     ClassDecl const* class_decl = identifier->target ? symbol_find_node(identifier->target, SYMBOL_DECL_CLASS) : nullptr;
-    if (!class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY || !identifier->super_member) return any_type(me);
+    if (!class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY) return any_type(me);
+    if (!identifier->super_member) {
+        Expr const* extends = &class_decl->extends;
+        if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+        return ty_expr_type(me, extends);
+    }
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_expr_type(me, &class_decl->extends);
     Ty const* base = ty_class_base_instance(me, class_decl);
     if (!base) return any_type(me);
@@ -1528,6 +1533,9 @@ static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     bool optional = false;
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
     Ty const* ret = ty_call_return_type(me, callee_type, call, ctx.contextual);
+    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER && !call->uses_new) {
+        return ret->flags & TYF_ANY ? ret : ty_intrinsic(me, TY_VOID);
+    }
     // The initializer of a `const` (or a `static readonly` property) makes a new unique symbol
     if (call->unique_symbol.key && (ret->flags & TYF_ES_SYMBOL_LIKE) && is_symbol_call(me, call)) {
         ret = ty_unique_symbol(me, &call->unique_symbol);

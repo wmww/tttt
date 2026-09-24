@@ -283,6 +283,7 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
         // A parameter of a function expression gets its type from the contextual signature, initializer or not
         Ty const* contextual = ty_contextual_parameter_type(checker, me);
         if (contextual) return contextual;
+        if (my is_rest_parameter && my value.tag == EXPR_IMPLICIT_ANY) return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
     }
     if (is_auto_typed(me)) return ty_intrinsic(checker, TY_AUTO);
     // A call of a single non-generic signature has its type without its arguments being checked (tsc's

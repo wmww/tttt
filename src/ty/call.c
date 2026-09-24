@@ -3,6 +3,7 @@
 #include "source_file.h"
 #include "program.h"
 #include "error.h"
+#include "class_decl.h"
 
 // Call resolution on Signatures, the way tsc observably does it (resolveCall): collect the call or construct
 // signatures of the callee, and take the first one the arguments fit: right number of them, type arguments inferred
@@ -1035,6 +1036,10 @@ static Ty const* this_argument(Checker* me, CallExpr const* call, Span call_span
     return property->optional_chain ? ty_non_nullable(me, receiver) : receiver;
 }
 
+static bool is_super_call(CallExpr const* call) {
+    return !call->uses_new && call->callable.tag == EXPR_IDENTIFIER && call->callable.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
+}
+
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
     CallExpr const* call = info->call;
     Ty const* any = ty_intrinsic(me, TY_ANY);
@@ -1042,7 +1047,8 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     Ty const* apparent = ty_apparent_type(me, callee);
     if (apparent->flags & TYF_ANY) return any;
 
-    bool construct = call->uses_new || call->is_extends;
+    bool super_call = is_super_call(call);
+    bool construct = call->uses_new || call->is_extends || super_call;
     // A union is called through the signatures its members have in common (tsc's getUnionSignatures)
     Signature* const* union_sigs = nullptr;
     u32 union_count = 0;
@@ -1149,7 +1155,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     }
 
     CallInfo with_this = *info;
-    if (!call->uses_new) {
+    if (!construct) {
         bool any_this = false;
         for (u32 i = 0; i < count && !any_this; i++) {
             signature_resolve(me, signatures[i]);
@@ -1171,9 +1177,18 @@ static Ty const* resolve_into(
 ) {
     CallInfo info = { .call = call, .contextual = contextual, .chosen_out = chosen_out };
     Ty const* type_args[32];
-    if (call->callable.tag == EXPR_GENERIC_PARAMS) {
+    // `super(x)` in `class A extends B<T>`: B's constructors with the type arguments of the heritage clause (tsc's
+    // getInstantiatedConstructorsForTypeArguments)
+    // TODO: without written type arguments tsc instantiates with the defaults instead of inferring
+    ClassDecl const* super_class = is_super_call(call) && call->callable.identifier.target ?
+        symbol_find_node(call->callable.identifier.target, SYMBOL_DECL_CLASS) : nullptr;
+    if (super_class && super_class->extends.tag == EXPR_GENERIC_PARAMS) {
+        info.type_arg_nodes = &super_class->extends.generic_params->params;
+    } else if (call->callable.tag == EXPR_GENERIC_PARAMS) {
         // `f<A, B>(x)`: the callee type is that of `f`
         info.type_arg_nodes = &call->callable.generic_params->params;
+    }
+    if (info.type_arg_nodes) {
         u32 len = 0;
         for_each (i, vec_spanned_type, info.type_arg_nodes) {
             if (len < c_arraylen(type_args)) type_args[len++] = ty_from_node(me, &i->type, (LowerCtx){ .generic = true });

@@ -290,7 +290,12 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
             if (compiler_options()->no_implicit_any && !i->initializer.getter &&
                 !ty_contextual_parameter_type(current_checker, &i->initializer)
             ) {
-                binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
+                if (i->rest && i->initializer.binding.tag == BINDING_IDENTIFIER) {
+                    error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", i->initializer.binding.content_span,
+                        "' implicitly has an 'any[]' type.");
+                } else {
+                    binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
+                }
             }
         }
         for_each (decorator, vec_expr, &i->decorators) {

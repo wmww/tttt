@@ -1957,6 +1957,7 @@ static bool parse_function_args_inner(
                     is_definitely_function = true;
                 }
 
+                initializer.is_rest_parameter = rest;
                 vec_function_arg_push(&ret->args, (FunctionArg){
                     .span = span_from(arg_start),
                     .rest_span = rest_span,

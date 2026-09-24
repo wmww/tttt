@@ -81,6 +81,7 @@ typedef struct InitializedBinding {
     Binding binding;
     Expr value;
     bool abstract_literals;
+    bool is_rest_parameter; // `...x`: without an annotation it's any[]
     LazyType lazy_type;
     // The unannotated parameter of a setter: the getter of the same property, whose return type it has
     struct FunctionImpl const* getter;
