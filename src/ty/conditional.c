@@ -4,17 +4,83 @@
 // parameters in the extends type. Distribution over unions happens at instantiation (instantiate.c), since that's
 // where the check type parameter gets its union.
 
-// Generic as far as deferring a conditional type goes: type variables at the top level, not inside object types
-// (`{ a: T } extends { a: infer U }` resolves, like in tsc)
-static bool is_generic(Ty const* ty) {
-    if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return true;
-    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
-        if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
-        for (u32 i = 0; i < ty->composite.types.len; i++) {
-            if (is_generic(ty->composite.types.data[i])) return true;
+typedef struct MentionWalk {
+    Ty const* bound[16]; // Type parameters of the signatures on the way: not free
+    u32 bound_len;
+    u32 visited[64];
+    u32 visited_len;
+} MentionWalk;
+
+// Whether a type variable really occurs in the type: TYF_COULD_CONTAIN_TYPE_VARIABLES is only a hint (like tsc's
+// couldContainTypeVariables, it is set for every function type and object literal type). Walks the members of object
+// types; true when unsure (too deep, too big, a return type still being inferred)
+static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk, u32 depth) {
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    if (ty->kind == TY_TYPE_PARAM) {
+        for (u32 i = 0; i < walk->bound_len; i++) {
+            if (walk->bound[i] == ty) return false;
         }
+        return true;
     }
-    return false;
+    if (ty->flags & TYF_DEFERRED) return true;
+    for (u32 i = 0; i < walk->visited_len; i++) {
+        if (walk->visited[i] == ty->id) return false;
+    }
+    if (depth > 8 || walk->visited_len == c_arraylen(walk->visited)) return true;
+    walk->visited[walk->visited_len++] = ty->id;
+    switch ((TyKind)ty->kind) {
+        case TY_UNION:
+        case TY_INTERSECTION:
+            for (u32 i = 0; i < ty->composite.types.len; i++) {
+                if (mentions_type_variables(me, ty->composite.types.data[i], walk, depth + 1)) return true;
+            }
+            return false;
+        case TY_REFERENCE: {
+            TyList args = ty_reference_args(me, ty);
+            for (u32 i = 0; i < args.len; i++) {
+                if (mentions_type_variables(me, args.data[i], walk, depth + 1)) return true;
+            }
+            return ty->reference.this_arg && mentions_type_variables(me, ty->reference.this_arg, walk, depth + 1);
+        }
+        case TY_ANONYMOUS: {
+            Members const* members = ty_members(me, ty);
+            if (members->mapped) return true;
+            for (u32 i = 0; i < members->prop_count; i++) {
+                if (mentions_type_variables(me, prop_type(me, members->props[i]), walk, depth + 1)) return true;
+            }
+            for (u32 i = 0; i < members->index_count; i++) {
+                if (mentions_type_variables(me, members->index[i].key, walk, depth + 1)) return true;
+                if (mentions_type_variables(me, members->index[i].value, walk, depth + 1)) return true;
+            }
+            for (u32 kind = 0; kind < 2; kind++) {
+                Signature* const* list = kind ? members->construct : members->call;
+                u32 count = kind ? members->construct_count : members->call_count;
+                for (u32 i = 0; i < count; i++) {
+                    Signature const* sig = list[i];
+                    signature_resolve(me, sig);
+                    if (ty_signature_return_in_flight(me, sig)) return true;
+                    u32 saved = walk->bound_len;
+                    if (walk->bound_len + sig->type_params.len > c_arraylen(walk->bound)) return true;
+                    for (u32 j = 0; j < sig->type_params.len; j++) walk->bound[walk->bound_len++] = sig->type_params.data[j];
+                    bool found = sig->this_type && mentions_type_variables(me, sig->this_type, walk, depth + 1);
+                    for (u32 j = 0; !found && j < sig->param_count; j++) {
+                        found = mentions_type_variables(me, sig->params[j].type, walk, depth + 1);
+                    }
+                    for (u32 j = 0; !found && j < sig->type_params.len; j++) {
+                        Ty const* constraint = ty_param_constraint(me, sig->type_params.data[j]);
+                        found = constraint && mentions_type_variables(me, constraint, walk, depth + 1);
+                    }
+                    found = found || mentions_type_variables(me, signature_return_type(me, sig), walk, depth + 1);
+                    walk->bound_len = saved;
+                    if (found) return true;
+                }
+            }
+            return false;
+        }
+        default:
+            // Template literals, string mappings, and whatever else: trust the flag
+            return true;
+    }
 }
 
 static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {
@@ -26,7 +92,7 @@ Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
     TyCondBranch const* if_false
 ) {
-    if (is_generic(check_type)) return nullptr;
+    if (ty_is_generic_index(check_type)) return nullptr;
     if ((check_type->flags | extends->flags) & TYF_ERROR) return ty_intrinsic(me, TY_ERROR);
 
     TyMapper const* mapper = nullptr;
@@ -55,7 +121,7 @@ Ty const* ty_conditional_resolve(
         inference_drop(&inf);
     }
     Ty const* inferred_extends = ty_instantiate(me, extends, mapper);
-    if (is_generic(inferred_extends)) return nullptr;
+    if (ty_is_generic_index(inferred_extends)) return nullptr;
 
     if (check_type->flags & TYF_ANY) {
         Ty const* parts[2] = { ty_instantiate(me, branch_type(me, if_true), mapper), branch_type(me, if_false) };
@@ -65,8 +131,11 @@ Ty const* ty_conditional_resolve(
         ty_is_related(me, check_type, inferred_extends, TY_RELATION_ASSIGNABLE);
     if (related) return ty_instantiate(me, branch_type(me, if_true), mapper);
     // HACK: tsc picks the false branch only if the check fails even with every type variable replaced by `any`
-    // (permissive instantiation), and defers otherwise. There's no such instantiation here yet: with type variables
+    // (permissive instantiation), and defers otherwise. There's no such instantiation here yet: with a type variable
     // nested in either side, a failed check defers
-    if ((check_type->flags | inferred_extends->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES) return nullptr;
+    MentionWalk walk = {0};
+    if (mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, inferred_extends, &walk, 0)) {
+        return nullptr;
+    }
     return branch_type(me, if_false);
 }

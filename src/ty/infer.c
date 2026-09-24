@@ -97,16 +97,33 @@ static void infer_with_priority(Checker* me, Inference* inf, Ty const* source, T
 }
 
 // A type parameter of the source signature isn't something to infer: it stands for its constraint (tsc's
-// getBaseSignature, roughly)
+// getBaseSignature). Constraints that mention the signature's own type parameters are resolved through each other
+// (once per parameter), what is still left of them is `any`. Outer type parameters stay: `C extends keyof S` in a
+// method of a class over S is `keyof S`
 static TyMapper const* base_signature_mapper(Checker* me, Signature const* sig) {
-    if (!sig->type_params.len) return nullptr;
-    Ty const** targets = arena_new_n(&my arena, Ty const*, sig->type_params.len);
-    for (u32 i = 0; i < sig->type_params.len; i++) {
-        Ty const* constraint = ty_param_constraint(me, sig->type_params.data[i]);
-        targets[i] = constraint && !(constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) ?
-            constraint : ty_intrinsic(me, TY_UNKNOWN_);
+    TyList params = sig->type_params;
+    if (!params.len) return nullptr;
+    u64 key[2] = { KEY_BASE_SIGNATURE, (u64)(uintptr_t)sig };
+    TyMapper const* cached = intern_get(&my links, key, 2);
+    if (cached) return cached;
+    Ty const** constraints = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 i = 0; i < params.len; i++) {
+        Ty const* constraint = ty_param_constraint(me, params.data[i]);
+        constraints[i] = constraint ? constraint : ty_intrinsic(me, TY_UNKNOWN_);
     }
-    return ty_mapper_new(me, sig->type_params, (TyList){ .data = targets, .len = sig->type_params.len });
+    TyMapper const* constraint_mapper = ty_mapper_new(me, params, (TyList){ .data = constraints, .len = params.len });
+    Ty const** targets = arena_new_n(&my arena, Ty const*, params.len);
+    memcpy(targets, constraints, sizeof(Ty const*) * params.len);
+    for (u32 round = 0; round + 1 < params.len; round++) {
+        for (u32 i = 0; i < params.len; i++) targets[i] = ty_instantiate(me, targets[i], constraint_mapper);
+    }
+    Ty const** anys = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 i = 0; i < params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
+    TyMapper const* eraser = ty_mapper_new(me, params, (TyList){ .data = anys, .len = params.len });
+    for (u32 i = 0; i < params.len; i++) targets[i] = ty_instantiate(me, targets[i], eraser);
+    TyMapper const* ret = ty_mapper_new(me, params, (TyList){ .data = targets, .len = params.len });
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
 }
 
 // What an optional parameter holds: `undefined` too, under strictNullChecks (tsc's addOptionality)

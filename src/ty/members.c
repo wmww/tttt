@@ -997,6 +997,17 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     return builder_finish(me, &builder);
 }
 
+// `string & Tag`: a key of an index signature of its own (tsc's isValidIndexKeyType)
+static bool is_index_key_intersection(Ty const* ty) {
+    if (ty->kind != TY_INTERSECTION || ty_is_generic_index(ty)) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        Ty const* member = ty->composite.types.data[i];
+        if (member->kind == TY_INTRINSIC && (member->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL))) return true;
+        if (ty_is_pattern_literal(member)) return true;
+    }
+    return false;
+}
+
 // A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
 // clause maps a key to), an index signature per primitive key. Returns the members unchanged while the key type is
 // generic (or something this can't expand yet)
@@ -1004,7 +1015,7 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
     MappedInfo const* mapped = members->mapped;
     if (!mapped) return members;
     Ty const* constraint = mapped->constraint;
-    if (constraint->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_ANY | TYF_DEFERRED)) return expand_generic_homomorphic(me, members);
+    if ((constraint->flags & TYF_ANY) || ty_is_generic_index(constraint)) return expand_generic_homomorphic(me, members);
     Ty const* const* keys;
     u32 key_count;
     union_members(&constraint, &keys, &key_count);
@@ -1100,7 +1111,9 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                     prop_name = ty_intrinsic(me, TY_STRING);
                 } else if (prop_name->flags & (TYF_NUMBER | TYF_ENUM)) {
                     prop_name = ty_intrinsic(me, TY_NUMBER);
-                } else if (!(prop_name->flags & TYF_ES_SYMBOL) && !ty_is_pattern_literal(prop_name)) {
+                } else if (!(prop_name->flags & TYF_ES_SYMBOL) && !ty_is_pattern_literal(prop_name) &&
+                    !is_index_key_intersection(prop_name)
+                ) {
                     continue;
                 }
                 Ty const* value = ty_instantiate(me, mapped->template, mapper);
@@ -1123,7 +1136,9 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
             }
         }
     }
-    return builder_finish(me, &builder);
+    Members* ret = (Members*)builder_finish(me, &builder);
+    ret->expanded_from = mapped;
+    return ret;
 }
 
 static Members const* resolve_members_inner(Checker* me, Ty const* ty);

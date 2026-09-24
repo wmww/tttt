@@ -489,6 +489,7 @@ struct Members {
     // Non-null for a mapped type whose keys aren't known. It has no other members, except `{ [K in keyof T]: X }` with T
     // generic: a property per property of T's constraint (see expand_generic_homomorphic())
     MappedInfo const* mapped;
+    MappedInfo const* expanded_from; // The mapped type these are the members of, once its keys are known
 };
 
 // sources[i] -> targets[i]. Always flat in stage 1 (composition builds a new flat mapper).
@@ -699,6 +700,9 @@ Ty const* ty_keyof(Checker* me, Ty const* operand);
 // template.c: template literal types and string mappings (tsc's getTemplateLiteralType, getStringMappingType)
 Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* const* types, u32 len);
 Ty const* ty_string_mapping(Checker* me, TyStringMapping mapping, Symbol const* symbol, Ty const* type);
+// A type variable at the top level (tsc's isGenericIndexType, roughly): what keeps keys, conditional types and
+// template literals from resolving. `{ a: T }` isn't, nor is `string & { tag: T }`
+bool ty_is_generic_index(Ty const* ty);
 bool ty_is_pattern_literal(Ty const* ty); // A template or mapping of nothing but placeholders: `a${string}`
 bool ty_is_pattern_placeholder(Ty const* ty); // Something a pattern can be made of: string, number, a pattern...
 // tsc's isTypeMatchedByTemplateLiteralType, isMemberOfStringMapping, templateLiteralTypesDefinitelyUnrelated
@@ -1001,6 +1005,14 @@ Ty const* ty_of_node(TypeNode const* node); // A written type, by the current ch
 // tsc's createUnionOrIntersectionProperty: a union has no property that is private or protected in some member unless
 // every member has it from the same declaration
 bool ty_union_non_public_conflict(Checker* me, Ty const* object, Atom const* name);
+// The flags of an index type as a key: those of its members for an intersection (`string & Tag` is a string key, tsc's
+// isTypeAssignableToKind)
+static inline u32 ty_key_flags(Ty const* index) {
+    if (index->kind != TY_INTERSECTION) return index->flags;
+    u32 flags = 0;
+    for (u32 i = 0; i < index->composite.types.len; i++) flags |= index->composite.types.data[i]->flags;
+    return flags;
+}
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index); // Of an apparent type
 // Member modifiers at a property access (tsc's checkPropertyAccessibility and the readonly checks of
 // checkPropertyAccessExpressionOrQualifiedName): TS2341, TS2445, TS2446, TS2340, TS2855, TS2540, TS2542

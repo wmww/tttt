@@ -10,11 +10,11 @@
 // Too many members in a cross product of unions (tsc's checkCrossProductUnion)
 enum { MAX_CROSS_PRODUCT = 100000 };
 
-static bool is_generic_index(Ty const* ty) {
+bool ty_is_generic_index(Ty const* ty) {
     if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return true;
     if ((ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) && (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {
-            if (is_generic_index(ty->composite.types.data[i])) return true;
+            if (ty_is_generic_index(ty->composite.types.data[i])) return true;
         }
     }
     return false;
@@ -96,7 +96,7 @@ static bool add_spans(Checker* me, TemplateBuilder* b, Atom const* const* texts,
             if (!add_spans(me, b, t->template_literal.texts, t->template_literal.types.data, t->template_literal.types.len)) {
                 return false;
             }
-        } else if (is_generic_index(t) || ty_is_pattern_placeholder(t)) {
+        } else if (ty_is_generic_index(t) || ty_is_pattern_placeholder(t)) {
             builder_push(me, b, t);
         } else {
             return false;
@@ -124,7 +124,7 @@ static Ty const* make_template(Checker* me, Atom const* const* texts, Ty const* 
         u32 flags = TYF_TEMPLATE_LITERAL;
         for (u32 i = 0; i < len; i++) {
             flags |= types[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
-            if (is_generic_index(types[i])) flags |= TYF_DEFERRED;
+            if (ty_is_generic_index(types[i])) flags |= TYF_DEFERRED;
         }
         Ty* ret = ty_alloc(me, TY_TEMPLATE_LITERAL, flags);
         Atom const** texts_copy = arena_new_n(&my arena, Atom const*, len + 1);
@@ -262,7 +262,7 @@ static Ty const* make_string_mapping(Checker* me, TyStringMapping mapping, Symbo
     void const** slot = intern_slot(me, &my types, key, 3);
     if (!*slot) {
         u32 flags = TYF_STRING_MAPPING | (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
-        if (is_generic_index(type) || ((type->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) && (type->flags & TYF_DEFERRED))) {
+        if (ty_is_generic_index(type) || ((type->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) && (type->flags & TYF_DEFERRED))) {
             flags |= TYF_DEFERRED;
         }
         Ty* ret = ty_alloc(me, TY_STRING_MAPPING, flags);
@@ -311,7 +311,7 @@ Ty const* ty_string_mapping(Checker* me, TyStringMapping mapping, Symbol const* 
         return ret;
     }
     if (type->kind == TY_STRING_MAPPING && type->string_mapping.mapping == mapping) return type;
-    if ((type->flags & (TYF_ANY | TYF_STRING | TYF_STRING_MAPPING)) || is_generic_index(type)) {
+    if ((type->flags & (TYF_ANY | TYF_STRING | TYF_STRING_MAPPING)) || ty_is_generic_index(type)) {
         return make_string_mapping(me, mapping, symbol, type);
     }
     if (ty_is_pattern_placeholder(type)) {

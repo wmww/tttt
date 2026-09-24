@@ -31,17 +31,19 @@ IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty cons
         return nullptr;
     }
     Members const* members = ty_members(me, object);
-    bool stringish = (index->flags & TYF_STRING_LIKE) != 0;
+    u32 key_flags = ty_key_flags(index);
+    bool stringish = (key_flags & TYF_STRING_LIKE) != 0;
     // A string literal that reads as a number applies to a numeric index signature (tsc's isApplicableIndexType)
-    bool numeric = (index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
+    bool numeric = (key_flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
         ((index->flags & TYF_STRING_LITERAL) && index->literal.string && ty_is_numeric_name(index->literal.string));
     // A numeric index signature is more specific than a string one, and a pattern (`[k: `data-${string}`]`) than both
     for (u32 pass = 0; pass < 2; pass++) {
         for (u32 i = 0; i < members->index_count; i++) {
             IndexInfo const* info = &members->index[i];
             bool applies = pass == 0 ?
-                ((info->key->flags & TYF_NUMBER) && numeric) || ((info->key->flags & TYF_ES_SYMBOL) && (index->flags & TYF_ES_SYMBOL_LIKE)) ||
-                    ((info->key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) && stringish &&
+                ((info->key->flags & TYF_NUMBER) && numeric) || ((info->key->flags & TYF_ES_SYMBOL) && (key_flags & TYF_ES_SYMBOL_LIKE)) ||
+                    ((info->key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING) || info->key->kind == TY_INTERSECTION) &&
+                        (stringish || numeric || info->key->kind == TY_INTERSECTION) &&
                         ty_is_related(me, index, info->key, TY_RELATION_ASSIGNABLE)) :
                 (info->key->flags & TYF_STRING) && (stringish || numeric);
             if (applies) return info;
@@ -94,7 +96,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     if (object->flags & TYF_ANY) return object;
     if (object->flags & TYF_NEVER) return object;
     if (index->flags & TYF_ANY) return ty_intrinsic(me, TY_ANY);
-    bool simple = (index->flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
+    bool simple = (ty_key_flags(index) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
     if (!simple) return nullptr;
 
     if (object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {

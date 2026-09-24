@@ -506,9 +506,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   alias body instantiates, approximated syntactically: never for `keyof` and intrinsic bodies, a conditional body only
   if the result still carries the alias (deferred, or distributed over a union), a homomorphic mapped body only if the
   result is a union. Unions don't have tsc's `origin` (how a union was written: `P & ("a" | "b")` prints distributed).
-- `keyof` of a generic mapped type without `as` stays a deferred `keyof` (tsc's getIndexTypeForMappedType gives the
-  constraint; doing that broke inference in localTypeParameterInferencePriority), and with `as` it isn't the `as`
-  type over the constraint either.
+- `keyof` of a mapped type with `as` isn't the `as` type over the constraint (without `as` it is the constraint, like
+  tsc's getIndexTypeForMappedType).
 - Relations to a generic mapped type (`generic_mapped_target_related`, relate.c) follow tsc's isGenericMappedType
   rule, but only a source without type variables gets its answer: a generic one that fails it falls through to the
   member-by-member comparison, which a mapped type without members passes. That permissive fallback stands in for
@@ -546,8 +545,10 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - Relation cache keys are plain (source id, target id); tsc's key postfix for in-scope type parameters and
   intersection state isn't there. `RelationState.overflow` (100 deep) reports through `instantiation_limit_hit`,
   which only `check_assignable_or_error_internal` turns into TS2589.
-- `ty_conditional_resolve`: without a permissive instantiation, a failed check with type variables nested in either
-  side stays deferred (tsc would pick the false branch if it fails even with them replaced by `any`). `infer X extends
+- `ty_conditional_resolve`: without a permissive instantiation, a failed check with a type variable nested in either
+  side stays deferred (tsc would pick the false branch if it fails even with them replaced by `any`). Whether one is
+  nested is a walk over members (`mentions_type_variables`), since TYF_COULD_CONTAIN_TYPE_VARIABLES is set on every
+  function and object literal type. `infer X extends
   C` constraints aren't checked. `infer_from`: no priorities, no contravariant candidates (union of everything),
   union targets infer to every member. An `infer` in rest position gets its implied `unknown[]` constraint by
   mutating the type parameter's state (`imply_rest_constraint`, and up front in `lower` for TYPE_TERNARY).

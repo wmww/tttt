@@ -258,7 +258,7 @@ const baselines = {
     'acceptSymbolAsWeakType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'acceptableAlias1': {
         errors: true,
@@ -2378,7 +2378,7 @@ const baselines = {
     'bigintWithLib': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'bigintWithoutLib': {
         errors: false,
@@ -5388,7 +5388,7 @@ const baselines = {
     'conditionalTypeGenericInSignatureTypeParameterConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypeRelaxingConstraintAssignability': {
         errors: false,
@@ -6151,7 +6151,7 @@ const baselines = {
         types: false,
     },
     'contextualTypesNegatedTypeLikeConstraintInGenericMappedType2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8178,7 +8178,7 @@ const baselines = {
     'declarationEmitMergedAliasWithConst': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMethodDeclaration': {
         errors: true,
@@ -22613,12 +22613,12 @@ const baselines = {
     'neverAsDiscriminantType(strict=false)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'neverAsDiscriminantType(strict=true)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'newAbstractInstance': {
         errors: false,
@@ -28112,7 +28112,7 @@ const baselines = {
     },
     'specialIntersectionsInMappedTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'specializationError': {
@@ -61951,9 +61951,9 @@ const baselines = {
         types: false,
     },
     'operatorsAndIntersectionTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveIntersectionTypes': {
         errors: true,

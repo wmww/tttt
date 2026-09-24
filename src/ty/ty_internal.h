@@ -43,6 +43,7 @@ enum {
     KEY_MERGED_VALUE,   // Symbol -> Ty, see ty_merged_value_type()
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE node, mapper pairs) -> Ty
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
+    KEY_BASE_SIGNATURE, // Signature -> TyMapper of its type parameters to their base constraints (infer.c)
     KEY_VARIANCES,      // declared type id -> variance array
     KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation
     KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature

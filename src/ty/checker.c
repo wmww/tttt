@@ -1248,10 +1248,15 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         ty_buf_drop(&parts);
         return ret;
     }
-    // The property names of `List<T>` don't depend on T: only type variables and generic mapped types defer
-    bool named_object = (operand->kind == TY_REFERENCE && !ty_is_tuple(operand)) || operand->kind == TY_DECLARED;
-    if (!defer && (operand->flags & TYF_OBJECT) && (!(operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || named_object)) {
+    // The property names of `List<T>` or `{ a: T }` don't depend on T: only type variables and generic mapped types
+    // (members->mapped) defer, like tsc's isGenericObjectType
+    bool known_names = !ty_is_tuple(operand) || !(operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+    if (!defer && (operand->flags & TYF_OBJECT) && known_names) {
         Members const* members = ty_members(me, operand);
+        // Of a mapped type without an `as` clause, its constraint (tsc's getIndexTypeForMappedType):
+        // `keyof { [P in string]: X }` is string, `keyof Pick<T, unknown>` unknown
+        if (members->expanded_from && !members->expanded_from->name_type) return members->expanded_from->constraint;
+        if (members->mapped && !members->mapped->name_type) return members->mapped->constraint;
         if (!members->mapped) {
             TyBuf parts = {0};
             for (u32 i = 0; i < members->prop_count; i++) {

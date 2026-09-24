@@ -564,7 +564,9 @@ static void check_access(
     bool error_if_not_found, u32 depth, ErrorCtx* errs
 ) {
     if (depth > 8) return;
-    if (index->kind == TY_UNION || index->kind == TY_INTERSECTION) {
+    // `string & Tag` is a string as far as indexing goes (tsc's isTypeAssignableToKind)
+    u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL;
+    if (index->kind == TY_UNION || (index->kind == TY_INTERSECTION && !(ty_key_flags(index) & key_like))) {
         for (u32 i = 0; i < index->composite.types.len; i++) {
             check_access(
                 me, object, index->composite.types.data[i], object_span, index_span, object_is_named,
@@ -574,7 +576,7 @@ static void check_access(
         return;
     }
     if (index->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) return; // TODO: TS2536 against `keyof` of the object
-    if (!(index->flags & (TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL))) {
+    if (!(ty_key_flags(index) & key_like)) {
         cstr index_str = ty_to_cstr(me, index);
         error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
         cstr_drop(&index_str);

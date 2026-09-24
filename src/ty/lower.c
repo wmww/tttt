@@ -1296,12 +1296,12 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             return lower_tuple(me, node, ctx);
 
         case TYPE_INDEXED: {
-            Ty const* ret = ty_indexed(
-                me,
-                ty_from_node(me, &node->indexed->interface, ctx),
-                ty_from_node(me, &node->indexed->index, ctx)
-            );
-            return alias && ret->kind == TY_INDEXED ? ty_realias(me, ret, alias, alias_args) : ret;
+            Ty const* index = ty_from_node(me, &node->indexed->index, ctx);
+            Ty const* ret = ty_indexed(me, ty_from_node(me, &node->indexed->interface, ctx), index);
+            // With a union index the result is the union of what each member accesses, made under the alias's name
+            // (tsc's getIndexedAccessType passes the alias symbol to getUnionType)
+            bool renames = ret->kind == TY_INDEXED || (ret->kind == TY_UNION && index->kind == TY_UNION);
+            return alias && renames ? ty_realias(me, ret, alias, alias_args) : ret;
         }
 
         case TYPE_KEYOF:
