@@ -48,6 +48,9 @@ typedef struct IdentifierExpr {
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
     bool constraint_position;
+    // `super.x` / `super[x]`: only there does `super` have a type yet (TODO: `super(...)` against the base
+    // constructor's signatures, until then its callee is any)
+    bool super_member;
     // `this` in a function that isn't a method or arrow function (THIS_ANY): that function, whose `this` may be
     // contextually typed (ty_contextual_this_type())
     FunctionImpl const* this_function;
@@ -328,6 +331,14 @@ typedef struct PropertyExpr {
     uint8_t assignment_target; // FlowAssignmentKind
     bool compound_like_target; // Like IdentifierExpr.compound_like_target
     FlowNode* flow; // Like IdentifierExpr.flow
+    // The innermost class it is in (member accessibility, see ClassDecl.outer_class for the others), and the class
+    // whose constructor is the function it is directly in (where `this.x = ` may write a readonly x)
+    ClassDecl const* enclosing_class;
+    Symbol const* in_constructor_of;
+    // What `this` is where it is, if not a class: a `this` parameter, or a function with a contextual `this` (a
+    // protected member is accessible when that is a derived class, tsc's getEnclosingClassFromThisParameter)
+    Symbol const* this_parameter;
+    FunctionImpl const* this_function;
 } PropertyExpr;
 
 // Generic params
@@ -361,6 +372,7 @@ typedef struct CallExpr {
     bool uses_new;
     bool is_extends;
     bool optional_chain; // `f?.()`
+    ClassDecl const* enclosing_class; // `new C()` of a private or protected constructor: see PropertyExpr
     Expr callable;
     // PERF: types of each argument should be cached
     VecExpr args;

@@ -1033,6 +1033,10 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
             free(signatures);
             return any;
         }
+        if (!ty_constructor_accessible(me, call, signatures[0], call_span, errs)) {
+            free(signatures);
+            return any;
+        }
     }
 
     CallInfo with_this = *info;

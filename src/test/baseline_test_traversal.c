@@ -667,6 +667,23 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
 }
 
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
+    if (my keyword == KEYWORD_IDENTIFIER_SUPER) {
+        // The base class (target is the class `super` is in), in a static member the base constructor's type
+        ClassDecl const* class_decl = my target ? symbol_find_node(my target, SYMBOL_DECL_CLASS) : nullptr;
+        Ty const* base = !class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY ? nullptr :
+            my this_kind == THIS_CLASS_STATIC ? ty_expr_type(current_checker, &class_decl->extends) :
+            ty_class_base_instance(current_checker, class_decl);
+        if (base && base->kind == TY_REFERENCE) base = base->reference.target;
+        Symbol const* symbol = base && base->kind == TY_DECLARED ? base->declared.symbol : nullptr;
+        if (symbol && span_valid(symbol->name_span)) {
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = declaration_get_spans(symbol),
+                .span = my name,
+                .name = symbol->name_span,
+            });
+        }
+        return;
+    }
     if (my target && span_valid(my target->name_span)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(shown_declaration(my symbol, my target)),

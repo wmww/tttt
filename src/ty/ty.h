@@ -16,6 +16,7 @@ typedef struct IdentifierExpr IdentifierExpr;
 typedef struct ObjectExprItem ObjectExprItem;
 typedef struct Expr Expr;
 typedef struct CallExpr CallExpr;
+typedef struct PropertyExpr PropertyExpr;
 typedef struct Checker Checker;
 typedef struct Prop Prop;
 typedef struct Signature Signature;
@@ -360,6 +361,17 @@ typedef enum PropFlags {
     // parameter, like tsc's lazily resolved accessor symbols (a getter's body can mention `this`, the literal's type)
     PROP_GETTER = 1 << 4,
     PROP_SETTER = 1 << 5,
+    // Class members: `private`/`protected` (dropped by mapped types and spreads like tsc's modifiers), static side,
+    // declared as a get/set accessor (a getter-only one is readonly everywhere, even in the constructor)
+    PROP_PRIVATE = 1 << 6,
+    PROP_PROTECTED = 1 << 7,
+    PROP_STATIC = 1 << 8,
+    PROP_ACCESSOR = 1 << 9,
+    PROP_FIELD = 1 << 10, // A class property declaration (tsc's isClassInstanceProperty when not static)
+    // An accessor whose setter is private/protected (PROP_PRIVATE/PROP_PROTECTED are the getter's): writes are checked
+    // against the setter
+    PROP_SET_PRIVATE = 1 << 11,
+    PROP_SET_PROTECTED = 1 << 12,
 } PropFlags;
 
 // A property of an object type. Deliberately the seed of plan 03's persistent symbol.
@@ -961,6 +973,17 @@ void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, S
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
 Ty const* ty_of_node(TypeNode const* node); // A written type, by the current checker
+// tsc's createUnionOrIntersectionProperty: a union has no property that is private or protected in some member unless
+// every member has it from the same declaration
+bool ty_union_non_public_conflict(Checker* me, Ty const* object, Atom const* name);
+IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index); // Of an apparent type
+// Member modifiers at a property access (tsc's checkPropertyAccessibility and the readonly checks of
+// checkPropertyAccessExpressionOrQualifiedName): TS2341, TS2445, TS2446, TS2340, TS2855, TS2540, TS2542
+void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
+// It assigns to a readonly property (TS2540), which makes its type the error type
+bool ty_is_readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object);
+// `new C()` of a class whose constructor is private or protected, from where it isn't accessible: TS2673, TS2674
+bool ty_constructor_accessible(Checker* me, CallExpr const* call, Signature const* sig, Span span, ErrorCtx* errs);
 // `object[index]` / `object.name`: TS2538, TS2493, TS2339...
 void ty_check_property_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,

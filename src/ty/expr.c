@@ -574,8 +574,22 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
 
 // Identifiers
 
+// tsc's checkSuperExpression for a property access: the base class instance with `this` as this-argument, in a static
+// member the base constructor
+static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
+    ClassDecl const* class_decl = identifier->target ? symbol_find_node(identifier->target, SYMBOL_DECL_CLASS) : nullptr;
+    if (!class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY || !identifier->super_member) return any_type(me);
+    if (identifier->this_kind == THIS_CLASS_STATIC) return ty_expr_type(me, &class_decl->extends);
+    Ty const* base = ty_class_base_instance(me, class_decl);
+    if (!base) return any_type(me);
+    Ty const* declared = ty_declared_type_of(me, identifier->target);
+    Ty const* this_param = declared->kind == TY_DECLARED ? declared->declared.this_param : nullptr;
+    return this_param ? ty_with_this_arg(me, base, this_param) : base;
+}
+
 Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identifier) {
     Symbol const* decl = identifier->target;
+    if (identifier->keyword == KEYWORD_IDENTIFIER_SUPER) return super_type(me, identifier);
     switch (identifier->this_kind) {
         case THIS_NONE: break;
         case THIS_ANY: {
@@ -1249,6 +1263,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (i->tag == OBJECT_ITEM_GETTER) {
                 existing->accessor = i->value.function;
                 existing->flags = (existing->flags & ~(u32)PROP_SETTER) | PROP_GETTER;
+            } else if (!ctx.is_const) {
+                existing->flags &= ~(u32)PROP_READONLY; // Not getter-only after all
             }
             continue;
         }
@@ -1262,7 +1278,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         *decl_span = i->span;
         u32 flags = 0;
         if (i->tag == OBJECT_ITEM_METHOD) flags |= PROP_METHOD;
-        if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER;
+        if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER | PROP_READONLY; // Until a setter shows up
         if (i->tag == OBJECT_ITEM_SETTER) flags |= PROP_SETTER;
         if (ctx.is_const) flags |= PROP_READONLY;
         literal_builder_add(&builder, (ObjectLiteralProp){
@@ -1549,7 +1565,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
             Ty const* ret = ty_access(me, object, ty_element_index_type(me, &expr->property->prop));
-            if (!ret) return any_type(me);
+            if (!ret || ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
             ret = access_flow_type(me, expr, ret);
             return optional ? optional_type(me, ret) : ret;
         }

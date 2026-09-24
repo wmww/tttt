@@ -247,6 +247,9 @@ typedef struct Scope {
     // valid during the walk
     FlowBuilder* flow;
     FunctionImpl* function; // The function this scope is in, null outside of functions
+    // A computed member name, a member decorator or a constructor's parameters: `super` can't be used, tsc's
+    // isLegalUsageOfSuperExpression
+    bool no_super;
 } Scope;
 
 // Symbol pointer -> symbol pointer, open addressing
@@ -345,3 +348,5 @@ Symbol const* scope_get_type(Scope const* me, csview name, Symbol const** found)
 Symbol const* scope_get_namespace(Scope const* me, csview name, Symbol const** found);
 // What `this` is here. In a type position only a class will do
 ThisRef scope_get_this(Scope const* me, bool type_else_value);
+// The innermost class body this scope is in (through functions), null if none
+struct ClassDecl const* scope_enclosing_class(Scope const* me);

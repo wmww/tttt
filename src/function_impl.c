@@ -53,6 +53,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     outer->next_function_is_iife = false;
     FlowBuilder flow;
     flow_builder_init(&flow, outer, names, me, errs);
+    flow.constructor_of = is_iife ? outer->constructor_of : my constructed_class;
     if (is_iife) {
         // Part of the flow around it, a `return` is a jump to the end of the body
         flow.start = outer->start;
@@ -95,9 +96,11 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     // The toplevel of the function body is the same scope as the arguments
     block_add_names(&my body, function_scope);
 
+    function_scope->no_super = my is_constructor;
     for_each (i, vec_function_arg, &my args) {
         initialized_binding_lookup_names_parameter(&i->initializer, function_scope, errs);
     }
+    function_scope->no_super = false;
     type_lookup_names(&my ret, function_scope, errs);
     if (my predicate) {
         TypePredicateNode* predicate = my predicate;

@@ -53,6 +53,7 @@ typedef struct ClassItem {
             bool is_optional;
             bool is_abstract;
             bool is_declare; // `declare x: T`: nothing is emitted, so it can't be decorated
+            bool is_auto_accessor; // `accessor x = 1`
             cstr name_string; // See method.name_string
             Span name_span;
             bool name_is_value;
@@ -89,6 +90,7 @@ typedef struct ClassDecl {
     VecTypeNode implements;
     VecClassItem items;
     Symbol* symbol;
+    struct ClassDecl const* outer_class; // The class this one is in (scope_enclosing_class()), set when resolving
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

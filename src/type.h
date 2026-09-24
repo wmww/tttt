@@ -48,6 +48,7 @@ typedef struct ThisRef {
     Symbol const* symbol;
     struct InterfaceDecl* interface; // THIS_INTERFACE: the declaration, which learns that it mentions `this`
     struct FunctionImpl const* function; // THIS_ANY: the function whose `this` it is (contextually typed, maybe)
+    struct ClassDecl const* class_decl; // THIS_CLASS_INSTANCE/STATIC: the class
     bool type_boundary; // A function that isn't a method: a `this` *type* in it has nothing to be about (TS2526)
 } ThisRef;
 g_declare_vec(TupleElement, tuple_element);

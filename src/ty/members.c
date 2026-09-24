@@ -340,6 +340,10 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     return true;
 }
 
+static u32 access_prop_flags(AccessModifier access) {
+    return access == ACCESS_MODIFIER_PRIVATE ? PROP_PRIVATE : access == ACCESS_MODIFIER_PROTECTED ? PROP_PROTECTED : 0;
+}
+
 static Prop* builder_add_class_prop(
     Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item
 ) {
@@ -361,6 +365,7 @@ static Prop* builder_add_class_prop(
     prop->ctx = ctx;
     prop->name_span = item->tag == CLASS_ITEM_FIELD ? item->field.name_span : item->method.name_span;
     prop->name_is_value = item->tag == CLASS_ITEM_FIELD ? item->field.name_is_value : item->method.name_is_value;
+    prop->flags = access_prop_flags(item->access) | (class_item_is_static((ClassItem*)item) ? PROP_STATIC : 0);
     prop_add_decl_spans(me, prop, &item->span, 1);
     builder_push(builder, props, prop);
     return prop;
@@ -383,6 +388,7 @@ static void builder_add_class_items(
                 }
                 prop->thisless = binding_is_thisless(i->field.has_explicit_type, &i->field.explicit_type,
                     i->field.value.tag != EXPR_IMPLICIT_ANY);
+                if (!i->field.is_auto_accessor) prop->flags |= PROP_FIELD;
                 if (i->field.is_optional) prop->flags |= PROP_OPTIONAL;
                 if (i->field.is_readonly) prop->flags |= PROP_READONLY;
             }   break;
@@ -394,12 +400,20 @@ static void builder_add_class_items(
                     Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, ctx, i);
                     if (!prop) break;
                     prop->lazy = &i->method.accessor_type;
+                    prop->flags |= PROP_ACCESSOR;
+                    // Reads go by the getter's accessibility, writes by the setter's
                     bool has_setter = false;
+                    u32 get_access = access_prop_flags(i->access), set_access = get_access;
                     for_each (other, vec_class_item, &class_decl->items) {
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor_first != i) continue;
                         has_setter |= other->method.accessor == CLASS_ACCESSOR_SET;
                         if (other != i) prop_add_decl_spans(me, prop, &other->span, 1);
+                        if (other->method.accessor == CLASS_ACCESSOR_GET) get_access = access_prop_flags(other->access);
+                        if (other->method.accessor == CLASS_ACCESSOR_SET) set_access = access_prop_flags(other->access);
                     }
+                    if (!has_setter) set_access = get_access;
+                    prop->flags = (prop->flags & ~(u32)(PROP_PRIVATE | PROP_PROTECTED)) | get_access |
+                        (set_access & PROP_PRIVATE ? PROP_SET_PRIVATE : 0) | (set_access & PROP_PROTECTED ? PROP_SET_PROTECTED : 0);
                     if (!has_setter) prop->flags |= PROP_READONLY;
                     break;
                 }
@@ -480,6 +494,7 @@ static void builder_add_class_items(
                     prop->name = name;
                     prop->parent = parent;
                     prop->ctx = ctx;
+                    prop->flags = access_prop_flags(arg->access);
                     prop->name_span = binding->content_span;
                     prop_add_decl_spans(me, prop, &arg->span, 1);
                     if (binding->has_explicit_type) {
@@ -523,7 +538,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     Prop* prototype = arena_new(&my arena, Prop);
     prototype->name = checker_atom(me, c_sv("prototype"));
     prototype->parent = instance_decl;
-    prototype->flags = PROP_READONLY;
+    prototype->flags = PROP_STATIC; // Not readonly: tsc's prototype symbol is a plain property
     if (instance->declared.type_params.len) {
         u32 len = instance->declared.type_params.len;
         Ty const** args = arena_new_n(&my arena, Ty const*, len);
@@ -794,6 +809,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 Prop* prop = arena_new(&my arena, Prop);
                 prop->name = checker_atom(me, exports[i].name);
                 prop->symbol = member;
+                if (member->is_const) prop->flags |= PROP_READONLY; // tsc's isReadonlySymbol: a `const` variable
                 prop->ctx = (LowerCtx){ .generic = true };
                 prop->name_span = symbol->name_span;
                 // `N.p` in the symbols baseline
@@ -1148,7 +1164,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     }
     Prop* length_prop = arena_new(&my arena, Prop);
     length_prop->name = checker_atom(me, c_sv("length"));
-    length_prop->flags = PROP_READONLY;
+    length_prop->flags = shape->readonly ? PROP_READONLY : 0; // Like tsc's, a mutable tuple's length can be assigned
     length_prop->type = length;
     length_prop->type_state = LAZY_STATE_DONE;
     builder_push(&builder, props, length_prop);

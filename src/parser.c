@@ -1909,6 +1909,8 @@ static bool parse_function_args_inner(
                 bool is_parameter_property = is_readonly_property || modifier_list.includes[MODIFIER_PUBLIC] ||
                     modifier_list.includes[MODIFIER_PROTECTED] || modifier_list.includes[MODIFIER_PRIVATE] ||
                     modifier_list.includes[MODIFIER_OVERRIDE];
+                uint8_t access = modifier_list.includes[MODIFIER_PRIVATE] ? ACCESS_MODIFIER_PRIVATE :
+                    modifier_list.includes[MODIFIER_PROTECTED] ? ACCESS_MODIFIER_PROTECTED : ACCESS_MODIFIER_PUBLIC;
                 modifier_list_drop(&modifier_list);
                 hop_whitespace(&p);
 
@@ -1952,6 +1954,7 @@ static bool parse_function_args_inner(
                     .decorators = decorators,
                     .is_parameter_property = is_parameter_property,
                     .is_readonly_property = is_readonly_property,
+                    .access = access,
                 });
 
                 if (p.pos == before_param) {
@@ -2791,6 +2794,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 .field = {
                     .is_readonly = modifiers.includes[MODIFIER_READONLY],
                     .is_declare = modifiers.includes[MODIFIER_DECLARE],
+                    .is_auto_accessor = modifiers.includes[MODIFIER_ACCESSOR],
                     .is_static = modifiers.includes[MODIFIER_STATIC],
                     .is_optional = optional,
                     .name_string = cstr_move(&name_string),
@@ -4221,6 +4225,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
         statement->main.tag = PORT_IMPORT_GATHER;
         statement->requires_target = true;
         statement->is_import_require = true;
+        statement->main.is_require = true;
     } else {
         parse_fail(&require_p);
         statement->main.tag = PORT_IMPORT_ALIAS;

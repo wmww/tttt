@@ -21,10 +21,11 @@ Atom const* ty_literal_name(Checker* me, Ty const* index) {
     return name;
 }
 
-static Ty const* access_index_infos(Checker* me, Ty const* object, Ty const* index) {
+// The index signature of `object` that applies to `index`, null if none
+IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index) {
     if (object->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < object->composite.types.len; i++) {
-            Ty const* found = access_index_infos(me, ty_apparent_type(me, object->composite.types.data[i]), index);
+            IndexInfo const* found = ty_applicable_index_info(me, ty_apparent_type(me, object->composite.types.data[i]), index);
             if (found) return found;
         }
         return nullptr;
@@ -41,10 +42,36 @@ static Ty const* access_index_infos(Checker* me, Ty const* object, Ty const* ind
                     ((info->key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) && stringish &&
                         ty_is_related(me, index, info->key, TY_RELATION_ASSIGNABLE)) :
                 (info->key->flags & TYF_STRING) && (stringish || numeric);
-            if (applies) return info->value;
+            if (applies) return info;
         }
     }
     return nullptr;
+}
+
+static Ty const* access_index_infos(Checker* me, Ty const* object, Ty const* index) {
+    IndexInfo const* info = ty_applicable_index_info(me, object, index);
+    return info ? info->value : nullptr;
+}
+
+bool ty_union_non_public_conflict(Checker* me, Ty const* object, Atom const* name) {
+    Prop const* first_root = nullptr;
+    bool non_public = false, differ = false;
+    for (u32 i = 0; i < object->composite.types.len; i++) {
+        Ty const* member = object->composite.types.data[i];
+        if (member->flags & TYF_NULLABLE) continue;
+        member = ty_apparent_type(me, member);
+        if (!(member->flags & TYF_OBJECT)) return false; // TODO: intersections and nested unions
+        Prop const* prop = ty_get_prop(me, member, name);
+        if (!prop) {
+            differ = true;
+            continue;
+        }
+        non_public |= (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) != 0;
+        Prop const* root = prop;
+        while (root->target) root = root->target;
+        if (!first_root) first_root = root; else differ |= root != first_root;
+    }
+    return non_public && differ;
 }
 
 static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth) {
@@ -82,6 +109,8 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         }
         if (!missing && len) ret = ty_union(me, parts, len, nullptr, (TyList){0});
         free(parts);
+        Atom const* name = ret ? ty_literal_name(me, index) : nullptr;
+        if (name && ty_union_non_public_conflict(me, object, name)) ret = nullptr;
         return ret;
     }
 

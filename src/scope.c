@@ -1292,6 +1292,13 @@ ThisRef scope_get_this(Scope const* me, bool type_else_value) {
     return (ThisRef){0};
 }
 
+struct ClassDecl const* scope_enclosing_class(Scope const* me) {
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        if (scope->this_ref.class_decl) return scope->this_ref.class_decl;
+    }
+    return nullptr;
+}
+
 Generic const* symbol_type_generic(Symbol const* me) {
     if (!me) return nullptr;
     for (u32 i = 0; i < my decl_count; i++) {

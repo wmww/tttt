@@ -19,6 +19,7 @@ typedef struct FunctionArg {
     // `constructor(public x: T)`: also declares a property of the class
     bool is_parameter_property;
     bool is_readonly_property;
+    uint8_t access; // AccessModifier (class_decl.h) of a parameter property
 } FunctionArg;
 
 void function_arg_drop(FunctionArg* me);
@@ -55,6 +56,7 @@ typedef struct FunctionImpl {
     Symbol const* promise_decl; // The global Promise type (if any), looked up for async functions
     bool is_abstract_constructor;
     Symbol const* constructed_class; // The constructor of a class: what it returns
+    uint8_t constructor_access; // The constructor of a class: its AccessModifier (class_decl.h)
     bool is_type; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from
     LazyType lazy_type;
     Symbol* symbol;

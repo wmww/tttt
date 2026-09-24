@@ -42,6 +42,18 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                 if (file->kind == SCOPE_NAMESPACE) my this_kind = THIS_NAMESPACE;
                 if (file->kind == SCOPE_ENUM) my this_kind = THIS_ENUM;
             }
+        } else if (my keyword == KEYWORD_IDENTIFIER_SUPER) {
+            // The class it's in (through arrow functions), whose base `super.x` is about. Anywhere else it's an error
+            // (TODO: TS2335-TS2338, TS2466, TS2660) and any
+            for (Scope const* scope = names; scope && !scope->no_super; scope = scope->parent) {
+                ThisKind kind = scope->this_ref.kind;
+                if (!kind) continue;
+                if (kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC) {
+                    my this_kind = kind;
+                    my target = scope->this_ref.symbol;
+                }
+                break;
+            }
         } else if (my keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
             // tsc's getNewTargetContainer(): the nearest function that isn't an arrow function, which must be a
             // constructor (the class), a function declaration or a function expression
@@ -637,6 +649,16 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             my property->flow = flow_builder_reference(flow, my outer_span);
             my property->assignment_target = assignment_target;
             my property->compound_like_target = compound_like_target;
+            my property->enclosing_class = scope_enclosing_class(names);
+            {
+                ThisRef this_ref = scope_get_this(names, false);
+                if (this_ref.kind == THIS_PARAMETER) my property->this_parameter = this_ref.symbol;
+                if (this_ref.kind == THIS_ANY) my property->this_function = this_ref.function;
+            }
+            my property->in_constructor_of = flow->constructor_of;
+            if (my property->expr.tag == EXPR_IDENTIFIER) {
+                my property->expr.identifier.super_member = my property->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
+            }
             if (my property->expr.tag == EXPR_IDENTIFIER &&
                 (my property->form == PROPERTY_EXPR_DOT || my property->prop.tag == EXPR_LITERAL)
             ) {
@@ -687,6 +709,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         }   break;
 
         case EXPR_CALL: {
+            if (my call->uses_new) my call->enclosing_class = scope_enclosing_class(names);
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
                 break;
@@ -705,6 +728,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 break;
             }
             expr_lookup_names(&my call->callable, names, errs);
+            if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) {
+                // Only directly in a constructor
+                if (!names->function || !names->function->is_constructor) callee->identifier.target = nullptr;
+            }
             for_each (i, vec_expr, &my call->args) {
                 expr_lookup_names(i, names, errs);
             }
@@ -1116,6 +1143,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 error_if_not_found,
                 errs
             );
+            ty_check_member_modifiers(current_checker, my property, expr_type, my inner_span, errs);
         }   break;
 
         case EXPR_GENERIC_PARAMS: generic_params_expr_typecheck(my generic_params, errs); break;

@@ -4,6 +4,8 @@
 #include "error.h"
 #include "source_file.h"
 #include "program.h"
+#include "class_decl.h"
+#include "port_statement.h"
 
 // Checks the statement/expression walk asks of the new core, and how their errors are worded.
 
@@ -354,4 +356,265 @@ bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpanne
     // Arena-allocated: instantiation can keep the mapper (deferred conditional and object types)
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = params.data, .len = len }, (TyList){ .data = lowered, .len = len });
     return ty_is_related(me, lowered[index], ty_instantiate(me, constraint, mapper), TY_RELATION_ASSIGNABLE);
+}
+
+// Member modifiers
+
+typedef struct MemberRefs {
+    Prop const* props[16];
+    Ty const* objects[16]; // The apparent type each was found on
+    u32 len;
+} MemberRefs;
+
+// The properties named `name` of `object` (of every member of a union or intersection that has one), and whether the
+// property tsc makes of them is readonly (a union's if any of them is, an intersection's if all are). -1: none
+static int member_refs(Checker* me, Ty const* object, Atom const* name, MemberRefs* out, u32 depth) {
+    if (depth > 8) return -1;
+    // Members first: the apparent type of an intersection with type parameters is a new type
+    if (object->kind != TY_UNION && object->kind != TY_INTERSECTION) object = ty_apparent_type(me, object);
+    if ((object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) || object->kind == TY_INTERSECTION) {
+        bool is_union = object->kind == TY_UNION;
+        int ret = -1;
+        for (u32 i = 0; i < object->composite.types.len; i++) {
+            Ty const* member = object->composite.types.data[i];
+            if (member->flags & TYF_NULLABLE) continue;
+            int readonly = member_refs(me, member, name, out, depth + 1);
+            if (readonly < 0 && is_union) {
+                // A member without it: through an index signature, else the union has no such property
+                Ty const* apparent = ty_apparent_type(me, member);
+                IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
+                    ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_STRING)) : nullptr;
+                if (!info) return -1;
+                readonly = info->readonly;
+            }
+            if (readonly < 0) continue;
+            ret = ret < 0 ? readonly : is_union ? (ret || readonly) : (ret && readonly);
+        }
+        return is_union && ret >= 0 && ty_union_non_public_conflict(me, object, name) ? -1 : ret;
+    }
+    if (!(object->flags & TYF_OBJECT)) return -1;
+    if (ty_is_tuple(object)) {
+        // Elements without resolving the tuple's members, which the element access didn't need
+        csview sv = atom_sv(name);
+        bool numeric = sv.size > 0;
+        for (isize_t i = 0; i < sv.size; i++) numeric &= sv.buf[i] >= '0' && sv.buf[i] <= '9';
+        if (numeric) {
+            u32 index = (u32)atoi(sv.buf);
+            TupleShape const* shape = object->reference.target->declared.tuple;
+            // Past the fixed elements it's the number index signature
+            return index < shape->arity && !(shape->flags[index] & TUPLE_ELEMENT_REST) ? shape->readonly : -1;
+        }
+    }
+    Prop const* prop = ty_get_prop(me, object, name);
+    if (!prop) return -1;
+    if (out->len < c_arraylen(out->props)) {
+        out->props[out->len] = prop;
+        out->objects[out->len++] = object;
+    }
+    return (prop->flags & PROP_READONLY) != 0;
+}
+
+static Atom const* access_name(Checker* me, PropertyExpr const* access) {
+    return ty_literal_name(me, ty_regular(me, ty_element_index_type(me, &access->prop)));
+}
+
+static bool is_keyword(Expr const* expr, KeywordIdentifier keyword) {
+    return expr->tag == EXPR_IDENTIFIER && expr->identifier.keyword == keyword;
+}
+
+// `ns` of `import * as ns from "./a"`
+static bool is_namespace_import(Expr const* expr) {
+    if (expr->tag != EXPR_IDENTIFIER || !expr->identifier.symbol) return false;
+    PortItem const* item = symbol_find_node(expr->identifier.symbol, SYMBOL_DECL_ALIAS);
+    return item && item->tag == PORT_IMPORT_GATHER && !item->is_require;
+}
+
+// tsc's isAssignmentToReadonlyEntity for a property
+static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object, MemberRefs* refs) {
+    if (!access->assignment_target) return false;
+    Atom const* name = access_name(me, access);
+    if (!name) return false;
+    int readonly = member_refs(me, object, name, refs, 0);
+    if (readonly == 0) return is_namespace_import(&access->expr);
+    if (readonly < 0) return false;
+    // A class's own readonly properties can be assigned through `this` in its constructor (not in functions in there)
+    if (refs->len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) && access->in_constructor_of &&
+        !(refs->props[0]->flags & PROP_ACCESSOR) && refs->props[0]->parent == access->in_constructor_of
+    ) {
+        return false;
+    }
+    return true;
+}
+
+bool ty_is_readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object) {
+    MemberRefs refs = {0};
+    return readonly_assignment(me, access, object, &refs);
+}
+
+static ClassDecl const* class_decl_of(Symbol const* symbol) {
+    return symbol ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
+}
+
+static bool is_within_class(ClassDecl const* enclosing, ClassDecl const* class_decl) {
+    for (ClassDecl const* c = enclosing; c; c = c->outer_class) {
+        if (c == class_decl) return true;
+    }
+    return false;
+}
+
+// tsc's hasBaseType on the containing type of a protected member access
+static bool containing_has_base(Checker* me, Ty const* containing, Ty const* base) {
+    if (containing->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < containing->composite.types.len; i++) {
+            if (containing_has_base(me, containing->composite.types.data[i], base)) return true;
+        }
+        return false;
+    }
+    return ty_has_base_type(me, containing, base);
+}
+
+// tsc's getEnclosingClassFromThisParameter: the class or interface `this` is where a function says what it is
+static Ty const* this_parameter_class(Checker* me, PropertyExpr const* access) {
+    Ty const* this_type = access->this_parameter ? ty_type_of_symbol(me, access->this_parameter) :
+        access->this_function ? ty_contextual_this_type(me, access->this_function) : nullptr;
+    if (this_type && this_type->kind == TY_TYPE_PARAM) this_type = ty_param_constraint(me, this_type);
+    if (!this_type) return nullptr;
+    if (this_type->kind == TY_REFERENCE) this_type = this_type->reference.target;
+    if (this_type->kind != TY_DECLARED) return nullptr;
+    TyDeclaredKind kind = this_type->declared.kind;
+    return kind == TY_DECLARED_CLASS_INSTANCE || kind == TY_DECLARED_INTERFACE ? this_type : nullptr;
+}
+
+// tsc's checkPropertyAccessibilityAtLocation for one (constituent) property, false if it reported
+static bool check_accessibility(
+    Checker* me, PropertyExpr const* site, Prop const* prop, Ty const* containing, bool is_super, ErrorCtx* errs
+) {
+    Span span = site->prop.outer_span;
+    if (is_super) {
+        if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
+            if (!(prop->flags & PROP_METHOD)) {
+                error_ctx_error_d(errs, span, 2340,
+                    "Only public and protected methods of the base class are accessible via the 'super' keyword.");
+                return false;
+            }
+        }
+        if (!(prop->flags & PROP_STATIC) && (prop->flags & PROP_FIELD)) {
+            error_ctx_error_d(errs, span, 2855, "Class field '", atom_sv(prop->name),
+                "' defined by the parent class is not accessible in the child class via super.");
+            return false;
+        }
+    }
+    u32 modifiers = prop->flags & (PROP_PRIVATE | PROP_PROTECTED);
+    if ((prop->flags & PROP_ACCESSOR) && site->assignment_target) {
+        modifiers = (prop->flags & PROP_SET_PRIVATE ? PROP_PRIVATE : 0) |
+            (prop->flags & PROP_SET_PROTECTED ? PROP_PROTECTED : 0);
+    }
+    if (!modifiers || !prop->parent) return true;
+    ClassDecl const* declaring = class_decl_of(prop->parent);
+    if (!declaring) return true;
+    Ty const* declaring_type = ty_declared_type_of(me, prop->parent);
+    if (modifiers & PROP_PRIVATE) {
+        if (is_within_class(site->enclosing_class, declaring)) return true;
+        cstr class_str = ty_to_cstr(me, declaring_type);
+        error_ctx_error_d(errs, span, 2341,
+            "Property '", atom_sv(prop->name), "' is private and only accessible within class '", class_str, "'.");
+        cstr_drop(&class_str);
+        return false;
+    }
+    if (is_super) return true;
+    // The first enclosing class that derives from the declaring class
+    Ty const* enclosing_type = nullptr;
+    for (ClassDecl const* c = site->enclosing_class; c && !enclosing_type; c = c->outer_class) {
+        if (!c->symbol) continue;
+        Ty const* type = ty_declared_type_of(me, c->symbol);
+        if (ty_has_base_type(me, type, declaring_type)) enclosing_type = type;
+    }
+    bool enclosing_found = enclosing_type != nullptr;
+    if (!enclosing_type) {
+        enclosing_type = this_parameter_class(me, site);
+        if (enclosing_type && !ty_has_base_type(me, enclosing_type, declaring_type)) enclosing_type = nullptr;
+    }
+    if (!enclosing_type || (prop->flags & PROP_STATIC && !enclosing_found)) {
+        cstr class_str = ty_to_cstr(me, declaring_type);
+        error_ctx_error_d(errs, span, 2445, "Property '", atom_sv(prop->name),
+            "' is protected and only accessible within class '", class_str, "' and its subclasses.");
+        cstr_drop(&class_str);
+        return false;
+    }
+    if (prop->flags & PROP_STATIC) return true;
+    if (containing->kind == TY_TYPE_PARAM) containing = ty_apparent_type(me, containing);
+    if (!containing_has_base(me, containing, enclosing_type)) {
+        cstr enclosing_str = ty_to_cstr(me, enclosing_type);
+        cstr containing_str = ty_to_cstr(me, containing);
+        error_ctx_error_d(errs, span, 2446, "Property '", atom_sv(prop->name),
+            "' is protected and only accessible through an instance of class '", enclosing_str,
+            "'. This is an instance of class '", containing_str, "'.");
+        c_drop(cstr, &enclosing_str, &containing_str);
+        return false;
+    }
+    return true;
+}
+
+static bool is_global_this(Ty const* ty) {
+    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.namespace_symbol &&
+        ty->declared.namespace_symbol->is_global_this;
+}
+
+void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
+    // `typeof globalThis` has no properties for block scoped variables (TS2339 there, see check_access())
+    if ((object->flags & TYF_ANY) || is_global_this(object)) return;
+    Atom const* name = access_name(me, access);
+    MemberRefs refs = {0};
+    if (!name || member_refs(me, object, name, &refs, 0) < 0) {
+        // Assigning to a generic object doesn't go through its index signatures (TS2339 instead)
+        bool generic = object->kind == TY_TYPE_PARAM && !object->param.state->is_this;
+        if (!access->assignment_target || generic) return;
+        // A readonly index signature (`readonly T[]`)
+        Ty const* apparent = ty_apparent_type(me, object);
+        IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
+            ty_applicable_index_info(me, apparent, ty_regular(me, ty_element_index_type(me, &access->prop))) : nullptr;
+        if (info && info->readonly) {
+            cstr object_str = ty_to_cstr(me, access->form == PROPERTY_EXPR_DOT ? apparent : object);
+            error_ctx_error_d(errs, span, 2542, "Index signature in type '", object_str, "' only permits reading.");
+            cstr_drop(&object_str);
+        }
+        return;
+    }
+    // Element access is the way around accessibility
+    if (access->form == PROPERTY_EXPR_DOT) {
+        bool is_super = is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER);
+        for (u32 i = 0; i < refs.len; i++) {
+            if (!check_accessibility(me, access, refs.props[i], refs.objects[i], is_super, errs)) break;
+        }
+    }
+    refs.len = 0;
+    if (readonly_assignment(me, access, object, &refs)) {
+        error_ctx_error_d(errs, access->prop.outer_span, 2540,
+            "Cannot assign to '", atom_sv(name), "' because it is a read-only property.");
+    }
+}
+
+bool ty_constructor_accessible(Checker* me, CallExpr const* call, Signature const* sig, Span span, ErrorCtx* errs) {
+    while (sig && !sig->function && sig->target) sig = sig->target;
+    FunctionImpl const* function = sig ? sig->function : nullptr;
+    if (!function || !function->constructed_class || function->constructor_access == ACCESS_MODIFIER_PUBLIC) {
+        return true;
+    }
+    ClassDecl const* declaring = class_decl_of(function->constructed_class);
+    if (!declaring || is_within_class(call->enclosing_class, declaring)) return true;
+    Ty const* declaring_type = ty_declared_type_of(me, function->constructed_class);
+    bool is_private = function->constructor_access == ACCESS_MODIFIER_PRIVATE;
+    // A protected constructor is accessible from a derived class (tsc's typeHasProtectedAccessibleBase)
+    if (!is_private && call->enclosing_class && call->enclosing_class->symbol &&
+        ty_has_base_type(me, ty_declared_type_of(me, call->enclosing_class->symbol), declaring_type)
+    ) {
+        return true;
+    }
+    if (errs) {
+        cstr class_str = ty_to_cstr(me, declaring_type);
+        error_ctx_error_d(errs, span, is_private ? 2673 : 2674, "Constructor of class '", class_str, "' is ",
+            is_private ? "private" : "protected", " and only accessible within the class declaration.");
+        cstr_drop(&class_str);
+    }
+    return false;
 }

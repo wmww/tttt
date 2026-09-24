@@ -348,6 +348,17 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 
 ## Calls, inference and property access (`ty/call.c`, `ty/infer.c`, `ty/access.c`): `ty/call.c`, `ty/infer.c`, `ty/access.c`
 The algorithms are meant to stay; what's listed is where they stop short of tsc.
+- Member modifiers (plan 13): `PropertyExpr` carries four resolve-walk pointers for them (`enclosing_class`,
+  `in_constructor_of`, `this_parameter`, `this_function`), 32 bytes per property access that only matter for class
+  members; a `Scope const*` would do (scopes live as long as the binder) if memory ever matters. `member_refs()`
+  (check.c) duplicates the member walk of `access()` (access.c) to get at the `Prop`s rather than their types; one walk
+  that returns both (tsc's getPropertyOfType giving a symbol) would be cleaner. It special-cases numeric names on
+  tuples so as not to resolve tuple members the element access never needed: *creating types in a check changes type
+  ids and so union/keyof display order* (valibot messages reordered until it didn't). Unions: a member without the
+  property but with an index signature is looked up with the index type `string`, not the name.
+- `super(...)` has an `any` callee (`IdentifierExpr.super_member` is false there): arguments aren't checked against the
+  base constructor, and the TS2335-TS2337/TS2466/TS2660 legality errors aren't reported although `Scope.no_super` and
+  the resolve walk already know where `super` is illegal.
 - `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), alias type arguments are only used for deferred types (there are no variances for aliases), no
   `InferencePriority` beyond naked-type-variable and return-type, type predicates don't exist (parser drops `x is T`).
 - `ty_union_signatures` (relate.c, tsc's getUnionSignatures): tsc's identity relation is approximated as "the same

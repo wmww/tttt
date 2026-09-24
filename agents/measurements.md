@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-23, plan 13 stages 1-3: accessibility, readonly writes, typed `super`
+Suite **4690 -> 4785** full (errors 7893, symbols 9449, types 7638; no component lost). Missing TS2540 154 -> 18,
+TS2341 117 -> 21, TS2445 106 -> 11, TS2446 31 -> 0, TS2340 48 -> 0, TS2673/2674 14 -> 0, TS2542 26 -> 17. About half
+the gain is `super.x` having a type at all (it was `any`). Corpora: tsc 0, type-fest 424 -> 423, valibot 1835 -> 1791
+(all 45 were `@ts-expect-error`s, TS2578, now used: readonly writes). `./bench.sh`: unchanged (type-fest 0.59 s,
+valibot 1.17 s / 609 MB, typecheck 1068 ms).
+
 ## 2026-09-23, plan 20: conditional instantiation cache
 Suite **4690** (unchanged, no component gained or lost). Corpora unchanged: tsc 0, type-fest 424, valibot 1835 (a few
 valibot messages print a union once where they printed `InferObjectOutput<X> | InferObjectOutput<X>`: two instances

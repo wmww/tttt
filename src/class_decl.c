@@ -104,9 +104,16 @@ void class_decl_drop(ClassDecl* me) {
     vec_class_item_drop(&my items);
 }
 
+// A computed member name or a decorator
+static void lookup_names_without_super(Expr* expr, Scope* names, ErrorCtx* errs) {
+    Scope* scope = scope_new(names, SCOPE_BLOCK);
+    scope->no_super = true;
+    expr_lookup_names(expr, scope, errs);
+}
+
 void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
     for_each (i, vec_expr, &my decorators) {
-        expr_lookup_names(i, names, errs);
+        lookup_names_without_super(i, names, errs);
     }
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
@@ -114,7 +121,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_METHOD:
-            if (my method.computed_key) expr_lookup_names(my method.computed_key, names, errs);
+            if (my method.computed_key) lookup_names_without_super(my method.computed_key, names, errs);
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
             my method.func.is_method = !my method.accessor;
             my method.func.accessor = (uint8_t)my method.accessor;
@@ -123,7 +130,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_FIELD:
-            if (my field.computed_key) expr_lookup_names(my field.computed_key, names, errs);
+            if (my field.computed_key) lookup_names_without_super(my field.computed_key, names, errs);
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
             type_lookup_names(&my field.explicit_type, names, errs);
             if (my field.value.tag == EXPR_IMPLICIT_ANY) {
@@ -165,7 +172,9 @@ void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported) {
 
 static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs, bool static_members) {
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
-    this_scope->this_ref = (ThisRef){ .kind = static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, .symbol = my symbol };
+    this_scope->this_ref = (ThisRef){
+        .kind = static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, .symbol = my symbol, .class_decl = me
+    };
 
     for_each (i, vec_class_item, &my items) {
         if (class_item_is_static(i) == static_members) {
@@ -179,6 +188,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         expr_lookup_names(i, names, errs);
     }
 
+    my outer_class = scope_enclosing_class(names);
     names = scope_new_generic(names, &my generic, errs);
 
     for_each (i, vec_class_item, &my items) {
@@ -195,6 +205,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
             check(i->constructor.func.ret.tag == TYPE_ANY);
             i->constructor.func.ret_explicit = false;
             i->constructor.func.constructed_class = my symbol;
+            i->constructor.func.constructor_access = (uint8_t)i->access;
         }
     }
 
