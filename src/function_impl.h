@@ -55,6 +55,7 @@ typedef struct FunctionImpl {
     bool is_generator;
     Symbol const* promise_decl; // The global Promise type (if any), looked up for async functions
     bool is_abstract_constructor;
+    struct Expr const* first_super_call; // A constructor: the first `super(...)` in its body, not in a nested function
     Symbol const* constructed_class; // The constructor of a class: what it returns
     uint8_t constructor_access; // The constructor of a class: its AccessModifier (class_decl.h)
     bool is_type; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from

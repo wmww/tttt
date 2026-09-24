@@ -96,11 +96,11 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     // The toplevel of the function body is the same scope as the arguments
     block_add_names(&my body, function_scope);
 
-    function_scope->no_super = my is_constructor;
+    function_scope->no_super = my is_constructor ? NO_SUPER_CONSTRUCTOR_ARGS : NO_SUPER_NONE;
     for_each (i, vec_function_arg, &my args) {
         initialized_binding_lookup_names_parameter(&i->initializer, function_scope, errs);
     }
-    function_scope->no_super = false;
+    function_scope->no_super = NO_SUPER_NONE;
     type_lookup_names(&my ret, function_scope, errs);
     if (my predicate) {
         TypePredicateNode* predicate = my predicate;

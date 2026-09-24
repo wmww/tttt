@@ -232,6 +232,14 @@ typedef enum ScopeKind {
     SCOPE_ENUM,
 } ScopeKind;
 
+typedef enum NoSuper : uint8_t {
+    NO_SUPER_NONE,
+    NO_SUPER_COMPUTED_NAME, // Of a class member
+    NO_SUPER_LITERAL_COMPUTED_NAME, // Of an object literal member: only picks the error message
+    NO_SUPER_DECORATOR,
+    NO_SUPER_CONSTRUCTOR_ARGS,
+} NoSuper;
+
 typedef struct Scope {
     Scope* parent;
     ScopeKind kind;
@@ -248,8 +256,8 @@ typedef struct Scope {
     FlowBuilder* flow;
     FunctionImpl* function; // The function this scope is in, null outside of functions
     // A computed member name, a member decorator or a constructor's parameters: `super` can't be used, tsc's
-    // isLegalUsageOfSuperExpression
-    bool no_super;
+    // isLegalUsageOfSuperExpression (see resolve_super())
+    NoSuper no_super;
 } Scope;
 
 // Symbol pointer -> symbol pointer, open addressing

@@ -49,9 +49,9 @@ typedef struct IdentifierExpr {
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
     bool constraint_position;
-    // `super.x` / `super[x]`: only there does `super` have a type yet (TODO: `super(...)` against the base
-    // constructor's signatures, until then its callee is any)
+    // `super.x` / `super[x]` (the base instance), `super(...)` (the base constructor)
     bool super_member;
+    bool super_call;
     // `this` in a function that isn't a method or arrow function (THIS_ANY): that function, whose `this` may be
     // contextually typed (ty_contextual_this_type())
     FunctionImpl const* this_function;

@@ -191,6 +191,8 @@ extern FlowNode flow_unreachable;
 extern FlowNode flow_reported_unreachable;
 
 static inline bool flow_is_unreachable(FlowNode const* flow) { return flow->flags & FLOW_UNREACHABLE; }
+/// Every way to `flow` from the start of its container goes through a `super(...)` call (tsc's isPostSuperFlowNode)
+bool flow_is_post_super(FlowNode const* flow);
 
 // A builder for a new container. `outer` may be null (a file)
 void flow_builder_init(FlowBuilder* me, FlowBuilder const* outer, Scope* scope, FunctionImpl const* function, ErrorCtx* errs);

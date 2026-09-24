@@ -41,12 +41,8 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   the end of plan 08, the array half is `any[]` (hacks.md "Narrowing"). controlFlowArrays and friends.
 
 ## Checker gaps (each verified still open by probe)
-- `super` legality errors are all missing (2026-09-23 failstats): TS2335 35 in 16 tests, TS2660 35 in 11, TS2337 33 in
-  9, TS2466 8, TS2336 3. The resolve walk now decides where `super` is legal (`Scope.no_super`, the super-call check
-  in `expr_lookup_names`), reporting there is cheap. Checking `super(...)` against the base constructor is the other
-  half (hacks.md).
 - `compoundExponentiationAssignmentLHSIsValue`: `x **= v` with a non-reference LHS reports TS2362 where tsc says TS2364
-  only (and `**=` has parse gaps there). Spotted by plan 13, not investigated.
+  only. (`**=` itself parses now.) Spotted by plan 13, not investigated.
 - `expandoFunctionSymbolProperty`: `f[symb] = ...` on a function declaration isn't an expando property (only `f.x =`
   is?), so `f` misses `[symb]` (TS2741). Found by plan 09.
 - `silentNeverPropagation` (lost to plan 10 stage 2 when object literal methods became context sensitive, like in
@@ -116,7 +112,6 @@ plans 11-15 or `bugs/` are gone from here; see those files.
 - `check_with()` (ty/expr.c) computes an expression with a contextual type without going through the LazyType, so it
   has no cycle detection (`let [x = x] = []` used to recurse forever; `lower_binding_access` avoids it, other
   contextual self-references can still overflow the stack).
-- `super.x` is `any`: `super` has no target symbol and no type (`super.throw()` isn't a never call).
 - Union *origins* aren't tracked: tsc remembers the aliases a union was written with and narrowing/filtering keeps
   them (`FooBase[]` where we print `string | false`: spreadBooleanRespectsFreshness, literalFreshnessPropagationOnNarrowing).
   Plan 12 gets the literals right but not this.

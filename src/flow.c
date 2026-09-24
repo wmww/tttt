@@ -445,3 +445,74 @@ void flow_builder_finish(FlowBuilder* me, csview name, Span span) {
     free(my dump);
     my dump = nullptr;
 }
+
+// Shared nodes already answered by flow_is_post_super() (a chain of `if`s is a chain of diamonds)
+typedef struct PostSuperMemo {
+    FlowNode const** nodes;
+    bool* results;
+    u32 len, cap;
+    FlowReduceLabel const* reduce; // A reduce label in effect: its target has these antecedents instead
+} PostSuperMemo;
+
+static bool post_super(FlowNode const* flow, PostSuperMemo* memo, u32 depth) {
+    if (depth > 1000) return true;
+    while (true) {
+        u32 flags = flow->flags;
+        if (flags & FLOW_SHARED) {
+            for (u32 i = 0; i < memo->len; i++) if (memo->nodes[i] == flow) return memo->results[i];
+        }
+        FlowNode const* at = flow;
+        bool result;
+        if (flags & (FLOW_ASSIGNMENT | FLOW_CONDITION | FLOW_SWITCH_CLAUSE)) {
+            flow = flow->antecedent;
+            continue;
+        } else if (flags & FLOW_CALL) {
+            Expr const* call = flow->node;
+            Expr const* callee = &call->call->callable;
+            if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) {
+                result = true;
+            } else {
+                flow = flow->antecedent;
+                continue;
+            }
+        } else if (flags & FLOW_BRANCH_LABEL) {
+            FlowList const* antecedents = memo->reduce && memo->reduce->target == flow ? memo->reduce->antecedents : flow->antecedents;
+            result = true;
+            for (u32 i = 0; antecedents && i < antecedents->count && result; i++) {
+                result = post_super(antecedents->items[i], memo, depth + 1);
+            }
+        } else if (flags & FLOW_LOOP_LABEL) {
+            // The way into the loop decides
+            if (!flow->antecedents || !flow->antecedents->count) return false;
+            flow = flow->antecedents->items[0];
+            continue;
+        } else if (flags & FLOW_REDUCE_LABEL) {
+            FlowReduceLabel const* saved = memo->reduce;
+            memo->reduce = flow->node;
+            result = post_super(flow->antecedent, memo, depth + 1);
+            memo->reduce = saved;
+        } else {
+            // The start. Unreachable code counts as after the call, to keep quiet
+            result = (flags & FLOW_UNREACHABLE) != 0;
+        }
+        if ((at->flags & FLOW_SHARED) && !memo->reduce) {
+            if (memo->len == memo->cap) {
+                memo->cap = memo->cap ? memo->cap * 2 : 16;
+                memo->nodes = realloc(memo->nodes, sizeof(FlowNode const*) * memo->cap);
+                memo->results = realloc(memo->results, sizeof(bool) * memo->cap);
+                panic_if(!memo->nodes || !memo->results, "out of memory");
+            }
+            memo->nodes[memo->len] = at;
+            memo->results[memo->len++] = result;
+        }
+        return result;
+    }
+}
+
+bool flow_is_post_super(FlowNode const* flow) {
+    PostSuperMemo memo = {0};
+    bool ret = post_super(flow, &memo, 0);
+    free(memo.nodes);
+    free(memo.results);
+    return ret;
+}

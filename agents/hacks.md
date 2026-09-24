@@ -371,8 +371,12 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   some member has no signatures of the kind (tsc: TS2349 "Not all constituents of type ... are callable").
 - `super(...)` (`resolve_into` in call.c): the heritage clause's type arguments are passed as explicit type arguments
   of the base constructor's signatures; without written ones they're inferred where tsc instantiates with defaults
-  (getInstantiatedConstructorsForTypeArguments). `super()` in an arrow function inside a constructor resolves to
-  nothing (`any`): tsc allows it.
+  (getInstantiatedConstructorsForTypeArguments).
+- `super` legality (`resolve_super` in expr.c) walks scopes instead of tsc's containers; a bare `super` (TS1034, a parse
+  error in tsc) isn't reported. `check_before_super` (TS17009/17011) only looks at `this`/`super` whose nearest function
+  scope is the constructor, so an IIFE's `this` isn't checked (tsc neither: the arrow is its container). No TS2401/TS2376
+  (where `super()` must be with initialized properties or parameter properties), no TS2659 (object literal `super`
+  below ES2015).
 - `report_arity`: the span for too few arguments is the callee's `inner_span`, not tsc's name-of-the-property-access
   rule.
 - Heritage checks (`ty_check_heritage`, `class_heritage_typecheck`): no TS2417 (static side), no TS2320 (inherited

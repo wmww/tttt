@@ -1534,7 +1534,7 @@ static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
     Ty const* ret = ty_call_return_type(me, callee_type, call, ctx.contextual);
     if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER && !call->uses_new) {
-        return ret->flags & TYF_ANY ? ret : ty_intrinsic(me, TY_VOID);
+        return ty_intrinsic(me, TY_VOID); // Whatever it resolved to, and even if it's an error
     }
     // The initializer of a `const` (or a `static readonly` property) makes a new unique symbol
     if (call->unique_symbol.key && (ret->flags & TYF_ES_SYMBOL_LIKE) && is_symbol_call(me, call)) {

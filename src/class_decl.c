@@ -118,15 +118,15 @@ void class_decl_drop(ClassDecl* me) {
 }
 
 // A computed member name or a decorator
-static void lookup_names_without_super(Expr* expr, Scope* names, ErrorCtx* errs) {
+static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, ErrorCtx* errs) {
     Scope* scope = scope_new(names, SCOPE_BLOCK);
-    scope->no_super = true;
+    scope->no_super = why;
     expr_lookup_names(expr, scope, errs);
 }
 
 void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
     for_each (i, vec_expr, &my decorators) {
-        lookup_names_without_super(i, names, errs);
+        lookup_names_without_super(i, names, NO_SUPER_DECORATOR, errs);
     }
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
@@ -134,7 +134,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_METHOD:
-            if (my method.computed_key) lookup_names_without_super(my method.computed_key, names, errs);
+            if (my method.computed_key) lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, errs);
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
             my method.func.is_method = !my method.accessor;
             my method.func.accessor = (uint8_t)my method.accessor;
@@ -143,7 +143,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_FIELD:
-            if (my field.computed_key) lookup_names_without_super(my field.computed_key, names, errs);
+            if (my field.computed_key) lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, errs);
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
             type_lookup_names(&my field.explicit_type, names, errs);
             if (my field.value.tag == EXPR_IMPLICIT_ANY) {
@@ -381,6 +381,19 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
                 function_impl_typecheck(&i->constructor.func, errs);
+                // tsc's checkConstructorDeclaration. TODO: TS2401/TS2376 (where the call must be with initialized
+                // properties or parameter properties)
+                if (i->constructor.func.has_body && my extends.tag != EXPR_IMPLICIT_ANY) {
+                    Expr const* super_call = i->constructor.func.first_super_call;
+                    bool extends_null = my extends.tag == EXPR_LITERAL && my extends.literal.tag == VALUE_NULL;
+                    if (super_call && extends_null) {
+                        error_ctx_error_d(errs, super_call->inner_span, 17005,
+                            "A constructor cannot contain a 'super' call when its class extends 'null'.");
+                    } else if (!super_call && !extends_null) {
+                        error_ctx_error_d(errs, i->constructor.name_span, 2377,
+                            "Constructors for derived classes must contain a 'super' call.");
+                    }
+                }
                 if (i->constructor.func.has_body) constructor_count++; // Overloads are fine
                 break;
 

@@ -23,6 +23,95 @@ void identifier_expr_drop(IdentifierExpr* me) {
     ignore me;
 }
 
+// tsc's checkThisBeforeSuper: directly in the constructor of a derived class (not `extends null`), `this` and
+// `super.x` need a `super()` call on every way there. The flow graph behind the current node is complete already
+static bool check_before_super(IdentifierExpr const* me, Scope const* names, unsigned code, char const* what, ErrorCtx* errs) {
+    FlowBuilder* flow = names->flow;
+    if (!flow || flow->dead || !flow->constructor_of || !names->function || !names->function->is_constructor) return true;
+    ClassDecl const* class_decl = symbol_find_node(flow->constructor_of, SYMBOL_DECL_CLASS);
+    if (!class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY) return true;
+    if (class_decl->extends.tag == EXPR_LITERAL && class_decl->extends.literal.tag == VALUE_NULL) return true;
+    if (flow_is_post_super(flow->current)) return true;
+    error_ctx_error_d(errs, my name, code, "'super' must be called before accessing ", what,
+        " in the constructor of a derived class.");
+    return false;
+}
+
+// tsc's checkSuperExpression up to its type: the member `super` is in (getSuperContainer: through arrow functions,
+// except for `super(...)`) decides whether it may be used there (isLegalUsageOfSuperExpression). A legal `super` of a
+// derived class targets that class, anything else is an error and any (an object literal's `super` is any too)
+static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs) {
+    bool is_call = my super_call;
+    Scope const* scope = names;
+    bool legal = false;
+    // A computed member name or a member decorator is outside the member, and so outside its class
+    bool in_computed_name = false, skip_class = false;
+    for (; scope; scope = scope->parent) {
+        if (scope->no_super == NO_SUPER_LITERAL_COMPUTED_NAME) {
+            in_computed_name = true;
+            continue;
+        }
+        if (scope->no_super == NO_SUPER_COMPUTED_NAME || scope->no_super == NO_SUPER_DECORATOR) {
+            in_computed_name |= scope->no_super == NO_SUPER_COMPUTED_NAME;
+            skip_class = true;
+            continue;
+        }
+        if (skip_class) {
+            skip_class = scope->this_ref.kind != THIS_CLASS_INSTANCE && scope->this_ref.kind != THIS_CLASS_STATIC;
+            continue;
+        }
+        if (scope->kind == SCOPE_FUNCTION && scope->function) {
+            FunctionImpl const* function = scope->function;
+            if (span_valid(function->arrow_span) && !is_call) continue;
+            bool member = span_valid(function->member_name) || function->accessor;
+            if (is_call) {
+                legal = function->is_constructor;
+            } else if (member && function->is_expression) {
+                return; // An object literal's method: any
+            } else {
+                legal = function->is_constructor || member;
+            }
+            break;
+        }
+        // A static block, or a property initializer: the class's own scope
+        if (scope->kind == SCOPE_STATIC_BLOCK || scope->this_ref.kind == THIS_CLASS_INSTANCE ||
+            scope->this_ref.kind == THIS_CLASS_STATIC
+        ) {
+            legal = !is_call;
+            break;
+        }
+    }
+    if (!legal) {
+        if (in_computed_name) {
+            error_ctx_error_d(errs, my name, 2466, "'super' cannot be referenced in a computed property name.");
+        } else if (is_call) {
+            error_ctx_error_d(errs, my name, 2337,
+                "Super calls are not permitted outside constructors or in nested functions inside constructors.");
+        } else {
+            error_ctx_error_d(errs, my name, 2660,
+                "'super' can only be referenced in members of derived classes or object literal expressions.");
+        }
+        return;
+    }
+    bool in_constructor_args = scope->no_super == NO_SUPER_CONSTRUCTOR_ARGS;
+    while (scope && scope->this_ref.kind != THIS_CLASS_INSTANCE && scope->this_ref.kind != THIS_CLASS_STATIC) {
+        scope = scope->parent;
+    }
+    ClassDecl const* class_decl = scope ? scope->this_ref.class_decl : nullptr;
+    if (!class_decl) return;
+    if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) {
+        error_ctx_error_d(errs, my name, 2335, "'super' can only be referenced in a derived class.");
+        return;
+    }
+    if (!is_call) check_before_super(me, names, 17011, "a property of 'super'", errs);
+    if (in_constructor_args) {
+        error_ctx_error_d(errs, my name, 2336, "'super' cannot be referenced in constructor arguments.");
+        return;
+    }
+    my this_kind = scope->this_ref.kind;
+    my target = scope->this_ref.symbol;
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
@@ -30,6 +119,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             my this_kind = this_ref.kind;
             my target = this_ref.symbol;
             my this_function = this_ref.function;
+            check_before_super(me, names, 17009, "'this'", errs);
             if (!this_ref.kind) {
                 // At the top level: of a script `typeof globalThis`, of a module `undefined`; in a namespace an error
                 Scope const* file = names;
@@ -43,17 +133,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                 if (file->kind == SCOPE_ENUM) my this_kind = THIS_ENUM;
             }
         } else if (my keyword == KEYWORD_IDENTIFIER_SUPER) {
-            // The class it's in (through arrow functions), whose base `super.x` is about. Anywhere else it's an error
-            // (TODO: TS2335-TS2338, TS2466, TS2660) and any
-            for (Scope const* scope = names; scope && !scope->no_super; scope = scope->parent) {
-                ThisKind kind = scope->this_ref.kind;
-                if (!kind) continue;
-                if (kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC) {
-                    my this_kind = kind;
-                    my target = scope->this_ref.symbol;
-                }
-                break;
-            }
+            resolve_super(me, names, errs);
         } else if (my keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
             // tsc's getNewTargetContainer(): the nearest function that isn't an arrow function, which must be a
             // constructor (the class), a function declaration or a function expression
@@ -739,11 +819,16 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 flow->next_function_is_iife = false;
                 break;
             }
-            expr_lookup_names(&my call->callable, names, errs);
-            if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) {
-                // Only directly in a constructor
-                if (!names->function || !names->function->is_constructor) callee->identifier.target = nullptr;
+            if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER && !my call->uses_new) {
+                callee->identifier.super_call = true;
+                // (tsc's findFirstSuperCall looks in the body only)
+                if (names->function && names->function->is_constructor && !names->function->first_super_call &&
+                    names->no_super != NO_SUPER_CONSTRUCTOR_ARGS
+                ) {
+                    names->function->first_super_call = me;
+                }
             }
+            expr_lookup_names(&my call->callable, names, errs);
             for_each (i, vec_expr, &my call->args) {
                 expr_lookup_names(i, names, errs);
             }
@@ -767,7 +852,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &my object) {
                 if (i->computed_key) {
-                    expr_lookup_names(i->computed_key, names, errs);
+                    // (A scope of its own only for resolve_super())
+                    Scope* key_scope = scope_new(names, SCOPE_BLOCK);
+                    key_scope->no_super = NO_SUPER_LITERAL_COMPUTED_NAME;
+                    expr_lookup_names(i->computed_key, key_scope, errs);
                 }
                 if (i->value.tag == EXPR_FUNCTION) {
                     i->value.function->accessor = i->tag == OBJECT_ITEM_GETTER ? 1 : i->tag == OBJECT_ITEM_SETTER ? 2 : 0;
