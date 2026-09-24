@@ -462,6 +462,7 @@ typedef struct IndexInfo {
     Ty const* value;
     Atom const* param_name;
     bool readonly;
+    Span decl_span; // The index signature as declared, invalid for synthesized ones
 } IndexInfo;
 
 typedef struct MappedInfo {
@@ -796,6 +797,8 @@ bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation r
 // Why source isn't related to target, outermost line first. The first line is the natural head of the error: TS2322
 // "Type 'S' is not assignable to type 'T'." unless something more specific replaces it (TS2741 and friends)
 void ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out);
+// The member of a union target a failed relation is most likely about (tsc's getBestMatchingType), null if none
+Ty const* ty_best_matching_type(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_widened_literal(Checker* me, Ty const* ty);
 // How the source of a failed relation shows in the error: widened unless the target has room for literal types
 cstr ty_report_source_cstr(Checker* me, Ty const* source, Ty const* target);
@@ -817,6 +820,12 @@ Ty const* ty_access(Checker* me, Ty const* object, Ty const* index);
 // type the expression got from the parent that knew its context.
 Ty const* ty_check_expr(Checker* me, Expr const* expr, Ty const* contextual);
 Ty const* ty_expr_type(Checker* me, Expr const* expr); // The memo, else checked without a contextual type
+// The memo as a mutable location holds it (tsc's checkExpressionForMutableLocation with a contextual type): fresh
+// literals widen unless the contextual type has room for them
+Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* contextual);
+// An array literal re-read as a tuple of its elements (tsc's checkArrayLiteral with forceTuple), from the elements'
+// memos. Null if it has spreads
+Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual);
 Ty const* ty_element_index_type(Checker* me, Expr const* index); // `index` of `x[index]`
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr
 // Every reference to a variable, parameter, function, class... gets its type here (plan 03: narrowing goes here)
@@ -958,9 +967,12 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
 
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
+// The same for a source that is `expr`'s type: a literal or arrow function is reported at what inside it doesn't fit
+// (tsc's elaborateError). Returns whether it was assignable
+bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs);
 // A `using` (TS2850) or `await using` (TS2851) initializer: disposable, null or undefined
 void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Span span, ErrorCtx* errs);
-void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS1360
+void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS1360
 // A class or interface that doesn't fit what it extends or implements: TS2416 at each of `members` (its own) that
 // doesn't fit the base's, else `ts_code` with "<what> 'D' <relation> 'B'." at `span` (tsc's issueMemberSpecificError)
 typedef struct HeritageMember {
@@ -974,7 +986,7 @@ void ty_check_heritage(
     Checker* me, Ty const* derived, Ty const* base, HeritageMember const* members, u32 count, unsigned ts_code,
     char const* what, char const* relation, Span span, ErrorCtx* errs
 );
-void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2345
+void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS2345
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
 Ty const* ty_of_node(TypeNode const* node); // A written type, by the current checker

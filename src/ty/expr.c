@@ -1389,6 +1389,28 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
     return ret;
 }
 
+Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* contextual) {
+    Ty const* type = ty_expr_type(me, expr);
+    if (contextual && any_literal_of_contextual_type(me, type, contextual)) return ty_regular(me, type);
+    return widen_literals(me, type);
+}
+
+Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual) {
+    u32 len = (u32)vec_expr_size(&expr->array);
+    Ty const** elements = malloc(sizeof(Ty const*) * (len ? len : 1));
+    unsigned char* flags = calloc(len ? len : 1, 1);
+    Ty const* ret = nullptr;
+    for_each (i, vec_expr, &expr->array) {
+        if (i->tag == EXPR_SPREAD) goto done;
+        elements[i_index] = ty_mutable_location_type(me, i, contextual_element_type(me, contextual, (u32)i_index));
+    }
+    ret = tuple_of(me, elements, flags, len, false);
+done:
+    free(elements);
+    free(flags);
+    return ret;
+}
+
 // The rest
 
 bool as_type_is_const(AsTypeExpr const* as_type) {

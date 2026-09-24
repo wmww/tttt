@@ -700,7 +700,7 @@ static Span report_unfit_argument(
         Arg const* arg = &args->data[index];
         bool is_rest_tuple = arg_type != arg->type;
         span = is_rest_tuple ? span_of_args(args, (u32)index, args->len - 1) : arg->expr->outer_span;
-        ty_report_unfit_argument(me, arg_type, param_type, span, errs);
+        ty_report_unfit_argument(me, arg_type, param_type, span, is_rest_tuple ? nullptr : arg->expr, errs);
     }
     free(shape.types);
     return span;
@@ -741,6 +741,23 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
         "externally visible."));
 }
 
+// Where a signature is declared, as tsc's createDiagnosticForNode(signature.declaration) points at it
+static Span signature_decl_span(Signature const* sig) {
+    while (sig->target) sig = sig->target;
+    if (sig->function && !sig->function->is_type && span_valid(sig->function->name)) return sig->function->name;
+    if (span_valid(sig->name_span)) return sig->name_span;
+    return sig->decl_span;
+}
+
+// Moves an error's message chain under `parent` and its related information into `related`
+static void move_error_into_chain(Error* error, Error* parent, VecError* related) {
+    Error line = { .message = error->message };
+    for_each (sub, vec_error, &error->sub_errors) vec_error_push(span_valid(sub->span) ? related : &line.sub_errors, *sub);
+    error->sub_errors.size = 0;
+    vec_error_drop(&error->sub_errors);
+    vec_error_push(&parent->sub_errors, line);
+}
+
 static void report_no_match(
     Checker* me, Candidate const* unfit, u32 unfit_count, u32 signature_count, Args* args, CallInfo const* info,
     Span call_span, ErrorCtx* errs
@@ -748,55 +765,78 @@ static void report_no_match(
     CallExpr const* call = info->call;
     ErrorCtx collected = error_ctx_init();
     collected.phase = errs->phase;
-    if (unfit_count == 1) {
-        report_unfit_argument(me, &unfit[0], args, info, call_span, &collected);
+    if (unfit_count == 1 || unfit_count > 3) {
+        // The last candidate's errors (each with a chain of its own when there were many candidates)
+        Candidate const* last = &unfit[unfit_count - 1];
+        report_unfit_argument(me, last, args, info, call_span, &collected);
         for_each (e, vec_error, &collected.errors) {
-            add_implementation_success(me, &unfit[0], args, info, call_span, e);
-            error_ctx_append_error(errs, *e);
+            Error error = *e;
+            if (unfit_count > 3) {
+                error = (Error){ .ts_code = 2769, .phase = e->phase, .span = e->span,
+                    .message = cstr_lit("No overload matches this call.") };
+                error_sub_error_s(&error, span_null, TS_CODE_NONE, cstr_lit("The last overload gave the following error."));
+                VecError related = {0};
+                move_error_into_chain(e, vec_error_back_mut(&error.sub_errors), &related);
+                for_each (r, vec_error, &related) vec_error_push(&error.sub_errors, *r);
+                related.size = 0;
+                vec_error_drop(&related);
+                error_add_related_s(&error, signature_decl_span(last->sig), 2771,
+                    cstr_lit("The last overload is declared here."));
+            }
+            add_implementation_success(me, last, args, info, call_span, &error);
+            error_ctx_append_error(errs, error);
         }
         collected.errors.size = 0;
         error_ctx_drop(&collected);
         return;
     }
-    Span common_span = span_null;
-    bool same_span = true;
-    Error head = { .ts_code = 2769, .phase = errs->phase, .message = cstr_lit("No overload matches this call.") };
-    VecError related = {0};
-    u32 first = unfit_count > 3 ? unfit_count - 1 : 0;
-    Error* parent = &head;
-    if (unfit_count > 3) {
-        error_sub_error_s(&head, span_null, TS_CODE_NONE, cstr_lit("The last overload gave the following error."));
-        parent = vec_error_back_mut(&head.sub_errors);
-    }
-    for (u32 i = first; i < unfit_count; i++) {
+    // Two or three: every candidate's errors, unless one of them had several (then only the one with the fewest)
+    VecError per[3] = {0};
+    isize_t max = 0, min = INTPTR_MAX;
+    u32 min_index = 0;
+    for (u32 i = 0; i < unfit_count; i++) {
         error_ctx_clear(&collected);
-        Span span = report_unfit_argument(me, &unfit[i], args, info, call_span, &collected);
-        if (i == first) common_span = span;
-        same_span &= span.sv.buf == common_span.sv.buf && span.sv.size == common_span.sv.size;
-        Error* under = parent;
-        if (unfit_count <= 3) {
-            cstr rendered = cstr_null;
-            ty_display_signature(me, (TyDisplay){ .target = &rendered }, unfit[i].sig);
-            error_sub_error_d(&head, span_null, TS_CODE_NONE,
-                "Overload ", i + 1, " of ", signature_count, ", '", rendered, "', gave the following error.");
-            cstr_drop(&rendered);
-            under = vec_error_back_mut(&head.sub_errors);
+        report_unfit_argument(me, &unfit[i], args, info, call_span, &collected);
+        per[i] = collected.errors;
+        collected.errors = (VecError){0};
+        isize_t count = vec_error_size(&per[i]);
+        if (count <= min) {
+            min = count;
+            min_index = i;
         }
-        for_each (e, vec_error, &collected.errors) {
-            // The chain goes under the overload's line, its related information after all of them
-            Error copy = { .message = cstr_clone(e->message) };
-            for_each (sub, vec_error, &e->sub_errors) {
-                vec_error_push(span_valid(sub->span) ? &related : &copy.sub_errors, error_clone(*sub));
-            }
-            vec_error_push(&under->sub_errors, copy);
-        }
+        if (count > max) max = count;
     }
     error_ctx_drop(&collected);
+    Error head = { .ts_code = 2769, .phase = errs->phase, .message = cstr_lit("No overload matches this call.") };
+    VecError related = {0};
+    Span common_span = span_null;
+    bool same_span = true, any = false;
+    for (u32 i = 0; i < unfit_count; i++) {
+        if (max > 1 && i != min_index) continue;
+        cstr rendered = cstr_null;
+        ty_display_signature(me, (TyDisplay){ .target = &rendered }, unfit[i].sig);
+        for_each (e, vec_error, &per[i]) {
+            if (!any) common_span = e->span;
+            any = true;
+            same_span &= span_eq(e->span, common_span);
+            error_sub_error_d(&head, span_null, TS_CODE_NONE,
+                "Overload ", i + 1, " of ", signature_count, ", '", rendered, "', gave the following error.");
+            move_error_into_chain(e, vec_error_back_mut(&head.sub_errors), &related);
+        }
+        cstr_drop(&rendered);
+    }
+    for (u32 i = 0; i < unfit_count; i++) {
+        if (max > 1 && i != min_index) vec_error_drop(&per[i]);
+        else {
+            per[i].size = 0; // messages and chains were moved
+            vec_error_drop(&per[i]);
+        }
+    }
     for_each (r, vec_error, &related) vec_error_push(&head.sub_errors, *r);
     related.size = 0;
     vec_error_drop(&related);
-    head.span = same_span && span_valid(common_span) ? common_span : call->callable.inner_span;
-    add_implementation_success(me, &unfit[unfit_count - 1], args, info, call_span, &head);
+    head.span = any && same_span && span_valid(common_span) ? common_span : call->callable.inner_span;
+    add_implementation_success(me, &unfit[0], args, info, call_span, &head);
     error_ctx_append_error(errs, head);
 }
 

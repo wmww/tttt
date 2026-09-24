@@ -372,9 +372,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 if (i->field.computed_key) class_computed_key_typecheck(i, errs);
                 expr_typecheck(&i->field.value, errs);
                 if (i->field.has_explicit_type) {
-                    ty_check_assignable(
+                    ty_check_assignable_expr(
                         current_checker, expr_get_type(&i->field.value), ty_of_node(&i->field.explicit_type),
-                        i->field.name_span, errs
+                        i->field.name_span, i->field.value.tag == EXPR_IMPLICIT_ANY ? nullptr : &i->field.value, errs
                     );
                 }
             }   break;

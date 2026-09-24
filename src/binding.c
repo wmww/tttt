@@ -157,12 +157,11 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
     }
 }
 
-void binding_typecheck(Binding* me, ErrorCtx* errs) {
+void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
     if (my has_explicit_type) {
         type_typecheck(&my explicit_type, errs);
-        ty_check_assignable(
-            current_checker, ty_binding_assigned_type(current_checker, me), ty_of_node(&my explicit_type), my content_span, errs
-        );
+        ty_check_assignable_expr(current_checker, ty_binding_assigned_type(current_checker, me),
+            ty_of_node(&my explicit_type), my content_span, initializer, errs);
     }
 
     if (my default_value) {
@@ -189,7 +188,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
             Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
             ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, my content_span, errs);
             for_each (i, vec_binding, &my array) {
-                binding_typecheck(i, errs);
+                binding_typecheck(i, nullptr, errs);
             }
             break;
 
@@ -198,7 +197,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
                 }
-                binding_typecheck(&i->target, errs);
+                binding_typecheck(&i->target, nullptr, errs);
             }
             break;
     }
@@ -312,5 +311,5 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
-    binding_typecheck(&my binding, errs);
+    binding_typecheck(&my binding, my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value, errs);
 }

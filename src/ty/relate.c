@@ -1233,6 +1233,8 @@ static Ternary some_related(Checker* me, RelationState* st, TyList sources, Ty c
     return TERNARY_FALSE;
 }
 
+static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* source, Ty const* target);
+
 static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     TyList targets = target->composite.types;
     for (u32 i = 0; i < targets.len; i++) {
@@ -1251,18 +1253,9 @@ static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source,
         if (related) return related;
     }
     if (report) {
-        // tsc elaborates on the one member that's the obvious intent: the only object type for an object source
-        Ty const* best = nullptr;
-        u32 candidates = 0;
-        if (source->flags & TYF_OBJECT) {
-            for (u32 i = 0; i < targets.len; i++) {
-                if (targets.data[i]->flags & TYF_OBJECT) {
-                    best = targets.data[i];
-                    candidates++;
-                }
-            }
-        }
-        if (candidates == 1) is_related_to(me, st, source, best, true);
+        // tsc elaborates on the member that's the likely intent
+        Ty const* best = best_matching_type(me, st, source, target);
+        if (best) is_related_to(me, st, source, best, true);
     }
     return TERNARY_FALSE;
 }
@@ -2095,7 +2088,7 @@ static bool is_empty_object_type(Checker* me, Ty const* ty) {
         !members->index_count;
 }
 
-static bool is_numeric_name(Atom const* name) {
+bool ty_is_numeric_name(Atom const* name) {
     if (!name->len) return false;
     char* end = nullptr;
     char buf[64];
@@ -2119,7 +2112,7 @@ static bool has_index_for_name(Checker* me, Members const* members, Atom const* 
     for (u32 i = 0; i < members->index_count; i++) {
         Ty const* key = members->index[i].key;
         if (key->flags & TYF_STRING) return true;
-        if ((key->flags & TYF_NUMBER) && is_numeric_name(name)) return true;
+        if ((key->flags & TYF_NUMBER) && ty_is_numeric_name(name)) return true;
         if ((key->flags & TYF_ES_SYMBOL) && ty_unique_symbol_of_name(me, name)) return true;
         if (!(key->flags & (TYF_NUMBER | TYF_ES_SYMBOL))) return true; // (Patterns tttt doesn't have: let them through)
     }
@@ -2154,7 +2147,7 @@ static Ty const* prop_or_index_type(Checker* me, Ty const* ty, Atom const* name)
     Members const* members = ty_members(me, ty);
     for (u32 i = 0; i < members->index_count; i++) {
         Ty const* key = members->index[i].key;
-        if (((key->flags & TYF_NUMBER) && is_numeric_name(name)) ||
+        if (((key->flags & TYF_NUMBER) && ty_is_numeric_name(name)) ||
             ((key->flags & TYF_ES_SYMBOL) && ty_unique_symbol_of_name(me, name))
         ) {
             return members->index[i].value;
@@ -2166,8 +2159,18 @@ static Ty const* prop_or_index_type(Checker* me, Ty const* ty, Atom const* name)
     return nullptr;
 }
 
-// tsc's findMatchingDiscriminantType (without the key property map) || filterPrimitivesIfContainsNonPrimitive
-static Ty const* excess_check_target_of_union(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+static bool related_for_matching(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    if (st) return is_related_to(me, st, source, target, false) != TERNARY_FALSE;
+    return ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
+}
+
+// tsc's discriminateTypeByDiscriminableItems over the source's discriminant properties (findMatchingDiscriminantType
+// without the key property map): the members of a union target whose discriminants the source's fit, else the target.
+// `*discriminants`: whether the source had any. Without `st`, relates by assignability
+static Ty const* discriminated_union_target(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool* discriminants
+) {
+    *discriminants = false;
     TyList types = target->composite.types;
     unsigned char include_buf[64];
     unsigned char* include = types.len <= sizeof(include_buf) ? include_buf : malloc(types.len);
@@ -2177,6 +2180,7 @@ static Ty const* excess_check_target_of_union(Checker* me, RelationState* st, Ty
     for (u32 p = 0; p < members->prop_count; p++) {
         Prop const* prop = members->props[p];
         if (!ty_is_discriminant_property(me, target, prop->name)) continue;
+        *discriminants = true;
         Ty const* prop_ty = prop_type(me, prop);
         TyList parts = prop_ty->kind == TY_UNION ? prop_ty->composite.types : (TyList){ .data = &prop_ty, .len = 1 };
         bool matched = false;
@@ -2185,7 +2189,7 @@ static Ty const* excess_check_target_of_union(Checker* me, RelationState* st, Ty
             Ty const* target_prop = prop_or_index_type(me, types.data[i], prop->name);
             bool related = false;
             for (u32 j = 0; target_prop && j < parts.len && !related; j++) {
-                related = is_related_to(me, st, parts.data[j], target_prop, false) != TERNARY_FALSE;
+                related = related_for_matching(me, st, parts.data[j], target_prop);
             }
             if (related) matched = true;
             else include[i] = 2; // Maybe
@@ -2203,10 +2207,19 @@ static Ty const* excess_check_target_of_union(Checker* me, RelationState* st, Ty
     if (discriminated && kept.len) ret = ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
     ty_buf_drop(&kept);
     if (include != include_buf) free(include);
+    return ret;
+}
+
+// tsc's findMatchingDiscriminantType || filterPrimitivesIfContainsNonPrimitive
+static Ty const* excess_check_target_of_union(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    TyList types = target->composite.types;
+    bool discriminants;
+    Ty const* ret = discriminated_union_target(me, st, source, target, &discriminants);
     if (ret != target) return ret;
     bool non_primitive = false;
     for (u32 i = 0; i < types.len; i++) non_primitive |= (types.data[i]->flags & TYF_NON_PRIMITIVE) != 0;
     if (!non_primitive) return target;
+    TyBuf kept = {0};
     for (u32 i = 0; i < types.len; i++) {
         if (types.data[i]->kind != TY_INTRINSIC && types.data[i]->kind != TY_LITERAL) ty_buf_push(&kept, types.data[i]);
         else if (types.data[i]->flags & TYF_NON_PRIMITIVE) ty_buf_push(&kept, types.data[i]);
@@ -2214,6 +2227,71 @@ static Ty const* excess_check_target_of_union(Checker* me, RelationState* st, Ty
     ret = kept.len ? ty_union(me, kept.data, kept.len, nullptr, (TyList){0}) : target;
     ty_buf_drop(&kept);
     return ret;
+}
+
+static bool has_signatures(Checker* me, Ty const* ty, bool construct) {
+    if (!(ty->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, ty);
+    return construct ? members->construct_count > 0 : members->call_count > 0;
+}
+
+// The union member a failed relation is most likely about (tsc's getBestMatchingType), null if none stands out
+static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    if (target->kind != TY_UNION) return nullptr;
+    TyList types = target->composite.types;
+    bool structured_source = (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) != 0;
+    // findMatchingDiscriminantType
+    if (structured_source) {
+        bool discriminants;
+        Ty const* discriminated = discriminated_union_target(me, st, source, target, &discriminants);
+        if (discriminants && discriminated != target) return discriminated;
+    }
+    // findMatchingTypeReferenceOrTypeAliasReference
+    if (source->kind == TY_REFERENCE || source->kind == TY_ANONYMOUS) {
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* t = types.data[i];
+            if (t->kind != source->kind) continue;
+            if (t->kind == TY_REFERENCE && t->reference.target == source->reference.target) return t;
+            if (t->kind == TY_ANONYMOUS && source->alias && source->alias == t->alias) return t;
+        }
+    }
+    // findBestTypeForObjectLiteral
+    if (source->kind == TY_ANONYMOUS && source->anonymous.object_literal) {
+        bool array_like = false;
+        for (u32 i = 0; i < types.len; i++) array_like |= ty_is_array(me, types.data[i]) || is_tuple(types.data[i]);
+        for (u32 i = 0; array_like && i < types.len; i++) {
+            if (!ty_is_array(me, types.data[i]) && !is_tuple(types.data[i])) return types.data[i];
+        }
+    }
+    // findBestTypeForInvokable
+    for (u32 construct = 0; construct < 2; construct++) {
+        if (!has_signatures(me, source, construct)) continue;
+        for (u32 i = 0; i < types.len; i++) {
+            if (has_signatures(me, types.data[i], construct)) return types.data[i];
+        }
+        break;
+    }
+    // findMostOverlappyType: the (last) member sharing the most property names with the source
+    Ty const* best = nullptr;
+    if (structured_source) {
+        Members const* members = ty_members(me, source);
+        u32 best_count = 0;
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* t = types.data[i];
+            if (!(t->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+            u32 count = 0;
+            for (u32 p = 0; p < members->prop_count; p++) count += ty_get_prop(me, t, members->props[p]->name) != nullptr;
+            if (count && count >= best_count) {
+                best = t;
+                best_count = count;
+            }
+        }
+    }
+    return best;
+}
+
+Ty const* ty_best_matching_type(Checker* me, Ty const* source, Ty const* target) {
+    return best_matching_type(me, nullptr, source, target);
 }
 
 static bool keep_excess_check_target(Ty const* ty) { return is_excess_property_check_target(ty); }

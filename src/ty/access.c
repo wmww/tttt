@@ -32,7 +32,9 @@ IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty cons
     }
     Members const* members = ty_members(me, object);
     bool stringish = (index->flags & TYF_STRING_LIKE) != 0;
-    bool numeric = (index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
+    // A string literal that reads as a number applies to a numeric index signature (tsc's isApplicableIndexType)
+    bool numeric = (index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
+        ((index->flags & TYF_STRING_LITERAL) && index->literal.string && ty_is_numeric_name(index->literal.string));
     // A numeric index signature is more specific than a string one, and a pattern (`[k: `data-${string}`]`) than both
     for (u32 pass = 0; pass < 2; pass++) {
         for (u32 i = 0; i < members->index_count; i++) {

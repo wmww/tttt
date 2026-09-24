@@ -31,31 +31,51 @@ static void attach_explanation(Error* error, VecTyReportLine const* lines, isize
     }
 }
 
-static bool check_assignable(
-    Checker* me, const char* source_label, Ty const* source, const char* target_label, Ty const* target,
-    unsigned ts_code, Span span, ErrorCtx* errs
+// How the head of an assignability error reads: "<source_label> 'S' is not assignable to <target_label> 'T'."
+typedef struct AssignHead {
+    char const* source_label;
+    char const* target_label;
+    unsigned ts_code;
+} AssignHead;
+
+static AssignHead const HEAD_TYPE = { "Type", "type", 2322 };
+static AssignHead const HEAD_ARGUMENT = { "Argument of type", "parameter of type", 2345 };
+static AssignHead const HEAD_THIS = { "The 'this' context of type", "method's 'this' of type", 2684 };
+static AssignHead const HEAD_COMPUTED = { nullptr, nullptr, 2418 }; // "Type of computed property's value is..."
+static AssignHead const HEAD_SATISFIES = { nullptr, nullptr, 1360 };
+
+static Error* report_unassignable_with_head(
+    Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head, Span span,
+    ErrorCtx* errs
+);
+
+// Reports that source isn't assignable to target (it isn't), explained. Returns the error, to add related information
+// to right away
+static Error* report_unassignable(
+    Checker* me, AssignHead head, Ty const* source, Ty const* target, Span span, ErrorCtx* errs
 ) {
-    // HACK: `any` stands for whatever couldn't be typed (no initializer, failed inference...), and is let through even
-    // to `never`
-    if (source->flags & TYF_ANY) return true;
-    bool related = ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
-    if (report_instantiation_limit(me, span, errs)) return false;
-    if (related) return true;
+    // The head line is rendered like the elaboration under it: a literal source shows widened unless the target has
+    // room for literals
+    cstr source_str = ty_report_source_cstr(me, source, target);
+    cstr target_str = ty_to_cstr(me, target);
+    if (head.ts_code == HEAD_SATISFIES.ts_code) {
+        Error* error = report_unassignable_with_head(me, source, target, 1360, cstr_d(
+            "Type '", source_str, "' does not satisfy the expected type '", target_str, "'."
+        ), false, span, errs);
+        c_drop(cstr, &source_str, &target_str);
+        return error;
+    }
 
     // Why not, outermost line first
     VecTyReportLine lines = {0};
     ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
     my instantiation_limit_hit = false;
 
-    // The head line is rendered like the elaboration under it: a literal source shows widened unless the target has
-    // room for literals
-    cstr source_str = ty_report_source_cstr(me, source, target);
-    cstr target_str = ty_to_cstr(me, target);
-
     isize_t first_nested = 0;
     Error* error;
-    bool default_head = ts_code == 2322;
+    bool default_head = head.ts_code == 2322;
     TyReportLine const* natural_head = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
+    if (natural_head && natural_head->related) natural_head = nullptr;
     if (natural_head && span_valid(natural_head->span)) {
         // An error that knows exactly where it is (an excess property) replaces the head, whatever it was
         error = error_ctx_error_s(errs, natural_head->span, natural_head->ts_code, cstr_clone(natural_head->message));
@@ -65,22 +85,326 @@ static bool check_assignable(
         error = error_ctx_error_s(errs, span, natural_head->ts_code, cstr_clone(natural_head->message));
         first_nested = 1;
     } else {
-        error = error_ctx_error_d(
-            errs, span, ts_code,
-            source_label, " '", source_str, "' is not assignable to ", target_label, " '", target_str, "'."
-        );
+        if (head.ts_code == HEAD_COMPUTED.ts_code) {
+            error = error_ctx_error_d(errs, span, head.ts_code, "Type of computed property's value is '", source_str,
+                "', which is not assignable to type '", target_str, "'.");
+        } else {
+            error = error_ctx_error_d(errs, span, head.ts_code, head.source_label, " '", source_str,
+                "' is not assignable to ", head.target_label, " '", target_str, "'.");
+        }
         if (natural_head && natural_head->ts_code == 2322) first_nested = 1;
     }
     attach_explanation(error, &lines, first_nested);
     vec_ty_report_line_drop(&lines);
     c_drop(cstr, &source_str, &target_str);
+    return error;
+}
+
+// Elaboration (tsc's elaborateError): a failed assignment of an object or array literal, or of an arrow function with
+// an expression body, is reported at the innermost property, element or returned expression that doesn't fit
+
+static bool elaborate_error(
+    Checker* me, AssignHead head, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs
+);
+
+static bool is_or_has_generic_conditional(Ty const* ty) {
+    if (ty->kind == TY_CONDITIONAL) return true;
+    if (ty->kind != TY_INTERSECTION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (is_or_has_generic_conditional(ty->composite.types.data[i])) return true;
+    }
+    return false;
+}
+
+// tsc's isGenericObjectType, roughly: what an indexed access stays deferred on
+static bool is_generic_object(Checker* me, Ty const* ty) {
+    if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) return true;
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (is_generic_object(me, ty->composite.types.data[i])) return true;
+        }
+        return false;
+    }
+    return (ty->flags & TYF_OBJECT) && ty_members(me, ty)->mapped;
+}
+
+// Where a type is declared (tsc's target.symbol.declarations[0], as an error span), invalid if nowhere
+static Span type_decl_span(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
+    if (ty->kind == TY_DECLARED) {
+        Symbol const* symbol = ty->declared.symbol;
+        return symbol && symbol->decl_count ? symbol->decls[0].name : (Span){0};
+    }
+    while (ty->kind == TY_ANONYMOUS && ty->anonymous.target) ty = ty->anonymous.target;
+    if (ty->kind != TY_ANONYMOUS) return (Span){0};
+    if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_CALLABLE) return ty->anonymous.node->callable->function->full_span;
+    FunctionImpl const* function = ty->anonymous.function;
+    if (function) return span_valid(function->name) ? function->name : function->full_span;
+    (void)me;
+    return (Span){0};
+}
+
+static bool in_lib(Span span) { return !span_valid(span) || !span.source || span.source->is_stdlib; }
+
+// The property a target has for a name (tsc's getPropertyOfType): of a union, only if every member has it
+static Prop const* target_prop_of(Checker* me, Ty const* target, Atom const* name) {
+    if (target->kind != TY_UNION && target->kind != TY_INTERSECTION) return ty_get_prop(me, ty_apparent_type(me, target), name);
+    Prop const* first = nullptr;
+    for (u32 i = 0; i < target->composite.types.len; i++) {
+        Prop const* prop = target_prop_of(me, target->composite.types.data[i], name);
+        if (!prop && target->kind == TY_UNION) return nullptr;
+        if (!first) first = prop;
+    }
+    return first;
+}
+
+// tsc's getBestMatchIndexedAccessTypeOrUndefined
+static Ty const* best_match_indexed_access(Checker* me, Ty const* source, Ty const* target, Ty const* name_type) {
+    if (is_generic_object(me, target)) return nullptr;
+    Ty const* ret = ty_access(me, target, name_type);
+    if (ret || target->kind != TY_UNION) return ret;
+    Ty const* best = ty_best_matching_type(me, source, target);
+    return best && !is_generic_object(me, best) ? ty_access(me, best, name_type) : nullptr;
+}
+
+// A property or element of a literal to elaborate on (tsc's ElaborationIterator item)
+typedef struct ElaborationItem {
+    Span error_span; // the property name, the element
+    Expr const* inner; // the value, null for methods, accessors and shorthands
+    Ty const* name_type;
+    Atom const* name;
+    bool computed_non_literal; // `[k]: v`: TS2418's message
+} ElaborationItem;
+
+// tsc's elaborateElementwise for one item. Returns whether it reported
+static bool elaborate_element(
+    Checker* me, ElaborationItem const* item, Ty const* source, Ty const* target, ErrorCtx* errs
+) {
+    Ty const* target_prop = best_match_indexed_access(me, source, target, item->name_type);
+    if (!target_prop || target_prop->kind == TY_INDEXED) return false;
+    Ty const* source_prop = ty_access(me, source, item->name_type);
+    if (!source_prop) return false;
+    if (ty_is_related(me, source_prop, target_prop, TY_RELATION_ASSIGNABLE)) return false;
+    if (item->inner && elaborate_error(me, HEAD_TYPE, item->inner, source_prop, target_prop, errs)) return true;
+    // The expression's own type, if it's the one that doesn't fit
+    Ty const* specific = item->inner ? ty_mutable_location_type(me, item->inner, source_prop) : source_prop;
+    if (specific != source_prop && ((specific->flags & TYF_ANY) ||
+        ty_is_related(me, specific, target_prop, TY_RELATION_ASSIGNABLE))
+    ) {
+        specific = source_prop;
+    }
+    AssignHead head = item->computed_non_literal ? HEAD_COMPUTED : HEAD_TYPE;
+    Error* error = report_unassignable(me, head, specific, target_prop, item->error_span, errs);
+    if (!error) return true;
+    // Where the expected type comes from
+    Prop const* declared = item->name ? target_prop_of(me, target, item->name) : nullptr;
+    if (!declared && !is_generic_object(me, target)) {
+        IndexInfo const* info = ty_applicable_index_info(me, ty_apparent_type(me, target), item->name_type);
+        if (info && !in_lib(info->decl_span)) {
+            error_add_related_d(error, info->decl_span, 6501, "The expected type comes from this index signature.");
+            return true;
+        }
+    }
+    Span decl = declared ? ty_prop_decl_span(declared) : (Span){0};
+    if (!span_valid(decl)) decl = type_decl_span(me, target);
+    if (in_lib(decl)) return true;
+    cstr name = item->name && !(item->name_type->flags & TYF_UNIQUE_ES_SYMBOL) ?
+        cstr_from_sv(atom_sv(item->name)) : ty_to_cstr(me, item->name_type);
+    cstr target_str = ty_to_cstr(me, target);
+    error_add_related_d(error, decl, 6500, "The expected type comes from property '", name,
+        "' which is declared here on type '", target_str, "'");
+    c_drop(cstr, &name, &target_str);
+    return true;
+}
+
+// Skips what tsc's getEffectiveCheckNode does: parentheses (inner_span) and `satisfies`
+static Expr const* effective_check_node(Expr const* expr) {
+    while (expr->tag == EXPR_AS_TYPE && expr->as_type->is_satisfies) expr = &expr->as_type->expr;
+    return expr;
+}
+
+static bool elaborate_object_literal(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
+    if (!(target->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_UNKNOWN |
+        TYF_ANY | TYF_NON_PRIMITIVE))) {
+        return false; // primitives and never
+    }
+    bool reported = false;
+    for_each (i, vec_object_expr_item, &expr->object) {
+        if (i->tag == OBJECT_ITEM_SPREAD) continue;
+        ElaborationItem item = { .error_span = i->name_span, .inner = i->tag == OBJECT_ITEM_PROPERTY ? &i->value : nullptr };
+        if (i->computed_key) {
+            bool is_number = false;
+            item.name = ty_property_name_of_key(me, ty_expr_type(me, i->computed_key), &is_number);
+            Expr const* key = i->computed_key;
+            item.computed_non_literal = !(key->tag == EXPR_LITERAL &&
+                (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER));
+        } else {
+            item.name = checker_atom(me, cstr_sv(&i->name_string));
+        }
+        if (!item.name) continue;
+        item.name_type = ty_prop_name_literal(me, item.name);
+        reported |= elaborate_element(me, &item, source, target, errs);
+    }
+    return reported;
+}
+
+// tsc's isTupleLikeType
+static bool is_tuple_like(Checker* me, Ty const* ty) {
+    return ty_is_tuple(ty) || target_prop_of(me, ty, checker_atom(me, c_sv("0")));
+}
+
+static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
+    if (!(target->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_UNKNOWN |
+        TYF_ANY | TYF_NON_PRIMITIVE))) {
+        return false;
+    }
+    if (!is_tuple_like(me, source)) {
+        // Re-read as a tuple (tsc's forceTuple)
+        source = ty_array_literal_as_tuple(me, expr, target);
+        if (!source || !is_tuple_like(me, source)) return false;
+    }
+    bool target_tuple_like = is_tuple_like(me, target);
+    bool reported = false;
+    for_each (i, vec_expr, &expr->array) {
+        // Elements the target doesn't have: a length error on the whole is likely better
+        char digits[16];
+        snprintf(digits, sizeof(digits), "%u", (unsigned)i_index);
+        Atom const* name = checker_atom(me, csview_from(digits));
+        if (target_tuple_like && !target_prop_of(me, target, name) && !(ty_is_tuple(target) && i_index <
+            (isize_t)target->reference.target->declared.tuple->arity)) {
+            continue;
+        }
+        if (!i->outer_span.sv.size) continue; // omitted
+        Expr const* check_node = effective_check_node(i);
+        Value index = value_number((double)i_index);
+        ElaborationItem item = {
+            .error_span = check_node->inner_span, .inner = check_node, .name_type = ty_literal(me, &index), .name = name,
+        };
+        reported |= elaborate_element(me, &item, source, target, errs);
+    }
+    return reported;
+}
+
+static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
+    FunctionImpl const* function = expr->function;
+    if (!span_valid(function->arrow_span) || !function->expression_body) return false;
+    for_each (i, vec_function_arg, &function->args) {
+        if (i->initializer.binding.has_explicit_type) return false;
+    }
+    if (!(source->flags & TYF_OBJECT)) return false;
+    Members const* source_members = ty_members(me, source);
+    if (source_members->call_count != 1 || source_members->construct_count || source_members->prop_count ||
+        source_members->index_count
+    ) {
+        return false;
+    }
+    Signature* const* target_sigs;
+    u32 target_count = 0;
+    if (target->kind == TY_UNION) {
+        target_sigs = ty_union_signatures(me, target->composite.types, false, &target_count);
+    } else {
+        Members const* target_members = ty_members(me, ty_apparent_type(me, target));
+        target_sigs = target_members->call;
+        target_count = target_members->call_count;
+    }
+    if (!target_count) return false;
+    Ty const* source_ret = signature_return_type(me, source_members->call[0]);
+    TyBuf rets = {0};
+    for (u32 i = 0; i < target_count; i++) ty_buf_push(&rets, signature_return_type(me, target_sigs[i]));
+    Ty const* target_ret = ty_union(me, rets.data, rets.len, nullptr, (TyList){0});
+    ty_buf_drop(&rets);
+    if (ty_is_related(me, source_ret, target_ret, TY_RELATION_ASSIGNABLE)) return false;
+    Expr const* body = &vec_statement_at(&function->body.statements, 0)->expr;
+    if (elaborate_error(me, HEAD_TYPE, body, source_ret, target_ret, errs)) return true;
+    Error* error = report_unassignable(me, HEAD_TYPE, source_ret, target_ret, body->outer_span, errs);
+    if (!error) return true;
+    if (target->kind != TY_UNION) {
+        Span decl = type_decl_span(me, target);
+        if (!in_lib(decl)) {
+            error_add_related_d(error, decl, 6502, "The expected type comes from the return type of this signature.");
+        }
+    }
+    // Would it fit as an async function?
+    Symbol const* promise_symbol = function->is_async ? nullptr :
+        program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
+    Ty const* promise = promise_symbol ? ty_declared_type_of(me, promise_symbol) : nullptr;
+    if (promise && promise->kind == TY_DECLARED && promise->declared.type_params.len == 1 &&
+        !ty_access(me, source_ret, ty_prop_name_literal(me, checker_atom(me, c_sv("then")))) &&
+        ty_is_related(me, ty_reference(me, promise, (TyList){ .data = &source_ret, .len = 1 }), target_ret,
+            TY_RELATION_ASSIGNABLE)
+    ) {
+        error_add_related_d(error, expr->inner_span, 1356, "Did you mean to mark this function as 'async'?");
+    }
+    return true;
+}
+
+// A function (or class) whose call (construction) would fit: the whole error, plus a hint
+static bool elaborate_did_you_mean_to_call(
+    Checker* me, AssignHead head, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs
+) {
+    if (!(source->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, ty_apparent_type(me, source));
+    for (u32 pass = 0; pass < 2; pass++) {
+        bool construct = pass == 0;
+        Signature* const* sigs = construct ? members->construct : members->call;
+        u32 count = construct ? members->construct_count : members->call_count;
+        bool fits = false;
+        for (u32 i = 0; i < count && !fits; i++) {
+            Ty const* ret = signature_return_type(me, sigs[i]);
+            fits = !(ret->flags & (TYF_ANY | TYF_NEVER)) && ty_is_related(me, ret, target, TY_RELATION_ASSIGNABLE);
+        }
+        if (!fits) continue;
+        Error* error = report_unassignable(me, head, source, target, expr->outer_span, errs);
+        error_add_related_s(error, expr->outer_span, construct ? 6213 : 6212, construct ?
+            cstr_lit("Did you mean to use 'new' with this expression?") : cstr_lit("Did you mean to call this expression?"));
+        return true;
+    }
+    return false;
+}
+
+static bool elaborate_error(
+    Checker* me, AssignHead head, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs
+) {
+    if (!expr || is_or_has_generic_conditional(target)) return false;
+    if (elaborate_did_you_mean_to_call(me, head, expr, source, target, errs)) return true;
+    switch (expr->tag) {
+        case EXPR_AS_TYPE:
+            if (expr->as_type->angle_bracket_syntax || expr->as_type->is_satisfies || !as_type_is_const(expr->as_type)) {
+                return false;
+            }
+            return elaborate_error(me, head, &expr->as_type->expr, source, target, errs);
+        case EXPR_BINARY_OP:
+            if (expr->binary_op->op != BINARY_OP_EQUAL && expr->binary_op->op != BINARY_OP_COMMA) return false;
+            return elaborate_error(me, head, &expr->binary_op->right, source, target, errs);
+        case EXPR_OBJECT: return elaborate_object_literal(me, expr, source, target, errs);
+        case EXPR_ARRAY: return elaborate_array_literal(me, expr, source, target, errs);
+        case EXPR_FUNCTION: return elaborate_arrow_function(me, expr, source, target, errs);
+        default: return false;
+    }
+}
+
+// tsc's checkTypeRelatedToAndOptionallyElaborate: `expr` (may be null) is what the source came from
+static bool check_assignable(
+    Checker* me, AssignHead head, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs
+) {
+    // HACK: `any` stands for whatever couldn't be typed (no initializer, failed inference...), and is let through even
+    // to `never`
+    if (source->flags & TYF_ANY) return true;
+    bool related = ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
+    if (report_instantiation_limit(me, span, errs)) return false;
+    if (related) return true;
+    if (errs && elaborate_error(me, head, expr, source, target, errs)) {
+        my instantiation_limit_hit = false;
+        return false;
+    }
+    report_unassignable(me, head, source, target, span, errs);
     return false;
 }
 
 // An error whose head says something of its own (`head`, taken), followed by why source isn't assignable to target.
 // `keep_natural_head`: the elaboration starts with "Type 'S' is not assignable to type 'T'." (tsc's containing message
 // chain) rather than having it replaced (tsc's head message)
-static void report_unassignable_with_head(
+static Error* report_unassignable_with_head(
     Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head, Span span,
     ErrorCtx* errs
 ) {
@@ -101,6 +425,7 @@ static void report_unassignable_with_head(
     if (natural && natural->ts_code == 2322 && !keep_natural_head) first = 1;
     attach_explanation(error, &lines, first);
     vec_ty_report_line_drop(&lines);
+    return error;
 }
 
 static Ty const* heritage_prop_type(Checker* me, Prop const* prop) {
@@ -148,20 +473,16 @@ void ty_check_heritage(
     c_drop(cstr, &derived_str, &base_str);
 }
 
-void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
-    if (source->flags & TYF_ANY) return;
-    if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return;
-    if (report_instantiation_limit(me, span, errs)) return;
-    cstr source_str = ty_report_source_cstr(me, source, target);
-    cstr target_str = ty_to_cstr(me, target);
-    report_unassignable_with_head(me, source, target, 1360, cstr_d(
-        "Type '", source_str, "' does not satisfy the expected type '", target_str, "'."
-    ), false, span, errs);
-    c_drop(cstr, &source_str, &target_str);
+void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs) {
+    check_assignable(me, HEAD_SATISFIES, source, target, span, expr, errs);
 }
 
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
-    check_assignable(me, "Type", source, "type", target, 2322, span, errs);
+    check_assignable(me, HEAD_TYPE, source, target, span, nullptr, errs);
+}
+
+bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs) {
+    return check_assignable(me, HEAD_TYPE, source, target, span, expr, errs);
 }
 
 // tsc's getGlobalDisposableType(/*reportErrors*/ true) & co: TS2318 once when the lib doesn't have it
@@ -198,12 +519,14 @@ void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Sp
             "method, or be 'null' or 'undefined'."), false, span, errs);
 }
 
-void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
-    check_assignable(me, "Argument of type", source, "parameter of type", target, 2345, span, errs);
+void ty_report_unfit_argument(
+    Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs
+) {
+    check_assignable(me, HEAD_ARGUMENT, source, target, span, expr, errs);
 }
 
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
-    check_assignable(me, "The 'this' context of type", source, "method's 'this' of type", target, 2684, span, errs);
+    check_assignable(me, HEAD_THIS, source, target, span, nullptr, errs);
 }
 
 Ty const* ty_of_node(TypeNode const* node) {

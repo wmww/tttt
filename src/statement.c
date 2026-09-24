@@ -1238,6 +1238,24 @@ static void statement_check_jump(Statement const* me, BlockTypecheckCtx ctx, Err
     }
 }
 
+// tsc's checkReturnExpression: the branches of a conditional expression are checked one by one. An error that isn't
+// elaborated goes on the `return` keyword (of a real return statement)
+static void return_typecheck(Statement const* statement, Expr const* expr, Ty const* target, bool in_conditional, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    if (expr->tag == EXPR_TERNARY) {
+        return_typecheck(statement, &expr->ternary->yes, target, true, errs);
+        return_typecheck(statement, &expr->ternary->no, target, true, errs);
+        return;
+    }
+    Expr const* effective = expr;
+    while (effective->tag == EXPR_AS_TYPE && effective->as_type->is_satisfies) effective = &effective->as_type->expr;
+    Span span = effective->inner_span;
+    if (!in_conditional && span_valid(statement->span)) {
+        span = span_make(statement->span.source, span_start_ptr(statement->span), span_start_ptr(statement->span) + 6);
+    }
+    ty_check_assignable_expr(checker, ty_expr_type(checker, expr), target, span, effective, errs);
+}
+
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     current_checker->instantiation_count = 0; // tsc's checkSourceElement
     // What the builder couldn't know: code after a call that never returns or an exhaustive switch (tsc's
@@ -1355,19 +1373,20 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
                     for_each (i, vec_initialized_binding, &my for_each_loop->variable.statement.initializers) {
-                        binding_typecheck(&i->binding, errs);
+                        binding_typecheck(&i->binding, nullptr, errs);
                     }
                     break;
 
                 case FOR_EACH_LOOP_EXPR:
                     expr_typecheck(&my for_each_loop->variable.expr, errs);
-                    ty_check_assignable(
+                    ty_check_assignable_expr(
                         checker,
                         // HACK: tsc checks a pattern target property by property (checkDestructuringAssignment),
                         // so the elements get no excess property checks
                         ty_widened_objects(checker, lazy_type_get(&my for_each_loop->var_type)),
                         expr_get_type(&my for_each_loop->variable.expr),
                         my for_each_loop->variable.expr.outer_span,
+                        &my for_each_loop->iterable,
                         errs
                     );
                     break;
@@ -1413,7 +1432,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
         case STATEMENT_TRY_CATCH:
             block_typecheck(&my try_catch->try_block, ctx, errs);
-            binding_typecheck(&my try_catch->catch_var, errs);
+            binding_typecheck(&my try_catch->catch_var, nullptr, errs);
             // No need to typecheck catch variable
             block_typecheck(&my try_catch->catch_block, ctx, errs);
             block_typecheck(&my try_catch->finally_block, ctx, errs);
@@ -1434,9 +1453,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             ty_check_expr(current_checker, &my expr, current_checker->return_context);
             expr_typecheck(&my expr, errs);
             if (ctx.specified_return) {
-                ty_check_assignable(
-                    current_checker, expr_get_type(&my expr), ty_of_node(ctx.specified_return), my expr.outer_span, errs
-                );
+                return_typecheck(me, &my expr, ty_of_node(ctx.specified_return), false, errs);
             }
             break;
 

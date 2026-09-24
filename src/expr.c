@@ -841,7 +841,8 @@ static bool extends_strict_nulls(Ty const* source, TyIntrinsic target) {
 // `target = source` where target is a reference or a destructuring pattern (tsc's checkReferenceAssignment and
 // checkDestructuringAssignment): each reference in it gets what it destructures to. Null `source` when that can't be
 // told (TODO: rest elements, iterables that aren't arrays), which checks the shape of the target only
-static void assignment_target_typecheck(Expr const* target, Ty const* source, ErrorCtx* errs) {
+// `source_expr`: the right-hand side of a plain assignment, which a failure is elaborated into
+static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs) {
     Checker* checker = current_checker;
     if (source && (source->flags & TYF_ANY)) source = nullptr;
     switch (target->tag) {
@@ -849,24 +850,24 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Er
             if (source && target->identifier.target) {
                 Ty const* declared = ty_type_of_symbol(checker, target->identifier.target);
                 if (target->identifier.compound_like_target) declared = ty_base_type_of_literal(checker, declared);
-                ty_check_assignable(checker, source, declared, target->outer_span, errs);
+                ty_check_assignable_expr(checker, source, declared, target->outer_span, source_expr, errs);
             }
             return;
 
         case EXPR_PROPERTY:
-            if (source) ty_check_assignable(checker, source, ty_expr_type(checker, target), target->outer_span, errs);
+            if (source) ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), target->outer_span, source_expr, errs);
             return;
 
         case EXPR_UNARY_OP:
             // `x! = 1`
-            if (target->unary_op->op == UNARY_OP_RIGHT_BANG) assignment_target_typecheck(&target->unary_op->expr, source, errs);
+            if (target->unary_op->op == UNARY_OP_RIGHT_BANG) assignment_target_typecheck(&target->unary_op->expr, source, source_expr, errs);
             else break;
             return;
 
         case EXPR_AS_TYPE:
             // `(x as T) = 1`: T is what's assigned to
             if (source && !target->as_type->is_satisfies) {
-                ty_check_assignable(checker, source, ty_expr_type(checker, target), target->outer_span, errs);
+                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), target->outer_span, source_expr, errs);
             }
             return;
 
@@ -874,7 +875,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Er
             // `[x = 1] = a`: a default, which the walk checks as an assignment of its own
             if (target->binary_op->op != BINARY_OP_EQUAL || expr_is_perenthisized(target)) break;
             assignment_target_typecheck(
-                &target->binary_op->left, source ? ty_without_undefined(checker, source) : nullptr, errs
+                &target->binary_op->left, source ? ty_without_undefined(checker, source) : nullptr, nullptr, errs
             );
             return;
 
@@ -888,7 +889,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Er
             for_each (i, vec_expr, &target->array) {
                 Ty const* element = iterated;
                 if (i->tag == EXPR_SPREAD) {
-                    assignment_target_typecheck(i->spread, nullptr, errs); // TODO: the rest of the array or tuple
+                    assignment_target_typecheck(i->spread, nullptr, nullptr, errs); // TODO: the rest of the array or tuple
                 } else if (i->tag == EXPR_LITERAL && i->outer_span.sv.size == 0) {
                     // A hole
                 } else {
@@ -897,7 +898,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Er
                         element = ty_access(checker, source, ty_literal(checker, &key));
                         if (!element) element = ty_access(checker, source, ty_intrinsic(checker, TY_NUMBER));
                     }
-                    assignment_target_typecheck(i, element, errs);
+                    assignment_target_typecheck(i, element, nullptr, errs);
                 }
                 index++;
             }
@@ -912,11 +913,11 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Er
                     property = ty_access(checker, source, ty_string_literal(checker, cstr_sv(&i->name_string)));
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD) {
-                    assignment_target_typecheck(&i->value, nullptr, errs); // TODO: the rest of the object
+                    assignment_target_typecheck(&i->value, nullptr, nullptr, errs); // TODO: the rest of the object
                 } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
                     // HACK: `{ a = 1 } = o`: the parser drops the default, so neither side is checked
                 } else if (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) {
-                    assignment_target_typecheck(&i->value, property, errs);
+                    assignment_target_typecheck(&i->value, property, nullptr, errs);
                 }
             }
             return;
@@ -947,7 +948,10 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
     if (async) yielded = ty_awaited(checker, yielded);
     if (!generator->ret_explicit) return;
     TyIterationTypes const* declared = ty_generator_context(checker, generator);
-    if (declared) ty_check_assignable(checker, yielded, declared->yield_type, span, errs);
+    if (declared) {
+        ty_check_assignable_expr(checker, yielded, declared->yield_type, span,
+            yield->op == UNARY_OP_YIELD_STAR || yield->expr.tag == EXPR_IMPLICIT_ANY ? nullptr : &yield->expr, errs);
+    }
 }
 
 static void binary_op_typecheck(
@@ -1006,7 +1010,7 @@ static void binary_op_typecheck(
             break;
 
         case BINARY_OP_EQUAL:
-            assignment_target_typecheck(&expr->binary_op->left, right, errs);
+            assignment_target_typecheck(&expr->binary_op->left, right, &expr->binary_op->right, errs);
             break;
 
         case BINARY_OP_DOUBLE_EQUAL:
@@ -1160,9 +1164,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             type_typecheck(&my as_type->type, errs);
             if (my as_type->is_satisfies) {
                 Checker* checker = current_checker;
-                ty_check_satisfies(
-                    checker, expr_get_type(&my as_type->expr), ty_of_node(&my as_type->type), my as_type->keyword_span, errs
-                );
+                ty_check_satisfies(checker, expr_get_type(&my as_type->expr), ty_of_node(&my as_type->type),
+                    my as_type->keyword_span, &my as_type->expr, errs);
             }
             break;
 

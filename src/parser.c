@@ -1414,6 +1414,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
             return parse_fail(&p);
         }
     } else if (parse_function_args(&p, true, true, true, &parsed.func)) {
+        parsed.func.full_span = span_from(value_anchor);
         *ret = function_impl_into_type(parsed.func);
     } else if (parse_inferred_type(&p, &parsed.inferred)) {
         *ret = type_inferred(c_new(InferredType, parsed.inferred));
@@ -2138,6 +2139,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, FunctionImpl
             .tag = STATEMENT_RETURN_EXPR,
             .expr = expr,
         });
+        ret->expression_body = true;
     }
 
     ret->has_body = true;

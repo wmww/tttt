@@ -62,7 +62,8 @@ void binding_flow_assign(Binding const* me, Scope* names);
 // An expression that is only evaluated sometimes (a default)
 void expr_lookup_names_initializer(Expr* me, Scope* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
-void binding_typecheck(Binding* me, ErrorCtx* errs);
+/// `initializer`: what the binding is initialized with, if anything (a failed check is elaborated into it)
+void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
 

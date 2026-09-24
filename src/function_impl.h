@@ -64,6 +64,7 @@ typedef struct FunctionImpl {
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow;
     bool has_body;
+    bool expression_body; // An arrow function whose body is an expression (a synthesized `return`)
     Block body; // Initialized to empty block if has_body is false
     // Control flow (flow.h), set by the resolve walk
     FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in

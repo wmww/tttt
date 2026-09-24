@@ -193,6 +193,7 @@ Ty const* ty_empty_object_type(Checker* me); // `{}`
 Atom const* ty_literal_name(Checker* me, Ty const* literal);
 // The property name a key type stands for (a string or number literal), null if none
 Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number);
+bool ty_is_numeric_name(Atom const* name); // relate.c, tsc's isNumericLiteralName: the name is what its number prints as
 typedef struct FoundProp {
     Ty const* type;
     u32 flags;

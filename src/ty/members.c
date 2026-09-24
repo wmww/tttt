@@ -208,6 +208,7 @@ static void builder_add_interface_member(
                     .value = ty_from_node(me, &i->type, ctx),
                     .param_name = checker_atom(me, i->key.index.name.sv),
                     .readonly = i->readonly,
+                    .decl_span = vec_span_size(&i->declarations) ? *vec_span_at(&i->declarations, 0) : (Span){0},
                 };
                 builder_push(builder, index, info);
             }   break;
