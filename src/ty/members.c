@@ -68,15 +68,6 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     return ret;
 }
 
-// `(...args: infer A) => any`: an `infer` type parameter in rest position is implicitly constrained to `unknown[]`
-static void imply_rest_constraint(Checker* me, SigParam const* param) {
-    if (!param->rest || param->type->kind != TY_TYPE_PARAM) return;
-    TyParamState* state = param->type->param.state;
-    if (!state->is_infer || ty_param_constraint(me, param->type)) return;
-    state->constraint = ty_array(me, ty_intrinsic(me, TY_UNKNOWN_), false);
-    state->constraint_state = LAZY_STATE_DONE;
-}
-
 static Signature* signature_from_function(Checker* me, FunctionImpl const* function, LowerCtx ctx) {
     Signature* ret = arena_new(&my arena, Signature);
     ret->function = function;
@@ -1458,7 +1449,6 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             param->decl = i;
             param->optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY;
             param->type = ty_binding_type(me, &i->initializer.binding, ctx);
-            if (function->is_type) imply_rest_constraint(me, param);
             if (param->optional || param->rest) counting_required = false;
             if (counting_required) sig->min_args++;
         }
@@ -1741,6 +1731,7 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
             node = state->item->extends_explicit ? &state->item->extends : nullptr;
         }
         state->constraint = node ? ty_from_node(me, node, (LowerCtx){ .generic = true }) : nullptr;
+        if (!node && state->is_infer) state->constraint = ty_implied_infer_constraint(me, param);
         state->constraint_state = LAZY_STATE_DONE;
     }
     // In flight means the constraint is circular (`T extends T`), tsc reports TS2313 and carries on without one

@@ -781,6 +781,7 @@ typedef struct CallEffects {
 CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call);
 TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained
+Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param); // Of an `infer X` without `extends`, from its position
 Ty const* ty_base_constraint(Checker* me, Ty const* ty); // of a type parameter or deferred type, null if there's none
 Ty const* ty_param_default(Checker* me, Ty const* param); // null if none
 

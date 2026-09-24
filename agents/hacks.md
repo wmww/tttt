@@ -330,10 +330,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   A source that is `any` is let through to anything, even `never` (`check_assignable`).
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS`: what the operator checks in `expr.c`/`ty/expr.c` mean by "extends number"
   (null/undefined don't, whatever strictNullChecks says). tsc checks operands differently (TS18050, never emitted here).
-- `function_impl_typecheck_signature` TS2370: skipped for `...args: infer A` by looking at the written node, and for
-  a *reference* to an unconstrained `infer` type parameter (`(...a: A1) => R1` in the true branch): the implied
-  `unknown[]` constraint only exists once the signature that declares `A1` was resolved (`imply_rest_constraint`),
-  which depends on evaluation order. tsc derives it from the position of the `infer` (getInferTypeConstraint).
 - `generic_params_expr_typecheck` (`f<A>` outside a call): constraints are checked against the first signature only.
 - `for_each_loop_statement_evaluate_var_type`: `for..in` is `string` (no `Extract<keyof T, string>`); `for await`
   doesn't parse.
@@ -578,10 +574,10 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   side stays deferred (tsc would pick the false branch if it fails even with them replaced by `any`). Whether one is
   nested is a walk over members (`mentions_type_variables`, up to 8192 types / 48 deep, "unsure" beyond), since
   TYF_COULD_CONTAIN_TYPE_VARIABLES is set on every function and object literal type. A generic mapped type anywhere
-  counts as mentioning one (`Omit<FirstTupleItem<unknown>, K>` after an `infer` without its implied constraint). `infer X extends
-  C` constraints aren't checked. `infer_from`: no priorities, no contravariant candidates (union of everything),
-  union targets infer to every member. An `infer` in rest position gets its implied `unknown[]` constraint by
-  mutating the type parameter's state (`imply_rest_constraint`, and up front in `lower` for TYPE_TERNARY).
+  counts as mentioning one. A constraint of an `infer` that mentions type variables (`Foo<infer X, infer Y>` with `U
+  extends T`) isn't checked against the inference (tsc instantiates it with the other inferences first).
+  `ty_implied_infer_constraint` (tsc's getInferredTypeParameterConstraint) lacks the last rule: an `infer` template
+  of a mapped extends type whose check type is a mapped type.
 - `TyCondBranch` / `ty_deferred_reference`: conditional branches and array/tuple nodes are only lazy when the node
   syntactically reaches the alias being resolved (`node_reaches_alias_in_flight*`); tsc defers by position. A named
   generic reference to the alias in flight outside of those (`type T = Foo<T>` is an error in tsc, but `type T =

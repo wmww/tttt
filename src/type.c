@@ -127,7 +127,8 @@ void type_drop(TypeNode* me) {
     my tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
 
-static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
+// Declares the `infer` type parameters of an extends type. `position` is where `me` is written (its immediate parent)
+static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPosition position, IdentifierType const* reference, u32 arg_index) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -144,7 +145,7 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
 
         case TYPE_IDENTIFIER:
             for_each (i, vec_spanned_type, &my identifier->generic_params) {
-                type_add_inferred_names(&i->type, scope);
+                type_add_inferred_names_at(&i->type, scope, INFER_POSITION_TYPE_ARG, my identifier, (u32)i_index);
             }
             break;
 
@@ -156,64 +157,75 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
                 .node = my inferred,
             });
             my inferred->symbol_ref = my inferred->owned_symbol;
+            my inferred->position = position;
+            my inferred->reference = reference;
+            my inferred->arg_index = arg_index;
             break;
 
         case TYPE_CALLABLE:
             for_each (i, vec_function_arg, &my callable->function->args) {
                 if (i->initializer.binding.has_explicit_type) {
-                    type_add_inferred_names(&i->initializer.binding.explicit_type, scope);
+                    InferPosition arg_position = i->rest ? INFER_POSITION_REST : INFER_POSITION_OTHER;
+                    type_add_inferred_names_at(&i->initializer.binding.explicit_type, scope, arg_position, nullptr, 0);
                 }
             }
-            type_add_inferred_names(&my callable->function->ret, scope);
+            type_add_inferred_names_at(&my callable->function->ret, scope, INFER_POSITION_OTHER, nullptr, 0);
             if (my callable->function->predicate && my callable->function->predicate->has_type) {
-                type_add_inferred_names(&my callable->function->predicate->type, scope);
+                type_add_inferred_names_at(&my callable->function->predicate->type, scope, INFER_POSITION_OTHER, nullptr, 0);
             }
             break;
 
         case TYPE_INTERFACE:
             for_each (i, vec_interface_member, &my interface.members) {
-                type_add_inferred_names(&i->type, scope);
+                if (i->key.tag == INTERFACE_KEY_MAPPED) {
+                    type_add_inferred_names_at(&i->key.mapped.in_type, scope, INFER_POSITION_MAPPED_KEY, nullptr, 0);
+                    if (i->key.mapped.has_as_type) {
+                        type_add_inferred_names_at(&i->key.mapped.as_type, scope, INFER_POSITION_OTHER, nullptr, 0);
+                    }
+                }
+                type_add_inferred_names_at(&i->type, scope, INFER_POSITION_OTHER, nullptr, 0);
             }
             break;
 
         case TYPE_ARRAY:
-            type_add_inferred_names(my array.element, scope);
+            type_add_inferred_names_at(my array.element, scope, INFER_POSITION_OTHER, nullptr, 0);
             break;
 
         case TYPE_TUPLE:
             for_each (i, vec_tuple_element, &my tuple.elements) {
-                type_add_inferred_names(&i->type, scope);
+                InferPosition element_position = i->rest ? INFER_POSITION_REST : INFER_POSITION_OTHER;
+                type_add_inferred_names_at(&i->type, scope, element_position, nullptr, 0);
             }
             break;
 
         case TYPE_INDEXED:
-            type_add_inferred_names(&my indexed->interface, scope);
-            type_add_inferred_names(&my indexed->index, scope);
+            type_add_inferred_names_at(&my indexed->interface, scope, INFER_POSITION_OTHER, nullptr, 0);
+            type_add_inferred_names_at(&my indexed->index, scope, INFER_POSITION_OTHER, nullptr, 0);
             break;
 
         case TYPE_KEYOF:
-            type_add_inferred_names(&my keyof->interface, scope);
+            type_add_inferred_names_at(&my keyof->interface, scope, INFER_POSITION_OTHER, nullptr, 0);
             break;
 
         case TYPE_TYPEOF: break;
 
         case TYPE_TERNARY:
-            type_add_inferred_names(&my ternary->maybe_sub, scope);
-            type_add_inferred_names(&my ternary->maybe_super, scope);
-            type_add_inferred_names(&my ternary->if_true, scope);
-            type_add_inferred_names(&my ternary->if_false, scope);
+            type_add_inferred_names_at(&my ternary->maybe_sub, scope, INFER_POSITION_OTHER, nullptr, 0);
+            type_add_inferred_names_at(&my ternary->maybe_super, scope, INFER_POSITION_OTHER, nullptr, 0);
+            type_add_inferred_names_at(&my ternary->if_true, scope, INFER_POSITION_OTHER, nullptr, 0);
+            type_add_inferred_names_at(&my ternary->if_false, scope, INFER_POSITION_OTHER, nullptr, 0);
             break;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             for_each (i, vec_type, &my composite) {
-                type_add_inferred_names(i, scope);
+                type_add_inferred_names_at(i, scope, INFER_POSITION_OTHER, nullptr, 0);
             }
             break;
 
         case TYPE_TEMPLATE:
             for_each (i, vec_type, &my template_->types) {
-                type_add_inferred_names(i, scope);
+                type_add_inferred_names_at(i, scope, INFER_POSITION_TEMPLATE, nullptr, 0);
             }
             break;
 
@@ -268,7 +280,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             type_lookup_names(&my ternary->maybe_super, names, errs);
 
             Scope* inferred_types_scope = scope_new(names, SCOPE_BLOCK);
-            type_add_inferred_names(&my ternary->maybe_super, inferred_types_scope);
+            type_add_inferred_names_at(&my ternary->maybe_super, inferred_types_scope, INFER_POSITION_OTHER, nullptr, 0);
             type_lookup_names(&my ternary->if_true, inferred_types_scope, errs);
 
             type_lookup_names(&my ternary->if_false, names, errs);

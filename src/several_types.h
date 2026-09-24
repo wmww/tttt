@@ -43,12 +43,24 @@ static inline TypeNode type_identifier(IdentifierType* identifier) {
 
 // Inferred identifier
 
+// Where an `infer X` is written, which decides its implied constraint (tsc's getInferredTypeParameterConstraint)
+typedef enum InferPosition {
+    INFER_POSITION_OTHER = 0,
+    INFER_POSITION_TYPE_ARG, // `Foo<infer X>`: the constraint of Foo's type parameter
+    INFER_POSITION_REST, // `(...args: infer X)`, `[...infer X]`: unknown[]
+    INFER_POSITION_TEMPLATE, // `${infer X}`: string
+    INFER_POSITION_MAPPED_KEY, // `{ [K in infer X]: ... }`: keyof any
+} InferPosition;
+
 typedef struct InferredType {
     Span name;
     Span full_span;
     TypeNode extends;
     Symbol* owned_symbol;
     Symbol const* symbol_ref;
+    InferPosition position;
+    IdentifierType const* reference; // INFER_POSITION_TYPE_ARG: the reference it is type argument `arg_index` of
+    u32 arg_index;
 } InferredType;
 
 void inferred_type_drop(InferredType* me);

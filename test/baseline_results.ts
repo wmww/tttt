@@ -17092,7 +17092,7 @@ const baselines = {
     },
     'inferTypeConstraintInstantiationCircularity': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'inferTypeParameterConstraints': {
@@ -61652,7 +61652,7 @@ const baselines = {
     },
     'inferTypes2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferTypesInvalidExtendsDeclaration': {
@@ -62357,7 +62357,7 @@ const baselines = {
     },
     'recursiveMappedTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'augmentedTypeAssignmentCompatIndexSignature': {

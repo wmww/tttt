@@ -508,12 +508,12 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         TyList target_args = ty_reference_args(me, target);
         for (u32 i = 0; i < target_shape->arity; i++) {
             if (target_shape->flags[i] & TUPLE_ELEMENT_REST) {
-                // `[infer H, ...infer R]`: a trailing rest element gets what's left of the source
+                // `[infer H, ...infer R]`: a trailing rest element gets what's left of the source, as a mutable tuple
+                // (tsc's sliceTupleType)
                 if (i + 1 != target_shape->arity || i > source_shape->arity) break;
                 u32 arity = source_shape->arity - i;
                 TupleShape shape = {
                     .arity = arity,
-                    .readonly = source_shape->readonly,
                     .flags = source_shape->flags + i,
                     .names = source_shape->names ? source_shape->names + i : nullptr,
                 };

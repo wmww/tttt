@@ -362,6 +362,49 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     return ty_regular(me, declared); // `E.x` as a type: an enum member's declared type is fresh
 }
 
+// tsc's getInferredTypeParameterConstraint: an `infer X` without `extends` is constrained by where it is written. With
+// several declarations (`A<infer X> | B<infer X>`), by all of them
+Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
+    Symbol const* symbol = param->param.symbol;
+    Ty const* found[8];
+    u32 len = 0;
+    for (u32 i = 0; symbol && i < symbol->decl_count && len < c_arraylen(found); i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_INFER) continue;
+        InferredType const* inferred = symbol->decls[i].node;
+        Ty const* constraint = nullptr;
+        switch (inferred->position) {
+            case INFER_POSITION_OTHER: break;
+            case INFER_POSITION_REST: constraint = ty_array(me, ty_intrinsic(me, TY_UNKNOWN_), false); break;
+            case INFER_POSITION_TEMPLATE: constraint = ty_intrinsic(me, TY_STRING); break;
+            case INFER_POSITION_MAPPED_KEY: constraint = ty_keyof(me, ty_intrinsic(me, TY_ANY)); break;
+            case INFER_POSITION_TYPE_ARG: {
+                IdentifierType const* reference = inferred->reference;
+                Symbol const* decl = canonical(me, reference->target);
+                if (!decl || span_valid(reference->import_span) || reference->keyword) break;
+                TyList params = {0};
+                if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
+                    Ty const* declared = ty_declared_type_of(me, decl);
+                    if (declared->kind == TY_DECLARED) params = declared->declared.type_params;
+                } else if (symbol_is_generic_alias(decl)) {
+                    params = ty_type_params_of(me, symbol_type_generic(decl));
+                }
+                if (inferred->arg_index >= params.len) break;
+                Ty const* declared_constraint = ty_param_constraint(me, params.data[inferred->arg_index]);
+                if (!declared_constraint) break;
+                // It can mention the other type parameters, which are what the reference passes (`Foo<infer X,
+                // infer X>` with `U extends T` gives X itself, which is no constraint)
+                Ty const* args_buf[MAX_TYPE_ARGS];
+                TyList args = lower_type_args(me, params, &reference->generic_params, (LowerCtx){ .generic = true }, args_buf);
+                constraint = ty_instantiate(me, declared_constraint, ty_mapper_new(me, params, args));
+                if (constraint == param) constraint = nullptr;
+            }   break;
+        }
+        if (constraint) found[len++] = constraint;
+    }
+    if (len <= 1) return len ? found[0] : nullptr;
+    return ty_intersection(me, found, len, nullptr, (TyList){0});
+}
+
 // Free type parameters of a node, see Ty.anonymous.free_params
 
 #define MAX_FREE_PARAMS 16
@@ -1179,7 +1222,13 @@ static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* ou
             collect_declared_infers(me, &node->callable->function->ret, out);
             break;
         case TYPE_INTERFACE:
-            for_each (i, vec_interface_member, &node->interface.members) collect_declared_infers(me, &i->type, out);
+            for_each (i, vec_interface_member, &node->interface.members) {
+                if (i->key.tag == INTERFACE_KEY_MAPPED) {
+                    collect_declared_infers(me, &i->key.mapped.in_type, out);
+                    if (i->key.mapped.has_as_type) collect_declared_infers(me, &i->key.mapped.as_type, out);
+                }
+                collect_declared_infers(me, &i->type, out);
+            }
             break;
         case TYPE_ARRAY: collect_declared_infers(me, node->array.element, out); break;
         case TYPE_TUPLE:
@@ -1316,22 +1365,7 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             // The extends type goes before the branches, it's what declares the `infer` type parameters
             LowerCtx inner = ctx;
             inner.generic = true;
-            // `F extends (...args: infer A) => any`: an `infer` type in rest position is implicitly constrained to
-            // `unknown[]`. Set up front, the signature itself is only resolved when somebody looks at it
             TypeNode const* extends_node = &node->ternary->maybe_super;
-            if (extends_node->tag == TYPE_CALLABLE) {
-                for_each (i, vec_function_arg, &extends_node->callable->function->args) {
-                    Binding const* binding = &i->initializer.binding;
-                    if (!i->rest || !binding->has_explicit_type || binding->explicit_type.tag != TYPE_INFERRED) continue;
-                    TypeNode const* arg_type = &binding->explicit_type;
-                    if (!arg_type->inferred->symbol_ref) continue;
-                    Ty const* param = ty_type_param(me, arg_type->inferred->symbol_ref);
-                    if (!ty_param_constraint(me, param)) {
-                        param->param.state->constraint = ty_array(me, ty_intrinsic(me, TY_UNKNOWN_), false);
-                        param->param.state->constraint_state = LAZY_STATE_DONE;
-                    }
-                }
-            }
             Ty const* check_type = ty_from_node(me, &node->ternary->maybe_sub, ctx);
             Ty const* extends = ty_from_node(me, &node->ternary->maybe_super, inner);
             TyCondBranch if_true = lower_branch(me, &node->ternary->if_true, inner);
@@ -1388,11 +1422,6 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             panic_if(!types || !texts, "out of memory");
             for_each (i, vec_type, &template->types) {
                 types[i_index] = ty_from_node(me, i, ctx);
-                // `infer X` right in a placeholder is implicitly constrained to `string`
-                if (i->tag == TYPE_INFERRED && types[i_index]->kind == TY_TYPE_PARAM && !ty_param_constraint(me, types[i_index])) {
-                    types[i_index]->param.state->constraint = ty_intrinsic(me, TY_STRING);
-                    types[i_index]->param.state->constraint_state = LAZY_STATE_DONE;
-                }
             }
             for_each (i, vec_cstr, &template->texts) texts[i_index] = checker_atom(me, cstr_sv(i));
             Ty const* ret = ty_template_literal(me, texts, types, len);

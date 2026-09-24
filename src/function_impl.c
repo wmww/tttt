@@ -205,17 +205,11 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
         }
 
         if (i->rest) {
-            // `(...args: infer A) => any`: an `infer` type in this position is implicitly constrained to an array
+            // `(...args: infer A) => any` is fine: the implied constraint of A is `unknown[]`
             Binding const* binding = &i->initializer.binding;
-            TypeNode const* written = binding->has_explicit_type ? &binding->explicit_type : nullptr;
             Checker* checker = current_checker;
-            // HACK: and so is a reference to one (`(...a: A1) => R1` in the true branch), but only once the signature
-            // that declares it was resolved (members.c: imply_rest_constraint). Any unconstrained `infer` is let through
-            Ty const* rest_type = written && written->tag == TYPE_INFERRED ?
-                nullptr : ty_binding_type(checker, binding, (LowerCtx){ .generic = true });
-            bool is_infer = rest_type && rest_type->kind == TY_TYPE_PARAM && rest_type->param.state->is_infer &&
-                !ty_param_constraint(checker, rest_type);
-            if (rest_type && !is_infer && !ty_extends_array(checker, rest_type)) {
+            Ty const* rest_type = ty_binding_type(checker, binding, (LowerCtx){ .generic = true });
+            if (!ty_extends_array(checker, rest_type)) {
                 error_ctx_error_d(errs, i->span, 2370, "A rest parameter must be of an array type.");
             }
             if (has_initializer) {

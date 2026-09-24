@@ -2,6 +2,11 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-24, plan 19 R9 (implied constraints of `infer`)
+Suite **5163 -> 5164** full (errors 8262, symbols 9492, types 7905; nothing lost). Corpora: tsc 0, **type-fest 173 ->
+167**, **valibot 311 -> 245** (TS2578 119, TS2322 32, TS2344 30, TS2339 24, TS2345 15). `./bench.sh`: valibot tttt
+0.58 s / 456 MB (typecheck 469 ms; more of it evaluates now) vs tsgo 0.85 s; type-fest 0.33 s / 88 MB vs tsgo 1.33.
+
 ## 2026-09-24, relations under assumptions (signature rules, TS2430/TS2320 on)
 Suite **5125 -> 5163** full (errors 8262, symbols 9489, types 7905; 3 types components lost to union order). Corpora:
 tsc 0, type-fest 173, **valibot 328 -> 311**. `./bench.sh`: **valibot tttt 0.57 s / 413 MB (typecheck 440 ms, was

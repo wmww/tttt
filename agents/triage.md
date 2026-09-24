@@ -87,6 +87,9 @@ here when there's something to know beyond the code.
   array half is `any[]` (hacks.md "Narrowing"). controlFlowArrays and friends.
 
 ## Checker gaps
+- valibot `actions/args/args.ts:43` (and argsAsync): spurious TS2370 on `(...args: InferInput<TSchema>) => ...` with
+  `TSchema extends BaseSchema<unknown[], unknown[], ...>`: `ty_extends_array` doesn't see through the constraint of
+  `NonNullable<TSchema['~types']>['input']` to `unknown[]`. Probe it before assuming where it breaks.
 ### Inference
 - `silentNeverPropagation` (re-probed: spurious TS2345, `'state'` missing): `convert(createModule({ a: 12 }, { foo()
   { return true } }))` infers the inner TActions from the return type context `ModuleWithState<{a}> & {foo():

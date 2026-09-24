@@ -167,7 +167,7 @@ TS2322 30, TS2339 24, TS2345 15, TS2488 9, TS18046 9). valibot's TS2344 are stil
 R7 (missing checks). TS2339 24 is R8's vitest `.not`. type-fest wasn't re-sampled (spread thin: conditional-pick-deep
 16, get 10, camel-case 10...).
 
-### R9. `infer` type parameters have no implied constraint from their position (valibot, most of the TS2344 left)
+### R9. ~~`infer` type parameters have no implied constraint from their position~~ done (valibot 311 -> 245, type-fest 173 -> 167 with sliceTupleType's mutable rest slice; the permissive instantiation was not done, see hacks.md `ty_conditional_resolve`)
 `S extends SchemaWithPipe<infer TPipe> | SchemaWithPipeAsync<infer TPipe> ? ...` with nothing inferred: tsc gives TPipe
 the constraint of the type parameter it is an argument of (getInferTypeParameterConstraint / the implied constraint),
 and an inference that doesn't satisfy it is the constraint. tttt infers `unknown`, so the extends type becomes
@@ -180,5 +180,6 @@ considering with it: a real permissive instantiation (every type parameter to a 
 `mentions_type_variables` walk, which is the other half of why these defer.
 
 ### Suggested order
-~~R5 and R3, R2, R6, R4, R1~~ (done), then R9 (valibot's TS2344), then the R7 checks one by one (valibot's
+~~R5 and R3, R2, R6, R4, R1, R9~~ (done). valibot's 30 TS2344 left are unrelated expect-type mismatches (readonly
+members `key04`, `Partial<Record<...>>` index signatures, `[]` vs array methods, Promise `then`): re-sample. Then the R7 checks one by one (valibot's
 TS2578), R8's vitest `.not`. Re-sample type-fest's TS2345 before picking its next root cause.
