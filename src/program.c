@@ -24,6 +24,10 @@ typedef SourceFile* SourceFilePtr;
 #define g_key SourceFilePtr, source_file_ptr
 #include <cleat/generic/vec.h>
 
+#define g_pro_key SvStr, svstr
+#define g_val SourceFilePtr, source_file_ptr
+#include <cleat/generic/hmap.h>
+
 static const csview lib_path = c_sv_const_init("thirdparty/lib");
 
 typedef enum {
@@ -63,6 +67,7 @@ typedef struct Program {
     ModuleResolver* resolver; // Made on first use, the options are final by then
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
+    HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
     Checker* checker; // Created by program_make_current()
     CompilerOptions options;
 } Program;
@@ -119,6 +124,7 @@ static void program_drop(Program* me) {
     // First, its memos point into the AST and the scopes
     checker_drop(my checker);
     hmap_box_source_file_drop(&my source_files_map);
+    hmap_source_file_ptr_drop(&my files_by_package_id);
     vec_source_file_ptr_drop(&my source_files_ordered);
     module_resolver_destroy(my resolver);
     compiler_options_drop(&my options);
@@ -186,6 +192,16 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
             } else {
                 ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
                 ref->used_ts_extension = resolved.used_ts_extension;
+                // The same version of a package installed twice is one package (tsc's packageIdToSourceFile): the
+                // second copy stays in the program, but imports mean the first
+                if (cstr_size(&resolved.package_id) && ref->file) {
+                    auto first = hmap_source_file_ptr_get(&my files_by_package_id, cstr_sv(&resolved.package_id));
+                    if (first) {
+                        ref->file = first->second;
+                    } else {
+                        hmap_source_file_ptr_insert(&my files_by_package_id, cstr_clone(resolved.package_id), ref->file);
+                    }
+                }
             }
             break;
         case RESOLVED_JS:

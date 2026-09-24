@@ -1,9 +1,9 @@
 # Plan 13: member modifiers (accessibility, readonly writes, private names)
 
 ## Status
-Stages 1-4 done (2026-09-23, see `documentation.md` "Member modifiers" and "Private names"). Left: stage 5 (nominal
-relations), then the leftovers below. Probe: `test/probes/triage/member_modifiers.ts`: what still differs from tsc
-there is exactly stage 5 (the TS2322 elaboration "Types have separate declarations of a private property").
+Stages 1-5 done (2026-09-23, see `documentation.md` "Member modifiers" and "Private names"); the probe
+`test/probes/triage/member_modifiers.ts` passes. What's left is the leftovers below: small, schedule them with
+triage-sized work rather than as a plan session. When they're done, delete this file.
 
 ## What exists now
 - `Prop.flags`: `PROP_PRIVATE`/`PROP_PROTECTED` (an accessor's are the getter's, `PROP_SET_*` the setter's for
@@ -23,15 +23,13 @@ Private names in object literals, interfaces, parameters and enums don't parse (
 TS1451: `./failstats.py --syntax -f '^privateName.*'`). TS18015 in relations (reportUnmatchedProperty's private-name
 case, needs stage 5's place), TS2806, TS2804/TS18010/TS2300 duplicates (privateNameDuplicateField and friends).
 
-## Stage 5: relations
-A private/protected target property is only satisfied by the *same declaration* (tsc `propertiesRelatedTo`: "Types
-have separate declarations of a private property", "Property 'x' is private in type 'A' but not in type 'B'", TS2415
-elaborations in class heritage). Intersection reduction to `never` for conflicting privates (lazily, like the existing
-`has_conflicting_discriminants`) and its TS2339 message: mixinAccessModifiers, mixinPrivateAndProtected,
-intersectionWithConflictingPrivates are the tests (they report spurious TS2341/TS2445 now, on members tsc reduces
-away). Use the root-declaration identity `ty_union_non_public_conflict()` already uses.
-Risk: nominal privates make some currently-passing assignments fail. Check `./resultdiff.py --lost` and the corpora
-(tsc's own `transformers/` uses private members heavily).
+## Stage 5 leftovers
+- Relations: `modifiers_related()` in relate.c. The "The intersection 'A & B' was reduced to 'never' because property
+  'x' exists in multiple constituents and is private in some" elaboration (and its discriminant sibling) needs the
+  reduced intersection to be remembered: tttt reduces eagerly to plain `never` (`has_conflicting_discriminants`,
+  6 tests). mixinAccessModifiers / mixinPrivateAndProtected: the mixin intersections (`mixB<typeof A>.(Anonymous
+  class) & A`) aren't reduced (their members still count as possibly generic?) and the anonymous mixin class prints
+  as `''` in TS2341/TS2445.
 
 ## Leftovers (not in any stage, small)
 - Destructuring: `const { priv } = a` and `({ priv } = a)` check accessibility in tsc (checkPropertyAccessibility from

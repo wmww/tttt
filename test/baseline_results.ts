@@ -3646,7 +3646,7 @@ const baselines = {
         types: true,
     },
     'classExtendsInterfaceThatExtendsClassWithPrivates1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8381,7 +8381,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitPrivateSymbolCausesVarDeclarationEmit2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9331,7 +9331,7 @@ const baselines = {
         types: true,
     },
     'derivedClassOverridesPrivateFunction1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10278,7 +10278,7 @@ const baselines = {
     'duplicatePackage_referenceTypes': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicatePackage_relativeImportWithinPackage': {
         errors: true,
@@ -10293,7 +10293,7 @@ const baselines = {
     'duplicatePackage_subModule': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicatePackage_withErrors': {
         errors: false,
@@ -15621,7 +15621,7 @@ const baselines = {
         types: true,
     },
     'implementPublicPropertyAsPrivate': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17416,7 +17416,7 @@ const baselines = {
         types: true,
     },
     'inheritanceGrandParentPrivateMemberCollision': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17773,7 +17773,7 @@ const baselines = {
     'instanceofWithStructurallyIdenticalTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instantiateConstraintsToTypeArguments2': {
         errors: true,
@@ -17956,7 +17956,7 @@ const baselines = {
         types: true,
     },
     'interfaceImplementation6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18367,7 +18367,7 @@ const baselines = {
     },
     'intersectionWithConflictingPrivates': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionWithConstructSignaturePrototypeResult': {
@@ -22148,7 +22148,7 @@ const baselines = {
     'narrowByClauseExpressionInSwitchTrue3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowByClauseExpressionInSwitchTrue4': {
         errors: true,
@@ -25466,7 +25466,7 @@ const baselines = {
         types: true,
     },
     'privateInterfaceProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25761,7 +25761,7 @@ const baselines = {
         types: false,
     },
     'protectedMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25806,7 +25806,7 @@ const baselines = {
         types: true,
     },
     'publicMemberImplementedAsPrivateInDerivedClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27231,7 +27231,7 @@ const baselines = {
         types: true,
     },
     'scopeTests': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27336,7 +27336,7 @@ const baselines = {
         types: true,
     },
     'shadowPrivateMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30341,7 +30341,7 @@ const baselines = {
         types: true,
     },
     'typeIdentityConsidersBrands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30411,7 +30411,7 @@ const baselines = {
         types: false,
     },
     'typeMatch1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34806,7 +34806,7 @@ const baselines = {
         types: true,
     },
     'readonlyConstructorAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -35106,7 +35106,7 @@ const baselines = {
         types: false,
     },
     'derivedClassOverridesProtectedMembers4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35146,12 +35146,12 @@ const baselines = {
         types: true,
     },
     'derivedClassWithPrivateInstanceShadowingProtectedInstance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'derivedClassWithPrivateInstanceShadowingPublicInstance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35493,7 +35493,7 @@ const baselines = {
     'privateNameAndAny': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameAndIndexSignature': {
         errors: false,
@@ -39106,7 +39106,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39128,7 +39128,7 @@ const baselines = {
     'symbolProperty16': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolProperty17': {
         errors: false,
@@ -49666,7 +49666,7 @@ const baselines = {
         types: true,
     },
     'mergedInterfacesWithInheritedPrivates': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49896,7 +49896,7 @@ const baselines = {
         types: false,
     },
     'implementingAnInterfaceExtendingClassWithPrivates': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62651,7 +62651,7 @@ const baselines = {
         types: true,
     },
     'nonPrimitiveNarrow': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -62663,7 +62663,7 @@ const baselines = {
     'nonPrimitiveStrictNull': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonPrimitiveUnionIntersection': {
         errors: false,
@@ -65426,9 +65426,9 @@ const baselines = {
         types: true,
     },
     'genericCallWithObjectTypeArgs': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithObjectTypeArgs2': {
         errors: true,

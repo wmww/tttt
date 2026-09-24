@@ -642,6 +642,25 @@ static bool prop_judgeable(Checker* me, Prop const* prop) {
     return !ty_node_reaches_alias_in_flight(me, prop->node);
 }
 
+static Prop const* root_declaration(Prop const* prop) {
+    while (prop->target) prop = prop->target;
+    return prop;
+}
+
+// A property of types[i] that a later member declares separately, one of them privately (tsc's
+// isConflictingPrivateProperty: a synthetic property with no single value declaration that contains a private one)
+static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* const* types, u32 i, u32 len) {
+    for (u32 j = i + 1; j < len; j++) {
+        Ty const* b = types[j];
+        if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        Prop const* other = ty_get_prop(me, b, prop->name);
+        if (other && ((prop->flags | other->flags) & PROP_PRIVATE) && root_declaration(prop) != root_declaration(other)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Object types that both have a required property whose types are disjoint, one of them a literal (`{ kind: "a" }
 // & { kind: "b" }`): the intersection is never (tsc's isDiscriminantWithNeverType, via getReducedType). Remembered
 // per member list, since it looks at every property
@@ -667,6 +686,7 @@ static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u
         Members const* members = ty_members(me, a);
         for (u32 p = 0; p < members->prop_count && !conflict; p++) {
             Prop const* prop = members->props[p];
+            conflict = has_conflicting_private(me, prop, types, i, len);
             if (prop->flags & PROP_OPTIONAL) continue;
             if (!prop_judgeable(me, prop)) {
                 skipped = true;

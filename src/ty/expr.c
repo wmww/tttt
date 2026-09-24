@@ -1600,6 +1600,8 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_PROPERTY: {
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
+            // `never` has no properties (TS2339), `never[k]` is never
+            if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
             Ty const* ret = ty_access(me, object, ty_access_key_type(me, expr->property));
             if (!ret || ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
             ret = access_flow_type(me, expr, ret);

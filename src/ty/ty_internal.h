@@ -200,6 +200,7 @@ typedef struct FoundProp {
     Ty const* type;
     u32 flags;
     bool found;
+    Prop const* prop; // The property found (of an intersection: of its first member that has one)
 } FoundProp;
 FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name);
 Ty const* ty_rest_element_type(Checker* me, Ty const* rest);

@@ -65,6 +65,7 @@ typedef struct State {
 void resolved_module_drop(ResolvedModule* me) {
     cstr_drop(&my path);
     cstr_drop(&my suggested_extension);
+    cstr_drop(&my package_id);
     *me = (ResolvedModule){0};
 }
 
@@ -309,6 +310,31 @@ static PackageJson const* package_json_of(State* me, csview directory) {
     cstr_drop(&path);
     auto inserted = hmap_package_json_insert(&resolver->package_jsons, cstr_from_sv(directory), package);
     return inserted.ref->second.exists ? &inserted.ref->second : nullptr;
+}
+
+// tsc's parseNodeModuleFromPath + withPackageId: the package directory after the last node_modules (`@scope/name`
+// for a scoped one) and what its package.json says
+static cstr package_id_of(State* me, csview path) {
+    isize at = -1;
+    for (isize i = csview_find_sv(path, c_sv("/node_modules/")); i != c_NPOS;) {
+        at = i;
+        isize next = csview_find_sv(csview_from_n(path.buf + i + 1, path.size - i - 1), c_sv("/node_modules/"));
+        i = next == c_NPOS ? c_NPOS : i + 1 + next;
+    }
+    if (at < 0) return cstr_null;
+    isize start = at + (isize)strlen("/node_modules/");
+    isize end = start;
+    for (int segments = path.buf[start] == '@' ? 2 : 1; segments--;) {
+        while (end < path.size && path.buf[end] != '/') end++;
+        if (segments) end++;
+    }
+    if (end >= path.size) return cstr_null;
+    PackageJson const* package = package_json_of(me, csview_from_n(path.buf, end));
+    if (!package) return cstr_null;
+    csview name = json_get_string(&package->json, "name");
+    csview version = json_get_string(&package->json, "version");
+    if (!name.size || !version.size) return cstr_null;
+    return cstr_d(name, csview_from_n(path.buf + end, path.size - end), "@", version);
 }
 
 // The nearest package.json at or above directory, and where it is
@@ -1185,6 +1211,7 @@ ResolvedModule module_resolver_resolve(
         ret.is_external_library = external;
         ret.used_ts_extension = found.used_ts_extension;
         ret.arbitrary_extension = found.arbitrary_extension;
+        ret.package_id = package_id_of(&state, cstr_sv(&ret.path));
         apply_realpath(me, &ret);
     } else {
         ret.json_without_option = state.json_without_option;

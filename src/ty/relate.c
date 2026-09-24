@@ -555,6 +555,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         for (u32 i = 0; i < ty->composite.types.len && len < c_arraylen(stack_buf); i++) {
             FoundProp part = find_prop(me, apparent_type(me, ty->composite.types.data[i]), name, depth + 1);
             if (!part.found) continue;
+            if (!ret.prop) ret.prop = part.prop;
             stack_buf[len++] = part.type;
             all_optional &= (part.flags & PROP_OPTIONAL) != 0;
             flags |= part.flags & ~(u32)PROP_OPTIONAL;
@@ -575,6 +576,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         ret.found = true;
         ret.type = prop_type(me, prop);
         ret.flags = prop->flags;
+        ret.prop = prop;
     }
     return ret;
 }
@@ -833,6 +835,68 @@ static bool requires_optional_properties(Checker* me, Ty const* source) {
     return !(ty_is_array(me, source) && (ty_reference_args(me, source).data[0]->flags & TYF_NEVER));
 }
 
+static Prop const* root_declaration(Prop const* prop) {
+    while (prop && prop->target) prop = prop->target;
+    return prop;
+}
+
+// The class a property is declared in (tsc's getDeclaringClass)
+static Ty const* declaring_class(Checker* me, Prop const* prop) {
+    Symbol const* parent = root_declaration(prop) ? root_declaration(prop)->parent : nullptr;
+    return parent && (parent->flags & SYMBOL_CLASS) ? ty_declared_type_of(me, parent) : nullptr;
+}
+
+// tsc's propertyRelatedTo on modifiers: a private property is only related to itself, a protected one to one declared
+// in a class derived from its class, and a protected source property isn't a public one
+static bool modifiers_related(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, FoundProp const* source_prop, Prop const* target_prop,
+    bool report
+) {
+    u32 source_flags = source_prop->flags;
+    u32 target_flags = target_prop->flags;
+    bool related = true;
+    unsigned code = 0;
+    if ((source_flags | target_flags) & PROP_PRIVATE) {
+        related = source_prop->prop && root_declaration(source_prop->prop) == root_declaration(target_prop);
+        code = (source_flags & target_flags & PROP_PRIVATE) ? 2442 : 2325;
+    } else if (target_flags & PROP_PROTECTED) {
+        Ty const* target_class = declaring_class(me, target_prop);
+        Ty const* source_class = source_prop->prop ? declaring_class(me, source_prop->prop) : nullptr;
+        related = !target_class || (source_class && ty_has_base_type(me, source_class, target_class));
+        code = 2443;
+    } else if (source_flags & PROP_PROTECTED) {
+        related = false;
+        code = 2444;
+    }
+    if (related || !report) return related;
+    cstr name = ty_prop_name_cstr(me, target_prop->name);
+    if (code == 2442) {
+        report_line(st, code, cstr_d("Types have separate declarations of a private property '", name, "'."));
+    } else if (code == 2325) {
+        bool source_private = source_flags & PROP_PRIVATE;
+        cstr private_str = display_for_report(me, source_private ? source : target, source_private);
+        cstr other_str = display_for_report(me, source_private ? target : source, !source_private);
+        report_line(st, code, cstr_d("Property '", name, "' is private in type '", private_str, "' but not in type '",
+            other_str, "'."));
+        c_drop(cstr, &private_str, &other_str);
+    } else if (code == 2443) {
+        Ty const* source_class = source_prop->prop ? declaring_class(me, source_prop->prop) : nullptr;
+        cstr source_str = display_for_report(me, source_class ? source_class : source, true);
+        cstr target_str = display_for_report(me, declaring_class(me, target_prop), false);
+        report_line(st, code, cstr_d("Property '", name, "' is protected but type '", source_str,
+            "' is not a class derived from '", target_str, "'."));
+        c_drop(cstr, &source_str, &target_str);
+    } else {
+        cstr source_str = display_for_report(me, source, true);
+        cstr target_str = display_for_report(me, target, false);
+        report_line(st, code, cstr_d("Property '", name, "' is protected in type '", source_str, "' but public in type '",
+            target_str, "'."));
+        c_drop(cstr, &source_str, &target_str);
+    }
+    cstr_drop(&name);
+    return false;
+}
+
 // tsc's shouldReportUnmatchedPropertyError: a function (or class) without properties isn't told it lacks the
 // target's properties, unless the target has signatures of the same kind
 static bool should_report_unmatched_property(Checker* me, Ty const* source, Ty const* target) {
@@ -913,6 +977,7 @@ static Ternary props_related(
             }
             return TERNARY_FALSE;
         }
+        if (!modifiers_related(me, st, source, target, &source_prop, target_prop, report)) return TERNARY_FALSE;
         if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop->flags & PROP_OPTIONAL) && !comparable) {
             if (report) {
                 cstr source_str = display_for_report(me, source, true);

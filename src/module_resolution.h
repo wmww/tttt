@@ -35,6 +35,9 @@ typedef struct ResolvedModule {
     bool needs_extension; // A relative name without extension in ESM mode of node16/nodenext: TS2834/TS2835
     cstr suggested_extension; // With needs_extension: ".js", ".mjs"... when the file that was meant exists
     bool json_without_option; // Would have been found with resolveJsonModule: TS2732
+    // tsc's packageId: `name/sub/module.d.ts@version` for a file of a node_modules package whose package.json has a name
+    // and a version, else empty. The program takes a second file with the same id for the first (duplicate packages)
+    cstr package_id;
 } ResolvedModule;
 
 void resolved_module_drop(ResolvedModule* me);
