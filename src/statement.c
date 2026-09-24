@@ -1247,8 +1247,7 @@ static void return_typecheck(Statement const* statement, Expr const* expr, Ty co
         return_typecheck(statement, &expr->ternary->no, target, true, errs);
         return;
     }
-    Expr const* effective = expr;
-    while (effective->tag == EXPR_AS_TYPE && effective->as_type->is_satisfies) effective = &effective->as_type->expr;
+    Expr const* effective = expr_effective_check_node(expr);
     Span span = effective->inner_span;
     if (!in_conditional && span_valid(statement->span)) {
         span = span_make(statement->span.source, span_start_ptr(statement->span), span_start_ptr(statement->span) + 6);

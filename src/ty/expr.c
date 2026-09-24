@@ -1401,11 +1401,17 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
     unsigned char* flags = calloc(len ? len : 1, 1);
     Ty const* ret = nullptr;
     for_each (i, vec_expr, &expr->array) {
-        if (i->tag == EXPR_SPREAD) goto done;
+        if (i->tag == EXPR_SPREAD) {
+            // As check_array() makes a spread element of a tuple
+            Ty const* operand = ty_expr_type(me, i->spread);
+            flags[i_index] = TUPLE_ELEMENT_REST;
+            elements[i_index] = ty_is_array(me, operand) || ty_is_tuple(operand) ?
+                operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);
+            continue;
+        }
         elements[i_index] = ty_mutable_location_type(me, i, contextual_element_type(me, contextual, (u32)i_index));
     }
     ret = tuple_of(me, elements, flags, len, false);
-done:
     free(elements);
     free(flags);
     return ret;

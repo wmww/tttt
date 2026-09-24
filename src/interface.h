@@ -1,6 +1,7 @@
 #pragma once
 
 #include "prelude.h"
+#include "span.h"
 
 typedef struct InterfaceMember InterfaceMember;
 typedef struct TypeNode TypeNode;
@@ -13,6 +14,7 @@ g_declare_vec(TypeNode, type);
 typedef struct Interface {
     VecInterfaceMember members;
     bool parsed : 1;
+    Span span; // From `{` to `}` (invalid for interface declarations' bodies)
 } Interface;
 
 void interface_drop(Interface* me);

@@ -1121,7 +1121,7 @@ const baselines = {
         types: true,
     },
     'arrayAssignmentTest2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1131,7 +1131,7 @@ const baselines = {
         types: true,
     },
     'arrayAssignmentTest4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2166,7 +2166,7 @@ const baselines = {
         types: true,
     },
     'avoidListingPropertiesForTypesWithOnlyCallOrConstructSignatures': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20126,7 +20126,7 @@ const baselines = {
         types: true,
     },
     'literalFreshnessPropagationOnNarrowing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27626,7 +27626,7 @@ const baselines = {
         types: false,
     },
     'slightlyIndirectedDeepObjectLiteralElaborations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42426,7 +42426,7 @@ const baselines = {
         types: true,
     },
     'iteratorSpreadInArray5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64321,7 +64321,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithCallSignatures2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64361,7 +64361,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithConstructSignatures2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

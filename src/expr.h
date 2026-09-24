@@ -279,6 +279,8 @@ typedef enum BinaryOp {
 } BinaryOp;
 
 int binary_op_get_precedence(BinaryOp op);
+/// What tsc's getEffectiveCheckNode checks and reports at: `satisfies` skipped (and parentheses: use its inner_span)
+Expr const* expr_effective_check_node(Expr const* me);
 zsview binary_op_get_zv(BinaryOp op);
 
 typedef struct BinaryOpExpr {

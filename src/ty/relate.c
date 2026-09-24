@@ -833,6 +833,17 @@ static bool requires_optional_properties(Checker* me, Ty const* source) {
     return !(ty_is_array(me, source) && (ty_reference_args(me, source).data[0]->flags & TYF_NEVER));
 }
 
+// tsc's shouldReportUnmatchedPropertyError: a function (or class) without properties isn't told it lacks the
+// target's properties, unless the target has signatures of the same kind
+static bool should_report_unmatched_property(Checker* me, Ty const* source, Ty const* target) {
+    if (!(source->flags & TYF_OBJECT)) return true;
+    Members const* members = ty_members(me, source);
+    if (!(members->call_count || members->construct_count) || members->prop_count) return true;
+    Members const* target_members = ty_members(me, target);
+    return (target_members->call_count && members->call_count) ||
+        (target_members->construct_count && members->construct_count);
+}
+
 static Ternary props_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent
 ) {
@@ -840,7 +851,7 @@ static Ternary props_related(
     bool comparable = st->relation == TY_RELATION_COMPARABLE;
 
     // A primitive is shown as itself, not as the global interface its properties come from
-    if (report && !source_is_apparent) {
+    if (report && !source_is_apparent && should_report_unmatched_property(me, source, target)) {
         // Missing properties get a message of their own instead of the generic head
         Atom const* missing[5];
         Prop const* missing_prop = nullptr;

@@ -824,7 +824,7 @@ Ty const* ty_expr_type(Checker* me, Expr const* expr); // The memo, else checked
 // literals widen unless the contextual type has room for them
 Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* contextual);
 // An array literal re-read as a tuple of its elements (tsc's checkArrayLiteral with forceTuple), from the elements'
-// memos. Null if it has spreads
+// memos
 Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual);
 Ty const* ty_element_index_type(Checker* me, Expr const* index); // `index` of `x[index]`
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr

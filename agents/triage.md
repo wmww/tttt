@@ -80,9 +80,9 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   (`keyof Gen<ABC.A>` misses `a`: the intersection with the conflicting-discriminant member isn't reduced before
   `keyof`), contextualTypeShouldBeLiteral (hacks.md: contextual types of union members are reduced, `string | "done"` is
   `string`, so the discriminant `value` widens and the wrong member is picked), bigintPropertyName (`{ 2n: x }` is
-  named `2n`, tsc names it `2`), genericMappedTypeAsClause (now: `{ bFoo: 'bar' }` is TS2741 where tsc elaborates to
-  TS2322 on the property, plan 16; `{ a, b }` against the generic `MappedModel<T>` is TS2322 where tsc says TS2353, the
-  excess check doesn't look at the resolved members of a generic mapped type; TS2312 missing).
+  named `2n`, tsc names it `2`), genericMappedTypeAsClause (`{ a, b }` against the generic
+  `MappedModel<T>` is TS2322 where tsc says TS2353, the excess check doesn't look at the resolved members of a generic
+  mapped type; TS2312 missing).
 - Probe leftovers of plan 12 (`test/probes/plan12/`): semver.ts prints the parameter as `"<" | "<=" | "="` where tsc
   reuses the annotation `Comparator["operator"]` (indexed access annotation not reused by the types printer);
   enum_messages.ts prints `(p: E)` for `p: E.x` (same, annotation reuse of an enum member reference).
@@ -136,9 +136,6 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   ... }`) and a generic signature shown inside a scope that has a type parameter of the same name (`createMCache :
   <T_1>() => MCache<T_1>` inside `function per<T>`: the types components of probes plan11/memoizeOne.ts and
   nestedReturnContext.ts).
-- tsc elaborates a lambda argument that doesn't fit at its return expression (TS2322 inside the body,
-  genericCallWithGenericSignatureArguments2), we report TS2345 on the whole argument. Same family as the object
-  literal elaboration below.
 - TS2403 ("Subsequent variable declarations must have the same type") doesn't exist (`lower.c` TODO); visible in
   contextualSignatureInstantiation now that failed calls return `unknown` like tsc.
 - Destructured parameters without a type annotation don't get the type the pattern implies (`({ a = 1 }) => a` is
@@ -175,8 +172,6 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   call returns `any` where tsc still resolves a signature.
 - `lower_identifier_internal` no longer treats a bare `C` inside generic class `C<T>` as `C<T>` (only `this` is);
   tsc reports TS2314 for the bare name, nothing here does.
-- Object literal elaboration: tsc reports a mismatching property of an object *literal* at the property (TS2322 +
-  related TS6500), we report the whole assignment with a chain (`elaborateError`).
 - TS18050 ("The value 'null' cannot be used here", 680 missing in 38 tests) is what tsc says for null/undefined
   operands; `expr.c` operator checks use `type_extends_strict_nulls` + TS2365 instead.
 - `unionRelationshipCheckPasses`: `{ foo?: number | undefined }` -> `{ foo?: undefined } | { foo: number }` needs
@@ -294,9 +289,14 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   'string' or 'any'") is missing, tttt reports TS2322 instead (`test/probes/plan14/using_identifier.ts`, line 10).
 - Plan 18 leftovers (2026-09-23): stringMappingReduction lost its errors component (it passed while `Lowercase<T>` was
   `any`): `EMap[C]` in the true branch of `C extends Keys ? EMap[C] : ...` needs substitution types (C & Keys).
-  mappedTypeAsClauseRelationships misses TS2208 ("This type parameter might need an `extends X` constraint", related
-  info on TS2322 against a type parameter's mapped type) and elaborates one line tsc doesn't for `+?` with a remapping
-  `as`. mappedTypeAsClauses: union `origin` display (`P & ("a" | "b")`), `keyof { [P in K]: X }` stays deferred (see
+  mappedTypeAsClauseRelationships elaborates one line tsc doesn't for `+?` with a remapping `as`. mappedTypeAsClauses: union `origin` display (`P & ("a" | "b")`), `keyof { [P in K]: X }` stays deferred (see
   hacks.md). templateLiteralTypes1/3/4: see failstats (TS1125/TS1121 for escapes in template literal types, TS2590 not
   reported, `${symbol}` not rejected). numericStringLiteralTypes: spurious TS2370 on `...values: UnwrapContainers<T>`
   (a homomorphic mapped type over a generic tuple as a rest parameter type).
+- Plan 16 leftovers (2026-09-23): TS2561/TS2820 need tsc's spelling suggestion (getSpellingSuggestion), which plan 15's
+  TS2552/TS2551 need too: write it once (5 tests for 2561/2820 alone). TS2793 ("would have succeeded against the
+  implementation") only for function declarations, not overloaded methods/constructors (`add_implementation_success`).
+  Destructuring assignment targets are checked as a whole, not property by property (for-of47/48: tsc's
+  checkDestructuringAssignment reports at the default). Most remaining missing related info comes with checks tttt
+  lacks (TS2403+TS6203 130, TS2448/2449/2729/2552/2551+TS2728, TS2394+TS2750: plan 15). Spurious related info rides on
+  errors that are wrong anyway (TS1007 under bad parser recovery, TS2728/TS2208 under wrong chains).

@@ -365,8 +365,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   `Ty`, or a strict subtype both ways"; union signatures aren't cached per union type (built on every call); `this`
   parameters aren't intersected (there are none). `resolve_call` still falls back to member-by-member resolution when
   some member has no signatures of the kind (tsc: TS2349 "Not all constituents of type ... are callable").
-- `report_arity`: no "An argument for 'x' was not provided" related info; the span for too few arguments is the
-  callee's `inner_span`, not tsc's name-of-the-property-access rule.
+- `report_arity`: the span for too few arguments is the callee's `inner_span`, not tsc's name-of-the-property-access
+  rule.
 - Heritage checks (`ty_check_heritage`, `class_heritage_typecheck`): no TS2417 (static side), no TS2320 (inherited
   properties of several bases that aren't identical), no tsc-specific elaborations ("The types returned by 'toSeq()'
   are incompatible between these types", "'X' is assignable to the constraint of type 'this', but..."); interface
@@ -416,9 +416,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   tttt prints `E` / `Choice.Yes`. `check_with` doesn't strip freshness from a literal of the contextual type (tsc's
   checkExpressionWithContextualType): harmless while relations normalise. Literal ids follow tsc only where tttt
   makes literals in the same order (`1 | 0` vs `0 | 1` in `literalTypes2/3`: tttt makes literals outside checking).
-- Excess property checks (plan 12, `has_excess_properties` in relate.c): no elaboration (tsc's elaborateError drills
-  into the literal and reports at the nested property with a related TS6500; tttt reports the outer relation, located
-  at the nested property name). No TS2561 (spelling suggestion). The keys of a generic mapped type count as known
+- Excess property checks (plan 12, `has_excess_properties` in relate.c): no TS2561 (spelling suggestion). The keys of a generic mapped type count as known
   (`members->mapped`), the intersection-target re-check of nested properties (tsc's structuredTypeRelatedTo, "Nested
   excess property") isn't there. The discriminant reduction of a union target is tsc's discriminateTypeByDiscriminableItems
   without the key-property map. Contextual types of union members are reduced (`string | "a"` is `string`, tsc keeps
@@ -655,3 +653,16 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
   errors in a file with parse errors. Only the `using`/import attribute checks go through it; the older checker grammar
   errors (TS1155, TS1039, TS1254, modifier checks...) still report regardless. Conversely tttt's *parser* reports some
   of tsc's grammar errors (TS1308, TS2852, TS1491/1495), and those count as parse errors for `has_parse_errors`.
+- Error elaboration (plan 16, `elaborate_error` & co in ty/check.c): tsc re-checks the elaborated expressions
+  (checkExpressionForMutableLocationWithContextualType, checkArrayLiteral with forceTuple); tttt reads the memos instead
+  (`ty_mutable_location_type`, `ty_array_literal_as_tuple`), so an expression whose memo was typed under a different
+  contextual type (generic inference passes) can show a different source type. `is_generic_object` approximates
+  isGenericObjectType. `ty_best_matching_type` (relate.c): findMatchingDiscriminantType lacks the key-property map,
+  findMatchingTypeReferenceOrTypeAliasReference only matches references by target and anonymous types by alias, and
+  findMostOverlappyType counts shared property names instead of intersecting `keyof`s.
+- `add_implementation_success` (call.c) probes the implementation signature with `resolve_with_signatures`, which
+  re-types the arguments; they are re-checked against the failed candidate afterwards to restore their memos.
+- Related information positions: `type_decl_span` (check.c) is tsc's target.symbol.declarations[0] for declared types,
+  function type nodes (FunctionImpl.full_span) and type literals (Interface.span) only. Mapped properties of an `as`
+  clause lose their declarations when the clause renamed the key (per key, tsc decides per mapped type: remapping vs
+  filtering, `expand_mapped` in members.c).

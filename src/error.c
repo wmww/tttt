@@ -144,6 +144,17 @@ static int error_cmp(Error const* a, Error const* b) {
     }
 }
 
+// The same message chain (tsc's compareDiagnosticsSkipRelatedInformation: related information doesn't count)
+static bool same_message_chain(Error const* a, Error const* b) {
+    if (a->ts_code != b->ts_code || !cstr_eq(&a->message, &b->message)) return false;
+    Error const* a_next = nullptr;
+    Error const* b_next = nullptr;
+    for_each (i, vec_error, &a->sub_errors) if (!span_valid(i->span)) a_next = i;
+    for_each (i, vec_error, &b->sub_errors) if (!span_valid(i->span)) b_next = i;
+    if (!a_next || !b_next) return !a_next && !b_next;
+    return same_message_chain(a_next, b_next);
+}
+
 static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
     for (intptr_t i = vec_error_size(&my errors); i > 0; i--) {
         int cmp = error_cmp(vec_error_at(&my errors, i - 1), error);
@@ -151,6 +162,11 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
             return i;
         } else if (cmp == 0) {
             if (error->phase == ERROR_PHASE_TYPECHECK) {
+                // tsc's diagnostic collection drops an identical diagnostic
+                for (intptr_t j = i; j > 0 && !error_cmp(vec_error_at(&my errors, j - 1), error); j--) {
+                    Error const* other = vec_error_at(&my errors, j - 1);
+                    if (span_eq(other->span, error->span) && same_message_chain(other, error)) return -1;
+                }
                 // Allow multiple typechecking errors for the same span
                 return i - 1;
             } else {

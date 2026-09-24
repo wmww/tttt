@@ -12,7 +12,7 @@ had **no mention anywhere in `src/`** while tsc's baselines want them (missing c
 | expressions | TS2356 201/22 + TS2357 64/7 (arithmetic/increment operands), TS2703 121/22 (delete), TS2872/TS2873 124+106 (always truthy/falsy), TS2774 59/5, TS1345 38/6, TS2464 71/28 (computed name type), TS7053 71/23 (implicit any index), TS17006 169/5, TS17009 62/24 (`super` before `this`), TS2537 41/10 |
 | grammar (checker-side in tsc) | TS1183 88/19, TS1036 38/28, TS1121 77/16 (octal), TS1210/TS1212/TS1213 ~160 (strict-mode reserved words), TS1359 69/28, TS1117 59/17 (duplicate object literal props), TS1107, TS1100 |
 | regex literal checking (tsc 5.5) | TS1487 116/4, TS1508, TS1535, TS1530, TS1501 64/24, TS1517, TS1518, TS1507 |
-| name suggestions | TS2552 101/54 ("did you mean", needs tsc's spelling suggestion algorithm), TS2583/TS2580/TS2585/TS2550 (lib/`@types` flavours, `triage.md` "Target-gated") |
+| name suggestions | TS2552 101/54 ("did you mean", needs tsc's spelling suggestion algorithm, which TS2561/TS2820 want too: related info TS2728 is ready, see plan 16's `error_add_related_d`), TS2583/TS2580/TS2585/TS2550 (lib/`@types` flavours, `triage.md` "Target-gated") |
 | JS-only | TS8002 132/12, TS8006 49/11, TS8010 34/14 ("TS-only syntax in a .js file": cheap, grammar-like; the rest of JS is its own plan) |
 | emit helpers | TS2343 153/59 (`importHelpers` + a `tslib` without the helper) |
 

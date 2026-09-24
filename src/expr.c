@@ -838,6 +838,11 @@ static bool extends_strict_nulls(Ty const* source, TyIntrinsic target) {
     return ty_is_related(checker, source, ty_intrinsic(checker, target), TY_RELATION_ASSIGNABLE_STRICT_NULLS);
 }
 
+Expr const* expr_effective_check_node(Expr const* me) {
+    while (my tag == EXPR_AS_TYPE && my as_type->is_satisfies) me = &my as_type->expr;
+    return me;
+}
+
 // `target = source` where target is a reference or a destructuring pattern (tsc's checkReferenceAssignment and
 // checkDestructuringAssignment): each reference in it gets what it destructures to. Null `source` when that can't be
 // told (TODO: rest elements, iterables that aren't arrays), which checks the shape of the target only

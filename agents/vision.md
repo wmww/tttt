@@ -53,9 +53,10 @@ types components) are the oracle, not the goal.
 - **Suite gaps are now mostly absent features, not wrong answers** (triage after plan 10): ~1250 tests hit a syntax
   error tsc doesn't have (plan 14 took ~500 of them); dozens of checks don't exist at all (`./unimplemented_codes.sh`:
   unused locals, property vs index signature, used-before-declaration, operand checks, grammar/regex checks: plan 15);
-  no accessibility/readonly/private-name checks (plan 13), no error elaboration and **no related information at all**
-  (plan 16: 896 failing tests expect related lines, 117 fail on nothing else; `./failstats.py` can't see them). These are
-  cheap per test compared with the type core work, and ready to schedule now that the corpus is done.
+  accessibility/readonly checks landed (plan 13 stages 1-3), error elaboration and related information landed (plan 16,
+  suite 4785 -> ~4930: tsc's elaborateError, getBestMatchingType, TS2769 grouping, related info from relations,
+  arity, duplicates, overload implementations, the parser). Missing related info now mostly comes with checks tttt
+  lacks (plan 15). These are cheap per test compared with the type core work.
 - The last plan 08 session added tsc rules the corpus needed: getQuickTypeOfExpression (declaration cycles through
   loops), auto types (`let x;` typed by control flow; evolving arrays still `any[]`), symbol-keyed element access
   references, removeOptionalityFromDeclaredType, inferFromAnnotatedParameters, hasContextualTypeWithNoGenericTypes,

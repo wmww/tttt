@@ -1488,6 +1488,7 @@ static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Ty
 
 static bool parse_interface(Parser* parent, Interface* ret) {
     Parser p = parser(parent);
+    Anchor a = anchor(&p);
 
     if (!hop_char(&p, '{')) {
         return parse_fail(&p);
@@ -1605,6 +1606,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
     *ret = (Interface) {
         .members = members,
         .parsed = true,
+        .span = span_from(a),
     };
     return parse_success(&p);
 }

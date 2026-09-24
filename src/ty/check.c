@@ -138,6 +138,7 @@ static Span type_decl_span(Checker* me, Ty const* ty) {
     while (ty->kind == TY_ANONYMOUS && ty->anonymous.target) ty = ty->anonymous.target;
     if (ty->kind != TY_ANONYMOUS) return (Span){0};
     if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_CALLABLE) return ty->anonymous.node->callable->function->full_span;
+    if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_INTERFACE) return ty->anonymous.node->interface.span;
     FunctionImpl const* function = ty->anonymous.function;
     if (function) return span_valid(function->name) ? function->name : function->full_span;
     (void)me;
@@ -217,12 +218,6 @@ static bool elaborate_element(
     return true;
 }
 
-// Skips what tsc's getEffectiveCheckNode does: parentheses (inner_span) and `satisfies`
-static Expr const* effective_check_node(Expr const* expr) {
-    while (expr->tag == EXPR_AS_TYPE && expr->as_type->is_satisfies) expr = &expr->as_type->expr;
-    return expr;
-}
-
 static bool elaborate_object_literal(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
     if (!(target->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_UNKNOWN |
         TYF_ANY | TYF_NON_PRIMITIVE))) {
@@ -275,7 +270,7 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
             continue;
         }
         if (!i->outer_span.sv.size) continue; // omitted
-        Expr const* check_node = effective_check_node(i);
+        Expr const* check_node = expr_effective_check_node(i);
         Value index = value_number((double)i_index);
         ElaborationItem item = {
             .error_span = check_node->inner_span, .inner = check_node, .name_type = ty_literal(me, &index), .name = name,

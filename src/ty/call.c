@@ -699,8 +699,9 @@ static Span report_unfit_argument(
     if (index >= 0) {
         Arg const* arg = &args->data[index];
         bool is_rest_tuple = arg_type != arg->type;
-        span = is_rest_tuple ? span_of_args(args, (u32)index, args->len - 1) : arg->expr->outer_span;
-        ty_report_unfit_argument(me, arg_type, param_type, span, is_rest_tuple ? nullptr : arg->expr, errs);
+        Expr const* effective = expr_effective_check_node(arg->expr);
+        span = is_rest_tuple ? span_of_args(args, (u32)index, args->len - 1) : effective->inner_span;
+        ty_report_unfit_argument(me, arg_type, param_type, span, is_rest_tuple ? nullptr : effective, errs);
     }
     free(shape.types);
     return span;
