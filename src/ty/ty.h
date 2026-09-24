@@ -650,6 +650,12 @@ void checker_drop(Checker* me);
 // New-core functions take a `Checker* me` instead. See hacks.md
 extern thread_local Checker* current_checker;
 void checker_make_current(Checker* me); // null for none
+// A class member, by (the start of) its declaration span, was read from outside of itself (tsc's isReferenced of a
+// member symbol, see ty_check_member_modifiers()). Only tracked under noUnusedLocals/noUnusedParameters
+bool ty_member_is_referenced(Checker* me, Span declaration);
+void ty_mark_member_referenced(Checker* me, Span declaration);
+// `const { name } = object` reads the member (check.c)
+void ty_mark_destructured_member(Checker* me, Ty const* object, csview name);
 Atom const* checker_atom(Checker* me, csview sv);
 static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return my intrinsics[i]; }
 

@@ -1224,6 +1224,17 @@ Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
     return *slot;
 }
 
+bool ty_member_is_referenced(Checker* me, Span declaration) {
+    u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.sv.buf };
+    return intern_get(&my links, key, 2) != nullptr;
+}
+
+void ty_mark_member_referenced(Checker* me, Span declaration) {
+    if (!span_valid(declaration)) return;
+    u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.sv.buf };
+    *intern_slot(me, &my links, key, 2) = me;
+}
+
 Atom const* ty_private_name(Checker* me, Symbol const* class_symbol, csview text) {
     Atom const* plain = checker_atom(me, text);
     u64 key[3] = { KEY_PRIVATE_NAME, (u64)(uintptr_t)class_symbol, (u64)(uintptr_t)plain };

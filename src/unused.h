@@ -19,8 +19,8 @@ typedef enum UnusedKind : uint8_t {
     UNUSED_VARIABLES, // VariableStatement of a `for`, span: the declaration list
     UNUSED_FOR_IN_OF_VARIABLES, // Same of a `for-in/of`, where `_x` is fine
     UNUSED_FUNCTION, // FunctionImpl: its parameters and type parameters
-    UNUSED_CLASS, // ClassDecl (its last declaration): type parameters
-    UNUSED_INTERFACE, // InterfaceDecl (its last declaration): type parameters
+    UNUSED_CLASS, // ClassDecl: private members, type parameters
+    UNUSED_INTERFACE, // InterfaceDecl: type parameters
     UNUSED_TYPE_ALIAS, // TypeDecl: type parameters
     UNUSED_INFER, // InferredType
 } UnusedKind;

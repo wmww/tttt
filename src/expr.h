@@ -350,6 +350,7 @@ typedef struct PropertyExpr {
     // protected member is accessible when that is a derived class, tsc's getEnclosingClassFromThisParameter)
     Symbol const* this_parameter;
     FunctionImpl const* this_function;
+    FunctionImpl const* containing_function; // The innermost function it is in, if any
 } PropertyExpr;
 
 typedef struct PrivateNameExpr {

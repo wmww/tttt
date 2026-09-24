@@ -203,10 +203,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     }
 
     my outer_class = scope_enclosing_class(names);
-    // Only the last declaration of a class (merged with interfaces) reports its type parameters
-    if (!my symbol || my symbol->decls[my symbol->decl_count - 1].node == me) {
-        unused_register(names, UNUSED_CLASS, me, span_null);
-    }
+    unused_register(names, UNUSED_CLASS, me, span_null);
     names = scope_new_generic(names, &my generic, errs);
 
     for_each (i, vec_class_item, &my items) {

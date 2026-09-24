@@ -56,6 +56,7 @@ enum {
     KEY_UNIQUE_SYMBOL_NAME, // Escaped property name atom (`__@sym@12`) -> the unique symbol type it stands for
     KEY_PRIVATE_NAME,   // (class symbol, `#x` atom) -> the class's own `#x` atom, see ty_private_name()
     KEY_PRIVATE_NAME_CLASS, // Private name atom -> its class symbol
+    KEY_REFERENCED_MEMBER, // Start of a class member's declaration span -> non-null once read (noUnusedLocals)
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c

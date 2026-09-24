@@ -5,6 +5,7 @@
 #include "display.h"
 #include "error.h"
 #include "ty/ty.h"
+#include "unused.h"
 
 void binding_drop(Binding* me) {
     switch (my tag) {
@@ -196,6 +197,9 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
             for_each (i, vec_object_binding_item, &my object) {
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
+                } else if (!i->target.rest && i->source.tag == VALUE_STRING && unused_enabled()) {
+                    Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
+                    ty_mark_destructured_member(current_checker, type, cstr_sv(&i->source.string));
                 }
                 binding_typecheck(&i->target, nullptr, errs);
             }

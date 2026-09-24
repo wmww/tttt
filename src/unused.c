@@ -9,6 +9,7 @@
 #include "error.h"
 #include "compiler_options.h"
 #include "interface_decl.h"
+#include "ty/ty.h"
 
 bool unused_enabled(void) {
     CompilerOptions const* options = compiler_options();
@@ -229,9 +230,11 @@ static bool type_parameter_is_unused(GenericItem const* me, Symbol const* owner,
     return true;
 }
 
-// tsc's checkUnusedTypeParameters
-static void report_type_parameters(Reporter const* r, Generic const* generic, Symbol const* owner) {
+// tsc's checkUnusedTypeParameters. Of a class or interface (`owner`) only the last declaration reports them: all of
+// them can use them
+static void report_type_parameters(Reporter const* r, Generic const* generic, Symbol const* owner, void const* node) {
     if (generic_empty(generic)) return;
+    if (owner && owner->decls[owner->decl_count - 1].node != node) return;
     u32 unused_count = 0;
     for_each (i, vec_generic_item, &generic->items) {
         if (type_parameter_is_unused(i, owner, i_index)) unused_count++;
@@ -255,7 +258,7 @@ static void report_type_parameters(Reporter const* r, Generic const* generic, Sy
 
 static void report_function(Reporter const* r, FunctionImpl const* me) {
     // Of overloads only the last declaration reports its type parameters
-    if (!my symbol || my symbol->decls[my symbol->decl_count - 1].node == me) report_type_parameters(r, &my generic, nullptr);
+    if (!my symbol || my symbol->decls[my symbol->decl_count - 1].node == me) report_type_parameters(r, &my generic, nullptr, nullptr);
     if (!my has_body || my is_type) return;
     for_each (i, vec_function_arg, &my args) {
         Binding const* binding = &i->initializer.binding;
@@ -376,6 +379,35 @@ static void mark_jsdoc_links(SourceFile const* file) {
     }
 }
 
+// tsc's checkUnusedClassMembers: private members nothing read (ty_mark_member_referenced())
+static void report_class_members(Reporter const* r, ClassDecl const* me) {
+    Checker* checker = current_checker;
+    for_each (i, vec_class_item, &my items) {
+        switch (i->tag) {
+            case CLASS_ITEM_METHOD:
+            case CLASS_ITEM_FIELD: {
+                Span name = i->tag == CLASS_ITEM_METHOD ? i->method.name_span : i->field.name_span;
+                bool private_name = span_valid(class_item_private_name(i));
+                if (i->access != ACCESS_MODIFIER_PRIVATE && !private_name) break;
+                // An accessor pair is reported on the getter
+                if (i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET && i->method.accessor_getter) break;
+                if (ty_member_is_referenced(checker, i->span)) break;
+                report_never_read(r, false, name, name);
+            }   break;
+            case CLASS_ITEM_CONSTRUCTOR:
+                for_each (arg, vec_function_arg, &i->constructor.func.args) {
+                    if (!arg->is_parameter_property || arg->access != ACCESS_MODIFIER_PRIVATE) continue;
+                    if (ty_member_is_referenced(checker, arg->span)) continue;
+                    Span name = arg->initializer.binding.content_span;
+                    report(r, false, name, 6138, cstr_d("Property '", name, "' is declared but its value is never read."));
+                }
+                break;
+            default:
+                break;
+        }
+    }
+}
+
 void unused_report(SourceFile const* file, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     mark_jsdoc_links(file);
@@ -389,13 +421,14 @@ void unused_report(SourceFile const* file, ErrorCtx* errs) {
             case UNUSED_FUNCTION: report_function(&r, candidate->node); break;
             case UNUSED_CLASS: {
                 ClassDecl const* decl = candidate->node;
-                report_type_parameters(&r, &decl->generic, decl->symbol);
+                report_class_members(&r, decl);
+                report_type_parameters(&r, &decl->generic, decl->symbol, decl);
             }   break;
             case UNUSED_INTERFACE: {
                 InterfaceDecl const* decl = candidate->node;
-                report_type_parameters(&r, &decl->generic, decl->symbol);
+                report_type_parameters(&r, &decl->generic, decl->symbol, decl);
             }   break;
-            case UNUSED_TYPE_ALIAS: report_type_parameters(&r, &((TypeDecl const*)candidate->node)->generic, nullptr); break;
+            case UNUSED_TYPE_ALIAS: report_type_parameters(&r, &((TypeDecl const*)candidate->node)->generic, nullptr, nullptr); break;
             case UNUSED_INFER: {
                 InferredType const* infer = candidate->node;
                 if (infer->owned_symbol && !(infer->owned_symbol->referenced & SYMBOL_TYPE_PARAMETER) &&

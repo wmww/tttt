@@ -24,10 +24,7 @@ void interface_decl_add_names(InterfaceDecl* me, Scope* scope, bool exported) {
 }
 
 void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs) {
-    // Only the last declaration of an interface reports its type parameters (the others' are used in it)
-    if (!my symbol || my symbol->decls[my symbol->decl_count - 1].node == me) {
-        unused_register(names, UNUSED_INTERFACE, me, span_null);
-    }
+    unused_register(names, UNUSED_INTERFACE, me, span_null);
     names = scope_new_generic(names, &my generic, errs);
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
     this_scope->this_ref = (ThisRef){ .kind = THIS_INTERFACE, .symbol = my symbol, .interface = me };

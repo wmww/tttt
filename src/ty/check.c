@@ -6,6 +6,7 @@
 #include "program.h"
 #include "class_decl.h"
 #include "port_statement.h"
+#include "unused.h"
 
 // Checks the statement/expression walk asks of the new core, and how their errors are worded.
 
@@ -894,11 +895,46 @@ static bool is_global_this(Ty const* ty) {
         ty->declared.namespace_symbol->is_global_this;
 }
 
+// tsc's markPropertyAsReferenced: a private member is read, unless the access only writes it or is its own body
+// reading it through `this` (`this.m()` in m). `access` is null for a destructuring, which always reads
+static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr const* access) {
+    while (prop->target) prop = prop->target;
+    bool private_name = span_valid(prop->name_span) && prop->name_span.sv.buf[0] == '#';
+    if (!(prop->flags & PROP_PRIVATE) && !private_name) return;
+    if (access && access->assignment_target == FLOW_TARGET_DEFINITE && !(prop->flags & PROP_ACCESSOR)) return;
+    Expr const* object = access ? &access->expr : nullptr;
+    bool self_type = object && (is_keyword(object, KEYWORD_IDENTIFIER_THIS) ||
+        (object->tag == EXPR_IDENTIFIER && prop->parent && object->identifier.target == prop->parent));
+    FunctionImpl const* function = access ? access->containing_function : nullptr;
+    char const* at = function ? span_start_ptr(function->member_name) : nullptr;
+    for (u32 i = 0; self_type && at && i < prop->decl_span_count; i++) {
+        if (at >= span_start_ptr(prop->decl_spans[i]) && at < span_end_ptr(prop->decl_spans[i])) return;
+    }
+    for (u32 i = 0; i < prop->decl_span_count; i++) ty_mark_member_referenced(me, prop->decl_spans[i]);
+}
+
+void ty_mark_destructured_member(Checker* me, Ty const* object, csview name) {
+    if (!unused_enabled() || (object->flags & TYF_ANY)) return;
+    MemberRefs refs = {0};
+    if (member_refs(me, object, checker_atom(me, name), &refs, 0) < 0) return;
+    for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, refs.props[i], nullptr);
+}
+
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
     // `typeof globalThis` has no properties for block scoped variables (TS2339 there, see check_access())
     if ((object->flags & TYF_ANY) || is_global_this(object)) return;
     Atom const* name = access_name(me, access);
     MemberRefs refs = {0};
+    if (!name && unused_enabled()) {
+        // `this[k]` with `k: "a" | "b"` reads both
+        Ty const* key = ty_regular(me, ty_access_key_type(me, access));
+        for (u32 i = 0; key->kind == TY_UNION && i < key->composite.types.len; i++) {
+            Atom const* member_name = ty_literal_name(me, key->composite.types.data[i]);
+            MemberRefs member = {0};
+            if (!member_name || member_refs(me, object, member_name, &member, 0) < 0) continue;
+            for (u32 j = 0; j < member.len; j++) mark_member_referenced(me, member.props[j], access);
+        }
+    }
     if (!name || member_refs(me, object, name, &refs, 0) < 0) {
         // Assigning to a generic object doesn't go through its index signatures (TS2339 instead)
         bool generic = object->kind == TY_TYPE_PARAM && !object->param.state->is_this;
@@ -913,6 +949,9 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
             cstr_drop(&object_str);
         }
         return;
+    }
+    if (unused_enabled()) {
+        for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, refs.props[i], access);
     }
     // Element access is the way around accessibility
     if (access->form == PROPERTY_EXPR_DOT) {
@@ -975,6 +1014,10 @@ void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* righ
     Ty const* right = ty_expr_type(me, right_expr);
     if (left_expr->tag == EXPR_PRIVATE_NAME) {
         PrivateNameExpr const* name = left_expr->private_name;
+        if (name->private_class && unused_enabled()) {
+            ClassItem const* item = class_decl_find_private_name(name->private_class, left_expr->inner_span.sv);
+            if (item) ty_mark_member_referenced(me, item->span);
+        }
         if (!name->enclosing_class) {
             error_ctx_grammar_error_d(errs, left_expr->inner_span, 18016, "Private identifiers are not allowed outside class bodies.");
         } else if (!name->private_class) {

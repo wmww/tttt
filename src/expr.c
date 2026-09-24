@@ -759,6 +759,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (this_ref.kind == THIS_ANY) my property->this_function = this_ref.function;
             }
             my property->in_constructor_of = flow->constructor_of;
+            my property->containing_function = names->function;
             if (my property->expr.tag == EXPR_IDENTIFIER) {
                 my property->expr.identifier.super_member = my property->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
             }
@@ -1036,6 +1037,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                 Ty const* property = nullptr;
                 if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
                     property = ty_access(checker, source, ty_string_literal(checker, cstr_sv(&i->name_string)));
+                    ty_mark_destructured_member(checker, source, cstr_sv(&i->name_string));
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD) {
                     assignment_target_typecheck(&i->value, nullptr, nullptr, errs); // TODO: the rest of the object
