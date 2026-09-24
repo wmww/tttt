@@ -47,6 +47,19 @@ void class_item_drop(ClassItem* me) {
     }
 }
 
+Span class_item_private_name(ClassItem const* me) {
+    Span name = my tag == CLASS_ITEM_METHOD ? my method.name_span : my tag == CLASS_ITEM_FIELD ? my field.name_span : span_null;
+    return span_valid(name) && name.sv.size > 1 && name.sv.buf[0] == '#' ? name : span_null;
+}
+
+ClassItem const* class_decl_find_private_name(ClassDecl const* me, csview name) {
+    for_each (i, vec_class_item, &my items) {
+        Span item_name = class_item_private_name(i);
+        if (span_valid(item_name) && csview_equals_sv(item_name.sv, name)) return i;
+    }
+    return nullptr;
+}
+
 bool class_item_is_static(ClassItem* me) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR: return false;
@@ -263,6 +276,15 @@ static void class_computed_key_typecheck(ClassItem* item, ErrorCtx* errs) {
     }
 }
 
+static Atom const* item_member_name(Checker* checker, ClassDecl const* me, ClassItem const* item) {
+    if (span_valid(class_item_private_name(item)) && my symbol) {
+        return ty_private_name(checker, my symbol, class_item_private_name(item).sv);
+    }
+    bool is_field = item->tag == CLASS_ITEM_FIELD;
+    return ty_member_name(checker, is_field ? &item->field.name_string : &item->method.name_string,
+        is_field ? item->field.computed_key : item->method.computed_key);
+}
+
 // tsc's checkClassLikeDeclaration: the class (with its own `this`) has to fit what it extends and implements, with
 // that `this`
 static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
@@ -277,24 +299,16 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
     for_each (i, vec_class_item, &my items) {
         if (i->tag == CLASS_ITEM_FIELD && !i->field.is_static) {
             members[count++] = (HeritageMember){
-                ty_member_name(checker, &i->field.name_string, i->field.computed_key), i->field.name_span,
+                item_member_name(checker, me, i), i->field.name_span,
             };
         } else if (i->tag == CLASS_ITEM_METHOD && !i->method.is_static) {
             members[count++] = (HeritageMember){
-                ty_member_name(checker, &i->method.name_string, i->method.computed_key), i->method.name_span,
+                item_member_name(checker, me, i), i->method.name_span,
             };
         }
     }
     Span span = span_valid(my name) ? my name : my full_span;
     Ty const* base = my extends.tag != EXPR_IMPLICIT_ANY ? ty_class_base_instance(checker, me) : nullptr;
-    // HACK: `#x` is a name of its own per class in tsc (the base's is still there, unrelated), a plain name here, so a
-    // class redeclaring one of its base's private names can't be compared with it
-    for (u32 i = 0; base && i < count; i++) {
-        Atom const* name = members[i].name;
-        if (name && name->len && name->str[0] == '#' && (base->flags & TYF_OBJECT) && ty_get_prop(checker, ty_apparent_type(checker, base), name)) {
-            base = nullptr;
-        }
-    }
     // A class that extends itself through its bases is TS2506 in tsc, and nothing is compared
     if (base && ty_has_base_type(checker, base, declared)) base = nullptr;
     if (base && (base->flags & TYF_OBJECT)) {
@@ -357,6 +371,13 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     int constructor_count = 0; // Implementations
     for_each (i, vec_class_item, &my items) {
+        // tsc's checkGrammarProperty/Method/Accessor (not for an ambient class's accessors)
+        Span private_name = class_item_private_name(i);
+        bool ambient_accessor = i->tag == CLASS_ITEM_METHOD && i->method.accessor && my symbol && my symbol->is_ambient;
+        if (span_valid(private_name) && compiler_options()->target < SCRIPT_TARGET_ES2015 && !ambient_accessor) {
+            error_ctx_grammar_error_d(errs, private_name, 18028,
+                "Private identifiers are only available when targeting ECMAScript 2015 and higher.");
+        }
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
                 function_impl_typecheck(&i->constructor.func, errs);

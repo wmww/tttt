@@ -300,3 +300,7 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   checkDestructuringAssignment reports at the default). Most remaining missing related info comes with checks tttt
   lacks (TS2403+TS6203 130, TS2448/2449/2729/2552/2551+TS2728, TS2394+TS2750: plan 15). Spurious related info rides on
   errors that are wrong anyway (TS1007 under bad parser recovery, TS2728/TS2208 under wrong chains).
+- Exposed by TS2339 on `never` (2026-09-23, `check_access`): taggedPrimitiveNarrowing (`typeof hash !== "string"` then
+  throw narrows `string & { __hash: true }` to never instead of keeping it) and contextualOverloadListFromArrayUnion
+  (`(never[] | string[]).map(item => item.length)`: `item` is never, tsc takes the union signature's parameter
+  `string`). Both passed before only because property access on never was silent.

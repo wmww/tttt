@@ -1600,7 +1600,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_PROPERTY: {
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
-            Ty const* ret = ty_access(me, object, ty_element_index_type(me, &expr->property->prop));
+            Ty const* ret = ty_access(me, object, ty_access_key_type(me, expr->property));
             if (!ret || ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
             ret = access_flow_type(me, expr, ret);
             return optional ? optional_type(me, ret) : ret;
@@ -1648,6 +1648,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_CLASS_DECL: return ty_type_of_symbol(me, expr->class_decl->symbol);
 
         case EXPR_REGEX: return ty_global_regexp_type(me);
+        case EXPR_PRIVATE_NAME: return any_type(me);
 
         case EXPR_TEMPLATE: {
             if (!expr->template_->tag) return check_template(me, expr, ctx);
@@ -1730,6 +1731,13 @@ static Ty const* check_template(Checker* me, Expr const* expr, ExprCtx ctx) {
 Ty const* ty_element_index_type(Checker* me, Expr const* index) {
     if (index->tag == EXPR_TEMPLATE && !index->template_->tag) return check_with(me, index, (ExprCtx){ .template_context = true });
     return ty_expr_type(me, index);
+}
+
+Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
+    if (access->private_class && access->private_class->symbol) {
+        return ty_prop_name_literal(me, ty_private_name(me, access->private_class->symbol, access->prop.inner_span.sv));
+    }
+    return ty_element_index_type(me, &access->prop);
 }
 
 // What the LazyType of an expression evaluates to: nobody checked it with a contextual type first

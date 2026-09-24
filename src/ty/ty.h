@@ -673,6 +673,11 @@ Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty); // A unique symbo
 // the string literal
 Ty const* ty_unique_symbol_of_name(Checker* me, Atom const* name);
 Ty const* ty_prop_name_literal(Checker* me, Atom const* name);
+// `#x` of a class: a name of its own per class (tsc's getSymbolNameForPrivateIdentifier, `__#12@#x`). It's an atom with
+// the text `#x` that isn't the interned one, so members are told apart by pointer like any name, and print as `#x`
+Atom const* ty_private_name(Checker* me, Symbol const* class_symbol, csview text);
+// The class a private name belongs to, null for any other name
+Symbol const* ty_private_name_class(Checker* me, Atom const* name);
 Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
@@ -827,6 +832,7 @@ Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* cont
 // memos
 Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual);
 Ty const* ty_element_index_type(Checker* me, Expr const* index); // `index` of `x[index]`
+Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access); // What `x.y`/`x[y]` looks up (`#y`: the class's)
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr
 // Every reference to a variable, parameter, function, class... gets its type here (plan 03: narrowing goes here)
 Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identifier);
@@ -997,6 +1003,12 @@ IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty cons
 // Member modifiers at a property access (tsc's checkPropertyAccessibility and the readonly checks of
 // checkPropertyAccessExpressionOrQualifiedName): TS2341, TS2445, TS2446, TS2340, TS2855, TS2540, TS2542
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
+// `#x` in `#x in obj`: the instance type of the class that declares it (its constructor for a static `#x`), null if
+// none does. `name` (may be null): the class's `#x`
+Ty const* ty_private_name_owner(Checker* me, Expr const* private_name, Atom const** name);
+void ty_check_in_expression(Checker* me, Expr const* left, Expr const* right, ErrorCtx* errs); // `left in right`
+// `a.#x`: what tsc says about private names rather than TS2339 (TS18013, TS18014, TS18016). True if it reported
+bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs);
 // It assigns to a readonly property (TS2540), which makes its type the error type
 bool ty_is_readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object);
 // `new C()` of a class whose constructor is private or protected, from where it isn't accessible: TS2673, TS2674

@@ -71,6 +71,8 @@ typedef struct ClassItem {
 
 void class_item_drop(ClassItem* me);
 bool class_item_is_static(ClassItem* me);
+/// `#x` (not `"#x"` or `[k]`): the item's name_span, else an invalid span
+Span class_item_private_name(ClassItem const* me);
 Ty const* class_item_field_evaluate_type(ClassItem* me);
 Ty const* class_item_accessor_evaluate_type(ClassItem* me);
 Ty const* class_item_get_type(ClassItem* me);
@@ -94,6 +96,8 @@ typedef struct ClassDecl {
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
+/// The first member of the class named `#name` (tsc's lookupSymbolForPrivateIdentifierDeclaration for one class)
+ClassItem const* class_decl_find_private_name(ClassDecl const* me, csview name);
 void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported);
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

@@ -693,6 +693,28 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
     }
 }
 
+// `#x in obj`: the member `#x` names, from the class that declares it
+static void private_name_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    Checker* checker = current_checker;
+    Atom const* name = nullptr;
+    Ty const* object = ty_private_name_owner(checker, me, &name);
+    if (!object) return;
+    PropSymbolInfo info = {0};
+    collect_prop_symbol(checker, object, name, &info, 0);
+    if (info.found) {
+        VecSpan namespaces = vec_span_init();
+        if (info.parent && info.member_count == 1) push_symbol_path(&namespaces, info.parent);
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = vec_span_clone(info.declarations),
+            .allow_declaration_empty = true,
+            .namespaces = namespaces,
+            .span = my inner_span,
+            .name = span_valid(info.name_span) ? info.name_span : my inner_span,
+        });
+    }
+    vec_span_drop(&info.declarations);
+}
+
 void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
@@ -740,7 +762,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             // member's, so a union of two interfaces gets the plain name like tsc's synthetic symbol
             Checker* checker = current_checker;
             Ty const* object = ty_expr_type(checker, &my property->expr);
-            Ty const* key = ty_expr_type(checker, &my property->prop);
+            Ty const* key = ty_access_key_type(checker, my property);
             PropSymbolInfo info = {0};
             if ((key->flags & TYF_STRING_LITERAL) && !(key->flags & TYF_ENUM_LITERAL)) {
                 collect_prop_symbol(checker, object, key->literal.string, &info, 0);
@@ -891,6 +913,10 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_REGEX:
+            break;
+
+        case EXPR_PRIVATE_NAME:
+            private_name_compile_test_info(me, ctx);
             break;
 
         case EXPR_TEMPLATE:

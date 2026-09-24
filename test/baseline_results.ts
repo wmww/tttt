@@ -5946,7 +5946,7 @@ const baselines = {
         types: false,
     },
     'contextualOverloadListFromArrayUnion': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -16021,9 +16021,9 @@ const baselines = {
         types: true,
     },
     'importHelpersES6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importHelpersInAmbientContext': {
         errors: true,
@@ -16052,8 +16052,8 @@ const baselines = {
     },
     'importHelpersNoHelpersForPrivateFields': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importHelpersNoModule': {
         errors: false,
@@ -16631,7 +16631,7 @@ const baselines = {
         types: false,
     },
     'inOperator': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17771,7 +17771,7 @@ const baselines = {
         types: false,
     },
     'instanceofWithStructurallyIdenticalTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22146,7 +22146,7 @@ const baselines = {
         types: true,
     },
     'narrowByClauseExpressionInSwitchTrue3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -29341,7 +29341,7 @@ const baselines = {
         types: true,
     },
     'taggedPrimitiveNarrowing': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -34432,8 +34432,8 @@ const baselines = {
     },
     'classStaticBlock16': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'classStaticBlock17': {
         errors: true,
@@ -35471,9 +35471,9 @@ const baselines = {
         types: true,
     },
     'privateNameAccessorsAccess': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameAccessorsCallExpression': {
         errors: true,
@@ -35481,9 +35481,9 @@ const baselines = {
         types: true,
     },
     'privateNameAccessorssDerivedClasses': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameAmbientNoImplicitAny': {
         errors: false,
@@ -35498,7 +35498,7 @@ const baselines = {
     'privateNameAndIndexSignature': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'privateNameAndObjectRestSpread': {
         errors: false,
@@ -35526,7 +35526,7 @@ const baselines = {
         types: true,
     },
     'privateNameBadAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35646,7 +35646,7 @@ const baselines = {
         types: false,
     },
     'privateNameES5Ban': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35671,9 +35671,9 @@ const baselines = {
         types: true,
     },
     'privateNameFieldAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameFieldCallExpression': {
         errors: true,
@@ -35686,9 +35686,9 @@ const baselines = {
         types: false,
     },
     'privateNameFieldDerivedClasses': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameFieldDestructuredBinding(target=es2015)': {
         errors: false,
@@ -35767,13 +35767,13 @@ const baselines = {
     },
     'privateNameInInExpressionUnused(target=es2022)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameInInExpressionUnused(target=esnext)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameInLhsReceiverExpression': {
         errors: true,
@@ -35826,9 +35826,9 @@ const baselines = {
         types: true,
     },
     'privateNameMethodAccess': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameMethodAssignment': {
         errors: false,
@@ -35846,7 +35846,7 @@ const baselines = {
         types: true,
     },
     'privateNameMethodClassExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35856,24 +35856,24 @@ const baselines = {
         types: true,
     },
     'privateNameMethodsDerivedClasses': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameNestedClassAccessorsShadowing': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameNestedClassFieldShadowing': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'privateNameNestedClassMethodShadowing': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameNestedClassNameConflict': {
         errors: true,
@@ -35881,14 +35881,14 @@ const baselines = {
         types: true,
     },
     'privateNameNestedMethodAccess': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameNotAccessibleOutsideDefiningClass': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameNotAllowedOutsideClass': {
         errors: false,
@@ -35896,7 +35896,7 @@ const baselines = {
         types: false,
     },
     'privateNameReadonly': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35916,9 +35916,9 @@ const baselines = {
         types: true,
     },
     'privateNameStaticAccessorsAccess': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameStaticAccessorsCallExpression': {
         errors: true,
@@ -35956,9 +35956,9 @@ const baselines = {
         types: true,
     },
     'privateNameStaticFieldAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameStaticFieldCallExpression': {
         errors: true,
@@ -35971,9 +35971,9 @@ const baselines = {
         types: false,
     },
     'privateNameStaticFieldDerivedClasses': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameStaticFieldDestructuredBinding(target=es2015)': {
         errors: false,
@@ -36046,9 +36046,9 @@ const baselines = {
         types: true,
     },
     'privateNameStaticMethodClassExpression': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameStaticMethodInStaticFieldInit': {
         errors: true,
@@ -36096,9 +36096,9 @@ const baselines = {
         types: true,
     },
     'privateNamesAndGenericClasses-2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesAndIndexedAccess': {
         errors: false,
@@ -36156,19 +36156,19 @@ const baselines = {
         types: false,
     },
     'privateNamesInGenericClasses': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesInNestedClasses-1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesInNestedClasses-2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesIncompatibleModifiers': {
         errors: false,
@@ -36181,8 +36181,8 @@ const baselines = {
         types: true,
     },
     'privateNamesInterfaceExtendingClass': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'privateNamesNoDelete': {
@@ -36206,7 +36206,7 @@ const baselines = {
         types: true,
     },
     'privateNamesUnique-2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36406,9 +36406,9 @@ const baselines = {
         types: true,
     },
     'autoAccessor10': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'autoAccessor11': {
         errors: false,
@@ -39451,7 +39451,7 @@ const baselines = {
         types: true,
     },
     'symbolType2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44603,17 +44603,17 @@ const baselines = {
     'compoundExponentiationAssignmentLHSCanBeAssigned1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compoundExponentiationAssignmentLHSCannotBeAssigned': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compoundExponentiationAssignmentLHSIsReference': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compoundExponentiationAssignmentLHSIsValue': {
         errors: false,
@@ -44621,39 +44621,39 @@ const baselines = {
         types: false,
     },
     'emitCompoundExponentiationAssignmentWithIndexingOnLHS1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitCompoundExponentiationAssignmentWithIndexingOnLHS2': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'emitCompoundExponentiationAssignmentWithIndexingOnLHS3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'emitCompoundExponentiationAssignmentWithIndexingOnLHS4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitCompoundExponentiationAssignmentWithPropertyAccessingOnLHS1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitCompoundExponentiationOperator1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitCompoundExponentiationOperator2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitExponentiationOperator1': {
         errors: true,
@@ -44786,14 +44786,14 @@ const baselines = {
         types: true,
     },
     'exponentiationOperatorWithTemplateStringInvalid': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorWithTemplateStringInvalidES6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorWithTypeParameter': {
         errors: true,
@@ -45856,7 +45856,7 @@ const baselines = {
         types: false,
     },
     'esDecorators-privateFieldAccess': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46296,7 +46296,7 @@ const baselines = {
         types: true,
     },
     'inOperatorWithValidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

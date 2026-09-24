@@ -641,6 +641,11 @@ static void check_access(
     }
 
     if (!error_if_not_found) return;
+    // `never` has no properties (tsc: only the silent never of inference passes is any-like)
+    if (object->flags & TYF_NEVER) {
+        report_no_property(me, object, index, 2339, index_span, errs);
+        return;
+    }
     // HACK: no expando members yet (`function f() {} f.x = 1`, and everything JS files declare by assignment:
     // `this.x = 1`, `module.exports.x`, prototype assignments), so callables and JS files are let through
     if (index_span.source && index_span.source->is_js) return;
@@ -742,7 +747,7 @@ static int member_refs(Checker* me, Ty const* object, Atom const* name, MemberRe
 }
 
 static Atom const* access_name(Checker* me, PropertyExpr const* access) {
-    return ty_literal_name(me, ty_regular(me, ty_element_index_type(me, &access->prop)));
+    return ty_literal_name(me, ty_regular(me, ty_access_key_type(me, access)));
 }
 
 static bool is_keyword(Expr const* expr, KeywordIdentifier keyword) {
@@ -899,7 +904,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         // A readonly index signature (`readonly T[]`)
         Ty const* apparent = ty_apparent_type(me, object);
         IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
-            ty_applicable_index_info(me, apparent, ty_regular(me, ty_element_index_type(me, &access->prop))) : nullptr;
+            ty_applicable_index_info(me, apparent, ty_regular(me, ty_access_key_type(me, access))) : nullptr;
         if (info && info->readonly) {
             cstr object_str = ty_to_cstr(me, access->form == PROPERTY_EXPR_DOT ? apparent : object);
             error_ctx_error_d(errs, span, 2542, "Index signature in type '", object_str, "' only permits reading.");
@@ -919,6 +924,124 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         error_ctx_error_d(errs, access->prop.outer_span, 2540,
             "Cannot assign to '", atom_sv(name), "' because it is a read-only property.");
     }
+}
+
+// tsc's checkNonNullType: unknown and (under strictNullChecks) null or undefined are errors. Null if it reported
+static Ty const* check_non_null_type(Checker* me, Ty const* type, Expr const* expr, ErrorCtx* errs) {
+    bool named = expr_is_entity_name(expr);
+    Span span = expr->inner_span;
+    if (type->flags & TYF_UNKNOWN) {
+        if (named) {
+            error_ctx_error_d(errs, span, 18046, "'", span, "' is of type 'unknown'.");
+        } else {
+            error_ctx_error_d(errs, span, 2571, "Object is of type 'unknown'.");
+        }
+        return nullptr;
+    }
+    if (!compiler_options()->strict_null_checks || (type->flags & TYF_ANY)) return type;
+    TyList parts = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+    bool has_null = false, has_undefined = false;
+    for (u32 i = 0; i < parts.len; i++) {
+        has_null |= (parts.data[i]->flags & TYF_NULL) != 0;
+        has_undefined |= (parts.data[i]->flags & TYF_UNDEFINED) != 0;
+    }
+    if (!has_null && !has_undefined) return type;
+    char const* what = has_null && has_undefined ? "null' or 'undefined" : has_null ? "null" : "undefined";
+    if (named) {
+        error_ctx_error_d(errs, span, has_null && has_undefined ? 18049 : has_null ? 18047 : 18048,
+            "'", span, "' is possibly '", what, "'.");
+    } else {
+        error_ctx_error_d(errs, span, has_null && has_undefined ? 2533 : has_null ? 2531 : 2532,
+            "Object is possibly '", what, "'.");
+    }
+    Ty const* non_null = ty_non_nullable(me, type);
+    return non_null->flags & (TYF_NULLABLE | TYF_NEVER) ? nullptr : non_null;
+}
+
+Ty const* ty_private_name_owner(Checker* me, Expr const* private_name, Atom const** name) {
+    ClassDecl const* class_decl = private_name->private_name->private_class;
+    if (!class_decl || !class_decl->symbol) return nullptr;
+    csview text = private_name->inner_span.sv;
+    if (name) *name = ty_private_name(me, class_decl->symbol, text);
+    ClassItem* item = (ClassItem*)class_decl_find_private_name(class_decl, text);
+    return class_item_is_static(item) ? ty_static_type_of(me, class_decl->symbol) : ty_declared_type_of(me, class_decl->symbol);
+}
+
+// tsc's checkInExpression
+// TODO: TS2638 for a right operand that may be a primitive (`{}`, an intersection with `{}`: hasEmptyObjectIntersection)
+void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* right_expr, ErrorCtx* errs) {
+    Ty const* right = ty_expr_type(me, right_expr);
+    if (left_expr->tag == EXPR_PRIVATE_NAME) {
+        PrivateNameExpr const* name = left_expr->private_name;
+        if (!name->enclosing_class) {
+            error_ctx_grammar_error_d(errs, left_expr->inner_span, 18016, "Private identifiers are not allowed outside class bodies.");
+        } else if (!name->private_class) {
+            cstr right_str = ty_to_cstr(me, right);
+            error_ctx_error_d(errs, left_expr->inner_span, 2339,
+                "Property '", left_expr->inner_span, "' does not exist on type '", right_str, "'.");
+            cstr_drop(&right_str);
+        }
+    } else {
+        Ty const* left = check_non_null_type(me, ty_expr_type(me, left_expr), left_expr, errs);
+        if (left) {
+            Ty const* keys[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
+            ty_check_assignable(me, left, ty_union(me, keys, 3, nullptr, (TyList){0}), left_expr->inner_span, errs);
+        }
+    }
+    right = check_non_null_type(me, right, right_expr, errs);
+    if (right) ty_check_assignable(me, right, ty_intrinsic(me, TY_NON_PRIMITIVE), right_expr->inner_span, errs);
+}
+
+// tsc's checkPropertyAccessExpressionOrQualifiedName for a PrivateIdentifier, and checkPrivateIdentifierPropertyAccess
+bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs) {
+    Span name = access->prop.inner_span;
+    if (access->form != PROPERTY_EXPR_DOT || access->prop.tag != EXPR_LITERAL || !span_valid(name) || name.sv.buf[0] != '#') {
+        return false;
+    }
+    ClassDecl const* lexical = access->private_class;
+    ClassItem const* lexical_item = lexical ? class_decl_find_private_name(lexical, name.sv) : nullptr;
+    if (access->assignment_target && lexical_item && lexical_item->tag == CLASS_ITEM_METHOD &&
+        lexical_item->method.accessor == CLASS_ACCESSOR_NONE
+    ) {
+        error_ctx_error_d(errs, name, 2803, "Cannot assign to private method '", name,
+            "'. Private methods are not writable.");
+    }
+    if (object->flags & TYF_ANY) {
+        if (lexical) return true;
+        if (!access->enclosing_class) {
+            error_ctx_error_d(errs, name, 18016, "Private identifiers are not allowed outside class bodies.");
+        } else {
+            error_ctx_error_d(errs, name, 2339, "Property '", name, "' does not exist on type 'any'.");
+        }
+        return true;
+    }
+    Ty const* apparent = ty_apparent_type(me, object);
+    if (!(apparent->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, apparent);
+    if (lexical && lexical->symbol && ty_get_prop(me, apparent, ty_private_name(me, lexical->symbol, name.sv))) return false;
+    // A private name of the same spelling on the type is another class's
+    Prop const* other = nullptr;
+    for (u32 i = 0; i < members->prop_count && !other; i++) {
+        Prop const* prop = members->props[i];
+        if (ty_private_name_class(me, prop->name) && csview_equals_sv(atom_sv(prop->name), name.sv)) other = prop;
+    }
+    if (!other) return false;
+    ClassDecl const* other_class = class_decl_of(ty_private_name_class(me, other->name));
+    if (lexical_item && other_class && is_within_class(lexical, other_class)) {
+        cstr type_str = ty_to_cstr(me, object);
+        Error* e = error_ctx_error_d(errs, name, 18014, "The property '", name, "' cannot be accessed on type '", type_str,
+            "' within this class because it is shadowed by another private identifier with the same spelling.");
+        cstr_drop(&type_str);
+        Span lexical_name = class_item_private_name(lexical_item);
+        error_add_related_d(e, lexical_name, 18017, "The shadowing declaration of '", name, "' is defined here");
+        error_add_related_d(e, ty_prop_decl_span(other), 18018, "The declaration of '", name,
+            "' that you probably intended to use is defined here");
+        return true;
+    }
+    csview class_name = other_class && span_valid(other_class->name) ? other_class->name.sv : c_sv("(anonymous)");
+    error_ctx_error_d(errs, name, 18013, "Property '", name, "' is not accessible outside class '", class_name,
+        "' because it has a private identifier.");
+    return true;
 }
 
 bool ty_constructor_accessible(Checker* me, CallExpr const* call, Signature const* sig, Span span, ErrorCtx* errs) {

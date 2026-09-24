@@ -438,6 +438,7 @@ static Expr const* reference_candidate(Expr const* expr) {
 // The name an access goes by: `a.b`, `a["b"]`, `a[0]`, `a[c]` for a `const c` of a literal type
 static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     Expr const* key = &access->prop;
+    if (access->private_class) return ty_literal_name(me, ty_access_key_type(me, access));
     if (key->tag == EXPR_LITERAL) {
         if (key->literal.tag != VALUE_STRING && key->literal.tag != VALUE_NUMBER) return nullptr;
     } else if (key->tag == EXPR_IDENTIFIER) {
@@ -1419,6 +1420,12 @@ static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* 
     Checker* me = q->me;
     Expr const* target = reference_candidate(&binary->right);
     if (!is_matching_reference(me, q->reference, target)) return type;
+    if (binary->left.tag == EXPR_PRIVATE_NAME) {
+        // `#x in obj` says obj is an instance of the class that declares `#x` (its constructor for a static `#x`: tsc's
+        // narrowTypeByPrivateIdentifierInInExpression)
+        Ty const* owner = ty_private_name_owner(me, &binary->left, nullptr);
+        return owner ? narrowed_type(me, type, owner, assume_true, true) : type;
+    }
     bool is_number = false;
     Atom const* name = ty_property_name_of_key(me, ty_flow_expr_type(me, &binary->left), &is_number);
     if (!name || (type->flags & TYF_ANY)) return type;

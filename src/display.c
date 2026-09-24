@@ -996,6 +996,7 @@ void display_expr(Display d, Expr const* me) {
         }   break;
 
         case EXPR_REGEX:
+        case EXPR_PRIVATE_NAME:
             display_sv(d, my inner_span.sv);
             break;
 

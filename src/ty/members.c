@@ -262,6 +262,8 @@ static void builder_add_interface(
 static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const* base) {
     Members const* members = ty_members(me, base);
     for (u32 i = 0; i < members->prop_count; i++) {
+        // A static `#x` stays the base's (tsc's isStaticPrivateIdentifierProperty in addInheritedMembers)
+        if ((members->props[i]->flags & PROP_STATIC) && ty_private_name_class(me, members->props[i]->name)) continue;
         if (!builder_find_prop(builder, members->props[i]->name)) {
             builder_push(builder, props, members->props[i]);
         }
@@ -355,6 +357,8 @@ static Prop* builder_add_class_prop(
         bool is_number = false;
         name = ty_property_name_of_key(me, ty_expr_type(me, computed_key), &is_number);
         if (!name) return nullptr;
+    } else if (span_valid(class_item_private_name(item)) && parent) {
+        name = ty_private_name(me, parent, cstr_sv(name_string));
     } else {
         name = checker_atom(me, cstr_sv(name_string));
     }

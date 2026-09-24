@@ -257,6 +257,10 @@ void expr_drop(Expr* me) {
         case EXPR_REGEX:
             break;
 
+        case EXPR_PRIVATE_NAME:
+            free(my private_name);
+            break;
+
         case EXPR_TEMPLATE:
             if (my template_->tag) {
                 expr_drop(my template_->tag);
@@ -650,6 +654,14 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             my property->assignment_target = assignment_target;
             my property->compound_like_target = compound_like_target;
             my property->enclosing_class = scope_enclosing_class(names);
+            if (my property->form == PROPERTY_EXPR_DOT && my property->prop.tag == EXPR_LITERAL &&
+                span_valid(my property->prop.inner_span) && my property->prop.inner_span.sv.buf[0] == '#'
+            ) {
+                csview name = my property->prop.inner_span.sv;
+                ClassDecl const* c = my property->enclosing_class;
+                while (c && !class_decl_find_private_name(c, name)) c = c->outer_class;
+                my property->private_class = c;
+            }
             {
                 ThisRef this_ref = scope_get_this(names, false);
                 if (this_ref.kind == THIS_PARAMETER) my property->this_parameter = this_ref.symbol;
@@ -796,6 +808,13 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_REGEX:
             break;
+
+        case EXPR_PRIVATE_NAME: {
+            ClassDecl const* c = scope_enclosing_class(names);
+            my private_name->enclosing_class = c;
+            while (c && !class_decl_find_private_name(c, my inner_span.sv)) c = c->outer_class;
+            my private_name->private_class = c;
+        }   break;
 
         case EXPR_TEMPLATE:
             if (my template_->tag) {
@@ -1041,9 +1060,12 @@ static void binary_op_typecheck(
         case BINARY_OP_GREATER:
         case BINARY_OP_LESS_EQUAL:
         case BINARY_OP_GREATER_EQUAL:
-        case BINARY_OP_IN:
         case BINARY_OP_INSTANCEOF:
             // TODO: figure out rules and typecheck
+            break;
+
+        case BINARY_OP_IN:
+            ty_check_in_expression(current_checker, &expr->binary_op->left, &expr->binary_op->right, errs);
             break;
 
         case BINARY_OP_AND_AND:
@@ -1093,6 +1115,14 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_IDENTIFIER: identifier_expr_typecheck(&my identifier, errs); break;
 
         case EXPR_BINARY_OP:
+            if (my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
+                !expr_is_perenthisized(&my binary_op->left)
+            ) {
+                // The one place `#x` is an expression
+                expr_typecheck(&my binary_op->right, errs);
+                ty_check_in_expression(current_checker, &my binary_op->left, &my binary_op->right, errs);
+                break;
+            }
             expr_typecheck(&my binary_op->left, errs);
             expr_typecheck(&my binary_op->right, errs);
             binary_op_typecheck(
@@ -1142,10 +1172,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 expr_type = ty_non_nullable(current_checker, expr_type);
             }
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
+            if (ty_check_private_name_access(current_checker, my property, expr_type, errs)) break;
             ty_check_property_access(
                 current_checker,
                 expr_type,
-                ty_element_index_type(current_checker, &my property->prop),
+                ty_access_key_type(current_checker, my property),
                 my property->expr.outer_span,
                 my property->prop.outer_span,
                 expr_is_entity_name(&my property->expr),
@@ -1243,6 +1274,17 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         }   break;
 
         case EXPR_REGEX:
+            break;
+
+        case EXPR_PRIVATE_NAME:
+            // tsc's checkGrammarPrivateIdentifierExpression: an expression only as the left operand of `in`
+            if (!my private_name->enclosing_class) {
+                error_ctx_grammar_error_d(errs, my inner_span, 18016, "Private identifiers are not allowed outside class bodies.");
+            } else {
+                error_ctx_grammar_error_d(errs, my inner_span, 1451, "Private identifiers are only allowed in class bodies "
+                    "and may only be used as part of a class member declaration, property access, or on the left-hand-side of an "
+                    "'in' expression");
+            }
             break;
 
         case EXPR_TEMPLATE:

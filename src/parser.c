@@ -3216,6 +3216,7 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     else if (hop_start(&p, "||=")) *op = BINARY_OP_OR_OR_EQUAL;
     else if (hop_start(&p, "\?\?=")) *op = BINARY_OP_EH_EH_EQUAL;
     else if (hop_start(&p, "++") || hop_start(&p, "--")) return parse_fail(&p);
+    else if (hop_start(&p, "**=")) *op = BINARY_OP_STAR_STAR_EQUAL;
     else if (hop_start(&p, "**")) *op = BINARY_OP_STAR_STAR;
     else if (hop_start(&p, "<<")) *op = BINARY_OP_LESS_LESS;
     else if (hop_start(&p, ">>")) *op = BINARY_OP_GREATER_GREATER;
@@ -3230,7 +3231,6 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     else if (hop_start(&p, "\?\?")) *op = BINARY_OP_EH_EH;
     else if (hop_start(&p, "+=")) *op = BINARY_OP_PLUS_EQUAL;
     else if (hop_start(&p, "-=")) *op = BINARY_OP_MINUS_EQUAL;
-    else if (hop_start(&p, "**=")) *op = BINARY_OP_STAR_STAR_EQUAL;
     else if (hop_start(&p, "*=")) *op = BINARY_OP_STAR_EQUAL;
     else if (hop_start(&p, "/=")) *op = BINARY_OP_SLASH_EQUAL;
     else if (hop_start(&p, "%=")) *op = BINARY_OP_MOD_EQUAL;
@@ -3930,6 +3930,11 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ret->tag = EXPR_LITERAL;
     } else if (parse_regex(&p)) {
         *ret = expr_regex(span_from(a));
+    } else if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+        p.pos++;
+        Span ignored;
+        parse_identifier_or_keyword(&p, &ignored);
+        *ret = expr_private_name(span_from(a), c_new(PrivateNameExpr, {0}));
     } else if (parse_object(&p, &ret->object)) {
         ret->tag = EXPR_OBJECT;
     } else if (parse_array(&p, &ret->array)) {

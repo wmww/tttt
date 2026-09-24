@@ -106,8 +106,12 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   `class_decl_lookup_names` (raw pointers between items of the same vec). No TS2300 for property-vs-accessor clashes,
   no check that getter and setter types agree, readonly only means "no setter". Interface/type-literal accessors are
   converted to properties in `parse_interface`.
-- Private names (`#x`): the `#` is just part of the member name string. No TS18028 target check, no "not accessible
-  outside class" (TS18013), no `#x in obj` (plan 13).
+- Private names (`#x`, `ty_private_name`): the lexical lookup (`PropertyExpr.private_class`) scans class items by
+  text on every access (no per-class table). An access that no class declares looks up the plain `"#x"` atom, so a
+  string-named property `"#x"` would be found (tsc: never). TS18015 (relations: "refers to a different member"), TS2806
+  (set-only private accessor), private names in object literals/interfaces/parameters (TS18016 via the parser: these
+  still fail to parse), for-in's `for (#x in o)` (TS1451 here, tsc TS2406) are missing.
+- `in` (`ty_check_in_expression`): no TS2638 (a right operand that may be a primitive, hasEmptyObjectIntersection).
 - `p!: T` / `let x!: T`: the `!` is hopped and forgotten (class fields only; `let resp!: T` still doesn't parse).
 - Generators (`infer_generator_type`, `check_yield`): no next type is inferred from what the `yield`s are used as
   (tsc's `nextTypes` from the yield's contextual type): it's the contextual/declared TNext or `unknown`. No TS7055/TS7057
@@ -365,6 +369,10 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   `Ty`, or a strict subtype both ways"; union signatures aren't cached per union type (built on every call); `this`
   parameters aren't intersected (there are none). `resolve_call` still falls back to member-by-member resolution when
   some member has no signatures of the kind (tsc: TS2349 "Not all constituents of type ... are callable").
+- `super(...)` (`resolve_into` in call.c): the heritage clause's type arguments are passed as explicit type arguments
+  of the base constructor's signatures; without written ones they're inferred where tsc instantiates with defaults
+  (getInstantiatedConstructorsForTypeArguments). `super()` in an arrow function inside a constructor resolves to
+  nothing (`any`): tsc allows it.
 - `report_arity`: the span for too few arguments is the callee's `inner_span`, not tsc's name-of-the-property-access
   rule.
 - Heritage checks (`ty_check_heritage`, `class_heritage_typecheck`): no TS2417 (static side), no TS2320 (inherited

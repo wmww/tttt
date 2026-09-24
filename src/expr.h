@@ -7,6 +7,7 @@
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
 typedef struct PropertyExpr PropertyExpr;
+typedef struct PrivateNameExpr PrivateNameExpr;
 typedef struct GenericParamsExpr GenericParamsExpr;
 typedef struct AsTypeExpr AsTypeExpr;
 typedef struct TernaryExpr TernaryExpr;
@@ -82,6 +83,7 @@ typedef struct Expr {
         EXPR_SPREAD, // `...a`, only appears directly in array literals and call arguments
         EXPR_REGEX, // `/a+/g`, the span is all there is to it
         EXPR_TEMPLATE, // Template literal with substitutions and/or a tag. Plain `abc` is a string EXPR_LITERAL
+        EXPR_PRIVATE_NAME, // `#x` on its own: only means something as the left operand of `in`
     } tag;
     union {
         Value literal;
@@ -99,6 +101,7 @@ typedef struct Expr {
         ClassDecl* class_decl;
         Expr* spread;
         TemplateExpr* template_;
+        PrivateNameExpr* private_name;
     };
     LazyType lazy_type;
 } Expr;
@@ -162,6 +165,10 @@ static inline Expr expr_spread(Span span, Expr* operand) {
 
 static inline Expr expr_template(Span span, TemplateExpr* template_) {
     return (Expr){ .tag = EXPR_TEMPLATE, .template_ = template_, EXPR_DEFAULT(span) };
+}
+
+static inline Expr expr_private_name(Span span, PrivateNameExpr* private_name) {
+    return (Expr){ .tag = EXPR_PRIVATE_NAME, .private_name = private_name, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_regex(Span span) {
@@ -336,12 +343,19 @@ typedef struct PropertyExpr {
     // The innermost class it is in (member accessibility, see ClassDecl.outer_class for the others), and the class
     // whose constructor is the function it is directly in (where `this.x = ` may write a readonly x)
     ClassDecl const* enclosing_class;
+    // `a.#x`: the innermost class around it that declares `#x`, whose `#x` it names (null if none does)
+    ClassDecl const* private_class;
     Symbol const* in_constructor_of;
     // What `this` is where it is, if not a class: a `this` parameter, or a function with a contextual `this` (a
     // protected member is accessible when that is a derived class, tsc's getEnclosingClassFromThisParameter)
     Symbol const* this_parameter;
     FunctionImpl const* this_function;
 } PropertyExpr;
+
+typedef struct PrivateNameExpr {
+    ClassDecl const* enclosing_class;
+    ClassDecl const* private_class; // See PropertyExpr.private_class
+} PrivateNameExpr;
 
 // Generic params
 

@@ -1,10 +1,9 @@
 # Plan 13: member modifiers (accessibility, readonly writes, private names)
 
 ## Status
-Stages 1-3 done (2026-09-23, see `documentation.md` "Member modifiers" for how it works). Left: stage 4 (private
-names) and stage 5 (nominal relations), then the leftovers below. Probe: `test/probes/triage/member_modifiers.ts`:
-what still differs from tsc there is exactly stages 4 and 5 (TS18028, TS18013, `a.#p` symbol, the TS2322
-elaboration "Types have separate declarations of a private property").
+Stages 1-4 done (2026-09-23, see `documentation.md` "Member modifiers" and "Private names"). Left: stage 5 (nominal
+relations), then the leftovers below. Probe: `test/probes/triage/member_modifiers.ts`: what still differs from tsc
+there is exactly stage 5 (the TS2322 elaboration "Types have separate declarations of a private property").
 
 ## What exists now
 - `Prop.flags`: `PROP_PRIVATE`/`PROP_PROTECTED` (an accessor's are the getter's, `PROP_SET_*` the setter's for
@@ -19,12 +18,10 @@ elaboration "Types have separate declarations of a private property").
   this-argument, base constructor in static members. Where tsc says `super` is illegal (computed names, member
   decorators, constructor parameters, `super()` outside a constructor: `Scope.no_super`) it stays `any`.
 
-## Stage 4: private names
-Give `#x` a per-class identity (tsc's escaped name `__#<classid>@#x`): the binder can mangle the atom with the
-declaring class's symbol id so lookup from another class simply fails, then TS18013 when a same-spelled `#x` exists on
-the type (tsc's lookup for a better message), TS18028 below ES2015 (target-gated, `compiler_options()->target`).
-Remove the `class_heritage_typecheck` HACK (`hacks.md`). Missing: TS18013 30 in 18 tests, TS18028 18 in 6, TS2803 12
-in 4. Check the symbols baseline (`a.#p` has no symbol in tsc when it's not accessible).
+## Stage 4 leftovers
+Private names in object literals, interfaces, parameters and enums don't parse (tsc parses them and reports TS18016 /
+TS1451: `./failstats.py --syntax -f '^privateName.*'`). TS18015 in relations (reportUnmatchedProperty's private-name
+case, needs stage 5's place), TS2806, TS2804/TS18010/TS2300 duplicates (privateNameDuplicateField and friends).
 
 ## Stage 5: relations
 A private/protected target property is only satisfied by the *same declaration* (tsc `propertiesRelatedTo`: "Types

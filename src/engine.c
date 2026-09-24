@@ -388,6 +388,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
         case EXPR_CLASS_DECL: return result_ok_undefined; // TODO
         case EXPR_SPREAD: return result_ok_undefined; // TODO
         case EXPR_REGEX: return result_ok_undefined; // TODO
+        case EXPR_PRIVATE_NAME: return result_ok_undefined;
         case EXPR_TEMPLATE: return result_ok_undefined; // TODO
     }
     impossible;

@@ -1147,7 +1147,40 @@ static Ty const* intern_deferred(Checker* me, u64 const* key, u32 count, TyKind 
 
 Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
-    return unique ? unique : ty_string_literal(me, atom_sv(name));
+    if (unique) return unique;
+    if (!ty_private_name_class(me, name)) return ty_string_literal(me, atom_sv(name));
+    // A string literal of the private atom (keyed like literal_type(): the atom is none of its)
+    u64 key[4] = { KEY_LITERAL, VALUE_STRING, (u64)(uintptr_t)name, 0 };
+    void const** slot = intern_slot(me, &my types, key, 4);
+    if (!*slot) {
+        Ty* ret = ty_alloc(me, TY_LITERAL, TYF_STRING_LITERAL);
+        ret->literal.value.tag = VALUE_STRING;
+        ret->literal.value.string = cstr_null;
+        ret->literal.string = name;
+        *slot = ret;
+    }
+    return *slot;
+}
+
+Atom const* ty_private_name(Checker* me, Symbol const* class_symbol, csview text) {
+    Atom const* plain = checker_atom(me, text);
+    u64 key[3] = { KEY_PRIVATE_NAME, (u64)(uintptr_t)class_symbol, (u64)(uintptr_t)plain };
+    Atom const* found = intern_get(&my links, key, 3);
+    if (found) return found;
+    Atom* atom = arena_alloc(&my arena, sizeof(Atom) + (size_t)plain->len + 1);
+    atom->len = plain->len;
+    memcpy(atom->str, plain->str, plain->len);
+    atom->str[plain->len] = 0;
+    *intern_slot(me, &my links, key, 3) = atom;
+    u64 back[2] = { KEY_PRIVATE_NAME_CLASS, (u64)(uintptr_t)atom };
+    *intern_slot(me, &my links, back, 2) = class_symbol;
+    return atom;
+}
+
+Symbol const* ty_private_name_class(Checker* me, Atom const* name) {
+    if (!name->len || name->str[0] != '#') return nullptr;
+    u64 key[2] = { KEY_PRIVATE_NAME_CLASS, (u64)(uintptr_t)name };
+    return intern_get(&my links, key, 2);
 }
 
 Ty const* ty_unique_symbol_of_name(Checker* me, Atom const* name) {
@@ -1202,6 +1235,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         if (!members->mapped) {
             TyBuf parts = {0};
             for (u32 i = 0; i < members->prop_count; i++) {
+                if (ty_private_name_class(me, members->props[i]->name)) continue; // Not a key (tsc's getLiteralTypeFromProperty)
                 ty_buf_push(&parts, ty_prop_name_literal(me, members->props[i]->name));
             }
             for (u32 i = 0; i < members->index_count; i++) {
