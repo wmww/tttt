@@ -66,7 +66,7 @@ bool class_item_is_static(ClassItem* me) {
         case CLASS_ITEM_CONSTRUCTOR: return false;
         case CLASS_ITEM_METHOD: return my method.is_static;
         case CLASS_ITEM_FIELD: return my field.is_static;
-        case CLASS_ITEM_INTERFACE_MEMBER: return false;
+        case CLASS_ITEM_INTERFACE_MEMBER: return my interface_member_static;
         case CLASS_ITEM_STATIC_BLOCK: return true;
     }
     impossible;
@@ -370,6 +370,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
 
     class_heritage_typecheck(me, errs);
+    if (my symbol) {
+        Checker* checker = current_checker;
+        ty_check_index_constraints(checker, ty_declared_type_of(checker, my symbol), my symbol, false, nullptr, 0, my name, errs);
+        ty_check_index_constraints(checker, ty_static_type_of(checker, my symbol), my symbol, true, nullptr, 0, my name, errs);
+    }
 
     int constructor_count = 0; // Implementations
     for_each (i, vec_class_item, &my items) {

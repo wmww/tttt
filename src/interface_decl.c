@@ -142,6 +142,10 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
             ty_check_heritage(checker, type_with_this, bases[b].with_this, nullptr, 0, 2430, "Interface", "incorrectly extends interface",
                 my name, errs);
         }
+        Ty const* written[32];
+        u32 written_count = 0;
+        for (u32 b = 0; b < base_count && written_count < c_arraylen(written); b++) written[written_count++] = bases[b].written;
+        ty_check_index_constraints(checker, declared, symbol, false, written, written_count, my name, errs);
     }
     if (bases != stack_bases) free(bases);
 }
@@ -163,7 +167,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         // TODO: TS2312 (not an object type)
     }
 
-    type_typecheck(&my type, errs);
+    interface_typecheck(&my type.interface, errs);
     // TODO: off until checking `CallChainRoot extends CallChain` early stops making the corpus' aliases circular
     // (triage.md, "TS2430"); TS2415/TS2416/TS2420 for classes are on
     interface_heritage_typecheck(me, errs);

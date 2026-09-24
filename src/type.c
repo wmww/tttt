@@ -234,6 +234,19 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
     }
 }
 
+bool type_literal_has_index_constraints(TypeNode const* me) {
+    if (my tag != TYPE_INTERFACE) return false;
+    // Only a literal with an index signature and something else to check against it: evaluating the others early
+    // would give their types ids (and so union orders) before the code that uses them does
+    u32 index_count = 0, other_count = 0;
+    for_each (i, vec_interface_member, &my interface.members) {
+        if (i->key.tag == INTERFACE_KEY_MAPPED) return false;
+        if (i->key.tag == INTERFACE_KEY_INDEX) index_count++;
+        else if (i->key.tag != INTERFACE_KEY_CALLABLE) other_count++;
+    }
+    return index_count && (other_count || index_count > 1);
+}
+
 void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
     switch (my tag) {
         case TYPE_ANY:
@@ -321,7 +334,14 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
 
         case TYPE_IDENTIFIER: identifier_type_typecheck(my identifier, errs); break;
         case TYPE_CALLABLE: callable_type_typecheck(my callable, errs); break;
-        case TYPE_INTERFACE: interface_typecheck(&my interface, errs); break;
+        case TYPE_INTERFACE:
+            // A type literal (an interface's body is checked by interface_decl_typecheck())
+            interface_typecheck(&my interface, errs);
+            if (type_literal_has_index_constraints(me)) {
+                Ty const* type = ty_of_node(me);
+                ty_check_index_constraints(current_checker, type, nullptr, false, nullptr, 0, (Span){0}, errs);
+            }
+            break;
         case TYPE_ARRAY: type_typecheck(my array.element, errs); break;
 
         case TYPE_TUPLE:

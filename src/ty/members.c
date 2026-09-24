@@ -475,7 +475,9 @@ static void builder_add_class_items(
             }   break;
 
             case CLASS_ITEM_INTERFACE_MEMBER:
-                if (!static_side) builder_add_interface_member(me, builder, &i->interface_memeber, ctx, parent);
+                if (static_side == i->interface_member_static) {
+                    builder_add_interface_member(me, builder, &i->interface_memeber, ctx, parent);
+                }
                 break;
 
             case CLASS_ITEM_CONSTRUCTOR:

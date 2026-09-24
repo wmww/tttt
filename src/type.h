@@ -237,6 +237,8 @@ static inline TypeNode type_move(TypeNode* me) {
 }
 
 void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs);
+// A type literal with index signatures whose members type_typecheck() checks against them (TS2411/TS2413)
+bool type_literal_has_index_constraints(TypeNode const* me);
 void type_typecheck(TypeNode const* me, ErrorCtx* errs);
 #define g_class_key TypeNode, type
 #define g_no_clone

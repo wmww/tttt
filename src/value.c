@@ -99,6 +99,60 @@ double value_to_number(Value const* me) {
     impossible;
 }
 
+// ECMAScript's Number::toString: the shortest digits that read back as the number, positioned by its rules
+static void append_js_number(cstr* target, double number) {
+    if (number == 0) {
+        cstr_append_lit(target, "0");
+        return;
+    }
+    if (isnan(number)) {
+        cstr_append_lit(target, "NaN");
+        return;
+    }
+    if (number < 0) {
+        cstr_append_lit(target, "-");
+        number = -number;
+    }
+    if (isinf(number)) {
+        cstr_append_lit(target, "Infinity");
+        return;
+    }
+    char buf[48];
+    for (int precision = 1; precision <= 17; precision++) {
+        snprintf(buf, sizeof(buf), "%.*e", precision - 1, number);
+        if (strtod(buf, nullptr) == number) break;
+    }
+    // buf is d.ddde[+-]x: the digits, and the position n of the decimal point (the number is 0.digits * 10^n)
+    char digits[24];
+    int k = 0;
+    char const* c = buf;
+    for (; *c && *c != 'e'; c++) {
+        if (*c >= '0' && *c <= '9' && k < (int)sizeof(digits) - 1) digits[k++] = *c;
+    }
+    while (k > 1 && digits[k - 1] == '0') k--;
+    digits[k] = 0;
+    int n = (*c == 'e' ? atoi(c + 1) : 0) + 1;
+    if (k <= n && n <= 21) {
+        cstr_append_n(target, digits, k);
+        for (int i = k; i < n; i++) cstr_append_lit(target, "0");
+    } else if (0 < n && n <= 21) {
+        cstr_append_n(target, digits, n);
+        cstr_append_lit(target, ".");
+        cstr_append_n(target, digits + n, k - n);
+    } else if (-6 < n && n <= 0) {
+        cstr_append_lit(target, "0.");
+        for (int i = 0; i < -n; i++) cstr_append_lit(target, "0");
+        cstr_append_n(target, digits, k);
+    } else {
+        cstr_append_n(target, digits, 1);
+        if (k > 1) {
+            cstr_append_lit(target, ".");
+            cstr_append_n(target, digits + 1, k - 1);
+        }
+        cstr_append_fmt(target, "e%c%d", n - 1 < 0 ? '-' : '+', abs(n - 1));
+    }
+}
+
 void cstr_append_value_js(cstr* target, Value const* me) {
     switch (my tag) {
         case VALUE_UNDEFINED: cstr_append_lit(target, "undefined"); break;
@@ -115,14 +169,7 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             break;
 
         case VALUE_NUMBER:
-            if (my number == 0) {
-                cstr_append_lit(target, "0");
-            } else if (isnan(my number)) {
-                cstr_append_lit(target, "NaN");
-            } else {
-                // Not display's %.12g: JS number-to-string needs the extra digits
-                cstr_append_fmt(target, "%.21g", my number);
-            }
+            append_js_number(target, my number);
             break;
 
         case VALUE_SYMBOL:

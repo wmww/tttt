@@ -226,7 +226,7 @@ const baselines = {
         types: true,
     },
     'abstractClassUnionInstantiation': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -643,7 +643,7 @@ const baselines = {
     'ambientEnum1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientEnumElementInitializer1': {
         errors: true,
@@ -658,7 +658,7 @@ const baselines = {
     'ambientEnumElementInitializer3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientEnumElementInitializer4': {
         errors: true,
@@ -3791,17 +3791,17 @@ const baselines = {
         types: true,
     },
     'classIndexer2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classIndexer3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classIndexer4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10443,12 +10443,12 @@ const baselines = {
     'elidedJSImport2(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'elidedJSImport2(module=es2022)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'elidingImportNames': {
         errors: true,
@@ -10893,7 +10893,7 @@ const baselines = {
     'enumInitializersWithExponents': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumKeysQuotedAsObjectPropertiesInDeclarationEmit': {
         errors: true,
@@ -16956,7 +16956,7 @@ const baselines = {
         types: true,
     },
     'indexerConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17581,7 +17581,7 @@ const baselines = {
         types: true,
     },
     'inheritedMembersAndIndexSignaturesFromDifferentBases': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17606,7 +17606,7 @@ const baselines = {
         types: true,
     },
     'inheritedStringIndexersFromDifferentBaseTypes2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17926,12 +17926,12 @@ const baselines = {
         types: true,
     },
     'interfaceExtendsClassWithPrivate2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'interfaceImplementation1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20153,7 +20153,7 @@ const baselines = {
     'literals1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'literalsInComputedProperties1': {
         errors: false,
@@ -23606,7 +23606,7 @@ const baselines = {
         types: true,
     },
     'numericIndexerConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25636,17 +25636,17 @@ const baselines = {
         types: true,
     },
     'propertiesAndIndexers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'propertiesAndIndexers2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'propertiesAndIndexersForNumericNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28636,12 +28636,12 @@ const baselines = {
         types: true,
     },
     'stringIndexerAndConstructor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'stringIndexerAndConstructor1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30421,7 +30421,7 @@ const baselines = {
         types: true,
     },
     'typeName1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36901,37 +36901,37 @@ const baselines = {
         types: true,
     },
     'staticIndexSignature1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'staticIndexSignature2': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'staticIndexSignature3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticIndexSignature4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'staticIndexSignature5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticIndexSignature6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'staticIndexSignature7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37128,7 +37128,7 @@ const baselines = {
     'controlFlowInstanceOfGuardPrimitives': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowInstanceofExtendsFunction': {
         errors: true,
@@ -39131,7 +39131,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39206,7 +39206,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty30': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40231,22 +40231,22 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames38_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNames38_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNames39_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNames39_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43343,12 +43343,12 @@ const baselines = {
     'templateStringWithEmbeddedUnaryPlus': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedUnaryPlusES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedYieldKeyword': {
         errors: false,
@@ -46723,7 +46723,7 @@ const baselines = {
     'literals': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'strictModeOctalLiterals': {
         errors: false,
@@ -49661,7 +49661,7 @@ const baselines = {
         types: true,
     },
     'mergedInterfacesWithIndexers2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49671,7 +49671,7 @@ const baselines = {
         types: true,
     },
     'mergedInterfacesWithInheritedPrivates2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49876,17 +49876,17 @@ const baselines = {
         types: true,
     },
     'interfaceWithStringIndexerHidingBaseTypeIndexer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'interfaceWithStringIndexerHidingBaseTypeIndexer2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'interfaceWithStringIndexerHidingBaseTypeIndexer3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49901,7 +49901,7 @@ const baselines = {
         types: true,
     },
     'implementingAnInterfaceExtendingClassWithPrivates2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57383,7 +57383,7 @@ const baselines = {
     'parser15.4.4.14-9-2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserAdditiveExpression1': {
         errors: true,
@@ -59298,17 +59298,17 @@ const baselines = {
     'everyTypeWithAnnotationAndInitializer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'everyTypeWithAnnotationAndInvalidInitializer': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'everyTypeWithInitializer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidMultipleVariableDeclarations': {
         errors: false,
@@ -61553,7 +61553,7 @@ const baselines = {
     'throwStatements': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'catchClauseWithTypeAnnotation': {
         errors: false,
@@ -62881,7 +62881,7 @@ const baselines = {
         types: true,
     },
     'stringIndexerConstrainsPropertyDeclarations2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64831,7 +64831,7 @@ const baselines = {
         types: false,
     },
     'enumIsNotASubtypeOfAnythingButNumber': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64881,7 +64881,7 @@ const baselines = {
         types: false,
     },
     'subtypesOfUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -65086,7 +65086,7 @@ const baselines = {
         types: true,
     },
     'unionSubtypeIfEveryConstituentTypeIsSubtype': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -139,6 +139,12 @@ static int error_cmp(Error const* a, Error const* b) {
         return ret;
     } else if (a->phase != b->phase) {
         return a->phase > b->phase ? 1 : -1;
+    } else if (a->phase == ERROR_PHASE_TYPECHECK && a->ts_code != b->ts_code) {
+        // tsc's compareDiagnostics (what the harness sorts by): code, then message
+        return a->ts_code > b->ts_code ? 1 : -1;
+    } else if (a->phase == ERROR_PHASE_TYPECHECK) {
+        ret = cstr_cmp(&a->message, &b->message);
+        return ret > 0 ? 1 : ret < 0 ? -1 : 0;
     } else {
         return 0;
     }

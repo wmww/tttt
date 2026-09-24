@@ -895,6 +895,153 @@ static bool is_global_this(Ty const* ty) {
         ty->declared.namespace_symbol->is_global_this;
 }
 
+// Index constraints
+
+// tsc's isApplicableIndexType
+static bool index_applies(Checker* me, Ty const* key, Ty const* index_key) {
+    if (ty_is_related(me, key, index_key, TY_RELATION_ASSIGNABLE)) return true;
+    if (index_key == ty_intrinsic(me, TY_STRING)) return ty_is_related(me, key, ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE);
+    return index_key == ty_intrinsic(me, TY_NUMBER) && (key->flags & TYF_STRING_LITERAL) && key->literal.string &&
+        ty_is_numeric_name(key->literal.string);
+}
+
+// Whether the span is part of one of the declarations of `owner` (all of a type literal's members are its own)
+static bool is_local_span(Symbol const* owner, Span span) {
+    if (!span_valid(span)) return false;
+    if (!owner) return true;
+    for (u32 i = 0; i < owner->decl_count; i++) {
+        Span full = owner->decls[i].full;
+        if (span.source == full.source && span_start_ptr(span) >= span_start_ptr(full) && span_end_ptr(span) <= span_end_ptr(full)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Whether a base of an interface has both (then the base reported it)
+static bool base_has_both(Checker* me, Ty const* const* bases, u32 base_count, Atom const* prop, Ty const* key, Ty const* index_key) {
+    for (u32 b = 0; b < base_count; b++) {
+        Members const* members = ty_members(me, ty_apparent_type(me, bases[b]));
+        bool has_first = false, has_index = false;
+        if (prop) {
+            has_first = ty_get_prop(me, bases[b], prop) != nullptr;
+        } else {
+            for (u32 i = 0; i < members->index_count; i++) has_first |= members->index[i].key == key;
+        }
+        for (u32 i = 0; i < members->index_count; i++) has_index |= members->index[i].key == index_key;
+        if (has_first && has_index) return true;
+    }
+    return false;
+}
+
+// A type member's node ends after its `;` or `,`
+static Span with_member_separator(Span span) {
+    if (!span_valid(span)) return span;
+    char const* end = span_end_ptr(span);
+    char const* c = end;
+    while (*c == ' ' || *c == '\t') c++;
+    if (*c == ';' || *c == ',') end = c + 1;
+    return span_make(span.source, span_start_ptr(span), end);
+}
+
+// Where tsc reports a property: the name of a property or method declaration, a whole method signature
+static Span prop_error_span(Prop const* prop) {
+    while (prop->target) prop = prop->target;
+    if ((prop->flags & PROP_METHOD) && !prop->function && !prop->overloads && prop->decl_span_count) {
+        return with_member_separator(prop->decl_spans[0]);
+    }
+    return prop->name_span;
+}
+
+// tsc's symbolToString of a property: as written if that was a string literal
+static cstr prop_name_str(Checker* me, Prop const* prop) {
+    while (prop->target) prop = prop->target;
+    Span name = prop->name_span;
+    if (span_valid(name) && name.sv.size >= 2 && (name.sv.buf[0] == '"' || name.sv.buf[0] == '\'')) return cstr_from_sv(name.sv);
+    return ty_prop_name_cstr(me, prop->name);
+}
+
+void ty_check_index_constraints(
+    Checker* me, Ty const* type, Symbol const* owner, bool is_static, Ty const* const* bases, u32 base_count, Span name,
+    ErrorCtx* errs
+) {
+    Members const* members = ty_members(me, type);
+    if (!members->index_count) return;
+    bool interface = owner && !(owner->flags & SYMBOL_CLASS);
+    for (u32 p = 0; p < members->prop_count; p++) {
+        Prop const* prop = members->props[p];
+        Prop const* root = prop;
+        while (root->target) root = root->target;
+        if (span_valid(root->name_span) && root->name_span.sv.buf[0] == '#') continue;
+        if (is_static && csview_equals(atom_sv(prop->name), "prototype")) continue;
+        Ty const* key = ty_prop_name_literal(me, prop->name);
+        bool local_prop = is_local_span(owner, root->name_span);
+        Ty const* prop_ty = nullptr;
+        for (u32 i = 0; i < members->index_count; i++) {
+            IndexInfo const* info = &members->index[i];
+            if (!index_applies(me, key, info->key)) continue;
+            Span at = local_prop ? prop_error_span(prop) :
+                is_local_span(owner, info->decl_span) ? with_member_separator(info->decl_span) :
+                interface && !base_has_both(me, bases, base_count, prop->name, nullptr, info->key) ? name : (Span){0};
+            if (!span_valid(at)) continue;
+            if (!prop_ty) prop_ty = prop_type(me, prop);
+            if (ty_is_related(me, prop_ty, info->value, TY_RELATION_ASSIGNABLE)) continue;
+            cstr prop_str = prop_name_str(me, prop);
+            cstr type_str = ty_to_cstr(me, prop_ty);
+            cstr key_str = ty_to_cstr(me, info->key);
+            cstr value_str = ty_to_cstr(me, info->value);
+            error_ctx_error_d(errs, at, 2411, "Property '", prop_str, "' of type '", type_str, "' is not assignable to '",
+                key_str, "' index type '", value_str, "'.");
+            c_drop(cstr, &prop_str, &type_str, &key_str, &value_str);
+        }
+    }
+    // A class's members whose computed names aren't known, by the type of the name
+    ClassDecl* class_decl = owner ? (ClassDecl*)symbol_find_node(owner, SYMBOL_DECL_CLASS) : nullptr;
+    VecClassItem empty = {0};
+    for_each (item, vec_class_item, class_decl ? &class_decl->items : &empty) {
+        bool is_method = item->tag == CLASS_ITEM_METHOD;
+        if ((!is_method && item->tag != CLASS_ITEM_FIELD) || class_item_is_static(item) != is_static) continue;
+        Expr const* computed = is_method ? item->method.computed_key : item->field.computed_key;
+        if (!computed || ty_member_name(me, is_method ? &item->method.name_string : &item->field.name_string, computed)) continue;
+        if (is_method && item->method.accessor == CLASS_ACCESSOR_SET && item->method.accessor_first != item) continue;
+        Span item_name = is_method ? item->method.name_span : item->field.name_span;
+        Ty const* key = ty_expr_type(me, computed);
+        Ty const* item_ty = nullptr;
+        for (u32 i = 0; i < members->index_count; i++) {
+            IndexInfo const* info = &members->index[i];
+            if (!index_applies(me, key, info->key)) continue;
+            if (!item_ty) item_ty = class_item_get_type(item);
+            if (ty_is_related(me, item_ty, info->value, TY_RELATION_ASSIGNABLE)) continue;
+            cstr type_str = ty_to_cstr(me, item_ty);
+            cstr key_str = ty_to_cstr(me, info->key);
+            cstr value_str = ty_to_cstr(me, info->value);
+            error_ctx_error_d(errs, item_name, 2411, "Property '", item_name, "' of type '", type_str, "' is not assignable to '",
+                key_str, "' index type '", value_str, "'.");
+            c_drop(cstr, &type_str, &key_str, &value_str);
+        }
+    }
+    if (members->index_count < 2) return;
+    for (u32 c = 0; c < members->index_count; c++) {
+        IndexInfo const* check_info = &members->index[c];
+        bool local_check = is_local_span(owner, check_info->decl_span);
+        for (u32 i = 0; i < members->index_count; i++) {
+            IndexInfo const* info = &members->index[i];
+            if (i == c || !index_applies(me, check_info->key, info->key)) continue;
+            Span at = local_check ? with_member_separator(check_info->decl_span) :
+                is_local_span(owner, info->decl_span) ? with_member_separator(info->decl_span) :
+                interface && !base_has_both(me, bases, base_count, nullptr, check_info->key, info->key) ? name : (Span){0};
+            if (!span_valid(at) || ty_is_related(me, check_info->value, info->value, TY_RELATION_ASSIGNABLE)) continue;
+            cstr check_key = ty_to_cstr(me, check_info->key);
+            cstr check_value = ty_to_cstr(me, check_info->value);
+            cstr key_str = ty_to_cstr(me, info->key);
+            cstr value_str = ty_to_cstr(me, info->value);
+            error_ctx_error_d(errs, at, 2413, "'", check_key, "' index type '", check_value, "' is not assignable to '",
+                key_str, "' index type '", value_str, "'.");
+            c_drop(cstr, &check_key, &check_value, &key_str, &value_str);
+        }
+    }
+}
+
 // tsc's markPropertyAsReferenced: a private member is read, unless the access only writes it or is its own body
 // reading it through `this` (`this.m()` in m). `access` is null for a destructuring, which always reads
 static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr const* access) {

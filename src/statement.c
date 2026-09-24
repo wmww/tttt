@@ -149,6 +149,8 @@ void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
+    // A literal checked for its index signatures is the alias's type: named by the alias, which has to come first
+    if (my symbol && type_literal_has_index_constraints(&my type)) ty_declared_type_of(current_checker, my symbol);
     generic_typecheck(&my generic, errs);
     type_typecheck(&my type, errs);
 }

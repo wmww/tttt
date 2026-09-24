@@ -2882,6 +2882,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.declarations = vec_span_single(span_from(a));
             ret->interface_memeber.readonly = modifiers.includes[MODIFIER_READONLY];
+            ret->interface_member_static = modifiers.includes[MODIFIER_STATIC];
             // `readonly [K in T]: X` (the modifier went to the list before the key was known to be mapped)
             InterfaceMember* member = &ret->interface_memeber;
             if (member->key.tag == INTERFACE_KEY_MAPPED && member->readonly && !member->key.mapped.readonly) {

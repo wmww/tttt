@@ -1018,6 +1018,14 @@ void ty_check_heritage(
     Checker* me, Ty const* derived, Ty const* base, HeritageMember const* members, u32 count, unsigned ts_code,
     char const* what, char const* relation, Span span, ErrorCtx* errs
 );
+// tsc's checkIndexConstraints: the properties (TS2411) and index signatures (TS2413) of a class, interface or type
+// literal fit the index signatures that apply to their names. `owner`: the class or interface (null: a type literal,
+// all of whose members are its own), `bases`: an interface's base types, `name`: where what two bases bring together is
+// reported
+void ty_check_index_constraints(
+    Checker* me, Ty const* type, Symbol const* owner, bool is_static, Ty const* const* bases, u32 base_count, Span name,
+    ErrorCtx* errs
+);
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS2345
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
