@@ -1008,6 +1008,36 @@ static bool is_index_key_intersection(Ty const* ty) {
     return false;
 }
 
+// The property of a mapped type's modifiers type that a key names, and its optional/readonly flags. Of a union or
+// intersection like tsc's createUnionOrIntersectionProperty: a union's is optional if it is in any member (none if a
+// member lacks it), an intersection's only if it is in every member that has it; readonly if any is
+static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* name, u32* flags) {
+    *flags = 0;
+    if (modifiers->kind != TY_UNION && modifiers->kind != TY_INTERSECTION) {
+        Prop const* prop = ty_get_prop(me, modifiers, name);
+        if (prop) *flags = prop->flags & (PROP_OPTIONAL | PROP_READONLY);
+        return prop;
+    }
+    bool is_union = modifiers->kind == TY_UNION;
+    Prop const* first = nullptr;
+    u32 optional = is_union ? 0 : PROP_OPTIONAL, readonly = 0;
+    for (u32 i = 0; i < modifiers->composite.types.len; i++) {
+        Ty const* member = ty_apparent_type(me, modifiers->composite.types.data[i]);
+        u32 member_flags = 0;
+        Prop const* prop = (member->flags & TYF_OBJECT) || member->kind == TY_UNION || member->kind == TY_INTERSECTION ?
+            modifiers_prop(me, member, name, &member_flags) : nullptr;
+        if (!prop) {
+            if (is_union) return nullptr;
+            continue;
+        }
+        if (!first) first = prop;
+        if (is_union) optional |= member_flags & PROP_OPTIONAL; else optional &= member_flags;
+        readonly |= member_flags & PROP_READONLY;
+    }
+    if (first) *flags = (optional & PROP_OPTIONAL) | readonly;
+    return first;
+}
+
 // A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
 // clause maps a key to), an index signature per primitive key. Returns the members unchanged while the key type is
 // generic (or something this can't expand yet)
@@ -1042,7 +1072,9 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
         }
     }
     Ty const* modifiers = mapped->modifiers_type;
-    if (modifiers && !(modifiers->flags & TYF_OBJECT)) modifiers = nullptr;
+    if (modifiers && !(modifiers->flags & TYF_OBJECT) && modifiers->kind != TY_UNION && modifiers->kind != TY_INTERSECTION) {
+        modifiers = nullptr;
+    }
     // The template as a property to instantiate per key
     Prop* template = arena_new(&my arena, Prop);
     template->type = mapped->template;
@@ -1074,11 +1106,11 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                     continue;
                 }
                 // Modifiers come from the property the key (not the name it's mapped to) names
-                Prop const* modifiers_prop = nullptr;
+                Prop const* from = nullptr;
+                u32 flags = 0;
                 if (modifiers && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) {
-                    modifiers_prop = ty_get_prop(me, modifiers, ty_literal_name(me, key));
+                    from = modifiers_prop(me, modifiers, ty_literal_name(me, key), &flags);
                 }
-                u32 flags = modifiers_prop ? modifiers_prop->flags & (PROP_OPTIONAL | PROP_READONLY) : 0;
                 if (mapped->optional > 0) flags |= PROP_OPTIONAL;
                 if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
                     flags &= ~(u32)PROP_OPTIONAL;
@@ -1095,7 +1127,7 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                 };
                 // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers), unless
                 // the `as` clause renamed it (tsc: a remapping rather than a filtering `as` clause; approximated per key)
-                Prop const* declared = prop_name == key ? modifiers_prop : nullptr;
+                Prop const* declared = prop_name == key ? from : nullptr;
                 while (declared && declared->target && !declared->decl_span_count) declared = declared->target;
                 if (declared) {
                     prop->name_span = declared->name_span;

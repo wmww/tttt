@@ -20381,7 +20381,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeUnionConstraintInferences': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
