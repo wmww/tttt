@@ -1,17 +1,31 @@
 # Todo
-Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 08)")
+Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 13)")
 for why.
 
-(Done since the last insights: plan 16 planned; plan 19 stage 0, valibot 4473 -> 2169; plan 14, suite 4221 -> 4604, spurious syntax
-errors 1242 -> 746 tests; plan 18 in one session, suite -> 4690, type-fest 598 -> 424, valibot -> 1835; plan 20,
-valibot 4.38 -> 1.19 s and 1834 -> 607 MB, vs tsgo 0.88 s / 834 MB; plan 13 stages 1-3 + typed `super`, suite
-4690 -> 4785, valibot -> 1791; plan 16 done in one session, suite 4785 -> ~4930, valibot -> 1883 (false positives split per
-property); plan 13 stages 4-5 + `super(...)` resolution, `super` legality, this-before-super, `in` checks, duplicate
-package redirects, suite 4931 -> 5116, valibot -> 1871. Plan 13 has only small leftovers now.)
-
-1. **Insights.** Triage after plan 13 is done (2026-09-23): triage.md is regrouped by theme, the old checker items
-   re-probed. Decisions waiting there: which of the new category-sized items get plans (binding patterns as types;
-   display fidelity: annotation reuse and union origins; class expressions + member symbols as a single session;
-   substitution types), how much of plan 19's loop (corpora to zero) to interleave with the suite plans, whether alias
-   variances (triage.md "Perf") get a plan, and when JS/JSDoc starts (it's also most of the spurious TS2304, the
-   biggest spurious code). Plan 15 (missing checks) is ready to run as is.
+1. **Execution: plan 19 R5, R3, R2** (`infer` variables defer nested conditionals; `keyof` of object literal types with
+   functions; mapped-type optionality over unions/intersections). Small, high leverage, mostly type-fest. Record both
+   corpus counts; the suite and the tsc corpus (0) are the regression checks.
+2. **Execution: plan 19 R4 + R1** (`const` type parameters; a real identity relation, tsc's `identityRelation`). Then
+   re-rank plan 19's buckets in the plan file and rerun `./bench.sh` (R1 should cut valibot's time).
+3. **Execution: relation results under assumptions.** `bugs/overload_relation_assumption.md` first (tsc's `maybeKeys`:
+   only cache results that depended on an in-progress assumption once the outermost relation succeeds), then
+   `bugs/interface_heritage_alias_cycle.md` to switch TS2430 on for good (167 missing in 40 tests). Same file as R1.
+4. **Execution: plan 15, session 1.** Re-derive the table. Start with unused locals/parameters (TS6133 & co., 120
+   tests miss only that): design the "referenced" bit + report pass once, as the plan says. Then declaration checks.
+5. **Planning: plan 21, display fidelity.** Rank the mechanisms behind the ~2600 tests that pass errors but fail
+   types/symbols (vision.md has first numbers; `./displaydiff.py` buckets the types diffs by mechanism, extend it to
+   symbols). Start with the 274 tests whose lines all match (only underlines or line order differ). Decide how to do tsc's annotation reuse (`typeof a`, `Array<X>` as written) for real rather
+   than extending the fitted rules in `ty_display.c` (hacks.md "Types baseline underlines"). Fold in triage.md's
+   "Display fidelity" and "Class expressions and member symbols".
+6. **Execution: plan 21, first stages.**
+7. **Execution: plan 15, session 2.**
+8. **Harness + planning: JSX.** Make `baseline_test_suite.c` collect `.tsx` tests (328 files; the pass count will drop,
+   save the new baseline and say so in the commit and `measurements.md`), then write plan 22 (JSX parse, `JSX`
+   namespace lookup, element/attribute typing, `@jsx` options, `@libFiles` react.d.ts). Measure how much `--syntax`
+   and TS2304 it accounts for.
+9. **Planning (+ execution if small): alias variances**, triage.md "Perf" first bullet: infer and relate two
+   instantiations of one alias by their type arguments with measured variances. valibot is the corpus where tsgo still
+   wins; bench before and after.
+10. **Triage.** Drain triage.md. Also audit `hacks.md` against the code (several entries are stale after plans 13/16/18:
+    "no nominal class rules", "no `as` clauses", the ambient module table note); delete what's fixed. Decide whether
+    "binding patterns as types" gets a plan now.

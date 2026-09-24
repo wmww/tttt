@@ -5,77 +5,52 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-23, plan 20 done)
-- **Plan 20: conditional types are instantiated through tsc's outer-type-parameter keyed cache** (mapper cut down to
-  the parameters the root mentions, result cached by what they map to). valibot **4.38 -> 1.19 s, 1834 -> 607 MB**
-  (tsgo 0.88 s / 834 MB, single-threaded 1.72), type-fest 0.68 -> 0.59 s, no diagnostics or tests changed. tttt now
-  beats single-threaded tsgo on all three corpora and multi-threaded tsgo on two; valibot's remaining gap is the
-  inference walk itself, where tsc has a shortcut tttt lacks (same-alias type arguments by variance, triage.md).
+## State (2026-09-24, insights after plan 13)
+- **Suite 5116 / 13163** fully pass (errors 8206, symbols 9480, types 7879). **Corpora**: tsc's `src/compiler` 0
+  diagnostics, type-fest 450, valibot 1871 (all three are clean under tsc). **Perf** (`measurements.md`): tsc corpus
+  0.70 s vs tsgo 0.75 (single-threaded 1.29), type-fest 0.53 vs 1.23, valibot 1.16 s / 615 MB vs tsgo 0.83 s / 833 MB
+  (single-threaded 1.62). valibot is the one corpus where multi-threaded tsgo still wins.
+- Since the last insights (plan 08), eight plans each finished in one session without a redesign: 17 (two modern
+  corpora), 19 stage 0 (module augmentation), 14 (syntax gaps), 18 (template literal types, `as` clauses), 20
+  (conditional instantiation cache, valibot 4.4 -> 1.2 s), 13 (member modifiers, `super`), 16 (elaboration, related
+  info). Suite 4211 -> 5116 over them.
+- Done and holding: hand-written backtracking parser, tsc-shaped binder, interned `Ty` core with id-keyed relations,
+  mapper instantiation, two-pass inference, contextual typing, conditional/mapped/indexed/template types, flow graph +
+  narrowing, module resolution + tsconfig, iteration protocol, generators, `this` types, elaboration. ~42k lines of C.
+  `documentation.md` describes it, `hacks.md` lists what is approximated.
+- Absent: JSX (and the suite doesn't even run `.tsx` tests, see below), JS/JSDoc semantics, substitution types, lazy
+  reverse mapped types, decorator checking, declaration emit (out of scope).
 
-- **Plan 18 (template literal types, string mappings, mapped `as` clauses) done in one session**, all five stages:
-  suite 4604 -> 4690, type-fest 598 -> 424 (nothing left in `source/`), valibot 2169 -> 1835, tsc corpus 0. It
-  surfaced two core bugs that type-level programming depends on (conditional instantiation leaking outer `infer`
-  results into recursive instances; variadic tuples never normalized), both fixed. type-fest's check went 0.24 ->
-  0.68 s because much more of it is evaluated now: the profile is the same uncached conditional instantiation as
-  valibot's (plan 20), which is now the perf item for *both* modern corpora.
-
-- **Plan 14 (syntax gaps) done in one session**: `using`/`await using`, import attributes, import/export forms,
-  break/continue targets, modifier order, decorators before computed names, `new.target`. Suite **4221 -> 4604**
-  (+383, no losses); tests with a spurious syntax error 1242 -> 746, what's left is JSX and error recovery fidelity
-  (triage.md). Grammar errors now have tsc's "not in a file with parse errors" rule (`error_ctx_grammar_error_d`), used
-  by the new checks only.
-- **Plan 19 stage 0**: module augmentations merge in `binder_link` (into alias targets, `export *`, `export =`),
-  valibot 4473 -> 2169; its top buckets are now expect-type's `toEqualTypeOf` constraint (TS2344 1166) and `Omit<>`
-  over unions (TS2345), see plan 19.
-
-- **Two modern corpora (plan 17)**, `thirdparty/ensure-corpora.sh`, `./realworld.py --corpus type-fest|valibot`, both
-  clean under tsc 5.8: type-fest **598** diagnostics, valibot **4473**. Ranked causes: module augmentation of an
-  aliased export (vitest's `expect`, ~2400 of valibot's: plan 19 stage 0), template literal types / string mappings /
-  `as` clauses (plan 18: type-fest's arithmetic utilities, expect-type's messages), then a long tail (plan 19 loop).
-- **valibot was the first corpus where tttt is slower than tsgo**: 4.0 s / 1.7 GB vs 1.3 s / 0.8 GB, 93% instantiating
-  conditional types during overload inference with no instantiation cache (fixed by plan 20).
-- Suite 4219. Plan 17 also added `@ts-expect-error`/`@ts-ignore` (+TS2578) and bigint literal types.
-- **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
-  under tsc): **0 diagnostics** (1751 at the start of plan 08; plans 09-12 took the category-sized buckets, the last
-  plan 08 session the 31 singles: ~20 root causes, each a tsc rule tttt didn't have, see the git log).
-- **The first honest perf comparison** (`measurements.md`): with every check done, tttt checks the corpus in **0.88 s
-  vs tsgo 1.02 s** (tsgo single-threaded 1.72 s, tsc 6.36 s), RSS 370 vs 425 MB. Single-threaded tttt is ~2x
-  single-threaded tsgo. Finishing the checks that used to fail early cost next to nothing. Typecheck is 567 ms of the
-  880, and its profile is narrowing -> relations (`ty_is_related` 4.3 M calls) and union building.
-- **Suite: `./fasttest.sh` 4211 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
-  a real measurement of type *printing*; plans 08-12 moved the suite by +715 on the side.
-- Plan 12 gave literals tsc's fresh/regular twins and object literals freshness + excess property checks (TS2353),
-  done in one session. It exposed the next missing piece of error *reporting*: tsc's elaborateError (errors located
-  at the offending property/element of a literal, plan 16).
-- Plan 11 removed the last big approximation in the generic core: relations instantiate a generic source in the
-  context of the target instead of unifying positionally / erasing to `any`, and instantiated generic signatures get
-  fresh type parameters (bounded ones) instead of sharing them with their target.
-- **Suite gaps are now mostly absent features, not wrong answers** (triage after plan 10): ~1250 tests hit a syntax
-  error tsc doesn't have (plan 14 took ~500 of them); dozens of checks don't exist at all (`./unimplemented_codes.sh`:
-  unused locals, property vs index signature, used-before-declaration, operand checks, grammar/regex checks: plan 15);
-  member modifiers landed (plan 13: accessibility, readonly, private names, nominal privates, `super` rules), error elaboration and related information landed (plan 16,
-  suite 4785 -> ~4930: tsc's elaborateError, getBestMatchingType, TS2769 grouping, related info from relations,
-  arity, duplicates, overload implementations, the parser). Missing related info now mostly comes with checks tttt
-  lacks (plan 15). These are cheap per test compared with the type core work.
-- The last plan 08 session added tsc rules the corpus needed: getQuickTypeOfExpression (declaration cycles through
-  loops), auto types (`let x;` typed by control flow; evolving arrays still `any[]`), symbol-keyed element access
-  references, removeOptionalityFromDeclaredType, inferFromAnnotatedParameters, hasContextualTypeWithNoGenericTypes,
-  members of generic homomorphic mapped types, getEffectiveConstraintOfIntersection, typeRelatedToDiscriminatedType.
-  One new hack on an old one: the eager discriminant-conflict reduction of intersections now skips properties it would
-  have to lower mid-cycle (tsc reduces lazily, `hacks.md`); that area produced the only order-dependent result seen.
-- `this` types (plan 10: polymorphic `this`, contextual `this`, class heritage checks) and the iteration protocol +
-  unique symbols + generators (plan 09) landed, both done in one long session each without a redesign.
-- ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole
-  corpus), binder (tsc-shaped symbols, persistent scopes, aliases, lib overlay: plan 04), the `Ty` type core
-  (interned, id-keyed relations, mapper instantiation, two-pass inference, contextual typing, conditional/mapped/
-  indexed types: 8 sessions), flow graph + narrowing (plan 05), module resolution + tsconfig (plan 06), compiler
-  options in one struct, multi-config tests, JS gate (`allowJs`/`checkJs`), diagnostics without a file.
-  `documentation.md` describes the architecture, `hacks.md` what is approximated in each part.
-- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, substitution types, reverse mapped types,
-  decorators checking, declaration emit (out of scope). The iteration protocol, unique symbols and generators landed
-  in plan 09 (`ty/iterate.c`).
-- History: every foundation plan (type core, binder, flow, modules) moved the suite by a whole category in one go and
-  made it faster. Per-plan numbers are in `measurements.md` and the git log.
+## Course correction (insights after plan 13, 2026-09-24)
+Where the failing suite tests are (`./failstats.py` + a one-off diff of the dumps against tsc's baselines):
+- **Missing checks, ~2350 non-JS tests** fail errors with *only missing* diagnostics (tttt says less than tsc, nothing
+  wrong). Top codes: TS6133 (unused), TS2339, TS2322, TS2300, TS2411, TS2403, TS2343, TS2695, TS2391, TS2430 (the check
+  exists but is off, `bugs/interface_heritage_alias_cycle.md`), TS2872, TS2314, TS2448. That's plan 15, which has
+  been "ready" for three insights sessions: it now gets two sessions.
+- **Display fidelity, ~2600 tests** pass their errors but fail types and/or symbols (1230 types only, 490 symbols only,
+  1060 both); 960 of them are 1-2 lines off, **274 differ only in `^^^` underlines** (plan 07 left 73). By mechanism
+  (lines): tsc reprinting a written annotation (`typeof a`, `Array<Base>`: ~290 tests), class expression constructors
+  printed as `{ new (): ; prototype: ; }`, symbols reached through an alias/namespace printed as `import("x").A`
+  instead of `Widgets.A` (~80 tests), `T_1` renaming (~90 tests), union member order (~90 tests), `any` where tsc has a
+  type (~400 tests, mixed causes). No single mechanism is huge, but together this is the biggest pool in the suite, and
+  it's also what users read in error messages. **Plan 21 (display fidelity) gets a planning session**, which ranks the
+  mechanisms properly and folds in triage.md's "Display fidelity" and "Class expressions and member symbols".
+- **`.tsx` tests aren't in the suite at all** (`baseline_test_suite.c` only collects `*.ts`: 328 test files). The pass
+  rate never counted JSX, and JSX is part of the TypeScript language (every React code base). First bring them into
+  the suite so the number is honest (it will drop), then a JSX plan (22).
+- **The modern corpora are the type-core oracle**, and plan 19's root causes are core rules, not polish: an identity
+  relation (R1), `const` type parameters (R4), `infer` variables deferring nested conditionals (R5), `keyof` of object
+  literal types (R3), mapped-type optionality over unions (R2). Those go first, ahead of the suite plans.
+- **Relations cache results computed under assumptions** (`bugs/overload_relation_assumption.md`, and the TS2430 bug
+  that keeps a finished check switched off). Those are the kind of foundation bug that shows up as order-dependent
+  answers later: fix them right after R1, which works in the same file.
+- **JS/JSDoc stays deferred** (~1050 tests, 930 failing, most of the spurious TS2304). Deliberate: it's a second
+  language front end on top of the checker; JSX and the TS checks come first. The next insights decides when.
+- `hacks.md` has gone partly stale (still says "no nominal class rules", "no `as` clauses" after plans 13 and 18); the
+  next triage audits it against the code.
+- Process health is good: eight plans in eight sessions, no redesigns, no losses. The risk is the other way: the easy
+  suite plans are running out, and what's left is bigger (display, JSX, JS). Don't let the pace push those into
+  piecemeal fixes; plan them.
 
 ## Course correction (insights after plan 08, 2026-09-22)
 - **The first corpus has told us what it can.** It is tsc's own code: ES5-era style, classes and unions, almost no
@@ -192,9 +167,9 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
    diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
 4b. ~~Real corpus to zero diagnostics (plan 08), then bench + profile it~~ done (with plans 09-12): 0 diagnostics,
    0.88 s vs tsgo 1.02 s.
-4c. ~~Second real corpus (plan 17)~~ done (type-fest + valibot). Now the type-core features they need (plan 18:
-   template literal types, key remapping), valibot's perf (plan 20), the corpora to zero (plan 19). Suite plans 13-16
-   alongside.
+4c. ~~Second real corpus (plan 17)~~ done (type-fest + valibot), plans 18/20 done. Now plan 19's core rules (R1-R5),
+   then the corpora to zero. ~~Suite plans 13, 14, 16~~ done; 15 (missing checks), 21 (display fidelity), 22 (JSX)
+   next.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.

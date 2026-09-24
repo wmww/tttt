@@ -27,7 +27,7 @@ here when there's something to know beyond the code.
   top-level `for await`. Older: TS1161 for an unterminated regex (`parse_regex` just fails), TS1263/1264 misplaced `let
   x!`, `const c;` in ambient files, `override`/TS4112+, overloads of `*()`-style nameless members, TS2303 "Circular
   definition of import alias".
-- **Class expressions and member symbols** (re-probed): a class expression prints as `''` in messages (tsc
+- **Class expressions and member symbols** (re-probed; goes into plan 21, todo.md): a class expression prints as `''` in messages (tsc
   `(Anonymous class)`, or `C` for `const C = class {}`), its instance type prints *empty* in the types baseline (`c : `)
   and its constructor as `{ new (): ; prototype: ; }` (tsc `typeof C`); the mixin tests show the same (`class ''` in
   TS2341/TS2445). Member symbols aren't qualified in the symbols baseline for parameter properties (`Symbol(q)` for
@@ -44,7 +44,7 @@ here when there's something to know beyond the code.
   (`({ a = 1 }) => a` is `{ a?: number }` in tsc, `any` here); object rest (`{ a, ...rest }`) is the whole object
   instead of getRestType(); computed keys in patterns miss their symbol lines (probe `binding_pattern_display.ts`).
   Worth a plan.
-- **Display fidelity** (types baseline; recurring in every plan's leftovers): tsc *reuses written annotations* when it
+- **Display fidelity** (types baseline; recurring in every plan's leftovers; plan 21 gets planned from this, todo.md): tsc *reuses written annotations* when it
   prints (`Comparator["operator"]` where we print the resolved `"<" | "<=" | "="`, `p: E.x` as `E.x` not `E`,
   `ReturnType<typeof mk>["a"]`, `type R = ReturnType<typeof f>` resolved, optional parameters as `x?: T | undefined`
   under strict, `get(k): T | undefined` without strictNullChecks where we drop the `| undefined` (re-probed); probes in
