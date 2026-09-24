@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
+if [[ "${1:-}" == --loop ]]; then
+    watch -ctn 10 "${BASH_SOURCE[0]}"
+    exit
+fi
+
 printf \
     "\e[34mTokens:       \e[44;1;37m%12s\e[0m\n\e[33m5h Limit:     \e[43;1;37m%12s\e[0m\n\e[31mWeekly:       \e[41;1;37m%12s\e[0m\n\e[35mLoC:          \e[45;1;37m%'12d\e[0m\n\e[32mTests:        \e[42;1;37m%12s\e[0m\n" \
     "$(~/playground/personal/tools/cc-tokens -r ~/tttt/ \
         | grep -P '^TOTAL' \
         | awk '{print $5}')" \
-   $((~/playground/personal/tools/cc-usage \
-       | awk '/Session/ {print $4} /Weekly, all models/ {print $5}') \
-       || echo - -) \
+    $((~/playground/personal/tools/cc-usage \
+        | awk '/Session/ {print $4} /Weekly, all models/ {print $5}') \
+        || echo - -) \
     "$(tokei -e thirdparty -t C,'C Header' ~/tttt/ \
         | awk '/Total/ {print $3}')" \
     "$(echo \
         "$(("$(cat test/baseline_results.ts | grep true | wc -l)" * 10000 \
             / "$(cat test/baseline_results.ts | grep -P '(true|false)' | wc -l)"))%" \
         | sed -E 's/(...)$/.\1/')"
-
