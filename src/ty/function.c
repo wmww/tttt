@@ -31,7 +31,6 @@ typedef struct FunctionReturn {
 } FunctionReturn;
 
 static Ty const* promise_of(Checker* me, FunctionImpl const* function, Ty const* type) {
-    // TODO: should be Promise<Awaited<T>>, returning a promise from an async function gives a nested one here
     if (!function->promise_decl) return ty_intrinsic(me, TY_ANY);
     Ty const* promise = ty_declared_type_of(me, function->promise_decl);
     if (promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return ty_intrinsic(me, TY_ANY);
@@ -87,6 +86,20 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
         return_type ? return_type : fallback, next_type);
 }
 
+// What the contextual return type of an async function says about the values it returns: the promised types of its
+// members that are promises (tsc filters them in getContextualReturnType, then takes getPromisedTypeOfPromise)
+static Ty const* promised_context(Checker* me, Ty const* contextual) {
+    TyList members = contextual->kind == TY_UNION ? contextual->composite.types : (TyList){ .data = &contextual, .len = 1 };
+    TyBuf promised = {0};
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* awaited = ty_awaited(me, members.data[i]);
+        if (awaited != members.data[i]) ty_buf_push(&promised, awaited);
+    }
+    Ty const* ret = promised.len ? ty_union(me, promised.data, promised.len, nullptr, (TyList){0}) : nullptr;
+    ty_buf_drop(&promised);
+    return ret;
+}
+
 static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     Ty const* outer_context = function_impl_enter_return_context(function);
     TyBuf returned = {0};
@@ -110,13 +123,18 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             bool undefined = contextual && contextual->kind != TY_UNION && (contextual->flags & TYF_UNDEFINED);
             ret = ty_intrinsic(me, undefined ? TY_UNDEFINED : TY_VOID);
         } else {
+            // An async function returns what its return expressions await to, and the context is about that too
+            // (tsc's getPromisedTypeOfPromise of the contextual return type)
+            Ty const* contextual = ty_contextual_return_type(me, function);
+            if (function->is_async) {
+                for (u32 i = 0; i < returned.len; i++) returned.data[i] = ty_awaited(me, returned.data[i]);
+                contextual = contextual ? promised_context(me, contextual) : nullptr;
+            }
             if (compiler_options()->strict_null_checks && returns_nothing_somewhere) {
                 ty_buf_push(&returned, ty_intrinsic(me, TY_UNDEFINED));
             }
             ret = ty_union_subtype_reduced(me, returned.data, returned.len);
-            if (!(ret->flags & TYF_NEVER)) {
-                ret = ty_widened_return_type(me, ret, ty_contextual_return_type(me, function));
-            }
+            if (!(ret->flags & TYF_NEVER)) ret = ty_widened_return_type(me, ret, contextual);
         }
     }
     ty_buf_drop(&returned);

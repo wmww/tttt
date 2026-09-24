@@ -44,6 +44,65 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     }
 }
 
+// Whether the interface itself declares `prop` (rather than inheriting it)
+static bool is_own_prop(Prop const* prop, Symbol const* symbol) {
+    while (prop->target) prop = prop->target;
+    return prop->parent == symbol;
+}
+
+typedef struct HeritageBase {
+    Ty const* written; // as the extends clause says, for messages
+    Ty const* with_this;
+} HeritageBase;
+
+// tsc's checkInheritedPropertiesAreIdentical: a property inherited from two bases has to be the same in both (TS2320),
+// unless the interface declares its own
+static bool inherited_props_identical(
+    Checker* checker, Symbol const* symbol, Ty const* type_with_this, HeritageBase const* bases, u32 base_count, Span span,
+    ErrorCtx* errs
+) {
+    if (base_count < 2) return true;
+    typedef struct Seen { Prop const* prop; i32 base; } Seen; // base -1: the interface's own
+    u32 cap = 0;
+    Members const* own = ty_members(checker, type_with_this);
+    cap += own->prop_count;
+    for (u32 b = 0; b < base_count; b++) cap += ty_members(checker, bases[b].with_this)->prop_count;
+    Seen* seen = malloc(sizeof(Seen) * (cap ? cap : 1));
+    panic_if(!seen, "out of memory");
+    u32 seen_count = 0;
+    for (u32 i = 0; i < own->prop_count; i++) {
+        if (is_own_prop(own->props[i], symbol)) seen[seen_count++] = (Seen){ own->props[i], -1 };
+    }
+    bool identical = true;
+    for (u32 b = 0; b < base_count; b++) {
+        Members const* members = ty_members(checker, bases[b].with_this);
+        for (u32 i = 0; i < members->prop_count; i++) {
+            Prop const* prop = members->props[i];
+            Seen const* existing = nullptr;
+            for (u32 j = 0; j < seen_count && !existing; j++) {
+                if (seen[j].prop->name == prop->name) existing = &seen[j];
+            }
+            if (!existing) {
+                seen[seen_count++] = (Seen){ prop, (i32)b };
+                continue;
+            }
+            if (existing->base < 0 || ty_props_identical(checker, existing->prop, prop)) continue;
+            identical = false;
+            cstr type_str = ty_to_cstr(checker, type_with_this);
+            cstr first = ty_to_cstr(checker, bases[existing->base].written);
+            cstr second = ty_to_cstr(checker, bases[b].written);
+            cstr name = ty_prop_name_cstr(checker, prop->name);
+            Error* error = error_ctx_error_d(errs, span, 2320, "Interface '", type_str, "' cannot simultaneously extend types '",
+                first, "' and '", second, "'.");
+            error_sub_error_s(error, span_null, 2319, cstr_d("Named property '", name, "' of types '", first, "' and '", second,
+                "' are not identical."));
+            c_drop(cstr, &type_str, &first, &second, &name);
+        }
+    }
+    free(seen);
+    return identical;
+}
+
 // tsc's checkInterfaceDeclaration, once per symbol (at its first declaration): the interface (with its own `this`) has to
 // fit every base of every declaration, with that `this`
 static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
@@ -56,17 +115,33 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     Ty const* type_with_this = this_param ? ty_with_this_arg(checker, declared, this_param) :
         declared->declared.type_params.len ? ty_reference(checker, declared, declared->declared.type_params) : declared;
     LowerCtx ctx = { .generic = true };
+    HeritageBase stack_bases[8];
+    HeritageBase* bases = stack_bases;
+    u32 base_count = 0, base_cap = c_arraylen(stack_bases);
     for (u32 d = 0; d < symbol->decl_count; d++) {
         if (symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
         InterfaceDecl const* decl = symbol->decls[d].node;
         for_each (extends, vec_spanned_type, &decl->extends) {
             Ty const* base = ty_from_node(checker, &extends->type, ctx);
             if (!(base->flags & TYF_OBJECT) || base == declared) continue;
-            if (this_param) base = ty_with_this_arg(checker, base, this_param);
-            ty_check_heritage(checker, type_with_this, base, nullptr, 0, 2430, "Interface", "incorrectly extends interface",
+            if (base_count == base_cap) {
+                base_cap *= 2;
+                HeritageBase* grown = malloc(sizeof(HeritageBase) * base_cap);
+                panic_if(!grown, "out of memory");
+                memcpy(grown, bases, sizeof(HeritageBase) * base_count);
+                if (bases != stack_bases) free(bases);
+                bases = grown;
+            }
+            bases[base_count++] = (HeritageBase){ base, this_param ? ty_with_this_arg(checker, base, this_param) : base };
+        }
+    }
+    if (inherited_props_identical(checker, symbol, type_with_this, bases, base_count, my name, errs)) {
+        for (u32 b = 0; b < base_count; b++) {
+            ty_check_heritage(checker, type_with_this, bases[b].with_this, nullptr, 0, 2430, "Interface", "incorrectly extends interface",
                 my name, errs);
         }
     }
+    if (bases != stack_bases) free(bases);
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
@@ -89,5 +164,5 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     type_typecheck(&my type, errs);
     // TODO: off until checking `CallChainRoot extends CallChain` early stops making the corpus' aliases circular
     // (triage.md, "TS2430"); TS2415/TS2416/TS2420 for classes are on
-    if (getenv("TTTT_INTERFACE_HERITAGE")) interface_heritage_typecheck(me, errs);
+    interface_heritage_typecheck(me, errs);
 }

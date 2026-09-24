@@ -1366,12 +1366,14 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
 
 // A generic signature instantiated by an outer mapper (a method of `Box<number>`) gets fresh type parameters whose
 // constraints and defaults are instantiated too (tsc's instantiateSignature). Type parameters that have neither are
-// shared with the target, which is indistinguishable and cheaper. The ones the mapper replaces are being instantiated
-// away (see ty_signature_instantiation()) and stay
+// shared with the target, which is indistinguishable and cheaper, unless the mapper brings in type variables: `T := U`
+// in the method `then<U>(cb: (value: T) => P<U>)` of `P<U>` would capture them. The ones the mapper replaces are being
+// instantiated away (see ty_signature_instantiation()) and stay
 static void clone_type_params(Checker* me, Signature* sig) {
     TyList params = sig->type_params;
     TyMapper const* outer = sig->mapper;
     bool any = false;
+    for (u32 j = 0; j < outer->len && !any; j++) any = outer->targets[j]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
     for (u32 i = 0; i < params.len && !any; i++) {
         bool mapped = false;
         for (u32 j = 0; j < outer->len; j++) mapped |= outer->sources[j] == params.data[i];

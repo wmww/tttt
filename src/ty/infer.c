@@ -231,6 +231,17 @@ static void infer_from_returns(
 static void infer_from_signatures(Checker* me, Inference* inf, Signature const* source, Signature const* target) {
     signature_resolve(me, source);
     signature_resolve(me, target);
+    if (target->type_params.len) {
+        // The target's own type parameters are any (tsc's getErasedSignature): they aren't what is being inferred, and
+        // walking into them would infer to them (`map<M>` of `N1<X>` compared with itself)
+        Ty const* stack_anys[16];
+        Ty const** anys = target->type_params.len <= c_arraylen(stack_anys) ? stack_anys : malloc(sizeof(Ty const*) * target->type_params.len);
+        panic_if(!anys, "out of memory");
+        for (u32 i = 0; i < target->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
+        target = ty_signature_instantiation(me, target, (TyList){ .data = anys, .len = target->type_params.len });
+        if (anys != stack_anys) free(anys);
+        signature_resolve(me, target);
+    }
     TyMapper const* base = base_signature_mapper(me, source);
     // Parameters are a contravariant position. Without strictFunctionTypes (and for methods) they compare
     // bivariantly, and tsc infers as if they were covariant
@@ -655,6 +666,26 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
             }
         }
     }
+    u32 sources_left = 0, targets_left = 0;
+    for (u32 s = 0; s < sources.len; s++) sources_left += !source_done[s];
+    for (u32 t = 0; t < targets.len; t++) targets_left += !target_done[t];
+    if (!targets_left) {
+        free(source_done);
+        return;
+    }
+    if (!sources_left) {
+        // Everything matched: rather than nothing (and a constraint later), the whole source to what is left of the
+        // target at a lower priority. `string` to `string | T` infers string for T
+        Ty const** left = malloc(sizeof(Ty const*) * targets_left);
+        u32 len = 0;
+        for (u32 t = 0; t < targets.len; t++) {
+            if (!target_done[t]) left[len++] = targets.data[t];
+        }
+        infer_with_priority(me, inf, source, ty_union(me, left, len, nullptr, (TyList){0}), INFER_PRIORITY_NAKED_TYPE_VARIABLE);
+        free(left);
+        free(source_done);
+        return;
+    }
 
     // To what isn't a naked type parameter first, remembering which sources that used up
     u32 naked_count = 0;
@@ -732,7 +763,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, inf, &source, &target)) return;
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
-        if (!param || param->fixed || (source->flags & TYF_ERROR) || source == ty_intrinsic(me, TY_SILENT_NEVER)) return;
+        if (!param || param->fixed || (source->flags & TYF_ERROR) || (source->flags & TYF_NON_INFERRABLE)) return;
         if (inf->priority < inf->hit_priority) inf->hit_priority = inf->priority;
         if (!param->has_priority || inf->priority < param->priority) {
             param->co_len = 0;

@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-24, relations under assumptions (signature rules, TS2430/TS2320 on)
+Suite **5125 -> 5163** full (errors 8262, symbols 9489, types 7905; 3 types components lost to union order). Corpora:
+tsc 0, type-fest 173, **valibot 328 -> 311**. `./bench.sh`: **valibot tttt 0.57 s / 413 MB (typecheck 440 ms, was
+836)** vs tsgo 0.82 s / 823 MB (single-threaded 1.79): tttt now beats multi-threaded tsgo on every real corpus. Almost
+all of it is inferFromSignatures erasing the target signature's type parameters (bogus inferences into them were
+cascading). type-fest 0.32 s / 88 MB vs tsgo 1.29; tsc corpus 0.74 s vs tsgo 0.76; synthetic corpus 1.92 s vs tsgo
+1.70 (single-threaded 3.73).
+
 ## 2026-09-24, plan 19 R4 (const type parameters) and R1 (identity relation)
 Suite **5120 -> 5125** full (errors 8218, symbols 9488, types 7896; nothing lost). Corpora: tsc 0, **type-fest 197 ->
 173** (R4 -> 195, R1 -> 173), **valibot 739 -> 328** (R4 -> 620, R1 -> 328). `./bench.sh`: type-fest tttt **0.30 s** /

@@ -220,7 +220,7 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_ES_SYMBOL] = make_intrinsic(me, "symbol", TYF_ES_SYMBOL);
     my intrinsics[TY_VOID] = make_intrinsic(me, "void", TYF_VOID);
     my intrinsics[TY_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
-    my intrinsics[TY_SILENT_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
+    my intrinsics[TY_SILENT_NEVER] = make_intrinsic(me, "never", TYF_NEVER | TYF_NON_INFERRABLE);
     my intrinsics[TY_IMPLICIT_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_UNREACHABLE_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_NON_PRIMITIVE] = make_intrinsic(me, "object", TYF_NON_PRIMITIVE);
@@ -440,6 +440,7 @@ static Ty const* intern_composite(
         u32 member_flags = flags;
         flags = (flags | ty_list_flags(alias_args)) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
         flags |= kind == TY_UNION ? TYF_UNION | (member_flags & (TYF_FRESH_LITERAL | TYF_FRESH_OBJECT)) : TYF_INTERSECTION;
+        flags |= member_flags & TYF_NON_INFERRABLE;
         // Any two boolean literals, fresh or not, are `boolean` (tsc's getUnionTypeFromSortedList)
         if (kind == TY_UNION && len == 2 && (types[0]->flags & types[1]->flags & TYF_BOOLEAN_LITERAL)) {
             flags |= TYF_BOOLEAN;
@@ -970,7 +971,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
         // Arrays and tuples of fresh object literals widen element-wise (tsc's getWidenedType)
         bool widens = target == my array_target || target == my readonly_array_target ||
             target->declared.kind == TY_DECLARED_TUPLE_TARGET;
-        u32 kept = TYF_COULD_CONTAIN_TYPE_VARIABLES | (widens ? TYF_FRESH_OBJECT : 0);
+        u32 kept = TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_NON_INFERRABLE | (widens ? TYF_FRESH_OBJECT : 0);
         Ty* ret = ty_alloc(me, TY_REFERENCE, TYF_OBJECT | (flags & kept));
         ret->reference.target = target;
         ret->reference.args = ty_list_copy(me, args.data, args.len);

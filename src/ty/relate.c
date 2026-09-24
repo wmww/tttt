@@ -645,8 +645,32 @@ static bool has_rest(Checker* me, Signature const* sig) {
     return shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
 }
 
+// tsc's SignatureCheckMode.StrictCallback / BivariantCallback: comparing the signatures of two callback parameters
+typedef enum CallbackMode {
+    CALLBACK_NONE,
+    CALLBACK_STRICT,
+    CALLBACK_BIVARIANT,
+} CallbackMode;
+
+// tsc's isInstantiatedGenericParameter: the parameter was generic before the signature was instantiated
+static bool is_instantiated_generic_param(Checker* me, Signature const* sig, u32 i) {
+    if (!sig->target) return false;
+    signature_resolve(me, sig->target);
+    Ty const* type = param_type_at(me, sig->target, i);
+    if (!type) return false;
+    if (ty_is_generic_index(type)) return true;
+    return (type->flags & TYF_OBJECT) && (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, type)->mapped;
+}
+
+// The one call signature of a callback parameter's type, if it is one
+static Signature const* callback_signature(Checker* me, Signature const* sig, u32 i, Ty const* type) {
+    if (is_instantiated_generic_param(me, sig, i)) return nullptr;
+    Signature const* ret = ty_single_signature(me, ty_non_nullable(me, type), false, false);
+    return ret && !signature_predicate(me, ret) ? ret : nullptr;
+}
+
 static Ternary compare_signatures(
-    Checker* me, RelationState* st, Signature const* source, Signature const* target, bool report
+    Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report
 ) {
     signature_resolve(me, source);
     signature_resolve(me, target);
@@ -667,7 +691,7 @@ static Ternary compare_signatures(
         return TERNARY_FALSE;
     }
 
-    bool strict = st->relation != TY_RELATION_COMPARABLE && compiler_options()->strict_function_types &&
+    bool strict = !callback && st->relation != TY_RELATION_COMPARABLE && compiler_options()->strict_function_types &&
         !(target->flags & (SIGNATURE_METHOD | SIGNATURE_CONSTRUCT));
     Ternary result = TERNARY_TRUE;
     // A source that says what `this` is needs a target that agrees (a `void` one is called any way)
@@ -687,9 +711,21 @@ static Ternary compare_signatures(
         Ty const* source_type = param_type_at(me, source, i);
         Ty const* target_type = param_type_at(me, target, i);
         if (!source_type || !target_type) break;
+        if (source_type == target_type) continue;
+        // Two callbacks: their parameters are output positions, so only the signatures are compared, the other way
+        // around (tsc's compareSignaturesRelated). A Promise<T> that uses T in callbacks only is covariant in T
+        Signature const* source_callback = callback ? nullptr : callback_signature(me, source, i, source_type);
+        Signature const* target_callback = source_callback ? callback_signature(me, target, i, target_type) : nullptr;
         Ternary related = TERNARY_FALSE;
-        if (!strict) related = is_related_to(me, st, source_type, target_type, false);
-        if (!related) related = is_related_to(me, st, target_type, source_type, report);
+        if (target_callback &&
+            ty_undefined_or_null_facts(me, source_type) == ty_undefined_or_null_facts(me, target_type)
+        ) {
+            related = compare_signatures(me, st, target_callback, source_callback,
+                strict ? CALLBACK_STRICT : CALLBACK_BIVARIANT, report);
+        } else {
+            if (!callback && !strict) related = is_related_to(me, st, source_type, target_type, false);
+            if (!related) related = is_related_to(me, st, target_type, source_type, report);
+        }
         if (!related) {
             if (report) {
                 u32 source_index = i < source->param_count ? i : source->param_count - 1;
@@ -751,8 +787,11 @@ static Ternary compare_signatures(
         }
         return result & related;
     }
+    // Return types of callbacks are related both ways, or the type containing them wouldn't be covariant
     Ternary related = TERNARY_FALSE;
-    if (st->relation == TY_RELATION_COMPARABLE) related = is_related_to(me, st, target_return, source_return, false);
+    if (st->relation == TY_RELATION_COMPARABLE || callback == CALLBACK_BIVARIANT) {
+        related = is_related_to(me, st, target_return, source_return, false);
+    }
     if (!related) related = is_related_to(me, st, source_return, target_return, report);
     return result & related;
 }
@@ -770,6 +809,14 @@ static Signature const* erased_signature(Checker* me, Signature const* sig) {
     return ret;
 }
 
+// Instantiations of the same generic type or type literal, whose signatures pair up one to one
+static bool same_signature_origin(Ty const* source, Ty const* target) {
+    if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE) return source->reference.target == target->reference.target;
+    return source->kind == TY_ANONYMOUS && target->kind == TY_ANONYMOUS && source->anonymous.target &&
+        source->anonymous.target == target->anonymous.target;
+}
+
+// tsc's signaturesRelatedTo
 static Ternary signatures_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool construct, bool report
 ) {
@@ -780,39 +827,52 @@ static Ternary signatures_related(
     u32 source_count = construct ? source_members->construct_count : source_members->call_count;
     u32 target_count = construct ? target_members->construct_count : target_members->call_count;
     if (!target_count) return TERNARY_TRUE;
+    if (construct && source_count && (source_sigs[0]->flags & SIGNATURE_ABSTRACT) && !(target_sigs[0]->flags & SIGNATURE_ABSTRACT)) {
+        if (report) report_line(st, 2517, cstr_lit("Cannot assign an abstract constructor type to a non-abstract constructor type."));
+        return TERNARY_FALSE;
+    }
     Ternary result = TERNARY_TRUE;
-    // Only a signature compared with a single one keeps its type parameters (tsc's signaturesRelatedTo: the N * M
-    // comparison erases them, and so does comparability)
-    bool erase = st->relation == TY_RELATION_COMPARABLE || source_count != 1 || target_count != 1;
-    for (u32 i = 0; i < target_count; i++) {
-        Signature const* target_sig = target_sigs[i];
-        Ternary related = TERNARY_FALSE;
-        for (u32 j = 0; j < source_count && !related; j++) {
-            Signature const* source_sig = source_sigs[j];
-            if (construct && (source_sig->flags & SIGNATURE_ABSTRACT) && !(target_sig->flags & SIGNATURE_ABSTRACT)) {
-                if (report) {
-                    report_line(st, 2517, cstr_lit("Cannot assign an abstract constructor type to a non-abstract constructor type."));
-                }
+    if (source_count == target_count && same_signature_origin(source, target)) {
+        // Pairwise, with type parameters erased: they are the same ones
+        for (u32 i = 0; i < target_count; i++) {
+            Ternary related = compare_signatures(
+                me, st, erased_signature(me, source_sigs[i]), erased_signature(me, target_sigs[i]), CALLBACK_NONE, report
+            );
+            if (!related) return TERNARY_FALSE;
+            result &= related;
+        }
+    } else if (source_count == 1 && target_count == 1) {
+        // A single generic source is instantiated in the context of the target instead (only comparability erases)
+        bool erase = st->relation == TY_RELATION_COMPARABLE;
+        result = compare_signatures(
+            me, st, erase ? erased_signature(me, source_sigs[0]) : source_sigs[0],
+            erase ? erased_signature(me, target_sigs[0]) : target_sigs[0], CALLBACK_NONE, report
+        );
+    } else {
+        // Every target signature needs a source signature, type parameters erased. Only the first failure explains
+        for (u32 i = 0; i < target_count; i++) {
+            Signature const* target_sig = erased_signature(me, target_sigs[i]);
+            isize_t saved = vec_ty_report_line_size(&st->lines);
+            bool elaborate = report;
+            Ternary related = TERNARY_FALSE;
+            for (u32 j = 0; j < source_count && !related; j++) {
+                related = compare_signatures(me, st, erased_signature(me, source_sigs[j]), target_sig, CALLBACK_NONE, elaborate);
+                elaborate = false;
+            }
+            if (related) {
+                report_truncate(st, saved);
+                result &= related;
                 continue;
             }
-            isize_t saved = vec_ty_report_line_size(&st->lines);
-            related = compare_signatures(
-                me, st, erase ? erased_signature(me, source_sig) : source_sig, erase ? erased_signature(me, target_sig) : target_sig,
-                report && source_count == 1 && target_count == 1
-            );
-            if (related) report_truncate(st, saved);
-        }
-        if (!related) {
-            if (report && !(source_count == 1 && target_count == 1)) {
+            if (elaborate) {
                 cstr source_str = display_for_report(me, source, false);
                 cstr sig_str = cstr_null;
-                ty_display_signature(me, (TyDisplay){ .target = &sig_str }, target_sig);
+                ty_display_signature(me, (TyDisplay){ .target = &sig_str }, target_sigs[i]);
                 report_line(st, 2658, cstr_d("Type '", source_str, "' provides no match for the signature '", sig_str, "'."));
                 c_drop(cstr, &source_str, &sig_str);
             }
             return TERNARY_FALSE;
         }
-        result &= related;
     }
     return result;
 }
@@ -908,6 +968,22 @@ static bool should_report_unmatched_property(Checker* me, Ty const* source, Ty c
         (target_members->construct_count && members->construct_count);
 }
 
+static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty);
+
+// tsc's tryElaborateArrayLikeErrors, without its own reporting: whether a list of missing properties is worth showing
+static bool elaborate_array_like(Checker* me, Ty const* source, Ty const* target) {
+    bool target_array_like = ty_is_array(me, target) || is_tuple(target) || is_empty_tuple(target);
+    if (is_tuple(source) || is_empty_tuple(source)) {
+        TupleShape const* shape = is_empty_tuple(source) ? source->declared.tuple : source->reference.target->declared.tuple;
+        if (shape->readonly && is_mutable_array_or_tuple(me, target)) return false;
+        return target_array_like;
+    }
+    bool source_readonly_array = source->kind == TY_REFERENCE && source->reference.target == my readonly_array_target;
+    if (source_readonly_array && is_mutable_array_or_tuple(me, target)) return false;
+    if (is_tuple(target) || is_empty_tuple(target)) return ty_is_array(me, source);
+    return true;
+}
+
 static Ternary props_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent
 ) {
@@ -937,6 +1013,11 @@ static Ternary props_related(
                 ));
                 report_related(st, 2728, cstr_d("'", name, "' is declared here."), ty_prop_decl_span(missing_prop));
                 cstr_drop(&name);
+            } else if (!elaborate_array_like(me, source, target)) {
+                // Nothing to say about an array against a tuple and the like but the head (tsc's
+                // tryElaborateArrayLikeErrors)
+                c_drop(cstr, &source_str, &target_str);
+                return TERNARY_FALSE;
             } else {
                 cstr names = cstr_null;
                 u32 shown = missing_count > 5 ? 4 : missing_count;
@@ -1462,14 +1543,34 @@ static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
 }
 
 // A distributive conditional type with its check type replaced by the constraint (tsc's
-// getConstraintOfDistributiveConditionalType): InstanceType<T> for `T extends typeof C` is C. Null if that's no different
+// getConstraintOfDistributiveConditionalType): InstanceType<T> for `T extends typeof C` is C, `Extract<keyof T, string>`
+// is string. The root's check type parameter is what gets mapped, so an instantiated check type like `keyof T` has its
+// constraint distributed over. Null if that's no different
 static Ty const* distributive_constraint(Checker* me, Ty const* conditional) {
+    if (!conditional->conditional.distributive) return nullptr;
     Ty const* check = conditional->conditional.check;
-    if (!conditional->conditional.distributive || check->kind != TY_TYPE_PARAM) return nullptr;
-    Ty const* check_constraint = ty_param_constraint(me, check);
+    Ty const* check_constraint = check->kind == TY_TYPE_PARAM ? ty_param_constraint(me, check) :
+        (check->flags & TYF_DEFERRED) ? ty_base_constraint(me, check) : nullptr;
     if (!check_constraint || check_constraint == check) return nullptr;
-    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &check, .len = 1 }, (TyList){ .data = &check_constraint, .len = 1 });
-    Ty const* instantiated = ty_instantiate(me, conditional, mapper);
+    Ty const* root = conditional->conditional.root ? conditional->conditional.root : conditional;
+    Ty const* root_check = root->conditional.check;
+    if (root_check->kind != TY_TYPE_PARAM) return nullptr;
+    TyMapper const* outer = conditional->conditional.mapper;
+    u32 outer_len = outer ? outer->len : 0;
+    Ty const** sources = malloc(sizeof(Ty const*) * (outer_len + 1) * 2);
+    panic_if(!sources, "out of memory");
+    Ty const** targets = sources + outer_len + 1;
+    u32 len = 0;
+    for (u32 i = 0; i < outer_len; i++) {
+        if (outer->sources[i] == root_check) continue;
+        sources[len] = outer->sources[i];
+        targets[len++] = outer->targets[i];
+    }
+    sources[len] = root_check;
+    targets[len++] = check_constraint;
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
+    free(sources);
+    Ty const* instantiated = ty_instantiate(me, root, mapper);
     return instantiated != conditional && !(instantiated->flags & TYF_NEVER) ? instantiated : nullptr;
 }
 
@@ -1764,17 +1865,28 @@ static bool is_readonly_prop(Prop const* prop) {
 }
 
 // tsc's compareProperties
+// tsc's compareProperties, less the types
+static bool prop_modifiers_identical(Prop const* source, Prop const* target) {
+    u32 access = PROP_PRIVATE | PROP_PROTECTED;
+    if ((source->flags & access) != (target->flags & access)) return false;
+    if (source->flags & access) {
+        if (root_declaration(source) != root_declaration(target)) return false;
+    } else if ((source->flags ^ target->flags) & PROP_OPTIONAL) {
+        return false;
+    }
+    return is_readonly_prop(source) == is_readonly_prop(target);
+}
+
 static Ternary props_identical(Checker* me, RelationState* st, Prop const* source, Prop const* target) {
     if (source == target) return TERNARY_TRUE;
-    u32 access = PROP_PRIVATE | PROP_PROTECTED;
-    if ((source->flags & access) != (target->flags & access)) return TERNARY_FALSE;
-    if (source->flags & access) {
-        if (root_declaration(source) != root_declaration(target)) return TERNARY_FALSE;
-    } else if ((source->flags ^ target->flags) & PROP_OPTIONAL) {
-        return TERNARY_FALSE;
-    }
-    if (is_readonly_prop(source) != is_readonly_prop(target)) return TERNARY_FALSE;
+    if (!prop_modifiers_identical(source, target)) return TERNARY_FALSE;
     return is_related_to(me, st, prop_type(me, source), prop_type(me, target), false);
+}
+
+bool ty_props_identical(Checker* me, Prop const* source, Prop const* target) {
+    if (source == target) return true;
+    return prop_modifiers_identical(source, target) &&
+        ty_is_related(me, prop_type(me, source), prop_type(me, target), TY_RELATION_IDENTITY);
 }
 
 // tsc's mappedTypeRelatedTo under identity: the same modifiers, identical constraints, name types and templates once
@@ -2137,17 +2249,22 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     bool target_is_tuple = is_tuple(target) || is_empty_tuple(target);
     if (source_is_tuple && target_is_tuple) return tuples_related(me, st, source, target, report);
     if (target_is_tuple) {
-        if (report && source->kind == TY_REFERENCE && is_array_target(me, source->reference.target)) {
-            TupleShape const* shape = is_empty_tuple(target) ? target->declared.tuple : target->reference.target->declared.tuple;
+        TupleShape const* shape = is_empty_tuple(target) ? target->declared.tuple : target->reference.target->declared.tuple;
+        if (source->kind == TY_REFERENCE && is_array_target(me, source->reference.target)) {
             u32 min = 0;
             for (u32 i = 0; i < shape->arity; i++) {
                 if (!(shape->flags[i] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) min = i + 1;
             }
-            if (min) {
+            if (report && min) {
                 report_line(st, 2620, cstr_d("Target requires ", min, " element(s) but source may have fewer."));
             }
+            return TERNARY_FALSE;
         }
-        return TERNARY_FALSE;
+        // Anything else is compared structurally, unless the tuple has a variable length (tsc's propertiesRelatedTo):
+        // `interface I extends [string, number] { x: string }` is one
+        for (u32 i = 0; i < shape->arity; i++) {
+            if (shape->flags[i] & TUPLE_ELEMENT_REST) return TERNARY_FALSE;
+        }
     }
     if (source_is_tuple) source = tuple_as_array(me, source);
 
@@ -2278,11 +2395,13 @@ bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth) {
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     RelationCache* cache = &my relations[st->relation];
     u64 key = relation_key(source, target);
-    // Without excess property checks the answer for a fresh object literal is another one (tsc's intersectionState
-    // is part of the key too)
-    if (st->intersection_target && (source->flags & TYF_FRESH_OBJECT)) key ^= 1ull << 63;
+    // Relating to an intersection's members is a question of its own (tsc's getRelationKey postfix): no excess property
+    // checks, and a pair compared inside it isn't the same pair on the stack outside it
+    if (st->intersection_target) key ^= 1ull << 63;
     unsigned cached = relation_cache_get(cache, key);
     if (cached == CACHE_SUCCEEDED) return TERNARY_TRUE;
+    // A cached failure is computed again only to explain it, and then a pair on the stack is still assumed related.
+    // Which comparisons explain (`report`) decides what is blamed, so it follows tsc closely
     if (cached == CACHE_FAILED && !report) return TERNARY_FALSE;
     for (u32 i = 0; i < st->maybe_count; i++) {
         if (st->maybe_keys[i] == key) return TERNARY_MAYBE;

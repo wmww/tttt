@@ -243,6 +243,7 @@ static Signature const* last_call_signature(Checker* me, Ty const* ty) {
 typedef struct OuterInference {
     Signature const* sig;
     Inference* inf;
+    TyMapper const* return_mapper; // What its own contextual type said, see infer_type_arguments()
 } OuterInference;
 
 // What the outer call has inferred so far, the rest being silent never (which nothing is inferred from): tsc's
@@ -259,12 +260,15 @@ static TyMapper const* outer_inference_mapper(Checker* me, OuterInference const*
 
 // What the contextual return type alone says about the type parameters (tsc's InferenceContext.returnMapper, from
 // cloneInferredPartOfContext): the ones it says nothing about stay themselves. Null if it says nothing
-static TyMapper const* return_inference_mapper(Checker* me, Signature const* sig, Inference* inf) {
+// `fallback`, if set: for the type parameters `inf` has nothing on
+static TyMapper const* return_inference_mapper(Checker* me, Signature const* sig, Inference* inf, Inference* fallback) {
     TyList params = sig->type_params;
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     bool any = false;
     for (u32 i = 0; i < params.len; i++) {
-        results[i] = inf->params[i].co_len || inf->params[i].contra_len ? inference_call_result(me, inf, i, true) : nullptr;
+        results[i] = inf->params[i].co_len || inf->params[i].contra_len ? inference_call_result(me, inf, i, true) :
+            fallback && (fallback->params[i].co_len || fallback->params[i].contra_len) ? inference_call_result(me, fallback, i, true) :
+            nullptr;
         any |= results[i] != nullptr;
         if (!results[i]) results[i] = params.data[i];
     }
@@ -358,9 +362,7 @@ static bool fixed_by_argument(Checker* me, Arg const* arg, Ty const* param_type,
     return fixed_by_type(me, param_type, probe, true, follow_returns ? 0 : 8);
 }
 
-// tsc's getSingleSignature: the one call (or construct) signature of an object type that has none of the other kind.
-// `allow_members`: properties and index signatures may be there too
-static Signature const* single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members) {
+Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members) {
     if (!(ty->flags & TYF_OBJECT)) return nullptr;
     Members const* members = ty_members(me, ty);
     if (!allow_members && (members->prop_count || members->index_count)) return nullptr;
@@ -373,11 +375,11 @@ static Signature const* single_signature(Checker* me, Ty const* ty, bool constru
 static Signature const* generic_function_argument(Checker* me, Ty const* arg_type, Ty const* param_type, Signature const** contextual) {
     if (!arg_type || !param_type) return nullptr;
     for (u32 construct = 0; construct < 2; construct++) {
-        Signature const* sig = single_signature(me, arg_type, construct, true);
+        Signature const* sig = ty_single_signature(me, arg_type, construct, true);
         if (!sig) continue;
         signature_resolve(me, sig);
         if (!sig->type_params.len) return nullptr;
-        Signature const* wanted = single_signature(me, ty_non_nullable(me, param_type), construct, false);
+        Signature const* wanted = ty_single_signature(me, ty_non_nullable(me, param_type), construct, false);
         if (!wanted) return nullptr;
         signature_resolve(me, wanted);
         if (wanted->type_params.len) return nullptr;
@@ -390,8 +392,8 @@ static Signature const* generic_function_argument(Checker* me, Ty const* arg_typ
 // `contextual`: the contextual type of the call, which the return type is inferred from at a low priority
 // tsc's getSingleCallOrConstructSignature, without other members
 static Signature const* single_call_or_construct(Checker* me, Ty const* ty) {
-    Signature const* ret = single_signature(me, ty, false, false);
-    return ret ? ret : single_signature(me, ty, true, false);
+    Signature const* ret = ty_single_signature(me, ty, false, false);
+    return ret ? ret : ty_single_signature(me, ty, true, false);
 }
 
 // Whether `sig` returns a single non-generic call or construct signature: what a generic function argument's type
@@ -434,6 +436,7 @@ static TyMapper const* infer_type_arguments(
     // inferred so far stands in for them
     OuterInference const* outer = my outer_inference;
     my outer_inference = nullptr;
+    Ty const* uninferred_contextual = contextual;
     if (contextual && outer && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         contextual = ty_instantiate(me, contextual, outer_inference_mapper(me, outer));
     }
@@ -446,7 +449,7 @@ static TyMapper const* infer_type_arguments(
         if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             // A generic function type is instantiated with its own type parameters, which can then be inferred as
             // they are instead of being erased: `const f: <A>(a: A[]) => A[] = arrayMap(x => x)` gives `x: A`
-            Signature const* contextual_sig = single_signature(me, contextual, false, false);
+            Signature const* contextual_sig = ty_single_signature(me, contextual, false, false);
             Ty const* source = contextual;
             if (contextual_sig) {
                 signature_resolve(me, contextual_sig);
@@ -455,9 +458,27 @@ static TyMapper const* infer_type_arguments(
                 }
             }
             infer_types(me, &inf, source, return_type, INFER_PRIORITY_RETURN_TYPE);
-            return_mapper = return_inference_mapper(me, sig, &inf);
+            // The mapper that instantiates contextual types of the arguments. tsc's InferenceContext.returnMapper comes
+            // from an inference of its own, from the contextual type as the outer call's contextual type (not its
+            // inferences) says: in `new Map(xs.map(x => [x, 1]))` the outer K and V aren't known, but `[K, V]` still
+            // makes the callback return a tuple. HACK: that inference only fills in what the outer inferences left
+            // unknown; using it for everything costs valibot 9% (the arguments' contextual types turn generic)
+            Ty const* return_source = outer && outer->return_mapper ?
+                ty_instantiate(me, uninferred_contextual, outer->return_mapper) : uninferred_contextual;
+            bool gaps = false;
+            for (u32 i = 0; i < inf.len && !gaps; i++) gaps = !inf.params[i].co_len && !inf.params[i].contra_len;
+            if (return_source == source || !gaps) {
+                return_mapper = return_inference_mapper(me, sig, &inf, nullptr);
+            } else {
+                Inference return_inf;
+                inference_init(&return_inf, sig->type_params);
+                infer_types(me, &return_inf, return_source, return_type, INFER_PRIORITY_NORMAL);
+                return_mapper = return_inference_mapper(me, sig, &inf, &return_inf);
+                inference_drop(&return_inf);
+            }
         }
     }
+    self.return_mapper = return_mapper;
 
     if (sig->this_type && this_arg) infer_types(me, &inf, this_arg, sig->this_type, INFER_PRIORITY_NORMAL);
 
@@ -472,9 +493,13 @@ static TyMapper const* infer_type_arguments(
         }
         my outer_inference = &self;
         if (return_mapper && !arg->spread && !arg->part_of_spread) {
-            // What the return type says about the type parameters helps type the argument (a tuple, a literal)
+            // What the return type says about the type parameters helps type the argument (a tuple, a literal). tsc
+            // instantiates the contextual type of each expression as it is asked for, so a function argument (whose
+            // parameters are annotated if it gets here) returns into the instantiated return type
             Ty const* param_type = shape_type_at(&shape, i);
-            arg->type = ty_check_expr_in_const(me, arg->expr, param_type ? instantiate_instantiable(me, param_type, return_mapper) : nullptr,
+            Ty const* context = !param_type ? nullptr : arg->expr->tag == EXPR_FUNCTION ?
+                ty_instantiate(me, param_type, return_mapper) : instantiate_instantiable(me, param_type, return_mapper);
+            arg->type = ty_check_expr_in_const(me, arg->expr, context,
                 ty_is_const_type_variable(me, param_type, 0));
         } else {
             check_arg(me, &shape, args, i);
@@ -541,12 +566,16 @@ static TyMapper const* infer_type_arguments(
             infer_from_annotated_params(me, &inf, arg->expr->function, param_type);
         }
         TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
+        bool any_candidates = false;
         for (u32 j = 0; j < inf.len; j++) {
-            if ((inf.params[j].co_len || inf.params[j].contra_len) && fixed_by_argument(me, arg, param_type, sig->type_params.data[j])) {
-                inf.params[j].fixed = so_far->targets[j];
-            }
+            if (!inf.params[j].co_len && !inf.params[j].contra_len) continue;
+            any_candidates = true;
+            if (fixed_by_argument(me, arg, param_type, sig->type_params.data[j])) inf.params[j].fixed = so_far->targets[j];
         }
-        arg->type = ty_check_expr(me, arg->expr, param_type ? ty_instantiate(me, param_type, so_far) : nullptr);
+        // Until something is inferred, what the contextual type of the call said stands in (tsc's
+        // instantiateContextualType: the nonFixingMapper if any inference has candidates, else the returnMapper)
+        TyMapper const* context_mapper = !any_candidates && return_mapper ? return_mapper : so_far;
+        arg->type = ty_check_expr(me, arg->expr, param_type ? ty_instantiate(me, param_type, context_mapper) : nullptr);
         infer_from_arg(me, &inf, &shape, args, i);
     }
     // A variadic rest parameter takes the remaining arguments as a tuple

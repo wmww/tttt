@@ -285,6 +285,7 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
                     alias_args[i] = ty_instantiate(me, target->alias_args.data[i], composed);
                 }
                 fresh->alias_args = (TyList){ .data = alias_args, .len = target->alias_args.len };
+                for (u32 i = 0; i < target->alias_args.len; i++) fresh->flags |= alias_args[i]->flags & TYF_NON_INFERRABLE;
             }
             // Instantiating the alias arguments may have grown the table, so the slot is looked up again
             *intern_slot(me, &my types, key, count) = fresh;

@@ -397,6 +397,10 @@ bool ty_can_be_truthy(Checker* me, Ty const* ty) { return has_type_facts(me, ty,
 bool ty_can_be_falsy(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_FALSY); }
 bool ty_can_be_nullish(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_EQ_UNDEFINED_OR_NULL); }
 
+unsigned ty_undefined_or_null_facts(Checker* me, Ty const* ty) {
+    return type_facts(me, ty, TF_IS_UNDEFINED_OR_NULL) & TF_IS_UNDEFINED_OR_NULL;
+}
+
 static Ty const* base_type_of_literal(Checker* me, Ty const* ty) { return ty_base_type_of_literal(me, ty); }
 
 static bool is_unit_type(Ty const* ty) {

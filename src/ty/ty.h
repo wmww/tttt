@@ -145,6 +145,9 @@ typedef enum TyFlags {
     TYF_FRESH_OBJECT                 = 1 << 27,
     TYF_TEMPLATE_LITERAL             = 1 << 28, // `a${B}` (TY_TEMPLATE_LITERAL)
     TYF_STRING_MAPPING               = 1 << 29, // Uppercase<T> & co. (TY_STRING_MAPPING)
+    // Nothing is inferred from it (tsc's ObjectFlags.NonInferrableType): the silent never that stands for what an outer
+    // inference hasn't found yet, and every union, intersection, reference or alias instantiation with one in it
+    TYF_NON_INFERRABLE               = 1u << 30,
 
     TYF_NULLABLE = TYF_UNDEFINED | TYF_NULL,
     TYF_ES_SYMBOL_LIKE = TYF_ES_SYMBOL | TYF_UNIQUE_ES_SYMBOL,
@@ -727,6 +730,9 @@ Ty const* ty_conditional(
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 TyList ty_conditional_own_infers(Checker* me, Ty const* root); // The `infer` type parameters its extends type declares
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
+// tsc's getSingleSignature: the one call (or construct) signature of an object type that has none of the other kind.
+// `allow_members`: properties and index signatures may be there too
+Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members);
 Ty const* ty_without_undefined(Checker* me, Ty const* ty); // Removes undefined only (tsc's getTypeWithFacts(NEUndefined))
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch);
 static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional, bool which) {
@@ -740,6 +746,7 @@ Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name); // 
 // The type whose members a value of `ty` has: `String` for a string, the constraint of a type parameter...
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
 Ty const* prop_type(Checker* me, Prop const* prop);
+bool ty_props_identical(Checker* me, Prop const* source, Prop const* target); // tsc's isPropertyIdenticalTo
 // The name of the property's first declaration (instantiations follow their target), invalid if it has none
 Span ty_prop_decl_span(Prop const* prop);
 bool ty_has_unresolved_base(Checker* me, Ty const* ty); // HACK: see has_unresolved_base()
@@ -930,6 +937,7 @@ Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty); // `"a"` -> string
 bool ty_can_be_truthy(Checker* me, Ty const* ty);
 bool ty_can_be_falsy(Checker* me, Ty const* ty);
 bool ty_can_be_nullish(Checker* me, Ty const* ty);
+unsigned ty_undefined_or_null_facts(Checker* me, Ty const* ty); // tsc's getTypeFacts(ty, TypeFacts.IsUndefinedOrNull)
 // Declarations evaluate self-contained: not in uncached mode, and with no loop in progress (tsc's
 // checkExpressionCached()). What they evaluate to is complete and can be remembered
 typedef struct FlowIsolation {

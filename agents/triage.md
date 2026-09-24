@@ -124,6 +124,13 @@ here when there's something to know beyond the code.
   contextual type.
 
 ### Relations, instantiation, reduction
+- Tuple normalization: `[...unknown[], ...unknown[]]` stays a tuple type where tsc makes it `unknown[]` (two
+  variable-length spreads). Now visible as TS2322 in valibot `looseTupleAsync.ts:92` and `tupleWithRestAsync.ts:124`
+  (`SuccessDataset<unknown[]>` not assignable to `SuccessDataset<[...unknown[], ...unknown[]]>`), which Promise's
+  bivariance used to hide.
+- TS2430 leftovers now that it's on: interfaceExtendsObjectIntersectionErrors (3 missing), interfaceThatIndirectlyInherits
+  FromItself (2 spurious, tsc reports the circularity instead), mappedTypesAndObjects, mergedInheritedMembersSatisfy
+  AbstractBase (1 missing each). `./failstats.py --code TS2430`.
 - mappedTypeNotMistakenlyHomomorphic (re-probed: spurious TS2353 x2, missing TS2741 x2): `keyof Gen<ABC.A>` misses `a`,
   the intersection with the conflicting-discriminant member isn't reduced before `keyof`. Related: conflicting
   discriminants and privates are reduced at construction (`has_conflicting_discriminants`), only for non-generic
@@ -230,6 +237,10 @@ here when there's something to know beyond the code.
   errors baseline measures.
 
 ## Harness and tools
+- `./release/baseline_tests -f complexRecursiveCollections --err` (outside `test.sh`) hangs forever in
+  `anon_pipe_write`: the harness writes to a pipe of its own that nobody drains while the test's output is big. The
+  valgrind build via `./test.sh` does finish. Two harness runs at once also wait on each other (a lock?), which looks
+  like a hang too.
 - `./release/baseline_tests -f enumLiteralsSubtypeReduction -d` hangs (re-probed: >20 s) while the same run without
   `-d` takes 0.2 s: probably the diff of a huge output through a pipe that nobody drains.
 - `filetest.sh` always uses `/tmp/testfile`: two agents running it at once collide. Take the directory from `mktemp

@@ -9,8 +9,8 @@ types components) are the oracle, not the goal.
 - **Suite 5125 / 13163** fully pass (errors 8218, symbols 9488, types 7896). **Corpora**: tsc's `src/compiler` 0
   diagnostics, type-fest 173, valibot 328 (all three are clean under tsc; 450 / 1871 before plan 19 R5/R3/R2/R4/R1).
   **Perf** (`measurements.md`): tsc corpus 0.70 s vs tsgo 0.75 (single-threaded 1.29), type-fest 0.30 vs 1.29,
-  valibot 0.97 s / 496 MB vs tsgo 0.84 s / 836 MB (single-threaded 1.75). valibot is the one corpus where
-  multi-threaded tsgo still wins.
+  valibot 0.57 s / 413 MB vs tsgo 0.82 s / 823 MB (2026-09-24, after the signature relation fixes): tttt now beats
+  multi-threaded tsgo on every real corpus, single-threaded.
 - Since the last insights (plan 08), eight plans each finished in one session without a redesign: 17 (two modern
   corpora), 19 stage 0 (module augmentation), 14 (syntax gaps), 18 (template literal types, `as` clauses), 20
   (conditional instantiation cache, valibot 4.4 -> 1.2 s), 13 (member modifiers, `super`), 16 (elaboration, related
@@ -25,8 +25,8 @@ types components) are the oracle, not the goal.
 ## Course correction (insights after plan 13, 2026-09-24)
 Where the failing suite tests are (`./failstats.py` + a one-off diff of the dumps against tsc's baselines):
 - **Missing checks, ~2350 non-JS tests** fail errors with *only missing* diagnostics (tttt says less than tsc, nothing
-  wrong). Top codes: TS6133 (unused), TS2339, TS2322, TS2300, TS2411, TS2403, TS2343, TS2695, TS2391, TS2430 (the check
-  exists but is off, `bugs/interface_heritage_alias_cycle.md`), TS2872, TS2314, TS2448. That's plan 15, which has
+  wrong). Top codes: TS6133 (unused), TS2339, TS2322, TS2300, TS2411, TS2403, TS2343, TS2695, TS2391, TS2430 (on since
+  2026-09-24, with TS2320), TS2872, TS2314, TS2448. That's plan 15, which has
   been "ready" for three insights sessions: it now gets two sessions.
 - **Display fidelity, ~2600 tests** pass their errors but fail types and/or symbols (1230 types only, 490 symbols only,
   1060 both); 960 of them are 1-2 lines off, **274 differ only in `^^^` underlines** (plan 07 left 73). By mechanism
@@ -42,9 +42,13 @@ Where the failing suite tests are (`./failstats.py` + a one-off diff of the dump
 - **The modern corpora are the type-core oracle**, and plan 19's root causes are core rules, not polish: an identity
   relation (R1), `const` type parameters (R4), `infer` variables deferring nested conditionals (R5), `keyof` of object
   literal types (R3), mapped-type optionality over unions (R2). Those go first, ahead of the suite plans.
-- **Relations cache results computed under assumptions** (`bugs/overload_relation_assumption.md`, and the TS2430 bug
-  that keeps a finished check switched off). Those are the kind of foundation bug that shows up as order-dependent
-  answers later: fix them right after R1, which works in the same file.
+- **Relations under assumptions: done (2026-09-24), and it wasn't a caching bug.** tttt's maybe-stack already was
+  tsc's. What differed was *which* inner comparisons tsc runs with reportErrors (overloads elaborate the first source
+  signature) and tsc's callback-parameter rule, which also makes `Promise<T>`-like types covariant instead of
+  bivariant. That strictness exposed a cluster of latent inference bugs the bivariance had hidden (unawaited async
+  returns, no `NonInferrableType`, no target erasure in inferFromSignatures, type parameter capture in
+  `clone_type_params`, union generator contexts), all fixed; the erasure alone halved valibot's typecheck time. Lesson:
+  a relation that is too lenient hides inference bugs, so expect more of these whenever relations get stricter.
 - **JS/JSDoc stays deferred** (~1050 tests, 930 failing, most of the spurious TS2304). Deliberate: it's a second
   language front end on top of the checker; JSX and the TS checks come first. The next insights decides when.
 - `hacks.md` has gone partly stale (still says "no nominal class rules", "no `as` clauses" after plans 13 and 18); the

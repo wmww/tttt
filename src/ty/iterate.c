@@ -162,6 +162,18 @@ typedef struct SigList {
     u32 len, cap;
 } SigList;
 
+static void sig_list_push(SigList* out, Signature const* sig) {
+    if (out->len == out->cap) {
+        out->cap *= 2;
+        Signature const** grown = malloc(sizeof(Signature const*) * out->cap);
+        panic_if(!grown, "out of memory");
+        memcpy(grown, out->data, sizeof(Signature const*) * out->len);
+        if (out->data != out->inline_data) free(out->data);
+        out->data = grown;
+    }
+    out->data[out->len++] = sig;
+}
+
 static void call_signatures(Checker* me, Ty const* ty, SigList* out) {
     if (!out->data) {
         out->data = out->inline_data;
@@ -173,22 +185,19 @@ static void call_signatures(Checker* me, Ty const* ty, SigList* out) {
         if (!constraint || constraint == ty) return;
         ty = constraint;
     }
+    if (ty->kind == TY_UNION) {
+        // The `next` of `Generator<...> | AsyncGenerator<...>`: the signatures the members have in common
+        u32 count = 0;
+        Signature* const* sigs = ty_union_signatures(me, ty->composite.types, false, &count);
+        for (u32 i = 0; i < count; i++) sig_list_push(out, sigs[i]);
+        return;
+    }
     TyList parts = ty->kind == TY_INTERSECTION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
     for (u32 i = 0; i < parts.len; i++) {
         Ty const* part = ty_apparent_type(me, parts.data[i]);
         if (!(part->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, part);
-        for (u32 j = 0; j < members->call_count; j++) {
-            if (out->len == out->cap) {
-                out->cap *= 2;
-                Signature const** grown = malloc(sizeof(Signature const*) * out->cap);
-                panic_if(!grown, "out of memory");
-                memcpy(grown, out->data, sizeof(Signature const*) * out->len);
-                if (out->data != out->inline_data) free(out->data);
-                out->data = grown;
-            }
-            out->data[out->len++] = members->call[j];
-        }
+        for (u32 j = 0; j < members->call_count; j++) sig_list_push(out, members->call[j]);
     }
 }
 
@@ -571,11 +580,34 @@ TyIterationTypes const* ty_generator_return_iteration_types(Checker* me, Ty cons
 
 // What a generator's `yield`s and `return`s are about: its annotation, else its contextual return type. Null if neither
 // says anything
+// tsc's checkGeneratorInstantiationAssignabilityToReturnType: whether the generator a function like this makes could be
+// assignable to `ret` at all
+static bool generator_fits(Checker* me, Ty const* ret, bool async) {
+    if (ret->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID | TYF_TYPE_PARAM | TYF_DEFERRED)) return true;
+    TyIterationTypes const* types = ty_generator_return_iteration_types(me, ret, async);
+    Ty const* yield_type = types ? types->yield_type : ty_intrinsic(me, TY_ANY);
+    Ty const* return_type = types ? types->return_type : yield_type;
+    Ty const* next_type = types ? types->next_type : ty_intrinsic(me, TY_UNKNOWN_);
+    return ty_is_related(me, ty_generator_type(me, async, yield_type, return_type, next_type), ret, TY_RELATION_ASSIGNABLE);
+}
+
 TyIterationTypes const* ty_generator_context(Checker* me, FunctionImpl const* generator) {
     Ty const* ret = generator->ret_explicit ?
         ty_from_node(me, &generator->ret, (LowerCtx){ .generic = true }) : ty_contextual_return_type(me, generator);
     if (!ret || (ret->flags & TYF_ANY)) return nullptr;
-    return ty_generator_return_iteration_types(me, ret, generator->is_async);
+    bool async = generator->is_async;
+    if (ret->kind == TY_UNION) {
+        // Only the members a generator could be: `Generator<...> | AsyncGenerator<...>` means the one that fits
+        TyBuf fitting = {0};
+        for (u32 i = 0; i < ret->composite.types.len; i++) {
+            Ty const* member = ret->composite.types.data[i];
+            if (generator_fits(me, member, async)) ty_buf_push(&fitting, member);
+        }
+        ret = ty_union(me, fitting.data, fitting.len, nullptr, (TyList){0});
+        ty_buf_drop(&fitting);
+        if (ret->flags & TYF_NEVER) return nullptr;
+    }
+    return ty_generator_return_iteration_types(me, ret, async);
 }
 
 // tsc's createGeneratorType: `Generator<Y, R, N>` (`AsyncGenerator`), else `IterableIterator` of old libs, else `{}`

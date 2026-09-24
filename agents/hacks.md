@@ -125,8 +125,10 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   inside the return type inference and the message can find the return type in progress (makes `yield* foo` inside
   `foo` any, YieldExpression6_es6). Faithful to what tsc observably does, but it is a side effect of printing.
 - Async functions (`FunctionImpl.is_async`, `promise_decl`): inferred return is `Promise<T>` built from the global
-  `Promise` looked up by name during name resolution (`any` if the lib has none, eg target ES5 without `@lib`); returning a promise nests instead of flattening; returns aren't checked against the declared type;
-  no TS1064/TS2705. `type_awaited` only unwraps types literally named `Promise`/`PromiseLike`.
+  `Promise` looked up by name during name resolution (`any` if the lib has none, eg target ES5 without `@lib`); return
+  expressions are awaited (`ty_awaited`) and widened against the promised type of the contextual return type
+  (`promised_context` in function.c: the members that `ty_awaited` unwraps); returns aren't checked against the
+  declared type; no TS1064/TS2705. `ty_awaited` only unwraps types literally named `Promise`/`PromiseLike`.
 - `await_is_operator`: decides keyword-vs-identifier from `ParserShared.in_async`/`function_depth` plus a peek at the
   next character. Top-level await never reports TS1375/TS1378 (needs module detection + `@module`/`@target`).
   Class field initialisers and parameter defaults count as "top level"/inherit the enclosing function's context.
@@ -303,9 +305,10 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `signature_resolve`: a method signature *written as a type* (`FunctionImpl.is_type`, `ctx.method`) lowers its
   parameter types with `ctx.method` still set, so a callback parameter of an interface method is itself a "method"
   signature (bivariant parameters) wherever that type ends up. This was an accident of the old `CallableType` path
-  and stands in for tsc's rule (callbacks of a bivariantly compared signature are compared bivariantly, `Callback`
-  check mode in compareSignaturesRelated). Without it `Array<X>` -> `ReadonlyArray<Y>` fails in
-  `nonInferrableTypePropagation2`. Class methods (not `is_type`) don't get it. The honest fix is in `relate.c`.
+  and stood in for tsc's rule (callbacks of a bivariantly compared signature are compared bivariantly, `Callback`
+  check mode in compareSignaturesRelated). Without it `Array<X>` -> `ReadonlyArray<Y>` failed in
+  `nonInferrableTypePropagation2`. Class methods (not `is_type`) don't get it. `compare_signatures` has tsc's callback
+  rule now (`CallbackMode`), so this is probably removable: try it.
 - `ty_binding_assigned_type`: not memoised per binding (the root's LazyType is, the accesses down a nested pattern
   are redone per query); arrays only, no iterables; an object rest is the whole object.
 - `FunctionImpl.constructed_class`: a class constructor's return type is `ty_class_instance_type()` of its class,
@@ -383,10 +386,11 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   below ES2015).
 - `report_arity`: the span for too few arguments is the callee's `inner_span`, not tsc's name-of-the-property-access
   rule.
-- Heritage checks (`ty_check_heritage`, `class_heritage_typecheck`): no TS2417 (static side), no TS2320 (inherited
-  properties of several bases that aren't identical), no tsc-specific elaborations ("The types returned by 'toSeq()'
-  are incompatible between these types", "'X' is assignable to the constraint of type 'this', but..."); interface
-  heritage (TS2430) is off (triage.md).
+- Heritage checks (`ty_check_heritage`, `class_heritage_typecheck`, `interface_heritage_typecheck`): no TS2417
+  (static side), TS2320 for interfaces only (`inherited_props_identical`: a class implementing two bases doesn't get
+  it), no tsc-specific elaborations ("The types returned by 'toSeq()' are incompatible between these types", "'X' is
+  assignable to the constraint of type 'this', but..."). The interface checks create types earlier than before, which
+  moved union member order / type parameter names in 3 types baselines (tsc orders by type id).
 - `skipLibCheck` makes declaration files `unchecked` (their semantic diagnostics are dropped, like tsc's
   skipTypeChecking); `skipDefaultLibCheck` isn't looked at.
 - Contextual `this` (`ty_contextual_this_type`, plan 10 stage 2): the object literal's contextual type is remembered
@@ -396,9 +400,25 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   inference in progress (tsc: getMapperFromContext(getInferenceContext(literal))). No TS7041 (`this` captured by an
   arrow function at the top level), no TS7017 on `typeof globalThis`.
 - `clone_type_params` (members.c, plan 11): an instantiated generic signature gets fresh type parameters (tsc's
-  cloneTypeParameter) only for those with a constraint or default (`ty_param_is_bounded`); unbounded ones stay shared
-  with the target (indistinguishable, and keeps `Box<A>.map` vs `Box<B>.map` a plain comparison instead of an
+  cloneTypeParameter) only for those with a constraint or default (`ty_param_is_bounded`), or when the mapper brings
+  type variables in (`then<U>` of `P<U>`: `T := U` would capture the method's own U). Otherwise unbounded ones stay
+  shared with the target (indistinguishable, and keeps `Box<A>.map` vs `Box<B>.map` a plain comparison instead of an
   inference). Something that relies on two instantiations *not* sharing an unbounded type parameter would notice.
+- Return mapper (`infer_type_arguments` in call.c, HACK comment): tsc's `returnMapper` comes from its own inference
+  from the contextual type as the outer call's return mapper says; tttt only uses that inference for type parameters
+  the main inference (from the outer-instantiated contextual type, silent never for what the outer call doesn't know)
+  has no candidates for. Using it for everything was tsc-exact on the tests but cost valibot 9%. The first pass gives
+  a non-context-sensitive *function* argument its parameter type fully instantiated with the return mapper (tsc
+  instantiates each nested contextual type as it is asked for); other arguments only get the top level
+  (`instantiate_instantiable`), since full instantiation broke arrayLiteralInference. The second pass uses the return
+  mapper while no type parameter has candidates (tsc's instantiateContextualType).
+- `TYF_NON_INFERRABLE` (tsc's ObjectFlags.NonInferrableType): set on the silent never and propagated through unions,
+  intersections, references and aliased anonymous instantiations. tsc also sets it on object literals with context
+  sensitive functions in them and on `anyFunctionType` (partially inferable object literals, isPartiallyInferableType);
+  tttt doesn't.
+- `ty_generator_context` (iterate.c): a union return annotation / contextual type is filtered to the members a
+  generator could be assignable to (tsc's checkGeneratorInstantiationAssignabilityToReturnType); tsc filters a
+  non-union contextual type too (to never if it doesn't fit).
 - Higher-order inference (plan 11, `call.c` pass 2, `infer.c: inference_propagate_generic`): tsc's two rounds per
   candidate are tttt's two passes; generic function arguments (`Arg.generic_function`) and calls of generic functions
   returning functions (`Arg.generic_call`, decided once per call in `collect_args` from the callee's apparent type) go
@@ -641,7 +661,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 ## Comment catalogue (2026-09-21, `grep -rnE "\b(PERF|HACK|TODO|FIXME)\b" src`, 155 comments; the ones not above)
 Checker gaps marked in the code, by function:
 - `class_decl_typecheck`: `implements Foo` is lowered as a type but never checked (TS2420).
-  `interface_decl_typecheck`: an `extends` target isn't checked for TS2312/TS2430.
+  `interface_decl_typecheck`: an `extends` target isn't checked for TS2312.
 - `check_access`: indexing with a type parameter / deferred index type returns silently instead of TS2536.
 - `lower_type_args`: a missing required type argument without default becomes any/error, no TS2314.
   `lower_identifier`: `import("./a").B.C` with a missing intermediate member gives `any`, no TS2339.
