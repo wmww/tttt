@@ -519,7 +519,6 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `class_base`: the base class is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`); tsc
   evaluates the expression and takes the return type of its construct signatures (mixins, `extends f()`). The static
   side inherits properties from the base's static side and, without a constructor of its own, its construct signatures.
-- `builder_add_class_items`: no accessibility (private/protected are ordinary members; plan 13).
 - `this` types (plan 10 stage 1): `Prop.thisless` follows tsc's syntactic isThisless* rules, so every class member
   without annotations is instantiated once per class (and per derived class: inherited members are the base's with
   this-argument = the derived `this`). No `this is T` as a *property* type (`isFSO: this is FileSystemObject`

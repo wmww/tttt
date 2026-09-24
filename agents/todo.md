@@ -9,8 +9,9 @@ valibot 4.38 -> 1.19 s and 1834 -> 607 MB, vs tsgo 0.88 s / 834 MB; plan 13 stag
 property); plan 13 stages 4-5 + `super(...)` resolution, `super` legality, this-before-super, `in` checks, duplicate
 package redirects, suite 4931 -> 5116, valibot -> 1871. Plan 13 has only small leftovers now.)
 
-1. **Triage.** Plan 12 left a batch of "exposed by excess property checks" items, the end of plan 08 a few display
-   and check gaps, plan 17 the TS2578-exposed missing checks (triage.md is ~270 lines: consolidate). Plan 13's leftovers (its file) can be
-   folded into triage.md or bugs/ and the plan deleted. Then insights,
-   which should decide how much of plan 19's loop (corpora to zero) to interleave with the suite plans, and whether
-   alias variances (triage.md, Perf: tsc's same-alias shortcut in inference and relations) get a plan.
+1. **Insights.** Triage after plan 13 is done (2026-09-23): triage.md is regrouped by theme, the old checker items
+   re-probed. Decisions waiting there: which of the new category-sized items get plans (binding patterns as types;
+   display fidelity: annotation reuse and union origins; class expressions + member symbols as a single session;
+   substitution types), how much of plan 19's loop (corpora to zero) to interleave with the suite plans, whether alias
+   variances (triage.md "Perf") get a plan, and when JS/JSDoc starts (it's also most of the spurious TS2304, the
+   biggest spurious code). Plan 15 (missing checks) is ready to run as is.

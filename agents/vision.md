@@ -53,7 +53,7 @@ types components) are the oracle, not the goal.
 - **Suite gaps are now mostly absent features, not wrong answers** (triage after plan 10): ~1250 tests hit a syntax
   error tsc doesn't have (plan 14 took ~500 of them); dozens of checks don't exist at all (`./unimplemented_codes.sh`:
   unused locals, property vs index signature, used-before-declaration, operand checks, grammar/regex checks: plan 15);
-  accessibility/readonly checks landed (plan 13 stages 1-3), error elaboration and related information landed (plan 16,
+  member modifiers landed (plan 13: accessibility, readonly, private names, nominal privates, `super` rules), error elaboration and related information landed (plan 16,
   suite 4785 -> ~4930: tsc's elaborateError, getBestMatchingType, TS2769 grouping, related info from relations,
   arity, duplicates, overload implementations, the parser). Missing related info now mostly comes with checks tttt
   lacks (plan 15). These are cheap per test compared with the type core work.

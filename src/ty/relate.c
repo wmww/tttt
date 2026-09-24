@@ -727,7 +727,7 @@ static Ternary compare_signatures(
         Ternary related = TERNARY_FALSE;
         if (source_predicate->is_this != target_predicate->is_this || source_predicate->asserts != target_predicate->asserts) {
             if (report && source_predicate->is_this != target_predicate->is_this) {
-                report_line(st, 1228, cstr_lit("A 'this'-based type guard is not compatible with a parameter-based type guard."));
+                report_line(st, 2518, cstr_lit("A 'this'-based type guard is not compatible with a parameter-based type guard."));
             }
         } else if (!source_predicate->is_this && source_predicate->param_index != target_predicate->param_index) {
             if (report) {
