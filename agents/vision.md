@@ -6,8 +6,8 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-24, insights after plan 13)
-- **Suite 5116 / 13163** fully pass (errors 8206, symbols 9480, types 7879). **Corpora**: tsc's `src/compiler` 0
-  diagnostics, type-fest 450, valibot 1871 (all three are clean under tsc). **Perf** (`measurements.md`): tsc corpus
+- **Suite 5120 / 13163** fully pass (errors 8210, symbols 9479, types 7885). **Corpora**: tsc's `src/compiler` 0
+  diagnostics, type-fest 197, valibot 739 (all three are clean under tsc; 450 / 1871 before plan 19 R5/R3/R2). **Perf** (`measurements.md`): tsc corpus
   0.70 s vs tsgo 0.75 (single-threaded 1.29), type-fest 0.53 vs 1.23, valibot 1.16 s / 615 MB vs tsgo 0.83 s / 833 MB
   (single-threaded 1.62). valibot is the one corpus where multi-threaded tsgo still wins.
 - Since the last insights (plan 08), eight plans each finished in one session without a redesign: 17 (two modern

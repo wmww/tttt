@@ -55,7 +55,7 @@ type A = SE<string, string>;                                               // tt
 type B = (<T>() => T extends {a: T} ? 1 : 0) extends (<T>() => T extends {a: T} ? 1 : 0) ? true : false; // false
 ```
 
-### R2. Homomorphic mapped types over a union/intersection lose `?` (valibot ~190)
+### R2. ~~Homomorphic mapped types over a union/intersection lose `?`~~ done (valibot 1628 -> 739: far more than the ~190 estimated, most expect-type mismatches were this)
 `Pick`/`Omit`/`Prettify` whose modifiers type is `A | B` or `A & B` make every property required. tsc: the mapped
 property's optionality comes from `getPropertyOfType(modifiersType, key)`, which for a union is optional if optional in
 any member, for an intersection only if optional in all members that have it (createUnionOrIntersectionProperty).
@@ -70,7 +70,7 @@ interface A { lang?: string; k: 1 } interface B { lang?: string; k: 2 }
 declare const a: Omit<A, 'k'>; const b: Omit<A | B, 'k'> = a;           // tttt TS2322
 ```
 
-### R3. `keyof` of an object literal type containing any function is deferred (type-fest ~90, valibot ~80)
+### R3. ~~`keyof` of an object literal type containing any function is deferred~~ done (type-fest 295 -> 198, valibot 1853 -> 1628; with the failed-conditional-check walk and tsc's getBaseSignature)
 `keyof typeof {a: () => 1}` stays `keyof {...}` (also `E[keyof E]`, and conditionals over such types stay deferred:
 valibot's `StrictEqual...<NullishSchema<..., () => undefined>, ...> extends true ? ...` constraint, 212 TS2344 are
 this shape). Function *expressions*/methods inside an object literal only; `keyof {a: typeof f}` is fine. Looks like
@@ -97,7 +97,7 @@ const s = q(['a', 'c']);                                  // tttt string[], tsc 
 declare function id<const T>(t: T): T; let r = id('foo'); // tttt string, tsc "foo"; id(1) in const W -> number
 ```
 
-### R5. `infer` variables are not treated as generic in nested conditionals (type-fest ~150)
+### R5. ~~`infer` variables are not treated as generic in nested conditionals~~ done (type-fest 450 -> 295, valibot 1871 -> 1853)
 In the true branch, a conditional whose check or extends type mentions an outer `infer` variable is resolved on the
 spot instead of deferred and re-evaluated after the branch is instantiated: `string extends T` (T infer, constraint
 unknown/string) resolves to true, and `S extends `${A}${infer U}`` (A outer infer) infers A afresh ("f"). tsc: the
@@ -153,7 +153,14 @@ f({ expected: '!1' });                                   // tttt TS2345 (string 
 - `g(() => 1)` with `g<T>(t: T): T` infers `() => number` (tsc `() => 1`: the return literal isn't widened when
   the contextual return type is a type parameter).
 
+### After R5, R3, R2 (2026-09-24)
+type-fest **197** (TS2345 120, TS2578 29, TS2322 15, TS2589 15, TS2344 9), valibot **739** (TS2344 443, TS2578 125,
+TS2322 73, TS2339 24, TS2741 22, TS2345 21). Sample of valibot TS2344 by constraint: `"Expected: literal string: foo,
+Actual: string"` 27 and `{ 0: "foo"; 1: 123; 2: true; }` 20 (R4), `StrictEqualUsingTSInternalIdenticalToOperator<...>`
+and `MismatchInfo` objects (R1) most of the rest. valibot's partial/required tests now reach `satisfies` (TS1360 10,
+R4). Re-rank type-fest's TS2345 after R4/R1, it hasn't been sampled since plan 18.
+
 ### Suggested order
-R5 and R3 (small, unblock most of type-fest and the partial/required valibot tests), R2, R6, R4, then R1 (biggest
+~~R5 and R3, R2, R6~~ (done), R4, then R1 (biggest
 count, medium, likely a perf win too), then the R7 checks one by one. Re-rank after R1: a lot of valibot TS2344 may
 turn out to also need R3/R4.

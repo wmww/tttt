@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-24, plan 19 R5, R3, R2
+Suite **5116 -> 5120** full (errors 8210, symbols 9479, types 7885; nothing lost). Corpora: tsc 0, **type-fest 450 ->
+197** (R5 -> 295, R3 -> 198, R2 -> 197), **valibot 1871 -> 739** (R5 -> 1853, R3 -> 1628, R2 -> 739).
+`realworld.py` wall: type-fest 0.73 s, valibot 1.17 s (was 1.16; R3 made more of it evaluate, +0.3 s of that was
+an uncached getBaseSignature, now cached), tsc 0.73 s. `./bench.sh` not rerun.
+
 ## 2026-09-23, plan 13 done (+ `super` calls and legality, `in` checks, duplicate packages), commit 5d9ff4c
 Suite **4931 -> 5116** full (errors 8206, symbols 9480, types 7879; lost components: taggedPrimitiveNarrowing and
 contextualOverloadListFromArrayUnion, from TS2339 on `never` exposing wrong narrowing/contextual types, triage.md).
