@@ -256,6 +256,15 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   TS2578 /tmp/realworld.txt` after `./realworld.py --corpus X` lists them.
 
 ## Perf (see `measurements.md` for numbers)
+- After plan 20, valibot is 1.19 s vs tsgo 0.88 (single-threaded 1.72). What's left is inference (`infer_from` 20%
+  self; half of all time under `infer_from_signature_lists` -> `infer_from_returns`, i.e. walking schema objects'
+  `~run`/`~standard` members) and `ty_conditional_resolve`'s `infer X` walks. The next lever is tsc's alias shortcut:
+  two instantiations of one alias (`InferObjectInput<X>` vs `InferObjectInput<TEntries>`) infer (and relate) by their
+  alias type arguments with the alias's variances. tttt only does it for deferred targets (`infer_from`, TODO) since
+  there are no alias variances (`get_variances` is for declared types). Covariant-only for all aliases measured
+  ~10% on valibot; it needs variances to be correct, and would help relations too: worth a plan.
+- type-fest's check (0.6 s) is ~90% `test-d/opaque.ts` alone, which runs into TS2589 at line 68 (`Tagged`/
+  `UnwrapTagged` over `TagContainer`) plus four TS7022 that tsc doesn't report: a correctness bug with a perf symptom.
 - `./bench.sh`'s "stdlib only" section prints ~0 ms for every phase (seen after plan 17): probably checks nothing.
 - Corpus profile after plan 05: `is_simple_related` + `check_related` 24% (3.9 M `ty_is_comparable_either_way` from
   discriminant/equality narrowing: tsc has a key property map for unions of 10+ members, `narrow_by_discriminant()`
@@ -271,6 +280,10 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   (release) already; long term, arenas.
 - No `perf` on the dev box; callgrind works (`valgrind --tool=callgrind ./release/tttt -q files...`, then
   `callgrind_annotate [--inclusive=yes]`). Worth a `./profile.sh` wrapper if more sessions need it.
+- type-fest `GreaterThan<2, 1>` is `false` (`test-d/greater-than-or-equal.ts:8`, and a probe importing
+  `source/greater-than.d.ts`): the nested `[...] extends infer R extends [boolean, ...] ? ... : never` chain (two
+  `infer R` in one declaration, the inner shadowing the outer) picks a wrong branch. It used to show as TS2589 in the
+  corpus run, before plan 20's cache kept the instantiation count down.
 - `for (x in o)` with a non-declaration target: TS2405 ("left-hand side of a 'for...in' statement must be of type
   'string' or 'any'") is missing, tttt reports TS2322 instead (`test/probes/plan14/using_identifier.ts`, line 10).
 - Plan 18 leftovers (2026-09-23): stringMappingReduction lost its errors component (it passed while `Lowercase<T>` was

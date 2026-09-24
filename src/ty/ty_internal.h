@@ -31,6 +31,8 @@ enum {
     KEY_STRING_MAPPING,
     KEY_MAPPED_KEY_PARAM, // MappedInfo -> TyMapper from its key type parameter to a constrained stand-in
     KEY_CONDITIONAL_INFERS, // root conditional type id -> TyList* of the `infer` type parameters its extends type declares
+    KEY_CONDITIONAL_OUTER, // root conditional type id -> TyConditionalOuter
+    KEY_CONDITIONAL_INSTANCE, // (root conditional type id, what its outer type parameters map to) -> Ty
     // First word of every key in Checker.links
     KEY_TYPE_PARAM,     // Symbol -> Ty
     KEY_SYMBOL_LINKS,   // Symbol -> SymbolLinks
@@ -65,6 +67,14 @@ enum {
     KEY_SIGNATURE_INSTANCE, // (Signature, type argument ids) -> ty_signature_instantiation()
     KEY_SIGNATURE_TYPE, // Signature -> ty_signature_type()
 };
+
+// The type parameters declared outside a root conditional type that it mentions (tsc's root.outerTypeParameters, less
+// the ones it can't reference). Instantiation only looks at what these map to, and caches by that
+typedef struct TyConditionalOuter {
+    TyList params;
+    bool unknown; // It has parts that aren't syntax (`this`, `typeof x`): every type parameter could matter
+} TyConditionalOuter;
+TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root); // lower.c, null if never lowered
 
 // Doesn't insert, unlike intern_slot()
 void const* intern_get(InternTable const* table, u64 const* words, u32 count);

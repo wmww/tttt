@@ -785,7 +785,8 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         return;
     }
     if (inf->depth == INFER_MAX_DEPTH) return;
-    for (u32 i = 0; i < inf->depth; i++) {
+    // An object pair on the stack is in `visited` too, which stops it below
+    for (u32 i = 0; i < inf->depth && !(target->flags & TYF_OBJECT); i++) {
         if (inf->visiting_sources[i] == source && inf->visiting_targets[i] == target) return;
     }
     inf->visiting_sources[inf->depth] = source;

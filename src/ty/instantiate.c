@@ -352,6 +352,94 @@ static Ty const* instantiate_alias(Checker* me, Ty const* ty, Ty const* result, 
     return ty_realias(me, result, ty->alias, alias_args);
 }
 
+// Start over from the conditional type as written, with everything that has happened to it since
+static Ty const* resolve_conditional_instance(Checker* me, Ty const* root, TyMapper const* combined, bool* distributed) {
+    Ty const* check_type = ty_instantiate(me, root->conditional.check, combined);
+    if (root->conditional.distributive && root->conditional.check->kind == TY_TYPE_PARAM &&
+        check_type != root->conditional.check
+    ) {
+        // Distribution: the whole conditional type is instantiated once per member, with the check type
+        // parameter mapped to that member everywhere
+        if (check_type->flags & TYF_NEVER) return check_type;
+        if (check_type->kind == TY_UNION) {
+            TyList members = check_type->composite.types;
+            Ty const** results = malloc(sizeof(Ty const*) * members.len);
+            for (u32 i = 0; i < members.len; i++) {
+                TyMapper const* member_mapper = mapper_with(me, combined, root->conditional.check, members.data[i]);
+                results[i] = conditional_from_root(me, root, members.data[i], member_mapper);
+            }
+            Ty const* ret = ty_union(me, results, members.len, nullptr, (TyList){0});
+            free(results);
+            *distributed = true;
+            return ret;
+        }
+    }
+    return conditional_from_root(me, root, check_type, combined);
+}
+
+// Like tsc's getConditionalTypeInstantiation: the mapper is cut down to the root's outer type parameters, which is
+// also what the result is cached by, so the same conditional type under another mapper that agrees on those is one
+// lookup, and mappers don't grow with every level of nesting
+static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper const* mapper, bool* distributed) {
+    Ty const* root = ty->conditional.root;
+    TyConditionalOuter const* outer = ty_conditional_outer(me, root);
+    if (!outer || outer->unknown) {
+        TyMapper const* combined = without_own_infers(me, root, compose_mappers(me, ty->conditional.mapper, mapper));
+        return resolve_conditional_instance(me, root, combined, distributed);
+    }
+
+    u32 len = outer->params.len;
+    u64 stack_key[34];
+    Ty const* stack_targets[32];
+    u64* key = len + 2 <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * (len + 2));
+    Ty const** targets = len <= c_arraylen(stack_targets) ? stack_targets : malloc(sizeof(Ty const*) * len);
+    key[0] = KEY_CONDITIONAL_INSTANCE;
+    key[1] = root->id;
+    u32 mapped = 0;
+    for (u32 i = 0; i < len; i++) {
+        // What the parameter maps to through this conditional type's mapper and then the new one: no need to compose
+        // the two, which would instantiate every one of the first's targets
+        targets[i] = ty_instantiate(me, ty_instantiate(me, outer->params.data[i], ty->conditional.mapper), mapper);
+        key[2 + i] = targets[i]->id;
+        mapped += targets[i] != outer->params.data[i];
+    }
+    Ty const* const* cached = intern_get(&my types, key, len + 2);
+    Ty const* ret = nullptr;
+    if (cached) {
+        ret = cached[0];
+        *distributed = (bool)(uintptr_t)cached[1];
+    } else {
+        // Only what changes: identity mappings say nothing
+        Ty const** sources = malloc(sizeof(Ty const*) * (mapped ? mapped * 2 : 1));
+        Ty const** kept = sources + mapped;
+        u32 kept_len = 0;
+        for (u32 i = 0; i < len; i++) {
+            if (targets[i] == outer->params.data[i]) continue;
+            sources[kept_len] = outer->params.data[i];
+            kept[kept_len++] = targets[i];
+        }
+        TyMapper const* restricted = ty_mapper_new(
+            me, (TyList){ .data = sources, .len = kept_len }, (TyList){ .data = kept, .len = kept_len }
+        );
+        free(sources);
+        // A result cut short by the instantiation limits (TS2589) isn't what this instantiation is: not cached
+        bool limit_hit = my instantiation_limit_hit;
+        my instantiation_limit_hit = false;
+        ret = resolve_conditional_instance(me, root, restricted, distributed);
+        bool cacheable = !my instantiation_limit_hit;
+        my instantiation_limit_hit |= limit_hit;
+        if (cacheable) {
+            Ty const** entry = arena_new_n(&my arena, Ty const*, 2);
+            entry[0] = ret;
+            entry[1] = (Ty const*)(uintptr_t)*distributed;
+            *intern_slot(me, &my types, key, len + 2) = entry;
+        }
+    }
+    if (key != stack_key) free(key);
+    if (targets != stack_targets) free(targets);
+    return ret;
+}
+
 static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* mapper) {
     Ty const* stack_buf[16];
     switch ((TyKind)ty->kind) {
@@ -444,30 +532,10 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
         }
 
         case TY_CONDITIONAL: {
-            // Start over from the conditional type as written, with everything that has happened to it since
-            Ty const* root = ty->conditional.root;
-            TyMapper const* combined = without_own_infers(me, root, compose_mappers(me, ty->conditional.mapper, mapper));
-            Ty const* check_type = ty_instantiate(me, root->conditional.check, combined);
-            if (root->conditional.distributive && root->conditional.check->kind == TY_TYPE_PARAM &&
-                check_type != root->conditional.check
-            ) {
-                // Distribution: the whole conditional type is instantiated once per member, with the check type
-                // parameter mapped to that member everywhere
-                if (check_type->flags & TYF_NEVER) return check_type;
-                if (check_type->kind == TY_UNION) {
-                    TyList members = check_type->composite.types;
-                    Ty const** results = malloc(sizeof(Ty const*) * members.len);
-                    for (u32 i = 0; i < members.len; i++) {
-                        TyMapper const* member_mapper = mapper_with(me, combined, root->conditional.check, members.data[i]);
-                        results[i] = conditional_from_root(me, root, members.data[i], member_mapper);
-                    }
-                    Ty const* ret = ty_union(me, results, members.len, nullptr, (TyList){0});
-                    free(results);
-                    return ret->kind == TY_UNION ? instantiate_alias(me, ty, ret, mapper) : ret;
-                }
-            }
-            Ty const* ret = conditional_from_root(me, root, check_type, combined);
-            return ret->kind == TY_CONDITIONAL ? instantiate_alias(me, ty, ret, mapper) : ret;
+            bool distributed = false;
+            Ty const* ret = instantiate_conditional(me, ty, mapper, &distributed);
+            bool keeps_alias = ret->kind == (distributed ? TY_UNION : TY_CONDITIONAL);
+            return keeps_alias ? instantiate_alias(me, ty, ret, mapper) : ret;
         }
     }
     impossible;

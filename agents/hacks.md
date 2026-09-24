@@ -548,9 +548,13 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   unnamed twin structurally. tsc's "local alias" exception isn't applied, the union a distributive conditional
   resolves to gets the alias only when it comes out of `ty_instantiate`, and `keyof` never has one (same as tsc).
 - `Ty.conditional.root` + `.mapper`: instantiation restarts from the conditional type as written (what makes
-  `Exclude<keyof T, K>` distribute inside `Omit`). The composed mapper is not restricted to the type parameters the
-  root mentions, and the intern key is still the instantiated operands (+ root), so the stored mapper is whichever
-  got there first. Equivalent for every parameter the root mentions.
+  `Exclude<keyof T, K>` distribute inside `Omit`), with the mapper cut down to the root's outer type parameters and
+  cached by what they map to (`instantiate_conditional`, tsc's getConditionalTypeInstantiation). The outer
+  parameters come from `collect_free_params` on the ternary node (`conditional_set_outer`), so they share its limits
+  (below); when it gives up (`TyConditionalOuter.unknown`: `this`, `typeof`, more than 16 parameters) instantiation
+  falls back to the old uncached path with the full composed mapper. Results cut short by the instantiation limits
+  aren't cached; anything else that depends on state outside the key (a branch in flight reads as the error type)
+  is, as in tsc.
 - `lazy_type_get((LazyType*)...)` const casts (`ty/expr.c`, `ty/lower.c`, `ty/members.c`): harmless, the memo is in the
   checker; they go when `lazy_type_get` takes a const pointer.
 - `ty_keyof` of primitives and `ty_indexed` on anything but plain props / index signatures / tuple and array

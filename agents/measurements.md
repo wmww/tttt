@@ -2,6 +2,18 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-23, plan 20: conditional instantiation cache
+Suite **4690** (unchanged, no component gained or lost). Corpora unchanged: tsc 0, type-fest 424, valibot 1835 (a few
+valibot messages print a union once where they printed `InferObjectOutput<X> | InferObjectOutput<X>`: two instances
+that used to be distinct types are one now; one type-fest TS2589 became the TS2345 it hid, see triage.md).
+`./bench.sh`: tsc corpus tttt **0.70 s** / 371 MB vs tsgo 0.75 (single-threaded 1.29), tsc 4.88. type-fest tttt
+**0.59 s / 73 MB** (was 0.68 s / 200 MB) vs tsgo 1.30 s / 807 MB. **valibot tttt 1.19 s / 607 MB** (was 4.38 s /
+1834 MB) vs tsgo **0.88 s** / 834 MB (single-threaded 1.72), tsc 6.27; typecheck 1072 ms. Callgrind of valibot
+51 G -> 12.2 G Ir. What's left: `infer_from` 20% self (half of everything under `infer_from_signature_lists` ->
+`infer_from_returns`), `instantiate_inner` 11%, `ty_is_deeply_nested` 5.5%, arena calloc/memset 5%, display of the
+wrong diagnostics 5%. Repeated calls are free now (50 `v.pipe(...)` in one file cost what 1 does). type-fest's
+remaining time is ~90% `test-d/opaque.ts` hitting TS2589 (a correctness bug, triage.md).
+
 ## 2026-09-23, plan 18: template literal types, string mappings, mapped `as` clauses
 Suite **4690** full (4604 before; errors 7834, symbols 9264, types 7522; lost stringMappingReduction's errors, see
 triage.md). Corpora: tsc 0, **type-fest 598 -> 424** (TS2345 225, TS2339 75, TS2322 48, TS2578 35, TS2344 14, TS2589 13;

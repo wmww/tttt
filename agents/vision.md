@@ -5,7 +5,13 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-23, plan 18 done)
+## State (2026-09-23, plan 20 done)
+- **Plan 20: conditional types are instantiated through tsc's outer-type-parameter keyed cache** (mapper cut down to
+  the parameters the root mentions, result cached by what they map to). valibot **4.38 -> 1.19 s, 1834 -> 607 MB**
+  (tsgo 0.88 s / 834 MB, single-threaded 1.72), type-fest 0.68 -> 0.59 s, no diagnostics or tests changed. tttt now
+  beats single-threaded tsgo on all three corpora and multi-threaded tsgo on two; valibot's remaining gap is the
+  inference walk itself, where tsc has a shortcut tttt lacks (same-alias type arguments by variance, triage.md).
+
 - **Plan 18 (template literal types, string mappings, mapped `as` clauses) done in one session**, all five stages:
   suite 4604 -> 4690, type-fest 598 -> 424 (nothing left in `source/`), valibot 2169 -> 1835, tsc corpus 0. It
   surfaced two core bugs that type-level programming depends on (conditional instantiation leaking outer `infer`
@@ -26,9 +32,8 @@ types components) are the oracle, not the goal.
   clean under tsc 5.8: type-fest **598** diagnostics, valibot **4473**. Ranked causes: module augmentation of an
   aliased export (vitest's `expect`, ~2400 of valibot's: plan 19 stage 0), template literal types / string mappings /
   `as` clauses (plan 18: type-fest's arithmetic utilities, expect-type's messages), then a long tail (plan 19 loop).
-- **valibot is the first corpus where tttt is slower than tsgo**: 4.0 s / 1.7 GB vs 1.3 s / 0.8 GB, 93% instantiating
-  conditional types during overload inference with no instantiation cache (plan 20). tsc corpus and type-fest are
-  still well ahead (0.74 vs 1.02 s; 0.28 vs 1.37 s, though type-fest's check is incomplete).
+- **valibot was the first corpus where tttt is slower than tsgo**: 4.0 s / 1.7 GB vs 1.3 s / 0.8 GB, 93% instantiating
+  conditional types during overload inference with no instantiation cache (fixed by plan 20).
 - Suite 4219. Plan 17 also added `@ts-expect-error`/`@ts-ignore` (+TS2578) and bigint literal types.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
   under tsc): **0 diagnostics** (1751 at the start of plan 08; plans 09-12 took the category-sized buckets, the last
@@ -164,9 +169,9 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type *printing* (alias preservation, union
   ordering by type id, truncation). Union order by creation id is something an interned design can mimic and a
   tree design cannot. Keep this in mind when designing ids.
-- Perf: ahead of tsgo on tsc's compiler (0.74 vs 1.02 s), **behind on valibot** (4.0 vs 1.3 s, conditional type
-  instantiation during overload inference: plan 20). Deep generic code is where tsc's caches matter, and tttt skipped
-  some of them.
+- Perf: ahead of tsgo on tsc's compiler (0.70 vs 0.75 s) and type-fest (0.59 vs 1.30 s), behind multi-threaded tsgo
+  on valibot (1.19 vs 0.88 s; was 4.4 s before plan 20's conditional instantiation cache). Deep generic code is where
+  tsc's caches and shortcuts matter, and tttt still lacks some (same-alias inference/relation by variance).
 - Parser robustness: error recovery paths are barely exercised under valgrind (plan 03's heap corruption turned out
   to be the error *printer*, `span_line_start` on a span starting at a newline, not the parser).
 - Single-threaded design. tsgo's win is largely parallel parse/bind + multiple checkers. Arena/interning design

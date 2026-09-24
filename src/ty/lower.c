@@ -552,6 +552,28 @@ static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found) {
     if (found.unknown || found.len) ty->flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
 }
 
+static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* node) {
+    u64 key[2] = { KEY_CONDITIONAL_OUTER, root->id };
+    if (intern_get(&my links, key, 2)) return;
+    FreeParams found = {0};
+    collect_free_params(me, node, &found);
+    u32 kept = 0;
+    for (u32 i = 0; i < found.len; i++) {
+        bool bound = false;
+        for (u32 j = 0; j < found.bound_len; j++) bound |= found.bound[j] == found.params[i];
+        if (!bound) found.params[kept++] = found.params[i];
+    }
+    TyConditionalOuter* outer = arena_new(&my arena, TyConditionalOuter);
+    outer->unknown = found.unknown;
+    if (!found.unknown) outer->params = ty_list_copy(me, found.params, kept);
+    *intern_slot(me, &my links, key, 2) = outer;
+}
+
+TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root) {
+    u64 key[2] = { KEY_CONDITIONAL_OUTER, root->id };
+    return intern_get(&my links, key, 2);
+}
+
 Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args) {
     check(node->tag == TYPE_INTERFACE || node->tag == TYPE_CALLABLE);
     ctx.in_alias = false; // Members are resolved lazily, which is what makes recursion through them legal
@@ -1332,6 +1354,7 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
                     }
                     ty_buf_drop(&infers);
                 }
+                conditional_set_outer(me, ret, node);
             }
             return alias && ret->kind == TY_CONDITIONAL ? ty_realias(me, ret, alias, alias_args) : ret;
         }

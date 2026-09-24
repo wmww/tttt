@@ -1316,6 +1316,11 @@ Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
     return branch->type;
 }
 
+static u32 cond_branch_key_len(TyCondBranch const* branch) {
+    if (!branch->node && !branch->source) return 2;
+    return 2 + (branch->mapper ? branch->mapper->len * 2 : 0);
+}
+
 static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
     if (!branch->node && !branch->source) {
         key[0] = branch->type->id;
@@ -1325,7 +1330,7 @@ static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
     u32 count = 0;
     key[count++] = branch->node ? (u64)(uintptr_t)branch->node : (u64)(uintptr_t)branch->source;
     key[count++] = branch->mapper ? branch->mapper->len : 0;
-    for (u32 i = 0; branch->mapper && i < branch->mapper->len && count + 2 <= 24; i++) {
+    for (u32 i = 0; branch->mapper && i < branch->mapper->len; i++) {
         key[count++] = branch->mapper->sources[i]->id;
         key[count++] = branch->mapper->targets[i]->id;
     }
@@ -1339,13 +1344,22 @@ Ty const* ty_conditional(
 ) {
     Ty const* resolved = ty_conditional_resolve(me, check_type, extends, if_true, if_false);
     if (resolved) return resolved;
-    u64 key[5 + 24 + 24] = { KEY_CONDITIONAL, check_type->id, extends->id, distributive, root ? root->id : 0 };
+    u64 stack_key[64];
+    u32 key_len = 5 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);
+    u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
+    panic_if(!key, "out of memory");
+    key[0] = KEY_CONDITIONAL;
+    key[1] = check_type->id;
+    key[2] = extends->id;
+    key[3] = distributive;
+    key[4] = root ? root->id : 0;
     u32 count = 5;
     count += cond_branch_key(key + count, if_true);
     count += cond_branch_key(key + count, if_false);
     u32 flags = check_type->flags | extends->flags | TYF_COULD_CONTAIN_TYPE_VARIABLES;
     Ty* fresh;
     Ty const* ret = intern_deferred(me, key, count, TY_CONDITIONAL, flags, &fresh);
+    if (key != stack_key) free(key);
     if (fresh) {
         fresh->conditional.check = check_type;
         fresh->conditional.extends = extends;
