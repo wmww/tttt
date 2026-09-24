@@ -56,42 +56,42 @@ const baselines = {
         types: true,
     },
     'ArrowFunctionExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ClassDeclaration10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ClassDeclaration11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ClassDeclaration13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ClassDeclaration14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ClassDeclaration15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ClassDeclaration21': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ClassDeclaration22': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -101,7 +101,7 @@ const baselines = {
         types: true,
     },
     'ClassDeclaration25': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -111,12 +111,12 @@ const baselines = {
         types: false,
     },
     'ClassDeclaration8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ClassDeclaration9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -146,22 +146,22 @@ const baselines = {
         types: true,
     },
     'FunctionDeclaration3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'FunctionDeclaration4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'FunctionDeclaration6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'FunctionDeclaration7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -171,17 +171,17 @@ const baselines = {
         types: true,
     },
     'MemberAccessorDeclaration15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ParameterList13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ParameterList4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -191,17 +191,17 @@ const baselines = {
         types: true,
     },
     'ParameterList6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ParameterList7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'ParameterList8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -311,7 +311,7 @@ const baselines = {
         types: true,
     },
     'accessorParameterAccessibilityModifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1561,7 +1561,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatFunctionsWithOptionalArgs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4011,12 +4011,12 @@ const baselines = {
         types: true,
     },
     'classWithOverloadImplementationOfWrongName': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'classWithOverloadImplementationOfWrongName2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6961,7 +6961,7 @@ const baselines = {
         types: false,
     },
     'crashOnMethodSignatures': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13926,12 +13926,12 @@ const baselines = {
         types: true,
     },
     'functionOverloadImplementationOfWrongName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'functionOverloadImplementationOfWrongName2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13941,7 +13941,7 @@ const baselines = {
         types: false,
     },
     'functionOverloads1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14051,7 +14051,7 @@ const baselines = {
         types: false,
     },
     'functionOverloads3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14176,7 +14176,7 @@ const baselines = {
         types: false,
     },
     'functionOverloadsOutOfOrder': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16681,7 +16681,7 @@ const baselines = {
         types: false,
     },
     'incorrectClassOverloadChain': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16931,7 +16931,7 @@ const baselines = {
         types: true,
     },
     'indexer2A': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19121,7 +19121,7 @@ const baselines = {
         types: false,
     },
     'jsFileCompilationDuplicateFunctionImplementationFileOrderReversed': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20781,7 +20781,7 @@ const baselines = {
         types: true,
     },
     'mixedStaticAndInstanceClassMembers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20816,7 +20816,7 @@ const baselines = {
         types: true,
     },
     'mixingStaticAndInstanceOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24536,7 +24536,7 @@ const baselines = {
         types: false,
     },
     'overloadsWithinClasses': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24556,7 +24556,7 @@ const baselines = {
         types: true,
     },
     'paramPropertiesInSignatures': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -24586,7 +24586,7 @@ const baselines = {
         types: false,
     },
     'parameterPropertyInConstructor1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -24616,7 +24616,7 @@ const baselines = {
         types: true,
     },
     'parameterPropertyOutsideConstructor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26011,7 +26011,7 @@ const baselines = {
         types: true,
     },
     'readonlyInNonPropertyParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34811,7 +34811,7 @@ const baselines = {
         types: true,
     },
     'readonlyInAmbientClass': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -36716,7 +36716,7 @@ const baselines = {
         types: true,
     },
     'memberFunctionOverloadMixingStaticAndInstance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49301,7 +49301,7 @@ const baselines = {
         types: false,
     },
     'functionNameConflicts': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53731,17 +53731,17 @@ const baselines = {
         types: true,
     },
     'declarationFileForHtmlFileWithinDeclarationFile': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'declarationFileForHtmlImport(allowarbitraryextensions=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'declarationFileForHtmlImport(allowarbitraryextensions=true)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54216,7 +54216,7 @@ const baselines = {
         types: true,
     },
     'parserArrowFunctionExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54326,12 +54326,12 @@ const baselines = {
         types: false,
     },
     'parserClassDeclaration10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserClassDeclaration11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54341,17 +54341,17 @@ const baselines = {
         types: true,
     },
     'parserClassDeclaration13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserClassDeclaration14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserClassDeclaration15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54386,12 +54386,12 @@ const baselines = {
         types: false,
     },
     'parserClassDeclaration21': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserClassDeclaration22': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54406,7 +54406,7 @@ const baselines = {
         types: true,
     },
     'parserClassDeclaration25': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54446,12 +54446,12 @@ const baselines = {
         types: true,
     },
     'parserClassDeclaration8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserClassDeclaration9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54896,7 +54896,7 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ModuleElement2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55261,12 +55261,12 @@ const baselines = {
         types: true,
     },
     'parserFunctionDeclaration3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserFunctionDeclaration4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55276,12 +55276,12 @@ const baselines = {
         types: true,
     },
     'parserFunctionDeclaration6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserFunctionDeclaration7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55726,7 +55726,7 @@ const baselines = {
         types: true,
     },
     'parserMemberAccessorDeclaration15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55811,7 +55811,7 @@ const baselines = {
         types: true,
     },
     'parserMemberFunctionDeclarationAmbiguities1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55926,7 +55926,7 @@ const baselines = {
         types: true,
     },
     'parserModuleDeclaration10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56051,7 +56051,7 @@ const baselines = {
         types: true,
     },
     'parserParameterList13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56086,7 +56086,7 @@ const baselines = {
         types: true,
     },
     'parserParameterList4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56096,17 +56096,17 @@ const baselines = {
         types: true,
     },
     'parserParameterList6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserParameterList7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'parserParameterList8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -62701,7 +62701,7 @@ const baselines = {
         types: true,
     },
     'callSignaturesWithAccessibilityModifiersOnParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -62731,7 +62731,7 @@ const baselines = {
         types: false,
     },
     'constructSignatureWithAccessibilityModifiersOnParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

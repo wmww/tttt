@@ -96,4 +96,5 @@ void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     for_each (i, vec_statement, &my statements) {
         statement_typecheck(i, ctx, errs);
     }
+    if (!ctx.ambient) statements_check_overloads(&my statements, errs);
 }

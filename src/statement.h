@@ -213,6 +213,10 @@ static inline bool statement_is_bare_return(Statement const* me) {
 // Whether pred holds for the expression of some non-bare `return` (not looking into nested functions, tsc's
 // forEachReturnStatement)
 bool statement_any_return(Statement const* me, bool (*pred)(Expr const*));
+// tsc's checkFunctionOrConstructorSymbol for the function declarations of a statement list: every overload is followed
+// by the next one or the implementation (TS2391, TS2389). Syntactic, per list: tsc's symbol walk only compares
+// declarations with the same parent
+void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs);
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
 #define g_class_key Statement, statement

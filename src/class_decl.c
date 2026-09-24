@@ -9,6 +9,7 @@
 #include "several_types.h"
 #include "error.h"
 #include "unused.h"
+#include "source_file.h"
 
 void class_item_drop(ClassItem* me) {
     vec_expr_drop(&my decorators);
@@ -335,6 +336,85 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
     free(members);
 }
 
+// A method (not an accessor) or constructor: what tsc's checkFunctionOrConstructorSymbol compares
+static FunctionImpl const* overloadable(ClassItem const* item) {
+    if (item->tag == CLASS_ITEM_CONSTRUCTOR) return &item->constructor.func;
+    if (item->tag == CLASS_ITEM_METHOD && !item->method.accessor) return &item->method.func;
+    return nullptr;
+}
+
+static bool same_member(ClassItem const* a, ClassItem const* b) {
+    if (a->tag != b->tag) return false;
+    if (a->tag == CLASS_ITEM_CONSTRUCTOR) return true;
+    return !a->method.computed_key && !b->method.computed_key && cstr_eq(&a->method.name_string, &b->method.name_string);
+}
+
+static Span overload_name(ClassItem const* item) {
+    return item->tag == CLASS_ITEM_CONSTRUCTOR ? item->constructor.name_span : item->method.name_span;
+}
+
+// tsc's checkFunctionOrConstructorSymbol for the methods and constructors of a class: overloads are consecutive and
+// followed by the implementation (TS2391, TS2389, TS2390, TS2516, TS2387/TS2388), one implementation (TS2393)
+static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
+    SourceFile const* file = my name.source ? my name.source : my full_span.source;
+    if ((my symbol && my symbol->is_ambient) || !file || file->is_declaration || file->has_parse_errors) return;
+    isize count = vec_class_item_size(&my items);
+    for (isize i = 0; i < count; i++) {
+        ClassItem const* item = vec_class_item_at(&my items, i);
+        FunctionImpl const* func = overloadable(item);
+        if (!func || func->has_body) continue;
+        bool is_constructor = item->tag == CLASS_ITEM_CONSTRUCTOR;
+        if (!is_constructor && item->method.computed_key) continue;
+        ClassItem const* next = i + 1 < count ? vec_class_item_at(&my items, i + 1) : nullptr;
+        if (next && !overloadable(next)) next = nullptr;
+        if (next && same_member(item, next)) {
+            bool is_static = !is_constructor && item->method.is_static;
+            if (!is_constructor && is_static != next->method.is_static) {
+                error_ctx_error_d(errs, next->method.name_span, is_static ? 2387 : 2388,
+                    is_static ? "Function overload must be static." : "Function overload must not be static.");
+            }
+            continue;
+        }
+        bool is_abstract = !is_constructor && item->method.is_abstract;
+        bool later = false;
+        for (isize j = i + 1; j < count && !later; j++) later = same_member(item, vec_class_item_at(&my items, j));
+        // The last one without a body is only an error for what needs an implementation
+        if (!later && (is_abstract || (!is_constructor && item->method.is_optional))) continue;
+        if (next && overloadable(next)->has_body && next->tag == item->tag) {
+            cstr name = cstr_from_sv(overload_name(item).sv);
+            error_ctx_error_d(errs, overload_name(next), 2389, "Function implementation name must be '", name, "'.");
+            cstr_drop(&name);
+        } else if (is_constructor) {
+            error_ctx_error_d(errs, overload_name(item), 2390, "Constructor implementation is missing.");
+        } else if (is_abstract) {
+            error_ctx_error_d(errs, overload_name(item), 2516, "All declarations of an abstract method must be consecutive.");
+        } else {
+            error_ctx_error_d(errs, overload_name(item), 2391,
+                "Function implementation is missing or not immediately following the declaration.");
+        }
+    }
+    // Two implementations of a method (constructors have TS2392)
+    for (isize i = 0; i < count; i++) {
+        ClassItem const* item = vec_class_item_at(&my items, i);
+        FunctionImpl const* func = overloadable(item);
+        if (!func || item->tag == CLASS_ITEM_CONSTRUCTOR || item->method.computed_key) continue;
+        bool first = true, is_static = item->method.is_static;
+        u32 bodies = 0;
+        for (isize j = 0; j < count; j++) {
+            ClassItem const* other = vec_class_item_at(&my items, j);
+            if (!overloadable(other) || !same_member(item, other) || other->method.is_static != is_static) continue;
+            if (j < i) first = false;
+            if (other->method.func.has_body) bodies++;
+        }
+        if (!first || bodies < 2) continue;
+        for (isize j = 0; j < count; j++) {
+            ClassItem const* other = vec_class_item_at(&my items, j);
+            if (!overloadable(other) || !same_member(item, other) || other->method.is_static != is_static) continue;
+            error_ctx_error_d(errs, other->method.name_span, 2393, "Duplicate function implementation.");
+        }
+    }
+}
+
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (my has_typechecked) {
         return;
@@ -376,6 +456,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
 
     class_heritage_typecheck(me, errs);
+    class_check_overloads(me, errs);
     if (my symbol) {
         Checker* checker = current_checker;
         ty_check_index_constraints(checker, ty_declared_type_of(checker, my symbol), my symbol, false, nullptr, 0, my name, errs);

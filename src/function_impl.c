@@ -184,6 +184,9 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
     bool rest_not_last = false;
     for_each (i, vec_function_arg, &my args) {
         bool has_initializer = i->initializer.value.tag != EXPR_IMPLICIT_ANY;
+        if (i->is_parameter_property && !(my is_constructor && my has_body)) {
+            error_ctx_error_d(errs, i->span, 2369, "A parameter property is only allowed in a constructor implementation.");
+        }
         if (is_type && has_initializer) {
             error_ctx_error_d(
                 errs,

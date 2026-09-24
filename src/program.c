@@ -418,6 +418,13 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
     if (csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts")) {
         source_file->is_declaration = true;
+    } else if (csview_ends_with(path, ".ts")) {
+        // tsc's getDeclarationFileExtension: `x.d.css.ts` (allowArbitraryExtensions) declares too
+        isize base = path.size;
+        while (base > 0 && path.buf[base - 1] != '/') base--;
+        for (isize i = base; i + 3 <= path.size; i++) {
+            if (!memcmp(path.buf + i, ".d.", 3)) source_file->is_declaration = true;
+        }
     }
 
     source_file->is_js = path_is_js(path);

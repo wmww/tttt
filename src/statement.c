@@ -1274,6 +1274,59 @@ static void return_typecheck(Statement const* statement, Expr const* expr, Ty co
     ty_check_assignable_expr(checker, ty_expr_type(checker, expr), target, span, effective, errs);
 }
 
+static FunctionImpl const* function_declaration(Statement const* me) {
+    return me && my tag == STATEMENT_DECL_FUNCTION && !my decl.props.declared ? my decl.function.impl : nullptr;
+}
+
+void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) {
+    isize count = vec_statement_size(statements);
+    for (isize i = 0; i < count; i++) {
+        FunctionImpl const* overload = function_declaration(vec_statement_at(statements, i));
+        if (!overload || overload->has_body || !span_valid(overload->name)) continue;
+        // A declaration file is ambient; after a parse error the body may be what the parser lost
+        SourceFile const* file = overload->name.source;
+        if (file->is_declaration || file->has_parse_errors) return;
+        FunctionImpl const* next = i + 1 < count ? function_declaration(vec_statement_at(statements, i + 1)) : nullptr;
+        if (next && csview_equals_sv(next->name.sv, overload->name.sv)) continue; // It goes on
+        // Not followed by its implementation. An error if the list declares more of it later (tsc's consecutive
+        // declarations), or if nothing declares more of it (the last declaration has no body)
+        bool later_here = false;
+        for (isize j = i + 1; j < count && !later_here; j++) {
+            FunctionImpl const* other = function_declaration(vec_statement_at(statements, j));
+            later_here = other && csview_equals_sv(other->name.sv, overload->name.sv);
+        }
+        Symbol const* symbol = overload->symbol;
+        bool later_elsewhere = false;
+        for (u32 d = 0; symbol && d < symbol->decl_count; d++) {
+            if (symbol->decls[d].node != overload) continue;
+            for (u32 e = d + 1; e < symbol->decl_count; e++) later_elsewhere |= symbol->decls[e].kind == SYMBOL_DECL_FUNCTION;
+            break;
+        }
+        if (!later_here && later_elsewhere) continue;
+        if (next && next->has_body) {
+            error_ctx_error_d(errs, next->name, 2389, "Function implementation name must be '", overload->name, "'.");
+        } else {
+            error_ctx_error_d(errs, overload->name, 2391,
+                "Function implementation is missing or not immediately following the declaration.");
+        }
+    }
+}
+
+// tsc's duplicateFunctionDeclaration: more than one declaration of the function has a body, reported on all of them
+static void function_check_duplicate_implementation(FunctionImpl const* me, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    if (!symbol || symbol_find_node(symbol, SYMBOL_DECL_FUNCTION) != me) return; // Once per symbol
+    u32 bodies = 0;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind == SYMBOL_DECL_FUNCTION && ((FunctionImpl const*)symbol->decls[i].node)->has_body) bodies++;
+    }
+    if (bodies < 2) return;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;
+        error_ctx_error_d(errs, symbol->decls[i].name, 2393, "Duplicate function implementation.");
+    }
+}
+
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     current_checker->instantiation_count = 0; // tsc's checkSourceElement
     // What the builder couldn't know: code after a call that never returns or an exhaustive switch (tsc's
@@ -1490,6 +1543,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
         case STATEMENT_DECL_FUNCTION:
             function_impl_typecheck(my decl.function.impl, errs);
+            function_check_duplicate_implementation(my decl.function.impl, errs);
             break;
 
         case STATEMENT_DECL_ENUM:
