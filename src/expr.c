@@ -113,6 +113,88 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
     my target = scope->this_ref.symbol;
 }
 
+// tsc's checkResolvedBlockScopedVariable / isBlockScopedNameDeclaredBeforeUse: a `let`/`const`, class or enum used
+// (as a value) before its declaration, unless the use is deferred: in a function, in an instance member
+static void check_declared_before_use(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    u32 flags = symbol->flags;
+    if (!(flags & (SYMBOL_BLOCK_SCOPED_VARIABLE | SYMBOL_CLASS | SYMBOL_ENUM)) || symbol->is_ambient) return;
+    if (flags & SYMBOL_CLASS && flags & (SYMBOL_FUNCTION | SYMBOL_FUNCTION_SCOPED_VARIABLE)) return;
+    if ((flags & SYMBOL_ENUM) == SYMBOL_CONST_ENUM && !compiler_options()->isolated_modules) return;
+    if ((names->flow && names->flow->in_type_query) || names->ambient) return;
+    SymbolDecl const* decl = nullptr;
+    for (u32 i = 0; i < symbol->decl_count && !decl; i++) {
+        SymbolDeclKind kind = symbol->decls[i].kind;
+        if ((kind == SYMBOL_DECL_VARIABLE && symbol->decls[i].flags & SYMBOL_BLOCK_SCOPED_VARIABLE) ||
+            kind == SYMBOL_DECL_CLASS || kind == SYMBOL_DECL_ENUM
+        ) {
+            decl = &symbol->decls[i];
+        }
+    }
+    if (!decl || decl->full.source != my name.source) return;
+    if (span_start_ptr(decl->full) <= span_start_ptr(my name)) {
+        if (decl->kind == SYMBOL_DECL_CLASS) {
+            // Declared before, but used in a computed name of its own members (`class A { [A.p]() {} }`)
+            bool in_computed_name = false;
+            Scope const* i = names;
+            for (; i && i->kind != SCOPE_FUNCTION && !i->this_ref.class_decl; i = i->parent) {
+                in_computed_name |= i->no_super == NO_SUPER_COMPUTED_NAME;
+            }
+            if (!in_computed_name || !i || i->this_ref.class_decl != decl->node) return;
+        } else {
+            // Declared before, but used in its own initializer (`let x = x`, `for (const x of x)`)
+            if (decl->kind != SYMBOL_DECL_VARIABLE || !names->flow || !names->flow->initializing) return;
+            Binding const* binding = decl->node;
+            Binding const* root = binding;
+            while (root->parent) root = root->parent;
+            if (root != &names->flow->initializing->binding) return;
+            // In the default of another element of the pattern it's initialized already (`{ a, b = a }`)
+            char const* at = span_start_ptr(my name);
+            bool in_pattern = at >= span_start_ptr(root->content_span) && at < span_end_ptr(root->content_span);
+            Span element = span_valid(binding->element_span) ? binding->element_span : binding->content_span;
+            if (binding->default_value) element = span_between(element, binding->default_value->outer_span);
+            if (in_pattern && !(at >= span_start_ptr(element) && at < span_end_ptr(element))) return;
+        }
+    } else {
+        // Used first: fine if the use is deferred until after the declaration ran
+        bool through_computed_name = false;
+        for (Scope const* i = names; i && !scope_declares_symbol(i, symbol); i = i->parent) {
+            if (i->kind == SCOPE_FUNCTION) return;
+            // A computed member name runs with the class, the members don't
+            if (i->no_super == NO_SUPER_COMPUTED_NAME) through_computed_name = true;
+            if (i->this_ref.kind == THIS_CLASS_INSTANCE && !through_computed_name) return;
+            if (i->this_ref.class_decl) through_computed_name = false;
+        }
+    }
+    Error* error;
+    if (flags & SYMBOL_BLOCK_SCOPED_VARIABLE) {
+        error = error_ctx_error_d(errs, my name, 2448, "Block-scoped variable '", decl->name, "' used before its declaration.");
+    } else if (flags & SYMBOL_CLASS) {
+        error = error_ctx_error_d(errs, my name, 2449, "Class '", decl->name, "' used before its declaration.");
+    } else {
+        error = error_ctx_error_d(errs, my name, 2450, "Enum '", decl->name, "' used before its declaration.");
+    }
+    error_add_related_d(error, decl->name, 2728, "'", decl->name, "' is declared here.");
+}
+
+// tsc's onSuccessfullyResolvedSymbol for parameter initializers: a parameter's initializer (or its pattern's defaults
+// and computed names) runs before the parameters after it are, and before it is itself
+static void check_parameter_reference(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+    FlowBuilder const* flow = names->flow;
+    Binding const* param = flow ? flow->parameter_initializing : nullptr;
+    if (!param || flow->in_type_query) return;
+    Symbol const* symbol = my symbol;
+    Span param_name = param->content_span;
+    if (param->tag == BINDING_IDENTIFIER && symbol == param->symbol) {
+        error_ctx_error_d(errs, my name, 2372, "Parameter '", param_name, "' cannot reference itself.");
+    } else if (span_start_ptr(symbol->name_span) > span_start_ptr(param_name) && symbol->name_span.source == param_name.source &&
+        flow->parameter_function_scope && scope_declares_symbol(flow->parameter_function_scope, symbol)
+    ) {
+        error_ctx_error_d(errs, my name, 2373,
+            "Parameter '", param_name, "' cannot reference identifier '", my name, "' declared after it.");
+    }
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
@@ -166,6 +248,8 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     }
     my target = scope_get_value(names, my name.sv, &my symbol);
     if (my target) {
+        check_declared_before_use(me, names, errs);
+        check_parameter_reference(me, names, errs);
         my outer_reference = my target->flow_start && names->flow && names->flow->start != my target->flow_start;
     } else if (span_equals(my name, "arguments") && scope_has_function(names)) {
         // No symbol: ty_identifier_reference_type() makes it IArguments. TODO: not in arrow functions (TS2496)
@@ -898,7 +982,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_CLASS_DECL: {
             Scope* class_name_scope = scope_new(names, SCOPE_BLOCK);
-            class_decl_add_names(my class_decl, class_name_scope, false);
+            class_decl_add_names(my class_decl, class_name_scope, false, false);
             class_decl_lookup_names(my class_decl, class_name_scope, errs);
         }   break;
 

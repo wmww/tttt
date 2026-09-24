@@ -90,7 +90,11 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     }
 
     if (my default_value) {
+        // In a parameter's pattern the default is the element's own (tsc's associatedDeclarationForContainingInitializer)
+        Binding const* saved = names->flow ? names->flow->parameter_initializing : nullptr;
+        if (saved) names->flow->parameter_initializing = me;
         expr_lookup_names_initializer(my default_value, names, errs);
+        if (saved) names->flow->parameter_initializing = saved;
     }
     if (my has_explicit_type) {
         type_lookup_names(&my explicit_type, names, errs);
@@ -241,14 +245,24 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
             &my binding.explicit_type, &my value
         );
     }
+    InitializedBinding const* outer = names->flow->initializing;
+    names->flow->initializing = me;
     binding_lookup_names(&my binding, names, errs);
     expr_lookup_names(&my value, names, errs);
+    names->flow->initializing = outer;
     if (my value.tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);
 }
 
 void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, ErrorCtx* errs) {
+    FlowBuilder* flow = names->flow;
+    Binding const* saved = flow->parameter_initializing;
+    Scope const* saved_scope = flow->parameter_function_scope;
+    flow->parameter_initializing = &my binding;
+    flow->parameter_function_scope = names->parent; // `names` is the parameter list's own scope
     binding_lookup_names(&my binding, names, errs);
     expr_lookup_names_initializer(&my value, names, errs);
+    flow->parameter_initializing = saved;
+    flow->parameter_function_scope = saved_scope;
 }
 
 // The initializer, checked with the type annotation (if any) as its contextual type

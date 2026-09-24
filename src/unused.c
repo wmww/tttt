@@ -29,21 +29,12 @@ void unused_register(Scope const* scope, UnusedKind kind, void const* node, Span
     file->unused[file->unused_count++] = (UnusedCandidate){ .kind = kind, .node = node, .span = span };
 }
 
-// Whether the scope's own tables have the symbol
-static bool scope_declares(Scope const* scope, Symbol const* symbol, u64 hash) {
-    SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : &scope->locals;
-    if ((table->count || table->parent) && symbol_table_lookup(table, symbol->name, hash) == symbol) return true;
-    return scope->container && scope->container->exports &&
-        symbol_table_lookup(scope->container->exports, symbol->name, hash) == symbol;
-}
-
 void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning) {
     if (!found || found->binder != scope->binder || !unused_enabled()) return;
     // tsc's lastSelfReferenceLocation: the outermost declaration the use is in, below the scope that has the symbol
     Symbol const* self = nullptr;
-    u64 hash = symbol_name_hash(found->name);
     for (Scope const* i = scope; i; i = i->parent) {
-        if (scope_declares(i, found, hash)) break;
+        if (scope_declares_symbol(i, found)) break;
         if (i->self) self = i->self;
     }
     if (self != found) found->referenced |= meaning;

@@ -12,11 +12,12 @@ void enum_decl_drop(EnumDecl* me) {
     vec_enum_case_drop(&my cases);
 }
 
-void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
+void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported, bool declared) {
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
         .exported = exported,
+        .is_ambient = declared,
         .kind = SYMBOL_DECL_ENUM,
         .node = me,
         .is_const_enum = my is_const,

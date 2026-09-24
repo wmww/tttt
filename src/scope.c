@@ -277,7 +277,7 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
 }
 
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared) {
-    if (!unused_enabled() || !self) return parent;
+    if (!declared && (!unused_enabled() || !self)) return parent;
     Scope* ret = scope_new(parent, SCOPE_BLOCK);
     ret->self = self;
     ret->ambient |= declared;
@@ -542,6 +542,8 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         // (Also when it merges into something that isn't a variable: a `declare const never` and the type `never`)
         symbol->is_const = props.is_const;
         symbol->is_parameter = props.is_parameter;
+    }
+    if (props.kind == SYMBOL_DECL_VARIABLE || props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM) {
         symbol->is_ambient |= scope->ambient || props.is_ambient;
     }
     if (!merged) {
@@ -1286,14 +1288,25 @@ static bool symbol_has_meaning(Symbol const* me, u32 meaning) {
     return my flags & SYMBOL_ALIAS && symbol_resolved_flags(me) & meaning;
 }
 
+bool scope_declares_symbol(Scope const* me, Symbol const* symbol) {
+    u64 hash = symbol_name_hash(symbol->name);
+    SymbolTable const* table = my kind == SCOPE_GLOBAL ? &my binder->globals : &my locals;
+    if ((table->count || table->parent) && symbol_table_lookup(table, symbol->name, hash) == symbol) return true;
+    return my container && my container->exports && symbol_table_lookup(my container->exports, symbol->name, hash) == symbol;
+}
+
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     u64 hash = symbol_name_hash(name);
+    bool from_parameters = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : &scope->locals;
         if (table->count || table->parent) {
             Symbol* found = symbol_table_lookup(table, name, hash);
-            if (found && symbol_has_meaning(found, meaning)) return found;
+            bool body_variable = from_parameters && found && (found->flags & SYMBOL_VARIABLE) && !found->is_parameter &&
+                compiler_options()->target >= SCRIPT_TARGET_ES2015;
+            if (found && !body_variable && symbol_has_meaning(found, meaning)) return found;
         }
+        from_parameters = scope->parameters;
         if (scope->container && scope->container->exports) {
             Symbol* found = symbol_table_lookup(scope->container->exports, name, hash);
             // `export { a }` must not find itself

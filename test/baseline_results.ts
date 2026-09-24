@@ -2511,22 +2511,22 @@ const baselines = {
         types: true,
     },
     'blockScopedEnumVariablesUseBeforeDef': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'blockScopedEnumVariablesUseBeforeDef_isolatedModules': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'blockScopedEnumVariablesUseBeforeDef_preserve': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'blockScopedEnumVariablesUseBeforeDef_verbatimModuleSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2586,7 +2586,7 @@ const baselines = {
         types: true,
     },
     'blockScopedVariablesUseBeforeDef': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -2981,7 +2981,7 @@ const baselines = {
         types: false,
     },
     'capturedParametersInInitializers1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3501,7 +3501,7 @@ const baselines = {
         types: true,
     },
     'classDeclarationShouldBeOutOfScopeInComputedNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -3901,7 +3901,7 @@ const baselines = {
         types: true,
     },
     'classOrder2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3941,7 +3941,7 @@ const baselines = {
         types: true,
     },
     'classSideInheritance2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5116,7 +5116,7 @@ const baselines = {
         types: true,
     },
     'complexClassRelationships': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5561,7 +5561,7 @@ const baselines = {
         types: true,
     },
     'constDeclarations-useBeforeDefinition': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9336,7 +9336,7 @@ const baselines = {
         types: true,
     },
     'derivedClasses': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10961,7 +10961,7 @@ const baselines = {
         types: true,
     },
     'enumUsedBeforeDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11481,7 +11481,7 @@ const baselines = {
         types: true,
     },
     'es5ExportDefaultClassDeclaration3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13106,7 +13106,7 @@ const baselines = {
         types: true,
     },
     'exportedBlockScopedDeclarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13181,7 +13181,7 @@ const baselines = {
         types: true,
     },
     'extendBaseClassBeforeItsDeclared': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -14621,7 +14621,7 @@ const baselines = {
         types: true,
     },
     'genericClassInheritsConstructorFromNonGenericClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -19951,7 +19951,7 @@ const baselines = {
         types: true,
     },
     'letDeclarations-useBeforeDefinition': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24071,12 +24071,12 @@ const baselines = {
         types: true,
     },
     'optionalParamReferencingOtherParams2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'optionalParamReferencingOtherParams3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26296,7 +26296,7 @@ const baselines = {
         types: true,
     },
     'recursiveLetConst': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27266,7 +27266,7 @@ const baselines = {
         types: false,
     },
     'selfReferencesInFunctionParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29981,7 +29981,7 @@ const baselines = {
         types: true,
     },
     'tryCatchFinallyControlFlow': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -32346,7 +32346,7 @@ const baselines = {
         types: true,
     },
     'useBeforeDeclaration_destructuring': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -32941,7 +32941,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction3_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33156,7 +33156,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration3_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33221,7 +33221,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction3_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33471,7 +33471,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration3_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33536,7 +33536,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction3_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33801,7 +33801,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration3_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34291,7 +34291,7 @@ const baselines = {
         types: true,
     },
     'classWithStaticFieldInParameterInitializer.2(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34431,7 +34431,7 @@ const baselines = {
         types: true,
     },
     'classStaticBlock16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34681,7 +34681,7 @@ const baselines = {
         types: false,
     },
     'classStaticBlockUseBeforeDef3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38621,32 +38621,32 @@ const baselines = {
         types: false,
     },
     'exportAsNamespace3(module=amd)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'exportAsNamespace3(module=commonjs)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'exportAsNamespace3(module=es2015)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'exportAsNamespace3(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'exportAsNamespace3(module=system)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'exportAsNamespace3(module=umd)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -39221,12 +39221,12 @@ const baselines = {
         types: true,
     },
     'symbolProperty33': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'symbolProperty34': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40641,7 +40641,7 @@ const baselines = {
         types: true,
     },
     'computedPropertyNamesWithStaticProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -40786,7 +40786,7 @@ const baselines = {
         types: false,
     },
     'destructuringArrayBindingPatternAndAssignment3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -40861,7 +40861,7 @@ const baselines = {
         types: false,
     },
     'destructuringObjectBindingPatternAndAssignment4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41271,7 +41271,7 @@ const baselines = {
         types: true,
     },
     'iterableArrayPattern16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41776,7 +41776,7 @@ const baselines = {
         types: true,
     },
     'for-of55': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41846,7 +41846,7 @@ const baselines = {
         types: true,
     },
     'FunctionDeclaration3_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42086,7 +42086,7 @@ const baselines = {
         types: true,
     },
     'exportBinding': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46856,7 +46856,7 @@ const baselines = {
         types: true,
     },
     'nullishCoalescingOperatorInParameterInitializer.2(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47071,7 +47071,7 @@ const baselines = {
         types: true,
     },
     'optionalChainingInParameterInitializer.2(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49366,7 +49366,7 @@ const baselines = {
         types: true,
     },
     'parameterInitializersForwardReferencing.2(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49376,7 +49376,7 @@ const baselines = {
         types: true,
     },
     'parameterInitializersForwardReferencing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59481,7 +59481,7 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarationsInForAwaitOf.2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59561,7 +59561,7 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarationsInForOf.4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61231,7 +61231,7 @@ const baselines = {
         types: true,
     },
     'ES5For-of17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61251,7 +61251,7 @@ const baselines = {
         types: true,
     },
     'ES5For-of20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

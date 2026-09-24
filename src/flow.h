@@ -160,6 +160,13 @@ typedef struct FlowBuilder {
     FlowNode* false_target;
     bool chain_continues; // The next expression is the object of an optional chain that isn't its root
     Binding const* binding_root; // The declaration whose binding pattern is being walked
+    // The variable declaration whose initializer (or for-in/of expression) is being walked: using it there is using it
+    // before its declaration (TS2448), also in an IIFE
+    struct InitializedBinding const* initializing;
+    // The parameter (or element of a parameter's pattern) whose initializer or pattern is being walked, and the scope
+    // of its function: it can't use itself (TS2372) or what that scope declares after it (TS2373)
+    Binding const* parameter_initializing;
+    Scope const* parameter_function_scope;
     bool in_type_query; // Inside `typeof x` written as a type: never "used before assigned"
     bool nullish_condition; // The next expression is a condition by being the left side of `??`: FLOW_NULLISH
     // The statement list of the Block the next statement is a direct child of (TS7027 covers runs of statements there)

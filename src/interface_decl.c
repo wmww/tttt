@@ -6,6 +6,7 @@
 #include "type.h"
 #include "scope.h"
 #include "unused.h"
+#include "flow.h"
 
 void interface_decl_drop(InterfaceDecl* me) {
     generic_drop(&my generic);
@@ -40,10 +41,14 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     for_each (i, vec_spanned_type, &my extends) {
         type_lookup_names(&i->type, names, errs);
     }
-    // The body's members directly: it isn't a type literal (whose `this` would be invalid)
+    // The body's members directly: it isn't a type literal (whose `this` would be invalid). Computed names in there
+    // aren't uses of values (tsc's isInAmbientOrTypeNode)
+    bool saved_type_query = names->flow->in_type_query;
+    names->flow->in_type_query = true;
     for_each (i, vec_interface_member, &my type.interface.members) {
         interface_member_lookup_names(i, names, errs);
     }
+    names->flow->in_type_query = saved_type_query;
 }
 
 // Whether the interface itself declares `prop` (rather than inheriting it)

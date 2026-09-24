@@ -263,6 +263,9 @@ typedef struct Scope {
     NoSuper no_super;
     // The file the scope is in (null for the global scope)
     SourceFile* file;
+    // The parameter list of a function: from ES2015 on the variables its body declares aren't visible there (tsc's
+    // useOuterVariableScopeInParameter), although they share the function's scope
+    bool parameters;
     // The inside of the declaration of this symbol (a function, class, interface, type alias, enum or namespace
     // declaration): a use of it from here isn't a reference (tsc's isSelfReferenceLocation)
     Symbol const* self;
@@ -330,7 +333,7 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
 Scope* scope_new(Scope* parent, ScopeKind kind);
 Scope* scope_new_file(Binder* binder, SourceFile* file);
 // A scope for the inside of the declaration of `self` (see Scope.self), ambient if it is `declare`d. Only made when
-// unused names are reported, returns parent otherwise
+// unused names are reported or it is `declare`d, returns parent otherwise
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared);
 // Child scope holding the type parameters, names looked up. Returns parent itself for an empty generic
 Scope* scope_new_generic(Scope* parent, Generic* generic, ErrorCtx* errs);
@@ -359,6 +362,8 @@ void scope_export_default(Scope* me, Symbol* symbol);
 // export_equals: `export = x`, under the name `export=` like in tsc
 void scope_export_default_expr(Scope* me, Expr* expr, bool export_equals);
 
+// Whether the scope's own tables (its locals, its container's exports) have the symbol
+bool scope_declares_symbol(Scope const* me, Symbol const* symbol);
 // Lookup by meaning, seeing through aliases. The symbol found may be an alias, see symbol_declaration()
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning);
 // Same, returning the symbol that has the meaning (aliases resolved), *found is what the name itself refers to

@@ -560,11 +560,11 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_DECL_ENUM:
-            enum_decl_add_names(my decl.enum_, scope, my decl.props.exported);
+            enum_decl_add_names(my decl.enum_, scope, my decl.props.exported, my decl.props.declared);
             break;
 
         case STATEMENT_DECL_CLASS:
-            class_decl_add_names(my decl.class, scope, my decl.props.exported);
+            class_decl_add_names(my decl.class, scope, my decl.props.exported, my decl.props.declared);
             break;
 
         case STATEMENT_DECL_TYPE:
@@ -930,7 +930,12 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             }
             FlowNode* pre_loop = flow_set_continue_target(flow, label_count, flow_new_loop_label(flow));
             FlowNode* post = flow_new_branch_label(flow);
+            InitializedBinding const* outer_initializing = flow->initializing;
+            if (is_declaration && vec_initialized_binding_size(&loop->variable.statement.initializers)) {
+                flow->initializing = vec_initialized_binding_front(&loop->variable.statement.initializers);
+            }
             expr_lookup_names(&loop->iterable, loop_scope, errs);
+            flow->initializing = outer_initializing;
             flow_add_antecedent(flow, pre_loop, flow->current);
             flow_set_current(flow, pre_loop);
             flow_add_antecedent(flow, post, flow->current);
@@ -964,9 +969,13 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             expr_lookup_names_statement(&my expr, names, errs);
             break;
 
-        case STATEMENT_EXPORT_DEFAULT_EXPR:
+        case STATEMENT_EXPORT_DEFAULT_EXPR: {
+            // `export = x` doesn't use x before its declaration: the emit moves it (tsc)
+            bool saved_type_query = flow->in_type_query;
+            if (my export_equals && my expr.tag == EXPR_IDENTIFIER) flow->in_type_query = true;
             expr_lookup_names(&my expr, names, errs);
-            break;
+            flow->in_type_query = saved_type_query;
+        }   break;
 
         case STATEMENT_THROW_EXPR:
             expr_lookup_names(&my expr, names, errs);

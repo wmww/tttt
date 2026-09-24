@@ -174,11 +174,12 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
     }
 }
 
-void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported) {
+void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported, bool declared) {
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
         .exported = exported,
+        .is_ambient = declared,
         .kind = SYMBOL_DECL_CLASS,
         .node = me,
     });

@@ -270,10 +270,14 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             // The members of a type literal are what a `this` type in them would be about (tsc's getThisContainer),
             // and they have none
             Scope* literal_scope = scope_new(names, SCOPE_BLOCK);
+            // Computed names in there are in a type: not uses of values (tsc's isInAmbientOrTypeNode)
+            bool saved_type_query = names->flow->in_type_query;
+            names->flow->in_type_query = true;
             literal_scope->this_ref = (ThisRef){ .kind = THIS_TYPE_LITERAL };
             for_each (i, vec_interface_member, &my interface.members) {
                 interface_member_lookup_names(i, literal_scope, errs);
             }
+            names->flow->in_type_query = saved_type_query;
         }   break;
 
         case TYPE_ARRAY:
