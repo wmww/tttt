@@ -423,7 +423,9 @@ typedef struct ObjectExprItem {
     bool name_is_value;
     Expr* computed_key; // Owned, null unless the key is `[expr]`
     Expr value;
-    bool shorthand_default; // `{ a = 1 }` (a destructuring assignment target), the default isn't kept
+    // Owned, `{ a = 1 }` (a destructuring assignment target): the default. Only its names are looked up (TODO: check it
+    // and show it in the baselines)
+    Expr* shorthand_default;
 } ObjectExprItem;
 
 void object_expr_item_drop(ObjectExprItem* me);

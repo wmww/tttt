@@ -29,6 +29,7 @@ core_files = files(
     'module_resolution.c',
     'tsconfig.c',
     'scope.c',
+    'unused.c',
     'flow.c',
     'engine.c',
     'string_helpers.c',

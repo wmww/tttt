@@ -9,6 +9,7 @@
 #include "function_impl.h"
 #include "program.h"
 #include "flow.h"
+#include "unused.h"
 
 // Variable initialization
 
@@ -243,6 +244,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
 void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* errs) {
     // The scope was made when the namespace was declared
     my inner_scope->flow = names->flow;
+    my inner_scope->self = my symbol;
     block_lookup_names_container(&my contents, false, c_sv("namespace"), my name, my inner_scope, errs);
     my inner_scope->flow = nullptr;
 }
@@ -848,6 +850,9 @@ static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scop
 // label_count: how many labels the statement has
 static void statement_resolve_names_reachable(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
+    if (statement_declares_name(my tag) || my tag == STATEMENT_IMPORT_EXPORT) {
+        unused_register(names, UNUSED_STATEMENT, me, span_null);
+    }
     switch (my tag) {
         case STATEMENT_LABELED: {
             FlowNode* post = flow_new_branch_label(flow);
@@ -928,6 +933,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             flow_set_current(flow, pre_loop);
             flow_add_antecedent(flow, post, flow->current);
             if (is_declaration) {
+                unused_register(loop_scope, UNUSED_FOR_IN_OF_VARIABLES, &loop->variable.statement, loop->variable.statement.span);
                 for_each (i, vec_initialized_binding, &loop->variable.statement.initializers) {
                     binding_lookup_names(&i->binding, loop_scope, errs);
                     expr_lookup_names(&i->value, loop_scope, errs);
@@ -1015,7 +1021,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            function_impl_lookup_names(my decl.function.impl, true, names, errs);
+            function_impl_lookup_names(my decl.function.impl, true, scope_new_self(names, my decl.function.impl->symbol, my decl.props.declared), errs);
             break;
 
         case STATEMENT_DECL_ENUM:
@@ -1023,16 +1029,18 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_DECL_CLASS:
-            class_decl_lookup_names(my decl.class, names, errs);
+            class_decl_lookup_names(my decl.class, scope_new_self(names, my decl.class->symbol, my decl.props.declared), errs);
             break;
 
         case STATEMENT_DECL_TYPE: {
-            Scope* generic_scope = scope_new_generic(names, &my decl.type.generic, errs);
+            Scope* self_scope = scope_new_self(names, my decl.type.symbol, my decl.props.declared);
+            unused_register(self_scope, UNUSED_TYPE_ALIAS, &my decl.type, span_null);
+            Scope* generic_scope = scope_new_generic(self_scope, &my decl.type.generic, errs);
             type_lookup_names(&my decl.type.type, generic_scope, errs);
         }   break;
 
         case STATEMENT_DECL_INTERFACE:
-            interface_decl_lookup_names(my decl.interface, names, errs);
+            interface_decl_lookup_names(my decl.interface, scope_new_self(names, my decl.interface->symbol, my decl.props.declared), errs);
             break;
 
         case STATEMENT_DECL_NAMESPACE:

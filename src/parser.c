@@ -2370,13 +2370,13 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         item.tag = OBJECT_ITEM_SHORTHAND;
         item.value = expr_identifier((IdentifierExpr){ .name = item.name_span });
         if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
-            // `{ a = 1 }` is only valid as a destructuring assignment target. The default is parsed and dropped
-            // TODO: keep it once assignment patterns are checked
+            // `{ a = 1 }` is only valid as a destructuring assignment target
             hop_char(&p, '=');
             hop_whitespace(&p);
-            item.shorthand_default = true;
             Expr default_value;
             if (expect_expr(&p, expr_ctx_null, &default_value)) {
+                item.shorthand_default = c_new(Expr, default_value);
+            } else {
                 expr_drop(&default_value);
             }
         }

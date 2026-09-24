@@ -13,6 +13,7 @@
 #include "flow.h"
 #include "statement.h"
 #include "ty/ty.h"
+#include "unused.h"
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
@@ -516,7 +517,10 @@ static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, Fl
     BinaryOp op = my binary_op->op;
     FlowNode* pre_right = flow_new_branch_label(flow);
     bool is_assignment = binary_op_is_logical_assignment(op);
-    if (is_assignment) flow->assignment_target = FLOW_TARGET_DEFINITE;
+    if (is_assignment) {
+        flow->assignment_target = FLOW_TARGET_DEFINITE;
+        flow->read_target = true;
+    }
     if (op == BINARY_OP_AND_AND || op == BINARY_OP_AND_AND_EQUAL) {
         expr_lookup_names_condition(&my binary_op->left, names, errs, pre_right, false_target);
     } else if (op == BINARY_OP_EH_EH && my binary_op->left.tag == EXPR_LITERAL) {
@@ -597,6 +601,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     uint8_t assignment_target = flow->assignment_target;
     bool compound_like_target = flow->compound_like_target;
     flow->compound_like_target = false;
+    bool read_target = flow->read_target;
+    flow->read_target = false;
     bool nullish_condition = flow->nullish_condition;
     flow->nullish_condition = false;
     flow->true_target = nullptr;
@@ -610,6 +616,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_IDENTIFIER:
             identifier_expr_lookup_names(&my identifier, names, errs);
+            // `x = 1` doesn't read x (tsc's isWriteOnlyAccess)
+            if (assignment_target != FLOW_TARGET_DEFINITE || read_target) {
+                unused_mark_referenced(names, (Symbol*)my identifier.symbol, SYMBOL_VALUE);
+            }
             my identifier.flow = flow_builder_reference(flow, my identifier.name);
             my identifier.assignment_target = assignment_target;
             my identifier.compound_like_target = compound_like_target;
@@ -702,6 +712,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
                     } else {
                         flow->assignment_target = assignment_target; // `x! = 1`
+                        flow->read_target = true;
                         expr_lookup_names(operand, names, errs);
                         // `x!` says x was assigned, whatever control flow thinks
                         if (operand->tag == EXPR_IDENTIFIER) operand->identifier.assume_initialized = true;
@@ -873,6 +884,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 }
                 flow->assignment_target = assignment_target; // A pattern: the values are the targets
                 expr_lookup_names(&i->value, names, errs);
+                if (i->shorthand_default) expr_lookup_names_initializer(i->shorthand_default, names, errs);
             }
             break;
 
@@ -891,6 +903,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_SPREAD:
             flow->assignment_target = assignment_target;
+            flow->read_target = true;
             expr_lookup_names(my spread, names, errs);
             break;
 
@@ -1563,6 +1576,10 @@ void object_expr_item_drop(ObjectExprItem* me) {
     if (my computed_key) {
         expr_drop(my computed_key);
         free(my computed_key);
+    }
+    if (my shorthand_default) {
+        expr_drop(my shorthand_default);
+        free(my shorthand_default);
     }
     expr_drop(&my value);
 }

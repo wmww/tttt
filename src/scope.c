@@ -10,6 +10,7 @@
 #include "interface_decl.h"
 #include "statement.h"
 #include "enum_decl.h"
+#include "unused.h"
 
 // Symbol tables
 
@@ -270,12 +271,22 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
     ret->errs = parent->errs;
     ret->ambient = parent->ambient;
     ret->flow = parent->flow;
+    ret->file = parent->file;
     if (kind == SCOPE_BLOCK) ret->function = parent->function;
+    return ret;
+}
+
+Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared) {
+    if (!unused_enabled() || !self) return parent;
+    Scope* ret = scope_new(parent, SCOPE_BLOCK);
+    ret->self = self;
+    ret->ambient |= declared;
     return ret;
 }
 
 Scope* scope_new_file(Binder* binder, SourceFile* file) {
     Scope* ret = scope_new(binder->global_scope, file->is_module ? SCOPE_MODULE : SCOPE_SCRIPT);
+    ret->file = file;
     ret->ambient = file->is_declaration;
     if (file->is_module) {
         ret->container = binder_new_module_symbol(binder, file);
@@ -619,6 +630,7 @@ void scope_add_port(Scope* me, PortItem* item) {
         symbol->parent = my container;
         symbol->name_span = item->decl_name;
         symbol->exported = exported;
+        symbol->is_local = table == &my locals;
     }
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .node = item, .name = item->decl_name, .full = item->full_span,
@@ -659,6 +671,7 @@ static bool scope_default_export_table(
 }
 
 void scope_export_default(Scope* me, Symbol* symbol) {
+    symbol->referenced = SYMBOL_ANY_MEANING; // An export, like tsc's exportSymbol
     SymbolTable* table;
     if (!scope_default_export_table(me, c_sv("default"), symbol->name_span, symbol, symbol->flags, &table)) return;
     symbol_table_insert(table, &my binder->arena, c_sv("default"), symbol_name_hash(c_sv("default")), symbol);
@@ -843,6 +856,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
             error_ctx_error_d(errs, first, 2304, "Cannot find name '", first, "'.");
             return nullptr;
         }
+        unused_mark_referenced(my alias->scope, target, SYMBOL_ANY_MEANING);
         target = resolve_if_pure_alias(target);
         if (target) vec_symbol_cptr_push(&item->alias_path_symbols, target);
         return target;
@@ -854,6 +868,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
         return nullptr;
     }
+    unused_mark_referenced(my alias->scope, target, SYMBOL_NAMESPACE);
     target = resolve_if_pure_alias(target);
     if (target) vec_symbol_cptr_push(&item->alias_path_symbols, target);
     for (isize i = 1; target && i < vec_span_size(&item->alias_path); i++) {
@@ -909,7 +924,9 @@ static Symbol* resolve_alias_target(Symbol* me) {
     if (!item) {
         // `export default x`, TS2304 comes from the expression
         Symbol* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);
-        return found == me ? nullptr : resolve_if_pure_alias(found);
+        if (found == me) return nullptr;
+        unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
+        return resolve_if_pure_alias(found);
     }
     Symbol* module = nullptr;
     Symbol* assigned = nullptr; // What its `export =` names, if it has one
@@ -977,6 +994,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 error_ctx_error_d(errs, item->source_name, 2304, "Cannot find name '", item->source_name, "'.");
                 return nullptr;
             }
+            unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
             item->source_symbol = found;
             return resolve_if_pure_alias(found);
         }

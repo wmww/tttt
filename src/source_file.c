@@ -54,6 +54,7 @@ void source_file_drop(SourceFile* me) {
     }
     free(my module_refs);
     free(my comment_directives);
+    free(my unused);
 }
 
 void source_file_add_comment_directive(SourceFile* me, const char* start, const char* end, bool expect_error) {

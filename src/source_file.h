@@ -88,6 +88,10 @@ typedef struct SourceFile {
     CommentDirective* comment_directives; // Owned, sorted by position (and so by line), recorded by the parser
     u32 comment_directive_count;
     u32 comment_directive_cap;
+    // Declarations that may be unused (noUnusedLocals/noUnusedParameters), registered by the resolve walk, see unused.h
+    struct UnusedCandidate* unused; // Owned
+    u32 unused_count;
+    u32 unused_cap;
 } SourceFile;
 
 SourceFile source_file_make(cstr canonical_path, cstr contents);

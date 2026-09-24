@@ -179,6 +179,9 @@ typedef struct Symbol {
     // Where the last assignment ends: a closure made after that sees the narrowed type (tsc's lastAssignmentPos).
     // Null: not assigned. Assignments in nested functions or loops count as "anywhere" (the end of the file)
     char const* last_assignment_end;
+    // tsc's isReferenced: the meanings the name was used with, see unused_mark_referenced(). Written by the resolve
+    // walk of the file that uses it, only under noUnusedLocals/noUnusedParameters
+    u32 referenced;
 } Symbol;
 
 // The symbol that gives the name the given meaning: itself, or for an alias its target (null if there is none).
@@ -258,6 +261,11 @@ typedef struct Scope {
     // A computed member name, a member decorator or a constructor's parameters: `super` can't be used, tsc's
     // isLegalUsageOfSuperExpression (see resolve_super())
     NoSuper no_super;
+    // The file the scope is in (null for the global scope)
+    SourceFile* file;
+    // The inside of the declaration of this symbol (a function, class, interface, type alias, enum or namespace
+    // declaration): a use of it from here isn't a reference (tsc's isSelfReferenceLocation)
+    Symbol const* self;
 } Scope;
 
 // Symbol pointer -> symbol pointer, open addressing
@@ -321,6 +329,9 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
 
 Scope* scope_new(Scope* parent, ScopeKind kind);
 Scope* scope_new_file(Binder* binder, SourceFile* file);
+// A scope for the inside of the declaration of `self` (see Scope.self), ambient if it is `declare`d. Only made when
+// unused names are reported, returns parent otherwise
+Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared);
 // Child scope holding the type parameters, names looked up. Returns parent itself for an empty generic
 Scope* scope_new_generic(Scope* parent, Generic* generic, ErrorCtx* errs);
 bool scope_has_function(Scope const* me);

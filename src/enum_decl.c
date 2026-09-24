@@ -41,6 +41,7 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
 void enum_decl_lookup_names(EnumDecl* me, Scope* names, ErrorCtx* errs) {
     // Initializers see the members by their bare names
     my namespace->flow = names->flow; // The scope was made when the enum was declared
+    my namespace->self = my symbol;
     for_each (i, vec_enum_case, &my cases) {
         expr_lookup_names(&i->value, my namespace, errs);
     }

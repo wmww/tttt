@@ -6,6 +6,7 @@
 #include "several_types.h"
 #include "ty/ty.h"
 #include "program.h"
+#include "unused.h"
 
 void function_arg_drop(FunctionArg* me) {
     vec_expr_drop(&my decorators);
@@ -67,6 +68,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     }
     if (is_iife || (my is_constructor && my has_body)) flow.return_target = flow_new_branch_label(&flow);
 
+    unused_register(names, UNUSED_FUNCTION, me, span_null);
     // Handle generics (includes adding names)
     names = scope_new_generic(names, &my generic, errs);
 

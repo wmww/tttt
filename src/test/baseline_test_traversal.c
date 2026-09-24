@@ -882,6 +882,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 switch (i->tag) {
                     case OBJECT_ITEM_SHORTHAND:
                         // tsc only shows the property, not the identifier expression it's initialized from
+                        if (i->shorthand_default) expr_compile_test_info(i->shorthand_default, ctx);
                         break;
 
                     case OBJECT_ITEM_METHOD:

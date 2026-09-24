@@ -7,6 +7,7 @@
 #include "scope.h"
 #include "generic.h"
 #include "error.h"
+#include "unused.h"
 
 // Identifier
 
@@ -149,6 +150,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             Symbol const* found;
             if (i == my namespaces.data /* First namespaces */) {
                 decl = scope_get_namespace(names, i->sv, &found);
+                unused_mark_referenced(names, (Symbol*)found, SYMBOL_NAMESPACE);
                 if (!decl) {
                     error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
                 }
@@ -176,6 +178,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
     } else {
         my target = scope_get_type(names, my name.sv, &my symbol);
         if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
+        unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
         if (!my target) {
             error_ctx_error_d(errs, my name, 2304, "Cannot find name '", my name, "'.");
         }

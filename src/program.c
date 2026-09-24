@@ -1,4 +1,5 @@
 #include "program.h"
+#include "unused.h"
 #include "import_attributes.h"
 #include "parser.h"
 #include "block.h"
@@ -769,6 +770,11 @@ void program_typecheck(Program* me) {
         if (!source->is_stdlib && !source->unchecked) {
             block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
         }
+    }
+    // After everything is checked: the checker marks members it reads
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
+        if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_report(source, my errs);
     }
     error_ctx_remove_unchecked(my errs);
     program_apply_comment_directives(me, ERROR_PHASE_TYPECHECK);

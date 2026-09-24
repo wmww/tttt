@@ -12,6 +12,7 @@
 #include "error.h"
 #include "math_helpers.h"
 #include "ty/ty.h"
+#include "unused.h"
 
 const TypeNode type_any = { .tag = TYPE_ANY };
 const TypeNode type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true };
@@ -157,6 +158,7 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
                 .node = my inferred,
             });
             my inferred->symbol_ref = my inferred->owned_symbol;
+            unused_register(scope, UNUSED_INFER, my inferred, span_null);
             my inferred->position = position;
             my inferred->reference = reference;
             my inferred->arg_index = arg_index;
