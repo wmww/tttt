@@ -622,9 +622,13 @@ static void report_arity(
     u32 min_above = UINT32_MAX;
     bool has_rest = false;
     bool any_below = false;
+    Signature const* closest = nullptr;
     for (u32 i = 0; i < count; i++) {
         ParamShape shape = param_shape(me, signatures[i], nullptr);
-        if (shape.min < min) min = shape.min;
+        if (shape.min < min) {
+            min = shape.min;
+            closest = signatures[i];
+        }
         if (shape.count > max) max = shape.count;
         if (shape.count < args->len && (!any_below || shape.count > max_below)) {
             max_below = shape.count;
@@ -644,12 +648,28 @@ static void report_arity(
             " or ", min_above, " arguments.");
     } else {
         Span span = args->len > max && !has_rest ? span_of_args(args, max, args->len - 1) : name_span;
+        Error* error;
         if (has_rest) {
-            error_ctx_error_d(errs, span, 2555, "Expected at least ", min, " arguments, but got ", args->len, ".");
+            error = error_ctx_error_d(errs, span, 2555, "Expected at least ", min, " arguments, but got ", args->len, ".");
         } else if (min == max) {
-            error_ctx_error_d(errs, span, 2554, "Expected ", min, " arguments, but got ", args->len, ".");
+            error = error_ctx_error_d(errs, span, 2554, "Expected ", min, " arguments, but got ", args->len, ".");
         } else {
-            error_ctx_error_d(errs, span, 2554, "Expected ", min, "-", max, " arguments, but got ", args->len, ".");
+            error = error_ctx_error_d(errs, span, 2554, "Expected ", min, "-", max, " arguments, but got ", args->len, ".");
+        }
+        // The first parameter without an argument of the signature that needs the fewest
+        SigParam const* missing = args->len < min && closest && args->len < closest->param_count ?
+            &closest->params[args->len] : nullptr;
+        if (missing && missing->decl) {
+            Binding const* binding = &missing->decl->initializer.binding;
+            if (binding->tag != BINDING_IDENTIFIER) {
+                error_add_related_d(error, missing->decl->span, 6211, "An argument matching this binding pattern was not provided.");
+            } else if (missing->rest) {
+                error_add_related_d(error, missing->decl->span, 6236, "Arguments for the rest parameter '",
+                    binding->content_span, "' were not provided.");
+            } else {
+                error_add_related_d(error, missing->decl->span, 6210, "An argument for '", binding->content_span,
+                    "' was not provided.");
+            }
         }
     }
 }
@@ -686,20 +706,62 @@ static Span report_unfit_argument(
     return span;
 }
 
+static Resolution resolve_with_signatures(
+    Checker* me, Signature* const* signatures, u32 count, Args* args, CallInfo const* info, Span call_span,
+    ErrorCtx* errs
+);
+
+// The call fits none of the overloads of a function, but would the implementation? (tsc's
+// addImplementationSuccessElaboration.) Only function declarations: methods and constructors TODO
+static void add_implementation_success(Checker* me, Candidate const* candidate, Args* args, CallInfo const* info,
+    Span call_span, Error* error
+) {
+    Signature const* failed = candidate->sig;
+    while (failed->target) failed = failed->target;
+    Symbol const* symbol = failed->function ? failed->function->symbol : nullptr;
+    if (!error || !symbol || symbol->decl_count < 2) return;
+    FunctionImpl const* impl = nullptr;
+    for (u32 i = 0; i < symbol->decl_count && !impl; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;
+        FunctionImpl const* function = symbol->decls[i].node;
+        if (function->has_body) impl = function;
+    }
+    if (!impl || impl == failed->function) return;
+    Signature const* sig = single_call_or_construct(me, ty_function_type(me, impl));
+    if (!sig) return;
+    Signature* impl_sig = (Signature*)sig;
+    bool fits = resolve_with_signatures(me, &impl_sig, 1, args, info, call_span, nullptr).chosen.sig;
+    // The arguments stay typed as checked against the overload (what the types baseline shows)
+    ParamShape shape = param_shape(me, candidate->sig, candidate->mapper);
+    check_args(me, &shape, args, false);
+    free(shape.types);
+    if (!fits) return;
+    error_add_related_s(error, impl->name, 2793, cstr_lit(
+        "The call would have succeeded against this implementation, but implementation signatures of overloads are not "
+        "externally visible."));
+}
+
 static void report_no_match(
     Checker* me, Candidate const* unfit, u32 unfit_count, u32 signature_count, Args* args, CallInfo const* info,
     Span call_span, ErrorCtx* errs
 ) {
     CallExpr const* call = info->call;
-    if (unfit_count == 1) {
-        report_unfit_argument(me, &unfit[0], args, info, call_span, errs);
-        return;
-    }
     ErrorCtx collected = error_ctx_init();
     collected.phase = errs->phase;
+    if (unfit_count == 1) {
+        report_unfit_argument(me, &unfit[0], args, info, call_span, &collected);
+        for_each (e, vec_error, &collected.errors) {
+            add_implementation_success(me, &unfit[0], args, info, call_span, e);
+            error_ctx_append_error(errs, *e);
+        }
+        collected.errors.size = 0;
+        error_ctx_drop(&collected);
+        return;
+    }
     Span common_span = span_null;
     bool same_span = true;
     Error head = { .ts_code = 2769, .phase = errs->phase, .message = cstr_lit("No overload matches this call.") };
+    VecError related = {0};
     u32 first = unfit_count > 3 ? unfit_count - 1 : 0;
     Error* parent = &head;
     if (unfit_count > 3) {
@@ -721,14 +783,20 @@ static void report_no_match(
             under = vec_error_back_mut(&head.sub_errors);
         }
         for_each (e, vec_error, &collected.errors) {
-            Error copy = error_clone(*e);
-            copy.span = span_null;
-            copy.ts_code = TS_CODE_NONE;
+            // The chain goes under the overload's line, its related information after all of them
+            Error copy = { .message = cstr_clone(e->message) };
+            for_each (sub, vec_error, &e->sub_errors) {
+                vec_error_push(span_valid(sub->span) ? &related : &copy.sub_errors, error_clone(*sub));
+            }
             vec_error_push(&under->sub_errors, copy);
         }
     }
     error_ctx_drop(&collected);
+    for_each (r, vec_error, &related) vec_error_push(&head.sub_errors, *r);
+    related.size = 0;
+    vec_error_drop(&related);
     head.span = same_span && span_valid(common_span) ? common_span : call->callable.inner_span;
+    add_implementation_success(me, &unfit[unfit_count - 1], args, info, call_span, &head);
     error_ctx_append_error(errs, head);
 }
 

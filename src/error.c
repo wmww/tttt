@@ -89,6 +89,14 @@ void error_sub_error_s(Error* me, Span span, unsigned ts_code, cstr message) {
     });
 }
 
+void error_add_related_s(Error* me, Span span, unsigned ts_code, cstr message) {
+    if (!span_valid(span) || !span.source) {
+        cstr_drop(&message);
+        return;
+    }
+    error_sub_error_s(me, span, ts_code, message);
+}
+
 void error_ctx_drop(ErrorCtx* me) {
     vec_error_drop(&my errors);
 }
@@ -179,6 +187,14 @@ Error* error_ctx_global_error_s(ErrorCtx* me, unsigned ts_code, cstr message) {
     }
     Error error = { .message = message, .ts_code = ts_code, .phase = my phase };
     return vec_error_insert_n(&my errors, index, &error, 1).ref;
+}
+
+Error* error_ctx_find(ErrorCtx* me, Span span, unsigned ts_code) {
+    for (isize_t i = vec_error_size(&my errors); me && i > 0; i--) {
+        Error* error = vec_error_at_mut(&my errors, i - 1);
+        if (error->ts_code == ts_code && span_eq(error->span, span)) return error;
+    }
+    return nullptr;
 }
 
 void error_ctx_remove_unchecked(ErrorCtx* me) {

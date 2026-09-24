@@ -16,6 +16,21 @@ static bool report_instantiation_limit(Checker* me, Span span, ErrorCtx* errs) {
     return true;
 }
 
+// The lines of an explanation from `first` on as the message chain under `error`, then its related information
+static void attach_explanation(Error* error, VecTyReportLine const* lines, isize_t first) {
+    if (!error) return;
+    Error* chain = error;
+    for (isize_t i = first; i < vec_ty_report_line_size(lines); i++) {
+        TyReportLine const* line = vec_ty_report_line_at(lines, i);
+        if (line->related) continue;
+        error_sub_error_s(chain, (Span){0}, TS_CODE_NONE, cstr_clone(line->message));
+        chain = vec_error_back_mut(&chain->sub_errors);
+    }
+    for_each (line, vec_ty_report_line, lines) {
+        if (line->related) error_add_related_s(error, line->span, line->ts_code, cstr_clone(line->message));
+    }
+}
+
 static bool check_assignable(
     Checker* me, const char* source_label, Ty const* source, const char* target_label, Ty const* target,
     unsigned ts_code, Span span, ErrorCtx* errs
@@ -56,10 +71,7 @@ static bool check_assignable(
         );
         if (natural_head && natural_head->ts_code == 2322) first_nested = 1;
     }
-    for (isize_t i = first_nested; error && i < vec_ty_report_line_size(&lines); i++) {
-        error_sub_error_s(error, (Span){0}, TS_CODE_NONE, cstr_clone(vec_ty_report_line_at(&lines, i)->message));
-        error = vec_error_back_mut(&error->sub_errors);
-    }
+    attach_explanation(error, &lines, first_nested);
     vec_ty_report_line_drop(&lines);
     c_drop(cstr, &source_str, &target_str);
     return false;
@@ -87,10 +99,7 @@ static void report_unassignable_with_head(
         error = error_ctx_error_s(errs, span, ts_code, head);
     }
     if (natural && natural->ts_code == 2322 && !keep_natural_head) first = 1;
-    for (isize_t i = first; error && i < vec_ty_report_line_size(&lines); i++) {
-        error_sub_error_s(error, (Span){0}, TS_CODE_NONE, cstr_clone(vec_ty_report_line_at(&lines, i)->message));
-        error = vec_error_back_mut(&error->sub_errors);
-    }
+    attach_explanation(error, &lines, first);
     vec_ty_report_line_drop(&lines);
 }
 

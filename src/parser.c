@@ -591,6 +591,15 @@ static Error* expected_token_error(Parser* parent, const char* expected) {
     return parse_error(parent, span_from_token(parent), 1005, "'", expected, "' expected.");
 }
 
+// The closing bracket of a bracket opened at `open` (tsc's parseExpectedMatchingBrackets: a missing one points at it)
+static bool expect_closing(Parser* parent, char close, const char* open) {
+    if (hop_char(parent, close)) return true;
+    Error* error = parse_error(parent, span_from_token(parent), 1005, "'", close, "' expected.");
+    error_add_related_d(error, span_make(parent->shared->source, open, open + 1), 1007,
+        "The parser expected to find a '", close, "' to match the '", *open, "' token here.");
+    return false;
+}
+
 static Error* expected_expression_error(Parser* parent) {
     return parse_error(parent, span_from_token(parent), 1109, "Expression expected.");
 }
@@ -2377,6 +2386,7 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
     Parser p = parser(parent);
     *ret = vec_object_expr_item_init();
 
+    const char* open = p.pos;
     if (!hop_char(&p, '{')) {
         return parse_fail(&p);
     }
@@ -2397,7 +2407,7 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
         hop_whitespace(&p);
     }
 
-    expect_char(&p, '}');
+    expect_closing(&p, '}', open);
 
     return parse_success(&p);
 }
@@ -2423,6 +2433,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
     Parser p = parser(parent);
     *ret = vec_expr_init();
 
+    const char* open = p.pos;
     if (!hop_char(&p, '[')) {
         return parse_fail(&p);
     }
@@ -2443,7 +2454,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
         hop_whitespace(&p);
     }
 
-    expect_char(&p, ']');
+    expect_closing(&p, ']', open);
 
     return parse_success(&p);
 }
@@ -5053,7 +5064,8 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    expect_char(&p, '(');
+    const char* open = p.pos;
+    bool opened = expect_char(&p, '(');
     hop_whitespace(&p);
 
     Expr condition = expr_literal(span_from_pos(&p), value_boolean(false));
@@ -5063,7 +5075,8 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    expect_char(&p, ')');
+    if (opened) expect_closing(&p, ')', open);
+    else expect_char(&p, ')');
     hop_whitespace(&p);
 
     expect_statement(&p, false, &body);
@@ -5097,7 +5110,8 @@ static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
     Expr condition = expr_literal(span_from_pos(&p), value_boolean(false));
     if (hop_start_if_ends_on_word_break(&p, "while")) {
         hop_whitespace(&p);
-        expect_char(&p, '(');
+        const char* open = p.pos;
+        bool opened = expect_char(&p, '(');
         hop_whitespace(&p);
         Expr parsed;
         if (expect_expr(&p, expr_ctx_null, &parsed)) {
@@ -5106,7 +5120,8 @@ static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
             parse_comma_ops_right_side(&p, &condition);
         }
         hop_whitespace(&p);
-        expect_char(&p, ')');
+        if (opened) expect_closing(&p, ')', open);
+        else expect_char(&p, ')');
     } else {
         expected_token_error(&p, "while");
     }
@@ -5785,6 +5800,7 @@ static inline bool expect_statement(Parser* parent, bool toplevel, Statement* re
 static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     Parser p = parser(parent);
 
+    const char* open = p.pos;
     if (!hop_char(&p, '{')) return parse_fail(&p);
     hop_whitespace(&p);
 
@@ -5794,7 +5810,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     }
     hop_whitespace(&p);
 
-    expect_char(&p, '}');
+    expect_closing(&p, '}', open);
     return parse_success(&p);
 }
 

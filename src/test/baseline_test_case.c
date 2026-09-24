@@ -468,6 +468,10 @@ static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* sourc
     return nullptr;
 }
 
+static const char* error_file_name(SourceFile const* source) {
+    return source->display_path_override ? source->display_path_override : cstr_str(&source->canonical_path);
+}
+
 static void format_error_tree(
     cstr* global_target,
     cstr* file_target,
@@ -482,11 +486,7 @@ static void format_error_tree(
     } else if (indent_level == 0) {
         unsigned line = span_line_index(error->span);
         unsigned col = span_col_index(error->span);
-        const char* filename = error->span.source ? (
-            error->span.source->display_path_override ?
-                error->span.source->display_path_override :
-                cstr_str(&error->span.source->canonical_path)
-        ) : "(nil)";
+        const char* filename = error->span.source ? error_file_name(error->span.source) : "(nil)";
 
         cstr_append_d(
             global_target, DEFAULT_DISPLAY,
@@ -506,15 +506,23 @@ static void format_error_tree(
             "\r\n!!! error TS", toplevel->ts_code, ": ", repeated_d("  ", indent_level), error->message
         );
     } else {
-        // Handle related errors (sub-errors that do have a valid span)
-        unsigned related_line = span_line_index(error->span);
-        unsigned related_col = span_col_index(error->span);
-        cstr_append_d(
-            file_target, DEFAULT_DISPLAY,
-            "\r\n!!! related TS", error->ts_code, " ",
-            basename_of(cstr_sv(&current_source->canonical_path)), ":",
-            related_line + 1, ":", related_col + 1, ": ", error->message
-        );
+        // Handle related errors (sub-errors that do have a valid span): in their own file, lib files without a position
+        SourceFile const* related_source = error->span.source ? error->span.source : current_source;
+        if (related_source->is_stdlib) {
+            cstr_append_d(
+                file_target, DEFAULT_DISPLAY,
+                "\r\n!!! related TS", error->ts_code, " lib.", basename_of(cstr_sv(&related_source->canonical_path)),
+                ":--:--: ", error->message
+            );
+        } else {
+            unsigned related_line = span_line_index(error->span);
+            unsigned related_col = span_col_index(error->span);
+            cstr_append_d(
+                file_target, DEFAULT_DISPLAY,
+                "\r\n!!! related TS", error->ts_code, " ", error_file_name(related_source), ":",
+                related_line + 1, ":", related_col + 1, ": ", error->message
+            );
+        }
     }
 
     // Traverse down the tree handling sub-errors and related errors
@@ -789,7 +797,7 @@ static void render_lines_woven_with_file(
         newline_if_next_line_non_empty = false;
         cstr_append_sv(target, i);
         if (!is_errors ||
-            index < vec_size ||
+            (index < vec_size && vec_line_numbered_str_at(lines, index)->line <= line) ||
             csview_end_ptr(i) < end_of_content_lines
         ) {
             cstr_append(target, "\r\n");
@@ -827,6 +835,11 @@ static void render_lines_woven_with_file(
 
     for (intptr_t i = 0; i < newlines_at_end_of_source; i++) {
         cstr_append_d(target, DEFAULT_DISPLAY, "\r\n", line_indent);
+    }
+    // Errors at the very end of a file that ends in a newline sit on the empty line after it
+    for (; index < vec_size; index++) {
+        cstr_append(target, "\r\n");
+        cstr_append_s(target, vec_line_numbered_str_at(lines, index)->str);
     }
 }
 

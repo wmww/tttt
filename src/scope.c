@@ -301,23 +301,41 @@ bool scope_has_function(Scope const* me) {
 
 // Declaring
 
-static void report_conflict(ErrorCtx* errs, Span at, unsigned code) {
-    if (!span_valid(at) || !at.source || at.source->is_stdlib) return;
+static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
+    if (!span_valid(at) || !at.source || at.source->is_stdlib) return nullptr;
+    // Once per declaration: a later conflict adds to the error that's there (tsc's lookupOrIssueError)
+    Error* existing = error_ctx_find(errs, at, code == 2567 || code == 2451 ? code : 2300);
+    if (existing) return existing;
     switch (code) {
         case 2567:
-            error_ctx_error_d(errs, at, 2567,
+            return error_ctx_error_d(errs, at, 2567,
                 "Enum declarations can only merge with namespace or other enum declarations.");
-            break;
         case 2451:
-            error_ctx_error_d(errs, at, 2451, "Cannot redeclare block-scoped variable '", at, "'.");
-            break;
+            return error_ctx_error_d(errs, at, 2451, "Cannot redeclare block-scoped variable '", at, "'.");
         default:
-            error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", at, "'.");
-            break;
+            return error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", at, "'.");
     }
 }
 
-static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, u32 includes) {
+// tsc's addDuplicateDeclarationError: the checker's merges (across files) point each error at the other side's
+// declarations, the binder's (within a file) don't
+static void add_duplicate_related(Error* error, Span at, Span other) {
+    if (!error || span_eq(at, other) || !span_valid(other) || !other.source || other.source->is_stdlib) return;
+    u32 count = 0;
+    for_each (i, vec_error, &error->sub_errors) {
+        if (!span_valid(i->span)) continue;
+        if (span_eq(i->span, other)) return;
+        count++;
+    }
+    if (count >= 5) return;
+    if (count) {
+        error_add_related_d(error, other, 6204, "and here.");
+    } else {
+        error_add_related_d(error, other, 6203, "'", at, "' was also declared here.");
+    }
+}
+
+static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, u32 includes, bool related) {
     bool same_file = existing->decl_count && existing->decls[0].name.source == name.source;
     unsigned code = 2300;
     if ((existing->flags | includes) & SYMBOL_ENUM) {
@@ -328,8 +346,15 @@ static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, 
         // Across files symbols are merged by the checker in tsc, which looks at both sides
         code = 2451;
     }
-    for (u32 i = 0; i < existing->decl_count; i++) report_conflict(errs, existing->decls[i].name, code);
-    report_conflict(errs, name, code);
+    related |= !same_file;
+    for (u32 i = 0; i < existing->decl_count; i++) {
+        Error* error = report_conflict(errs, existing->decls[i].name, code);
+        if (related) add_duplicate_related(error, existing->decls[i].name, name);
+    }
+    Error* error = report_conflict(errs, name, code);
+    for (u32 i = 0; related && i < existing->decl_count; i++) {
+        add_duplicate_related(error, name, existing->decls[i].name);
+    }
 }
 
 // A program that adds to a symbol of the lib program it shares (an interface, a namespace like Intl) gets a clone to
@@ -364,7 +389,7 @@ static Symbol* declare_symbol(
         Symbol* inherited = symbol_table_lookup(table->parent, name, hash);
         if (inherited) {
             if (inherited->flags & excludes) {
-                report_conflicts(scope->errs, inherited, name_span, includes);
+                report_conflicts(scope->errs, inherited, name_span, includes, false);
                 return binder_new_symbol(binder, name, includes);
             }
             existing = clone_parent_symbol(binder, inherited);
@@ -373,7 +398,7 @@ static Symbol* declare_symbol(
     }
     if (existing) {
         if (existing->flags & excludes) {
-            report_conflicts(scope->errs, existing, name_span, includes);
+            report_conflicts(scope->errs, existing, name_span, includes, false);
             return binder_new_symbol(binder, name, includes);
         }
         existing->decl_flags_before = existing->flags;
@@ -1075,7 +1100,7 @@ static void merge_symbol(Binder* binder, Symbol* target, Symbol* source, ErrorCt
         return;
     }
     if (target->flags & excluded_flags(source->flags)) {
-        report_conflicts(errs, target, source->decls[0].name, source->flags);
+        report_conflicts(errs, target, source->decls[0].name, source->flags, true);
         for (u32 i = 1; i < source->decl_count; i++) report_conflict(errs, source->decls[i].name, 2300);
         return;
     }

@@ -32,6 +32,12 @@ void error_sub_error_s(Error* me, Span span, unsigned ts_code, cstr message);
 #define error_sub_error_d(me, span, ts_code, ...) \
     error_sub_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 
+/// Related information (tsc's relatedInformation): printed after the whole message chain. noop if me is null or the
+/// span is invalid (a sub error without a span is a line of the chain)
+void error_add_related_s(Error* me, Span span, unsigned ts_code, cstr message);
+#define error_add_related_d(me, span, ts_code, ...) \
+    error_add_related_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+
 #define g_class_key Error, error
 #define g_declared
 #include <cleat/generic/vec.h>
@@ -57,6 +63,8 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
 Error* error_ctx_global_error_s(ErrorCtx* me, unsigned ts_code, cstr message);
 #define error_ctx_global_error_d(me, ts_code, ...) \
     error_ctx_global_error_s(me, ts_code, cstr_d(__VA_ARGS__))
+/// The error with this span and code, if there is one
+Error* error_ctx_find(ErrorCtx* me, Span span, unsigned ts_code);
 /// Semantic diagnostics (name resolution and typecheck) are not reported inside files that are SourceFile.unchecked
 void error_ctx_remove_unchecked(ErrorCtx* me);
 #define error_ctx_error_d(me, span, ts_code, ...) \

@@ -354,7 +354,11 @@ static bool is_structured(Ty const* ty) {
 
 static void report_line(RelationState* st, unsigned ts_code, cstr message) {
     // `boolean` is a union, whose member `false` reads as 'boolean' again once widened for display
-    if (!vec_ty_report_line_is_empty(&st->lines) && cstr_eq(&vec_ty_report_line_back(&st->lines)->message, &message)) {
+    TyReportLine const* last = nullptr;
+    for (isize_t i = vec_ty_report_line_size(&st->lines); i > 0 && !last; i--) {
+        if (!vec_ty_report_line_at(&st->lines, i - 1)->related) last = vec_ty_report_line_at(&st->lines, i - 1);
+    }
+    if (last && cstr_eq(&last->message, &message)) {
         cstr_drop(&message);
         return;
     }
@@ -363,6 +367,14 @@ static void report_line(RelationState* st, unsigned ts_code, cstr message) {
 
 static void report_line_at(RelationState* st, unsigned ts_code, cstr message, Span span) {
     vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message, .span = span });
+}
+
+static void report_related(RelationState* st, unsigned ts_code, cstr message, Span span) {
+    if (!span_valid(span)) {
+        cstr_drop(&message);
+        return;
+    }
+    vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message, .span = span, .related = true });
 }
 
 static void report_truncate(RelationState* st, isize_t len) {
@@ -386,9 +398,28 @@ cstr ty_report_source_cstr(Checker* me, Ty const* source, Ty const* target) {
     return display_for_report(me, widen ? ty_base_type_of_literal(me, source) : source, widen);
 }
 
+// An unconstrained type parameter source could have been constrained to the target (tsc's reportRelationError: unless
+// that constraint would be circular)
+static void report_missing_constraint(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    if (source->kind != TY_TYPE_PARAM || source->param.state->is_this || ty_param_constraint(me, source)) return;
+    Ty const* declared = source;
+    while (declared->param.state->clone_of) declared = declared->param.state->clone_of;
+    GenericItem const* item = declared->param.state->item;
+    if (!item) return;
+    Ty const* base = target;
+    for (u32 depth = 0; base && base->kind == TY_TYPE_PARAM && depth < 16; depth++) {
+        if (base == source || base == declared) return;
+        base = ty_param_constraint(me, base);
+    }
+    cstr target_str = display_for_report(me, target, false);
+    report_related(st, 2208, cstr_d("This type parameter might need an `extends ", target_str, "` constraint."), item->name);
+    cstr_drop(&target_str);
+}
+
 static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     if (st->override_next_head) {
         st->override_next_head--;
+        report_missing_constraint(me, st, source, target);
         return;
     }
     bool widen = report_widens(me, target);
@@ -422,6 +453,7 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
     } else {
         report_line(st, 2322, cstr_d("Type '", source_str, "' is not assignable to type '", target_str, "'."));
     }
+    report_missing_constraint(me, st, source, target);
     c_drop(cstr, &source_str, &target_str);
 }
 
@@ -811,11 +843,13 @@ static Ternary props_related(
     if (report && !source_is_apparent) {
         // Missing properties get a message of their own instead of the generic head
         Atom const* missing[5];
+        Prop const* missing_prop = nullptr;
         u32 missing_count = 0;
         for (u32 i = 0; i < target_members->prop_count; i++) {
             Prop const* target_prop = target_members->props[i];
             if ((target_prop->flags & PROP_OPTIONAL) || find_prop(me, source, target_prop->name, 0).found) continue;
             if (missing_count < c_arraylen(missing)) missing[missing_count] = target_prop->name;
+            if (!missing_count) missing_prop = target_prop;
             missing_count++;
         }
         if (missing_count) {
@@ -826,6 +860,7 @@ static Ternary props_related(
                 report_line(st, 2741, cstr_d(
                     "Property '", name, "' is missing in type '", source_str, "' but required in type '", target_str, "'."
                 ));
+                report_related(st, 2728, cstr_d("'", name, "' is declared here."), ty_prop_decl_span(missing_prop));
                 cstr_drop(&name);
             } else {
                 cstr names = cstr_null;
@@ -2310,9 +2345,13 @@ static bool check_related(
         result = TERNARY_FALSE;
     }
     if (report_into && !result) {
-        // Collected innermost first
-        while (!vec_ty_report_line_is_empty(&st->lines)) {
-            vec_ty_report_line_push(report_into, vec_ty_report_line_pull(&st->lines));
+        // Collected innermost first; related information goes last, in the order it was associated
+        for (isize_t i = vec_ty_report_line_size(&st->lines); i > 0; i--) {
+            TyReportLine* line = vec_ty_report_line_at_mut(&st->lines, i - 1);
+            if (!line->related) vec_ty_report_line_push(report_into, ty_report_line_clone(*line));
+        }
+        for_each (line, vec_ty_report_line, &st->lines) {
+            if (line->related) vec_ty_report_line_push(report_into, ty_report_line_clone(*line));
         }
     }
     vec_ty_report_line_drop(&st->lines);

@@ -1077,8 +1077,9 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                     .target = template,
                     .mapper = mapper,
                 };
-                // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers)
-                Prop const* declared = modifiers_prop;
+                // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers), unless
+                // the `as` clause renamed it (tsc: a remapping rather than a filtering `as` clause; approximated per key)
+                Prop const* declared = prop_name == key ? modifiers_prop : nullptr;
                 while (declared && declared->target && !declared->decl_span_count) declared = declared->target;
                 if (declared) {
                     prop->name_span = declared->name_span;
@@ -1274,6 +1275,11 @@ Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
         if (members->props[i]->name == name) return members->props[i];
     }
     return nullptr;
+}
+
+Span ty_prop_decl_span(Prop const* prop) {
+    while (prop && !span_valid(prop->name_span)) prop = prop->target;
+    return prop ? prop->name_span : (Span){0};
 }
 
 Ty const* prop_type(Checker* me, Prop const* const_prop) {

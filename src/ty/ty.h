@@ -538,6 +538,9 @@ typedef struct TyReportLine {
     unsigned ts_code;
     cstr message;
     Span span; // Where the error goes if this line heads it, invalid for "wherever the check was asked for"
+    // Related information (tsc's associateRelatedInfo) for the diagnostic the explanation ends up in, at `span`.
+    // ty_explain_unrelated() lists these after all the other lines
+    bool related;
 } TyReportLine;
 static inline void ty_report_line_drop(TyReportLine* me) { cstr_drop(&my message); }
 static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message = cstr_clone(me.message); return me; }
@@ -722,6 +725,8 @@ Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name); // 
 // The type whose members a value of `ty` has: `String` for a string, the constraint of a type parameter...
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
 Ty const* prop_type(Checker* me, Prop const* prop);
+// The name of the property's first declaration (instantiations follow their target), invalid if it has none
+Span ty_prop_decl_span(Prop const* prop);
 bool ty_has_unresolved_base(Checker* me, Ty const* ty); // HACK: see has_unresolved_base()
 void signature_resolve(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
