@@ -46,14 +46,15 @@ types components) are the oracle, not the goal.
   a real measurement of type *printing*; plans 08-12 moved the suite by +715 on the side.
 - Plan 12 gave literals tsc's fresh/regular twins and object literals freshness + excess property checks (TS2353),
   done in one session. It exposed the next missing piece of error *reporting*: tsc's elaborateError (errors located
-  at the offending property/element of a literal, plan 16 stub).
+  at the offending property/element of a literal, plan 16).
 - Plan 11 removed the last big approximation in the generic core: relations instantiate a generic source in the
   context of the target instead of unifying positionally / erasing to `any`, and instantiated generic signatures get
   fresh type parameters (bounded ones) instead of sharing them with their target.
 - **Suite gaps are now mostly absent features, not wrong answers** (triage after plan 10): ~1250 tests hit a syntax
   error tsc doesn't have (plan 14 took ~500 of them); dozens of checks don't exist at all (`./unimplemented_codes.sh`:
   unused locals, property vs index signature, used-before-declaration, operand checks, grammar/regex checks: plan 15);
-  no accessibility/readonly/private-name checks (plan 13), no error elaboration (plan 16 stub). These are
+  no accessibility/readonly/private-name checks (plan 13), no error elaboration and **no related information at all**
+  (plan 16: 896 failing tests expect related lines, 117 fail on nothing else; `./failstats.py` can't see them). These are
   cheap per test compared with the type core work, and ready to schedule now that the corpus is done.
 - The last plan 08 session added tsc rules the corpus needed: getQuickTypeOfExpression (declaration cycles through
   loops), auto types (`let x;` typed by control flow; evolving arrays still `any[]`), symbol-keyed element access
