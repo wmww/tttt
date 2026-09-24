@@ -1191,10 +1191,8 @@ static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* ou
             break;
         case TYPE_KEYOF: collect_declared_infers(me, &node->keyof->interface, out); break;
         case TYPE_TERNARY:
+            // What its extends type declares is the nested conditional type's own
             collect_declared_infers(me, &node->ternary->maybe_sub, out);
-            collect_declared_infers(me, &node->ternary->maybe_super, out);
-            collect_declared_infers(me, &node->ternary->if_true, out);
-            collect_declared_infers(me, &node->ternary->if_false, out);
             break;
         case TYPE_UNION:
         case TYPE_INTERSECTION:
@@ -1339,23 +1337,24 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             TyCondBranch if_true = lower_branch(me, &node->ternary->if_true, inner);
             TyCondBranch if_false = lower_branch(me, &node->ternary->if_false, ctx);
             bool distributive = is_naked_type_param_node(&node->ternary->maybe_sub);
-            Ty const* ret = ty_conditional(me, check_type, extends, &if_true, &if_false, nullptr, nullptr, distributive);
+            TyBuf infers = {0};
+            collect_declared_infers(me, extends_node, &infers);
+            Ty const* ret = ty_conditional(
+                me, check_type, extends, &if_true, &if_false, nullptr, nullptr, distributive,
+                (TyList){ .data = infers.data, .len = infers.len }
+            );
             if (ret->kind == TY_CONDITIONAL && ret->conditional.root == ret) {
                 // Instantiation must leave them alone: they're this conditional type's own, whatever an outer one of
                 // the same declaration inferred (`Split<B, D>` in the true branch of Split, see instantiate.c)
                 u64 key[2] = { KEY_CONDITIONAL_INFERS, ret->id };
-                if (!intern_get(&my links, key, 2)) {
-                    TyBuf infers = {0};
-                    collect_declared_infers(me, extends_node, &infers);
-                    if (infers.len) {
-                        TyList* list = arena_new(&my arena, TyList);
-                        *list = ty_list_copy(me, infers.data, infers.len);
-                        *intern_slot(me, &my links, key, 2) = list;
-                    }
-                    ty_buf_drop(&infers);
+                if (infers.len && !intern_get(&my links, key, 2)) {
+                    TyList* list = arena_new(&my arena, TyList);
+                    *list = ty_list_copy(me, infers.data, infers.len);
+                    *intern_slot(me, &my links, key, 2) = list;
                 }
                 conditional_set_outer(me, ret, node);
             }
+            ty_buf_drop(&infers);
             return alias && ret->kind == TY_CONDITIONAL ? ty_realias(me, ret, alias, alias_args) : ret;
         }
 

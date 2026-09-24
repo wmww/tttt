@@ -1394,9 +1394,9 @@ static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
 // Resolves right away unless the check type is generic (conditional.c)
 Ty const* ty_conditional(
     Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
-    Ty const* root, TyMapper const* mapper, bool distributive
+    Ty const* root, TyMapper const* mapper, bool distributive, TyList infers
 ) {
-    Ty const* resolved = ty_conditional_resolve(me, check_type, extends, if_true, if_false);
+    Ty const* resolved = ty_conditional_resolve(me, check_type, extends, infers, if_true, if_false);
     if (resolved) return resolved;
     u64 stack_key[64];
     u32 key_len = 5 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);

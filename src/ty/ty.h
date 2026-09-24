@@ -713,7 +713,8 @@ Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index);
 Ty const* ty_conditional(
     Checker* me, Ty const* check, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
     Ty const* root, TyMapper const* mapper, // null for a root
-    bool distributive
+    bool distributive,
+    TyList infers // The `infer` type parameters its extends type declares (ty_conditional_own_infers of the root)
 );
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 TyList ty_conditional_own_infers(Checker* me, Ty const* root); // The `infer` type parameters its extends type declares
@@ -811,7 +812,8 @@ void relation_cache_drop(RelationCache* me);
 // conditional.c
 // Null while the conditional type has to stay deferred
 Ty const* ty_conditional_resolve(
-    Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false
+    Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
+    TyCondBranch const* if_false
 );
 
 // access.c

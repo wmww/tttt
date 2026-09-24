@@ -23,36 +23,35 @@ static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {
 }
 
 Ty const* ty_conditional_resolve(
-    Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false
+    Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
+    TyCondBranch const* if_false
 ) {
     if (is_generic(check_type)) return nullptr;
     if ((check_type->flags | extends->flags) & TYF_ERROR) return ty_intrinsic(me, TY_ERROR);
 
     TyMapper const* mapper = nullptr;
-    if (extends->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+    // Only its own `infer X`: one of an outer conditional type is a type variable like any other here, which keeps
+    // this one deferred until the outer one's true branch is instantiated with what it inferred
+    if (infers.len) {
         Inference inf;
-        inference_init(&inf, (TyList){0});
-        inf.collect_infer_params = true;
-        inference_collect_infer_params(me, &inf, extends);
+        inference_init(&inf, infers);
         infer_types(me, &inf, check_type, extends, INFER_PRIORITY_NORMAL);
-        if (inf.len) {
-            Ty const** params = arena_new_n(&my arena, Ty const*, inf.len);
-            Ty const** results = arena_new_n(&my arena, Ty const*, inf.len);
-            for (u32 i = 0; i < inf.len; i++) {
-                params[i] = inf.params[i].param;
-                results[i] = inference_conditional_result(me, &inf, i);
-                if (!results[i]) results[i] = ty_intrinsic(me, TY_UNKNOWN_);
-                // Nothing inferred, or what doesn't satisfy `infer X extends C` (or an implied constraint: `string` in a
-                // template), is the constraint (tsc's getInferredType)
-                Ty const* constraint = ty_param_constraint(me, params[i]);
-                if (constraint && constraint != params[i] && !(constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
-                    !ty_is_related(me, results[i], constraint, TY_RELATION_ASSIGNABLE)
-                ) {
-                    results[i] = constraint;
-                }
+        Ty const** params = arena_new_n(&my arena, Ty const*, inf.len);
+        Ty const** results = arena_new_n(&my arena, Ty const*, inf.len);
+        for (u32 i = 0; i < inf.len; i++) {
+            params[i] = inf.params[i].param;
+            results[i] = inference_conditional_result(me, &inf, i);
+            if (!results[i]) results[i] = ty_intrinsic(me, TY_UNKNOWN_);
+            // Nothing inferred, or what doesn't satisfy `infer X extends C` (or an implied constraint: `string` in a
+            // template), is the constraint (tsc's getInferredType)
+            Ty const* constraint = ty_param_constraint(me, params[i]);
+            if (constraint && constraint != params[i] && !(constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+                !ty_is_related(me, results[i], constraint, TY_RELATION_ASSIGNABLE)
+            ) {
+                results[i] = constraint;
             }
-            mapper = ty_mapper_new(me, (TyList){ .data = params, .len = inf.len }, (TyList){ .data = results, .len = inf.len });
         }
+        mapper = ty_mapper_new(me, (TyList){ .data = params, .len = inf.len }, (TyList){ .data = results, .len = inf.len });
         inference_drop(&inf);
     }
     Ty const* inferred_extends = ty_instantiate(me, extends, mapper);

@@ -64,76 +64,7 @@ static InferParam* inference_param(Inference* inf, Ty const* ty) {
     for (u32 i = 0; i < inf->len; i++) {
         if (inf->params[i].param == ty) return &inf->params[i];
     }
-    if (inf->collect_infer_params && ty->kind == TY_TYPE_PARAM && ty->param.state->is_infer) {
-        if (inf->len == inf->cap) {
-            inf->cap *= 2;
-            inf->params = realloc(inf->params, inf->cap * sizeof(InferParam));
-            panic_if(!inf->params, "out of memory");
-        }
-        inf->params[inf->len] = (InferParam){ .param = ty, .top_level = true };
-        return &inf->params[inf->len++];
-    }
     return nullptr;
-}
-
-// Every `infer X` the target declares, whether or not the walk with the source reaches it: one that gets no candidate
-// still has to be replaced (by `unknown`) for the conditional type to resolve
-static void collect_infer_params(Checker* me, Inference* inf, Ty const* target, u32 depth) {
-    if (depth > 6 || !(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
-    switch ((TyKind)target->kind) {
-        case TY_TYPE_PARAM:
-            inference_param(inf, target);
-            break;
-        case TY_UNION:
-        case TY_INTERSECTION:
-            for (u32 i = 0; i < target->composite.types.len; i++) {
-                collect_infer_params(me, inf, target->composite.types.data[i], depth + 1);
-            }
-            break;
-        case TY_REFERENCE: {
-            TyList args = ty_reference_args(me, target);
-            for (u32 i = 0; i < args.len; i++) collect_infer_params(me, inf, args.data[i], depth + 1);
-        }   break;
-        case TY_ANONYMOUS: {
-            Members const* members = ty_members(me, target);
-            for (u32 i = 0; i < members->prop_count; i++) {
-                collect_infer_params(me, inf, prop_type(me, members->props[i]), depth + 1);
-            }
-            for (u32 kind = 0; kind < 2; kind++) {
-                Signature* const* list = kind ? members->construct : members->call;
-                u32 count = kind ? members->construct_count : members->call_count;
-                for (u32 i = 0; i < count; i++) {
-                    signature_resolve(me, list[i]);
-                    if (list[i]->this_type) collect_infer_params(me, inf, list[i]->this_type, depth + 1);
-                    for (u32 j = 0; j < list[i]->param_count; j++) {
-                        collect_infer_params(me, inf, list[i]->params[j].type, depth + 1);
-                    }
-                    collect_infer_params(me, inf, signature_return_type(me, list[i]), depth + 1);
-                }
-            }
-            for (u32 i = 0; i < members->index_count; i++) collect_infer_params(me, inf, members->index[i].value, depth + 1);
-        }   break;
-        case TY_KEYOF:
-            collect_infer_params(me, inf, target->keyof.operand, depth + 1);
-            break;
-        case TY_INDEXED:
-            collect_infer_params(me, inf, target->indexed.object, depth + 1);
-            collect_infer_params(me, inf, target->indexed.index, depth + 1);
-            break;
-        case TY_TEMPLATE_LITERAL:
-            for (u32 i = 0; i < target->template_literal.types.len; i++) {
-                collect_infer_params(me, inf, target->template_literal.types.data[i], depth + 1);
-            }
-            break;
-        case TY_STRING_MAPPING:
-            collect_infer_params(me, inf, target->string_mapping.type, depth + 1);
-            break;
-        default: break;
-    }
-}
-
-void inference_collect_infer_params(Checker* me, Inference* inf, Ty const* target) {
-    collect_infer_params(me, inf, target, 0);
 }
 
 static void candidates_push(Ty const*** list, u32* len, Ty const* candidate) {

@@ -25616,7 +25616,7 @@ const baselines = {
         types: false,
     },
     'propTypeValidatorInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

@@ -117,7 +117,6 @@ typedef struct Inference {
     InferParam* params;
     u32 len;
     u32 cap;
-    bool collect_infer_params; // conditional types: every `infer X` met in the target becomes a parameter
     bool within_relation; // Constraints are checked by the relation in progress (tsc's InferenceContext.compareTypes)
     // Type parameters of generic function arguments that the call's return type is generic in (tsc's
     // InferenceContext.inferredTypeParameters, see inference_propagate_generic()). Malloc'd
@@ -152,7 +151,6 @@ void inference_init(Inference* inf, TyList params);
 // tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
 bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth);
 void inference_drop(Inference* inf);
-void inference_collect_infer_params(Checker* me, Inference* inf, Ty const* target);
 void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority);
 // What a call infers for parameter i: common supertype of the candidates, widened unless `keep_literals`. Null if
 // there were no candidates
