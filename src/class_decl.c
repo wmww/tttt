@@ -122,7 +122,10 @@ void class_decl_drop(ClassDecl* me) {
 static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, ErrorCtx* errs) {
     Scope* scope = scope_new(names, SCOPE_BLOCK);
     scope->no_super = why;
+    uint8_t initializer_context = names->flow->initializer_context;
+    names->flow->initializer_context = INITIALIZER_NONE;
     expr_lookup_names(expr, scope, errs);
+    names->flow->initializer_context = initializer_context;
 }
 
 void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
@@ -155,6 +158,8 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
                 FlowBuilder flow;
                 flow_builder_init(&flow, outer, names, nullptr, errs);
                 flow.current = flow_new_start(&flow, nullptr, false);
+                flow.initializer_context = my field.is_static ? INITIALIZER_STATIC_FIELD : INITIALIZER_INSTANCE_FIELD;
+                flow.initializer_field = me;
                 names->flow = &flow;
                 expr_lookup_names(&my field.value, names, errs);
                 flow_builder_finish(&flow, c_sv("field"), my field.value.outer_span);

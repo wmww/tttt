@@ -7,6 +7,7 @@
 #include "class_decl.h"
 #include "port_statement.h"
 #include "unused.h"
+#include "statement.h"
 
 // Checks the statement/expression walk asks of the new core, and how their errors are worded.
 
@@ -1067,6 +1068,104 @@ void ty_mark_destructured_member(Checker* me, Ty const* object, csview name) {
     for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, refs.props[i], nullptr);
 }
 
+// tsc's isPropertyDeclaredInAncestorClass: a base class declares it too, and gives it its value first
+static bool declared_in_base_class(Checker* me, ClassDecl const* class_decl, Atom const* name) {
+    for (u32 depth = 0; class_decl && depth < 32; depth++) {
+        Ty const* base = ty_class_base_instance(me, class_decl);
+        if (!base || !(base->flags & TYF_OBJECT)) return false;
+        Prop const* prop = ty_get_prop(me, base, name);
+        if (prop) return true;
+        Ty const* target = base->kind == TY_REFERENCE ? base->reference.target : base;
+        Symbol const* symbol = target->kind == TY_DECLARED ? target->declared.symbol : nullptr;
+        class_decl = symbol ? class_decl_of(symbol) : nullptr;
+    }
+    return false;
+}
+
+// tsc's isPropertyInitializedInStaticBlocks, syntactically (HACK: tsc asks control flow at the end of each block): a
+// `static {}` before `before` assigns `this.name` (or `C.name`) in one of its statements
+static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview name, char const* before) {
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (i->tag != CLASS_ITEM_STATIC_BLOCK || span_start_ptr(i->span) >= before) continue;
+        for_each (s, vec_statement, &i->static_block.statements) {
+            if (s->tag != STATEMENT_EXPR || s->expr.tag != EXPR_BINARY_OP || s->expr.binary_op->op != BINARY_OP_EQUAL) continue;
+            Expr const* target = &s->expr.binary_op->left;
+            if (target->tag == EXPR_PROPERTY && target->property->form == PROPERTY_EXPR_DOT &&
+                csview_equals_sv(target->property->prop.inner_span.sv, name)
+            ) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static bool span_contains(Span outer, char const* at) {
+    return at >= span_start_ptr(outer) && at < span_end_ptr(outer);
+}
+
+// tsc's checkPropertyNotUsedBeforeDeclaration with isBlockScopedNameDeclaredBeforeUse: `this.x` (or `o.x`) in a field
+// initializer or a static block, where x isn't initialized yet (TS2729). Any property declared later in the file
+// counts, class members have more rules
+static void check_used_before_initialization(Checker* me, PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
+    while (prop->target) prop = prop->target;
+    if (!span_valid(prop->name_span) || prop->name_span.source != access->prop.outer_span.source) return;
+    ClassDecl* class_decl = prop->parent && (prop->parent->flags & SYMBOL_CLASS) ? (ClassDecl*)class_decl_of(prop->parent) : nullptr;
+    // A class member's declaration: a field, method or accessor, or a parameter property
+    ClassItem* item = nullptr;
+    FunctionArg const* parameter = nullptr;
+    char const* name_at = span_start_ptr(prop->name_span);
+    for_each (i, vec_class_item, class_decl ? &class_decl->items : &(VecClassItem){0}) {
+        if ((i->tag == CLASS_ITEM_FIELD || i->tag == CLASS_ITEM_METHOD) && span_contains(i->span, name_at)) item = i;
+        if (i->tag != CLASS_ITEM_CONSTRUCTOR) continue;
+        for_each (arg, vec_function_arg, &i->constructor.func.args) {
+            if (arg->is_parameter_property && span_contains(arg->span, name_at)) parameter = arg;
+        }
+    }
+    if (!item && !parameter) class_decl = nullptr;
+    bool is_field = item && item->tag == CLASS_ITEM_FIELD;
+    if (is_field && item->field.is_optional) return;
+    if (item && item->tag == CLASS_ITEM_METHOD && item->method.is_static) return;
+    CompilerOptions const* options = compiler_options();
+    bool emit_standard = options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022;
+    if (class_decl && !options->use_define_for_class_fields && declared_in_base_class(me, class_decl, prop->name)) return;
+
+    Span declaration = item ? item->span : parameter ? parameter->span : prop->name_span;
+    char const* declared_at = span_start_ptr(declaration);
+    char const* used_at = span_start_ptr(access->expr.outer_span);
+    bool same_class = class_decl && access->enclosing_class == class_decl;
+    bool this_access = access->expr.tag == EXPR_IDENTIFIER && access->expr.identifier.keyword == KEYWORD_IDENTIFIER_THIS;
+    bool initialized = is_field && (item->field.value.tag != EXPR_IMPLICIT_ANY || *span_end_ptr(item->field.name_span) == '!');
+    bool within_declaration = span_contains(declaration, used_at);
+    // isUsedInFunctionOrInstanceProperty, from where the reads can be
+    bool is_instance_field = is_field && !item->field.is_static;
+    bool deferred = false;
+    switch (access->initializer_context) {
+        case INITIALIZER_INSTANCE_FIELD: deferred = !is_instance_field || !same_class; break;
+        case INITIALIZER_STATIC_FIELD:
+            deferred = (item && item->tag == CLASS_ITEM_METHOD) || (is_field && same_class && access->initializer_field &&
+                initialized_in_static_blocks(class_decl, access->prop.inner_span.sv, span_start_ptr(access->initializer_field->span)));
+            break;
+        case INITIALIZER_STATIC_BLOCK: deferred = declared_at < used_at; break;
+    }
+    bool fine;
+    if (declared_at <= used_at && !(is_field && this_access && !initialized)) {
+        fine = is_field ? !within_declaration : parameter ? !(emit_standard && same_class && deferred) : true;
+    } else if (deferred) {
+        // With standard class fields the fields of the class are defined in order, the parameter properties after them
+        fine = !(emit_standard && (is_field || parameter) &&
+            (within_declaration || (access->initializer_field && same_class) ||
+                access->initializer_context == INITIALIZER_STATIC_BLOCK) &&
+            span_end_ptr(access->prop.outer_span) <= span_end_ptr(declaration));
+    } else {
+        fine = false;
+    }
+    if (fine) return;
+    Span name = access->prop.inner_span;
+    Error* error = error_ctx_error_d(errs, name, 2729, "Property '", name, "' is used before its initialization.");
+    error_add_related_d(error, prop->name_span, 2728, "'", name, "' is declared here.");
+}
+
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
     // `typeof globalThis` has no properties for block scoped variables (TS2339 there, see check_access())
     if ((object->flags & TYF_ANY) || is_global_this(object)) return;
@@ -1099,6 +1198,9 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     }
     if (unused_enabled()) {
         for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, refs.props[i], access);
+    }
+    if (access->initializer_context && refs.len == 1 && !(ty_apparent_type(me, object)->flags & TYF_ANY)) {
+        check_used_before_initialization(me, access, refs.props[0], errs);
     }
     // Element access is the way around accessibility
     if (access->form == PROPERTY_EXPR_DOT) {

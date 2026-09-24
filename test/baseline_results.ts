@@ -3876,7 +3876,7 @@ const baselines = {
         types: false,
     },
     'classMergedWithInterfaceMultipleBasesNoError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -3951,7 +3951,7 @@ const baselines = {
         types: true,
     },
     'classStaticInitializersUsePropertiesBeforeDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13661,7 +13661,7 @@ const baselines = {
         types: true,
     },
     'forwardRefInClassProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17626,7 +17626,7 @@ const baselines = {
         types: false,
     },
     'initializerWithThisPropertyAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27226,7 +27226,7 @@ const baselines = {
         types: true,
     },
     'scopeCheckStaticInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32351,12 +32351,12 @@ const baselines = {
         types: false,
     },
     'useBeforeDeclaration_propertyAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'useBeforeDeclaration_superClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34586,22 +34586,22 @@ const baselines = {
         types: true,
     },
     'classStaticBlock3(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classStaticBlock3(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classStaticBlock4(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classStaticBlock4(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34641,22 +34641,22 @@ const baselines = {
         types: true,
     },
     'classStaticBlock9(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classStaticBlock9(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classStaticBlock9(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classStaticBlock9(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34671,12 +34671,12 @@ const baselines = {
         types: false,
     },
     'classStaticBlockUseBeforeDef2(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'classStaticBlockUseBeforeDef2(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -34691,7 +34691,7 @@ const baselines = {
         types: false,
     },
     'classStaticBlockUseBeforeDef5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -36226,7 +36226,7 @@ const baselines = {
         types: true,
     },
     'privateNamesUseBeforeDef': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36816,7 +36816,7 @@ const baselines = {
         types: true,
     },
     'redeclaredProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46716,7 +46716,7 @@ const baselines = {
         types: true,
     },
     'scopeResolutionIdentifiers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -167,6 +167,11 @@ typedef struct FlowBuilder {
     // of its function: it can't use itself (TS2372) or what that scope declares after it (TS2373)
     Binding const* parameter_initializing;
     Scope const* parameter_function_scope;
+    // Evaluated with the class: a field's initializer or a `static {}` block's expression statement (tsc's
+    // isInPropertyInitializerOrClassStaticBlock), where a property can be read before it is initialized (TS2729).
+    // Functions (and the computed names of methods, which are in them for tsc) don't count
+    uint8_t initializer_context; // InitializerContext
+    struct ClassItem const* initializer_field; // The field whose initializer it is
     bool in_type_query; // Inside `typeof x` written as a type: never "used before assigned"
     bool nullish_condition; // The next expression is a condition by being the left side of `??`: FLOW_NULLISH
     // The statement list of the Block the next statement is a direct child of (TS7027 covers runs of statements there)
@@ -186,6 +191,13 @@ typedef struct FlowBuilder {
     u32 dump_count;
     u32 dump_cap;
 } FlowBuilder;
+
+typedef enum InitializerContext : uint8_t {
+    INITIALIZER_NONE,
+    INITIALIZER_INSTANCE_FIELD,
+    INITIALIZER_STATIC_FIELD,
+    INITIALIZER_STATIC_BLOCK,
+} InitializerContext;
 
 typedef enum FlowAssignmentKind {
     FLOW_TARGET_NONE = 0,

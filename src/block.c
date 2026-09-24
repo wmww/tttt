@@ -52,7 +52,13 @@ void block_lookup_names_inline_container(Block const* me, Scope* scope, ErrorCtx
     flow.has_flow_effects = outer->has_flow_effects;
     flow.return_target = flow_new_branch_label(&flow);
     scope->flow = &flow;
-    block_lookup_names_as(me, true, scope, errs);
+    for_each (i, vec_statement, &my statements) {
+        flow.statement_list = &my statements;
+        // Its expression statements run with the class (TS2729), the rest is like any other code
+        flow.initializer_context = i->tag == STATEMENT_EXPR ? INITIALIZER_STATIC_BLOCK : INITIALIZER_NONE;
+        statement_resolve_names(i, scope, errs);
+    }
+    flow.initializer_context = INITIALIZER_NONE;
     flow_add_antecedent(&flow, flow.return_target, flow.current);
     flow.current = flow_finish_label(flow.return_target);
     flow_builder_finish(&flow, c_sv("static block"), span_null);

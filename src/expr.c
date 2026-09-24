@@ -843,6 +843,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (this_ref.kind == THIS_ANY) my property->this_function = this_ref.function;
             }
             my property->in_constructor_of = flow->constructor_of;
+            if (my property->form == PROPERTY_EXPR_DOT && my property->expr.tag != EXPR_PROPERTY) {
+                my property->initializer_context = flow->initializer_context;
+                my property->initializer_field = flow->initializer_field;
+            }
             my property->containing_function = names->function;
             if (my property->expr.tag == EXPR_IDENTIFIER) {
                 my property->expr.identifier.super_member = my property->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
@@ -951,7 +955,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     // (A scope of its own only for resolve_super())
                     Scope* key_scope = scope_new(names, SCOPE_BLOCK);
                     key_scope->no_super = NO_SUPER_LITERAL_COMPUTED_NAME;
+                    // The name of a method or accessor is in it, as far as a class initializer is concerned (TS2729)
+                    uint8_t initializer_context = flow->initializer_context;
+                    if (i->tag != OBJECT_ITEM_PROPERTY) flow->initializer_context = INITIALIZER_NONE;
                     expr_lookup_names(i->computed_key, key_scope, errs);
+                    flow->initializer_context = initializer_context;
                 }
                 if (i->value.tag == EXPR_FUNCTION) {
                     i->value.function->accessor = i->tag == OBJECT_ITEM_GETTER ? 1 : i->tag == OBJECT_ITEM_SETTER ? 2 : 0;
