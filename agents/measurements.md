@@ -2,12 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
-## 2026-09-23, plan 13 stages 1-3: accessibility, readonly writes, typed `super`
-Suite **4690 -> 4785** full (errors 7893, symbols 9449, types 7638; no component lost). Missing TS2540 154 -> 18,
-TS2341 117 -> 21, TS2445 106 -> 11, TS2446 31 -> 0, TS2340 48 -> 0, TS2673/2674 14 -> 0, TS2542 26 -> 17. About half
-the gain is `super.x` having a type at all (it was `any`). Corpora: tsc 0, type-fest 424 -> 423, valibot 1835 -> 1791
-(all 45 were `@ts-expect-error`s, TS2578, now used: readonly writes). `./bench.sh`: unchanged (type-fest 0.59 s,
-valibot 1.17 s / 609 MB, typecheck 1068 ms).
+## 2026-09-23, plan 13 done (+ `super` calls and legality, `in` checks, duplicate packages), commit 5d9ff4c
+Suite **4931 -> 5116** full (errors 8206, symbols 9480, types 7879; lost components: taggedPrimitiveNarrowing and
+contextualOverloadListFromArrayUnion, from TS2339 on `never` exposing wrong narrowing/contextual types, triage.md).
+The biggest single gains: `super(...)` resolved and `void` (+91 with untyped rest parameters as `any[]`), `super`
+legality/this-before-super/TS2377 (+38), private names (+63 with `in` checks), nominal privates (+22). Corpora: tsc 0,
+type-fest 450 (was 424 before plan 16's per-property elaboration), valibot 1883 -> 1871. `./bench.sh`: type-fest
+0.53 s / 74 MB (tsgo 1.23), valibot 1.16 s / 615 MB (tsgo 0.83 s / 833 MB, single-threaded 1.62), typecheck 1043 ms.
 
 ## 2026-09-23, plan 20: conditional instantiation cache
 Suite **4690** (unchanged, no component gained or lost). Corpora unchanged: tsc 0, type-fest 424, valibot 1835 (a few
