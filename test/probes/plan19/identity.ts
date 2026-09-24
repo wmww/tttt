@@ -1,0 +1,17 @@
+type SE<L, R> = (<T>() => T extends (L & T) | T ? 1 : 2) extends <T>() => T extends (R & T) | T ? 1 : 2 ? true : false;
+type A = SE<string, string>;
+type A2 = SE<string, number>;
+type B = (<T>() => T extends {a: T} ? 1 : 0) extends (<T>() => T extends {a: T} ? 1 : 0) ? true : false;
+type C = SE<{a: 1, f(): void}, {a: 1, f(): void}>;
+type C2 = SE<{a: 1, f(): void}, {a: 1, f(): string}>;
+type D = SE<{a?: 1}, {a?: 1}>;
+type D2 = SE<{a?: 1}, {a: 1 | undefined}>;
+type E = SE<{readonly a: 1}, {a: 1}>;
+type F = SE<string[], string[]>;
+type G = SE<[string, number?], [string, number?]>;
+type H = SE<any, unknown>;
+type I = SE<{ [k: string]: number }, Record<string, number>>;
+type J = SE<(x: string) => void, (y: string) => void>;
+type K = SE<Promise<{a: 1}>, Promise<{a: 1}>>;
+type L = SE<{a: 1} & {b: 2}, {a: 1, b: 2}>;
+type M = SE<1 | 2, 2 | 1>;

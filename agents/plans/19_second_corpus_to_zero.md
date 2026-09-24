@@ -36,7 +36,7 @@ checked with `FAST=1 ./filetest.sh` against tsc; counts are estimates from group
 can need several fixes, so buckets overlap a little). Roughly ordered by count per single fix (R7 bundles several
 small missing checks).
 
-### R1. No identity relation: conditional types compared by pointer (valibot ~950)
+### R1. ~~No identity relation: conditional types compared by pointer~~ done (valibot 620 -> 328, type-fest 195 -> 173; with tsc's intersection member matching in inference and InferencePriority as OR'ed flags, both needed for the expect-type trick)
 `is_related_to` for `TY_CONDITIONAL` (relate.c) requires `source->conditional.extends == target->conditional.extends`;
 tsc (structuredTypeRelatedToWorker) uses `isTypeIdenticalTo` on the extends types and relates check types both ways.
 `types_identical` (relate.c) approximates identity as mutual strict-subtype. So expect-type's
@@ -83,7 +83,7 @@ const e = { a: () => 1 };
 type K = keyof typeof e;                                                  // tttt keyof {...}, tsc "a"
 ```
 
-### R4. `const` type parameters are ignored (valibot ~150)
+### R4. ~~`const` type parameters are ignored~~ done (valibot 739 -> 620, with `as const` being the regular literal type)
 `parse_generic_decl_item` drops the `const` modifier (hacks.md). tsc checks the argument in a const context
 (isConstContext: contextual type is a const type variable) and never widens its inference. Every valibot factory is
 `<const TWrapped ..., const TDefault ...>`. Effects: `getDefault(exactOptional(string(), 'foo'))` is `string` (40
@@ -160,7 +160,25 @@ Actual: string"` 27 and `{ 0: "foo"; 1: 123; 2: true; }` 20 (R4), `StrictEqualUs
 and `MismatchInfo` objects (R1) most of the rest. valibot's partial/required tests now reach `satisfies` (TS1360 10,
 R4). Re-rank type-fest's TS2345 after R4/R1, it hasn't been sampled since plan 18.
 
+### After R4, R1 (2026-09-24)
+type-fest **173** (TS2345 107, TS2578 29, TS2322 13, TS2589 13, TS2344 6), valibot **328** (TS2578 129, TS2344 96,
+TS2322 30, TS2339 24, TS2345 15, TS2488 9, TS18046 9). valibot's TS2344 are still expect-type (82 of 96 name
+`StrictEqualUsingTSInternalIdenticalToOperator`), but no longer the identity relation: sampled ones are R9. TS2578 is
+R7 (missing checks). TS2339 24 is R8's vitest `.not`. type-fest wasn't re-sampled (spread thin: conditional-pick-deep
+16, get 10, camel-case 10...).
+
+### R9. `infer` type parameters have no implied constraint from their position (valibot, most of the TS2344 left)
+`S extends SchemaWithPipe<infer TPipe> | SchemaWithPipeAsync<infer TPipe> ? ...` with nothing inferred: tsc gives TPipe
+the constraint of the type parameter it is an argument of (getInferTypeParameterConstraint / the implied constraint),
+and an inference that doesn't satisfy it is the constraint. tttt infers `unknown`, so the extends type becomes
+`Omit<FirstTupleItem<unknown>, ...> & {...}`, a generic mapped type, and `ty_conditional_resolve` defers (it can't
+pick the false branch without a permissive instantiation). Deferred key conditionals leave valibot's
+`InferObjectOutput` mapped types generic, so `IsNever<Omit<ObjectSchema<...>>>` defers and so does every
+`toEqualTypeOf` over such a schema. Probe `test/probes/plan19/infer_implied_constraint.ts` (tsc `A = "no"`, tttt
+deferred). Only `imply_rest_constraint` exists (the `unknown[]` of a rest position). Size: small-medium. Worth
+considering with it: a real permissive instantiation (every type parameter to a wildcard `any`) instead of the
+`mentions_type_variables` walk, which is the other half of why these defer.
+
 ### Suggested order
-~~R5 and R3, R2, R6~~ (done), R4, then R1 (biggest
-count, medium, likely a perf win too), then the R7 checks one by one. Re-rank after R1: a lot of valibot TS2344 may
-turn out to also need R3/R4.
+~~R5 and R3, R2, R6, R4, R1~~ (done), then R9 (valibot's TS2344), then the R7 checks one by one (valibot's
+TS2578), R8's vitest `.not`. Re-sample type-fest's TS2345 before picking its next root cause.

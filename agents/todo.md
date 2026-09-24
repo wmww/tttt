@@ -2,11 +2,11 @@
 Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 13)")
 for why.
 
-1. **Execution: plan 19 R4 + R1** (`const` type parameters; a real identity relation, tsc's `identityRelation`). Then
-   re-rank plan 19's buckets in the plan file and rerun `./bench.sh` (R1 should cut valibot's time).
-2. **Execution: relation results under assumptions.** `bugs/overload_relation_assumption.md` first (tsc's `maybeKeys`:
+1. **Execution: relation results under assumptions.** `bugs/overload_relation_assumption.md` first (tsc's `maybeKeys`:
    only cache results that depended on an in-progress assumption once the outermost relation succeeds), then
-   `bugs/interface_heritage_alias_cycle.md` to switch TS2430 on for good (167 missing in 40 tests). Same file as R1.
+   `bugs/interface_heritage_alias_cycle.md` to switch TS2430 on for good (167 missing in 40 tests). Same file as R1 (relate.c; the identity relation is `TY_RELATION_IDENTITY` now).
+2. **Execution: plan 19 R9** (implied constraints of `infer` type parameters; most of valibot's TS2344 left). Small;
+   rerun both corpora and `./bench.sh` after.
 3. **Execution: plan 15, session 1.** Re-derive the table. Start with unused locals/parameters (TS6133 & co., 120
    tests miss only that): design the "referenced" bit + report pass once, as the plan says. Then declaration checks.
 4. **Planning: plan 21, display fidelity.** Rank the mechanisms behind the ~2600 tests that pass errors but fail

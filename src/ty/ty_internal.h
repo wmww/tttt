@@ -104,12 +104,14 @@ typedef struct InferParam {
     Ty const* fixed;
 } InferParam;
 
+// Flags like tsc's InferencePriority: a nested inference ORs its own in, and a higher number is a worse priority
+// (a naked type variable inferred to while inferring from the return type is worse than the return type itself)
 typedef enum InferPriority {
     INFER_PRIORITY_NORMAL = 0,
-    INFER_PRIORITY_NAKED_TYPE_VARIABLE = 1, // to a naked type parameter in a union with other things
-    INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE = 2, // T from a reverse mapped type (`{ [K in keyof T]: X<T[K]> }`)
-    INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT = 3, // K from the keys of the source (`{ [P in K]: X }`)
-    INFER_PRIORITY_RETURN_TYPE = 4,
+    INFER_PRIORITY_NAKED_TYPE_VARIABLE = 1 << 0, // to a naked type parameter in a union with other things
+    INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE = 1 << 3, // T from a reverse mapped type (`{ [K in keyof T]: X<T[K]> }`)
+    INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT = 1 << 5, // K from the keys of the source (`{ [P in K]: X }`)
+    INFER_PRIORITY_RETURN_TYPE = 1 << 7,
 } InferPriority;
 
 #define INFER_MAX_DEPTH 24

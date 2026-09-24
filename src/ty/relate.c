@@ -1723,7 +1723,203 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
     return result;
 }
 
+// The identity relation (tsc's identityRelation in isRelatedTo and structuredTypeRelatedTo)
+
+// What tsc's TypeFlags say about a type, as opposed to the facts cached in them
+#define IDENTITY_FLAGS (~(u32)(TYF_ERROR | TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_FRESH_LITERAL | TYF_FRESH_OBJECT))
+
+static Ternary signatures_identical_in(
+    Checker* me, RelationState* st, Signature const* source, Signature const* target, bool partial, bool ignore_return
+);
+static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
+
+static Ternary identity_related(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    if (source->kind != target->kind || ((source->flags ^ target->flags) & IDENTITY_FLAGS)) return TERNARY_FALSE;
+    // Intrinsics of the same flags are the same (`any` and the error `any`), literals are interned, and a type
+    // parameter is only identical to itself
+    if (source->kind == TY_INTRINSIC) return TERNARY_TRUE;
+    if (source->kind == TY_LITERAL || source->kind == TY_TYPE_PARAM) return TERNARY_FALSE;
+    return recursive_related(me, st, source, target, false);
+}
+
+static Ternary identical_to_some(Checker* me, RelationState* st, Ty const* source, TyList targets) {
+    for (u32 i = 0; i < targets.len; i++) {
+        if (targets.data[i] == source) return TERNARY_TRUE;
+    }
+    for (u32 i = 0; i < targets.len; i++) {
+        Ternary related = is_related_to(me, st, source, targets.data[i], false);
+        if (related) return related;
+    }
+    return TERNARY_FALSE;
+}
+
+static Ternary each_identical_to_some(Checker* me, RelationState* st, TyList sources, TyList targets) {
+    Ternary result = TERNARY_TRUE;
+    for (u32 i = 0; i < sources.len && result; i++) result &= identical_to_some(me, st, sources.data[i], targets);
+    return result;
+}
+
+static bool is_readonly_prop(Prop const* prop) {
+    return (prop->flags & PROP_READONLY) || ((prop->flags & PROP_GETTER) && !(prop->flags & PROP_SETTER));
+}
+
+// tsc's compareProperties
+static Ternary props_identical(Checker* me, RelationState* st, Prop const* source, Prop const* target) {
+    if (source == target) return TERNARY_TRUE;
+    u32 access = PROP_PRIVATE | PROP_PROTECTED;
+    if ((source->flags & access) != (target->flags & access)) return TERNARY_FALSE;
+    if (source->flags & access) {
+        if (root_declaration(source) != root_declaration(target)) return TERNARY_FALSE;
+    } else if ((source->flags ^ target->flags) & PROP_OPTIONAL) {
+        return TERNARY_FALSE;
+    }
+    if (is_readonly_prop(source) != is_readonly_prop(target)) return TERNARY_FALSE;
+    return is_related_to(me, st, prop_type(me, source), prop_type(me, target), false);
+}
+
+// tsc's mappedTypeRelatedTo under identity: the same modifiers, identical constraints, name types and templates once
+// the source's key type parameter is the target's
+static Ternary mapped_identical(Checker* me, RelationState* st, MappedInfo const* source, MappedInfo const* target) {
+    if (source->readonly != target->readonly || source->optional != target->optional) return TERNARY_FALSE;
+    Ternary result = is_related_to(me, st, target->constraint, source->constraint, false);
+    if (!result) return TERNARY_FALSE;
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &source->type_param, .len = 1 },
+        (TyList){ .data = &target->type_param, .len = 1 });
+    Ty const* source_name = source->name_type ? ty_instantiate(me, source->name_type, mapper) : nullptr;
+    if (source_name != target->name_type) return TERNARY_FALSE;
+    return result & is_related_to(me, st, ty_instantiate(me, source->template, mapper), target->template, false);
+}
+
+static Ternary signature_lists_identical(
+    Checker* me, RelationState* st, Signature* const* source, u32 source_count, Signature* const* target, u32 target_count
+) {
+    if (source_count != target_count) return TERNARY_FALSE;
+    Ternary result = TERNARY_TRUE;
+    for (u32 i = 0; i < source_count && result; i++) {
+        result &= signatures_identical_in(me, st, source[i], target[i], false, false);
+    }
+    return result;
+}
+
+static Ternary objects_identical(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    Members const* source_members = ty_members(me, source);
+    Members const* target_members = ty_members(me, target);
+    if (source_members->mapped || target_members->mapped) {
+        if (!source_members->mapped || !target_members->mapped) return TERNARY_FALSE;
+        return mapped_identical(me, st, source_members->mapped, target_members->mapped);
+    }
+    // Two references to one generic type (or tuples of one shape): their type arguments
+    if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE && source->reference.target == target->reference.target) {
+        TyList source_args = ty_reference_args(me, source);
+        TyList target_args = ty_reference_args(me, target);
+        Ternary result = TERNARY_TRUE;
+        for (u32 i = 0; i < source_args.len && result; i++) result &= is_related_to(me, st, source_args.data[i], target_args.data[i], false);
+        Ty const* source_this = source->reference.this_arg;
+        Ty const* target_this = target->reference.this_arg;
+        if (result && source_this != target_this) {
+            result &= is_related_to(me, st, source_this ? source_this : source, target_this ? target_this : target, false);
+        }
+        return result;
+    }
+    bool source_tuple = is_tuple(source) || is_empty_tuple(source);
+    bool target_tuple = is_tuple(target) || is_empty_tuple(target);
+    if (source_tuple || target_tuple) {
+        // (Tuples of different shapes: labels aside, not identical)
+        if (!source_tuple || !target_tuple || is_empty_tuple(source) || is_empty_tuple(target)) return TERNARY_FALSE;
+        TupleShape const* source_shape = source->reference.target->declared.tuple;
+        TupleShape const* target_shape = target->reference.target->declared.tuple;
+        if (source_shape->arity != target_shape->arity || source_shape->readonly != target_shape->readonly ||
+            memcmp(source_shape->flags, target_shape->flags, source_shape->arity) != 0
+        ) {
+            return TERNARY_FALSE;
+        }
+        TyList source_args = ty_reference_args(me, source);
+        TyList target_args = ty_reference_args(me, target);
+        Ternary result = TERNARY_TRUE;
+        for (u32 i = 0; i < source_args.len && result; i++) result &= is_related_to(me, st, source_args.data[i], target_args.data[i], false);
+        return result;
+    }
+    // Structurally: the same properties, signatures and index signatures, each identical (tsc's propertiesIdenticalTo,
+    // signaturesIdenticalTo, indexSignaturesIdenticalTo)
+    if (source_members->prop_count != target_members->prop_count) return TERNARY_FALSE;
+    Ternary result = TERNARY_TRUE;
+    for (u32 i = 0; i < source_members->prop_count && result; i++) {
+        Prop const* source_prop = source_members->props[i];
+        Prop const* target_prop = ty_get_prop(me, target, source_prop->name);
+        if (!target_prop) return TERNARY_FALSE;
+        result &= props_identical(me, st, source_prop, target_prop);
+    }
+    if (result) {
+        result &= signature_lists_identical(me, st, source_members->call, source_members->call_count, target_members->call,
+            target_members->call_count);
+    }
+    if (result) {
+        result &= signature_lists_identical(me, st, source_members->construct, source_members->construct_count,
+            target_members->construct, target_members->construct_count);
+    }
+    if (result && source_members->index_count != target_members->index_count) return TERNARY_FALSE;
+    for (u32 i = 0; i < target_members->index_count && result; i++) {
+        IndexInfo const* target_info = &target_members->index[i];
+        IndexInfo const* source_info = nullptr;
+        for (u32 j = 0; j < source_members->index_count && !source_info; j++) {
+            if (source_members->index[j].key == target_info->key) source_info = &source_members->index[j];
+        }
+        if (!source_info || source_info->readonly != target_info->readonly) return TERNARY_FALSE;
+        result &= is_related_to(me, st, source_info->value, target_info->value, false);
+    }
+    return result;
+}
+
+static Ternary identity_structured(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    Ternary result = TERNARY_FALSE;
+    switch ((TyKind)source->kind) {
+        case TY_UNION:
+        case TY_INTERSECTION:
+            result = each_identical_to_some(me, st, source->composite.types, target->composite.types);
+            if (result) result &= each_identical_to_some(me, st, target->composite.types, source->composite.types);
+            return result;
+        case TY_KEYOF:
+            return is_related_to(me, st, source->keyof.operand, target->keyof.operand, false);
+        case TY_INDEXED:
+            result = is_related_to(me, st, source->indexed.object, target->indexed.object, false);
+            if (result) result &= is_related_to(me, st, source->indexed.index, target->indexed.index, false);
+            return result;
+        case TY_CONDITIONAL:
+            if (source->conditional.distributive != target->conditional.distributive) return TERNARY_FALSE;
+            result = is_related_to(me, st, source->conditional.check, target->conditional.check, false);
+            if (result) result &= is_related_to(me, st, source->conditional.extends, target->conditional.extends, false);
+            if (result) {
+                result &= is_related_to(me, st, ty_conditional_branch(me, source, true), ty_conditional_branch(me, target, true), false);
+            }
+            if (result) {
+                result &= is_related_to(me, st, ty_conditional_branch(me, source, false), ty_conditional_branch(me, target, false), false);
+            }
+            return result;
+        case TY_TEMPLATE_LITERAL: {
+            TyList source_types = source->template_literal.types;
+            TyList target_types = target->template_literal.types;
+            if (source_types.len != target_types.len) return TERNARY_FALSE;
+            for (u32 i = 0; i <= source_types.len; i++) {
+                if (source->template_literal.texts[i] != target->template_literal.texts[i]) return TERNARY_FALSE;
+            }
+            result = TERNARY_TRUE;
+            for (u32 i = 0; i < source_types.len && result; i++) result &= is_related_to(me, st, source_types.data[i], target_types.data[i], false);
+            return result;
+        }
+        case TY_STRING_MAPPING:
+            if (source->string_mapping.mapping != target->string_mapping.mapping) return TERNARY_FALSE;
+            return is_related_to(me, st, source->string_mapping.type, target->string_mapping.type, false);
+        case TY_DECLARED:
+        case TY_REFERENCE:
+        case TY_ANONYMOUS:
+            return objects_identical(me, st, source, target);
+        default:
+            return TERNARY_FALSE;
+    }
+}
+
 static Ternary structured_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    if (st->relation == TY_RELATION_IDENTITY) return identity_structured(me, st, source, target);
     bool comparable = st->relation == TY_RELATION_COMPARABLE;
 
     // Unions and intersections
@@ -1825,10 +2021,12 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
         }   break;
 
         case TY_CONDITIONAL: {
-            if (source->kind == TY_CONDITIONAL && source->conditional.check == target->conditional.check &&
-                source->conditional.extends == target->conditional.extends
-            ) {
-                Ternary related = is_related_to(me, st, ty_conditional_branch(me, source, true), ty_conditional_branch(me, target, true), false);
+            // Identical extends types, check types related one way or the other, and related branches (tsc's rule for
+            // two conditional types; not inferring the source's `infer` type parameters from the target's extends type)
+            if (source->kind == TY_CONDITIONAL && ty_is_related(me, source->conditional.extends, target->conditional.extends, TY_RELATION_IDENTITY)) {
+                Ternary related = is_related_to(me, st, source->conditional.check, target->conditional.check, false);
+                if (!related) related = is_related_to(me, st, target->conditional.check, source->conditional.check, false);
+                if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, true), ty_conditional_branch(me, target, true), false);
                 if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), ty_conditional_branch(me, target, false), false);
                 if (related) return related;
             }
@@ -2442,6 +2640,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
+    if (st->relation == TY_RELATION_IDENTITY) return identity_related(me, st, source, target);
     if (is_simple_related(me, st, source, target)) return TERNARY_TRUE;
     if (ty_is_fresh_object(source) && !st->intersection_target && is_structured(target) &&
         has_excess_properties(me, st, source, target, report)
@@ -2484,8 +2683,9 @@ static bool check_related(
     st->expanding = 0;
     st->overflow = false;
     st->outer = my relating;
-    if (!st->reporting && (source == target || is_simple_related(me, st, source, target))) return true;
-    if (!st->reporting && !is_structured(source) && !is_structured(target)) {
+    if (source == target) return true;
+    if (relation != TY_RELATION_IDENTITY && !st->reporting && is_simple_related(me, st, source, target)) return true;
+    if (relation != TY_RELATION_IDENTITY && !st->reporting && !is_structured(source) && !is_structured(target)) {
         // Nothing to look into (narrowing asks this about every member of big literal unions): see is_related_to()
         if (relation != TY_RELATION_COMPARABLE || source->kind != TY_INTRINSIC) return false;
         Ty const* widened = ty_base_type_of_literal(me, target);
@@ -2552,13 +2752,16 @@ void ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRel
 
 // Union signatures (tsc's getUnionSignatures): what a union of callables can be called with
 
-// tsc's identity relation, approximated: the same type, or each a subtype of the other
 static bool types_identical(Checker* me, Ty const* a, Ty const* b) {
-    return a == b || (ty_is_related(me, a, b, TY_RELATION_STRICT_SUBTYPE) && ty_is_related(me, b, a, TY_RELATION_STRICT_SUBTYPE));
+    return a == b || ty_is_related(me, a, b, TY_RELATION_IDENTITY);
 }
 
-static bool union_types_compare(Checker* me, Ty const* t, Ty const* s, bool partial) {
-    return partial ? t == s || ty_is_related(me, t, s, TY_RELATION_STRICT_SUBTYPE) : types_identical(me, t, s);
+// How signatures_identical() compares two types: by identity (inside the identity relation `st` if there is one), or
+// with `partial`, by strict subtype (tsc's compareTypesSubtypeOf)
+static Ternary sig_types_compare(Checker* me, RelationState* st, Ty const* t, Ty const* s, bool partial) {
+    if (partial) return t == s || ty_is_related(me, t, s, TY_RELATION_STRICT_SUBTYPE) ? TERNARY_TRUE : TERNARY_FALSE;
+    if (st) return is_related_to(me, st, t, s, false);
+    return types_identical(me, t, s) ? TERNARY_TRUE : TERNARY_FALSE;
 }
 
 static Ty const* type_at_position(Checker* me, Signature const* sig, u32 i) {
@@ -2568,17 +2771,17 @@ static Ty const* type_at_position(Checker* me, Signature const* sig, u32 i) {
 
 // tsc's compareSignaturesIdentical: `partial` lets the source have more (optional) parameters, whose types are then
 // only compared by subtype
-static bool signatures_identical(
-    Checker* me, Signature const* source, Signature const* target, bool partial, bool ignore_return
+static Ternary signatures_identical_in(
+    Checker* me, RelationState* st, Signature const* source, Signature const* target, bool partial, bool ignore_return
 ) {
-    if (source == target) return true;
+    if (source == target) return TERNARY_TRUE;
     signature_resolve(me, source);
     signature_resolve(me, target);
     bool same_shape = param_count_of(source) == param_count_of(target) && source->min_args == target->min_args &&
         has_rest(me, source) == has_rest(me, target);
-    if (!same_shape && !(partial && source->min_args <= target->min_args)) return false;
-    if (source->type_params.len != target->type_params.len) return false;
-    if (target->type_params.len) {
+    if (!same_shape && !(partial && source->min_args <= target->min_args)) return TERNARY_FALSE;
+    if (source->type_params.len != target->type_params.len) return TERNARY_FALSE;
+    if (target->type_params.len && source->type_params.data != target->type_params.data) {
         TyMapper const* mapper = ty_mapper_new(me, source->type_params, target->type_params);
         Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
         for (u32 i = 0; i < target->type_params.len; i++) {
@@ -2589,26 +2792,27 @@ static bool signatures_identical(
             Ty const* t_constraint = ty_param_constraint(me, t);
             Ty const* s_default = ty_param_default(me, s);
             Ty const* t_default = ty_param_default(me, t);
-            if (!union_types_compare(me, s_constraint ? ty_instantiate(me, s_constraint, mapper) : unknown,
+            if (!sig_types_compare(me, st, s_constraint ? ty_instantiate(me, s_constraint, mapper) : unknown,
                     t_constraint ? t_constraint : unknown, partial) ||
-                !union_types_compare(me, s_default ? ty_instantiate(me, s_default, mapper) : unknown,
+                !sig_types_compare(me, st, s_default ? ty_instantiate(me, s_default, mapper) : unknown,
                     t_default ? t_default : unknown, partial)
             ) {
-                return false;
+                return TERNARY_FALSE;
             }
         }
         source = ty_signature_instantiation(me, source, target->type_params);
     }
-    if (source->this_type && target->this_type &&
-        !union_types_compare(me, source->this_type, target->this_type, partial)
-    ) {
-        return false;
+    Ternary result = TERNARY_TRUE;
+    if (source->this_type && target->this_type) {
+        result &= sig_types_compare(me, st, source->this_type, target->this_type, partial);
+        if (!result) return TERNARY_FALSE;
     }
     u32 target_len = param_count_of(target);
     for (u32 i = 0; i < target_len; i++) {
-        if (!union_types_compare(me, type_at_position(me, target, i), type_at_position(me, source, i), partial)) return false;
+        result &= sig_types_compare(me, st, type_at_position(me, target, i), type_at_position(me, source, i), partial);
+        if (!result) return TERNARY_FALSE;
     }
-    if (ignore_return) return true;
+    if (ignore_return) return result;
     TyPredicate const* source_predicate = signature_predicate(me, source);
     TyPredicate const* target_predicate = signature_predicate(me, target);
     if (source_predicate || target_predicate) {
@@ -2616,13 +2820,19 @@ static bool signatures_identical(
             source_predicate->asserts != target_predicate->asserts ||
             source_predicate->param_index != target_predicate->param_index
         ) {
-            return false;
+            return TERNARY_FALSE;
         }
-        if (source_predicate->type == target_predicate->type) return true;
-        return source_predicate->type && target_predicate->type &&
-            union_types_compare(me, source_predicate->type, target_predicate->type, partial);
+        if (source_predicate->type == target_predicate->type) return result;
+        if (!source_predicate->type || !target_predicate->type) return TERNARY_FALSE;
+        return result & sig_types_compare(me, st, source_predicate->type, target_predicate->type, partial);
     }
-    return union_types_compare(me, signature_return_type(me, source), signature_return_type(me, target), partial);
+    return result & sig_types_compare(me, st, signature_return_type(me, source), signature_return_type(me, target), partial);
+}
+
+static bool signatures_identical(
+    Checker* me, Signature const* source, Signature const* target, bool partial, bool ignore_return
+) {
+    return signatures_identical_in(me, nullptr, source, target, partial, ignore_return) != TERNARY_FALSE;
 }
 
 typedef struct SignatureList {

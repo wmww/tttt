@@ -368,9 +368,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   base constructor, and the TS2335-TS2337/TS2466/TS2660 legality errors aren't reported although `Scope.no_super` and
   the resolve walk already know where `super` is illegal.
 - `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), alias type arguments are only used for deferred types (there are no variances for aliases), no
-  `InferencePriority` beyond naked-type-variable and return-type, type predicates don't exist (parser drops `x is T`).
-- `ty_union_signatures` (relate.c, tsc's getUnionSignatures): tsc's identity relation is approximated as "the same
-  `Ty`, or a strict subtype both ways"; union signatures aren't cached per union type (built on every call); `this`
+  `InferencePriority` flags beyond naked-type-variable, homomorphic, mapped-constraint and return-type (they are tsc's
+  bit values and OR together now), type predicates don't exist (parser drops `x is T`).
+- `ty_union_signatures` (relate.c, tsc's getUnionSignatures): union signatures aren't cached per union type (built on every call); `this`
   parameters aren't intersected (there are none). `resolve_call` still falls back to member-by-member resolution when
   some member has no signatures of the kind (tsc: TS2349 "Not all constituents of type ... are callable").
 - `super(...)` (`resolve_into` in call.c): the heritage clause's type arguments are passed as explicit type arguments
@@ -546,13 +546,19 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   tuples). `VARIANCE_UNRELIABLE` is set from a checker-wide flag whenever a deferred type or mapped type is compared
   while *any* variance is being measured; cached sub-results don't set it. No alias variances: instantiated
   aliases of object types compare structurally (the maybe-cache keeps that finite).
+- The identity relation (`TY_RELATION_IDENTITY`, `identity_structured` in relate.c): tuples of different shapes are
+  never identical (tsc compares their properties, so labels don't matter there either); two references to one target
+  compare type arguments only (no structural fallback); the two-conditional rule in `structured_related` doesn't infer
+  the source's `infer` type parameters from the target's extends type. Inference matches identical members with it
+  (`is_identical` in infer.c, pointers first).
 - Relation cache keys are plain (source id, target id); tsc's key postfix for in-scope type parameters and
   intersection state isn't there. `RelationState.overflow` (100 deep) reports through `instantiation_limit_hit`,
   which only `check_assignable_or_error_internal` turns into TS2589.
 - `ty_conditional_resolve`: without a permissive instantiation, a failed check with a type variable nested in either
   side stays deferred (tsc would pick the false branch if it fails even with them replaced by `any`). Whether one is
-  nested is a walk over members (`mentions_type_variables`), since TYF_COULD_CONTAIN_TYPE_VARIABLES is set on every
-  function and object literal type. `infer X extends
+  nested is a walk over members (`mentions_type_variables`, up to 8192 types / 48 deep, "unsure" beyond), since
+  TYF_COULD_CONTAIN_TYPE_VARIABLES is set on every function and object literal type. A generic mapped type anywhere
+  counts as mentioning one (`Omit<FirstTupleItem<unknown>, K>` after an `infer` without its implied constraint). `infer X extends
   C` constraints aren't checked. `infer_from`: no priorities, no contravariant candidates (union of everything),
   union targets infer to every member. An `infer` in rest position gets its implied `unknown[]` constraint by
   mutating the type parameter's state (`imply_rest_constraint`, and up front in `lower` for TYPE_TERNARY).

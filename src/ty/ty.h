@@ -524,6 +524,8 @@ typedef enum TyRelation {
     // What union (subtype) reduction uses: `any` is only a subtype of `any`/`unknown`, and a type that lacks an
     // optional property of the target isn't a subtype of it
     TY_RELATION_STRICT_SUBTYPE,
+    // tsc's identityRelation: the same kind of type with identical parts (never reports)
+    TY_RELATION_IDENTITY,
     TY_RELATION_COUNT,
 } TyRelation;
 

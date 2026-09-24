@@ -5946,7 +5946,7 @@ const baselines = {
         types: false,
     },
     'contextualOverloadListFromArrayUnion': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

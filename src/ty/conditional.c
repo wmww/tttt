@@ -7,9 +7,42 @@
 typedef struct MentionWalk {
     Ty const* bound[16]; // Type parameters of the signatures on the way: not free
     u32 bound_len;
-    u32 visited[64];
+    // Types already walked (a type seen again is either being walked or mentions nothing: either way nothing new).
+    // Open addressing on ids, 0 is empty
+    u32* visited;
+    u32 visited_cap;
     u32 visited_len;
 } MentionWalk;
+
+#define MENTION_MAX_VISITED 8192
+#define MENTION_MAX_DEPTH 48
+
+// Adds `id`; false if it was there already
+static bool mention_visit(MentionWalk* walk, u32 id) {
+    if (walk->visited_len * 2 >= walk->visited_cap) {
+        u32 cap = walk->visited_cap ? walk->visited_cap * 2 : 128;
+        u32* grown = calloc(cap, sizeof(u32));
+        panic_if(!grown, "out of memory");
+        for (u32 i = 0; i < walk->visited_cap; i++) {
+            u32 old = walk->visited[i];
+            if (!old) continue;
+            u32 j = (old * 0x9e3779b9u) & (cap - 1);
+            while (grown[j]) j = (j + 1) & (cap - 1);
+            grown[j] = old;
+        }
+        free(walk->visited);
+        walk->visited = grown;
+        walk->visited_cap = cap;
+    }
+    u32 j = (id * 0x9e3779b9u) & (walk->visited_cap - 1);
+    while (walk->visited[j]) {
+        if (walk->visited[j] == id) return false;
+        j = (j + 1) & (walk->visited_cap - 1);
+    }
+    walk->visited[j] = id;
+    walk->visited_len++;
+    return true;
+}
 
 // Whether a type variable really occurs in the type: TYF_COULD_CONTAIN_TYPE_VARIABLES is only a hint (like tsc's
 // couldContainTypeVariables, it is set for every function type and object literal type). Walks the members of object
@@ -23,11 +56,8 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
         return true;
     }
     if (ty->flags & TYF_DEFERRED) return true;
-    for (u32 i = 0; i < walk->visited_len; i++) {
-        if (walk->visited[i] == ty->id) return false;
-    }
-    if (depth > 8 || walk->visited_len == c_arraylen(walk->visited)) return true;
-    walk->visited[walk->visited_len++] = ty->id;
+    if (depth > MENTION_MAX_DEPTH || walk->visited_len >= MENTION_MAX_VISITED) return true;
+    if (!mention_visit(walk, ty->id + 1)) return false;
     switch ((TyKind)ty->kind) {
         case TY_UNION:
         case TY_INTERSECTION:
@@ -134,8 +164,7 @@ Ty const* ty_conditional_resolve(
     // (permissive instantiation), and defers otherwise. There's no such instantiation here yet: with a type variable
     // nested in either side, a failed check defers
     MentionWalk walk = {0};
-    if (mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, inferred_extends, &walk, 0)) {
-        return nullptr;
-    }
-    return branch_type(me, if_false);
+    bool mentions = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, inferred_extends, &walk, 0);
+    free(walk.visited);
+    return mentions ? nullptr : branch_type(me, if_false);
 }

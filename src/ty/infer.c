@@ -91,7 +91,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
 
 static void infer_with_priority(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority) {
     u32 saved = inf->priority;
-    inf->priority = priority > saved ? priority : saved;
+    inf->priority = saved | priority;
     infer_from(me, inf, source, target);
     inf->priority = saved;
 }
@@ -610,8 +610,17 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
     }
 }
 
-static bool is_identical_or_base(Ty const* source, Ty const* target) {
-    return source == target ||
+// tsc's isTypeIdenticalTo, pointers first (structured types of the same kind can be identical without being the same)
+static bool is_identical(Checker* me, Ty const* source, Ty const* target) {
+    if (source == target) return true;
+    if (source->kind != target->kind || source->kind == TY_INTRINSIC || source->kind == TY_LITERAL || source->kind == TY_TYPE_PARAM) {
+        return false;
+    }
+    return ty_is_related(me, source, target, TY_RELATION_IDENTITY);
+}
+
+static bool is_identical_or_base(Checker* me, Ty const* source, Ty const* target) {
+    return is_identical(me, source, target) ||
         ((target->flags & TYF_STRING) && (source->flags & TYF_STRING_LITERAL)) ||
         ((target->flags & TYF_NUMBER) && (source->flags & TYF_NUMBER_LITERAL));
 }
@@ -637,7 +646,7 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
             for (u32 s = 0; s < sources.len; s++) {
                 if (source_done[s] && pass == 1) continue;
                 bool matches = pass == 0 ?
-                    is_identical_or_base(sources.data[s], targets.data[t]) :
+                    is_identical_or_base(me, sources.data[s], targets.data[t]) :
                     is_closely_matched(sources.data[s], targets.data[t]);
                 if (!matches) continue;
                 if (pass == 1) infer_from(me, inf, sources.data[s], targets.data[t]);
@@ -687,8 +696,40 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
     free(source_done);
 }
 
+// tsc's inferFromTypes on an intersection target with a type variable of the inference in it: members identical in
+// source and target cancel out first (`string & T` from `string & U` infers T from U, not from `string & U`). Returns
+// whether anything is left to infer between, in *source / *target
+static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** source, Ty const** target) {
+    TyList targets = (*target)->composite.types;
+    bool any_param = false;
+    for (u32 i = 0; i < targets.len && !any_param; i++) any_param = inference_param(inf, targets.data[i]) != nullptr;
+    if (!any_param) return true;
+    TyList sources = (*source)->kind == TY_INTERSECTION ? (*source)->composite.types : (TyList){ .data = source, .len = 1 };
+    TyBuf kept_sources = {0};
+    TyBuf kept_targets = {0};
+    for (u32 i = 0; i < sources.len; i++) {
+        bool matched = false;
+        for (u32 j = 0; j < targets.len && !matched; j++) matched = is_identical(me, sources.data[i], targets.data[j]);
+        if (!matched) ty_buf_push(&kept_sources, sources.data[i]);
+    }
+    for (u32 j = 0; j < targets.len; j++) {
+        bool matched = false;
+        for (u32 i = 0; i < sources.len && !matched; i++) matched = is_identical(me, sources.data[i], targets.data[j]);
+        if (!matched) ty_buf_push(&kept_targets, targets.data[j]);
+    }
+    bool left = kept_sources.len && kept_targets.len;
+    if (left && kept_targets.len < targets.len) {
+        *source = ty_intersection(me, kept_sources.data, kept_sources.len, nullptr, (TyList){0});
+        *target = ty_intersection(me, kept_targets.data, kept_targets.len, nullptr, (TyList){0});
+    }
+    ty_buf_drop(&kept_sources);
+    ty_buf_drop(&kept_targets);
+    return left;
+}
+
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if (!(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+    if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, inf, &source, &target)) return;
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
         if (!param || param->fixed || (source->flags & TYF_ERROR) || source == ty_intrinsic(me, TY_SILENT_NEVER)) return;
@@ -706,7 +747,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             } else {
                 candidates_push(&param->co, &param->co_len, source);
             }
-            if (inf->priority != INFER_PRIORITY_RETURN_TYPE && param->top_level && inf->original_target &&
+            if (!(inf->priority & INFER_PRIORITY_RETURN_TYPE) && param->top_level && inf->original_target &&
                 !is_param_at_top_level(inf->original_target, target)
             ) {
                 param->top_level = false;
@@ -989,7 +1030,7 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
             }
             free(literals);
         }
-        co = param->priority == INFER_PRIORITY_RETURN_TYPE ?
+        co = (param->priority & INFER_PRIORITY_RETURN_TYPE) ?
             ty_union(me, candidates, len, nullptr, (TyList){0}) :
             common_supertype(me, candidates, len);
         co = ty_widened_objects(me, co); // (tsc's getWidenedType of the inference)

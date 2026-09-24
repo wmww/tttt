@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-24, plan 19 R4 (const type parameters) and R1 (identity relation)
+Suite **5120 -> 5125** full (errors 8218, symbols 9488, types 7896; nothing lost). Corpora: tsc 0, **type-fest 197 ->
+173** (R4 -> 195, R1 -> 173), **valibot 739 -> 328** (R4 -> 620, R1 -> 328). `./bench.sh`: type-fest tttt **0.30 s** /
+86 MB (was 0.53; typecheck 270 ms) vs tsgo 1.29 s (single-threaded 1.78), tsc 3.38. **valibot tttt 0.97 s / 496 MB**
+(was 1.16 s / 615 MB; typecheck 836 ms) vs tsgo 0.84 s / 836 MB (single-threaded 1.75), tsc 6.24. Most of the time
+saved is expect-type's `MismatchInfo`/`DeepBrand` fallback no longer being evaluated once the identity check holds.
+valibot is still the one corpus where multi-threaded tsgo wins, now by 15%.
+
 ## 2026-09-24, plan 19 R5, R3, R2
 Suite **5116 -> 5120** full (errors 8210, symbols 9479, types 7885; nothing lost). Corpora: tsc 0, **type-fest 450 ->
 197** (R5 -> 295, R3 -> 198, R2 -> 197), **valibot 1871 -> 739** (R5 -> 1853, R3 -> 1628, R2 -> 739).

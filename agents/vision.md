@@ -6,10 +6,11 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-24, insights after plan 13)
-- **Suite 5120 / 13163** fully pass (errors 8210, symbols 9479, types 7885). **Corpora**: tsc's `src/compiler` 0
-  diagnostics, type-fest 197, valibot 739 (all three are clean under tsc; 450 / 1871 before plan 19 R5/R3/R2). **Perf** (`measurements.md`): tsc corpus
-  0.70 s vs tsgo 0.75 (single-threaded 1.29), type-fest 0.53 vs 1.23, valibot 1.16 s / 615 MB vs tsgo 0.83 s / 833 MB
-  (single-threaded 1.62). valibot is the one corpus where multi-threaded tsgo still wins.
+- **Suite 5125 / 13163** fully pass (errors 8218, symbols 9488, types 7896). **Corpora**: tsc's `src/compiler` 0
+  diagnostics, type-fest 173, valibot 328 (all three are clean under tsc; 450 / 1871 before plan 19 R5/R3/R2/R4/R1).
+  **Perf** (`measurements.md`): tsc corpus 0.70 s vs tsgo 0.75 (single-threaded 1.29), type-fest 0.30 vs 1.29,
+  valibot 0.97 s / 496 MB vs tsgo 0.84 s / 836 MB (single-threaded 1.75). valibot is the one corpus where
+  multi-threaded tsgo still wins.
 - Since the last insights (plan 08), eight plans each finished in one session without a redesign: 17 (two modern
   corpora), 19 stage 0 (module augmentation), 14 (syntax gaps), 18 (template literal types, `as` clauses), 20
   (conditional instantiation cache, valibot 4.4 -> 1.2 s), 13 (member modifiers, `super`), 16 (elaboration, related
