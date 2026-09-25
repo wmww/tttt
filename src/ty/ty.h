@@ -781,6 +781,16 @@ Ty const* ty_optional_param_type(Checker* me, Ty const* type); // infer.c
 Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper); // infer.c
 Signature const* ty_combine_intersection_signatures(Checker* me, Signature const* left, Signature const* right);
 bool ty_signatures_identical(Checker* me, Signature const* source, Signature const* target, bool partial, bool ignore_return);
+// tsc's isImplementationCompatibleWithOverload (TS2394): the returns relate either way (or the overload's is void) and,
+// type parameters erased, the implementation is assignable to the overload with the returns ignored
+bool ty_implementation_compatible_with_overload(Checker* me, Signature const* implementation, Signature const* overload);
+// The call signature of a function declaration or method (its first construct signature for a constructor)
+Signature const* ty_function_signature(Checker* me, FunctionImpl const* function);
+// TS2394 on the first of the overloads (with their names) that the implementation isn't compatible with
+void ty_check_overloads_compatible(
+    Checker* me, FunctionImpl const* implementation, Span implementation_name, FunctionImpl const* const* overloads,
+    Span const* names, u32 count, ErrorCtx* errs
+);
 Signature const* ty_union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count);
 bool ty_type_params_identical(Checker* me, TyList source, TyList target);
 bool ty_is_discriminant_property(Checker* me, Ty const* type, Atom const* name); // flow.c

@@ -1238,6 +1238,27 @@ void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_typ
     error_ctx_error_d(errs, span, 2464, "A computed property name must be of type 'string', 'number', 'symbol', or 'any'.");
 }
 
+Signature const* ty_function_signature(Checker* me, FunctionImpl const* function) {
+    Members const* members = ty_members(me, ty_function_type(me, function));
+    if (members->call_count) return members->call[0];
+    return members->construct_count ? members->construct[0] : nullptr;
+}
+
+void ty_check_overloads_compatible(
+    Checker* me, FunctionImpl const* implementation, Span implementation_name, FunctionImpl const* const* overloads,
+    Span const* names, u32 count, ErrorCtx* errs
+) {
+    Signature const* impl = ty_function_signature(me, implementation);
+    if (!impl) return;
+    for (u32 i = 0; i < count; i++) {
+        Signature const* overload = ty_function_signature(me, overloads[i]);
+        if (!overload || ty_implementation_compatible_with_overload(me, impl, overload)) continue;
+        Error* e = error_ctx_error_d(errs, names[i], 2394, "This overload signature is not compatible with its implementation signature.");
+        error_add_related_d(e, implementation_name, 2750, "The implementation signature is declared here.");
+        break;
+    }
+}
+
 // Index constraints
 
 // tsc's isApplicableIndexType

@@ -1319,10 +1319,28 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
     }
 }
 
-// tsc's duplicateFunctionDeclaration: more than one declaration of the function has a body, reported on all of them
+// tsc's duplicateFunctionDeclaration: more than one declaration of the function has a body, reported on all of them.
+// And that the overloads are compatible with the implementation (TS2394)
 static void function_check_duplicate_implementation(FunctionImpl const* me, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
     if (!symbol || symbol_find_node(symbol, SYMBOL_DECL_FUNCTION) != me) return; // Once per symbol
+    FunctionImpl const* implementation = nullptr;
+    FunctionImpl const* overloads[32];
+    Span names[32];
+    u32 overload_count = 0;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;
+        FunctionImpl const* function = symbol->decls[i].node;
+        if (function->has_body) {
+            if (!implementation) implementation = function;
+        } else if (overload_count < c_arraylen(overloads)) {
+            names[overload_count] = symbol->decls[i].name;
+            overloads[overload_count++] = function;
+        }
+    }
+    if (implementation && overload_count) {
+        ty_check_overloads_compatible(current_checker, implementation, implementation->name, overloads, names, overload_count, errs);
+    }
     u32 bodies = 0;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (symbol->decls[i].kind == SYMBOL_DECL_FUNCTION && ((FunctionImpl const*)symbol->decls[i].node)->has_body) bodies++;

@@ -809,6 +809,26 @@ static Signature const* erased_signature(Checker* me, Signature const* sig) {
     return ret;
 }
 
+bool ty_implementation_compatible_with_overload(Checker* me, Signature const* implementation, Signature const* overload) {
+    Signature const* source = erased_signature(me, implementation);
+    Signature const* target = erased_signature(me, overload);
+    Ty const* source_return = signature_return_type(me, source);
+    Ty const* target_return = signature_return_type(me, target);
+    if (target_return != ty_intrinsic(me, TY_VOID) && !ty_is_related(me, target_return, source_return, TY_RELATION_ASSIGNABLE) &&
+        !ty_is_related(me, source_return, target_return, TY_RELATION_ASSIGNABLE)
+    ) {
+        return false;
+    }
+    // isSignatureAssignableTo with IgnoreReturnTypes: the target returning any compares nothing more
+    Signature* copy = arena_new(&my arena, Signature);
+    *copy = *target;
+    copy->ret = ty_intrinsic(me, TY_ANY);
+    copy->ret_state = LAZY_STATE_DONE;
+    copy->predicate = nullptr;
+    copy->predicate_done = true;
+    return ty_is_related(me, ty_signature_type(me, source), ty_signature_type(me, copy), TY_RELATION_ASSIGNABLE);
+}
+
 // Instantiations of the same generic type or type literal, whose signatures pair up one to one
 static bool same_signature_origin(Ty const* source, Ty const* target) {
     if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE) return source->reference.target == target->reference.target;
@@ -1454,10 +1474,29 @@ static TyMapper const* mapped_key_param_mapper(Checker* me, MappedInfo const* ma
     return ret;
 }
 
+// tsc's mappedTypeRelatedTo: two mapped types whose keys aren't known relate by their modifiers (the target at least as
+// optional), constraints (the other way around), name types (the same) and templates, once the source's key type
+// parameter is the target's
+static Ternary mapped_related(Checker* me, RelationState* st, MappedInfo const* source, MappedInfo const* target, bool report) {
+    bool modifiers_related = st->relation == TY_RELATION_COMPARABLE || source->optional <= target->optional;
+    if (!modifiers_related) return TERNARY_FALSE;
+    Ternary result = is_related_to(me, st, target->constraint, source->constraint, report);
+    if (!result) return TERNARY_FALSE;
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &source->type_param, .len = 1 },
+        (TyList){ .data = &target->type_param, .len = 1 });
+    Ty const* source_name = source->name_type ? ty_instantiate(me, source->name_type, mapper) : nullptr;
+    Ty const* target_name = target->name_type ? ty_instantiate(me, target->name_type, mapper) : nullptr;
+    if (source_name != target_name) return TERNARY_FALSE;
+    return result & is_related_to(me, st, ty_instantiate(me, source->template, mapper), target->template, report);
+}
+
 static Ternary generic_mapped_target_related(
     Checker* me, RelationState* st, Ty const* source, MappedInfo const* mapped, bool report
 ) {
     Ty const* template = mapped->template;
+    if (source->kind == TY_ANONYMOUS && (source->flags & TYF_OBJECT) && ty_members(me, source)->mapped) {
+        return mapped_related(me, st, ty_members(me, source)->mapped, mapped, report);
+    }
     if (!mapped->name_type && template->kind == TY_INDEXED && template->indexed.object == source &&
         template->indexed.index == mapped->type_param
     ) {

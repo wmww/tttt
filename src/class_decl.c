@@ -395,6 +395,37 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
                 "Function implementation is missing or not immediately following the declaration.");
         }
     }
+    // The overloads of each method (and of the constructor) fit its implementation (TS2394)
+    for (isize i = 0; i < count; i++) {
+        ClassItem const* item = vec_class_item_at(&my items, i);
+        FunctionImpl const* func = overloadable(item);
+        if (!func || (item->tag == CLASS_ITEM_METHOD && item->method.computed_key)) continue;
+        bool first = true;
+        FunctionImpl const* implementation = nullptr;
+        Span implementation_name = span_null;
+        FunctionImpl const* overloads[32];
+        Span names[32];
+        u32 overload_count = 0;
+        for (isize j = 0; j < count; j++) {
+            ClassItem const* other = vec_class_item_at(&my items, j);
+            FunctionImpl const* other_func = overloadable(other);
+            if (!other_func || !same_member(item, other)) continue;
+            if (item->tag == CLASS_ITEM_METHOD && other->method.is_static != item->method.is_static) continue;
+            if (j < i) first = false;
+            if (other_func->has_body) {
+                if (!implementation) {
+                    implementation = other_func;
+                    implementation_name = overload_name(other);
+                }
+            } else if (overload_count < c_arraylen(overloads)) {
+                names[overload_count] = overload_name(other);
+                overloads[overload_count++] = other_func;
+            }
+        }
+        if (first && implementation && overload_count) {
+            ty_check_overloads_compatible(current_checker, implementation, implementation_name, overloads, names, overload_count, errs);
+        }
+    }
     // Two implementations of a method (constructors have TS2392)
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
