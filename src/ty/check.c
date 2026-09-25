@@ -461,13 +461,13 @@ static Ty const* heritage_prop_type(Checker* me, Prop const* prop) {
     return type;
 }
 
-void ty_check_heritage(
+bool ty_check_heritage(
     Checker* me, Ty const* derived, Ty const* base, HeritageMember const* members, u32 count, unsigned ts_code,
     char const* what, char const* relation, Span span, ErrorCtx* errs
 ) {
-    if ((derived->flags | base->flags) & TYF_ANY) return;
-    if (ty_is_related(me, derived, base, TY_RELATION_ASSIGNABLE)) return;
-    if (report_instantiation_limit(me, span, errs)) return;
+    if ((derived->flags | base->flags) & TYF_ANY) return true;
+    if (ty_is_related(me, derived, base, TY_RELATION_ASSIGNABLE)) return true;
+    if (report_instantiation_limit(me, span, errs)) return false;
     cstr derived_str = ty_to_cstr(me, derived);
     cstr base_str = ty_to_cstr(me, base);
     // Each of the type's own members that doesn't fit the base's (tsc's issueMemberSpecificError), else the whole type
@@ -495,6 +495,32 @@ void ty_check_heritage(
             base_str, "'."), false, span, errs);
     }
     c_drop(cstr, &derived_str, &base_str);
+    return false;
+}
+
+// tsc's getTypeWithoutSignatures(): the properties of a type (index signatures go too)
+static Ty const* type_without_signatures(Checker* me, Ty const* ty) {
+    Members const* members = ty_members(me, ty);
+    if (!members->call_count && !members->construct_count) return ty;
+    ObjectLiteralProp* props = malloc(sizeof(ObjectLiteralProp) * (members->prop_count ? members->prop_count : 1));
+    panic_if(!props, "out of memory");
+    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = members->props[i] };
+    Ty const* ret = ty_object_literal(me, props, members->prop_count, nullptr, 0, OBJECT_SYNTHETIC);
+    free(props);
+    return ret;
+}
+
+bool ty_check_static_heritage(Checker* me, Ty const* static_type, Ty const* base_static, Span span, ErrorCtx* errs) {
+    if (!(static_type->flags & TYF_OBJECT) || !(base_static->flags & TYF_OBJECT)) return true;
+    Ty const* target = type_without_signatures(me, base_static);
+    if (ty_is_related(me, static_type, target, TY_RELATION_ASSIGNABLE)) return true;
+    if (report_instantiation_limit(me, span, errs)) return false;
+    cstr derived_str = ty_to_cstr(me, static_type);
+    cstr base_str = ty_to_cstr(me, base_static);
+    report_unassignable_with_head(me, static_type, target, 2417, cstr_d("Class static side '", derived_str,
+        "' incorrectly extends base class static side '", base_str, "'."), false, span, errs);
+    c_drop(cstr, &derived_str, &base_str);
+    return false;
 }
 
 void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs) {

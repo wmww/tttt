@@ -590,9 +590,18 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         }
     }
 
-    // Static members are inherited too
-    if (base_static) {
-        Members const* base_members = ty_members(me, base_static);
+    // Static members are inherited too: every property of the base constructor's type (tsc's
+    // getBaseConstructorTypeOfClass), which also has what merges into a base class and what the type of a constructor
+    // that isn't a class has
+    Ty const* base_constructor = base_static;
+    if (has_base) {
+        Expr const* extends = &class_decl->extends;
+        if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+        Ty const* type = ty_apparent_type(me, ty_expr_type(me, extends));
+        if (type->flags & (TYF_OBJECT | TYF_INTERSECTION) && type != ty) base_constructor = type;
+    }
+    if (base_constructor) {
+        Members const* base_members = ty_members(me, base_constructor);
         for (u32 i = 0; i < base_members->prop_count; i++) {
             if (!builder_find_prop(builder, base_members->props[i]->name)) {
                 builder_push(builder, props, base_members->props[i]);

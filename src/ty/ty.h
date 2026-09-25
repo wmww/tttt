@@ -1077,10 +1077,13 @@ typedef struct HeritageMember {
 Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl); // What it extends, null if nothing
 bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target); // `source` is, extends or inherits from `target`
 Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* computed_key); // Null: not a known name
-void ty_check_heritage(
+// Whether it fits (false: reported)
+bool ty_check_heritage(
     Checker* me, Ty const* derived, Ty const* base, HeritageMember const* members, u32 count, unsigned ts_code,
     char const* what, char const* relation, Span span, ErrorCtx* errs
 );
+// TS2417: the static side of a class has to fit its base constructor's, whose signatures don't matter
+bool ty_check_static_heritage(Checker* me, Ty const* static_type, Ty const* base_static, Span span, ErrorCtx* errs);
 // tsc's checkIndexConstraints: the properties (TS2411) and index signatures (TS2413) of a class, interface or type
 // literal fit the index signatures that apply to their names. `owner`: the class or interface (null: a type literal,
 // all of whose members are its own), `bases`: an interface's base types, `name`: where what two bases bring together is

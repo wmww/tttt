@@ -17491,7 +17491,7 @@ const baselines = {
         types: true,
     },
     'inheritanceStaticAccessorOverridingMethod': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17501,7 +17501,7 @@ const baselines = {
         types: true,
     },
     'inheritanceStaticFuncOverridingAccessor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17516,7 +17516,7 @@ const baselines = {
         types: true,
     },
     'inheritanceStaticFuncOverridingProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17536,7 +17536,7 @@ const baselines = {
         types: true,
     },
     'inheritanceStaticMembersIncompatible': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17546,7 +17546,7 @@ const baselines = {
         types: true,
     },
     'inheritanceStaticPropertyOverridingMethod': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24546,7 +24546,7 @@ const baselines = {
         types: false,
     },
     'overridingPrivateStaticMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29621,7 +29621,7 @@ const baselines = {
         types: true,
     },
     'thisConditionalOnMethodReturnOfGenericInstance': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -35086,7 +35086,7 @@ const baselines = {
         types: true,
     },
     'derivedClassOverridesPrivates': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

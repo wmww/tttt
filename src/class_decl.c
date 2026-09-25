@@ -504,8 +504,13 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (base && ty_has_base_type(checker, base, declared)) base = nullptr;
     if (base && (base->flags & TYF_OBJECT)) {
         class_check_member_overrides(me, declared, base, errs);
-        ty_check_heritage(checker, type_with_this, ty_with_this_arg(checker, base, this_param), members, count, 2415,
-            "Class", "incorrectly extends base class", span, errs);
+        bool fits = ty_check_heritage(checker, type_with_this, ty_with_this_arg(checker, base, this_param), members, count,
+            2415, "Class", "incorrectly extends base class", span, errs);
+        // The static side only when the instance side fits
+        Ty const* base_static = ty_apparent_type(checker, ty_expr_type(checker, &my extends));
+        if (fits && !(base_static->flags & (TYF_ANY | TYF_NULLABLE))) {
+            ty_check_static_heritage(checker, ty_static_type_of(checker, my symbol), base_static, span, errs);
+        }
     }
     for_each (i, vec_type, &my implements) {
         Ty const* implemented = ty_of_node(i);
