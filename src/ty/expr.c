@@ -1664,6 +1664,8 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_REGEX: return ty_global_regexp_type(me);
         case EXPR_PRIVATE_NAME: return any_type(me);
+        // JSX is typed in plan 22 stage 2 (the JSX namespace); until then elements are `any`
+        case EXPR_JSX_ELEMENT: case EXPR_JSX_FRAGMENT: case EXPR_JSX_ATTRIBUTES: return any_type(me);
 
         case EXPR_TEMPLATE: {
             if (!expr->template_->tag) return check_template(me, expr, ctx);

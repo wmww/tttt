@@ -1191,6 +1191,26 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 expr_compile_test_info(i, ctx);
             }
             break;
+
+        // TODO(plan 22 stage 2): intrinsic tag names, attribute names and closing tags
+        case EXPR_JSX_ELEMENT:
+        case EXPR_JSX_FRAGMENT:
+            if (my tag == EXPR_JSX_ELEMENT && !jsx_element_is_intrinsic(my jsx)) {
+                expr_compile_test_info(&my jsx->tag_name, ctx);
+            }
+            expr_compile_test_info_inner(&my jsx->attributes, ctx);
+            for_each (i, vec_jsx_child, &my jsx->children) {
+                if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_compile_test_info(&i->expr, ctx);
+            }
+            break;
+
+        case EXPR_JSX_ATTRIBUTES:
+            for_each (i, vec_jsx_attribute, &my jsx_attributes) {
+                if (i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR) {
+                    expr_compile_test_info(&i->value, ctx);
+                }
+            }
+            break;
     }
 }
 

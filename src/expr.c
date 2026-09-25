@@ -520,8 +520,41 @@ void expr_drop(Expr* me) {
             vec_cstr_drop(&my template_->texts);
             free(my template_);
             break;
+
+        case EXPR_JSX_ELEMENT:
+        case EXPR_JSX_FRAGMENT:
+            jsx_element_drop(my jsx);
+            free(my jsx);
+            break;
+
+        case EXPR_JSX_ATTRIBUTES:
+            vec_jsx_attribute_drop(&my jsx_attributes);
+            break;
     }
     lazy_type_drop(&my lazy_type);
+}
+
+void jsx_attribute_drop(JsxAttribute* me) {
+    expr_drop(&my value);
+}
+
+void jsx_child_drop(JsxChild* me) {
+    expr_drop(&my expr);
+}
+
+void jsx_element_drop(JsxElement* me) {
+    expr_drop(&my tag_name);
+    vec_spanned_type_drop(&my type_args);
+    expr_drop(&my attributes);
+    vec_jsx_child_drop(&my children);
+    expr_drop(&my closing_name);
+}
+
+bool jsx_element_is_intrinsic(JsxElement const* me) {
+    if (my namespaced) return true;
+    if (my tag_name.tag != EXPR_IDENTIFIER || my tag_name.identifier.keyword) return false;
+    csview name = my tag_name.identifier.name.sv;
+    return (name.size && name.buf[0] >= 'a' && name.buf[0] <= 'z') || csview_contains(name, "-");
 }
 
 // `x as const` / `<const>x`: `const` isn't a type name (the new core checks the same, see is_const_assertion())
@@ -770,6 +803,36 @@ static void mark_indirect_call(Expr* callee) {
     }
     bool eval = right->tag == EXPR_IDENTIFIER && !right->identifier.keyword && csview_equals(right->identifier.name.sv, "eval");
     if (right->tag == EXPR_PROPERTY || eval) callee->binary_op->indirect_call = true;
+}
+
+// Not inlined, like jsx_typecheck()
+__attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
+    switch (my tag) {
+        case EXPR_JSX_ELEMENT:
+        case EXPR_JSX_FRAGMENT: {
+            // A value tag (`<Comp />`, `<this.x />`) is a reference, an intrinsic one (`<div />`) is a name
+            bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx);
+            if (!intrinsic) expr_lookup_names(&my jsx->tag_name, names, errs);
+            expr_lookup_names(&my jsx->attributes, names, errs);
+            for_each (i, vec_jsx_child, &my jsx->children) {
+                if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_lookup_names(&i->expr, names, errs);
+            }
+            if (!intrinsic && my jsx->closing_name.tag != EXPR_IMPLICIT_ANY && span_valid(my jsx->closing_name.inner_span) &&
+                my jsx->closing_name.inner_span.sv.size
+            ) {
+                expr_lookup_names(&my jsx->closing_name, names, errs);
+            }
+        }   break;
+
+        case EXPR_JSX_ATTRIBUTES:
+            for_each (i, vec_jsx_attribute, &my jsx_attributes) {
+                if (i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR) {
+                    expr_lookup_names(&i->value, names, errs);
+                }
+            }
+            break;
+        default: impossible;
+    }
 }
 
 void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
@@ -1130,6 +1193,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             for_each (i, vec_expr, &my template_->substitutions) {
                 expr_lookup_names(i, names, errs);
             }
+            break;
+
+        case EXPR_JSX_ELEMENT:
+        case EXPR_JSX_FRAGMENT:
+        case EXPR_JSX_ATTRIBUTES:
+            jsx_lookup_names(me, names, errs);
             break;
     }
     if (my tag == EXPR_CALL && !my call->uses_new) flow->contextual_depth--;
@@ -1522,6 +1591,8 @@ static bool is_side_effect_free(Expr const* me) {
         case EXPR_CLASS_DECL:
         case EXPR_ARRAY:
         case EXPR_OBJECT:
+        case EXPR_JSX_ELEMENT:
+        case EXPR_JSX_FRAGMENT:
             return true;
         case EXPR_TERNARY:
             return is_side_effect_free(&my ternary->yes) && is_side_effect_free(&my ternary->no);
@@ -1970,6 +2041,35 @@ static void private_access_check_emit_helpers(Expr const* me, ErrorCtx* errs) {
     if (target != FLOW_TARGET_DEFINITE) ty_check_emit_helpers(current_checker, my outer_span, EMIT_HELPER_CLASS_PRIVATE_FIELD_GET, errs);
 }
 
+// Not inlined into expr_typecheck(), whose frame deeply nested expressions pay for (binderBinaryExpressionStress)
+__attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* errs) {
+    switch (my tag) {
+        case EXPR_JSX_ELEMENT:
+        case EXPR_JSX_FRAGMENT: {
+            // tsc's checkJsxPreconditions
+            if (compiler_options()->jsx == JSX_NONE) {
+                error_ctx_error_d(errs, my jsx->opening_span, 17004, "Cannot use JSX unless the '--jsx' flag is provided.");
+            }
+            bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx);
+            if (!intrinsic) expr_typecheck(&my jsx->tag_name, errs);
+            expr_typecheck(&my jsx->attributes, errs);
+            for_each (i, vec_jsx_child, &my jsx->children) {
+                if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_typecheck(&i->expr, errs);
+            }
+        }   break;
+
+        case EXPR_JSX_ATTRIBUTES:
+            for_each (i, vec_jsx_attribute, &my jsx_attributes) {
+                if (i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR) {
+                    expr_typecheck(&i->value, errs);
+                }
+            }
+            break;
+
+        default: impossible;
+    }
+}
+
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     // The expression's own type first: evaluating it is what gives the expressions inside it their contextual types
     // (whoever knows this expression's contextual type has done the same before getting here)
@@ -1998,7 +2098,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             } else if (my binary_op->op == BINARY_OP_EH_EH) {
                 nullish_coalesce_typecheck(me, errs);
             } else if (my binary_op->op == BINARY_OP_COMMA && !compiler_options()->allow_unreachable_code &&
-                !my binary_op->indirect_call && is_side_effect_free(&my binary_op->left)
+                !my binary_op->indirect_call && !my binary_op->jsx_siblings && is_side_effect_free(&my binary_op->left)
             ) {
                 error_ctx_error_d(errs, expr_error_span(&my binary_op->left), 2695,
                     "Left side of comma operator is unused and has no side effects.");
@@ -2205,6 +2305,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     "and may only be used as part of a class member declaration, property access, or on the left-hand-side of an "
                     "'in' expression");
             }
+            break;
+
+        case EXPR_JSX_ELEMENT:
+        case EXPR_JSX_FRAGMENT:
+        case EXPR_JSX_ATTRIBUTES:
+            jsx_typecheck(me, errs);
             break;
 
         case EXPR_TEMPLATE:

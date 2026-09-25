@@ -90,7 +90,7 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
             i->value.tag == EXPR_IMPLICIT_ANY &&
             !declared
         ) {
-            error_ctx_error_d(errs, i->binding.content_span, 1155,
+            error_ctx_grammar_error_d(errs, i->binding.content_span, 1155,
                 "'", variable_statement_keyword_str(me), "' declarations must be initialized.");
         } else if (declared &&
             i->value.tag != EXPR_IMPLICIT_ANY

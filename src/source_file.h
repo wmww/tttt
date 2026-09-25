@@ -70,6 +70,9 @@ typedef struct SourceFile {
     bool has_parse_errors;
     // A .js/.jsx/.mjs/.cjs file: only part of a program with `allowJs`
     bool is_js;
+    // tsc's LanguageVariant.JSX (.tsx and JavaScript files): `<` at the start of an expression is a JSX element, never
+    // a type assertion
+    bool is_jsx;
     // Semantic diagnostics (names, types) inside this file aren't reported: JavaScript without `checkJs` or a leading
     // `// @ts-check`, any file with `// @ts-nocheck`
     bool unchecked;

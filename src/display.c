@@ -997,6 +997,9 @@ void display_expr(Display d, Expr const* me) {
 
         case EXPR_REGEX:
         case EXPR_PRIVATE_NAME:
+        case EXPR_JSX_ELEMENT:
+        case EXPR_JSX_FRAGMENT:
+        case EXPR_JSX_ATTRIBUTES:
             display_sv(d, my inner_span.sv);
             break;
 

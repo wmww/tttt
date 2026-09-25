@@ -14,6 +14,9 @@ typedef struct TernaryExpr TernaryExpr;
 typedef struct CallExpr CallExpr;
 typedef struct TemplateExpr TemplateExpr;
 typedef struct ObjectExprItem ObjectExprItem;
+typedef struct JsxElement JsxElement;
+typedef struct JsxAttribute JsxAttribute;
+typedef struct JsxChild JsxChild;
 typedef struct vec_object_expr_item ObjectExpr;
 typedef struct FunctionImpl FunctionImpl;
 typedef struct ClassDecl ClassDecl;
@@ -21,6 +24,8 @@ typedef struct ErrorCtx ErrorCtx;
 typedef struct Expr Expr;
 
 g_declare_vec(ObjectExprItem, object_expr_item);
+g_declare_vec(JsxAttribute, jsx_attribute);
+g_declare_vec(JsxChild, jsx_child);
 g_declare_vec(Expr, expr);
 
 typedef struct FlowNode FlowNode; // flow.h
@@ -88,6 +93,9 @@ typedef struct Expr {
         EXPR_REGEX, // `/a+/g`, the span is all there is to it
         EXPR_TEMPLATE, // Template literal with substitutions and/or a tag. Plain `abc` is a string EXPR_LITERAL
         EXPR_PRIVATE_NAME, // `#x` on its own: only means something as the left operand of `in`
+        EXPR_JSX_ELEMENT, // `<a x="1">...</a>`, `<a />`
+        EXPR_JSX_FRAGMENT, // `<>...</>` (a JsxElement without a tag name or attributes)
+        EXPR_JSX_ATTRIBUTES, // The attributes of a JsxElement, as one expression (tsc's JsxAttributes, an object literal)
     } tag;
     union {
         Value literal;
@@ -106,6 +114,8 @@ typedef struct Expr {
         Expr* spread;
         TemplateExpr* template_;
         PrivateNameExpr* private_name;
+        JsxElement* jsx;
+        VecJsxAttribute jsx_attributes;
     };
     LazyType lazy_type;
 } Expr;
@@ -305,6 +315,8 @@ typedef struct BinaryOpExpr {
     Expr right;
     bool is_operand; // An operand of another binary expression, without parentheses
     bool indirect_call; // `(0, o.f)()`: the comma is how to call f without `this` (tsc's isIndirectCall)
+    // `<a /><b />` where one element is expected: a comma made up by the parser, which already reported TS2657
+    bool jsx_siblings;
 } BinaryOpExpr;
 
 static inline void expr_mark_binary_operand(Expr* me) {
@@ -455,3 +467,71 @@ void object_expr_item_drop(ObjectExprItem* me);
 #define g_no_clone
 #define g_declared
 #include <cleat/generic/vec.h>
+
+// JSX (tsc's JsxElement, JsxSelfClosingElement, JsxFragment). Only in JSX files (SourceFile.is_jsx)
+
+typedef struct JsxAttribute {
+    Span span;
+    // `x`, `data-x` (tsc's JSX identifiers take hyphens) or a namespaced `ns:x`. Empty for a spread
+    Span name;
+    enum {
+        JSX_ATTRIBUTE_NO_VALUE, // `<a x />`, which is `x={true}`
+        JSX_ATTRIBUTE_STRING, // `x="1"`: value is a string literal (no escapes in JSX strings)
+        JSX_ATTRIBUTE_EXPR, // `x={e}`: value is e
+        JSX_ATTRIBUTE_EMPTY_EXPR, // `x={}` (or only a comment in the braces)
+        JSX_ATTRIBUTE_ELEMENT, // `x=<b />`: value is the element
+        JSX_ATTRIBUTE_SPREAD, // `{...e}`: value is e
+    } tag;
+    Expr value;
+} JsxAttribute;
+
+void jsx_attribute_drop(JsxAttribute* me);
+
+#define g_class_key JsxAttribute, jsx_attribute
+#define g_opt (c_no_atomic)
+#define g_no_clone
+#define g_declared
+#include <cleat/generic/vec.h>
+
+typedef struct JsxChild {
+    enum {
+        JSX_CHILD_TEXT, // Text between tags, entities undecoded
+        JSX_CHILD_EXPR, // `{e}` or `{...e}`: expr is e
+        JSX_CHILD_EMPTY_EXPR, // `{}` or `{/* comment */}`
+        JSX_CHILD_ELEMENT, // A nested element or fragment: expr is it
+    } tag;
+    Span span;
+    // Text of only whitespace that contains a line break (tsc's JsxTextAllWhiteSpaces): not a child at all as far as
+    // the checker is concerned
+    bool whitespace_only;
+    bool spread; // `{...e}`
+    Expr expr;
+} JsxChild;
+
+void jsx_child_drop(JsxChild* me);
+
+#define g_class_key JsxChild, jsx_child
+#define g_opt (c_no_atomic)
+#define g_no_clone
+#define g_declared
+#include <cleat/generic/vec.h>
+
+typedef struct JsxElement {
+    // The tag name: an identifier (hyphens allowed: `my-elem`, or namespaced `a:b`, see namespaced), `this`, or a
+    // property access `a.b.c`. EXPR_IMPLICIT_ANY for a fragment
+    Expr tag_name;
+    bool namespaced;
+    bool self_closing;
+    bool has_type_args;
+    VecSpannedType type_args; // `<C<string> />`
+    Expr attributes; // EXPR_JSX_ATTRIBUTES (also for a fragment, with none)
+    VecJsxChild children;
+    Span opening_span; // `<a x="1">` / `<a />` / `<>`
+    // The name in the closing tag, like tag_name (EXPR_IMPLICIT_ANY when self closing, a fragment, or missing)
+    Expr closing_name;
+    Span closing_span; // `</a>` / `</>`, invalid when self closing
+} JsxElement;
+
+void jsx_element_drop(JsxElement* me);
+// tsc's isJsxIntrinsicTagName: `<div>`, `<my-elem>`, `<a:b>` name an entry of JSX.IntrinsicElements, not a value
+bool jsx_element_is_intrinsic(JsxElement const* me);

@@ -165,6 +165,15 @@ static cstr program_path_for_message(Program* me, csview absolute) {
     return ret;
 }
 
+// Whether a script declares `declare module "<name>"` (tsc's SourceFile.ambientModuleNames)
+static bool source_declares_ambient_module(SourceFile const* source, csview name) {
+    for (u32 i = 0; i < source->module_ref_count; i++) {
+        ModuleRef const* ref = source->module_refs[i];
+        if (ref->is_declaration && csview_equals_sv(cstr_sv(&ref->path), name)) return true;
+    }
+    return false;
+}
+
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
     ModuleResolver* resolver = program_resolver(me);
@@ -428,6 +437,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     }
 
     source_file->is_js = path_is_js(path);
+    source_file->is_jsx = source_file->is_js || csview_ends_with(path, ".tsx");
     int check_directive = source_check_directive(cstr_sv(&source_file->contents));
     source_file->unchecked = check_directive ? check_directive < 0 : source_file->is_js && !my options.check_js;
     // tsc's skipTypeChecking: declaration files aren't checked with skipLibCheck
@@ -477,6 +487,9 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         // does a name that finds no file
         if (ref->is_declaration && !source_file->is_module) continue;
         if (my options.no_resolve) continue; // program_resolve_names(), once every root is loaded
+        // A name the file declares an ambient module for is that module, not a file (tsc's resolveToOwnAmbientModule):
+        // `import * as React from "react"` inside react16.d.ts's `declare module "react/jsx-runtime"`
+        if (!source_file->is_module && source_declares_ambient_module(source_file, cstr_sv(&ref->path))) continue;
         program_load_module_ref(me, source_file, ref);
     }
 

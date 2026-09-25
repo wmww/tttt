@@ -309,6 +309,10 @@ static void apply_setting(BaselineTestCase* me, csview key, csview value) {
         my no_implicit_references = tag_equals(value, "true");
         return;
     }
+    if (tag_equals(key, "libfiles")) {
+        cstr_take(&my lib_files, cstr_from_sv(value));
+        return;
+    }
     if (tag_equals(key, "currentdirectory")) {
         Fs const* mock = mock_fs_get_fs(my fs);
         try (fs_mkdir(mock, value)) or_log(info);
@@ -360,6 +364,22 @@ static_failable add_virtual_source_file(BaselineTestCase* me, csview virtual_pat
         .path = cstr_from_sv(virtual_path),
     });
     return ok;
+}
+
+// Copies the real directory `from` into the mock filesystem at `to`
+static void mount_test_lib_folder(BaselineTestCase* me, csview from, csview to) {
+    try (fs_mkdir(mock_fs_get_fs(my fs), to)) or_log(info);
+    for_each (item, fs_listdir_sorted, fs, from) {
+        cstr target = cstr_d(to, "/", item.name);
+        if (fs_is_directory(fs, item.path)) {
+            mount_test_lib_folder(me, item.path, cstr_sv(&target));
+        } else {
+            cstr contents = cstr_null;
+            try (fs_read_file(fs, item.path, &contents)) or_log(info);
+            try (mock_fs_create_file(my fs, cstr_sv(&target), contents)) or_log(info);
+        }
+        cstr_drop(&target);
+    }
 }
 
 static_failable load_test_source(BaselineTestCase* me, csview config) {
@@ -415,8 +435,32 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
         cstr_drop(&unparsed_contents);
     }
+    // tsc's harness has its tests/lib folder at /.lib (vfs.ts testLibFolder), for `@libFiles` and for
+    // `/// <reference path="/.lib/react16.d.ts" />`. Copied in only for the tests that mention it
+    if (cstr_size(&my lib_files) || csview_find_sv(contents_sv, c_sv("/.lib/")) != c_NPOS) {
+        isize cases = csview_find_sv(my source_path, c_sv("/tests/cases/"));
+        if (cases != c_NPOS) {
+            cstr lib_dir = cstr_d(csview_slice(my source_path, 0, cases), "/tests/lib");
+            mount_test_lib_folder(me, cstr_sv(&lib_dir), c_sv("/.lib"));
+            cstr_drop(&lib_dir);
+        }
+    }
+
     // A file that says `/// <reference no-default-lib="true"/>` is the default library (tsc's hasNoDefaultLib)
     bool no_default_lib = csview_find_sv(contents_sv, c_sv("no-default-lib=\"true\"")) != c_NPOS;
+    for (csview list = cstr_sv(&my lib_files); list.size && !no_default_lib;) {
+        isize end = csview_find_sv(list, c_sv(","));
+        cstr path = cstr_d("/.lib/", csview_trim_whitespace(csview_slice(list, 0, end)));
+        list = end == c_NPOS ? c_sv("") : csview_slice(list, end + 1, INTPTR_MAX);
+        cstr lib_contents = cstr_null;
+        try (fs_read_file(mock_fs_get_fs(my fs), cstr_sv(&path), &lib_contents)) if_err (e) {
+            ignore e;
+            current_error_destroy();
+        }
+        no_default_lib = cstr_find(&lib_contents, "no-default-lib=\"true\"") != c_NPOS;
+        cstr_drop(&lib_contents);
+        cstr_drop(&path);
+    }
     cstr_drop(&unparsed_contents);
 
     for (isize i = 0; i + 1 < vec_cstr_size(&my links); i += 2) {
@@ -513,9 +557,11 @@ static void format_error_tree(
         // Handle related errors (sub-errors that do have a valid span): in their own file, lib files without a position
         SourceFile const* related_source = error->span.source ? error->span.source : current_source;
         if (related_source->is_stdlib) {
+            // (the default lib's files are named after their lib, a `@libFiles` one already is `lib.*.d.ts`)
+            csview name = basename_of(cstr_sv(&related_source->canonical_path));
             cstr_append_d(
                 file_target, DEFAULT_DISPLAY,
-                "\r\n!!! related TS", error->ts_code, " lib.", basename_of(cstr_sv(&related_source->canonical_path)),
+                "\r\n!!! related TS", error->ts_code, " ", csview_starts_with(name, "lib.") ? "" : "lib.", name,
                 ":--:--: ", error->message
             );
         } else {
@@ -718,6 +764,25 @@ BaselineTestCase run_baseline_test_case(
         try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
         i->source = source;
     }
+    // `@libFiles` are roots after the test's own files (harnessIO.ts compileFiles). Like the default lib, a `lib.*.d.ts`
+    // among them is shown without positions
+    for (csview list = cstr_sv(&ret.lib_files); list.size;) {
+        isize end = csview_find_sv(list, c_sv(","));
+        csview name = csview_trim_whitespace(csview_slice(list, 0, end));
+        list = end == c_NPOS ? c_sv("") : csview_slice(list, end + 1, INTPTR_MAX);
+        if (!name.size) continue;
+        cstr path = cstr_d("/.lib/", name);
+        SourceFile* source = nullptr;
+        try (program_load(program, cstr_sv(&path), &source)) if_err (e) {
+            ignore e;
+            current_error_destroy();
+        }
+        if (source && csview_starts_with(name, "lib.") && csview_ends_with(name, ".d.ts")) {
+            source->is_stdlib = true;
+            cstr_take(&source->decl_override, cstr_d(name, ", --, --"));
+        }
+        cstr_drop(&path);
+    }
     program_load_automatic_types(program);
     for_each (i, vec_baseline_test_file, &ret.files) {
         if (!i->source && path_is_script(cstr_sv(&i->path))) {
@@ -758,6 +823,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     error_ctx_drop(my error_ctx);
     free(my error_ctx);
     cstr_drop(&my lib_list);
+    cstr_drop(&my lib_files);
     cstr_drop(&my last_unit);
     cstr_drop(&my formatted_errors);
     cstr_drop(&my formatted_global_errors);
@@ -1012,12 +1078,33 @@ static bool is_last_unit(BaselineTestCase const* me, BaselineTestFile const* fil
     return csview_equals_sv(a, b);
 }
 
+// tsc's Utils.removeTestPathPrefixes on what was appended to target from `from` on: `/.src/`, `/.lib/` and `/.ts/`
+// disappear (`file:///.src/` keeps its `file:///`)
+static void remove_test_path_prefixes(cstr* target, isize from) {
+    static const char* const prefixes[] = { "/.src/", "/.lib/", "/.ts/" };
+    for (isize i = 0; i < (isize)c_arraylen(prefixes); i++) {
+        isize at = from;
+        while ((at = cstr_find_at(target, at, prefixes[i])) != c_NPOS) {
+            cstr_erase(target, at, (isize)strlen(prefixes[i]) - 1);
+            // (the `/` of the prefix stays only after `file://`)
+            const char* str = cstr_str(target);
+            if (at >= 7 && !memcmp(str + at - 7, "file://", 7)) {
+                at++;
+            } else {
+                cstr_erase(target, at, 1);
+            }
+        }
+    }
+}
+
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
         if (!i->source) continue;
+        isize from = cstr_size(target);
         render_types_or_symbols_file(target, cstr_str(&i->path), cstr_sv(&i->source->contents), &i->symbols,
             is_last_unit(me, i), false);
+        remove_test_path_prefixes(target, from);
     }
 }
 
@@ -1029,8 +1116,10 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, b
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
         if (!i->source) continue;
+        isize from = cstr_size(target);
         render_types_or_symbols_file(target, cstr_str(&i->path), cstr_sv(&i->source->contents), &i->types,
             is_last_unit(me, i), !had_errors);
+        remove_test_path_prefixes(target, from);
     }
 }
 

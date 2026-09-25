@@ -390,6 +390,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
         case EXPR_REGEX: return result_ok_undefined; // TODO
         case EXPR_PRIVATE_NAME: return result_ok_undefined;
         case EXPR_TEMPLATE: return result_ok_undefined; // TODO
+        case EXPR_JSX_ELEMENT: case EXPR_JSX_FRAGMENT: case EXPR_JSX_ATTRIBUTES: return result_ok_undefined;
     }
     impossible;
 }
