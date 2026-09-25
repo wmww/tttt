@@ -66,6 +66,15 @@ typedef struct BaselineTestCase {
     Span parameter_property_class;
     struct Symbol const* class_symbol; // The class whose members are being walked
     struct Ty const* member_owner; // The interface or type literal whose members are being walked
+    // The type parameters of the declarations around the traversal (TyParamNames.in_scope), innermost last
+    struct Ty const** scope_params;
+    u32 scope_params_len;
+    u32 scope_params_cap;
+    // The class whose members are being walked: its type parameters, and how many were in scope outside it (they
+    // aren't in scope in computed member names)
+    struct Ty const* const* class_params;
+    u32 class_params_len;
+    u32 class_params_outside;
     // Set by the traversal right before adding a node whose `any` keeps its underline even without errors (tsc's
     // harness exempts children of property accesses and qualified names, binding elements, labels and import/export
     // names). The next types line consumes it
@@ -86,6 +95,13 @@ typedef struct BaselineTestCase {
 
 // Never prints to stdout, only prints to stderr if noisy is true, or if it panics. show_logs leaves the checker's
 // log output on without the rest of what noisy does. config is one of baseline_test_configurations(), or empty
+// The traversal enters a generic declaration: its type parameters are in scope until
+// baseline_test_case_leave_generic(the returned value)
+u32 baseline_test_case_enter_generic(BaselineTestCase* me, struct Generic const* generic);
+void baseline_test_case_leave_generic(BaselineTestCase* me, u32 saved);
+struct TyList;
+u32 baseline_test_case_enter_type_params(BaselineTestCase* me, struct TyList params);
+
 BaselineTestCase run_baseline_test_case(
     BaselineTestCache* cache,
     csview source_path,

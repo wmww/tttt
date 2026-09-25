@@ -1159,6 +1159,22 @@ typedef struct TyDisplayVisit {
     struct TyDisplayVisit const* outer;
 } TyDisplayVisit;
 
+// tsc's GenerateNamesForShadowedTypeParams (the types baseline): a type parameter whose name another one printed in
+// the same scope already has, or that names another type parameter in scope where the type is printed, prints as
+// `T_1`, `T_2`... (typeParameterToName)
+typedef struct TyParamName {
+    Ty const* param;
+    Atom const* name;
+} TyParamName;
+typedef struct TyParamNames {
+    TyList in_scope; // The declared type parameters in scope where the type is printed, innermost last
+    // The names given so far (tsc's typeParameterNames and typeParameterNamesByText): a signature is a scope, it drops
+    // the names given inside it on its way out
+    TyParamName* given;
+    u32 len;
+    u32 cap;
+} TyParamNames;
+
 typedef struct TyDisplay {
     cstr* target;
     u32 depth;
@@ -1185,6 +1201,7 @@ typedef struct TyDisplay {
     // A function expression that tsc types syntactically where it is printed (the returned function of
     // typeFromSingleReturnExpression): its parameter declarations are reused, `: ` and all
     struct FunctionImpl const* syntactic_function;
+    TyParamNames* param_names; // Null: type parameters print as they're called
 } TyDisplay;
 // A symbol's name qualified as far as needed to reach it from `enclosing` (tsc's symbolToString with an enclosing
 // declaration), fully without one

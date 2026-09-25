@@ -764,6 +764,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     vec_cstr_drop(&my links);
     vec_cstr_drop(&my directives);
     str_list_drop(&my tsconfig_roots);
+    free(my scope_params);
 }
 
 static csview relative_test_path(csview test_path) {
@@ -1225,7 +1226,12 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
 void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type) {
     cstr rendered = cstr_null;
     cstr underline = cstr_null;
-    ty_display(current_checker, (TyDisplay){ .target = &rendered, .enclosing = my enclosing, .underline = &underline, .unique_symbols = true }, type);
+    TyParamNames param_names = { .in_scope = { .data = my scope_params, .len = my scope_params_len } };
+    ty_display(current_checker, (TyDisplay){
+        .target = &rendered, .enclosing = my enclosing, .underline = &underline, .unique_symbols = true,
+        .param_names = &param_names,
+    }, type);
+    free(param_names.given);
     add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered), &underline);
     c_drop(cstr, &rendered, &underline);
 }
@@ -1235,6 +1241,26 @@ void baseline_test_case_add_type_text(BaselineTestCase* me, Span span, csview te
     for (isize i = 0; i < text.size; i++) cstr_push(&underline, "^");
     add_type_rendered(me, span, span, text, &underline);
     cstr_drop(&underline);
+}
+
+u32 baseline_test_case_enter_generic(BaselineTestCase* me, Generic const* generic) {
+    return baseline_test_case_enter_type_params(me, ty_type_params_of(current_checker, generic));
+}
+
+u32 baseline_test_case_enter_type_params(BaselineTestCase* me, TyList params) {
+    u32 saved = my scope_params_len;
+    for (u32 i = 0; i < params.len; i++) {
+        if (my scope_params_len == my scope_params_cap) {
+            my scope_params_cap = my scope_params_cap ? my scope_params_cap * 2 : 16;
+            my scope_params = realloc(my scope_params, sizeof(Ty const*) * my scope_params_cap);
+        }
+        my scope_params[my scope_params_len++] = params.data[i];
+    }
+    return saved;
+}
+
+void baseline_test_case_leave_generic(BaselineTestCase* me, u32 saved) {
+    my scope_params_len = saved;
 }
 
 void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type) {

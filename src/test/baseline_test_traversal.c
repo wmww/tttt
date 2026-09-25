@@ -211,6 +211,18 @@ static Ty const* optional_member_type(Ty const* type, bool optional) {
     return ty_union(checker, parts, 2, nullptr, (TyList){0});
 }
 
+// The type parameters of the class or interface aren't in scope in a computed member name (tsc's resolveName)
+static void computed_member_name_compile_test_info(Expr* key, BaselineTestCase* ctx) {
+    u32 inside = ctx->scope_params_len;
+    bool in_class = ctx->class_params_len && ctx->class_params_outside + ctx->class_params_len <= inside;
+    if (in_class) baseline_test_case_leave_generic(ctx, ctx->class_params_outside);
+    expr_compile_test_info(key, ctx);
+    if (in_class) {
+        baseline_test_case_enter_type_params(ctx, (TyList){ ctx->class_params, ctx->class_params_len });
+        check(ctx->scope_params_len == inside);
+    }
+}
+
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: {
@@ -235,7 +247,10 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .name_is_value = my key.name_is_value,
             });
             Ty const* type = merged ? prop_type(current_checker, merged) : optional_member_type(ty_of_node(&my type), my optional);
+            bool method = my key.name_is_member_function && my type.tag == TYPE_CALLABLE;
+            u32 saved = method ? baseline_test_case_enter_generic(ctx, &my type.callable->function->generic) : 0;
             baseline_test_case_add_type(ctx, my key.span, type);
+            if (method) baseline_test_case_leave_generic(ctx, saved);
         }   break;
 
         case INTERFACE_KEY_INDEX:
@@ -253,7 +268,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .name_is_value = true,
             });
             baseline_test_case_add_type(ctx, my key.span, optional_member_type(ty_of_node(&my type), my optional));
-            expr_compile_test_info(my key.expr.ref, ctx);
+            computed_member_name_compile_test_info(my key.expr.ref, ctx);
             break;
 
         case INTERFACE_KEY_MAPPED:
@@ -363,7 +378,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             });
             break;
 
-        case TYPE_CALLABLE:
+        case TYPE_CALLABLE: {
+            u32 saved = baseline_test_case_enter_generic(ctx, &my callable->function->generic);
             generic_compile_test_info(&my callable->function->generic, ctx);
             for_each (i, vec_function_arg, &my callable->function->args) {
                 binding_content_compile_test_info(&i->initializer.binding, ctx);
@@ -376,12 +392,16 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             } else {
                 type_compile_test_info(&my callable->function->ret, ctx);
             }
-            break;
+            baseline_test_case_leave_generic(ctx, saved);
+        }   break;
 
         case TYPE_INTERFACE: {
             Ty const* outer_owner = ctx->member_owner;
             ctx->member_owner = ty_of_node(me);
+            u32 outer_class_params_len = ctx->class_params_len;
+            ctx->class_params_len = 0; // (A type literal's computed names see them)
             interface_compile_test_info(&my interface, span_null, ctx);
+            ctx->class_params_len = outer_class_params_len;
             ctx->member_owner = outer_owner;
         }   break;
 
@@ -443,6 +463,7 @@ static void type_predicate_compile_test_info(TypePredicateNode* me, BaselineTest
 }
 
 void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
+    u32 saved = baseline_test_case_enter_generic(ctx, &my generic);
     if (span_valid(my name)) {
         baseline_test_case_add_declaration(ctx, my name, my symbol);
     }
@@ -464,6 +485,7 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         type_compile_test_info(&my ret, ctx);
     }
     block_compile_test_info(&my body, ctx);
+    baseline_test_case_leave_generic(ctx, saved);
 }
 
 // An alias shows its own declaration as the symbol and the value of what it resolves to as the type
@@ -615,6 +637,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             break;
 
         case CLASS_ITEM_METHOD: {
+            u32 saved_generic = baseline_test_case_enter_generic(ctx, &my method.func.generic);
             VecSpan declarations = {0};
             if (my method.accessor && my method.accessor_first) {
                 // Both halves of an accessor pair declare the same property. Items live in one vec, so walk forward
@@ -658,7 +681,9 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 if (prop) type = prop_type(checker, prop);
             }
             baseline_test_case_add_type(ctx, my method.name_span, optional_member_type(type, my method.is_optional));
-            if (my method.computed_key) expr_compile_test_info(my method.computed_key, ctx);
+            // (Not in scope in its computed name)
+            baseline_test_case_leave_generic(ctx, saved_generic);
+            if (my method.computed_key) computed_member_name_compile_test_info(my method.computed_key, ctx);
             function_impl_compile_test_info(&my method.func, ctx);
         }   break;
 
@@ -671,7 +696,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .name_is_value = my field.name_is_value || my field.computed_key,
             });
             baseline_test_case_add_type(ctx, my field.name_span, optional_member_type(class_item_get_type(me), my field.is_optional));
-            if (my field.computed_key) expr_compile_test_info(my field.computed_key, ctx);
+            if (my field.computed_key) computed_member_name_compile_test_info(my field.computed_key, ctx);
 
             if (my field.has_explicit_type) {
                 type_compile_test_info(&my field.explicit_type, ctx);
@@ -695,6 +720,10 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     for_each (i, vec_expr, &my decorators) {
         expr_compile_test_info(i, ctx);
     }
+    // (Those of the merged declarations: one symbol each, like tsc's)
+    TyList class_params = my symbol ? ty_declared_type_of(current_checker, my symbol)->declared.type_params :
+        ty_type_params_of(current_checker, &my generic);
+    u32 saved_generic = baseline_test_case_enter_type_params(ctx, class_params);
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(my symbol),
@@ -730,13 +759,27 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     }
     Symbol const* outer_class = ctx->class_symbol;
     ctx->class_symbol = my symbol;
+    TyList outer_class_params = { ctx->class_params, ctx->class_params_len };
+    u32 outer_class_params_outside = ctx->class_params_outside;
+    ctx->class_params = class_params.data;
+    ctx->class_params_len = class_params.len;
+    ctx->class_params_outside = saved_generic;
     for_each (i, vec_class_item, &my items) {
+        // (The class's type parameters aren't in scope in a static member)
+        bool is_static = class_item_is_static(i);
+        if (is_static) baseline_test_case_leave_generic(ctx, saved_generic);
         class_item_compile_test_info(i, &my items, is_expr ? class_decl_display_name(me) : my name, ctx);
+        if (is_static) baseline_test_case_enter_type_params(ctx, class_params);
     }
     ctx->class_symbol = outer_class;
+    ctx->class_params = outer_class_params.data;
+    ctx->class_params_len = outer_class_params.len;
+    ctx->class_params_outside = outer_class_params_outside;
+    baseline_test_case_leave_generic(ctx, saved_generic);
 }
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
+    u32 saved_generic = baseline_test_case_enter_generic(ctx, &my generic);
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = declaration_get_spans(my symbol),
         .span = my name,
@@ -748,9 +791,18 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     );
     generic_compile_test_info(&my generic, ctx);
     type_compile_test_info(&my type, ctx);
+    baseline_test_case_leave_generic(ctx, saved_generic);
 }
 
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
+    TyList params = my symbol ? ty_declared_type_of(current_checker, my symbol)->declared.type_params :
+        ty_type_params_of(current_checker, &my generic);
+    u32 saved_generic = baseline_test_case_enter_type_params(ctx, params);
+    TyList outer_class_params = { ctx->class_params, ctx->class_params_len };
+    u32 outer_class_params_outside = ctx->class_params_outside;
+    ctx->class_params = params.data;
+    ctx->class_params_len = params.len;
+    ctx->class_params_outside = saved_generic;
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(my symbol),
@@ -765,6 +817,10 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
     ctx->member_owner = my symbol && !(my symbol->flags & SYMBOL_CLASS) ? ty_declared_type_of(current_checker, my symbol) : nullptr;
     interface_compile_test_info(&my type.interface, my name, ctx);
     ctx->member_owner = outer_owner;
+    ctx->class_params = outer_class_params.data;
+    ctx->class_params_len = outer_class_params.len;
+    ctx->class_params_outside = outer_class_params_outside;
+    baseline_test_case_leave_generic(ctx, saved_generic);
 }
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
@@ -1022,7 +1078,11 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                             .name = i->name_span,
                         });
                     }
+                    // (A method's type parameters are in scope at its name)
+                    bool method = i->value.tag == EXPR_FUNCTION && i->tag != OBJECT_ITEM_PROPERTY && i->tag != OBJECT_ITEM_SHORTHAND;
+                    u32 saved = method ? baseline_test_case_enter_generic(ctx, &i->value.function->generic) : 0;
                     baseline_test_case_add_type(ctx, i->name_span, ty_object_literal_member_type(current_checker, me, i));
+                    if (method) baseline_test_case_leave_generic(ctx, saved);
                 }
                 if (i->computed_key) {
                     expr_compile_test_info(i->computed_key, ctx);

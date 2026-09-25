@@ -5373,7 +5373,7 @@ const baselines = {
     'conditionalTypeContextualTypeSimplificationsSuceeds': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypeDiscriminatingLargeUnionRegularTypeFetchingSpeedReasonable': {
         errors: true,
@@ -6018,7 +6018,7 @@ const baselines = {
     'contextualSignatureInstantiation3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualSignatureInstantiation4': {
         errors: true,
@@ -10328,7 +10328,7 @@ const baselines = {
     'duplicateTypeParameters3': {
         errors: true,
         symbols: false,
-        types: true,
+        types: false,
     },
     'duplicateVarAndImport': {
         errors: true,
@@ -14168,12 +14168,12 @@ const baselines = {
     'functionOverloadsOnGenericArity1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloadsOnGenericArity2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloadsOutOfOrder': {
         errors: true,
@@ -14408,7 +14408,7 @@ const baselines = {
     'funduleUsedAcrossFileBoundary': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fuzzy': {
         errors: false,
@@ -14818,7 +14818,7 @@ const baselines = {
     'genericFunctionSpecializations1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericFunctionTypedArgumentsAreFixed': {
         errors: true,
@@ -24508,7 +24508,7 @@ const baselines = {
     'overloadsAndTypeArgumentArity': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadsAndTypeArgumentArityErrors': {
         errors: false,
@@ -25503,17 +25503,17 @@ const baselines = {
     'promiseChaining': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'promiseChaining1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'promiseChaining2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'promiseDefinitionTest': {
         errors: true,
@@ -28753,7 +28753,7 @@ const baselines = {
     'subclassWithPolymorphicThisIsAssignable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'substituteReturnTypeSatisfiesConstraint': {
         errors: true,
@@ -36668,7 +36668,7 @@ const baselines = {
     'instanceMemberInitialization': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instanceMemberWithComputedPropertyName': {
         errors: true,
@@ -40183,12 +40183,12 @@ const baselines = {
     'computedPropertyNames33_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames33_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames34_ES5': {
         errors: true,
@@ -65518,7 +65518,7 @@ const baselines = {
     'genericContextualTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericContextualTypes2': {
         errors: true,

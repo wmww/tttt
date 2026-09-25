@@ -349,6 +349,52 @@ static void display_string_literal(TyDisplay d, csview sv);
 static void display_template_text(TyDisplay d, csview sv);
 static void append_binding_pattern(cstr* out, Binding const* binding);
 
+// What a type parameter is called where it's printed, see TyParamNames
+static Atom const* numbered_name(Checker* me, csview base, char const* suffix_format, u32 n);
+static Atom const* type_param_name(Checker* me, TyDisplay d, Ty const* param) {
+    TyParamNames* names = d.param_names;
+    if (!names || param->param.state->is_this) return param->param.name;
+    for (u32 i = names->len; i--;) {
+        if (names->given[i].param == param) return names->given[i].name;
+    }
+    Ty const* declared = param; // (A clone made by instantiating a signature has its original's symbol)
+    while (declared->param.state->clone_of) declared = declared->param.state->clone_of;
+    Atom const* name = param->param.name;
+    for (u32 n = 1;; n++) {
+        bool taken = false;
+        for (u32 i = 0; i < names->len && !taken; i++) taken = names->given[i].name == name;
+        // (tsc's typeParameterShadowsOtherTypeParameterInScope)
+        for (u32 i = names->in_scope.len; i-- && !taken;) {
+            Ty const* other = names->in_scope.data[i];
+            if (other->param.name != name) continue;
+            taken = other != declared;
+            break;
+        }
+        if (!taken) break;
+        name = numbered_name(me, atom_sv(param->param.name), "_%u", n);
+    }
+    if (names->len == names->cap) {
+        names->cap = names->cap ? names->cap * 2 : 8;
+        names->given = realloc(names->given, sizeof(TyParamName) * names->cap);
+    }
+    names->given[names->len++] = (TyParamName){ .param = param, .name = name };
+    return name;
+}
+
+// A renamed one is a new identifier: never reused
+static void out_type_param_name(Checker* me, TyDisplay d, Ty const* param) {
+    Atom const* name = type_param_name(me, d, param);
+    out(name == param->param.name ? d : reused_if(d, false), atom_sv(name));
+}
+
+// tsc's enterNewScope() for a signature: names given inside it don't count outside
+static u32 param_names_enter(TyDisplay d) {
+    return d.param_names ? d.param_names->len : 0;
+}
+static void param_names_leave(TyDisplay d, u32 saved) {
+    if (d.param_names) d.param_names->len = saved;
+}
+
 // tsc's trackExistingEntityName(): the first name of an entity name means the same where the type is printed
 static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csview first, u32 meaning) {
     // Unresolved names are an error type; type parameters and parameters in scope where they're printed (tsc checks
@@ -453,7 +499,11 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         out(d, i->sv);
         out_lit(d, ".");
     }
-    out(d, identifier->name.sv);
+    if (!qualified && d.param_names && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER)) {
+        out_type_param_name(me, d, ty_type_param(me, symbol));
+    } else {
+        out(d, identifier->name.sv);
+    }
     display_node_args(me, d, &identifier->generic_params);
 }
 
@@ -497,7 +547,8 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
     for_each (i, vec_generic_item, &generic->items) {
         if (i_index) out_lit(d, ", ");
         if (i->is_const) out_lit(d, "const ");
-        out(d, i->name.sv);
+        if (d.param_names && i->symbol_ref) out_type_param_name(me, d, ty_type_param(me, i->symbol_ref));
+        else out(d, i->name.sv);
         if (i->extends_explicit) {
             out_lit(d, " extends ");
             display_node(me, d, &i->extends);
@@ -511,7 +562,14 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
 }
 
 // A signature written as a type: `<T>(x: T) => U` with `separator` " => ", a member's `(x: T): U` with ": "
+static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl const* function, char const* separator);
 static void display_node_signature(Checker* me, TyDisplay d, FunctionImpl const* function, char const* separator) {
+    u32 saved = param_names_enter(d);
+    display_node_signature_inner(me, d, function, separator);
+    param_names_leave(d, saved);
+}
+
+static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl const* function, char const* separator) {
     if (function->is_abstract_constructor) out_lit(d, "abstract ");
     if (function->is_constructor || function->is_abstract_constructor) out_lit(d, "new ");
     display_node_type_params(me, d, &function->generic);
@@ -601,10 +659,15 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     for_each (i, vec_interface_member, &interface->members) {
         if (!member_printed(me, i)) continue;
         switch (i->key.tag) {
-            case INTERFACE_KEY_MAPPED:
+            case INTERFACE_KEY_MAPPED: {
+                u32 saved = param_names_enter(d); // (A mapped type is a scope)
                 if (i->key.mapped.readonly) out(d, i->key.mapped.readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
                 out_lit(d, "[");
-                out(d, i->key.mapped.type_name.sv);
+                if (d.param_names && i->key.mapped.symbol_ref) {
+                    out_type_param_name(me, d, ty_type_param(me, i->key.mapped.symbol_ref));
+                } else {
+                    out(d, i->key.mapped.type_name.sv);
+                }
                 out_lit(d, " in ");
                 display_node(me, d, &i->key.mapped.in_type);
                 if (i->key.mapped.has_as_type) {
@@ -616,7 +679,8 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 out_lit(d, ": ");
                 if (i->type.parsed) display_node(me, d, &i->type);
                 else out(reused_if(d, false), c_sv("any"));
-                break;
+                param_names_leave(d, saved);
+            }   break;
             case INTERFACE_KEY_INDEX:
                 if (i->readonly) out_lit(d, "readonly ");
                 out_lit(d, "[");
@@ -712,18 +776,24 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             out_lit(d, "keyof ");
             display_node(me, d, &node->keyof->interface);
             break;
-        case TYPE_TERNARY:
+        case TYPE_TERNARY: {
             display_node(me, d, &node->ternary->maybe_sub);
             out_lit(d, " extends ");
+            u32 saved = param_names_enter(d); // (Its `infer` type parameters are in scope in the true branch)
             display_node(me, d, &node->ternary->maybe_super);
             out_lit(d, " ? ");
             display_node(me, d, &node->ternary->if_true);
+            param_names_leave(d, saved);
             out_lit(d, " : ");
             display_node(me, d, &node->ternary->if_false);
-            break;
+        }   break;
         case TYPE_INFERRED:
             out_lit(d, "infer ");
-            out(d, node->inferred->name.sv);
+            if (d.param_names && node->inferred->symbol_ref) {
+                out_type_param_name(me, d, ty_type_param(me, node->inferred->symbol_ref));
+            } else {
+                out(d, node->inferred->name.sv);
+            }
             if (node->inferred->extends.parsed) {
                 out_lit(d, " extends ");
                 display_node(me, d, &node->inferred->extends);
@@ -1002,7 +1072,14 @@ static SigParam const* expanded_params(Checker* me, Signature const* sig, u32* c
     return params;
 }
 
+static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
+    u32 saved = param_names_enter(d);
+    display_signature_inner(me, d, sig, separator, with_new);
+    param_names_leave(d, saved);
+}
+
+static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
     d.widen_literals = false;
     signature_resolve(me, sig);
     if (with_new) {
@@ -1438,7 +1515,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             bool declared_here = false;
             for (u32 i = 0; i < d.infer_params.len; i++) declared_here |= d.infer_params.data[i] == ty;
             if (declared_here) out_lit(d, "infer ");
-            out(d, atom_sv(ty->param.name));
+            out_type_param_name(me, d, ty);
             if (declared_here && ty->param.state->constraint_node) {
                 out_lit(d, " extends ");
                 TyDisplay inner = d;
