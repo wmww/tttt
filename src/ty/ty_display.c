@@ -897,6 +897,13 @@ static bool mentions(Checker* me, Ty const* ty, TyList params) {
             return false;
         case TY_KEYOF:
             return mentions(me, ty->keyof.operand, params);
+        case TY_ANONYMOUS:
+            // (What the lowering found it can mention, when it knows)
+            if (ty->anonymous.free_params_unknown) return true;
+            for (u32 i = 0; i < ty->anonymous.free_params.len; i++) {
+                if (mentions(me, ty->anonymous.free_params.data[i], params)) return true;
+            }
+            return false;
         case TY_INDEXED:
             return mentions(me, ty->indexed.object, params) || mentions(me, ty->indexed.index, params);
         default:

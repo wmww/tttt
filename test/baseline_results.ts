@@ -3083,7 +3083,7 @@ const baselines = {
     'chainedCallsWithTypeParameterConstrainedToOtherTypeParameter2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'chainedImportAlias': {
         errors: true,
@@ -17283,7 +17283,7 @@ const baselines = {
     'inferrenceInfiniteLoopWithSubtyping': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferringAnyFunctionType1': {
         errors: false,
