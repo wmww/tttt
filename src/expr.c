@@ -1589,9 +1589,10 @@ static bool maybe_kind(Ty const* ty, u32 kind, bool constraint) {
         }
         return false;
     }
-    if (constraint && (ty->flags & TYF_TYPE_PARAM)) {
-        Ty const* base = ty_apparent_type(current_checker, ty);
-        return base != ty && maybe_kind(base, kind, false);
+    if (constraint && (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) {
+        // (tsc's maybeTypeOfKindConsideringBaseConstraint)
+        Ty const* base = ty_base_constraint(current_checker, ty);
+        return base && base != ty && maybe_kind(base, kind, false);
     }
     return false;
 }
@@ -1664,6 +1665,16 @@ static bool instanceof_target_ok(Checker* checker, Ty const* ty) {
     return false;
 }
 
+// tsc's checkForDisallowedESSymbolOperand: symbols don't convert to numbers or strings implicitly
+static bool check_symbol_operands(Ty const* left, Ty const* right, Expr const* expr, ErrorCtx* errs) {
+    Expr const* offending = maybe_kind(left, TYF_ES_SYMBOL_LIKE, true) ? &expr->binary_op->left :
+        maybe_kind(right, TYF_ES_SYMBOL_LIKE, true) ? &expr->binary_op->right : nullptr;
+    if (!offending) return true;
+    error_ctx_error_d(errs, expr_error_span(offending), 2469, "The '", binary_op_get_zv(expr->binary_op->op).str,
+        "' operator cannot be applied to type 'symbol'.");
+    return false;
+}
+
 static void binary_op_typecheck(
     Ty const* left,
     BinaryOp op,
@@ -1685,10 +1696,14 @@ static void binary_op_typecheck(
             }
             u32 number_like = TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM, bigint_like = TYF_BIGINT | TYF_BIGINT_LITERAL;
             u32 string_like = TYF_STRING_LIKE;
-            if (assignable_to_kind(left, number_like, true) && assignable_to_kind(right, number_like, true)) break;
-            if (assignable_to_kind(left, bigint_like, true) && assignable_to_kind(right, bigint_like, true)) break;
-            if (assignable_to_kind(left, string_like, true) || assignable_to_kind(right, string_like, true)) break;
-            if ((left->flags | right->flags) & TYF_ANY) break;
+            if ((assignable_to_kind(left, number_like, true) && assignable_to_kind(right, number_like, true)) ||
+                (assignable_to_kind(left, bigint_like, true) && assignable_to_kind(right, bigint_like, true)) ||
+                assignable_to_kind(left, string_like, true) || assignable_to_kind(right, string_like, true) ||
+                ((left->flags | right->flags) & TYF_ANY)
+            ) {
+                check_symbol_operands(left, right, expr, errs);
+                break;
+            }
             // Shown as their base types (`false` as `boolean`) unless both could plausibly be operands
             u32 close_enough = number_like | bigint_like | string_like | TYF_ANY | TYF_UNKNOWN;
             report_operator_error(left, right, expr, close_enough, errs);
@@ -1752,6 +1767,7 @@ static void binary_op_typecheck(
         case BINARY_OP_LESS_EQUAL:
         case BINARY_OP_GREATER_EQUAL: {
             Checker* checker = current_checker;
+            if (!check_symbol_operands(left, right, expr, errs)) break;
             left = ty_check_non_null_type(checker, left, &expr->binary_op->left, errs);
             right = ty_check_non_null_type(checker, right, &expr->binary_op->right, errs);
             if (!left || !right) break;
@@ -1905,9 +1921,15 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
                 case UNARY_OP_TILDE:
                 case UNARY_OP_PLUS:
-                case UNARY_OP_MINUS:
-                    ty_check_non_null_type(current_checker, ty_expr_type(current_checker, &my unary_op->expr), &my unary_op->expr, errs);
-                    break;
+                case UNARY_OP_MINUS: {
+                    Ty const* operand = ty_expr_type(current_checker, &my unary_op->expr);
+                    ty_check_non_null_type(current_checker, operand, &my unary_op->expr, errs);
+                    if (maybe_kind(operand, TYF_ES_SYMBOL_LIKE, true)) {
+                        csview op_text = csview_trim(zsview_sv(unary_op_get_zv(my unary_op->op)));
+                        error_ctx_error_d(errs, expr_error_span(&my unary_op->expr), 2469, "The '", op_text,
+                            "' operator cannot be applied to type 'symbol'.");
+                    }
+                }   break;
 
                 case UNARY_OP_TYPEOF:
                 case UNARY_OP_VOID:
@@ -2072,6 +2094,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             }
             for_each (i, vec_expr, &my template_->substitutions) {
                 expr_typecheck(i, errs);
+                // tsc's checkTemplateExpression
+                if (!my template_->tag && maybe_kind(ty_expr_type(current_checker, i), TYF_ES_SYMBOL_LIKE, true)) {
+                    error_ctx_error_d(errs, expr_error_span(i), 2731, "Implicit conversion of a 'symbol' to a 'string' will "
+                        "fail at runtime. Consider wrapping this expression in 'String(...)'.");
+                }
             }
             break;
     }

@@ -23086,7 +23086,7 @@ const baselines = {
         types: true,
     },
     'noImplicitSymbolToString': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39461,7 +39461,7 @@ const baselines = {
         types: true,
     },
     'symbolType3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39476,7 +39476,7 @@ const baselines = {
         types: true,
     },
     'symbolType6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39486,7 +39486,7 @@ const baselines = {
         types: true,
     },
     'symbolType8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
