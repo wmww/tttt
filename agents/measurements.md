@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-25, alias variances (tsc's getAliasVariances)
+Suite 6914 -> **6918 / 13542** (+4: circularContextualReturnType, consistentAliasVsNonAliasRecordBehavior,
+unionTypeErrorMessageTypeRefs01, mappedTypes3; nothing lost). tsc corpus still 0 diagnostics. `./bench.sh`: tsc corpus
+2.57 s (typecheck 254 ms in the phase run), type-fest 0.29 s, valibot 0.58 s / 506 MB vs tsgo 0.86 s: unchanged, so
+the shortcut is a correctness rule here more than a perf one. valibot gained 2 wrong TS2578s (triage.md "Perf").
+
 ## 2026-09-25, `.tsx` tests in the suite (harness change, no checker change)
 The harness now collects `.tsx` test files: **13163 -> 13540 tests** (+377 configurations of 328 files). Suite 6912 ->
 **6914 / 13540** full (errors 9298, symbols 10512, types 8967): 2 of the new ones pass. `./failstats.py --jsx` (the

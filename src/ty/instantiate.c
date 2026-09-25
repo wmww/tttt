@@ -128,8 +128,8 @@ static TyList instantiate_list(Checker* me, TyList list, TyMapper const* mapper,
 }
 
 // A homomorphic mapped type (`{ [P in keyof T]: X }`) instantiated with an array or tuple for T is an array or tuple of
-// the template, not an object with the array methods mapped, and with a union for T a union (tsc's
-// instantiateMappedType). Null if this isn't that
+// the template, not an object with the array methods mapped, with a union for T a union, and with a primitive for T the
+// primitive (tsc's instantiateMappedType). Null if this isn't that
 static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMapper const* mapper) {
     // Asking for the members of every object type that gets instantiated would defeat their laziness, so look at the
     // syntax first
@@ -143,13 +143,14 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (!mapped || mapped->name_type || !mapped->modifiers_type || mapped->modifiers_type->kind != TY_TYPE_PARAM) return nullptr;
     Ty const* list = ty_instantiate(me, mapped->modifiers_type, mapper);
     if (list == mapped->modifiers_type) return nullptr;
+    u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
+    if (list->kind != TY_UNION && !(list->flags & (mappable | TYF_ERROR))) return list;
     if (list->kind == TY_UNION) {
         // Distributes over a union (tsc's mapTypeWithAlias): `Mutable<A | B>` is `Mutable<A> | Mutable<B>` by the
         // name it was written with. Primitives map to themselves
         u32 len = list->composite.types.len;
         Ty const** parts = malloc(sizeof(Ty const*) * len);
         panic_if(!parts, "out of memory");
-        u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
         for (u32 i = 0; i < len; i++) {
             Ty const* part = list->composite.types.data[i];
             parts[i] = part->flags & mappable ? ty_instantiate(me, ty, mapper_with(me, mapper, mapped->modifiers_type, part)) : part;

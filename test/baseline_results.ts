@@ -3373,7 +3373,7 @@ const baselines = {
     'circularContextualReturnType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularGetAccessor(noimplicitany=false)': {
         errors: false,
@@ -5626,7 +5626,7 @@ const baselines = {
         types: false,
     },
     'consistentAliasVsNonAliasRecordBehavior': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32111,7 +32111,7 @@ const baselines = {
         types: false,
     },
     'unionTypeErrorMessageTypeRefs01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64197,8 +64197,8 @@ const baselines = {
     },
     'mappedTypes3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mappedTypes4': {
         errors: false,

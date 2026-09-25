@@ -46,6 +46,8 @@ enum {
     KEY_BASE_SIGNATURE, // Signature -> TyMapper of its type parameters to their base constraints (infer.c)
     KEY_VARIANCES,      // declared type id -> variance array
     KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation
+    KEY_ALIAS_VARIANCES, // alias Symbol -> variance array
+    KEY_ALIAS_MARKER,   // type id -> non-null if it is an alias instantiation variances are measured with
     KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
     KEY_CONTEXT_THIS,   // FunctionImpl -> the `this` type its contextual signature declares
@@ -210,6 +212,10 @@ FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name);
 Ty const* ty_rest_element_type(Checker* me, Ty const* rest);
 // Type parameter `index` of a generic declared type was measured as contravariant
 bool ty_type_param_is_contravariant(Checker* me, Ty const* target, u32 index);
+bool ty_alias_param_is_contravariant(Checker* me, Symbol const* alias, u32 index);
+Ty const* ty_alias_instance(Checker* me, Symbol const* decl, TyList args);
+TyList ty_alias_type_params(Checker* me, Symbol const* decl);
+bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional);
 bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c
 bool ty_is_tuple(Ty const* ty); // Not the empty tuple, which is its own target (TY_DECLARED)
 bool ty_is_array(Checker* me, Ty const* ty);

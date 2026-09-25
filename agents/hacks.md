@@ -438,7 +438,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `super(...)` has an `any` callee (`IdentifierExpr.super_member` is false there): arguments aren't checked against the
   base constructor, and the TS2335-TS2337/TS2466/TS2660 legality errors aren't reported although `Scope.no_super` and
   the resolve walk already know where `super` is illegal.
-- `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), alias type arguments are only used for deferred types (there are no variances for aliases), no
+- `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), no
   `InferencePriority` flags beyond naked-type-variable, homomorphic, mapped-constraint and return-type (they are tsc's
   bit values and OR together now), type predicates don't exist (parser drops `x is T`).
 - `ty_union_signatures` (relate.c, tsc's getUnionSignatures): union signatures aren't cached per union type (built on every call); `this`
@@ -603,7 +603,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - Relations to a generic mapped type (`generic_mapped_target_related`, relate.c) follow tsc's isGenericMappedType
   rule, but only a source without type variables gets its answer: a generic one that fails it falls through to the
   member-by-member comparison, which a mapped type without members passes. That permissive fallback stands in for
-  mappedTypeRelatedTo (generic mapped to generic mapped), homomorphic `Readonly<T>` to `T`, and the like. The mapped
+  homomorphic `Readonly<T>` to `T` and the like (generic mapped to generic mapped is tsc's mappedTypeRelatedTo,
+  `mapped_related`, and decides on its own). The mapped
   type parameter P gets no constraint when lowered, so `S[P]` is compared as `S[Q]` (with an `as` clause a stand-in
   P' constrained to Q is used, `mapped_key_param_mapper`, cached per MappedInfo). Target `T[K]` uses the write type
   (intersection over a union constraint of T, `write_constraint_of_indexed`).
@@ -630,10 +631,14 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   property that is in flight or whose node reaches an alias in flight (through unresolved aliases,
   `ty_node_reaches_alias_in_flight`) isn't judged, and the answer isn't remembered. The intersection itself is
   interned with that answer. The real fix is a lazy reduced view of intersections.
-- `get_variances`: arrays, tuples and synthetic targets are hardcoded covariant (tsc does the same for arrays and
-  tuples). `VARIANCE_UNRELIABLE` is set from a checker-wide flag whenever a deferred type or mapped type is compared
-  while *any* variance is being measured; cached sub-results don't set it. No alias variances: instantiated
-  aliases of object types compare structurally (the maybe-cache keeps that finite).
+- `get_variances` / `get_alias_variances`: arrays, tuples and synthetic targets are hardcoded covariant (tsc does the
+  same for arrays and tuples). `VARIANCE_UNRELIABLE` is set from a checker-wide flag whenever a deferred type or mapped
+  type is compared while *any* variance is being measured (tsc: only when a marker is reached through it), and
+  remembered in the relation cache (`CACHE_UNRELIABLE`). There is no `Unmeasurable` (tsc: `-?` mapped types, which
+  then need identical arguments): it's treated as unreliable, so the variance fast path can accept pairs tsc would only
+  accept if identical. `in`/`out` modifiers on type parameters are parsed and dropped (tsc takes the variance from
+  them). Alias variances apply to object and conditional types (like tsc), keyed by the alias Symbol; the marker
+  instantiations are remembered by type id (`KEY_ALIAS_MARKER`, tsc's markerTypes).
 - The identity relation (`TY_RELATION_IDENTITY`, `identity_structured` in relate.c): tuples of different shapes are
   never identical (tsc compares their properties, so labels don't matter there either); two references to one target
   compare type arguments only (no structural fallback); the two-conditional rule in `structured_related` doesn't infer

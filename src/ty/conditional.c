@@ -12,6 +12,7 @@ typedef struct MentionWalk {
     u32* visited;
     u32 visited_cap;
     u32 visited_len;
+    Ty const* only; // Non-null: the one type parameter that counts
 } MentionWalk;
 
 #define MENTION_MAX_VISITED 8192
@@ -53,7 +54,7 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
         for (u32 i = 0; i < walk->bound_len; i++) {
             if (walk->bound[i] == ty) return false;
         }
-        return true;
+        return !walk->only || walk->only == ty;
     }
     if (ty->flags & TYF_DEFERRED) return true;
     if (depth > MENTION_MAX_DEPTH || walk->visited_len >= MENTION_MAX_VISITED) return true;
@@ -111,6 +112,18 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             // Template literals, string mappings, and whatever else: trust the flag
             return true;
     }
+}
+
+// tsc's isDistributionDependent: a distributive conditional type whose branches (may) mention the check type
+// parameter, so they depend on which member of a union it's instantiated with
+bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional) {
+    Ty const* root = conditional->conditional.root ? conditional->conditional.root : conditional;
+    if (!root->conditional.distributive || root->conditional.check->kind != TY_TYPE_PARAM) return false;
+    MentionWalk walk = { .only = root->conditional.check };
+    bool ret = mentions_type_variables(me, ty_conditional_branch(me, root, true), &walk, 0) ||
+        mentions_type_variables(me, ty_conditional_branch(me, root, false), &walk, 0);
+    free(walk.visited);
+    return ret;
 }
 
 static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {

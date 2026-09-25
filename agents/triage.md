@@ -56,6 +56,9 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   array half is `any[]` (hacks.md "Narrowing"). controlFlowArrays and friends.
 
 ## Checker gaps
+- `in`/`out` variance annotations on type parameters are parsed and dropped (`GenericItem` has no field): tsc takes the
+  variance from them instead of measuring (`getVariancesWorker`), and checks them (TS2636/TS2637). Small now that
+  `measure_variances` is shared by declared types and aliases.
 - valibot `actions/args/args.ts:43` (and argsAsync): spurious TS2370 on `(...args: InferInput<TSchema>) => ...` with
   `TSchema extends BaseSchema<unknown[], unknown[], ...>`: `ty_extends_array` doesn't see through the constraint of
   `NonNullable<TSchema['~types']>['input']` to `unknown[]`. Probe it before assuming where it breaks.
@@ -327,13 +330,17 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   a cheap regression check for lib-related changes.
 
 ## Perf (see `measurements.md` for numbers)
-- After plan 20, valibot is ~1.2 s vs tsgo 0.88 (single-threaded 1.72). What's left is inference (`infer_from` 20%
-  self; half of all time under `infer_from_signature_lists` -> `infer_from_returns`, i.e. walking schema objects'
-  `~run`/`~standard` members) and `ty_conditional_resolve`'s `infer X` walks. The next lever is tsc's alias shortcut:
-  two instantiations of one alias (`InferObjectInput<X>` vs `InferObjectInput<TEntries>`) infer (and relate) by their
-  alias type arguments with the alias's variances. tttt only does it for deferred targets (`infer_from`, TODO) since
-  there are no alias variances (`get_variances` is for declared types). Covariant-only for all aliases measured
-  ~10% on valibot; it needs variances to be correct, and would help relations too: worth a plan.
+- Alias variances are in (2026-09-25): two instantiations of one alias infer and relate by their type arguments
+  (tsc's getAliasVariances). What's left of valibot's time is inference (`infer_from_signature_lists` ->
+  `infer_from_returns` over schema objects' `~run`/`~standard` members) and `ty_conditional_resolve`'s `infer X` walks;
+  re-profile before picking the next lever.
+- valibot `methods/required/required.ts:258` and `requiredAsync.ts:269`: since alias variances, tttt finds the first
+  overload compatible with the implementation (TS2578 unused `@ts-expect-error`; tsc says TS2394). The erased overload
+  return `Omit<any, ...> & { entries: RequiredEntries<ObjectEntries, undefined, undefined>; ... }` now relates to the
+  implementation's `SchemaWithRequired<Schema, ObjectKeys<Schema> | undefined, ...>`; the variance fast path decides
+  some pair tsc doesn't (`RequiredEntries` measures invariant+unreliable for TKeys, `InferObjectInput` covariant+
+  unreliable). `TTTT_DEBUG_RELATE_NESTED=1` shows the pairs; suspects: no `Unmeasurable` (hacks.md, `get_variances`),
+  or a marker reaching a type whose variance tsc reports as unmeasurable.
 - Cache call resolutions per `CallExpr` in the checker (each call resolves twice today).
 - type-fest's check (0.6 s) is ~90% `test-d/opaque.ts` alone, which runs into TS2589 at line 68 (`Tagged`/
   `UnwrapTagged` over `TagContainer`) plus four TS7022 that tsc doesn't report: a correctness bug with a perf symptom.

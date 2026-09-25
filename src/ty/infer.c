@@ -760,6 +760,18 @@ static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** s
 
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if (!(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+    if (source->alias && source->alias == target->alias) {
+        // Two instantiations of one type alias: by type argument, with the alias's variances (tsc). Without type
+        // arguments the two are the same type, with nothing to infer
+        for (u32 i = 0; i < source->alias_args.len && i < target->alias_args.len; i++) {
+            if (!(target->alias_args.data[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+            bool flip = ty_alias_param_is_contravariant(me, source->alias, i);
+            if (flip) inf->contravariant = !inf->contravariant;
+            infer_from(me, inf, source->alias_args.data[i], target->alias_args.data[i]);
+            if (flip) inf->contravariant = !inf->contravariant;
+        }
+        return;
+    }
     if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, inf, &source, &target)) return;
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
@@ -791,16 +803,6 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         // infers `T` from `T | undefined`)
         for (u32 i = 0; i < source->composite.types.len; i++) {
             infer_from(me, inf, source->composite.types.data[i], source->composite.types.data[i]);
-        }
-        return;
-    }
-    if ((target->flags & TYF_DEFERRED) && source->alias && source->alias == target->alias &&
-        source->alias_args.len == target->alias_args.len
-    ) {
-        // Two instantiations of one alias whose structure can't be walked: by type argument. TODO: tsc does this for
-        // every alias, with the variances of the alias deciding the direction (there are none for aliases here yet)
-        for (u32 i = 0; i < source->alias_args.len; i++) {
-            infer_from(me, inf, source->alias_args.data[i], target->alias_args.data[i]);
         }
         return;
     }
