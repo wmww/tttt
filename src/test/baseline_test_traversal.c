@@ -1008,6 +1008,27 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
+            // A name exported by `export = X` or `export default X` isn't an expression: it shows the type it declares
+            // if it declares one (tsc's getTypeOfNode, isInRightSideOfImportOrExportAssignment)
+            if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR && my expr.tag == EXPR_IDENTIFIER && !my expr.identifier.keyword &&
+                my expr.identifier.symbol
+            ) {
+                Symbol const* type_symbol = symbol_for_meaning(my expr.identifier.symbol, SYMBOL_TYPE);
+                if (type_symbol && !type_symbol->is_placeholder &&
+                    (type_symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM | SYMBOL_TYPE_ALIAS))
+                ) {
+                    Symbol const* shown = my expr.identifier.target ? my expr.identifier.target : type_symbol;
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = declaration_get_spans(shown_declaration(my expr.identifier.symbol, shown)),
+                        .span = my expr.identifier.name,
+                        .name = shown_declaration(my expr.identifier.symbol, shown)->name_span,
+                    });
+                    ctx->any_keeps_underline = true;
+                    baseline_test_case_add_type(ctx, my expr.identifier.name, ty_declared_type_of(current_checker, type_symbol));
+                    break;
+                }
+            }
+            // fallthrough
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             // (A bare `return;` returns an implicit undefined literal, a written `undefined` is an expression)

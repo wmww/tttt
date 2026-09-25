@@ -533,12 +533,12 @@ const baselines = {
     'allowSyntheticDefaultImports4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'allowSyntheticDefaultImports5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'allowSyntheticDefaultImports6': {
         errors: false,
@@ -688,7 +688,7 @@ const baselines = {
     'ambientExternalModuleInAnotherExternalModule': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientExternalModuleReopen': {
         errors: true,
@@ -703,7 +703,7 @@ const baselines = {
     'ambientExternalModuleWithRelativeExternalImportDeclaration': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ambientExternalModuleWithRelativeModuleName': {
         errors: false,
@@ -848,12 +848,12 @@ const baselines = {
     'amdModuleName1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'amdModuleName2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'anonClassDeclarationEmitIsAnon': {
         errors: true,
@@ -4028,7 +4028,7 @@ const baselines = {
     'clinterfaces': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'cloduleAcrossModuleDefinitions': {
         errors: true,
@@ -7008,7 +7008,7 @@ const baselines = {
     'cyclicModuleImport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'cyclicTypeInstantiation': {
         errors: true,
@@ -7633,7 +7633,7 @@ const baselines = {
     'declarationEmitComputedNameConstEnumAlias': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitComputedNameWithQuestionToken': {
         errors: true,
@@ -8673,7 +8673,7 @@ const baselines = {
     'declarationFileNoCrashOnExtraExportModifier': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationFileOverwriteError': {
         errors: false,
@@ -9158,7 +9158,7 @@ const baselines = {
     'defaultNamedExportWithType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultNamedExportWithType3': {
         errors: true,
@@ -9168,7 +9168,7 @@ const baselines = {
     'defaultNamedExportWithType4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultOfAnyInStrictNullChecks': {
         errors: true,
@@ -11463,7 +11463,7 @@ const baselines = {
     'es5-umd4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5-yieldFunctionObjectLiterals': {
         errors: true,
@@ -11858,12 +11858,12 @@ const baselines = {
     'es6ImportEqualsExportModuleCommonJsError': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportEqualsExportModuleEs2015Error': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportNameSpaceImport': {
         errors: true,
@@ -12103,7 +12103,7 @@ const baselines = {
     'esModuleInteropDefaultMemberMustBeSyntacticallyDefaultExport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'esModuleInteropEnablesSyntheticDefaultImports': {
         errors: true,
@@ -12408,7 +12408,7 @@ const baselines = {
     'exportAssignValueAndType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignedNamespaceIsVisibleInDeclarationEmit': {
         errors: true,
@@ -12493,7 +12493,7 @@ const baselines = {
     'exportAssignmentWithExports': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentWithImportStatementPrivacyError': {
         errors: true,
@@ -12633,7 +12633,7 @@ const baselines = {
     'exportDefaultInterfaceClassAndFunctionOverloads': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportDefaultInterfaceClassAndValue': {
         errors: false,
@@ -12838,12 +12838,12 @@ const baselines = {
     'exportEqualsClassNoRedeclarationError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportEqualsClassRedeclarationError': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportEqualsCommonJs': {
         errors: true,
@@ -15443,7 +15443,7 @@ const baselines = {
     'globalFunctionAugmentationOverload': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'globalIsContextualKeyword': {
         errors: true,
@@ -16418,12 +16418,12 @@ const baselines = {
     'importNonExportedMember10': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importNonExportedMember11': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importNonExportedMember12': {
         errors: false,
@@ -16443,32 +16443,32 @@ const baselines = {
     'importNonExportedMember4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importNonExportedMember5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importNonExportedMember6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importNonExportedMember7': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importNonExportedMember8': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importNonExportedMember9': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importNotElidedWhenNotFound': {
         errors: true,
@@ -22733,7 +22733,7 @@ const baselines = {
     'noCircularDefinitionOnExportOfPrivateInMergedNamespace': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCollisionThisExpressionAndClassInGlobal': {
         errors: true,
@@ -25253,7 +25253,7 @@ const baselines = {
     'privacyCheckExportAssignmentOnExportedGenericInterface2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'privacyCheckExternalModuleExportAssignmentOfGenericClass': {
         errors: false,
@@ -27973,12 +27973,12 @@ const baselines = {
     'sourceMapValidationExportAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationExportAssignmentCommonjs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationFor': {
         errors: false,
@@ -48058,7 +48058,7 @@ const baselines = {
     'es6modulekindWithES5Target4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6modulekindWithES5Target5': {
         errors: true,
@@ -48128,7 +48128,7 @@ const baselines = {
     'esnextmodulekindWithES5Target4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'esnextmodulekindWithES5Target5': {
         errors: true,
@@ -48188,7 +48188,7 @@ const baselines = {
     'exportAssignmentAndDeclaration': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentCircularModules': {
         errors: true,
@@ -48318,7 +48318,7 @@ const baselines = {
     'exportNonVisibleType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportTypeMergedWithExportStarAsNamespace': {
         errors: true,
@@ -50658,7 +50658,7 @@ const baselines = {
     'jsDeclarationsDefaultsErr': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsDocCommentsOnConsts': {
         errors: false,
