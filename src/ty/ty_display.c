@@ -340,20 +340,28 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
     // Unresolved names are an error type; type parameters and parameters in scope where they're printed (tsc checks
     // that by resolving from the signature's fake scope)
     if (!symbol || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return true;
+    if (symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN) return true; // `object`
     // (A local of a function or block never is: tsc's isDeclarationVisible() is false for it, and `enclosing` only knows
     // file and namespace scopes anyway)
     Symbol const* found = scope_resolve(d.enclosing, first, meaning);
     return found && same_symbol(me, found, symbol);
 }
 
-// The type of an annotation, the way the checker lowered it
-static Ty const* node_type(Checker* me, TypeNode const* node) {
-    return ty_from_node(me, node, (LowerCtx){ .generic = true });
+// A type of the uninstantiated signature at the root of `sig` as `sig` has it
+static Ty const* instantiate_for(Checker* me, Signature const* sig, Ty const* ty) {
+    if (!sig || !sig->target) return ty;
+    ty = instantiate_for(me, sig->target, ty);
+    return sig->mapper ? ty_instantiate(me, ty, sig->mapper) : ty;
+}
+
+// The type of an annotation, the way the checker lowered it (and instantiated, see TyDisplay.mapped_by)
+static Ty const* node_type(Checker* me, TyDisplay d, TypeNode const* node) {
+    return instantiate_for(me, d.mapped_by, ty_from_node(me, node, (LowerCtx){ .generic = true }));
 }
 
 // A part of an annotation that can't be reused prints its type
 static void display_node_fallback(Checker* me, TyDisplay d, TypeNode const* node) {
-    ty_display(me, reused_if(d, false), node_type(me, node));
+    ty_display(me, reused_if(d, false), node_type(me, d, node));
 }
 
 static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* args) {
@@ -395,8 +403,23 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
             *vec_symbol_cptr_at(&identifier->namespace_symbols, 0) : nullptr;
     }
     Span first = qualified ? *vec_span_at(&identifier->namespaces, 0) : identifier->name;
-    if (!name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) {
+    // (A type parameter that the instantiation maps: tsc's canReuseTypeNode)
+    bool mapped = !qualified && d.mapped_by && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) &&
+        node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
+    if (mapped || !name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) {
+        isize_t start = cstr_size(d.target);
         display_node_fallback(me, d, node);
+        // tsc names it anew (serializeTypeName) in a node it marks as reused: of an `import("m").A` it made, the
+        // `import(` and `).` are reused and the rest isn't
+        char const* text = cstr_str(d.target) + start;
+        if (!mapped && d.underline && strncmp(text, "import(\"", 8) == 0) {
+            char const* close = strstr(text, "\").");
+            char* underline = (char*)cstr_str(d.underline) + (cstr_size(d.underline) - (cstr_size(d.target) - start));
+            if (close) {
+                memset(underline, ' ', strlen("import("));
+                memset(underline + (close + 1 - text), ' ', 2);
+            }
+        }
         return;
     }
     for_each (i, vec_span, &identifier->namespaces) {
@@ -730,7 +753,7 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
 // without its `undefined`), so that it can be reprinted
 static bool annotation_is(Checker* me, TypeNode const* node, Ty const* ty, bool optional) {
     if (!node->parsed || node->tag == TYPE_UNIQUE_SYMBOL) return false;
-    Ty const* annotated = node_type(me, node);
+    Ty const* annotated = node_type(me, (TyDisplay){0}, node);
     return annotated == ty || (optional && annotated == ty_without_undefined(me, ty));
 }
 
@@ -962,14 +985,22 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     bool reused = ret_annotation &&
         (!instantiated || (ret == signature_return_type(me, root) && !mentions(me, ret, d.fresh_params)));
     if (predicate) {
-        TyDisplay predicate_d = reused_if(d, reusable && function->predicate);
+        // In an instantiated signature, a parameter it names isn't the one of the instantiated signature (tsc resolves
+        // it to the declaration's own), so the whole predicate is printed
+        bool names_param = function && function->predicate && !function->predicate->is_this;
+        TyDisplay predicate_d = reused_if(d, reusable && function->predicate && !(instantiated && !this_only && names_param));
         if (predicate->asserts) out_lit(predicate_d, "asserts ");
         out(predicate_d, atom_sv(predicate->param_name));
         if (predicate->type) {
             out_lit(predicate_d, " is ");
-            TypeNode const* annotation = reusable && function->predicate && function->predicate->has_type &&
-                (!instantiated || !mentions(me, predicate->type, d.fresh_params)) ? &function->predicate->type : nullptr;
-            display_annotated(me, predicate_d, annotation, predicate->type, false);
+            // Reused like any annotation, but whatever type it has (tsc compares the return type, boolean): in an
+            // instantiated signature, what the instantiation maps prints what it is mapped to
+            if (predicate_d.reused && function->predicate->has_type && d.underline && d.enclosing) {
+                predicate_d.mapped_by = instantiated && !this_only ? sig : nullptr;
+                display_node(me, predicate_d, &function->predicate->type);
+            } else {
+                ty_display(me, reused_if(predicate_d, false), predicate->type);
+            }
         }
         return;
     }
@@ -1205,6 +1236,7 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
 
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     d.depth++;
+    d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
     if (d.depth > MAX_DISPLAY_DEPTH * 4) {
         out_lit(d, "...");
         return;
@@ -1256,10 +1288,21 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             } else if (ty->literal.enum_decl) {
                 // The only member of an enum is the enum. TODO(fresh literals): tsc prints the *fresh* type of the
                 // expression `E.x` as `E.x` even then (error messages); `.types` baselines show the widened `E`
+                bool member = ty->literal.enum_member != ty->literal.enum_decl && ty_enum_of_member(me, ty) != ty;
+                csview member_name = ty->literal.enum_member->name;
+                if (member && !is_identifier_name(member_name)) {
+                    // `(typeof E)["a b"]`: a member whose name isn't an identifier
+                    out_lit(d, "(typeof ");
+                    out_symbol_name(me, d, ty->literal.enum_decl, SYMBOL_VALUE);
+                    out_lit(d, ")[");
+                    display_string_literal(d, member_name);
+                    out_lit(d, "]");
+                    break;
+                }
                 out_symbol_name(me, d, ty->literal.enum_decl, SYMBOL_TYPE);
-                if (ty->literal.enum_member != ty->literal.enum_decl && ty_enum_of_member(me, ty) != ty) {
+                if (member) {
                     out_lit(d, ".");
-                    out(d, ty->literal.enum_member->name_span.sv);
+                    out(d, member_name);
                 }
             } else if (ty->literal.string) {
                 display_string_literal(d, atom_sv(ty->literal.string));

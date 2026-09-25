@@ -1177,6 +1177,9 @@ typedef struct TyDisplay {
     TyList fresh_params;
     bool unique_symbols; // Print unique symbol types as `unique symbol` rather than `typeof sym` (types baseline)
     TyList infer_params; // Inside the extends type of a conditional type: its own `infer` type parameters
+    // Reprinting an annotation of this instantiated signature (tsc's context.mapper): its type parameters that the
+    // instantiation maps aren't reused, they print what they're mapped to
+    struct Signature const* mapped_by;
 } TyDisplay;
 // A symbol's name qualified as far as needed to reach it from `enclosing` (tsc's symbolToString with an enclosing
 // declaration), fully without one
