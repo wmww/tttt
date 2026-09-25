@@ -1337,6 +1337,77 @@ static void nullish_coalesce_typecheck(Expr const* me, ErrorCtx* errs) {
     }
 }
 
+// An object or array literal that is a destructuring assignment target: its elements are assigned to
+static bool is_destructuring_target(Expr const* me) {
+    switch (my tag) {
+        case EXPR_IDENTIFIER: return my identifier.assignment_target;
+        case EXPR_PROPERTY: return my property->assignment_target;
+        case EXPR_BINARY_OP: return my binary_op->op == BINARY_OP_EQUAL && is_destructuring_target(&my binary_op->left);
+        case EXPR_SPREAD: return is_destructuring_target(my spread);
+        case EXPR_ARRAY:
+            for_each (i, vec_expr, &my array) {
+                if (is_destructuring_target(i)) return true;
+            }
+            return false;
+        case EXPR_OBJECT:
+            for_each (i, vec_object_expr_item, &my object) {
+                if (i->shorthand_default || is_destructuring_target(&i->value)) return true;
+            }
+            return false;
+        default:
+            return false;
+    }
+}
+
+// tsc's checkGrammarObjectLiteralExpression: a name can be one property, one method or one get/set pair
+static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
+    if (!my outer_span.source || my outer_span.source->has_parse_errors || is_destructuring_target(me)) return;
+    enum { GET = 1, SET = 2, PROPERTY = 4, METHOD = 8, ACCESSOR = GET | SET };
+    ObjectExpr const* object = &my object;
+    isize count = vec_object_expr_item_size(object);
+    uint8_t* seen = calloc(count ? (size_t)count : 1, 1);
+    panic_if(!seen, "out of memory");
+    for (isize n = 0; n < count; n++) {
+        ObjectExprItem const* item = vec_object_expr_item_at(object, n);
+        uint8_t kind;
+        switch (item->tag) {
+            case OBJECT_ITEM_PROPERTY: case OBJECT_ITEM_SHORTHAND: kind = PROPERTY; break;
+            case OBJECT_ITEM_METHOD: kind = METHOD; break;
+            case OBJECT_ITEM_GETTER: kind = GET; break;
+            case OBJECT_ITEM_SETTER: kind = SET; break;
+            default: continue;
+        }
+        if (item->computed_key) continue; // TODO: literal-typed computed names (tsc's tryGetNameFromType)
+        isize existing = -1;
+        for (isize j = 0; j < n && existing < 0; j++) {
+            ObjectExprItem const* other = vec_object_expr_item_at(object, j);
+            if (seen[j] && !other->computed_key && cstr_equals_sv(&other->name_string, cstr_sv(&item->name_string))) existing = j;
+        }
+        if (existing < 0) {
+            seen[n] = kind;
+            continue;
+        }
+        uint8_t previous = seen[existing];
+        Span name = item->name_span;
+        if ((kind & METHOD) && (previous & METHOD)) {
+            error_ctx_error_d(errs, name, 2300, "Duplicate identifier '", name, "'.");
+        } else if ((kind & PROPERTY) && (previous & PROPERTY)) {
+            error_ctx_error_d(errs, name, 1117, "An object literal cannot have multiple properties with the same name.");
+        } else if ((kind & ACCESSOR) && (previous & ACCESSOR)) {
+            if (previous != ACCESSOR && kind != previous) {
+                seen[existing] = kind | previous;
+            } else {
+                error_ctx_error_d(errs, name, 1118, "An object literal cannot have multiple get/set accessors with the same name.");
+                break;
+            }
+        } else {
+            error_ctx_error_d(errs, name, 1119, "An object literal cannot have property and accessor with the same name.");
+            break;
+        }
+    }
+    free(seen);
+}
+
 // tsc's checkPrefixUnaryExpression/checkPostfixUnaryExpression for `++`/`--`: the operand has to be numeric, and then
 // a reference (tsc's checkReferenceExpression)
 static void increment_typecheck(Expr const* operand, ErrorCtx* errs) {
@@ -1666,6 +1737,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             break;
 
         case EXPR_OBJECT:
+            object_check_duplicate_names(me, errs);
             for_each (i, vec_object_expr_item, &my object) {
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);

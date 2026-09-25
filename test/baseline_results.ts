@@ -10116,7 +10116,7 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierDifferentSpelling': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -10301,7 +10301,7 @@ const baselines = {
         types: false,
     },
     'duplicatePropertiesInStrictMode': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -19831,7 +19831,7 @@ const baselines = {
         types: false,
     },
     'lastPropertyInLiteralWins': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20441,7 +20441,7 @@ const baselines = {
         types: true,
     },
     'memberOverride': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23166,7 +23166,7 @@ const baselines = {
         types: true,
     },
     'noRepeatedPropertyNames': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -62391,7 +62391,7 @@ const baselines = {
         types: false,
     },
     'duplicatePropertyNames': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -62471,7 +62471,7 @@ const baselines = {
         types: true,
     },
     'objectTypeWithDuplicateNumericProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -62801,7 +62801,7 @@ const baselines = {
         types: true,
     },
     'stringLiteralTypesInImplementationSignatures2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -62931,7 +62931,7 @@ const baselines = {
         types: true,
     },
     'numericStringNamedPropertyEquivalence': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
