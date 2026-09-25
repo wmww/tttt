@@ -302,6 +302,7 @@ typedef struct BinaryOpExpr {
     Expr left;
     Expr right;
     bool is_operand; // An operand of another binary expression, without parentheses
+    bool indirect_call; // `(0, o.f)()`: the comma is how to call f without `this` (tsc's isIndirectCall)
 } BinaryOpExpr;
 
 static inline void expr_mark_binary_operand(Expr* me) {

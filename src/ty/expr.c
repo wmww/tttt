@@ -929,7 +929,6 @@ static Ty const* binary_result(Checker* me, Ty const* left, BinaryOp op, Ty cons
 
         case BINARY_OP_EQUAL:
         case BINARY_OP_COMMA:
-            // TODO: TS2695: Left side of comma operator is unused and has no side effects.
             return right;
 
         default:

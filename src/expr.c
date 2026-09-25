@@ -703,6 +703,20 @@ static void expr_lookup_names_chain_flow(
     flow->has_flow_effects |= saved_effects;
 }
 
+// tsc's isIndirectCall: `(0, o.f)()` and `(0, eval)()` call without a `this`, the comma isn't pointless
+static void mark_indirect_call(Expr* callee) {
+    if (callee->tag != EXPR_BINARY_OP || !expr_is_perenthisized(callee) || callee->binary_op->op != BINARY_OP_COMMA) return;
+    Expr const* left = &callee->binary_op->left;
+    Expr const* right = &callee->binary_op->right;
+    if (left->tag != EXPR_LITERAL || left->literal.tag != VALUE_NUMBER || expr_is_perenthisized(left) ||
+        !csview_equals(left->inner_span.sv, "0")
+    ) {
+        return;
+    }
+    bool eval = right->tag == EXPR_IDENTIFIER && !right->identifier.keyword && csview_equals(right->identifier.name.sv, "eval");
+    if (right->tag == EXPR_PROPERTY || eval) callee->binary_op->indirect_call = true;
+}
+
 void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
 
@@ -930,6 +944,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         }   break;
 
         case EXPR_CALL: {
+            mark_indirect_call(&my call->callable);
             if (my call->uses_new) my call->enclosing_class = scope_enclosing_class(names);
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
@@ -1041,6 +1056,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_TEMPLATE:
             if (my template_->tag) {
+                mark_indirect_call(my template_->tag);
                 expr_lookup_names(my template_->tag, names, errs);
             }
             for_each (i, vec_expr, &my template_->substitutions) {
@@ -1414,6 +1430,37 @@ static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
     free(seen);
 }
 
+// tsc's isSideEffectFree
+static bool is_side_effect_free(Expr const* me) {
+    switch (my tag) {
+        case EXPR_IDENTIFIER:
+            return !my identifier.keyword;
+        case EXPR_LITERAL:
+        case EXPR_REGEX:
+        case EXPR_TEMPLATE:
+        case EXPR_FUNCTION:
+        case EXPR_CLASS_DECL:
+        case EXPR_ARRAY:
+        case EXPR_OBJECT:
+            return true;
+        case EXPR_TERNARY:
+            return is_side_effect_free(&my ternary->yes) && is_side_effect_free(&my ternary->no);
+        case EXPR_BINARY_OP:
+            if (binary_op_is_assignment(my binary_op->op)) return false;
+            return is_side_effect_free(&my binary_op->left) && is_side_effect_free(&my binary_op->right);
+        case EXPR_UNARY_OP:
+            switch (my unary_op->op) {
+                case UNARY_OP_LEFT_BANG: case UNARY_OP_PLUS: case UNARY_OP_MINUS: case UNARY_OP_TILDE:
+                case UNARY_OP_TYPEOF: case UNARY_OP_RIGHT_BANG:
+                    return true;
+                default:
+                    return false;
+            }
+        default:
+            return false;
+    }
+}
+
 // tsc's checkPrefixUnaryExpression/checkPostfixUnaryExpression for `++`/`--`: the operand has to be numeric, and then
 // a reference (tsc's checkReferenceExpression)
 static void increment_typecheck(Expr const* operand, ErrorCtx* errs) {
@@ -1614,6 +1661,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 expr_check_truthiness(&my binary_op->left, errs);
             } else if (my binary_op->op == BINARY_OP_EH_EH) {
                 nullish_coalesce_typecheck(me, errs);
+            } else if (my binary_op->op == BINARY_OP_COMMA && !compiler_options()->allow_unreachable_code &&
+                !my binary_op->indirect_call && is_side_effect_free(&my binary_op->left)
+            ) {
+                error_ctx_error_d(errs, expr_error_span(&my binary_op->left), 2695,
+                    "Left side of comma operator is unused and has no side effects.");
             }
             expr_typecheck(&my binary_op->right, errs);
             binary_op_typecheck(

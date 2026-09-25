@@ -1881,7 +1881,7 @@ const baselines = {
         types: true,
     },
     'assignmentToParenthesizedExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4511,7 +4511,7 @@ const baselines = {
         types: true,
     },
     'commaOperator1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -4521,7 +4521,7 @@ const baselines = {
         types: false,
     },
     'commaOperatorLeftSideUnused': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12191,7 +12191,7 @@ const baselines = {
         types: true,
     },
     'evalAfter0': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24731,17 +24731,17 @@ const baselines = {
         types: false,
     },
     'parseCommaSeparatedNewlineNew': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parseCommaSeparatedNewlineNumber': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parseCommaSeparatedNewlineString': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25121,7 +25121,7 @@ const baselines = {
         types: true,
     },
     'predicateSemantics': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27981,7 +27981,7 @@ const baselines = {
         types: true,
     },
     'sourceMapValidationFor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29231,7 +29231,7 @@ const baselines = {
         types: false,
     },
     'systemModule16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30916,7 +30916,7 @@ const baselines = {
         types: false,
     },
     'typecheckCommaExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46506,12 +46506,12 @@ const baselines = {
         types: true,
     },
     'parenthesizedContexualTyping1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parenthesizedContexualTyping2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47811,27 +47811,27 @@ const baselines = {
         types: true,
     },
     'logicalNotOperatorWithAnyOtherType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'logicalNotOperatorWithBooleanType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'logicalNotOperatorWithEnumType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'logicalNotOperatorWithNumberType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'logicalNotOperatorWithStringType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47846,22 +47846,22 @@ const baselines = {
         types: true,
     },
     'negateOperatorWithBooleanType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'negateOperatorWithEnumType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'negateOperatorWithNumberType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'negateOperatorWithStringType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47876,22 +47876,22 @@ const baselines = {
         types: true,
     },
     'plusOperatorWithBooleanType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'plusOperatorWithEnumType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'plusOperatorWithNumberType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'plusOperatorWithStringType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47901,27 +47901,27 @@ const baselines = {
         types: false,
     },
     'typeofOperatorWithAnyOtherType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeofOperatorWithBooleanType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeofOperatorWithEnumType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'typeofOperatorWithNumberType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeofOperatorWithStringType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54271,7 +54271,7 @@ const baselines = {
         types: false,
     },
     'parserArrowFunctionExpression4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54746,7 +54746,7 @@ const baselines = {
         types: false,
     },
     'parserErrorRecoveryArrayLiteralExpression3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55336,7 +55336,7 @@ const baselines = {
         types: true,
     },
     'parserCastVersusArrowFunction1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -56421,7 +56421,7 @@ const baselines = {
         types: true,
     },
     'parserTernaryAndCommaOperators1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62136,7 +62136,7 @@ const baselines = {
         types: true,
     },
     'stringLiteralsWithSwitchStatements04': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
