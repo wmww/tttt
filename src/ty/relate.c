@@ -2222,9 +2222,12 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
         case TY_TYPE_PARAM: {
             Ty const* constraint = ty_param_constraint(me, source);
             if (!constraint || constraint == source || (constraint->flags & TYF_ANY)) {
+                if (target->kind == TY_TYPE_PARAM || (target->flags & TYF_DEFERRED)) return TERNARY_FALSE;
+                // Comparable: as `unknown` (tsc's getConstraintOfType(source) || unknownType), which is comparable to
+                // anything
+                if (st->relation == TY_RELATION_COMPARABLE) return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
                 // An unconstrained type parameter is related to `{}`, but not to `object`
                 if (target->flags & TYF_NON_PRIMITIVE) return TERNARY_FALSE;
-                if (target->kind == TY_TYPE_PARAM || (target->flags & TYF_DEFERRED)) return TERNARY_FALSE;
                 return is_related_to(me, st, global_type(me, GLOBAL_EMPTY_OBJECT), target, false);
             }
             return is_related_to(me, st, constraint, target, report);
@@ -2803,6 +2806,10 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
     if (st->relation == TY_RELATION_IDENTITY) return identity_related(me, st, source, target);
+    // Comparability is mostly bidirectional (tsc's isRelatedTo: simple relations the other way around count too)
+    if (st->relation == TY_RELATION_COMPARABLE && !(target->flags & TYF_NEVER) && is_simple_related(me, st, target, source)) {
+        return TERNARY_TRUE;
+    }
     if (is_simple_related(me, st, source, target)) return TERNARY_TRUE;
     if (ty_is_fresh_object(source) && !st->intersection_target && is_structured(target) &&
         has_excess_properties(me, st, source, target, report)

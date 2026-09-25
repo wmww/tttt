@@ -1511,6 +1511,81 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
     }
 }
 
+// tsc's isTypeAssignableToKind (`strict`: any, unknown, void, null and undefined are nothing of the kind)
+static bool assignable_to_kind(Ty const* ty, u32 kind, bool strict) {
+    Checker* checker = current_checker;
+    if (ty->flags & kind) return true;
+    if (strict && (ty->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID | TYF_NULLABLE))) return false;
+    if ((kind & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) &&
+        ty_is_related(checker, ty, ty_intrinsic(checker, TY_NUMBER), TY_RELATION_ASSIGNABLE)
+    ) {
+        return true;
+    }
+    if ((kind & (TYF_BIGINT | TYF_BIGINT_LITERAL)) && ty_is_related(checker, ty, ty_intrinsic(checker, TY_BIGINT), TY_RELATION_ASSIGNABLE)) {
+        return true;
+    }
+    return (kind & TYF_STRING_LIKE) && ty_is_related(checker, ty, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE);
+}
+
+// tsc's maybeTypeOfKind (`constraint`: of a type parameter, its constraint)
+static bool maybe_kind(Ty const* ty, u32 kind, bool constraint) {
+    if (ty->flags & kind) return true;
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (maybe_kind(ty->composite.types.data[i], kind, constraint)) return true;
+        }
+        return false;
+    }
+    if (constraint && (ty->flags & TYF_TYPE_PARAM)) {
+        Ty const* base = ty_apparent_type(current_checker, ty);
+        return base != ty && maybe_kind(base, kind, false);
+    }
+    return false;
+}
+
+// tsc's getBaseTypeOfLiteralTypeForComparison: enum and number literals are numbers, string-likes strings
+static Ty const* base_type_for_comparison(Checker* checker, Ty const* ty) {
+    if (ty->kind == TY_UNION) {
+        Ty const* stack[16];
+        TyList types = ty->composite.types;
+        if (types.len > c_arraylen(stack)) return ty;
+        for (u32 i = 0; i < types.len; i++) stack[i] = base_type_for_comparison(checker, types.data[i]);
+        return ty_union(checker, stack, types.len, nullptr, (TyList){});
+    }
+    if (ty->flags & (TYF_STRING_LITERAL | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) return ty_intrinsic(checker, TY_STRING);
+    if (ty->flags & (TYF_NUMBER_LITERAL | TYF_ENUM)) return ty_intrinsic(checker, TY_NUMBER);
+    if (ty->flags & TYF_BIGINT_LITERAL) return ty_intrinsic(checker, TY_BIGINT);
+    if (ty->flags & TYF_BOOLEAN_LITERAL) return ty_intrinsic(checker, TY_BOOLEAN);
+    return ty;
+}
+
+// The operands of `<` & co.: both numeric, or both not and comparable
+static bool comparison_operands_fit(Ty const* left, Ty const* right) {
+    Checker* checker = current_checker;
+    if ((left->flags | right->flags) & TYF_ANY) return true;
+    Ty const* numeric_types[] = { ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_BIGINT) };
+    Ty const* number_or_bigint = ty_union(checker, numeric_types, 2, nullptr, (TyList){});
+    bool left_numeric = ty_is_related(checker, left, number_or_bigint, TY_RELATION_ASSIGNABLE);
+    bool right_numeric = ty_is_related(checker, right, number_or_bigint, TY_RELATION_ASSIGNABLE);
+    return (left_numeric && right_numeric) || (!left_numeric && !right_numeric && ty_is_comparable_either_way(checker, left, right));
+}
+
+// tsc's reportOperatorError with getBaseTypesIfUnrelated: literal types are shown as their base types if those don't
+// fit either, the operands fitting when both are of `kind`
+static void report_operator_error(Ty const* left, Ty const* right, Expr const* expr, u32 kind, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    Ty const* left_base = ty_base_type_of_literal(checker, left);
+    Ty const* right_base = ty_base_type_of_literal(checker, right);
+    bool related = assignable_to_kind(left_base, kind, false) && assignable_to_kind(right_base, kind, false);
+    if (!related) {
+        left = left_base;
+        right = right_base;
+    }
+    BinaryOp written = expr->binary_op->op;
+    error_ctx_error_d(errs, expr->inner_span, 2365, "Operator '", binary_op_get_zv(written).str, "' cannot be applied to types '",
+        left, "' and '", right, "'.");
+}
+
 static void binary_op_typecheck(
     Ty const* left,
     BinaryOp op,
@@ -1519,32 +1594,27 @@ static void binary_op_typecheck(
     ErrorCtx* errs
 ) {
     switch (op) {
-        case BINARY_OP_PLUS:
-            // PERF: we also do this checks when evaluating the type, shouldn't need to duplicate them
+        case BINARY_OP_PLUS: {
+            Checker* checker = current_checker;
             // (tsc's isTypeAssignableToKind: without strictNullChecks null and undefined are strings too)
-            if (!ty_is_related(current_checker, left, ty_intrinsic(current_checker, TY_STRING), TY_RELATION_ASSIGNABLE) &&
-                !ty_is_related(current_checker, right, ty_intrinsic(current_checker, TY_STRING), TY_RELATION_ASSIGNABLE)
+            if (!ty_is_related(checker, left, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE) &&
+                !ty_is_related(checker, right, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE)
             ) {
                 // Null or undefined operands are an error of their own (tsc's checkNonNullType), then any
-                Ty const* non_null_left = ty_check_non_null_type(current_checker, left, &expr->binary_op->left, errs);
-                Ty const* non_null_right = ty_check_non_null_type(current_checker, right, &expr->binary_op->right, errs);
-                if (non_null_left != left || non_null_right != right) break;
+                left = ty_check_non_null_type(checker, left, &expr->binary_op->left, errs);
+                right = ty_check_non_null_type(checker, right, &expr->binary_op->right, errs);
+                if (!left || !right) break;
             }
-            if (extends_strict_nulls(left, TY_STRING) || extends_strict_nulls(right, TY_STRING)) {
-            } else if (extends_strict_nulls(left, TY_NUMBER) && extends_strict_nulls(right, TY_NUMBER)) {
-            } else {
-                // TODO: it seems special handling of possibly null or undefined types is needed
-                // Shown as their base types (`false` as `boolean`) unless both could plausibly be operands
-                Ty const* left_base = ty_base_type_of_literal(current_checker, left);
-                Ty const* right_base = ty_base_type_of_literal(current_checker, right);
-                if (!plausible_operand(left_base) || !plausible_operand(right_base)) {
-                    left = left_base;
-                    right = right_base;
-                }
-                error_ctx_error_d(errs, expr->inner_span, 2365,
-                    "Operator '+' cannot be applied to types '", left, "' and '", right, "'.");
-            }
-            break;
+            u32 number_like = TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM, bigint_like = TYF_BIGINT | TYF_BIGINT_LITERAL;
+            u32 string_like = TYF_STRING_LIKE;
+            if (assignable_to_kind(left, number_like, true) && assignable_to_kind(right, number_like, true)) break;
+            if (assignable_to_kind(left, bigint_like, true) && assignable_to_kind(right, bigint_like, true)) break;
+            if (assignable_to_kind(left, string_like, true) || assignable_to_kind(right, string_like, true)) break;
+            if ((left->flags | right->flags) & TYF_ANY) break;
+            // Shown as their base types (`false` as `boolean`) unless both could plausibly be operands
+            u32 close_enough = number_like | bigint_like | string_like | TYF_ANY | TYF_UNKNOWN;
+            report_operator_error(left, right, expr, close_enough, errs);
+        }   break;
 
         case BINARY_OP_STAR_STAR:
         case BINARY_OP_STAR:
@@ -1556,26 +1626,71 @@ static void binary_op_typecheck(
         case BINARY_OP_GREATER_GREATER_GREATER:
         case BINARY_OP_AND:
         case BINARY_OP_XOR:
-        case BINARY_OP_OR:
-            left = ty_check_non_null_type(current_checker, left, &expr->binary_op->left, errs);
-            right = ty_check_non_null_type(current_checker, right, &expr->binary_op->right, errs);
-            if (left && !extends_strict_nulls(left, TY_NUMBER)) {
-                error_ctx_error_d(
-                    errs,
-                    expr->binary_op->left.outer_span,
-                    2362,
-                    "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
-                );
+        case BINARY_OP_OR: {
+            Checker* checker = current_checker;
+            left = ty_check_non_null_type(checker, left, &expr->binary_op->left, errs);
+            right = ty_check_non_null_type(checker, right, &expr->binary_op->right, errs);
+            Ty const* any = ty_intrinsic(checker, TY_ANY);
+            if (!left) left = any; // (tsc's errorType)
+            if (!right) right = any;
+            // `true & false`: probably meant `&&`
+            BinaryOp suggested = op == BINARY_OP_AND ? BINARY_OP_AND_AND : op == BINARY_OP_OR ? BINARY_OP_OR_OR :
+                op == BINARY_OP_XOR ? BINARY_OP_TRIPLE_NOT_EQUAL : op;
+            if (suggested != op && maybe_kind(left, TYF_BOOLEAN | TYF_BOOLEAN_LITERAL, true) &&
+                maybe_kind(right, TYF_BOOLEAN | TYF_BOOLEAN_LITERAL, true)
+            ) {
+                error_ctx_error_d(errs, expr->inner_span, 2447, "The '", binary_op_get_zv(expr->binary_op->op).str,
+                    "' operator is not allowed for boolean types. Consider using '", binary_op_get_zv(suggested).str, "' instead.");
+                break;
             }
-            if (right && !extends_strict_nulls(right, TY_NUMBER)) {
-                error_ctx_error_d(
-                    errs,
-                    expr->binary_op->right.outer_span,
-                    2363,
-                    "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
-                );
+            Ty const* numeric_types[] = { ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_BIGINT) };
+            Ty const* number_or_bigint = ty_union(checker, numeric_types, 2, nullptr, (TyList){});
+            if (!ty_is_related(checker, left, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
+                error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2362,
+                    "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
             }
-            break;
+            if (!ty_is_related(checker, right, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
+                error_ctx_error_d(errs, expr->binary_op->right.outer_span, 2363,
+                    "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
+            }
+            // Mixing bigint with anything else
+            u32 bigint_like = TYF_BIGINT | TYF_BIGINT_LITERAL;
+            bool both_any = assignable_to_kind(left, TYF_ANY | TYF_UNKNOWN, false) && assignable_to_kind(right, TYF_ANY | TYF_UNKNOWN, false);
+            if (both_any || !(maybe_kind(left, bigint_like, false) || maybe_kind(right, bigint_like, false))) break;
+            if (assignable_to_kind(left, bigint_like, false) && assignable_to_kind(right, bigint_like, false)) {
+                if (op == BINARY_OP_GREATER_GREATER_GREATER) {
+                    report_operator_error(left, right, expr, bigint_like, errs);
+                } else if (op == BINARY_OP_STAR_STAR && compiler_options()->target < SCRIPT_TARGET_ES2016) {
+                    error_ctx_error_d(errs, expr->inner_span, 2791,
+                        "Exponentiation cannot be performed on 'bigint' values unless the 'target' option is set to 'es2016' or later.");
+                }
+            } else {
+                report_operator_error(left, right, expr, bigint_like, errs);
+            }
+        }   break;
+
+        case BINARY_OP_LESS:
+        case BINARY_OP_GREATER:
+        case BINARY_OP_LESS_EQUAL:
+        case BINARY_OP_GREATER_EQUAL: {
+            Checker* checker = current_checker;
+            left = ty_check_non_null_type(checker, left, &expr->binary_op->left, errs);
+            right = ty_check_non_null_type(checker, right, &expr->binary_op->right, errs);
+            if (!left || !right) break;
+            left = base_type_for_comparison(checker, left);
+            right = base_type_for_comparison(checker, right);
+            if ((left->flags | right->flags) & TYF_ANY) break;
+            if (comparison_operands_fit(left, right)) break;
+            // (tsc's getBaseTypesIfUnrelated)
+            Ty const* left_base = ty_base_type_of_literal(checker, left);
+            Ty const* right_base = ty_base_type_of_literal(checker, right);
+            if (!comparison_operands_fit(left_base, right_base)) {
+                left = left_base;
+                right = right_base;
+            }
+            error_ctx_error_d(errs, expr->inner_span, 2365, "Operator '", binary_op_get_zv(op).str,
+                "' cannot be applied to types '", left, "' and '", right, "'.");
+        }   break;
 
         case BINARY_OP_EQUAL:
             assignment_target_typecheck(&expr->binary_op->left, right, &expr->binary_op->right, errs);
@@ -1600,16 +1715,8 @@ static void binary_op_typecheck(
             }
             break;
 
-        case BINARY_OP_LESS:
-        case BINARY_OP_GREATER:
-        case BINARY_OP_LESS_EQUAL:
-        case BINARY_OP_GREATER_EQUAL:
         case BINARY_OP_INSTANCEOF:
             // TODO: figure out rules and typecheck
-            if (op != BINARY_OP_INSTANCEOF) {
-                ty_check_non_null_type(current_checker, left, &expr->binary_op->left, errs);
-                ty_check_non_null_type(current_checker, right, &expr->binary_op->right, errs);
-            }
             break;
 
         case BINARY_OP_IN:

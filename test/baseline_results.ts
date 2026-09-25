@@ -10211,12 +10211,12 @@ const baselines = {
         types: true,
     },
     'duplicateLocalVariable1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'duplicateLocalVariable2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15476,7 +15476,7 @@ const baselines = {
         types: false,
     },
     'grammarAmbiguities1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26621,7 +26621,7 @@ const baselines = {
         types: false,
     },
     'relationalOperatorComparable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37196,7 +37196,7 @@ const baselines = {
         types: false,
     },
     'controlFlowWhileStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -46011,7 +46011,7 @@ const baselines = {
         types: false,
     },
     'compoundAdditionAssignmentLHSCanBeAssigned': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46021,7 +46021,7 @@ const baselines = {
         types: true,
     },
     'compoundAdditionAssignmentWithInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46116,7 +46116,7 @@ const baselines = {
         types: true,
     },
     'arithmeticOperatorWithInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46166,22 +46166,22 @@ const baselines = {
         types: true,
     },
     'comparisonOperatorWithIntersectionType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'comparisonOperatorWithNoRelationshipObjectsOnCallSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'comparisonOperatorWithNoRelationshipObjectsOnConstructorSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'comparisonOperatorWithNoRelationshipObjectsOnIndexSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46196,22 +46196,22 @@ const baselines = {
         types: true,
     },
     'comparisonOperatorWithNoRelationshipObjectsOnOptionalProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'comparisonOperatorWithNoRelationshipObjectsOnProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'comparisonOperatorWithNoRelationshipPrimitiveType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'comparisonOperatorWithNoRelationshipTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46286,7 +46286,7 @@ const baselines = {
         types: true,
     },
     'comparisonOperatorWithTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55481,7 +55481,7 @@ const baselines = {
         types: false,
     },
     'parserGreaterThanTokenAmbiguity2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55491,12 +55491,12 @@ const baselines = {
         types: true,
     },
     'parserGreaterThanTokenAmbiguity3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63651,7 +63651,7 @@ const baselines = {
         types: true,
     },
     'stringLiteralTypesWithVariousOperators02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
