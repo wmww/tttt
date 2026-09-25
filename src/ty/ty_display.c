@@ -95,7 +95,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
             out_symbol_name(me, d, parent, SYMBOL_NAMESPACE);
             out_lit(d, ".");
         }
-        out(d, symbol->name_span.sv);
+        out(d, ty_symbol_display_name(symbol).sv);
         return;
     }
     // tsc's getAccessibleSymbolChain walks the scopes from the inside, and in each looks for the symbol under its own

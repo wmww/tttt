@@ -60,7 +60,7 @@ static void unify_type_params(Checker* me, TyList params, Generic const* other) 
 Span ty_symbol_display_name(Symbol const* symbol) {
     if (span_valid(symbol->name_span) || !(symbol->flags & SYMBOL_CLASS)) return symbol->name_span;
     ClassDecl const* class_decl = symbol_find_node(symbol, SYMBOL_DECL_CLASS);
-    return class_decl && class_decl->is_expression ? class_decl_display_name(class_decl) : symbol->name_span;
+    return class_decl ? class_decl_display_name(class_decl) : symbol->name_span;
 }
 
 // `A.B.name`. TODO(plan 04 stage 3): tsc qualifies a name as far as needed to be reachable from where it's printed

@@ -192,7 +192,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
 Span class_decl_display_name(ClassDecl const* me) {
     if (span_valid(my name)) return my name;
     if (span_valid(my assigned_name)) return my assigned_name;
-    return sv_make_span(c_sv("(Anonymous class)"));
+    return sv_make_span(my is_expression ? c_sv("(Anonymous class)") : c_sv("default")); // `export default class {}`
 }
 
 void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported, bool declared) {
