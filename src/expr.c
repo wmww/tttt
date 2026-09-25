@@ -1907,6 +1907,47 @@ Ty const* expr_evaluate_type(Expr const* me) {
     return ty_compute_expr_without_context(current_checker, me);
 }
 
+// The flags of a regular expression literal (the flag part of tsc's reScanSlashToken). TODO: the pattern itself
+// (scanRegularExpressionWorker: TS1487, TS1508, TS1535...)
+// (not inlined: expr_typecheck() recurses as deep as expressions nest, see binderBinaryExpressionStress)
+__attribute__((noinline)) static void regex_check_flags(Expr const* me, ErrorCtx* errs) {
+    csview text = my inner_span.sv;
+    isize end = text.size;
+    while (end > 0 && text.buf[end - 1] != '/') end--;
+    if (end <= 1) return;
+    static char const letters[] = "dgimsuvy";
+    // What each flag needs: `u` and `y` ES2015, `s` ES2018, `d` ES2022, `v` ES2024
+    static ScriptTarget const available[] = {
+        SCRIPT_TARGET_ES2022, 0, 0, 0, SCRIPT_TARGET_ES2018, SCRIPT_TARGET_ES2015, SCRIPT_TARGET_ES2024, SCRIPT_TARGET_ES2015,
+    };
+    static char const* const names[] = { [SCRIPT_TARGET_ES2015] = "es6", [SCRIPT_TARGET_ES2018] = "es2018",
+        [SCRIPT_TARGET_ES2022] = "es2022", [SCRIPT_TARGET_ES2024] = "es2024" };
+    u32 seen = 0;
+    for (isize i = end; i < text.size; i++) {
+        Span at = { .source = my inner_span.source, .sv = csview_from_n(text.buf + i, 1) };
+        char const* found = strchr(letters, text.buf[i]);
+        if (!found || !text.buf[i]) {
+            error_ctx_grammar_error_d(errs, at, 1499, "Unknown regular expression flag.");
+            continue;
+        }
+        u32 flag = 1u << (found - letters);
+        u32 unicode_modes = (1u << 5) | (1u << 6);
+        if (seen & flag) {
+            error_ctx_grammar_error_d(errs, at, 1500, "Duplicate regular expression flag.");
+        } else if (((seen | flag) & unicode_modes) == unicode_modes) {
+            error_ctx_grammar_error_d(errs, at, 1502,
+                "The Unicode (u) flag and the Unicode Sets (v) flag cannot be set simultaneously.");
+        } else {
+            seen |= flag;
+            ScriptTarget needs = available[found - letters];
+            if (needs && compiler_options()->target < needs) {
+                error_ctx_grammar_error_d(errs, at, 1501, "This regular expression flag is only available when targeting '",
+                    names[needs], "' or later.");
+            }
+        }
+    }
+}
+
 // The target of a destructuring assignment (`[...x] = e`, `({ ...x } = e)`), as the resolve walk marked it
 static bool expr_is_destructuring_target(Expr const* me) {
     return (my tag == EXPR_IDENTIFIER && my identifier.assignment_target) ||
@@ -2148,6 +2189,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         }   break;
 
         case EXPR_REGEX:
+            regex_check_flags(me, errs);
             break;
 
         case EXPR_PRIVATE_NAME:

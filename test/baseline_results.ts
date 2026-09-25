@@ -43401,7 +43401,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions01(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43411,7 +43411,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions02(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43421,7 +43421,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions03(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43431,7 +43431,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions04(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43441,7 +43441,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions05(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43451,7 +43451,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions06(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43471,7 +43471,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions08(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43481,7 +43481,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions09(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43491,7 +43491,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions10(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43501,7 +43501,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions11(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43521,7 +43521,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions13(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43541,7 +43541,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions15(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43551,7 +43551,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions16(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43571,7 +43571,7 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions18(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56471,7 +56471,7 @@ const baselines = {
         types: true,
     },
     'parserRegularExpressionDivideAmbiguity3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
