@@ -17766,7 +17766,7 @@ const baselines = {
         types: false,
     },
     'instanceofWithPrimitiveUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -32666,7 +32666,7 @@ const baselines = {
         types: true,
     },
     'widenedTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -39396,7 +39396,7 @@ const baselines = {
         types: true,
     },
     'symbolType1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42821,12 +42821,12 @@ const baselines = {
         types: true,
     },
     'templateStringInInstanceOf': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInInstanceOfES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -43261,12 +43261,12 @@ const baselines = {
         types: true,
     },
     'templateStringWithEmbeddedInstanceOf': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringWithEmbeddedInstanceOfES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -46311,7 +46311,7 @@ const baselines = {
         types: false,
     },
     'instanceofOperatorWithInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

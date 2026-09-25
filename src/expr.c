@@ -1639,6 +1639,31 @@ static void report_operator_error(Ty const* left, Ty const* right, Expr const* e
         left, "' and '", right, "'.");
 }
 
+// The right side of `instanceof`: callable, constructable or with a [Symbol.hasInstance] (of every union member, some
+// intersection member)
+static bool instanceof_target_ok(Checker* checker, Ty const* ty) {
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        bool is_union = ty->kind == TY_UNION;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            bool fits = instanceof_target_ok(checker, ty->composite.types.data[i]);
+            if (fits != is_union) return fits;
+        }
+        return is_union;
+    }
+    Ty const* apparent = ty_apparent_type(checker, ty);
+    if (!(apparent->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(checker, apparent);
+    if (members->call_count || members->construct_count) return true;
+    for (u32 i = 0; i < members->prop_count; i++) {
+        // (A well-known symbol's escaped name: `__@hasInstance@<id>`)
+        csview name = atom_sv(members->props[i]->name);
+        for (isize c = 0; c + 12 <= name.size; c++) {
+            if (memcmp(name.buf + c, "@hasInstance", 12) == 0) return true;
+        }
+    }
+    return false;
+}
+
 static void binary_op_typecheck(
     Ty const* left,
     BinaryOp op,
@@ -1768,9 +1793,28 @@ static void binary_op_typecheck(
             }
             break;
 
-        case BINARY_OP_INSTANCEOF:
-            // TODO: figure out rules and typecheck
-            break;
+        case BINARY_OP_INSTANCEOF: {
+            // tsc's checkInstanceOfExpression: the left side can't be a primitive
+            Checker* checker = current_checker;
+            u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
+                TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_NULLABLE;
+            TyList parts = left->kind == TY_UNION ? left->composite.types : (TyList){ .data = &left, .len = 1 };
+            // HACK: not in JS files, whose JSDoc types tttt doesn't read
+            bool all_primitive = !(left->flags & (TYF_ANY | TYF_NEVER)) && !(expr->inner_span.source && expr->inner_span.source->is_js);
+            for (u32 i = 0; i < parts.len && all_primitive; i++) all_primitive = assignable_to_kind(parts.data[i], primitive, false);
+            if (all_primitive) {
+                error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2358, "The left-hand side of an 'instanceof' "
+                    "expression must be of type 'any', an object type or a type parameter.");
+            }
+            // (tsc's resolveInstanceofExpression) the right side something callable or constructable
+            if (right->flags & TYF_ANY) break;
+            if (instanceof_target_ok(checker, right)) break;
+            Ty const* function_type = ty_global_function_type(checker);
+            if (!function_type || ty_is_related(checker, right, function_type, TY_RELATION_ASSIGNABLE)) break;
+            error_ctx_error_d(errs, expr->binary_op->right.outer_span, 2359, "The right-hand side of an 'instanceof' "
+                "expression must be either of type 'any', a class, function, or other type assignable to the 'Function' "
+                "interface type, or an object type with a 'Symbol.hasInstance' method.");
+        }   break;
 
         case BINARY_OP_IN:
             ty_check_in_expression(current_checker, &expr->binary_op->left, &expr->binary_op->right, errs);

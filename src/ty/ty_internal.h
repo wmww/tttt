@@ -191,7 +191,6 @@ Signature const* ty_signature_with_type_params(Checker* me, Signature const* sig
 // question ends); a plain ty_is_related() outside of one
 bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_global_regexp_type(Checker* me);
-Ty const* ty_global_function_type(Checker* me); // Null without a lib
 Ty const* ty_global_object_type(Checker* me); // Null without a lib
 Ty const* ty_empty_object_type(Checker* me); // `{}`
 // The property name a string or number literal type stands for, null for other types

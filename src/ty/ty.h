@@ -763,6 +763,7 @@ Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
 Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name); // relate.c, with Function/Object members
 // The type whose members a value of `ty` has: `String` for a string, the constraint of a type parameter...
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
+Ty const* ty_global_function_type(Checker* me); // Null without a lib
 Ty const* prop_type(Checker* me, Prop const* prop);
 bool ty_props_identical(Checker* me, Prop const* source, Prop const* target); // tsc's isPropertyIdenticalTo
 // The name of the property's first declaration (instantiations follow their target), invalid if it has none

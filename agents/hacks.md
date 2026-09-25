@@ -187,6 +187,9 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   an approximation. A proper fix is tsc's nullWideningType/undefinedWideningType.
 - TS2403 (`check_subsequent_declaration`) compares with the identity relation, which finds every type-core
   approximation between two spellings of one type: see triage "TS2403 false positives".
+- `binary_op_typecheck` (instanceof): TS2358 isn't checked in JS files, where tttt doesn't read JSDoc types (a `@type
+  {*}` variable is its initializer's primitive type here). Also the `[Symbol.hasInstance]` test matches the escaped
+  name `__@hasInstance@<id>` by text (`instanceof_target_ok`).
 
 ## The binder (`scope.c`, plan 04 done)
 - Identifiers keep two symbol pointers, `symbol` (what the name found, maybe an alias) and `target` (the one with the
