@@ -62,6 +62,8 @@ typedef struct BaselineTestCase {
     bool no_implicit_references; // `@noImplicitReferences`
     // Where the traversal is: types are printed the way they're named from there
     struct Scope const* enclosing;
+    // The class whose constructor's parameter properties are being walked: their names are its members (`C.x`)
+    Span parameter_property_class;
     // Set by the traversal right before adding a node whose `any` keeps its underline even without errors (tsc's
     // harness exempts children of property accesses and qualified names, binding elements, labels and import/export
     // names). The next types line consumes it

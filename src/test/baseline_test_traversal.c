@@ -149,6 +149,16 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
 
         case BINDING_IDENTIFIER:
             if (my parent) ctx->any_keeps_underline = true; // A binding element
+            if (!my parent && span_valid(ctx->parameter_property_class) && my symbol) {
+                // A parameter property's name declares the property (tsc's parameter.symbol is the property's)
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = symbol_declaration_spans(my symbol),
+                    .namespaces = vec_span_single(ctx->parameter_property_class),
+                    .span = my content_span,
+                });
+                baseline_test_case_add_symbol_value(ctx, my content_span, my symbol);
+                break;
+            }
             baseline_test_case_add_declaration(ctx, my content_span, my symbol);
             break;
 
@@ -417,7 +427,12 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         for_each (decorator, vec_expr, &i->decorators) {
             expr_compile_test_info(decorator, ctx);
         }
+        Span saved = ctx->parameter_property_class;
+        if (i->is_parameter_property && my constructed_class && span_valid(my constructed_class->name_span)) {
+            ctx->parameter_property_class = my constructed_class->name_span;
+        }
         initialized_binding_compile_test_info(&i->initializer, ctx);
+        ctx->parameter_property_class = saved;
     }
     if (my predicate) {
         type_predicate_compile_test_info(my predicate, ctx);
