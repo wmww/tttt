@@ -379,6 +379,16 @@ static Symbol const* file_symbol_exporting(ChainCtx* me, Symbol const* container
 static u32 containers_of(ChainCtx* me, Symbol const* symbol, u32 meaning, Symbol const** out) {
     u32 count = 0;
     Symbol const* container = symbol->parent ? merged(me, symbol->parent) : nullptr;
+    // A duplicate declaration's symbol isn't in its container (tsc makes a symbol of its own without a parent)
+    if (container && symbol_members(container)->exports) {
+        SymbolTable const* exports = symbol_members(container)->exports;
+        Symbol const* found = symbol_table_get(exports, symbol->name);
+        if (merged(me, found) != merged(me, symbol) && merged(me, symbol_table_get(exports, c_sv("default"))) != merged(me, symbol) &&
+            merged(me, symbol_table_get(exports, c_sv("export="))) != merged(me, symbol)
+        ) {
+            container = nullptr;
+        }
+    }
     if (container && !(symbol->flags & SYMBOL_TYPE_PARAMETER)) {
         Symbol const* additional = file_symbol_exporting(me, container);
         SymbolChain ignored;
@@ -507,6 +517,8 @@ void symbol_chain_append_member(cstr* out, csview name, bool is_enum_member) {
         cstr_push(out, quote == '\'' ? "'" : "\"");
         for (isize i = 0; i < inner.size; i++) {
             if (inner.buf[i] == '\\' && i + 1 < inner.size) i++;
+            // (the printer escapes the text again)
+            if (inner.buf[i] == '\\' || inner.buf[i] == quote) cstr_push(out, "\\");
             char c[2] = { inner.buf[i], 0 };
             cstr_push(out, c);
         }

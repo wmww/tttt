@@ -42,6 +42,7 @@ typedef struct PropSymbolInfo {
     bool missing_in_member; // Some member of a union has no such property: no symbol at all, like tsc
     Symbol const* parent;
     Symbol const* member_symbol; // A namespace's or module's export: named by its symbol
+    Symbol const* namespace; // The object is a namespace's or module's value: the property is its export
     Span name_span;
     bool name_is_value;
     VecSpan declarations;
@@ -67,6 +68,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             if (!info->found) {
                 info->found = true;
                 info->parent = inner.parent;
+                info->namespace = inner.namespace;
                 info->member_symbol = inner.member_count == 1 ? inner.member_symbol : nullptr;
                 info->name_span = inner.name_span;
                 info->name_is_value = inner.name_is_value;
@@ -100,6 +102,9 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     if (!info->found) {
         info->found = true;
         info->parent = prop->parent;
+        if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE) {
+            info->namespace = object->declared.namespace_symbol;
+        }
         info->member_symbol = root->symbol;
         info->name_span = root->name_span;
         info->name_is_value = root->name_is_value;
@@ -115,12 +120,37 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     }
 }
 
+// The name of a member's declaration from here: its container's chain (see prop_text) and its name as written (a
+// computed name `[x]` too). Without a container symbol, the container's name (`container_span`) or nothing
+static cstr member_text(BaselineTestCase* ctx, Symbol const* container, Span container_span, csview name, bool enum_member) {
+    cstr ret = cstr_init();
+    SymbolChain chain = {0};
+    if (container) chain = symbol_member_container_chain_at(ctx->enclosing, container);
+    if (chain.len) {
+        symbol_chain_append(&ret, ctx->enclosing, &chain);
+        symbol_chain_append_member(&ret, name, enum_member);
+    } else if (!container && span_valid(container_span)) {
+        cstr_append_span(&ret, container_span);
+        symbol_chain_append_member(&ret, name, enum_member);
+    } else {
+        cstr_append_sv(&ret, name);
+    }
+    return ret;
+}
+
 // The name of a property's symbol from here: a namespace's or module's export by its own chain, a member by the chain
 // of its container (tsc's getContainersOfSymbol of a member), else bare
 static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fallback) {
     csview name = span_valid(info->name_span) ? info->name_span.sv : fallback.sv;
     cstr ret = cstr_init();
     Symbol const* member = info->member_symbol;
+    // A member of a namespace's or module's object is its export (maybe an alias: getSymbolAtLocation doesn't resolve)
+    Symbol const* exported = info->member_count == 1 && info->namespace ?
+        symbol_get_export(info->namespace, name) : nullptr;
+    if (exported) {
+        cstr_drop(&ret);
+        return symbol_text(ctx, exported);
+    }
     if (info->member_count == 1 && member && member->parent && !info->name_is_value &&
         (!info->parent || info->parent->is_module || member->parent == info->parent)
     ) {
@@ -251,9 +281,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
-                .namespaces = vec_span_single(scope),
                 .span = my key.span,
-                .name_is_value = my key.name_is_value,
+                .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
             });
             Ty const* type = merged ? prop_type(current_checker, merged) : optional_member_type(ty_of_node(&my type), my optional);
             bool method = my key.name_is_member_function && my type.tag == TYPE_CALLABLE;
@@ -271,10 +300,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
         case INTERFACE_KEY_EXPR:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(my key.span),
-                .namespaces = vec_span_single(scope),
                 .span = my key.span,
-                .name = my key.expr.ref->outer_span,
-                .name_is_value = true,
+                .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
             });
             baseline_test_case_add_type(ctx, my key.span, optional_member_type(ty_of_node(&my type), my optional));
             computed_member_name_compile_test_info(my key.expr.ref, ctx);
@@ -410,10 +437,13 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
         case TYPE_INTERFACE: {
             Ty const* outer_owner = ctx->member_owner;
             ctx->member_owner = ty_of_node(me);
+            Symbol const* outer_container = ctx->member_container;
+            ctx->member_container = nullptr;
             u32 outer_class_params_len = ctx->class_params_len;
             ctx->class_params_len = 0; // (A type literal's computed names see them)
             interface_compile_test_info(&my interface, span_null, ctx);
             ctx->class_params_len = outer_class_params_len;
+            ctx->member_container = outer_container;
             ctx->member_owner = outer_owner;
         }   break;
 
@@ -607,11 +637,9 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
         Span span = i->full_name;
         Symbol const* declaration = i->symbol;
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .namespaces = vec_span_single(my name),
             .declarations = symbol_declaration_spans(declaration),
             .span = span,
-            .name = i->name_is_value ? i->full_name : declaration->name_span,
-            .name_is_value = i->name_is_value,
+            .text = member_text(ctx, my symbol, my name, (i->name_is_value ? i->full_name : declaration->name_span).sv, true),
         });
         baseline_test_case_add_symbol_value(ctx, span, declaration);
         if (i->value.tag != EXPR_IMPLICIT_ANY) {
@@ -676,10 +704,8 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
-                .namespaces = vec_span_single(class_name),
                 .span = my method.name_span,
-                .name = my method.computed_key ? my method.computed_key->outer_span : span_null,
-                .name_is_value = my method.name_is_value || my method.computed_key,
+                .text = member_text(ctx, ctx->class_symbol, class_name, my method.name_span.sv, false),
             });
             // An overloaded method is all of its overloads (the member's type)
             u32 overload_count = 0;
@@ -703,10 +729,8 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
         case CLASS_ITEM_FIELD: {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(my span),
-                .namespaces = vec_span_single(class_name),
                 .span = my field.name_span,
-                .name = my field.computed_key ? my field.computed_key->outer_span : span_null,
-                .name_is_value = my field.name_is_value || my field.computed_key,
+                .text = member_text(ctx, ctx->class_symbol, class_name, my field.name_span.sv, false),
             });
             baseline_test_case_add_type(ctx, my field.name_span, optional_member_type(class_item_get_type(me), my field.is_optional));
             if (my field.computed_key) computed_member_name_compile_test_info(my field.computed_key, ctx);
@@ -771,7 +795,9 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         type_compile_test_info(i, ctx);
     }
     Symbol const* outer_class = ctx->class_symbol;
+    Symbol const* outer_container = ctx->member_container;
     ctx->class_symbol = my symbol;
+    ctx->member_container = my symbol;
     TyList outer_class_params = { ctx->class_params, ctx->class_params_len };
     u32 outer_class_params_outside = ctx->class_params_outside;
     ctx->class_params = class_params.data;
@@ -785,6 +811,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         if (is_static) baseline_test_case_enter_type_params(ctx, class_params);
     }
     ctx->class_symbol = outer_class;
+    ctx->member_container = outer_container;
     ctx->class_params = outer_class_params.data;
     ctx->class_params_len = outer_class_params.len;
     ctx->class_params_outside = outer_class_params_outside;
@@ -828,7 +855,10 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
     }
     Ty const* outer_owner = ctx->member_owner;
     ctx->member_owner = my symbol && !(my symbol->flags & SYMBOL_CLASS) ? ty_declared_type_of(current_checker, my symbol) : nullptr;
+    Symbol const* outer_container = ctx->member_container;
+    ctx->member_container = my symbol;
     interface_compile_test_info(&my type.interface, my name, ctx);
+    ctx->member_container = outer_container;
     ctx->member_owner = outer_owner;
     ctx->class_params = outer_class_params.data;
     ctx->class_params_len = outer_class_params.len;

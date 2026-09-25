@@ -66,6 +66,7 @@ typedef struct BaselineTestCase {
     Span parameter_property_class;
     struct Symbol const* class_symbol; // The class whose members are being walked
     struct Ty const* member_owner; // The interface or type literal whose members are being walked
+    struct Symbol const* member_container; // The class, interface or enum whose members are being walked (null: literal)
     // The type parameters of the declarations around the traversal (TyParamNames.in_scope), innermost last
     struct Ty const** scope_params;
     u32 scope_params_len;

@@ -1477,12 +1477,12 @@ const baselines = {
     },
     'assertionFunctionWildcardImport1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assertionFunctionWildcardImport2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assertionFunctionsCanNarrowByDiscriminant': {
@@ -7812,27 +7812,27 @@ const baselines = {
     },
     'declarationEmitComputedPropertyNameEnum1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitComputedPropertyNameEnum2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitComputedPropertyNameEnum3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitComputedPropertyNameSymbol1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitComputedPropertyNameSymbol2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitConstantNoWidening': {
@@ -8432,7 +8432,7 @@ const baselines = {
     },
     'declarationEmitOfTypeofAliasedExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks1': {
@@ -8487,7 +8487,7 @@ const baselines = {
     },
     'declarationEmitPartialReuseComputedProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitPathMappingMonorepo': {
@@ -9247,7 +9247,7 @@ const baselines = {
     },
     'deeplyNestedMappedTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'deeplyNestedTemplateLiteralIntersection': {
@@ -10562,7 +10562,7 @@ const baselines = {
     },
     'dynamicNames': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'dynamicNamesErrors': {
@@ -11647,7 +11647,7 @@ const baselines = {
     },
     'es5ExportDefaultClassDeclaration2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'es5ExportDefaultClassDeclaration3': {
@@ -11867,7 +11867,7 @@ const baselines = {
     },
     'es6ExportDefaultClassDeclaration2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'es6ExportDefaultExpression': {
@@ -12212,7 +12212,7 @@ const baselines = {
     },
     'es6ModuleInternalImport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'es6ModuleInternalNamedImports': {
@@ -13047,7 +13047,7 @@ const baselines = {
     },
     'exportImport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportImportAndClodule': {
@@ -13062,7 +13062,7 @@ const baselines = {
     },
     'exportImportMultipleFiles': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportImportNonInstantiatedModule': {
@@ -13842,12 +13842,12 @@ const baselines = {
     },
     'forwardRefInTypeDeclaration(strict=false)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'forwardRefInTypeDeclaration(strict=true)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'freshLiteralInference': {
@@ -18867,7 +18867,7 @@ const baselines = {
     },
     'isolatedModulesConstEnum': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'isolatedModulesDeclaration': {
@@ -20327,7 +20327,7 @@ const baselines = {
     },
     'keyRemappingKeyofResult': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'keyofDoesntContainSymbols': {
@@ -22397,7 +22397,7 @@ const baselines = {
     },
     'moduleSharesNameWithImportDeclarationInsideIt3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleSharesNameWithImportDeclarationInsideIt4': {
@@ -22407,7 +22407,7 @@ const baselines = {
     },
     'moduleSharesNameWithImportDeclarationInsideIt5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleSharesNameWithImportDeclarationInsideIt6': {
@@ -22512,7 +22512,7 @@ const baselines = {
     },
     'multiImportExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'multiLineContextDiagnosticWithPretty': {
@@ -26302,7 +26302,7 @@ const baselines = {
     },
     'propertyAssignment': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'propertyIdentityWithPrivacyMismatch': {
@@ -29902,7 +29902,7 @@ const baselines = {
     },
     'systemModule15': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'systemModule16': {
@@ -31617,7 +31617,7 @@ const baselines = {
     },
     'typeUsedAsTypeLiteralIndex': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeUsedAsValueError': {
@@ -37847,7 +37847,7 @@ const baselines = {
     },
     'controlFlowForInStatement2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'controlFlowForOfStatement': {
@@ -37877,7 +37877,7 @@ const baselines = {
     },
     'controlFlowInOperator': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowInstanceOfGuardPrimitives': {
@@ -39327,92 +39327,92 @@ const baselines = {
     },
     'exportAsNamespace1(module=amd)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace1(module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace1(module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace1(module=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace1(module=system)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace1(module=umd)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace2(module=amd)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace2(module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace2(module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace2(module=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace2(module=system)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace2(module=umd)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace3(module=amd)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace3(module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace3(module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace3(module=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace3(module=system)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace3(module=umd)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace4(module=amd)': {
@@ -39842,7 +39842,7 @@ const baselines = {
     },
     'symbolDeclarationEmit7': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolDeclarationEmit8': {
@@ -40612,7 +40612,7 @@ const baselines = {
     },
     'exportDefaultClassWithStaticPropertyAssignmentsInES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parseClassDeclarationInStrictModeByDefaultInES6': {
@@ -41337,22 +41337,22 @@ const baselines = {
     },
     'computedPropertyNamesDeclarationEmit3_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNamesDeclarationEmit3_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNamesDeclarationEmit4_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNamesDeclarationEmit4_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNamesDeclarationEmit5_ES5': {
@@ -41412,7 +41412,7 @@ const baselines = {
     },
     'decoratorOnClassAccessor1.es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'decoratorOnClass1.es6': {
@@ -41452,22 +41452,22 @@ const baselines = {
     },
     'decoratorOnClass8.es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'decoratorOnClassMethod1.es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'decoratorOnClassMethodParameter1.es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'decoratorOnClassProperty1.es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'emitDefaultParametersFunction': {
@@ -42397,7 +42397,7 @@ const baselines = {
     },
     'for-of29': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of3': {
@@ -42942,7 +42942,7 @@ const baselines = {
     },
     'exportsAndImportsWithContextualKeywordNames02': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportsAndImportsWithUnderscores1': {
@@ -47072,7 +47072,7 @@ const baselines = {
     },
     'instanceofOperatorWithInvalidOperands.es2015': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'instanceofOperatorWithInvalidOperands': {
@@ -47097,7 +47097,7 @@ const baselines = {
     },
     'instanceofOperatorWithRHSHasSymbolHasInstance': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'instanceofOperatorWithRHSIsSubtypeOfFunction': {
@@ -48322,7 +48322,7 @@ const baselines = {
     },
     'typeGuardsWithInstanceOfBySymbolHasInstance': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typePredicateASI': {
@@ -49117,7 +49117,7 @@ const baselines = {
     },
     'importsImplicitlyReadonly': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'initializersInDeclarations': {
@@ -49567,7 +49567,7 @@ const baselines = {
     },
     'computedPropertyName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enums': {
@@ -49782,7 +49782,7 @@ const baselines = {
     },
     'namespaceImportTypeQuery': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'namespaceImportTypeQuery2': {
@@ -56377,7 +56377,7 @@ const baselines = {
     },
     'parserES5ComputedPropertyName8': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserES5ComputedPropertyName9': {
@@ -59102,12 +59102,12 @@ const baselines = {
     },
     'parserES5SymbolProperty8': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserES5SymbolProperty9': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'TupleType1': {
@@ -59547,17 +59547,17 @@ const baselines = {
     },
     'parserComputedPropertyName13': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName14': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName15': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserComputedPropertyName16': {
@@ -59572,12 +59572,12 @@ const baselines = {
     },
     'parserComputedPropertyName18': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName19': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName2': {
@@ -59672,7 +59672,7 @@ const baselines = {
     },
     'parserComputedPropertyName36': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserComputedPropertyName37': {
@@ -59942,12 +59942,12 @@ const baselines = {
     },
     'parserSymbolProperty8': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserSymbolProperty9': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'noUncheckedIndexedAccess': {
@@ -63797,7 +63797,7 @@ const baselines = {
     },
     'intersectionTypeInference3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionTypeMembers': {
@@ -64377,7 +64377,7 @@ const baselines = {
     },
     'objectTypeWithStringNamedPropertyOfIllegalCharacters': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typesWithOptionalProperty': {
@@ -67467,7 +67467,7 @@ const baselines = {
     },
     'unionTypeInference': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arrayLiteralWidened': {
@@ -67612,17 +67612,17 @@ const baselines = {
     },
     'uniqueSymbols': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'uniqueSymbolsDeclarations': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'uniqueSymbolsDeclarationsErrors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'uniqueSymbolsDeclarationsInJs': {
