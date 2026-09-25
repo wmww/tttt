@@ -239,6 +239,38 @@ here when there's something to know beyond the code.
   `hop_start_if_ends_on_word_break` are ~5% of the corpus profile), but parse-error fidelity against tsc is what the
   errors baseline measures.
 
+### Found by plan 15 session 1 (2026-09-24)
+- **TS2403 false positives = type-core bugs** (each test's errors fail on a spurious TS2403 because tttt computes two
+  spellings of one type differently): rest/spread of unions and intersections (restUnion, restUnion2,
+  restIntersection, spreadIntersection, spreadUnion: tsc's getRestType/getSpreadType), `Required<>`/`-?` and mapped
+  type identity (inferenceOptionalProperties(+Strict), mappedTypeModifiers, mappedTypes4), optional tuple elements
+  carry `| undefined` in tsc's element types (optionalTupleElementsAndUndefined), error recovery gives `any` where tsc
+  keeps the declared type of a private/unresolved member (constructorParameterProperties, objectLiteralGettersAndSetters,
+  ModuleWithExportedAndNonExportedImportAlias), `new C()` without inference gives `T<{}>` not `T<unknown>`
+  (newOperatorConformance), overload choice with `any` arguments (anyAssignabilityInInheritance), array literal
+  element unions (`[[], [null, null]]`, arrayLiteralWidened), booleanFilterAnyArray (`Ari<any> | Ari<unknown>`),
+  wrappedAndRecursiveConstraints2 (inference through a recursive constraint). Good one-bug-per-session material.
+- `({ f } = this)` inside method f counts as a read of the private f (tsc's rightIsThis self access):
+  noUnusedLocals_destructuringAssignment.
+- tsc's requiresScopeChange exceptions to "body variables aren't visible from parameters" (`??`/`?.` before ES2020,
+  object rest before ES2017, static fields of class expressions) need a walk over the parameter list: the `.2`
+  variants of nullishCoalescingOperatorInParameter*, optionalChainingInParameter*, classWithStaticFieldInParameter*,
+  parameterInitializersForwardReferencing.2.
+- Class members with computed names nothing knows (`[s]: number` with `s: string`) contribute index signatures in tsc
+  (computedPropertyNames12_ES5/ES6 want TS2411 against them); tttt drops them.
+- Errors tsc reports *inside lib files* (objectTypeHidingMembersOfExtendedObject, duplicateNumericIndexers: global
+  interface augmentations checked through the lib's first declaration) are dropped by `error_ctx_error_s` with a
+  log_error. Not worth much; the log noise is the issue.
+- The `{ a = dflt }` default of a shorthand assignment pattern is now kept and resolved but not checked (neither the
+  default's type against the property nor its display): `ObjectExprItem.shorthand_default`.
+- Overloads: TS2394 (implementation compatible with overloads) and the flag agreement codes (TS2383/2385/2386) aren't
+  done; tsc's checkFunctionOrConstructorSymbol has them next to what plan 15 did.
+- abstractClassUnionInstantiation fails when run alone (`-f`), passes in the full run: its TS2511 errors land on an
+  invalid span (the "Error added with invalid span" log_error in failstats); something order-dependent in the shared
+  lib state.
+- The CLI (`program.c`) still loads the default lib when a file says `/// <reference no-default-lib="true"/>`; only
+  the test harness honours it.
+
 ## Harness and tools
 - `./release/baseline_tests -f complexRecursiveCollections --err` (outside `test.sh`) hangs forever in
   `anon_pipe_write`: the harness writes to a pipe of its own that nobody drains while the test's output is big. The

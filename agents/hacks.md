@@ -15,9 +15,9 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   Dropping an AST while *another* program's checker is current would reset nothing (different slots), so it's safe,
   but the rule is implicit.
 - `CompilerOptions` (`compiler_options.c`): every tsc boolean/enum option parses and resolves its defaults, but the
-  checker only *reads* `strict_null_checks`, `strict_function_types`, `no_implicit_any` and
-  `no_unchecked_indexed_access`. Everything else (target-gated diagnostics, `allowJs`/`checkJs`, `jsx`, module kind,
-  unused locals, `exactOptionalPropertyTypes`...) is carried but inert. `compiler_options()` is a global like the
+  checker only *reads* `strict_null_checks`, `strict_function_types`, `no_implicit_any`,
+  `no_unchecked_indexed_access`, `no_unused_locals`/`no_unused_parameters` and a few more. Much else (target-gated
+  diagnostics, `allowJs`/`checkJs`, `jsx`, module kind, `exactOptionalPropertyTypes`...) is carried but inert. `compiler_options()` is a global like the
   `ErrorConfig` it replaced, set around load/resolve/check by `program.c`; becomes a `Checker`/`Program` field read
   through a context when signatures get one.
 - `baseline_test_case.c: apply_setting`: harness-only directives that are still ignored: `@libFiles` (99 of its 100
@@ -150,6 +150,31 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   (escapes not processed); enum member types still print as `E.b c` rather than `(typeof E)["b c"]`.
 - `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined). See triage: is it used?
 
+
+## Missing checks (plan 15: `unused.c`, `ty/check.c`, `statement.c`, `class_decl.c`)
+- `Symbol.referenced` (unused locals) is written by the resolve walk of the file that uses a name, also for globals
+  (a script's top-level declarations) that other files share: a data race once files resolve in parallel. Only under
+  noUnusedLocals/noUnusedParameters. Class members aren't symbols, so their reads are a checker table keyed by the
+  start of the member's declaration span (`ty_mark_member_referenced`).
+- `mark_jsdoc_links()` (unused.c): JSDoc `{@link X}` names count as uses by a text scan of the file, looked up from
+  the file's scope (tsc resolves them where the comment is).
+- Type parameters of merged interface/class declarations are separate symbols in tttt (merged in tsc): unused.c
+  checks every declaration's type parameter at the same index (`type_parameter_is_unused`), and
+  `ty_check_type_parameter_lists_identical` maps each declaration's parameters to the merged list.
+- `ty_check_index_constraints` on type literals only runs when the literal syntactically has an index signature and
+  something to check against it (`type_literal_has_index_constraints`), and an alias body is evaluated through its
+  alias first (`type_decl_typecheck`): evaluating a literal's type early gives it an id (union order) and loses the
+  alias name. tsc checks every literal, lazily.
+- The overload checks (`statements_check_overloads`, `class_check_overloads`) are syntactic per statement list /
+  class body; tsc walks a symbol's declarations and compares parents. "Same parent" is approximated by "the list
+  declares more of it later".
+- TS2729: tsc's isPropertyInitializedInStaticBlocks runs control flow at the end of each static block;
+  `initialized_in_static_blocks` looks for a top-level `this.x = ...` statement instead.
+- `widen_nullable` (members.c, non-strict widening to any): tsc only widens its *widening* null/undefined (the types
+  of the `null`/`undefined` expressions), tttt has one null type; spread properties of object literals are exempt as
+  an approximation. A proper fix is tsc's nullWideningType/undefinedWideningType.
+- TS2403 (`check_subsequent_declaration`) compares with the identity relation, which finds every type-core
+  approximation between two spellings of one type: see triage "TS2403 false positives".
 
 ## The binder (`scope.c`, plan 04 done)
 - Identifiers keep two symbol pointers, `symbol` (what the name found, maybe an alias) and `target` (the one with the
