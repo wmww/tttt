@@ -381,10 +381,11 @@ static Atom const* type_param_name(Checker* me, TyDisplay d, Ty const* param) {
     return name;
 }
 
-// A renamed one is a new identifier: never reused
-static void out_type_param_name(Checker* me, TyDisplay d, Ty const* param) {
+// A renamed one is a new identifier, which isn't reused, except in a reused node (tsc's trackExistingEntityName gives
+// it the range of the node it replaces)
+static void out_type_param_name(Checker* me, TyDisplay d, Ty const* param, bool in_node) {
     Atom const* name = type_param_name(me, d, param);
-    out(name == param->param.name ? d : reused_if(d, false), atom_sv(name));
+    out(name == param->param.name || in_node ? d : reused_if(d, false), atom_sv(name));
 }
 
 // tsc's enterNewScope() for a signature: names given inside it don't count outside
@@ -500,7 +501,7 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         out_lit(d, ".");
     }
     if (!qualified && d.param_names && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER)) {
-        out_type_param_name(me, d, ty_type_param(me, symbol));
+        out_type_param_name(me, d, ty_type_param(me, symbol), true);
     } else {
         out(d, identifier->name.sv);
     }
@@ -547,7 +548,7 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
     for_each (i, vec_generic_item, &generic->items) {
         if (i_index) out_lit(d, ", ");
         if (i->is_const) out_lit(d, "const ");
-        if (d.param_names && i->symbol_ref) out_type_param_name(me, d, ty_type_param(me, i->symbol_ref));
+        if (d.param_names && i->symbol_ref) out_type_param_name(me, d, ty_type_param(me, i->symbol_ref), true);
         else out(d, i->name.sv);
         if (i->extends_explicit) {
             out_lit(d, " extends ");
@@ -664,7 +665,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 if (i->key.mapped.readonly) out(d, i->key.mapped.readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
                 out_lit(d, "[");
                 if (d.param_names && i->key.mapped.symbol_ref) {
-                    out_type_param_name(me, d, ty_type_param(me, i->key.mapped.symbol_ref));
+                    out_type_param_name(me, d, ty_type_param(me, i->key.mapped.symbol_ref), true);
                 } else {
                     out(d, i->key.mapped.type_name.sv);
                 }
@@ -790,7 +791,7 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_INFERRED:
             out_lit(d, "infer ");
             if (d.param_names && node->inferred->symbol_ref) {
-                out_type_param_name(me, d, ty_type_param(me, node->inferred->symbol_ref));
+                out_type_param_name(me, d, ty_type_param(me, node->inferred->symbol_ref), true);
             } else {
                 out(d, node->inferred->name.sv);
             }
@@ -1079,6 +1080,40 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     param_names_leave(d, saved);
 }
 
+// Whether the declared signature at the root of an instantiated one mentions what the instantiations map (other than
+// its own type parameters). tsc doesn't instantiate a signature that doesn't (getObjectTypeInstantiation keeps only the
+// outer type parameters the declaration may reference): it prints as declared, fresh type parameters and all
+static bool mentions_mapped(Checker* me, Signature const* sig, Signature const* root) {
+    u32 count = 0;
+    for (Signature const* i = sig; i != root; i = i->target) count += i->mapper ? i->mapper->len : 0;
+    Ty const** sources = arena_new_n(&my arena, Ty const*, count ? count : 1);
+    u32 len = 0;
+    for (Signature const* i = sig; i != root; i = i->target) {
+        for (u32 j = 0; i->mapper && j < i->mapper->len; j++) {
+            Ty const* source = i->mapper->sources[j];
+            bool own = false;
+            for (u32 k = 0; k < root->type_params.len; k++) own |= root->type_params.data[k] == source;
+            if (!own) sources[len++] = source;
+        }
+    }
+    TyList mapped = { .data = sources, .len = len };
+    if (!len) return false;
+    // (tsc's isTypeParameterPossiblyReferenced is syntactic: a body without a return type annotation may reference anything)
+    FunctionImpl const* function = root->function;
+    if (function && function->has_body && !function->ret_explicit) return true;
+    for (u32 i = 0; i < root->param_count; i++) {
+        if (mentions(me, root->params[i].type, mapped)) return true;
+    }
+    for (u32 i = 0; i < root->type_params.len; i++) {
+        Ty const* constraint = ty_param_constraint(me, root->type_params.data[i]);
+        if (constraint && mentions(me, constraint, mapped)) return true;
+    }
+    TyPredicate const* predicate = signature_predicate(me, root);
+    if (predicate && predicate->type && mentions(me, predicate->type, mapped)) return true;
+    return (root->this_type && mentions(me, root->this_type, mapped)) ||
+        mentions(me, signature_return_type(me, root), mapped);
+}
+
 static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
     d.widen_literals = false;
     signature_resolve(me, sig);
@@ -1099,6 +1134,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         }
     }
     signature_resolve(me, root);
+    if (root != sig && !this_only && !mentions_mapped(me, sig, root)) sig = root;
     bool instantiated = root != sig;
     if (instantiated && root->type_params.len && !this_only) d.fresh_params = root->type_params;
     FunctionImpl const* function = root->class_instance ? nullptr : root->function;
@@ -1515,7 +1551,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             bool declared_here = false;
             for (u32 i = 0; i < d.infer_params.len; i++) declared_here |= d.infer_params.data[i] == ty;
             if (declared_here) out_lit(d, "infer ");
-            out_type_param_name(me, d, ty);
+            out_type_param_name(me, d, ty, false);
             if (declared_here && ty->param.state->constraint_node) {
                 out_lit(d, " extends ");
                 TyDisplay inner = d;
