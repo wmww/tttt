@@ -49,6 +49,8 @@ typedef struct RelationState {
     // Relating to the members of an intersection target (tsc's IntersectionState.Target): no excess property checks,
     // the intersection as a whole had them
     bool intersection_target;
+    // The failure just reported heads the error itself (a weak type): no "not assignable" line for it
+    bool head_reported;
     u64* maybe_keys;
     u32 maybe_count, maybe_cap;
     Ty const* source_stack[MAX_RELATION_DEPTH];
@@ -2507,6 +2509,34 @@ static bool is_deeply_nested_max(Ty const* ty, Ty const* const* stack, u32 depth
     return false;
 }
 
+// The weak type check of tsc's isRelatedTo, reported. Done once a pair isn't cached (the answer only depends on it)
+static bool lacks_common_properties(Checker* me, RelationState* st, Ty const* source, Ty const* target);
+static bool fails_common_properties(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    if (!lacks_common_properties(me, st, source, target)) return false;
+    {
+        if (report) {
+            cstr source_str = display_for_report(me, source, false);
+            cstr target_str = display_for_report(me, target, false);
+            // Something callable whose result would fit
+            Ty const* apparent = ty_apparent_type(me, source);
+            Members const* members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
+            Signature const* sig = members && members->call_count ? members->call[0] :
+                members && members->construct_count ? members->construct[0] : nullptr;
+            if (sig && is_related_to(me, st, signature_return_type(me, sig), target, false)) {
+                report_line(st, 2560, cstr_d("Value of type '", source_str, "' has no properties in common with type '",
+                    target_str, "'. Did you mean to call it?"));
+            } else {
+                report_line(st, 2559, cstr_d("Type '", source_str, "' has no properties in common with type '", target_str, "'."));
+            }
+            isize_t count = vec_ty_report_line_size(&st->lines);
+            if (count) vec_ty_report_line_at_mut(&st->lines, count - 1)->replaces_head = true;
+            st->head_reported = true;
+            c_drop(cstr, &source_str, &target_str);
+        }
+        return true;
+    }
+}
+
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     RelationCache* cache = &my relations[st->relation];
     u64 key = relation_key(source, target);
@@ -2520,6 +2550,10 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     if (cached == CACHE_FAILED && !report) return TERNARY_FALSE;
     for (u32 i = 0; i < st->maybe_count; i++) {
         if (st->maybe_keys[i] == key) return TERNARY_MAYBE;
+    }
+    if (fails_common_properties(me, st, source, target, report)) {
+        relation_cache_put(cache, key, CACHE_FAILED);
+        return TERNARY_FALSE;
     }
     if (st->depth == MAX_RELATION_DEPTH) {
         st->overflow = true;
@@ -2927,27 +2961,6 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         if (report) report_relation_error(me, st, source, target);
         return TERNARY_FALSE;
     }
-    if (lacks_common_properties(me, st, source, target)) {
-        if (report) {
-            cstr source_str = display_for_report(me, source, false);
-            cstr target_str = display_for_report(me, target, false);
-            // Something callable whose result would fit
-            Ty const* apparent = ty_apparent_type(me, source);
-            Members const* members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
-            Signature const* sig = members && members->call_count ? members->call[0] :
-                members && members->construct_count ? members->construct[0] : nullptr;
-            if (sig && is_related_to(me, st, signature_return_type(me, sig), target, false)) {
-                report_line(st, 2560, cstr_d("Value of type '", source_str, "' has no properties in common with type '",
-                    target_str, "'. Did you mean to call it?"));
-            } else {
-                report_line(st, 2559, cstr_d("Type '", source_str, "' has no properties in common with type '", target_str, "'."));
-            }
-            isize_t count = vec_ty_report_line_size(&st->lines);
-            if (count) vec_ty_report_line_at_mut(&st->lines, count - 1)->replaces_head = true;
-            c_drop(cstr, &source_str, &target_str);
-        }
-        return TERNARY_FALSE;
-    }
     Ternary result = TERNARY_FALSE;
     if (st->relation == TY_RELATION_COMPARABLE && !is_structured(source) && !is_structured(target)) {
         // Comparable is looser about literals: a primitive is comparable to its literals
@@ -2957,6 +2970,10 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         isize_t saved = vec_ty_report_line_size(&st->lines);
         result = recursive_related(me, st, source, target, report);
         if (result) report_truncate(st, saved);
+    }
+    if (st->head_reported) {
+        st->head_reported = false;
+        return result;
     }
     if (!result && report) report_relation_error(me, st, source, target);
     return result;
@@ -2982,6 +2999,7 @@ static bool check_related(
     st->depth = 0;
     st->expanding = 0;
     st->overflow = false;
+    st->head_reported = false;
     st->outer = my relating;
     if (source == target) return true;
     if (relation != TY_RELATION_IDENTITY && !st->reporting && is_simple_related(me, st, source, target)) return true;
