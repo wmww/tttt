@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-25, plan 21 stages 4 and 5 (class expression names, T_1 renaming)
+Suite **6810 -> 6912** full (errors 9296, symbols 10494, types 8817 -> 8960; lost duplicateTypeParameters3 types).
+Corpora unchanged (tsc 0). `./bench.sh`: type-fest 0.29 s, valibot 0.58 s / 511 MB (unchanged; the new display state
+is only allocated by the types baseline). `./displaydiff.py` TS tests fixed by one kind: other 594, we-any 123,
+our-typeof 86, underlines/order only 75, line-extra 72, tsc-any 69, line-missing 65, tsc-import() 51, union-order 49,
+tsc-typeof 28, T_1-rename 1 (was 71), class-expression 11 tests anywhere (was 88). Symbols: line-missing 311 (+97
+JS), name 231, other 71, decls-missing 49.
+
 ## 2026-09-25, plan 21 stage 3 (annotation reuse by reprinting the node)
 Suite **6505 -> 6810** full (errors 9289, symbols 10449, types 8416 -> 8817; nothing lost). Corpora unchanged (tsc 0,
 type-fest 144, valibot 165). CLI cost unchanged: tsc corpus 0.65 s best of 8 before and after (`./bench.sh` said 0.70,

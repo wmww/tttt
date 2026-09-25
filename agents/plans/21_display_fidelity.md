@@ -57,8 +57,18 @@ Symbols (1827 tests):
   expressions/expando functions, stage 4, and JS), `Array<>-reuse` 16 -> 0, underlines-only 182 -> ~70 (left:
   union/array element identity picking another of two equal types, syntactic object literals, JS, `import()` of
   symlinked packages).
-- **Next: stage 2.1 or 4/5**, in plan order stage 4 (class expressions) and 5 (`T_1`, 71 alone now); 2.1 (scopes of
-  functions/blocks for the traversal) still blocks name qualification of locals.
+- **Execution session 3 (2026-09-25), suite 6810 -> 6912: stages 4 and 5 done.** Stage 4: anonymous class
+  expressions are named like tsc's getAssignedName (`ClassDecl.assigned_name`, set by the parser), else `(Anonymous
+  class)`; `export default class {}` prints `default` (tsc prints the importing alias, `typeof b`: stage 2);
+  `(typeof C)[]` parenthesized. class-expression bucket 88 tests -> 11 (+40). Parameter properties and enum members in
+  initializers were already qualified. Stage 5: tsc's typeParameterToName ported (`TyParamNames` in `TyDisplay`,
+  types baseline only; scopes per signature and per reused conditional/mapped node; renamed names are new
+  identifiers except inside a reused node); the traversal tracks the type parameters in scope. T_1 bucket 71 alone ->
+  1 (+61). Two findings on the way: tsc keeps member signatures uninstantiated when they can't reference the mapped
+  parameters (`mentions_mapped()`, hacks.md), and `mentions()` now reads anonymous types' free params.
+- **Next: stage 2.1 + 2** (the symbols `name` bucket, 231 alone: over-qualification 71, under-qualification 98,
+  alias/other names 231 lines in the samples), then 6 (symbol lines/declarations, `line-missing` 311 alone in the
+  symbols baseline) and 7 (union origins, decide by sampling `other`).
 
 ## Stages (in order; each is a commit with numbers, `./fasttest.sh -s` before committing)
 

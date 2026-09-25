@@ -201,6 +201,18 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - `error.c` "Error added with invalid span" is ~64 lines per suite run (TS2511 on a lib class in 15 tests, names found
   in a `_` of some lib). `grep build/failstats/stderr.txt`. Also one "Declaration B acquired multiple times".
 
+- Duplicate type parameters `<A, A>` are one merged symbol in tsc's binder (the checker reports TS2300 on the second)
+  but two in tttt's (`scope_init_declaration`), so the types baseline renames the second `A_1` where tsc prints `<A,
+  A>` (duplicateTypeParameters3, lost types in plan 21 stage 5). Merging them in the binder is the tsc shape; check what
+  it does to TS2300 and to the generic's type parameter list.
+- `export default class {}` prints `typeof default` from other files where tsc names the alias that imports it
+  (`import { default as b }` -> `typeof b`, importHelpersWithImportOrExportDefault): tsc's getNameOfSymbolAsWritten
+  special-cases `default` by binding context. Plan 21 stage 2 material.
+- tttt instantiates member signatures of generic classes/interfaces that can't reference the mapped type parameters;
+  tsc keeps them (getObjectTypeInstantiation filters outer type parameters with isTypeParameterPossiblyReferenced).
+  Display compensates (`mentions_mapped()`, hacks.md); doing it in `instantiate.c` would be correct *and* cheaper
+  (fewer signature copies, identity-preserving relations). Measure on valibot/type-fest.
+
 ## Parser
 - `parse_label` should refuse reserved words (`default:`/`case x:` are fine today only because of parse order).
 - A leading `&`/`|` in a type becomes an `any`/`never` operand (`parse_type`), which every consumer has to know to skip.

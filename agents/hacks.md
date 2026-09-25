@@ -51,6 +51,14 @@ Suboptimal-but-working code. Prefer function names over line numbers.
     signature's type parameters" (tsc: uninstantiated annotation type == instantiated type, with fresh type parameters
     tttt doesn't make, `mentions()` is conservative). `TyDisplay.mapped_by` (tsc's context.mapper, recovering mapped
     type parameters inside a reused node) is only used for type predicates.
+  - `mentions_mapped()`: tsc doesn't instantiate a member signature that can't reference the mapped type parameters
+    (getObjectTypeInstantiation + the syntactic isTypeParameterPossiblyReferenced); tttt does, and display then prints
+    the declared signature instead. The real fix is in `instantiate.c` (keep the type when the declaration can't
+    reference the mapper's sources, like the anonymous types' free params already do), which would also save work.
+  - `T_1` renaming (`TyParamNames`): the type parameters in scope at the print location come from the traversal
+    (`baseline_test_case_enter_generic()`, with tsc's resolveName exceptions for static members and computed member
+    names re-stated by hand), not from a real scope chain (plan 21 stage 2.1). Mapped/conditional synthetic `T`s of
+    tsc's node builder (distributive conditional rewriting, homomorphic mapped wrappers) aren't made.
   - Inaccessible names: `display_node_identifier()` names the target anew with `out_symbol_name()` and keeps the type
     arguments; when that gives `import("m").A` it patches the underline so `import(` and `).` are reused, byte-offset
     arithmetic that assumes an ASCII module name.
