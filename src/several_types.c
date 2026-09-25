@@ -134,13 +134,14 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
 }
 
 // tsc's resolveNameHelper at a class: a static member can't see the class's type parameters (TS2302)
-static void check_static_type_parameter_reference(IdentifierType const* me, Scope const* names, ErrorCtx* errs) {
+static void check_static_type_parameter_reference(IdentifierType* me, Scope const* names, ErrorCtx* errs) {
     for (Scope const* scope = names; scope; scope = scope->parent) {
         if (scope_declares_symbol(scope, my target)) return;
         if (scope->this_ref.kind != THIS_CLASS_STATIC || !scope->this_ref.class_decl) continue;
         for_each (i, vec_generic_item, &scope->this_ref.class_decl->generic.items) {
             if (i->owned_symbol == my target || i->symbol_ref == my target) {
                 error_ctx_error_d(errs, my name, 2302, "Static members cannot reference class type parameters.");
+                my target = my symbol = nullptr; // (Resolves to nothing, like in tsc)
                 return;
             }
         }

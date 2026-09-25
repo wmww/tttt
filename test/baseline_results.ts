@@ -3967,7 +3967,7 @@ const baselines = {
     },
     'classTypeParametersInStatics': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classUpdateTests': {
@@ -14642,8 +14642,8 @@ const baselines = {
     },
     'genericClassWithStaticsUsingTypeArguments': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'genericClasses0': {
         errors: true,
@@ -28417,7 +28417,7 @@ const baselines = {
     },
     'staticMethodReferencingTypeArgument1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'staticMethodWithTypeParameterExtendsClauseDeclFile': {
@@ -28427,7 +28427,7 @@ const baselines = {
     },
     'staticMethodsReferencingClassTypeParameters': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'staticMismatchBecauseOfPrototype': {
@@ -30667,17 +30667,17 @@ const baselines = {
     },
     'typeParametersInStaticAccessors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParametersInStaticMethods': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParametersInStaticProperties': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParametersShouldNotBeEqual': {
@@ -34907,7 +34907,7 @@ const baselines = {
     },
     'staticIndexers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classPropertyAsPrivate': {
@@ -35042,7 +35042,7 @@ const baselines = {
     },
     'staticPropertyNotInClassType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classWithBaseClassButNoConstructor': {
@@ -40192,12 +40192,12 @@ const baselines = {
     },
     'computedPropertyNames34_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames34_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames35_ES5': {
@@ -63322,7 +63322,7 @@ const baselines = {
     },
     'typeofClassWithPrivates': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeofModuleWithoutExports': {
@@ -64222,7 +64222,7 @@ const baselines = {
     },
     'staticMembersUsingClassTypeParameter': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterConstModifiers': {
