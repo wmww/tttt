@@ -937,7 +937,7 @@ const baselines = {
     },
     'argsInScope': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arguments': {
@@ -952,7 +952,7 @@ const baselines = {
     },
     'argumentsAsPropertyName2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'argumentsBindsToFunctionScopeArgumentList': {
@@ -962,37 +962,37 @@ const baselines = {
     },
     'argumentsObjectCreatesRestForJs': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'argumentsObjectIterator01_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'argumentsObjectIterator01_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'argumentsObjectIterator02_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'argumentsObjectIterator02_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'argumentsObjectIterator03_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'argumentsObjectIterator03_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'argumentsPropertyNameInJsMode1': {
@@ -1002,7 +1002,7 @@ const baselines = {
     },
     'argumentsPropertyNameInJsMode2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'argumentsReferenceInConstructor1_Js': {
@@ -1042,7 +1042,7 @@ const baselines = {
     },
     'argumentsReferenceInFunction1_Js': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'argumentsReferenceInMethod1_Js': {
@@ -1087,12 +1087,12 @@ const baselines = {
     },
     'argumentsUsedInClassFieldInitializerOrStaticInitializationBlock': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'argumentsUsedInObjectLiteralProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arithAssignTyping': {
@@ -6472,7 +6472,7 @@ const baselines = {
     },
     'contextuallyTypeArgumentsKeyword': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextuallyTypeAsyncFunctionReturnTypeFromUnion': {
@@ -13852,7 +13852,7 @@ const baselines = {
     },
     'functionDeclarationWithResolutionOfTypeNamedArguments01': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionDeclarationWithResolutionOfTypeOfSameName01': {
@@ -13887,7 +13887,7 @@ const baselines = {
     },
     'functionExpressionWithResolutionOfTypeNamedArguments01': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionExpressionWithResolutionOfTypeOfSameName01': {
@@ -19462,7 +19462,7 @@ const baselines = {
     },
     'jsSelfReferencingArgumentsFunction': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocAccessEnumType': {
@@ -19567,7 +19567,7 @@ const baselines = {
     },
     'jsdocRestParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocRestParameter_es6': {
@@ -20862,42 +20862,42 @@ const baselines = {
     },
     'modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'modularizeLibrary_ErrorFromUsingES6FeaturesWithOnlyES5Lib': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'modularizeLibrary_ErrorFromUsingWellknownSymbolWithOutES6WellknownSymbolLib': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'modularizeLibrary_NoErrorDuplicateLibOptions1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'modularizeLibrary_NoErrorDuplicateLibOptions2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'modularizeLibrary_TargetES5UsingES6Lib': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'modularizeLibrary_TargetES6UsingES6Lib': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'modularizeLibrary_UsingES5LibAndES6ArrayLib': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'modularizeLibrary_UsingES5LibAndES6FeatureLibs': {
@@ -20907,7 +20907,7 @@ const baselines = {
     },
     'modularizeLibrary_UsingES5LibES6ArrayLibES6WellknownSymbolLib': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'modularizeLibrary_Worker.asynciterable': {
@@ -32977,7 +32977,7 @@ const baselines = {
     },
     'asyncArrowFunctionCapturesArguments_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asyncArrowFunctionCapturesThis_es2017': {
@@ -33256,8 +33256,8 @@ const baselines = {
         types: false,
     },
     'asyncArrowFunctionCapturesArguments_es5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'asyncArrowFunctionCapturesThis_es5': {
@@ -33507,7 +33507,7 @@ const baselines = {
     },
     'asyncFunctionDeclarationCapturesArguments_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asyncAliasReturnType_es6': {
@@ -33572,7 +33572,7 @@ const baselines = {
     },
     'asyncArrowFunctionCapturesArguments_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asyncArrowFunctionCapturesThis_es6': {
@@ -34627,7 +34627,7 @@ const baselines = {
     },
     'classStaticBlock6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classStaticBlock7': {
@@ -39531,24 +39531,24 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments01': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments01_ES6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments02': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments02_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments03': {
         errors: false,
@@ -39611,23 +39611,23 @@ const baselines = {
         types: false,
     },
     'emitArrowFunctionWhenUsingArguments09': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments09_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments10': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments10_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments11': {
@@ -39701,7 +39701,7 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments18': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -39711,13 +39711,13 @@ const baselines = {
         types: false,
     },
     'emitArrowFunctionWhenUsingArguments19': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments19_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionsAsIs': {
@@ -39852,7 +39852,7 @@ const baselines = {
     },
     'parseClassDeclarationInStrictModeByDefaultInES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'superCallBeforeThisAccessing1': {
@@ -51467,7 +51467,7 @@ const baselines = {
     },
     'jsdocParamTag2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocParamTagTypeLiteral': {
@@ -51787,7 +51787,7 @@ const baselines = {
     },
     'paramTagOnFunctionUsingArguments': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'paramTagTypeResolution': {
@@ -57128,7 +57128,7 @@ const baselines = {
     'parserStrictMode4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode5': {
         errors: false,
@@ -57632,7 +57632,7 @@ const baselines = {
     },
     'parserUsingConstructorAsIdentifier': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserVoidExpression1': {

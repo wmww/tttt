@@ -799,6 +799,10 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_IDENTIFIER:
             identifier_expr_compile_test_info(&my identifier, ctx);
+            if (!my identifier.target && my identifier.is_arguments) {
+                // A function's `arguments` (tsc's argumentsSymbol, which has no declaration)
+                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my identifier.name, .allow_declaration_empty = true });
+            }
             if (my identifier.keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
                 // tsc shows the `target` of `new.target` too, like the name of a property access
                 Span target = my identifier.name;

@@ -46,6 +46,7 @@ typedef struct IdentifierExpr {
     // A variable referenced from another flow container (function) than the one it's declared in (tsc's
     // isOuterVariable), as far as the resolve walk knows (a `var` whose declaration comes later isn't)
     bool outer_reference;
+    bool is_arguments; // The implicit `arguments` of the function around it (tsc's argumentsSymbol)
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
     bool constraint_position;

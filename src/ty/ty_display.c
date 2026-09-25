@@ -77,14 +77,13 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         out(d, symbol->name_span.sv);
         return;
     }
-    // Visible under its own name?
+    // tsc's getAccessibleSymbolChain walks the scopes from the inside, and in each looks for the symbol under its own
+    // name and then for an alias of it. (The globals aren't searched for aliases: nothing but `export as namespace`
+    // puts one there)
     Symbol const* found = scope_resolve(d.enclosing, symbol->name, meaning);
-    if (found && same_symbol(me, symbol_for_meaning(found, meaning), symbol)) {
-        out(d, symbol->name_span.sv);
-        return;
-    }
-    // Under an import's? The globals aren't searched: nothing but `export as namespace` puts an alias there
+    bool own_name = found && same_symbol(me, symbol_for_meaning(found, meaning), symbol);
     for (Scope const* scope = d.enclosing; scope && scope->kind != SCOPE_GLOBAL; scope = scope->parent) {
+        if (own_name && scope_declares_symbol(scope, found)) break;
         csview alias_name;
         if (find_alias_in_table(me, &scope->locals, symbol, meaning, &alias_name) ||
             (scope->container && find_alias_in_table(me, scope->container->exports, symbol, meaning, &alias_name))
@@ -92,6 +91,10 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
             out(d, alias_name);
             return;
         }
+    }
+    if (own_name) {
+        out(d, symbol->name_span.sv);
+        return;
     }
     if (parent->is_module) {
         // Of another module: through an import that names the module (`import * as ns`, `import ns = require()`)

@@ -195,6 +195,18 @@ static void check_parameter_reference(IdentifierExpr const* me, Scope const* nam
     }
 }
 
+// Whether a function is around that has `arguments`: from ES2015 on an arrow function sees the arguments of the
+// function it is in, before that its own (which is TS2496)
+static bool scope_has_arguments(Scope const* scope) {
+    bool arrows = compiler_options()->target < SCRIPT_TARGET_ES2015;
+    for (; scope; scope = scope->parent) {
+        if (scope->kind == SCOPE_FUNCTION && scope->function && (arrows || !span_valid(scope->function->arrow_span))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
@@ -251,8 +263,19 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         check_declared_before_use(me, names, errs);
         check_parameter_reference(me, names, errs);
         my outer_reference = my target->flow_start && names->flow && names->flow->start != my target->flow_start;
-    } else if (span_equals(my name, "arguments") && scope_has_function(names)) {
-        // No symbol: ty_identifier_reference_type() makes it IArguments. TODO: not in arrow functions (TS2496)
+    } else if (span_equals(my name, "arguments") && scope_has_arguments(names)) {
+        // No symbol: ty_identifier_reference_type() makes it IArguments
+        my is_arguments = true;
+        FunctionImpl const* container = names->function;
+        if (compiler_options()->target < SCRIPT_TARGET_ES2015 && container) {
+            if (span_valid(container->arrow_span)) {
+                error_ctx_error_d(errs, my name, 2496, "The 'arguments' object cannot be referenced in an arrow function in ES5. "
+                    "Consider using a standard function expression.");
+            } else if (container->is_async) {
+                error_ctx_error_d(errs, my name, 2522, "The 'arguments' object cannot be referenced in an async function or "
+                    "method in ES5. Consider using a standard function or method.");
+            }
+        }
     } else if (scope_get_type(names, my name.sv, nullptr)) {
         error_ctx_error_d(
             errs, my name, 2693,
