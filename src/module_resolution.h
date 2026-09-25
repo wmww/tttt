@@ -15,6 +15,9 @@ typedef struct ModuleResolver ModuleResolver;
 typedef enum ResolutionMode {
     RESOLUTION_MODE_COMMONJS,
     RESOLUTION_MODE_ESM,
+    // CommonJS because the syntax says so (`import x = require()`, `resolution-mode: "require"`): bundler resolution,
+    // which otherwise always reads `exports` with `import`, uses `require` then too
+    RESOLUTION_MODE_REQUIRE_SYNTAX,
 } ResolutionMode;
 
 typedef enum ResolvedKind {

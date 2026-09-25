@@ -289,7 +289,39 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
     }
 }
 
+// tsc's getErrorSpanForNode() of a function: its name, else an arrow function up to the end of its first line, else
+// its first token
+static Span function_error_span(FunctionImpl const* me) {
+    if (span_valid(my name)) return my name;
+    if (span_valid(my arrow_span)) {
+        Span ret = my full_span;
+        if (!my expression_body) {
+            const char* start = span_start_ptr(ret);
+            const char* line_end = memchr(start, '\n', ret.sv.size);
+            if (line_end) ret.sv.size = line_end - start;
+            while (ret.sv.size && (ret.sv.buf[ret.sv.size - 1] == '\r')) ret.sv.size--;
+        }
+        return ret;
+    }
+    return block_first_token(my full_span);
+}
+
+// The helpers async functions and generators are emitted with (tsc's checkSignatureDeclaration)
+static void function_check_emit_helpers(FunctionImpl const* me, ErrorCtx* errs) {
+    if (!my has_body || my ambient || (!my is_async && !my is_generator)) return;
+    ScriptTarget target = compiler_options()->target;
+    Span at = function_error_span(me);
+    if (my is_async && my is_generator && target < SCRIPT_TARGET_ES2018) {
+        ty_check_emit_helpers(current_checker, at, EMIT_HELPER_AWAIT | EMIT_HELPER_ASYNC_GENERATOR, errs);
+    }
+    if (my is_async && !my is_generator && target < SCRIPT_TARGET_ES2017) {
+        ty_check_emit_helpers(current_checker, at, EMIT_HELPER_AWAITER, errs);
+    }
+    if (target < SCRIPT_TARGET_ES2015) ty_check_emit_helpers(current_checker, at, EMIT_HELPER_GENERATOR, errs);
+}
+
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
+    function_check_emit_helpers(me, errs);
     for_each (i, vec_function_arg, &my args) {
         if (!i->initializer.binding.has_explicit_type &&
             i->initializer.value.tag == EXPR_IMPLICIT_ANY

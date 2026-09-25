@@ -181,6 +181,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
 }
 
 void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported, bool declared) {
+    my is_ambient = declared || scope->ambient;
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
@@ -449,6 +450,115 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
     }
 }
 
+// A decorator, from its `@`
+static Span decorator_span(Expr const* decorator) {
+    Span ret = decorator->outer_span;
+    const char* start = span_start_ptr(ret);
+    const char* file_start = source_file_start(ret.source);
+    while (start > file_start && start[-1] != '@') start--;
+    if (start > file_start) start--;
+    ret.sv = csview_from_n(start, span_end_ptr(ret) - start);
+    return ret;
+}
+
+// nodeCanBeDecorated() of an ES decorator on a member (legacy decorators aren't asked)
+static bool item_es_decorated(ClassItem const* item) {
+    if (!vec_expr_size(&item->decorators)) return false;
+    switch (item->tag) {
+        case CLASS_ITEM_FIELD: return !(item->field.is_declare || item->field.is_abstract);
+        case CLASS_ITEM_METHOD: return item->method.func.has_body;
+        default: return false;
+    }
+}
+
+// tsc's getFirstTransformableStaticClassElement(): where the emitter builds the class's static side, and so names the
+// class with __setFunctionName (an invalid span if it doesn't)
+static Span class_transformable_static_element(ClassDecl const* me) {
+    CompilerOptions const* options = compiler_options();
+    bool decorated = !options->experimental_decorators && options->target < SCRIPT_TARGET_ESNEXT &&
+        vec_expr_size(&my decorators);
+    bool standard_fields = options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022;
+    for_each (i, vec_class_item, &my items) {
+        if (decorated && item_es_decorated(i)) return decorator_span(vec_expr_at(&my decorators, 0));
+        if (options->target < SCRIPT_TARGET_ESNEXT) {
+            if (i->tag == CLASS_ITEM_STATIC_BLOCK) return i->span;
+            if (!class_item_is_static((ClassItem*)i)) continue;
+            Span name = i->tag == CLASS_ITEM_METHOD ? i->method.name_span : i->field.name_span;
+            if (span_valid(class_item_private_name(i))) return name;
+            if (!standard_fields && i->tag == CLASS_ITEM_FIELD && i->field.value.tag != EXPR_IMPLICIT_ANY) return name;
+        }
+    }
+    return span_null;
+}
+
+// The tslib helpers the class's emit uses: `extends` below ES2015, decorators (tsc's checkDecorators())
+static void class_check_emit_helpers(ClassDecl* me, ErrorCtx* errs) {
+    if (my is_ambient) return;
+    CompilerOptions const* options = compiler_options();
+    bool legacy = options->experimental_decorators;
+    if (vec_expr_size(&my decorators) && !(legacy && my is_expression)) {
+        Span at = decorator_span(vec_expr_at(&my decorators, 0));
+        if (legacy) {
+            ty_check_emit_helpers(current_checker, at, EMIT_HELPER_DECORATE, errs);
+            if (options->emit_decorator_metadata) ty_check_emit_helpers(current_checker, at, EMIT_HELPER_METADATA, errs);
+        } else if (options->target < SCRIPT_TARGET_ESNEXT) {
+            ty_check_emit_helpers(current_checker, at, EMIT_HELPER_DECORATE, errs);
+            if (!my is_expression && (!span_valid(my name) || span_valid(class_transformable_static_element(me)))) {
+                ty_check_emit_helpers(current_checker, at, EMIT_HELPER_SET_FUNCTION_NAME, errs);
+            }
+        }
+    }
+    // tsc's checkClassExpressionExternalHelpers()
+    if (my is_expression && my named_evaluation) {
+        Span at = !legacy && options->target < SCRIPT_TARGET_ESNEXT && vec_expr_size(&my decorators) ?
+            decorator_span(vec_expr_at(&my decorators, 0)) : class_transformable_static_element(me);
+        if (span_valid(at)) {
+            ty_check_emit_helpers(current_checker, at, EMIT_HELPER_SET_FUNCTION_NAME, errs);
+            if (my named_evaluation == CLASS_NAMED_BY_COMPUTED_KEY) {
+                ty_check_emit_helpers(current_checker, at, EMIT_HELPER_PROP_KEY, errs);
+            }
+        }
+    }
+    if (span_valid(my extends_clause) && options->target < SCRIPT_TARGET_ES2015) {
+        ty_check_emit_helpers(current_checker, my extends_clause, EMIT_HELPER_EXTENDS, errs);
+    }
+    for_each (i, vec_class_item, &my items) {
+        ClassItem const* item = i;
+        if (vec_expr_size(&item->decorators)) {
+            Span at = decorator_span(vec_expr_at(&item->decorators, 0));
+            if (legacy) {
+                bool valid = !my is_expression &&
+                    (item->tag == CLASS_ITEM_FIELD || (item->tag == CLASS_ITEM_METHOD && item->method.func.has_body));
+                if (valid) {
+                    ty_check_emit_helpers(current_checker, at, EMIT_HELPER_DECORATE, errs);
+                    if (options->emit_decorator_metadata) {
+                        ty_check_emit_helpers(current_checker, at, EMIT_HELPER_METADATA, errs);
+                    }
+                }
+            } else if (item_es_decorated(item) && options->target < SCRIPT_TARGET_ESNEXT) {
+                ty_check_emit_helpers(current_checker, at, EMIT_HELPER_DECORATE, errs);
+                bool private_name = span_valid(class_item_private_name(item));
+                if (private_name && (item->tag == CLASS_ITEM_METHOD || item->field.is_auto_accessor)) {
+                    ty_check_emit_helpers(current_checker, at, EMIT_HELPER_SET_FUNCTION_NAME, errs);
+                }
+                Expr const* computed = item->tag == CLASS_ITEM_METHOD ? item->method.computed_key : item->field.computed_key;
+                if (computed) ty_check_emit_helpers(current_checker, at, EMIT_HELPER_PROP_KEY, errs);
+            }
+        }
+        // Parameters: legacy decorators of methods and constructors with a body in a class declaration
+        FunctionImpl const* function = item->tag == CLASS_ITEM_METHOD ? &item->method.func :
+            item->tag == CLASS_ITEM_CONSTRUCTOR ? &item->constructor.func : nullptr;
+        if (!legacy || !function || !function->has_body || my is_expression) continue;
+        if (item->tag == CLASS_ITEM_METHOD && item->method.accessor == CLASS_ACCESSOR_GET) continue;
+        for_each (arg, vec_function_arg, &function->args) {
+            if (!vec_expr_size(&arg->decorators)) continue;
+            Span at = decorator_span(vec_expr_at(&arg->decorators, 0));
+            ty_check_emit_helpers(current_checker, at, EMIT_HELPER_DECORATE | EMIT_HELPER_PARAM, errs);
+            if (options->emit_decorator_metadata) ty_check_emit_helpers(current_checker, at, EMIT_HELPER_METADATA, errs);
+        }
+    }
+}
+
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (my has_typechecked) {
         return;
@@ -501,6 +611,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             expr_typecheck(decorator, errs);
         }
     }
+
+    class_check_emit_helpers(me, errs);
 
     generic_typecheck(&my generic, errs);
 

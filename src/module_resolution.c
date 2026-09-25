@@ -1159,7 +1159,8 @@ static State state_make(ModuleResolver* resolver, ResolutionMode mode) {
     state.use_exports = options->resolve_package_json_exports && (node_next || bundler);
     state.use_imports = options->resolve_package_json_imports && (node_next || bundler);
     state.use_self_name = node_next || bundler;
-    add_condition(&state, bundler || mode == RESOLUTION_MODE_ESM ? "import" : "require");
+    bool import = mode == RESOLUTION_MODE_ESM || (bundler && mode != RESOLUTION_MODE_REQUIRE_SYNTAX);
+    add_condition(&state, import ? "import" : "require");
     add_condition(&state, "types");
     if (!bundler) add_condition(&state, "node");
     for (isize i = 0; i < options->custom_conditions.count; i++) {

@@ -84,6 +84,9 @@ typedef struct SourceFile {
     ModuleRef** module_refs; // Owned, in source order
     u32 module_ref_count;
     u32 module_ref_cap;
+    // With `importHelpers`, a module that isn't a declaration file imports "tslib" implicitly (tsc's
+    // externalHelpersModuleReference). The first of module_refs, with an empty span at the start of the file
+    ModuleRef* helpers_ref; // (the first of module_refs)
     SourceFile* index_file; // The index(.d).ts file in the same directory as this file
     CommentDirective* comment_directives; // Owned, sorted by position (and so by line), recorded by the parser
     u32 comment_directive_count;

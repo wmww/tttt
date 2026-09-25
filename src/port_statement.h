@@ -101,4 +101,4 @@ typedef struct PortStatement {
 void port_statement_drop(PortStatement* me);
 void port_statement_add_names(PortStatement* me, Scope* scope);
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs);
-void port_statement_typecheck(PortStatement const* me, ErrorCtx* errs);
+void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs);

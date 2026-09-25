@@ -23,6 +23,7 @@ void binding_drop(Binding* me) {
 
 void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNamesProps props) {
     my source = source;
+    my ambient = props.is_ambient || scope->ambient;
 
     switch (my tag) {
         case BINDING_NOOP: break;
@@ -217,6 +218,9 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
             break;
 
         case BINDING_ARRAY:
+            if (compiler_options()->target < SCRIPT_TARGET_ES2015 && compiler_options()->downlevel_iteration && !my ambient) {
+                ty_check_emit_helpers(current_checker, my content_span, EMIT_HELPER_READ, errs);
+            }
             Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
             ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, my content_span, errs);
             for_each (i, vec_binding, &my array) {
@@ -231,6 +235,9 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
                 } else if (!i->target.rest && i->source.tag == VALUE_STRING && unused_enabled()) {
                     Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
                     ty_mark_destructured_member(current_checker, type, cstr_sv(&i->source.string));
+                }
+                if (i->target.rest && compiler_options()->target < SCRIPT_TARGET_ES2018 && !my ambient) {
+                    ty_check_emit_helpers(current_checker, i->target.content_span, EMIT_HELPER_REST, errs);
                 }
                 binding_typecheck(&i->target, nullptr, errs);
             }

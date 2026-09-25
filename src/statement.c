@@ -1421,6 +1421,12 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             Checker* checker = current_checker;
             Ty const* iterable_type = ty_expr_type(checker, &my for_each_loop->iterable);
 
+            // TODO: `for await` in an async function below ES2018 (__asyncValues) needs the function it is in
+            if (my for_each_loop->keyword == FOR_EACH_LOOP_OF && !my for_each_loop->is_await &&
+                compiler_options()->downlevel_iteration && compiler_options()->target < SCRIPT_TARGET_ES2015
+            ) {
+                ty_check_emit_helpers(checker, my span, EMIT_HELPER_VALUES, errs);
+            }
             if (my for_each_loop->variable.tag == FOR_EACH_LOOP_STATEMENT) {
                 variable_statement_check_using(&my for_each_loop->variable.statement,
                     my for_each_loop->keyword == FOR_EACH_LOOP_IN, errs);
@@ -1559,10 +1565,15 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_IMPORT_EXPORT:
-            port_statement_typecheck(my import_export, errs);
+            port_statement_typecheck(my import_export, my span, ctx.ambient, errs);
             break;
 
         case STATEMENT_DECL_VARIABLE:
+            if ((my decl.variable.keyword == VAR_INIT_USING || my decl.variable.keyword == VAR_INIT_AWAIT_USING) &&
+                compiler_options()->target < SCRIPT_TARGET_ESNEXT && !ctx.ambient
+            ) {
+                ty_check_emit_helpers(current_checker, my decl.variable.span, EMIT_HELPER_DISPOSABLE, errs);
+            }
             if (body && my decl.variable.keyword != VAR_INIT_VAR) {
                 // tsc's checkGrammarForDisallowedBlockScopedVariableStatement()
                 error_ctx_grammar_error_d(errs, my span, 1156,

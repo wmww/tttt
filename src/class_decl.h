@@ -82,15 +82,25 @@ Ty const* class_item_get_type(ClassItem* me);
 #define g_no_clone
 #include <cleat/generic/vec.h>
 
+// An anonymous class expression that the emitter names at runtime (tsc's isNamedEvaluationSource), set by the parser
+typedef enum ClassNamedEvaluation {
+    CLASS_NOT_NAMED_BY_CONTEXT,
+    CLASS_NAMED_BY_CONTEXT, // `x = class {}`, `{ a: class {} }`, `export default class {}`...
+    CLASS_NAMED_BY_COMPUTED_KEY, // `{ [k]: class {} }`, `[k] = class {}` in a class: named with __propKey
+} ClassNamedEvaluation;
+
 typedef struct ClassDecl {
     Span full_span;
     Span name;
     bool is_abstract;
     bool is_expression; // A class expression, which legacy decorators can't decorate the members of
+    bool is_ambient; // `declare class`, or in an ambient context
+    uint8_t named_evaluation; // ClassNamedEvaluation
     bool has_typechecked;
     VecExpr decorators; // TODO: only checked as expressions, not as decorators of this class
     Generic generic;
     Expr extends;
+    Span extends_clause; // `extends A<T>`
     VecTypeNode implements;
     VecClassItem items;
     Symbol* symbol;

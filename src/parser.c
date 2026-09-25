@@ -226,6 +226,19 @@ static bool parse_binding_element(Parser* parent, Binding* ret);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
 
+// tsc's isNamedEvaluationSource(): `value` gets its name from where it is (`x = class {}`). An anonymous class there
+// is named by the emitter at runtime (ClassDecl.named_evaluation)
+static void mark_named_evaluation(Expr* value, bool computed_key) {
+    while (true) {
+        if (value->tag == EXPR_AS_TYPE) value = &value->as_type->expr;
+        else if (value->tag == EXPR_UNARY_OP && value->unary_op->op == UNARY_OP_RIGHT_BANG) value = &value->unary_op->expr;
+        else break;
+    }
+    if (value->tag == EXPR_CLASS_DECL && !span_valid(value->class_decl->name)) {
+        value->class_decl->named_evaluation = computed_key ? CLASS_NAMED_BY_COMPUTED_KEY : CLASS_NAMED_BY_CONTEXT;
+    }
+}
+
 static inline Parser parser(Parser* parent) {
 #ifdef DEBUG_BUILD
     check(!parent->has_panding_child);
@@ -1955,6 +1968,7 @@ static bool parse_function_args_inner(
                 hop_whitespace(&p);
 
                 parse_initialization_or_set_to_default(&p, expr_ctx_null, &initializer.value);
+                if (initializer.binding.tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(&initializer.value, false);
                 hop_whitespace(&p);
 
                 if (vec_function_arg_is_empty(&ret->args) && initializer.binding.has_explicit_type) {
@@ -2367,6 +2381,10 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     } else if (hop_char(&p, ':')) {
         hop_whitespace(&p);
         expect_expr(&p, expr_ctx_null, &item.value);
+        // Not `__proto__: class {}`, which sets the prototype
+        if (item.computed_key || !csview_equals(cstr_sv(&item.name_string), "__proto__")) {
+            mark_named_evaluation(&item.value, item.computed_key);
+        }
     } else if (name_is_identifier && !item.computed_key && (*p.pos == ',' || *p.pos == '}' || *p.pos == '=')) {
         item.tag = OBJECT_ITEM_SHORTHAND;
         item.value = expr_identifier((IdentifierExpr){ .name = item.name_span, .shorthand = true });
@@ -2376,6 +2394,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             hop_whitespace(&p);
             Expr default_value;
             if (expect_expr(&p, expr_ctx_null, &default_value)) {
+                mark_named_evaluation(&default_value, false);
                 item.shorthand_default = c_new(Expr, default_value);
             } else {
                 expr_drop(&default_value);
@@ -2836,6 +2855,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             }
 
             if (parse_initialization_or_set_to_default(&p, expr_ctx_null, &ret->field.value)) {
+                mark_named_evaluation(&ret->field.value, ret->field.computed_key);
                 is_definitely_field = true;
                 hop_whitespace(&p);
             }
@@ -2965,12 +2985,14 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
         ret->generic = (Generic){0};
     }
 
+    Anchor extends_start = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         hop_whitespace(&p);
 
         ExprCtx ctx = expr_ctx_null;
         ctx.reject_operators = true;
         expect_expr(&p, ctx, &ret->extends);
+        ret->extends_clause = span_from(extends_start);
         hop_whitespace(&p);
 
         if (hop_char(&p, ',')) {
@@ -3281,6 +3303,9 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     ctx.min_precedence = right_associative ? precedence - 1 : precedence;
     expect_expr(&p, ctx, &right);
 
+    bool logical_or_plain = op == BINARY_OP_EQUAL || op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_OR_OR_EQUAL ||
+        op == BINARY_OP_EH_EH_EQUAL;
+    if (logical_or_plain && left_and_ret->tag == EXPR_IDENTIFIER) mark_named_evaluation(&right, false);
     expr_mark_binary_operand(left_and_ret);
     expr_mark_binary_operand(&right);
     *left_and_ret = expr_binary_op(span_between(left_and_ret->outer_span, right.outer_span), c_new(BinaryOpExpr, {
@@ -4407,6 +4432,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         hop_whitespace(&p);
         Expr expr;
         expect_expr(&p, expr_ctx_null, &expr);
+        mark_named_evaluation(&expr, false);
         *ret = (Statement){
             .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
             .expr = expr,
@@ -4596,6 +4622,7 @@ static bool parse_binding_element(Parser* parent, Binding* ret) {
         hop_whitespace(&default_p);
         Expr default_value;
         expect_expr(&default_p, expr_ctx_null, &default_value);
+        if (ret->tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(&default_value, false);
         ret->default_value = c_new(Expr, default_value);
         parse_success(&default_p);
     } else {
@@ -4892,6 +4919,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         }
 
         if (parse_initialization_or_set_to_default(&p, ctx, &initializer.value)) {
+            if (initializer.binding.tag == BINDING_IDENTIFIER) mark_named_evaluation(&initializer.value, false);
             end_of_initialization = p.pos;
             hop_whitespace(&p);
         }
@@ -5744,6 +5772,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (decl_props.exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {
+        mark_named_evaluation(&parsed.expr, false);
         *ret = (Statement){
             .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
             .expr = parsed.expr,

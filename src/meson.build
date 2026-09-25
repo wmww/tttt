@@ -51,6 +51,7 @@ core_files = files(
     'ty/flow.c',
     'ty/iterate.c',
     'ty/template.c',
+    'ty/helpers.c',
 )
 
 main_files = core_files + files('main.c')

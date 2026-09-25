@@ -1547,6 +1547,18 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
     FunctionImpl const* generator = yield->generator;
     if (!generator) return;
     bool async = generator->is_async;
+    if (yield->op == UNARY_OP_YIELD_STAR) {
+        ScriptTarget target = compiler_options()->target;
+        Span keyword = my outer_span; // (what tsc reports it at)
+        if (keyword.sv.size > 5) keyword.sv.size = 5;
+        if (async && target < SCRIPT_TARGET_ES2018) {
+            ty_check_emit_helpers(checker, keyword,
+                EMIT_HELPER_AWAIT | EMIT_HELPER_ASYNC_DELEGATOR | EMIT_HELPER_ASYNC_VALUES, errs);
+        }
+        if (!async && target < SCRIPT_TARGET_ES2015 && compiler_options()->downlevel_iteration) {
+            ty_check_emit_helpers(checker, keyword, EMIT_HELPER_VALUES, errs);
+        }
+    }
     Ty const* yielded;
     Span span = yield->expr.tag == EXPR_IMPLICIT_ANY ? my outer_span : yield->expr.outer_span;
     if (yield->op == UNARY_OP_YIELD_STAR) {
@@ -1872,6 +1884,24 @@ Ty const* expr_evaluate_type(Expr const* me) {
     return ty_compute_expr_without_context(current_checker, me);
 }
 
+// The target of a destructuring assignment (`[...x] = e`, `({ ...x } = e)`), as the resolve walk marked it
+static bool expr_is_destructuring_target(Expr const* me) {
+    return (my tag == EXPR_IDENTIFIER && my identifier.assignment_target) ||
+        (my tag == EXPR_PROPERTY && my property->assignment_target);
+}
+
+// Private names are emitted with WeakMaps and the __classPrivateField* helpers
+static bool private_names_lowered(void) {
+    return compiler_options()->target < SCRIPT_TARGET_ESNEXT || !compiler_options()->use_define_for_class_fields;
+}
+
+static void private_access_check_emit_helpers(Expr const* me, ErrorCtx* errs) {
+    if (!private_names_lowered()) return;
+    uint8_t target = my property->assignment_target;
+    if (target != FLOW_TARGET_NONE) ty_check_emit_helpers(current_checker, my outer_span, EMIT_HELPER_CLASS_PRIVATE_FIELD_SET, errs);
+    if (target != FLOW_TARGET_DEFINITE) ty_check_emit_helpers(current_checker, my outer_span, EMIT_HELPER_CLASS_PRIVATE_FIELD_GET, errs);
+}
+
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     // The expression's own type first: evaluating it is what gives the expressions inside it their contextual types
     // (whoever knows this expression's contextual type has done the same before getting here)
@@ -1887,6 +1917,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 !expr_is_perenthisized(&my binary_op->left)
             ) {
                 // The one place `#x` is an expression
+                if (private_names_lowered()) {
+                    ty_check_emit_helpers(current_checker, my binary_op->left.outer_span, EMIT_HELPER_CLASS_PRIVATE_FIELD_IN, errs);
+                }
                 expr_typecheck(&my binary_op->right, errs);
                 ty_check_in_expression(current_checker, &my binary_op->left, &my binary_op->right, errs);
                 break;
@@ -1968,6 +2001,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 expr_type = ty_non_nullable(current_checker, expr_type);
             }
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
+            if (my property->form == PROPERTY_EXPR_DOT && my property->prop.tag == EXPR_LITERAL &&
+                span_valid(my property->prop.inner_span) && my property->prop.inner_span.sv.buf[0] == '#'
+            ) {
+                private_access_check_emit_helpers(me, errs);
+            }
             if (ty_check_private_name_access(current_checker, my property, expr_type, errs)) break;
             ty_check_property_access(
                 current_checker,
@@ -2048,6 +2086,15 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     ty_check_computed_name(current_checker, i->computed_key, i->name_span, false, errs);
                 }
                 expr_typecheck(&i->value, errs);
+                if (i->tag == OBJECT_ITEM_SPREAD) {
+                    // `{ ...o }` is emitted with __assign below ES2015, `({ ...x } = o)` with __rest below ES2018
+                    ScriptTarget target = compiler_options()->target;
+                    if (expr_is_destructuring_target(&i->value)) {
+                        if (target < SCRIPT_TARGET_ES2018) ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_REST, errs);
+                    } else if (target < SCRIPT_TARGET_ES2015) {
+                        ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_ASSIGN, errs);
+                    }
+                }
             }
             break;
 
@@ -2066,8 +2113,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             // `...x` of an array literal or a call: what isn't an array has to be iterable. Not in a destructuring
             // assignment, where `x` is assigned to (`[...x] = e`)
             Checker* checker = current_checker;
-            bool target = (my spread->tag == EXPR_IDENTIFIER && my spread->identifier.assignment_target) ||
-                (my spread->tag == EXPR_PROPERTY && my spread->property->assignment_target);
+            bool target = expr_is_destructuring_target(my spread);
+            if (!target && compiler_options()->target < SCRIPT_TARGET_ES2015) {
+                ty_check_emit_helpers(checker, my outer_span,
+                    EMIT_HELPER_SPREAD_ARRAY | (compiler_options()->downlevel_iteration ? EMIT_HELPER_READ : 0), errs);
+            }
             Ty const* operand = expr_get_type(my spread);
             if (!target && !(operand->flags & TYF_ANY) && !ty_extends_array(checker, operand)) {
                 ty_iterated_type(checker, ITERATION_SPREAD, operand, my spread->outer_span, errs);
@@ -2090,6 +2140,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_TEMPLATE:
             if (my template_->tag) {
+                if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
+                    ty_check_emit_helpers(current_checker, my inner_span, EMIT_HELPER_MAKE_TEMPLATE_OBJECT, errs);
+                }
                 expr_typecheck(my template_->tag, errs);
             }
             for_each (i, vec_expr, &my template_->substitutions) {

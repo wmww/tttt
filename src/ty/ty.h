@@ -794,6 +794,40 @@ bool ty_signatures_identical(Checker* me, Signature const* source, Signature con
 // tsc's isImplementationCompatibleWithOverload (TS2394): the returns relate either way (or the overload's is void) and,
 // type parameters erased, the implementation is assignable to the overload with the returns ignored
 bool ty_implementation_compatible_with_overload(Checker* me, Signature const* implementation, Signature const* overload);
+// tsc's ExternalEmitHelpers: the tslib helpers the emitter lowers syntax into (helpers.c)
+typedef enum EmitHelper {
+    EMIT_HELPER_EXTENDS = 1u << 0,
+    EMIT_HELPER_ASSIGN = 1u << 1,
+    EMIT_HELPER_REST = 1u << 2,
+    EMIT_HELPER_DECORATE = 1u << 3, // ES decorators: __esDecorate and __runInitializers
+    EMIT_HELPER_METADATA = 1u << 4,
+    EMIT_HELPER_PARAM = 1u << 5,
+    EMIT_HELPER_AWAITER = 1u << 6,
+    EMIT_HELPER_GENERATOR = 1u << 7,
+    EMIT_HELPER_VALUES = 1u << 8,
+    EMIT_HELPER_READ = 1u << 9,
+    EMIT_HELPER_SPREAD_ARRAY = 1u << 10,
+    EMIT_HELPER_AWAIT = 1u << 11,
+    EMIT_HELPER_ASYNC_GENERATOR = 1u << 12,
+    EMIT_HELPER_ASYNC_DELEGATOR = 1u << 13,
+    EMIT_HELPER_ASYNC_VALUES = 1u << 14,
+    EMIT_HELPER_EXPORT_STAR = 1u << 15,
+    EMIT_HELPER_IMPORT_STAR = 1u << 16,
+    EMIT_HELPER_IMPORT_DEFAULT = 1u << 17,
+    EMIT_HELPER_MAKE_TEMPLATE_OBJECT = 1u << 18,
+    EMIT_HELPER_CLASS_PRIVATE_FIELD_GET = 1u << 19,
+    EMIT_HELPER_CLASS_PRIVATE_FIELD_SET = 1u << 20,
+    EMIT_HELPER_CLASS_PRIVATE_FIELD_IN = 1u << 21,
+    EMIT_HELPER_SET_FUNCTION_NAME = 1u << 22,
+    EMIT_HELPER_PROP_KEY = 1u << 23,
+    EMIT_HELPER_DISPOSABLE = 1u << 24, // __addDisposableResource and __disposeResources
+    EMIT_HELPER_REQUESTED = 1u << 31, // Internal: the memo is set
+} EmitHelper;
+// TS2343/TS2807 for helpers the file's tslib doesn't have, TS2354 (once per file) when there is no tslib. Callers
+// check the target/option conditions; nothing happens without importHelpers or in a script
+void ty_check_emit_helpers(Checker* me, Span at, u32 helpers, ErrorCtx* errs);
+// The file is emitted as CommonJS, AMD, UMD or a script (tsc's getEmitModuleFormatOfFile() < ModuleKind.System)
+bool ty_emits_commonjs_like(struct SourceFile const* file);
 // The call signature of a function declaration or method (its first construct signature for a constructor)
 Signature const* ty_function_signature(Checker* me, FunctionImpl const* function);
 // TS2394 on the first of the overloads (with their names) that the implementation isn't compatible with

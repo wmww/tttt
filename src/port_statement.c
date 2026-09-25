@@ -3,6 +3,7 @@
 #include "program.h"
 #include "source_file.h"
 #include "scope.h"
+#include "ty/ty.h"
 
 void port_item_drop(PortItem* me) {
     vec_span_drop(&my alias_path);
@@ -98,8 +99,42 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
     }
 }
 
-// tsc's checkImportAttributes()
-void port_statement_typecheck(PortStatement const* me, ErrorCtx* errs) {
+// The tslib helpers of CommonJS-like emit (tsc's checkImportDeclaration/checkExportDeclaration/checkImportBinding)
+static void port_statement_check_emit_helpers(PortStatement const* me, Span span, ErrorCtx* errs) {
+    if (!my module_ref || !ty_emits_commonjs_like(span.source)) return;
+    bool interop = compiler_options()->es_module_interop;
+    switch (my main.tag) {
+        case PORT_IMPORT_GATHER:
+            if (!my main.is_require && interop) ty_check_emit_helpers(current_checker, span, EMIT_HELPER_IMPORT_STAR, errs);
+            break;
+        case PORT_REEXPORT_GATHER:
+            if (interop) ty_check_emit_helpers(current_checker, span, EMIT_HELPER_IMPORT_STAR, errs);
+            break;
+        case PORT_REEXPORT_SPLAT: {
+            // (a module with `export =` is TS2498 instead)
+            Symbol* module = binder_module_of_ref(current_checker->binder, my module_ref);
+            if (!module || !symbol_table_get(module->exports, c_sv("export="))) {
+                ty_check_emit_helpers(current_checker, span, EMIT_HELPER_EXPORT_STAR, errs);
+            }
+        }   break;
+        default:
+            break;
+    }
+    if (!interop) return;
+    for_each (i, vec_port_item, &my items) {
+        if (i->tag != PORT_IMPORT_SPECIFIC && i->tag != PORT_REEXPORT_SPECIFIC) continue;
+        if (csview_equals(port_item_name(i->source_name), "default")) {
+            Span at = i->full_span; // (which may end in whitespace)
+            while (at.sv.size && (at.sv.buf[at.sv.size - 1] == ' ' || at.sv.buf[at.sv.size - 1] == '\n' ||
+                at.sv.buf[at.sv.size - 1] == '\t' || at.sv.buf[at.sv.size - 1] == '\r')) at.sv.size--;
+            ty_check_emit_helpers(current_checker, at, EMIT_HELPER_IMPORT_DEFAULT, errs);
+        }
+    }
+}
+
+void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs) {
+    if (!ambient) port_statement_check_emit_helpers(me, span, errs);
+    // tsc's checkImportAttributes()
     ImportAttributes const* node = my attributes;
     if (!node) return;
     // TODO: the attributes' type against the global `ImportAttributes` (TS2322 for a non-string value)

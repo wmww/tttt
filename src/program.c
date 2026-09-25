@@ -170,10 +170,10 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     ModuleResolver* resolver = program_resolver(me);
     csview containing = cstr_sv(&source->canonical_path);
     // The conditions `exports` are read with: by syntax, else the format of the importing file
-    ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_COMMONJS :
+    ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_REQUIRE_SYNTAX :
         ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
     if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
-    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_COMMONJS;
+    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
     ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
     if (my options.no_resolve) {
         // Nothing is added to the program, but a name may still mean a file that is part of it
@@ -458,6 +458,16 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
     for_each (i, vec_statement, &source_file->ast.statements) {
         program_handle_statement(me, source_file, i);
+    }
+    if (my options.import_helpers && source_file->is_module && !source_file->is_declaration && !my loading_stdlib) {
+        Span at = { .source = source_file, .sv = csview_from_n(source_file_start(source_file), 0) };
+        source_file->helpers_ref = source_file_add_module_ref(source_file, cstr_lit("tslib"), at);
+        // First, like tsc's: it decides the order files are in the program
+        memmove(source_file->module_refs + 1, source_file->module_refs,
+            sizeof(ModuleRef*) * (source_file->module_ref_count - 1));
+        source_file->module_refs[0] = source_file->helpers_ref;
+        // Resolved like the import the emitter writes: a `require()` in CommonJS output
+        if (ty_emits_commonjs_like(source_file)) source_file->helpers_ref->syntax = MODULE_REF_REQUIRE;
     }
 
     // Every module the file mentions, wherever (the parser lists them). By index: loading parses, never this file

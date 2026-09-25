@@ -610,6 +610,22 @@ static bool path_is_script(csview path) {
     return false;
 }
 
+// Where a file goes in the baselines of a test with a tsconfig.json: the config, the roots, the rest
+static int tsconfig_file_rank(BaselineTestCase const* test, MockFs* fs, BaselineTestFile const* file) {
+    csview name = basename_of(cstr_sv(&file->path));
+    if (tag_equals(name, "tsconfig.json") || tag_equals(name, "jsconfig.json")) return 0;
+    cstr cwd = cstr_null;
+    try (fs_get_cwd(mock_fs_get_fs(fs), &cwd)) or_panic;
+    cstr absolute = absolute_path_of(cstr_sv(&cwd), cstr_sv(&file->path));
+    int ret = 2;
+    for (isize j = 0; j < test->tsconfig_roots.count; j++) {
+        if (cstr_eq(&test->tsconfig_roots.items[j], &absolute)) ret = 1;
+    }
+    cstr_drop(&absolute);
+    cstr_drop(&cwd);
+    return ret;
+}
+
 BaselineTestCase run_baseline_test_case(
     BaselineTestCache* cache,
     csview source_path,
@@ -663,6 +679,23 @@ BaselineTestCase run_baseline_test_case(
             isize count = vec_baseline_test_file_size(&ret.files);
             memmove(ret.files.data + 1, ret.files.data, sizeof(BaselineTestFile) * (size_t)(count - 1));
             ret.files.data[0] = moved;
+        }
+    }
+
+    // With a tsconfig.json the baselines show it, then the roots, then the other files (the harness's tsConfigFiles,
+    // toBeCompiled and otherFiles), each in the order the test has them
+    if (ret.has_tsconfig) {
+        // (a stable insertion sort by rank)
+        isize count = vec_baseline_test_file_size(&ret.files);
+        for (isize i = 1; i < count; i++) {
+            BaselineTestFile moving = ret.files.data[i];
+            int rank = tsconfig_file_rank(&ret, fs, &moving);
+            isize j = i;
+            while (j > 0 && tsconfig_file_rank(&ret, fs, &ret.files.data[j - 1]) > rank) {
+                ret.files.data[j] = ret.files.data[j - 1];
+                j--;
+            }
+            ret.files.data[j] = moving;
         }
     }
 
