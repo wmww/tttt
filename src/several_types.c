@@ -8,6 +8,8 @@
 #include "generic.h"
 #include "error.h"
 #include "unused.h"
+#include "class_decl.h"
+#include "statement.h"
 
 // Identifier
 
@@ -196,6 +198,86 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
     }
 }
 
+// The type parameters a class, interface or alias declares (the first declaration that has any), and how many of them
+// no declaration gives a default (tsc's getMinTypeArgumentCount)
+static Generic const* declared_type_params(Symbol const* symbol, u32* min) {
+    Generic const* ret = nullptr;
+    *min = 0;
+    for (u32 d = 0; d < symbol->decl_count && !ret; d++) {
+        Generic const* generic = nullptr;
+        switch (symbol->decls[d].kind) {
+            case SYMBOL_DECL_CLASS: generic = &((ClassDecl const*)symbol->decls[d].node)->generic; break;
+            case SYMBOL_DECL_INTERFACE: generic = &((InterfaceDecl const*)symbol->decls[d].node)->generic; break;
+            case SYMBOL_DECL_TYPE_ALIAS: generic = &((TypeDecl const*)symbol->decls[d].node)->generic; break;
+            default: continue;
+        }
+        if (!generic_empty(generic)) ret = generic;
+    }
+    if (!ret) return nullptr;
+    u32 count = (u32)vec_generic_item_size(&ret->items);
+    for (u32 i = 0; i < count; i++) {
+        bool has_default = false;
+        for (u32 d = 0; d < symbol->decl_count; d++) {
+            Generic const* generic = nullptr;
+            switch (symbol->decls[d].kind) {
+                case SYMBOL_DECL_CLASS: generic = &((ClassDecl const*)symbol->decls[d].node)->generic; break;
+                case SYMBOL_DECL_INTERFACE: generic = &((InterfaceDecl const*)symbol->decls[d].node)->generic; break;
+                case SYMBOL_DECL_TYPE_ALIAS: generic = &((TypeDecl const*)symbol->decls[d].node)->generic; break;
+                default: continue;
+            }
+            if (i < (u32)vec_generic_item_size(&generic->items)) has_default |= vec_generic_item_at(&generic->items, i)->fallback_explicit;
+        }
+        if (!has_default) *min = i + 1;
+    }
+    return ret;
+}
+
+// tsc's getTypeFromClassOrInterfaceReference/getTypeFromTypeAliasReference/checkNoTypeArguments: the number of type
+// arguments has to fit the type parameters (TS2314, TS2707), and a type without any takes none (TS2315)
+static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs) {
+    Symbol const* symbol = my target;
+    if (!symbol || symbol->is_placeholder || my keyword || my import_ref || !span_valid(my name)) return;
+    if (!my name.source || my name.source->is_js) return;
+    // The reference as written: from its first name to its closing `>`
+    char const* start = span_start_ptr(vec_span_is_empty(&my namespaces) ? my name : *vec_span_front(&my namespaces));
+    char const* end = span_end_ptr(my name);
+    u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
+    if (arg_count) {
+        char const* limit = cstr_str(&my name.source->contents) + cstr_size(&my name.source->contents);
+        end = span_end_ptr(vec_spanned_type_at(&my generic_params, arg_count - 1)->span);
+        while (end < limit && *end != '>') end++;
+        if (end < limit) end++;
+    }
+    Span span = span_make(my name.source, start, end);
+    bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
+    u32 min = 0;
+    Generic const* params = generic_kind ? declared_type_params(symbol, &min) : nullptr;
+    if (!params) {
+        if (arg_count && (symbol->flags & SYMBOL_TYPE)) {
+            error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
+        }
+        return;
+    }
+    u32 count = (u32)vec_generic_item_size(&params->items);
+    if (arg_count >= min && arg_count <= count) return;
+    cstr name = cstr_from_sv(symbol->name);
+    if (!(symbol->flags & SYMBOL_TYPE_ALIAS)) {
+        // (tsc's typeToString of the generic type: its parameters)
+        cstr_append(&name, "<");
+        for (u32 i = 0; i < count; i++) {
+            if (i) cstr_append(&name, ", ");
+            cstr_append_sv(&name, vec_generic_item_at(&params->items, i)->name.sv);
+        }
+        cstr_append(&name, ">");
+    }
+    if (min == count) {
+        error_ctx_error_d(errs, span, 2314, "Generic type '", name, "' requires ", count, " type argument(s).");
+    } else {
+        error_ctx_error_d(errs, span, 2707, "Generic type '", name, "' requires between ", min, " and ", count, " type arguments.");
+    }
+    cstr_drop(&name);
+}
+
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     if (my import_attributes) import_attributes_resolution_mode(my import_attributes, errs); // tsc's checkImportType
     for_each (i, vec_spanned_type, &my generic_params) {
@@ -204,6 +286,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE) {
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }
+    identifier_type_check_arity(me, errs);
     if (my target) {
         /*
         //This can be enabled once we're parsing the standard library

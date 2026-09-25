@@ -1261,7 +1261,7 @@ const baselines = {
         types: true,
     },
     'arrayLiteralAndArrayConstructorEquivalence1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -1296,7 +1296,7 @@ const baselines = {
         types: false,
     },
     'arrayReferenceWithoutTypeArgs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14521,7 +14521,7 @@ const baselines = {
         types: true,
     },
     'genericArrayWithoutTypeAnnotation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14691,7 +14691,7 @@ const baselines = {
         types: true,
     },
     'genericCloduleInModule2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14886,7 +14886,7 @@ const baselines = {
         types: true,
     },
     'genericGetter2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14956,7 +14956,7 @@ const baselines = {
         types: false,
     },
     'genericInterfacesWithoutTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14966,7 +14966,7 @@ const baselines = {
         types: false,
     },
     'genericLambaArgWithoutTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15086,7 +15086,7 @@ const baselines = {
         types: false,
     },
     'genericReturnTypeFromGetter1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15196,7 +15196,7 @@ const baselines = {
         types: false,
     },
     'genericTypeReferencesRequireTypeArgs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15206,7 +15206,7 @@ const baselines = {
         types: true,
     },
     'genericTypeUsedWithoutTypeArguments3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15336,7 +15336,7 @@ const baselines = {
         types: false,
     },
     'genericsWithoutTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -18636,7 +18636,7 @@ const baselines = {
         types: false,
     },
     'isolatedDeclarationsAddUndefined2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20751,12 +20751,12 @@ const baselines = {
         types: false,
     },
     'missingTypeArguments1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'missingTypeArguments2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20936,7 +20936,7 @@ const baselines = {
         types: true,
     },
     'moduleAndInterfaceSharingName2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -23196,7 +23196,7 @@ const baselines = {
         types: false,
     },
     'noTypeArgumentOnReturnType1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26386,7 +26386,7 @@ const baselines = {
         types: true,
     },
     'recursiveTypeParameterConstraintReferenceLacksTypeArgs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27091,7 +27091,7 @@ const baselines = {
         types: false,
     },
     'returnTypeTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -29821,7 +29821,7 @@ const baselines = {
         types: false,
     },
     'tooManyTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30071,7 +30071,7 @@ const baselines = {
         types: false,
     },
     'typeAliasDeclarationEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36656,7 +36656,7 @@ const baselines = {
         types: true,
     },
     'initializerReferencingConstructorLocals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48931,7 +48931,7 @@ const baselines = {
         types: false,
     },
     'generic': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55411,12 +55411,12 @@ const baselines = {
         types: false,
     },
     'parserGenericsInTypeContexts1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserGenericsInTypeContexts2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -63366,7 +63366,7 @@ const baselines = {
         types: false,
     },
     'nonGenericTypeReferenceWithTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -63706,7 +63706,7 @@ const baselines = {
         types: true,
     },
     'thisTypeErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

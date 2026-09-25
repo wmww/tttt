@@ -547,6 +547,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
             case CLASS_ITEM_FIELD: {
                 if (i->field.computed_key) class_computed_key_typecheck(i, errs);
+                if (i->field.has_explicit_type) type_typecheck(&i->field.explicit_type, errs);
                 expr_typecheck(&i->field.value, errs);
                 if (i->field.has_explicit_type) {
                     ty_check_assignable_expr(
