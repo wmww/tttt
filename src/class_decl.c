@@ -500,8 +500,12 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
     Span span = span_valid(my name) ? my name : my full_span;
     Ty const* base = my extends.tag != EXPR_IMPLICIT_ANY ? ty_class_base_instance(checker, me) : nullptr;
-    // A class that extends itself through its bases is TS2506 in tsc, and nothing is compared
-    if (base && ty_has_base_type(checker, base, declared)) base = nullptr;
+    // A class that extends itself through its bases (tsc's circularity in getBaseConstructorTypeOfClass), and then
+    // nothing is compared
+    if (base && ty_has_base_type(checker, base, declared)) {
+        error_ctx_error_d(errs, span, 2506, "'", span, "' is referenced directly or indirectly in its own base expression.");
+        base = nullptr;
+    }
     if (base && (base->flags & TYF_OBJECT)) {
         class_check_member_overrides(me, declared, base, errs);
         bool fits = ty_check_heritage(checker, type_with_this, ty_with_this_arg(checker, base, this_param), members, count,

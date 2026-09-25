@@ -3811,7 +3811,7 @@ const baselines = {
         types: true,
     },
     'classInheritence': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5131,7 +5131,7 @@ const baselines = {
         types: false,
     },
     'complicatedGenericRecursiveBaseClassReference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16991,12 +16991,12 @@ const baselines = {
         types: false,
     },
     'indirectSelfReference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'indirectSelfReferenceGeneric': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26061,22 +26061,22 @@ const baselines = {
         types: true,
     },
     'recursiveBaseCheck': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'recursiveBaseCheck2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'recursiveBaseCheck3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'recursiveBaseCheck4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26086,7 +26086,7 @@ const baselines = {
         types: true,
     },
     'recursiveBaseCheck6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34111,12 +34111,12 @@ const baselines = {
         types: true,
     },
     'classExtendsItself': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'classExtendsItselfIndirectly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -34126,7 +34126,7 @@ const baselines = {
         types: false,
     },
     'classExtendsItselfIndirectly3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
