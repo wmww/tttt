@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-25, same box upgraded to Ubuntu 26.04 (GCC 15.2, node 22.22 from Ubuntu, tsgo = `typescript@7.0.2`)
+Suite **7152 / 13542**, unchanged, without the 64 MB stack-limit constructor. Corpora unchanged: tsc 0, type-fest 142,
+valibot 161. `./bench.sh --runs 3` (tttt / tsgo / tsgo single-threaded), all within noise of the 24.04 numbers:
+synthetic 2.96 s / 3.65 / 6.34 (tttt 3450 MB vs 2689); tsc corpus 0.76 s / 1.10 / 1.51 (typecheck 514 ms); type-fest
+0.31 s / 1.69 / 2.02; valibot 0.66 s / 506 MB vs 1.44 / 825 MB.
+
 ## 2026-09-25, plan 21 stage 2 (symbol accessibility: `symbol_chain.c`)
 Suite **6918 -> 7152 / 13540** full (errors 9300, symbols 10513 -> 10812, types 8969 -> 9125; nothing lost). Corpora:
 tsc 0, type-fest 142, valibot 161 (unchanged; the binder fix of the session, ambient export contexts no longer

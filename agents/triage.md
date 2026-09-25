@@ -217,6 +217,11 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   (fewer signature copies, identity-preserving relations). Measure on valibot/type-fest.
 
 ## Parser
+- **Unbounded recursion depth**: the parser and checker recurse once per nesting level, so
+  binderBinaryExpressionStress needs 4-8 MB of stack with GCC 15 -O3 (passes at the default 8 MB, fails at 4 MB; GCC 13
+  needed 16 MB, which the 24.04 box band-aided with a 64 MB RLIMIT_STACK constructor, removed after the 26.04 upgrade).
+  tsc walks binary chains iteratively; a compiler upgrade or bigger frames can bring the overflow back. Threads get
+  smaller stacks still.
 - `parse_label` should refuse reserved words (`default:`/`case x:` are fine today only because of parse order).
 - A leading `&`/`|` in a type becomes an `any`/`never` operand (`parse_type`), which every consumer has to know to skip.
 - No tokenizer + backtracking with fail cache. Fine for speed in principle (`parse_fail`/

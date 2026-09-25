@@ -10,7 +10,7 @@ own `src/compiler` (193k lines) typechecks end to end in 0.7 s with ~1750 spurio
 
 Internal documentation: [documentation.md](documentation.md). Standard library: [cleat](https://codeberg.org/sphi/cleat).
 
-Dependencies: a C23 compiler (GCC 13+), meson, ninja, valgrind (debug scripts), python3, node + npm (the test
+Dependencies: a C23 compiler (GCC 13+), meson, ninja, valgrind (debug scripts), python3, node 22 + npm (the test
 scripts clone and build TypeScript 5.8.2 into `thirdparty/tsc`, `thirdparty/ensure-corpora.sh` fetches the realworld
 corpora), and optionally TypeScript 7 (tsgo) on PATH as `tsc` for `./bench.sh`.
 

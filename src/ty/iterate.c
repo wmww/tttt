@@ -450,7 +450,7 @@ TyIterationTypes const* ty_iteration_types_of_iterable(Checker* me, Ty const* ty
         TyIterationTypes const* types = iterable_types_of(me, ty, use);
         return types == &no_iteration_types ? nullptr : types;
     }
-    TyIterationTypes const* stack[16];
+    TyIterationTypes const* stack[16] = {}; // Initialized only for GCC 15's maybe-uninitialized false positive
     TyIterationTypes const** all = ty->composite.types.len <= c_arraylen(stack) ?
         stack : malloc(sizeof(TyIterationTypes const*) * ty->composite.types.len);
     TyIterationTypes const* ret = nullptr;
