@@ -1,8 +1,8 @@
 # Triage
 Uninvestigated items. Triage sessions drain this. Last drained 2026-09-23 (triage after plan 13): the older checker
 items were re-probed then; fixed ones are gone, "(re-probed)" marks ones confirmed open with the current symptom.
-Missing checks that `./unimplemented_codes.sh` finds belong to plan 15, which re-derives its table: they're only listed
-here when there's something to know beyond the code.
+Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the codes `src/` never mentions, and
+"Missing checks after plan 15" below has the tail worth knowing about.
 
 ## Category-sized (worth a plan or a whole session)
 - **JS files: JSDoc types, CommonJS**. `.js` files load only with `allowJs`, semantic diagnostics in them only with
@@ -46,12 +46,11 @@ here when there's something to know beyond the code.
   indexed/type-param references made in a conditional's true branch.
 - `this` leftovers: TS2526 for `this` in static property initializers (`static y = <this>undefined`) and a few other
   contexts (thisTypeErrors, 7 missing); TS7041 (`this` captured by a top-level arrow); TS7017 (`typeof globalThis` has
-  no index signature); TS2417 (class static side); `ThisType<T>` arguments aren't instantiated with the inference in
+  no index signature); `ThisType<T>` arguments aren't instantiated with the inference in
   progress (Vue-style `defineComponent` options).
 - **Target-gated diagnostics** (`compiler_options()->target` exists): TS2705/TS2468 (async needs `Promise`),
   TS1375/TS1378 (top-level await), TS2802 (iteration needs `downlevelIteration`), TS1056 (accessors, ES3), TS2659
-  (`super` in an object literal below ES2015). The "Cannot find name" flavours (TS2583/TS2584/TS2580/TS2582/TS2550) are
-  in plan 15.
+  (`super` in an object literal below ES2015).
 - **Evolving arrays** (tsc's autoArrayType: `let x = []` / `x = []` on an auto-typed `let x;`, then `x.push(v)`,
   `x[i] = v` grow the element type; needs FLOW_ARRAY_MUTATION nodes in the builder). Auto types (`let x;`) exist, the
   array half is `any[]` (hacks.md "Narrowing"). controlFlowArrays and friends.
@@ -166,7 +165,7 @@ here when there's something to know beyond the code.
   only in tsc. TS7005 for `declare var foo;` without a type (implicitAnyDeclareVariablesWithoutTypeAndInit).
 - Missing TS2339 is ~380 in 166 tests: the gates in `check_access()` (JS, callables, mapped, unresolved bases),
   bracket access (TS7053), and whatever is typed `any` by failure. TS2550 instead of TS2339 for members of newer libs
-  (doYouNeedToChangeYourTargetLibrary*: ~80 diagnostics), TS2551: plan 15.
+  (doYouNeedToChangeYourTargetLibrary*: ~80 diagnostics): done in plan 15 (`lib_features.c`), re-probe.
 - Module augmentation / `export =` merges don't add members (moduleAugmentationsImports3/4, augmentExportEquals6_1,
   umd-augmentation-3/4, moduleAugmentationDoes*MergeOfReexport). `aliasUsageIn*` (4 tests): the static side of a
   class reached through `import x = require()` vs another import reports a missing property.
@@ -194,8 +193,8 @@ here when there's something to know beyond the code.
 - `check_with()` (ty/expr.c) computes an expression with a contextual type without going through the LazyType, so it
   has no cycle detection (`let [x = x] = []` used to recurse forever; `lower_binding_access` avoids it, other
   contextual self-references can still overflow the stack).
-- Plan 16 leftovers: TS2561/TS2820 need tsc's spelling suggestion (getSpellingSuggestion), which plan 15's
-  TS2552/TS2551 need too: write it once. TS2793 ("would have succeeded against the implementation") only for function
+- Plan 16 leftovers: TS2561/TS2820 want tsc's spelling suggestion, which exists now (`spelling_suggestion()`, plan
+  15): 11 diagnostics in 5 tests. TS2793 ("would have succeeded against the implementation") only for function
   declarations, not overloaded methods/constructors (`add_implementation_success`). Destructuring assignment targets
   are checked as a whole, not property by property (for-of47/48: tsc's checkDestructuringAssignment reports at the
   default).
@@ -256,6 +255,33 @@ here when there's something to know beyond the code.
   includeClassComputedPropertyName.
 - The JSX `<T>` vs type assertion and arrow functions in `?:` recovery: `(a?) => {} ? b : c` and `() => {} || a`
   are now parse errors like tsc, but tsc's exact recovery tokens (TS1005 vs ours) aren't checked.
+
+### Missing checks after plan 15 (retired 2026-09-24; counts: missing diagnostics / tests)
+- **Stack depth: binderBinaryExpressionStress passes at the default 8 MB stack and crashes at 7 MB.** Inlining one
+  small helper into `expr_typecheck()` was enough to overflow it (session 3; fixed with `noinline`). Checking (and the
+  resolve walk?) recurse once per operand of a long `a + b + c + ...` chain; tsc checks binary chains iteratively
+  (checkBinaryExpression's state machine). Real code has such chains (generated files): worth a fix before it bites.
+- Default exports: `default` should be one merged symbol like tsc's (TS2528 22/12, TS2813 19/16, TS2814 22/16,
+  TS2323 for defaults): `scope_default_export_table` keeps one symbol per declaration. A session.
+- TS2774 (59/5, "function is always defined" in conditions), TS7053 (71/23, implicit-any element access), TS2537
+  (41/10), TS1262 (16/13), TS2496 (11/11, `arguments` in ES5 arrow functions: the check exists, the misses are other
+  places), TS1117 (43/8, blocked by parser gaps, see session 2 below), TS2311 (`await` as a callee).
+- Regular expression *patterns* (TS1487 116/4, TS1508, TS1535, TS1530, TS1517, TS1518, TS1507...): tsc's
+  scanRegularExpressionWorker, ~1000 lines; only the flags are checked (`regex_check_flags`).
+- TS2612 needs isPropertyInitializedInConstructor (flow at the end of the constructor), and so does TS2564
+  (strictPropertyInitialization, 20/6, absent).
+- Emit helpers: `for await` (__asyncValues) needs the enclosing function; esDecorators-classExpression-...-8 needs the
+  shorthand default `{ C = class {} }` checked. nodeModulesImportHelpersCollisions2/3: only a trailing blank line in
+  the errors baseline differs (harness).
+- TS1361: `import x = types.A` of a type-only namespace import (importEquals1); mergeSymbolRexportFunction (an
+  augmentation merging a const into a type-only re-export: tsc's TS2451 path).
+- TS2417 found a real case tsc hides behind a circularity: thisConditionalOnMethodReturnOfGenericInstance (tsc too
+  finds `C<any>` not assignable to `B<any>`, but runs into a circular method return type there; tttt reports).
+- TS2506 across files through namespace-qualified bases (classExtendsItselfIndirectly2).
+- Abstract members satisfied by another base type merged into the class (an interface): tsc looks there before
+  TS2515; tttt doesn't.
+- TS1042 on object literal members (`{ public foo: 1 }`, modifiersInObjectLiterals): the parser rejects them first.
+- The JS-only codes (TS8002 132/12, TS8006, TS8010) belong to the JS plan; TS5055 (emit paths) is out of scope.
 
 ## Harness and tools
 - `./release/baseline_tests -f complexRecursiveCollections --err` (outside `test.sh`) hangs forever in

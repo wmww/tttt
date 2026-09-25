@@ -2,9 +2,7 @@
 Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 13)")
 for why.
 
-1. **Execution: plan 15, session 3.** The plan's "Progress" section has the list. Stop when what's left is < ~20
-   tests per code; then retire the plan (fold what's left into triage.md).
-1b. **Perf session (small):** tsgo overtook tttt on the tsc corpus (measurements.md). Profile the corpus with
+1. **Perf session (small):** tsgo overtook tttt on the tsc corpus (measurements.md). Profile the corpus with
    callgrind (`is_simple_related`, `check_related`, `ty_union`, qsort in unions, memset) and win back >5% without
    touching semantics; re-run `./bench.sh`.
 2. **Execution: plan 21, stage 3 (+ the rest of 2).** The plan's Progress section says where it stands; stage 3
@@ -16,7 +14,8 @@ for why.
 4. **Planning (+ execution if small): alias variances**, triage.md "Perf" first bullet: infer and relate two
    instantiations of one alias by their type arguments with measured variances. It's a correctness rule
    too (tsc does it); valibot no longer loses to tsgo (measurements.md), so perf is no longer the reason. Bench anyway.
-5. **Triage.** Drain triage.md. Try removing the `ctx.method` callback hack in `signature_resolve` (hacks.md), now that
+5. **Triage.** Drain triage.md, starting with "Missing checks after plan 15"'s stack depth item (a crash in waiting)
+   and deciding whether default exports as one merged symbol gets a session. Try removing the `ctx.method` callback hack in `signature_resolve` (hacks.md), now that
    relate.c has tsc's callback rule. Also audit `hacks.md` against the code (several entries are stale after plans 13/16/18:
     "no nominal class rules", "no `as` clauses", the ambient module table note); delete what's fixed. Decide whether
     "binding patterns as types" gets a plan now.

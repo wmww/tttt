@@ -162,7 +162,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   one line off (symbolLinkDeclarationEmitModuleNamesImportRef).
 - `arguments` resolution per target (`scope_has_arguments`) has no TS2815 (`arguments` in a class field initializer).
 
-## Missing checks (plan 15: `unused.c`, `ty/check.c`, `statement.c`, `class_decl.c`)
+## Missing checks (plan 15, retired: `unused.c`, `ty/check.c`, `ty/helpers.c`, `statement.c`, `class_decl.c`)
 - `Symbol.referenced` (unused locals) is written by the resolve walk of the file that uses a name, also for globals
   (a script's top-level declarations) that other files share: a data race once files resolve in parallel. Only under
   noUnusedLocals/noUnusedParameters. Class members aren't symbols, so their reads are a checker table keyed by the
@@ -190,6 +190,23 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `binary_op_typecheck` (instanceof): TS2358 isn't checked in JS files, where tttt doesn't read JSDoc types (a `@type
   {*}` variable is its initializer's primitive type here). Also the `[Symbol.hasInstance]` test matches the escaped
   name `__@hasInstance@<id>` by text (`instanceof_target_ok`).
+- Emit helpers (`ty/helpers.c`, `ty_check_emit_helpers`): the call sites pass spans computed by hand where tsc uses
+  getErrorSpanForNode: `decorator_span()` scans back from the expression to its `@`; `function_error_span()` cuts an
+  arrow function at its first line; `yield*` is cut to its 5-char keyword; an import specifier's `full_span` is trimmed
+  of trailing whitespace. "Ambient" is approximated per call site (`ClassDecl.is_ambient`, `Binding.ambient`,
+  `BlockTypecheckCtx.ambient`); tsc has one NodeFlags.Ambient. `for await` (__asyncValues) isn't checked: the statement
+  doesn't know its function.
+- Named evaluation of anonymous class expressions (`ClassDecl.named_evaluation`) is marked by the parser at each
+  construction site (`mark_named_evaluation()`); a new place that assigns an expression to a name needs a call there.
+- TS1361/TS1362's valid use sites (`FlowBuilder.type_only_alias_ok`, `in_type_query`) are set by the constructs that
+  contain the identifier, not derived from its parents like tsc's isValidTypeOnlyAliasUseSite.
+- `class_check_member_overrides()` (TS2610 & co) reads member kinds off the class items of the declaring class
+  (`class_instance_member()`, found by name atom), not off symbol flags; the `x!:` of a field is found by looking at
+  the source text after its name (the parser drops the `!`). TS2612 skips every case where tsc's
+  isPropertyInitializedInConstructor (flow analysis) would decide.
+- `regex_check_flags()` and TS1042 (`report_misplaced_async()`) are grammar checks done where it was convenient:
+  the flags in the checker's expression walk, `async` in the parser next to the other modifier checks (as parse
+  errors, which suppress later grammar errors in the file; tsc's is a checker grammar error).
 
 ## The binder (`scope.c`, plan 04 done)
 - Identifiers keep two symbol pointers, `symbol` (what the name found, maybe an alias) and `target` (the one with the

@@ -6,12 +6,13 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-24, insights after plan 13)
-- **Suite 6373 / 13163** fully pass (errors 9140, symbols 10418, types 8396; 5125 at the insights after plan 13: +307
-  from plan 15 session 1, +545 from plan 21's first execution session, +357 from plan 15 session 2). **Corpora**: tsc's
+- **Suite 6505 / 13163** fully pass (errors 9289, symbols 10449, types 8416; 5125 at the insights after plan 13: +307
+  from plan 15 session 1, +545 from plan 21's first execution session, +357 from plan 15 session 2, +132 from plan
+  15 session 3, which retired the plan: no missing code is worth 20 tests on its own any more). **Corpora**: tsc's
   `src/compiler` 0 diagnostics, type-fest 144, valibot 165 (all three are clean under tsc; 450 / 1871 before plan 19
   R5/R3/R2/R4/R1; some of the recent drop is ts-expect-error directives that new checks now satisfy).
-  **Perf** (`measurements.md`, end of plan 15 session 2): tsc corpus 0.74 s vs tsgo 0.69 (single-threaded 1.21),
-  type-fest 0.29 vs 1.22, valibot 0.59 s / 510 MB vs tsgo 0.77 s / 831 MB. tttt beats multi-threaded tsgo on the
+  **Perf** (`measurements.md`, end of plan 15 session 3): tsc corpus 0.75 s vs tsgo 0.72 (single-threaded 1.23),
+  type-fest 0.30 vs 1.24, valibot 0.60 s / 511 MB vs tsgo 0.81 s / 834 MB. tttt beats multi-threaded tsgo on the
   library corpora but no longer on tsc's own source: every check that goes in costs a little (plan 15's cost ~4%),
   so perf needs its own sessions again (relations: `is_simple_related` alone is ~9% of instructions).
 - Since the last insights (plan 08), eight plans each finished in one session without a redesign: 17 (two modern
@@ -29,8 +30,8 @@ types components) are the oracle, not the goal.
 Where the failing suite tests are (`./failstats.py` + a one-off diff of the dumps against tsc's baselines):
 - **Missing checks, ~2350 non-JS tests** fail errors with *only missing* diagnostics (tttt says less than tsc, nothing
   wrong). Top codes: TS6133 (unused), TS2339, TS2322, TS2300, TS2411, TS2403, TS2343, TS2695, TS2391, TS2430 (on since
-  2026-09-24, with TS2320), TS2872, TS2314, TS2448. That's plan 15, which has
-  been "ready" for three insights sessions: it now gets two sessions.
+  2026-09-24, with TS2320), TS2872, TS2314, TS2448. That was plan 15: three sessions (+796), retired 2026-09-24.
+  What's left of "only missing" is type-core answers (TS2322/TS2339) and a long tail (triage.md).
 - **Display fidelity, ~2600 tests** pass their errors but fail types and/or symbols (1230 types only, 490 symbols only,
   1060 both); 960 of them are 1-2 lines off, **274 differ only in `^^^` underlines** (plan 07 left 73). By mechanism
   (lines): tsc reprinting a written annotation (`typeof a`, `Array<Base>`: ~290 tests), class expression constructors

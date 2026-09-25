@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-24, plan 15 session 3 (missing checks, plan retired), end of session
+Suite **6373 -> 6505** full (errors 9289, symbols 10449, types 8416). Corpora unchanged: tsc 0, type-fest 144,
+valibot 165. `./bench.sh`: tsc corpus 0.75 s vs tsgo 0.72 (single-threaded 1.23), typecheck 501 ms; type-fest 0.30 s
+vs 1.24; valibot 0.60 s / 511 MB vs tsgo 0.81 s / 834 MB. The session's checks (emit helpers, member override kinds,
+the static side) cost nothing measurable. Of the +132: importHelpers/tslib 68 (17 of them a harness file-order fix
+for tsconfig tests), member override kinds 27, regex flags 15, TS1042 10, TS2417 7, TS2506 5.
+
 ## 2026-09-24, plan 15 session 2 (missing checks), end of session
 Suite **6016 -> 6373** full (errors 9140, symbols 10418, types 8396). Corpora: tsc 0, type-fest 144 (165: the
 ts-expect-errors that wanted TS2314, fewer weak-type false positives), valibot 165 (240: 73 ts-expect-errors now
