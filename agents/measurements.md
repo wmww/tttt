@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-24, plan 15 session 1 (missing checks), commit 228ccb7
+Suite **5164 -> 5471** full (errors 8644, symbols 9502, types 7946). Corpora: tsc 0 (also with `--noUnusedLocals`; 2
+with `--noUnusedParameters`, both real), type-fest 165, valibot 240. `./bench.sh` (a slower machine today: valibot
+typecheck at the session's first commit measured 545 ms here, 505 ms after): synthetic 2.31 s / 2676 MB vs tsgo 1.83
+(single-threaded 4.17); tsc corpus 0.84 s vs tsgo 0.87 (single-threaded 1.48); type-fest 0.35 s / 90 MB vs tsgo 1.36;
+valibot 0.66 s / 489 MB vs tsgo 0.86 s / 826 MB (single-threaded 2.03).
+
 ## 2026-09-24, plan 19 R9 (implied constraints of `infer`)
 Suite **5163 -> 5164** full (errors 8262, symbols 9492, types 7905; nothing lost). Corpora: tsc 0, **type-fest 173 ->
 167**, **valibot 311 -> 245** (TS2578 119, TS2322 32, TS2344 30, TS2339 24, TS2345 15). `./bench.sh`: valibot tttt

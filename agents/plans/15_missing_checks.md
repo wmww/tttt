@@ -19,6 +19,22 @@ had **no mention anywhere in `src/`** while tsc's baselines want them (missing c
 Plans 13 (TS2341/TS2445/TS2540/...) and 12 (TS2353 excess properties, its stage 4) own their codes; don't
 duplicate. Numbers drift: re-derive the table first (below).
 
+## Progress
+- **Session 1 (2026-09-24), suite 5164 -> 5471.** Done: noUnusedLocals/noUnusedParameters (`unused.c`: TS6133,
+  TS6196, TS6192, TS6198, TS6199, TS6205, TS6138, private members), TS2411/TS2413 index constraints (+ static index
+  signatures), TS2448/2449/2450 used before declaration, TS2372/2373 parameter references (+ tsc's parameter scope),
+  TS2729, TS2369, overload checks (TS2391, TS2389, TS2390, TS2393, TS2516, TS2387/2388), TS2464, TS2374, TS2428,
+  TS2403 (+ identity/widening/intersection fixes), TS2300/TS2804/TS2717 member duplicates. Left in triage.md ("Found
+  by plan 15 session 1") and hacks.md ("Missing checks").
+- **Next (session 2), re-derived after session 1** (missing count / tests; "alone" = tests that would pass on it):
+  TS2394 overload compatibility (22 alone, the flag agreement codes TS2383/2385/2386 with it), TS2356/TS2357
+  arithmetic and increment operands (201/22, 64/7), TS2872/TS2873 always truthy/falsy (124/40, 106/22), TS2703
+  `delete` operand (121/22), TS1183/TS1036 ambient grammar (88/19, 38/28), TS2323/TS2395 export merges (58/19,
+  40/10), TS1117 duplicate object literal properties (59/17), TS2774 (59/5), TS17006 (169/5, one file), TS2552
+  (spelling suggestions, 101/54: needs tsc's getSpellingSuggestion, a small algorithm; also feeds TS2561/TS2820),
+  strict-mode reserved words TS1210/1212/1213/1359. TS2343 (59 alone) needs `importHelpers` + tslib semantics.
+  22 tests also fail on a *spurious* TS2403 whose causes are type-core bugs (triage.md): worth a session of its own.
+
 ## How (a loop like plan 08)
 1. Re-derive: `./failstats.py`, then `./unimplemented_codes.sh` (missing codes `src/` never mentions, with their
    messages; a code that is mentioned can still be half-done, e.g. TS18050 is a TODO in `ty/check.c`). Also check
