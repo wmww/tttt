@@ -71,6 +71,7 @@ typedef struct BaselineTestCase {
     // names). The next types line consumes it
     bool any_keeps_underline;
     cstr lib_list;
+    cstr last_unit; // The name of the test's last unit (the only one whose content ends where the test file does)
     bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
     cstr formatted_errors;
     cstr formatted_global_errors; // The `!!!` lines of diagnostics without a file

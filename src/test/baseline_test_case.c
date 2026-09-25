@@ -410,6 +410,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         }
     }
 
+    cstr_take(&my last_unit, cstr_from_sv(current_filename));
     try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
         cstr_drop(&unparsed_contents);
     }
@@ -723,6 +724,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     error_ctx_drop(my error_ctx);
     free(my error_ctx);
     cstr_drop(&my lib_list);
+    cstr_drop(&my last_unit);
     cstr_drop(&my formatted_errors);
     cstr_drop(&my formatted_global_errors);
     vec_baseline_test_file_drop(&my files);
@@ -752,6 +754,100 @@ static bool line_effectively_empty(csview line) {
             *line.buf == '}'
         )
     );
+}
+
+// A line tsc's harness doesn't separate from the lines before it by an empty line: blank, or only `{`, `|` or `}`
+static bool is_quiet_code_line(csview line) {
+    csview t = csview_trim_whitespace(line);
+    return t.size == 0 || (t.size == 1 && (t.buf[0] == '{' || t.buf[0] == '|' || t.buf[0] == '}'));
+}
+
+typedef struct CodeLines {
+    csview* data;
+    u32 len;
+    u32 cap;
+} CodeLines;
+
+// tsc's harness: `content.split(/\r?\n/)`, each part split again on \r, U+2028 and U+2029
+static CodeLines split_code_lines(csview contents) {
+    CodeLines ret = {0};
+    char const* start = contents.buf;
+    char const* end = csview_end_ptr(contents);
+    char const* c = start;
+    for (;;) {
+        char const* line_end = c;
+        size_t skip = 0;
+        while (line_end < end) {
+            if (*line_end == '\n') { skip = 1; break; }
+            if (*line_end == '\r') { skip = line_end + 1 < end && line_end[1] == '\n' ? 2 : 1; break; }
+            if ((unsigned char)line_end[0] == 0xE2 && line_end + 2 < end && (unsigned char)line_end[1] == 0x80 &&
+                ((unsigned char)line_end[2] == 0xA8 || (unsigned char)line_end[2] == 0xA9)
+            ) {
+                skip = 3;
+                break;
+            }
+            line_end++;
+        }
+        if (ret.len == ret.cap) {
+            ret.cap = ret.cap ? ret.cap * 2 : 64;
+            ret.data = realloc(ret.data, sizeof(csview) * ret.cap);
+            panic_if(!ret.data, "out of memory");
+        }
+        ret.data[ret.len++] = csview_from_n(c, line_end - c);
+        if (!skip) break;
+        c = line_end + skip;
+    }
+    return ret;
+}
+
+// tsc's harness iterateBaseLine() for one file of the types or symbols baseline: code lines up to each result's line,
+// an empty line before a run of code lines that don't follow the last result's line directly (unless the first of them
+// is blank or a lone brace), the file's rest, a final line break
+static void render_types_or_symbols_file(
+    cstr* target, const char* source_path, csview source_contents, VecLineNumberedStr const* lines, bool is_last_file,
+    bool drop_any_underlines
+) {
+    cstr_append_d(target, DEFAULT_DISPLAY, "=== ", source_path, " ===\r\n");
+    // tsc's harness joins a unit's lines with line breaks (makeUnitsFromTest), load_test_source() ends each line of a
+    // unit but the test file's last with one
+    if (!is_last_file && csview_ends_with(source_contents, "\n")) {
+        source_contents.size--;
+        if (csview_ends_with(source_contents, "\r")) source_contents.size--;
+    }
+    CodeLines code = split_code_lines(source_contents);
+    i64 last = -2; // -2: nothing written yet
+    for_each (i, vec_line_numbered_str, lines) {
+        i64 line = i->line < code.len ? i->line : code.len - 1;
+        if (last == -2) {
+            for (i64 l = 0; l <= line; l++) {
+                cstr_append_sv(target, code.data[l]);
+                cstr_append_lit(target, "\r\n");
+            }
+        } else if (line != last) {
+            if (!(last + 1 < code.len && is_quiet_code_line(code.data[last + 1]))) cstr_append_lit(target, "\r\n");
+            for (i64 l = last + 1; l <= line; l++) {
+                cstr_append_sv(target, code.data[l]);
+                cstr_append_lit(target, "\r\n");
+            }
+        }
+        last = line;
+        if (drop_any_underlines && i->any_underline_at) {
+            cstr_append_sv(target, csview_from_n(cstr_str(&i->str), i->any_underline_at));
+        } else {
+            cstr_append_s(target, i->str);
+        }
+        cstr_append_lit(target, "\r\n");
+    }
+    if (last == -2) last = -1;
+    if (last + 1 < code.len) {
+        if (!is_quiet_code_line(code.data[last + 1])) cstr_append_lit(target, "\r\n");
+        for (i64 l = last + 1; l < code.len; l++) {
+            if (l > last + 1) cstr_append_lit(target, "\r\n");
+            cstr_append_sv(target, code.data[l]);
+        }
+    }
+    cstr_append_lit(target, "\r\n");
+    free(code.data);
 }
 
 static void render_lines_woven_with_file(
@@ -874,19 +970,19 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     }
 }
 
+static bool is_last_unit(BaselineTestCase const* me, BaselineTestFile const* file) {
+    csview a = cstr_sv(&file->path), b = cstr_sv(&my last_unit);
+    if (csview_starts_with(a, "/")) a = csview_slice(a, 1, a.size);
+    if (csview_starts_with(b, "/")) b = csview_slice(b, 1, b.size);
+    return csview_equals_sv(a, b);
+}
+
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
         if (!i->source) continue;
-        render_lines_woven_with_file(
-            target,
-            cstr_str(&i->path),
-            false,
-            cstr_sv(&i->source->contents),
-            &i->symbols,
-            i == vec_baseline_test_file_back(&my files),
-            false
-        );
+        render_types_or_symbols_file(target, cstr_str(&i->path), cstr_sv(&i->source->contents), &i->symbols,
+            is_last_unit(me, i), false);
     }
 }
 
@@ -898,15 +994,8 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, b
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
         if (!i->source) continue;
-        render_lines_woven_with_file(
-            target,
-            cstr_str(&i->path),
-            false,
-            cstr_sv(&i->source->contents),
-            &i->types,
-            i == vec_baseline_test_file_back(&my files),
-            !had_errors
-        );
+        render_types_or_symbols_file(target, cstr_str(&i->path), cstr_sv(&i->source->contents), &i->types,
+            is_last_unit(me, i), !had_errors);
     }
 }
 
