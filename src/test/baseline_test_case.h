@@ -136,6 +136,8 @@ typedef struct BaselineSym {
     Span span;              // Used for placing this symbol in the output
     Span name;              // The specific identifier or value, defaults to the contents of `span` if not set
     bool name_is_value;     // If to use namespace['property'] notation
+    cstr text;              // The whole name when set (owned): what symbol_chain.h printed. `namespaces`/`name` are
+                            // ignored then
 } BaselineSym;
 
 // These are used by traversial to assemble the test case data while the test is being run. After the test has completed

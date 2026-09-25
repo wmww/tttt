@@ -1113,6 +1113,11 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     cstr text = cstr_d(">", data.span, " : Symbol(");
 
     bool has_namespace = false;
+    if (cstr_size(&data.text)) {
+        cstr_append_sv(&text, cstr_sv(&data.text));
+        vec_span_clear(&data.namespaces);
+        data.name_is_value = false;
+    }
     for_each (i, vec_span, &data.namespaces) {
         if (span_valid(*i)) {
             if (has_namespace) {
@@ -1123,7 +1128,9 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
         }
     }
 
-    if (data.name_is_value) {
+    if (cstr_size(&data.text)) {
+        // (the name is complete)
+    } else if (data.name_is_value) {
         if (has_namespace) cstr_append_lit(&text, "[");
         cstr_append_span(&text, span_valid(data.name) ? data.name : data.span);
         if (has_namespace) cstr_append_lit(&text, "]");
@@ -1154,6 +1161,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     });
     vec_span_drop(&data.declarations);
     vec_span_drop(&data.namespaces);
+    cstr_drop(&data.text);
 }
 
 static void append_span_contents_without_newlines(cstr* target, Span span) {

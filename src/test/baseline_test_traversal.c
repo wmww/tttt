@@ -14,6 +14,7 @@
 #include "function_impl.h"
 #include "callable_type.h"
 #include "ty/ty.h"
+#include "symbol_chain.h"
 
 // What the symbols baseline shows for a reference: the declarations of the symbol the name found (an alias shows its
 // import, not what it resolves to), or of the declaration when there is no symbol (keywords, synthetic nodes)
@@ -23,6 +24,14 @@ static inline Symbol const* shown_declaration(Symbol const* symbol, Symbol const
 
 static inline VecSpan declaration_get_spans(Symbol const* me) {
     return symbol_declaration_spans(me);
+}
+
+// tsc's symbolToString(symbol, node.parent): the name of a symbol as the symbols baseline prints it from here
+static cstr symbol_text(BaselineTestCase* ctx, Symbol const* symbol) {
+    SymbolChain chain = symbol_chain_at(ctx->enclosing, symbol, 0);
+    cstr ret = cstr_init();
+    symbol_chain_append(&ret, ctx->enclosing, &chain);
+    return ret;
 }
 
 // `A.B.C` as spans
@@ -36,6 +45,10 @@ typedef struct PropSymbolInfo {
     Span name_span;
     bool name_is_value;
     VecSpan declarations;
+    // tsc's synthetic union/intersection property keeps the parent only when every member's property has the same
+    // declaration (hasNonUniformValueDeclaration)
+    Span first_declaration;
+    bool non_uniform;
 } PropSymbolInfo;
 
 static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* name, PropSymbolInfo* info, u32 depth) {
@@ -57,7 +70,11 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
                 info->member_symbol = inner.member_count == 1 ? inner.member_symbol : nullptr;
                 info->name_span = inner.name_span;
                 info->name_is_value = inner.name_is_value;
+                info->first_declaration = inner.first_declaration;
+            } else if (!span_eq(info->first_declaration, inner.first_declaration)) {
+                info->non_uniform = true;
             }
+            info->non_uniform |= inner.non_uniform;
             info->member_count += inner.member_count;
             for_each (k, vec_span, &inner.declarations) {
                 bool seen = false;
@@ -79,12 +96,16 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     }
     Prop const* root = prop;
     while (root->target && !root->decl_span_count) root = root->target;
+    Span first_declaration = root->decl_span_count ? root->decl_spans[0] : span_null;
     if (!info->found) {
         info->found = true;
         info->parent = prop->parent;
         info->member_symbol = root->symbol;
         info->name_span = root->name_span;
         info->name_is_value = root->name_is_value;
+        info->first_declaration = first_declaration;
+    } else if (!span_eq(info->first_declaration, first_declaration)) {
+        info->non_uniform = true;
     }
     info->member_count++;
     for (u32 j = 0; j < root->decl_span_count; j++) {
@@ -94,41 +115,29 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     }
 }
 
-static void push_symbol_path(VecSpan* out, Symbol const* symbol) {
-    if (symbol->parent && !symbol->parent->is_module) push_symbol_path(out, symbol->parent);
-    vec_span_push(out, symbol->name_span);
-}
-
-// The container of a member qualified as tsc's symbolToString(symbol, node.parent) does: only as far as needed from where
-// it is used. `storage` holds the text, it has to outlive the symbol line
-static void push_accessible_path(VecSpan* out, Symbol const* container, BaselineTestCase* ctx, cstr* storage) {
-    if (!ctx->enclosing) {
-        push_symbol_path(out, container);
-        return;
-    }
-    *storage = ty_symbol_name_at(current_checker, ctx->enclosing, container);
-    vec_span_push(out, sv_make_span(cstr_sv(storage)));
-}
-
-// The qualifier of a property's symbol: its container's name from here, or for the export of a namespace or module
-// (a symbol with a parent) what its own name needs (`ns.x` through `import * as ns`, nothing for a module nothing names)
-static void push_prop_qualifier(VecSpan* out, PropSymbolInfo const* info, BaselineTestCase* ctx, cstr* storage) {
-    if (info->member_count != 1) return;
+// The name of a property's symbol from here: a namespace's or module's export by its own chain, a member by the chain
+// of its container (tsc's getContainersOfSymbol of a member), else bare
+static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fallback) {
+    csview name = span_valid(info->name_span) ? info->name_span.sv : fallback.sv;
+    cstr ret = cstr_init();
     Symbol const* member = info->member_symbol;
-    if (member && member->parent && ctx->enclosing && !info->name_is_value &&
+    if (info->member_count == 1 && member && member->parent && !info->name_is_value &&
         (!info->parent || info->parent->is_module || member->parent == info->parent)
     ) {
-        cstr full = ty_symbol_name_at(current_checker, ctx->enclosing, member);
-        csview name = member->name_span.sv;
-        csview full_sv = cstr_sv(&full);
-        if (full_sv.size > name.size + 1 && csview_equals_sv(csview_slice(full_sv, full_sv.size - name.size, full_sv.size), name)) {
-            *storage = cstr_from_sv(csview_slice(cstr_sv(&full), 0, cstr_size(&full) - name.size - 1));
-            vec_span_push(out, sv_make_span(cstr_sv(storage)));
-        }
-        cstr_drop(&full);
-        return;
+        cstr_drop(&ret);
+        return symbol_text(ctx, member);
     }
-    if (info->parent) push_accessible_path(out, info->parent, ctx, storage);
+    SymbolChain chain = {0};
+    if (info->parent && !(info->member_count > 1 && info->non_uniform)) {
+        chain = symbol_member_container_chain_at(ctx->enclosing, info->parent);
+    }
+    if (!chain.len) {
+        cstr_append_sv(&ret, name);
+        return ret;
+    }
+    symbol_chain_append(&ret, ctx->enclosing, &chain);
+    symbol_chain_append_member(&ret, name, false);
+    return ret;
 }
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
@@ -354,16 +363,19 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     .allow_declaration_empty = true,
                     .namespaces = vec_span_clone(so_far),
                     .span = *i,
+                    .text = decl && !decl->is_placeholder ? symbol_text(ctx, decl) : cstr_init(),
                 });
                 vec_span_push(&so_far, *i);
             }
             vec_span_drop(&so_far);
             if (!span_valid(my identifier->name)) break; // A bare `import("./a")`
+            Symbol const* shown = shown_declaration(my identifier->symbol, my identifier->target);
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_clone(my identifier->namespaces),
-                .declarations = declaration_get_spans(shown_declaration(my identifier->symbol, my identifier->target)),
+                .declarations = declaration_get_spans(shown),
                 .allow_declaration_empty = true,
                 .span = my identifier->name,
+                .text = shown && !shown->is_placeholder ? symbol_text(ctx, shown) : cstr_init(),
             });
             for_each (i, vec_spanned_type, &my identifier->generic_params) {
                 type_compile_test_info(&i->type, ctx);
@@ -493,7 +505,7 @@ static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = symbol_declaration_spans(my symbol),
         .span = my decl_name,
-        .name = my decl_name,
+        .text = symbol_text(ctx, my symbol),
     });
     // tsc shows aliases of pure types as any
     ctx->any_keeps_underline = true; // An import/export name
@@ -528,7 +540,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = symbol_declaration_spans(decl),
                     .span = *i,
-                    .name = decl->name_span,
+                    .text = decl->is_placeholder ? cstr_from_sv(decl->name_span.sv) : symbol_text(ctx, shown_declaration(symbol, decl)),
                 });
                 if (decl->flags & SYMBOL_TYPE && !(decl->flags & SYMBOL_NAMESPACE) && !decl->is_placeholder) {
                     TypeNode t = type_identifier(c_new(IdentifierType, {
@@ -556,6 +568,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = symbol_declaration_spans(i->source_symbol),
                     .span = i->source_name,
+                    .text = i->source_symbol->is_placeholder ? cstr_init() : symbol_text(ctx, i->source_symbol),
                 });
             }
             ctx->any_keeps_underline = true;
@@ -882,10 +895,11 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         return;
     }
     if (my target && span_valid(my target->name_span)) {
+        Symbol const* shown = shown_declaration(my symbol, my target);
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declaration_get_spans(shown_declaration(my symbol, my target)),
+            .declarations = declaration_get_spans(shown),
             .span = my name,
-            .name = shown_declaration(my symbol, my target)->name_span,
+            .text = symbol_text(ctx, shown),
         });
     }
 }
@@ -899,17 +913,12 @@ static void private_name_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     PropSymbolInfo info = {0};
     collect_prop_symbol(checker, object, name, &info, 0);
     if (info.found) {
-        VecSpan namespaces = vec_span_init();
-        cstr qualifier = cstr_null;
-        push_prop_qualifier(&namespaces, &info, ctx, &qualifier);
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = vec_span_clone(info.declarations),
             .allow_declaration_empty = true,
-            .namespaces = namespaces,
             .span = my inner_span,
-            .name = span_valid(info.name_span) ? info.name_span : my inner_span,
+            .text = prop_text(&info, ctx, my inner_span),
         });
-        cstr_drop(&qualifier);
     }
     vec_span_drop(&info.declarations);
 }
@@ -971,17 +980,12 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 collect_prop_symbol(checker, object, key->literal.string, &info, 0);
             }
             if (info.found) {
-                VecSpan namespaces = vec_span_init();
-                cstr qualifier = cstr_null;
-                push_prop_qualifier(&namespaces, &info, ctx, &qualifier);
                 if (my property->form == PROPERTY_EXPR_DOT) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = vec_span_clone(info.declarations),
                         .allow_declaration_empty = true,
-                        .namespaces = vec_span_clone(namespaces),
                         .span = my inner_span,
-                        .name = span_valid(info.name_span) ? info.name_span : my property->prop.outer_span,
-                        .name_is_value = info.name_is_value,
+                        .text = prop_text(&info, ctx, my property->prop.outer_span),
                     });
                 }
                 expr_compile_test_info(&my property->expr, ctx);
@@ -991,14 +995,10 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = vec_span_clone(info.declarations),
                         .allow_declaration_empty = true,
-                        .namespaces = vec_span_clone(namespaces),
                         .span = my property->prop.outer_span,
-                        .name = info.name_span,
-                        .name_is_value = info.name_is_value,
+                        .text = prop_text(&info, ctx, my property->prop.outer_span),
                     });
                 }
-                vec_span_drop(&namespaces);
-                cstr_drop(&qualifier);
             }
             vec_span_drop(&info.declarations);
 

@@ -209,6 +209,8 @@ Symbol* symbol_resolve_alias(Symbol* me);
 PortItem const* symbol_type_only_declaration(Symbol const* me);
 // Member of a namespace, enum or module (`export *` included), null if there is none
 Symbol* symbol_get_export(Symbol const* me, csview name);
+// The table of them (null if there are none)
+SymbolTable const* symbol_exports_table(Symbol const* me);
 // All of them, malloc'd
 SymbolEntry* symbol_collect_exports(Symbol const* me, u32* count);
 

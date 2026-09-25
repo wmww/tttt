@@ -1053,6 +1053,12 @@ Symbol* symbol_get_export(Symbol const* me, csview name) {
     return symbol_table_get(table, name);
 }
 
+SymbolTable const* symbol_exports_table(Symbol const* me) {
+    me = symbol_members(me);
+    if (!me) return nullptr;
+    return my is_module ? module_resolved_exports((Symbol*)me) : my exports;
+}
+
 SymbolEntry* symbol_collect_exports(Symbol const* me, u32* count) {
     *count = 0;
     me = symbol_members(me);
@@ -1087,9 +1093,8 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
             return nullptr;
         }
         unused_mark_referenced(my alias->scope, target, SYMBOL_ANY_MEANING);
-        target = resolve_if_pure_alias(target);
-        if (target) vec_symbol_cptr_push(&item->alias_path_symbols, target);
-        return target;
+        vec_symbol_cptr_push(&item->alias_path_symbols, target);
+        return resolve_if_pure_alias(target);
     }
 
     target = scope_resolve(my alias->scope, first.sv, SYMBOL_NAMESPACE);
@@ -1099,21 +1104,22 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         return nullptr;
     }
     unused_mark_referenced(my alias->scope, target, SYMBOL_NAMESPACE);
+    vec_symbol_cptr_push(&item->alias_path_symbols, target);
     target = resolve_if_pure_alias(target);
-    if (target) vec_symbol_cptr_push(&item->alias_path_symbols, target);
     for (isize i = 1; target && i < vec_span_size(&item->alias_path); i++) {
         Span name = *vec_span_at(&item->alias_path, i);
         Span prev = *vec_span_at(&item->alias_path, i - 1);
         bool last = i == vec_span_size(&item->alias_path) - 1;
         Symbol const* container = symbol_for_meaning(target, SYMBOL_NAMESPACE);
         if (!container || container->is_placeholder) return nullptr; // A placeholder: anything goes
-        Symbol* next = resolve_if_pure_alias(symbol_get_export(container, name.sv));
+        Symbol* found = symbol_get_export(container, name.sv);
+        Symbol* next = resolve_if_pure_alias(found);
         if (!next || (!last && !(symbol_resolved_flags(next) & SYMBOL_NAMESPACE) && !next->is_placeholder)) {
             error_ctx_error_d(errs, name, 2694, "Namespace '", prev, "' has no exported member '", name, "'.");
             return nullptr;
         }
         target = next;
-        vec_symbol_cptr_push(&item->alias_path_symbols, target);
+        vec_symbol_cptr_push(&item->alias_path_symbols, found);
     }
     return target;
 }

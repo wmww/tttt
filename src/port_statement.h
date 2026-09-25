@@ -44,7 +44,7 @@ typedef struct PortItem {
     bool type_only; // Has the "type" keyword for the main import
     Span source_name; // Only used for _SPECIFIC ports
     VecSpan alias_path; // Only used for PORT_IMPORT_ALIAS, the dotted name after the =
-    VecSymbolCPtr alias_path_symbols; // What each item of alias_path resolved to, shorter if resolution failed
+    VecSymbolCPtr alias_path_symbols; // What each item of alias_path found (maybe an alias), shorter if resolution failed
     bool export_import; // `export import foo = ...`
     bool is_require; // `import foo = require("./abc")` (a PORT_IMPORT_GATHER that isn't a namespace import)
     ModuleRef* module_ref; // The module to import from, null for forms that have none
