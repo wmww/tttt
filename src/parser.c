@@ -1366,6 +1366,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         VecTupleElement tuple_elements;
     } parsed;
 
+    bool parenthesized = false;
+    bool placeholder = false;
     Span readonly_span = span_null;
     if (hop_start_if_ends_on_word_break(&p, "readonly")) {
         readonly_span = span_from(a);
@@ -1455,15 +1457,20 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         expect_type(&p, TYPE_PRECEDENCE_NULL, ret);
         hop_whitespace(&p);
         expect_char(&p, ')');
+        parenthesized = true;
     } else if (parse_interface(&p, &ret->interface)) {
         ret->tag = TYPE_INTERFACE;
     } else if (*p.pos == '|' || *p.pos == '&') {
         *ret = *p.pos == '|' ? type_never : type_any;
+        placeholder = true;
     } else {
         return parse_fail(&p);
     }
 
     ret->parsed = true;
+    // (Some branches above only write part of `ret`, over what a failed attempt may have left)
+    ret->parenthesized = parenthesized;
+    ret->placeholder = placeholder;
 
     if (span_valid(readonly_span)) {
         // `readonly` applies to the whole postfix chain: `readonly T[][]` is a readonly array of `T[]`
@@ -1477,6 +1484,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         }
     }
     while (parse_type_right_side(&p, min_precedence, ret)) {}
+    ret->parsed = true; // (Also what the right side made)
 
     if (span_valid(readonly_span)) {
         parse_error(

@@ -90,6 +90,8 @@ typedef struct TypeNode {
         TYPE_TEMPLATE,
     } tag;
     bool parsed : 1;
+    bool parenthesized : 1; // Written in parentheses (the types baseline reprints annotations as written)
+    bool placeholder : 1; // The empty operand before a leading `|` or `&` (`| A | B`), not written
     union {
         struct {
             bool self_referential_error;

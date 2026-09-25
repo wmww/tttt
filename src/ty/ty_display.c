@@ -5,6 +5,8 @@
 #include "several_types.h"
 #include "interface_member.h"
 #include "statement.h"
+#include "source_file.h"
+#include "callable_type.h"
 
 // Prints a Ty the way tsc's typeToString() does, in its order of preference: alias name, reference name + arguments
 // (array and tuple syntax for those targets), declared name, structure.
@@ -30,6 +32,11 @@ static void out(TyDisplay d, csview sv) {
     underline_since(d, start);
 }
 #define out_lit(d, s) out(d, c_sv(s))
+
+static TyDisplay reused_if(TyDisplay d, bool reused) {
+    d.reused = reused;
+    return d;
+}
 
 static void display_list(Checker* me, TyDisplay d, TyList list) {
     for (u32 i = 0; i < list.len; i++) {
@@ -315,92 +322,427 @@ static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
     }
 }
 
-// Node reuse, for the underlines of the types baseline (see TyDisplay.underline). tsc prints a type for a declaration
-// by reusing the declaration's own annotation where it can (serializeTypeForDeclaration -> tryReuseExistingTypeNode).
-// We print the Ty as usual and only mark those parts as reused. HACK: tsc re-prints the annotation itself, so where
-// the Ty prints differently from what was written (`Array<string>`) the text is wrong too (hacks.md)
+// Node reuse. tsc prints a type for a declaration by reusing the declaration's own annotation where it can
+// (serializeTypeForDeclaration -> tryReuseExistingTypeNode): when the annotation's type is the type being printed, it
+// prints *the node*, as written (`Array<string>`, `typeof a`, `(() => S)[]`, `Omit<O, "p">`). Only for the types
+// baseline (TyDisplay.underline), where the reused parts are the spaces of the `^^^` line. A name in the annotation that
+// doesn't mean the same from where the type is printed isn't reused: that part prints its type instead (tsc's
+// visitExistingNodeTreeSymbols recovers per node)
 
-// Whether every name in an annotation still means the same thing from where the type is printed (tsc bails out of
-// reusing a node whose names aren't accessible there, `q: Q` printed outside of namespace N is `q: N.Q`)
-static bool annotation_accessible(Checker* me, TyDisplay d, TypeNode const* node);
+static void display_node(Checker* me, TyDisplay d, TypeNode const* node);
+static bool is_identifier_name(csview sv);
+static void display_string_literal(TyDisplay d, csview sv);
+static void display_template_text(TyDisplay d, csview sv);
+static void append_binding_pattern(cstr* out, Binding const* binding);
 
-static bool function_annotations_accessible(Checker* me, TyDisplay d, FunctionImpl const* function) {
-    for_each (i, vec_generic_item, &function->generic.items) {
-        if (i->extends_explicit && !annotation_accessible(me, d, &i->extends)) return false;
-    }
-    for_each (i, vec_function_arg, &function->args) {
-        Binding const* binding = &i->initializer.binding;
-        if (binding->has_explicit_type && !annotation_accessible(me, d, &binding->explicit_type)) return false;
-    }
-    return !function->ret_explicit || annotation_accessible(me, d, &function->ret);
+// tsc's trackExistingEntityName(): the first name of an entity name means the same where the type is printed
+static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csview first, u32 meaning) {
+    // Unresolved names are an error type; type parameters and parameters in scope where they're printed (tsc checks
+    // that by resolving from the signature's fake scope)
+    if (!symbol || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return true;
+    // (A local of a function or block never is: tsc's isDeclarationVisible() is false for it, and `enclosing` only knows
+    // file and namespace scopes anyway)
+    Symbol const* found = scope_resolve(d.enclosing, first, meaning);
+    return found && same_symbol(me, found, symbol);
 }
 
-static bool annotation_accessible(Checker* me, TyDisplay d, TypeNode const* node) {
-    switch (node->tag) {
-        case TYPE_IDENTIFIER: {
-            IdentifierType const* identifier = node->identifier;
-            for_each (i, vec_spanned_type, &identifier->generic_params) {
-                if (!annotation_accessible(me, d, &i->type)) return false;
-            }
-            if (identifier->keyword || identifier->import_ref) return true;
-            bool qualified = vec_span_size(&identifier->namespaces) > 0;
-            Symbol const* symbol = identifier->symbol;
-            if (qualified) {
-                symbol = vec_symbol_cptr_size(&identifier->namespace_symbols) ?
-                    *vec_symbol_cptr_at(&identifier->namespace_symbols, 0) : nullptr;
-            }
-            // Unresolved names are an error type, and the type parameters of what is printed are in scope for it
-            if (!symbol || (symbol->flags & SYMBOL_TYPE_PARAMETER)) return true;
-            Span first = qualified ? *vec_span_at(&identifier->namespaces, 0) : identifier->name;
-            Symbol const* found = scope_resolve(d.enclosing, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE);
-            return found && same_symbol(me, found, symbol);
+// The type of an annotation, the way the checker lowered it
+static Ty const* node_type(Checker* me, TypeNode const* node) {
+    return ty_from_node(me, node, (LowerCtx){ .generic = true });
+}
+
+// A part of an annotation that can't be reused prints its type
+static void display_node_fallback(Checker* me, TyDisplay d, TypeNode const* node) {
+    ty_display(me, reused_if(d, false), node_type(me, node));
+}
+
+static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* args) {
+    if (!vec_spanned_type_size(args)) return;
+    out_lit(d, "<");
+    for_each (i, vec_spanned_type, args) {
+        if (i_index) out_lit(d, ", ");
+        display_node(me, d, &i->type);
+    }
+    out_lit(d, ">");
+}
+
+static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* node) {
+    IdentifierType const* identifier = node->identifier;
+    if (identifier->keyword) {
+        out(d, identifier->name.sv);
+        return;
+    }
+    if (identifier->import_ref) {
+        if (identifier->import_typeof) out_lit(d, "typeof ");
+        out_lit(d, "import(");
+        display_string_literal(d, cstr_sv(&identifier->import_ref->path));
+        out_lit(d, ")");
+        for_each (i, vec_span, &identifier->namespaces) {
+            out_lit(d, ".");
+            out(d, i->sv);
         }
-        case TYPE_CALLABLE:
-            return function_annotations_accessible(me, d, node->callable->function);
-        case TYPE_INTERFACE:
-            for_each (i, vec_interface_member, &node->interface.members) {
-                if (i->key.tag == INTERFACE_KEY_INDEX && !annotation_accessible(me, d, &i->key.index.type)) return false;
-                if (i->key.tag == INTERFACE_KEY_MAPPED) {
-                    if (!annotation_accessible(me, d, &i->key.mapped.in_type)) return false;
-                    if (i->key.mapped.has_as_type && !annotation_accessible(me, d, &i->key.mapped.as_type)) return false;
-                }
-                if (!annotation_accessible(me, d, &i->type)) return false;
-            }
-            return true;
-        case TYPE_ARRAY:
-            return annotation_accessible(me, d, node->array.element);
-        case TYPE_TUPLE:
-            for_each (i, vec_tuple_element, &node->tuple.elements) {
-                if (!annotation_accessible(me, d, &i->type)) return false;
-            }
-            return true;
-        case TYPE_INDEXED:
-            return annotation_accessible(me, d, &node->indexed->interface) &&
-                annotation_accessible(me, d, &node->indexed->index);
-        case TYPE_KEYOF:
-            return annotation_accessible(me, d, &node->keyof->interface);
-        case TYPE_TERNARY:
-            return annotation_accessible(me, d, &node->ternary->maybe_sub) &&
-                annotation_accessible(me, d, &node->ternary->maybe_super) &&
-                annotation_accessible(me, d, &node->ternary->if_true) &&
-                annotation_accessible(me, d, &node->ternary->if_false);
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            for_each (i, vec_type, &node->composite) {
-                if (!annotation_accessible(me, d, i)) return false;
-            }
-            return true;
-        case TYPE_INFERRED:
-            return !node->inferred->extends.parsed || annotation_accessible(me, d, &node->inferred->extends);
-        default:
-            return true; // Keywords, literals, `typeof x` (TODO: the entity name of a typeof)
+        if (span_valid(identifier->name)) {
+            out_lit(d, ".");
+            out(d, identifier->name.sv);
+        }
+        display_node_args(me, d, &identifier->generic_params);
+        return;
+    }
+    bool qualified = vec_span_size(&identifier->namespaces) > 0;
+    Symbol const* symbol = identifier->symbol;
+    if (qualified) {
+        symbol = vec_symbol_cptr_size(&identifier->namespace_symbols) ?
+            *vec_symbol_cptr_at(&identifier->namespace_symbols, 0) : nullptr;
+    }
+    Span first = qualified ? *vec_span_at(&identifier->namespaces, 0) : identifier->name;
+    if (!name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) {
+        display_node_fallback(me, d, node);
+        return;
+    }
+    for_each (i, vec_span, &identifier->namespaces) {
+        out(d, i->sv);
+        out_lit(d, ".");
+    }
+    out(d, identifier->name.sv);
+    display_node_args(me, d, &identifier->generic_params);
+}
+
+// The entity name of `typeof a.b<T>`
+static Expr const* entity_leftmost(Expr const* expr) {
+    while (true) {
+        if (expr->tag == EXPR_PROPERTY) expr = &expr->property->expr;
+        else if (expr->tag == EXPR_GENERIC_PARAMS) expr = &expr->generic_params->expr;
+        else return expr;
     }
 }
 
-// Whether to print a declaration's annotation as reused. Only when underlining: `enclosing` is what accessibility is
-// judged from
-static bool reuses(Checker* me, TyDisplay d, TypeNode const* annotation) {
-    return d.underline && d.enclosing && annotation_accessible(me, d, annotation);
+static void display_entity_expr(Checker* me, TyDisplay d, Expr const* expr) {
+    if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) {
+        display_entity_expr(me, d, &expr->property->expr);
+        out_lit(d, ".");
+        out(d, expr->property->prop.inner_span.sv);
+    } else if (expr->tag == EXPR_GENERIC_PARAMS) {
+        display_entity_expr(me, d, &expr->generic_params->expr);
+        display_node_args(me, d, &expr->generic_params->params);
+    } else {
+        out(d, expr->inner_span.sv);
+    }
+}
+
+static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) {
+    Expr const* leftmost = entity_leftmost(node->typeof_->expr);
+    if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
+        !name_accessible(me, d, leftmost->identifier.symbol, leftmost->identifier.name.sv, SYMBOL_VALUE)
+    ) {
+        display_node_fallback(me, d, node);
+        return;
+    }
+    out_lit(d, "typeof ");
+    display_entity_expr(me, d, node->typeof_->expr);
+}
+
+static void display_node_type_params(Checker* me, TyDisplay d, Generic const* generic) {
+    if (generic_empty(generic)) return;
+    out_lit(d, "<");
+    for_each (i, vec_generic_item, &generic->items) {
+        if (i_index) out_lit(d, ", ");
+        if (i->is_const) out_lit(d, "const ");
+        out(d, i->name.sv);
+        if (i->extends_explicit) {
+            out_lit(d, " extends ");
+            display_node(me, d, &i->extends);
+        }
+        if (i->fallback_explicit) {
+            out_lit(d, " = ");
+            display_node(me, d, &i->fallback);
+        }
+    }
+    out_lit(d, ">");
+}
+
+// A signature written as a type: `<T>(x: T) => U` with `separator` " => ", a member's `(x: T): U` with ": "
+static void display_node_signature(Checker* me, TyDisplay d, FunctionImpl const* function, char const* separator) {
+    if (function->is_abstract_constructor) out_lit(d, "abstract ");
+    if (function->is_constructor || function->is_abstract_constructor) out_lit(d, "new ");
+    display_node_type_params(me, d, &function->generic);
+    out_lit(d, "(");
+    for_each (i, vec_function_arg, &function->args) {
+        if (i_index) out_lit(d, ", ");
+        if (i->rest) out_lit(d, "...");
+        Binding const* binding = &i->initializer.binding;
+        if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
+            cstr pattern = cstr_init();
+            append_binding_pattern(&pattern, binding);
+            out(d, cstr_sv(&pattern));
+            cstr_drop(&pattern);
+        } else {
+            out(d, binding->content_span.sv);
+        }
+        if (i->explicit_optional) out_lit(d, "?");
+        out_lit(d, ": ");
+        if (binding->has_explicit_type) display_node(me, d, &binding->explicit_type);
+        else out(reused_if(d, false), c_sv("any")); // tsc gives it a synthesized `any`
+    }
+    out_lit(d, ")");
+    out(d, csview_from(separator));
+    TypePredicateNode const* predicate = function->predicate;
+    if (predicate) {
+        if (predicate->asserts) out_lit(d, "asserts ");
+        out(d, predicate->name.sv);
+        if (predicate->has_type) {
+            out_lit(d, " is ");
+            display_node(me, d, &predicate->type);
+        }
+    } else if (function->ret_explicit) {
+        display_node(me, d, &function->ret);
+    } else {
+        out(reused_if(d, false), c_sv("any"));
+    }
+}
+
+// A computed member name `[a.b]`. One whose name isn't accessible prints its value instead (tsc's
+// visitExistingNodeTreeSymbolsWorker, ComputedPropertyName), as written if it has none (a unique symbol)
+static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* expr) {
+    Expr const* leftmost = entity_leftmost(expr);
+    if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
+        !name_accessible(me, d, leftmost->identifier.symbol, leftmost->identifier.name.sv, SYMBOL_VALUE)
+    ) {
+        Ty const* key = ty_expr_type(me, expr);
+        if (key->kind == TY_LITERAL && key->literal.string && !(key->flags & TYF_UNIQUE_ES_SYMBOL)) {
+            csview name = atom_sv(key->literal.string);
+            if (is_identifier_name(name)) {
+                out(d, name);
+            } else {
+                out_lit(d, "[");
+                display_string_literal(d, name);
+                out_lit(d, "]");
+            }
+            return;
+        }
+        if (key->kind == TY_LITERAL && key->literal.value.tag == VALUE_NUMBER && !(key->flags & TYF_BIGINT_LITERAL)) {
+            bool negative = key->literal.value.number < 0;
+            if (negative) out_lit(d, "[");
+            isize_t start = cstr_size(d.target);
+            cstr_append_value_js(d.target, &key->literal.value);
+            underline_since(d, start);
+            if (negative) out_lit(d, "]");
+            return;
+        }
+    }
+    out_lit(d, "[");
+    out(d, expr->outer_span.sv);
+    out_lit(d, "]");
+}
+
+// A computed name that isn't a literal or unique symbol isn't a member (tsc's shouldRemoveDeclaration)
+static bool member_printed(Checker* me, InterfaceMember const* member) {
+    return member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr.ref ||
+        ty_expr_type(me, member->key.expr.ref)->kind == TY_LITERAL;
+}
+
+static void display_node_interface(Checker* me, TyDisplay d, Interface const* interface) {
+    bool empty = true;
+    for_each (i, vec_interface_member, &interface->members) empty &= !member_printed(me, i);
+    if (empty) {
+        out_lit(d, "{}");
+        return;
+    }
+    out_lit(d, "{ ");
+    for_each (i, vec_interface_member, &interface->members) {
+        if (!member_printed(me, i)) continue;
+        switch (i->key.tag) {
+            case INTERFACE_KEY_MAPPED:
+                if (i->key.mapped.readonly) out(d, i->key.mapped.readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
+                out_lit(d, "[");
+                out(d, i->key.mapped.type_name.sv);
+                out_lit(d, " in ");
+                display_node(me, d, &i->key.mapped.in_type);
+                if (i->key.mapped.has_as_type) {
+                    out_lit(d, " as ");
+                    display_node(me, d, &i->key.mapped.as_type);
+                }
+                out_lit(d, "]");
+                if (i->key.mapped.optional) out(d, i->key.mapped.optional > 0 ? c_sv("?") : c_sv("-?"));
+                out_lit(d, ": ");
+                if (i->type.parsed) display_node(me, d, &i->type);
+                else out(reused_if(d, false), c_sv("any"));
+                break;
+            case INTERFACE_KEY_INDEX:
+                if (i->readonly) out_lit(d, "readonly ");
+                out_lit(d, "[");
+                out(d, i->key.index.name.sv);
+                out_lit(d, ": ");
+                display_node(me, d, &i->key.index.type);
+                out_lit(d, "]: ");
+                display_node(me, d, &i->type);
+                break;
+            case INTERFACE_KEY_CALLABLE:
+                display_node_signature(me, d, i->type.callable->function, ": ");
+                break;
+            case INTERFACE_KEY_EXPR:
+            case INTERFACE_KEY_NAME:
+                if (i->readonly) out_lit(d, "readonly ");
+                if (i->key.tag == INTERFACE_KEY_EXPR) {
+                    display_node_computed_name(me, d, i->key.expr.ref);
+                } else {
+                    out(d, i->key.span.sv);
+                }
+                if (i->optional) out_lit(d, "?");
+                if (i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_member_function && i->type.tag == TYPE_CALLABLE) {
+                    display_node_signature(me, d, i->type.callable->function, ": ");
+                } else {
+                    out_lit(d, ": ");
+                    if (i->type.parsed) display_node(me, d, &i->type);
+                    else out(reused_if(d, false), c_sv("any"));
+                }
+                break;
+        }
+        out_lit(d, "; ");
+    }
+    out_lit(d, "}");
+}
+
+static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list, char const* separator) {
+    bool first = true;
+    for_each (i, vec_type, list) {
+        if (i->placeholder) continue;
+        if (!first) out(d, csview_from(separator));
+        first = false;
+        display_node(me, d, i);
+    }
+}
+
+// Prints an annotation as written, as reused
+static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
+    d.reused = true;
+    if (node->parenthesized) out_lit(d, "(");
+    switch (node->tag) {
+        case TYPE_IDENTIFIER:
+            display_node_identifier(me, d, node);
+            break;
+        case TYPE_TYPEOF:
+            display_node_typeof(me, d, node);
+            break;
+        case TYPE_CALLABLE:
+            display_node_signature(me, d, node->callable->function, " => ");
+            break;
+        case TYPE_INTERFACE:
+            display_node_interface(me, d, &node->interface);
+            break;
+        case TYPE_ARRAY:
+            if (node->array.readonly) out_lit(d, "readonly ");
+            display_node(me, d, node->array.element);
+            out_lit(d, "[]");
+            break;
+        case TYPE_TUPLE:
+            if (node->tuple.readonly) out_lit(d, "readonly ");
+            out_lit(d, "[");
+            for_each (i, vec_tuple_element, &node->tuple.elements) {
+                if (i_index) out_lit(d, ", ");
+                if (i->rest) out_lit(d, "...");
+                if (span_valid(i->maybe_name)) {
+                    out(d, i->maybe_name.sv);
+                    if (i->optional) out_lit(d, "?");
+                    out_lit(d, ": ");
+                    display_node(me, d, &i->type);
+                } else {
+                    display_node(me, d, &i->type);
+                    if (i->optional) out_lit(d, "?");
+                }
+            }
+            out_lit(d, "]");
+            break;
+        case TYPE_INDEXED:
+            display_node(me, d, &node->indexed->interface);
+            out_lit(d, "[");
+            display_node(me, d, &node->indexed->index);
+            out_lit(d, "]");
+            break;
+        case TYPE_KEYOF:
+            out_lit(d, "keyof ");
+            display_node(me, d, &node->keyof->interface);
+            break;
+        case TYPE_TERNARY:
+            display_node(me, d, &node->ternary->maybe_sub);
+            out_lit(d, " extends ");
+            display_node(me, d, &node->ternary->maybe_super);
+            out_lit(d, " ? ");
+            display_node(me, d, &node->ternary->if_true);
+            out_lit(d, " : ");
+            display_node(me, d, &node->ternary->if_false);
+            break;
+        case TYPE_INFERRED:
+            out_lit(d, "infer ");
+            out(d, node->inferred->name.sv);
+            if (node->inferred->extends.parsed) {
+                out_lit(d, " extends ");
+                display_node(me, d, &node->inferred->extends);
+            }
+            break;
+        case TYPE_UNION:
+            display_node_list(me, d, &node->composite, " | ");
+            break;
+        case TYPE_INTERSECTION:
+            display_node_list(me, d, &node->composite, " & ");
+            break;
+        case TYPE_TEMPLATE: {
+            TemplateType const* template = node->template_;
+            out_lit(d, "`");
+            for (isize_t i = 0; i < vec_cstr_size(&template->texts); i++) {
+                if (i) {
+                    out_lit(d, "${");
+                    display_node(me, d, vec_type_at(&template->types, i - 1));
+                    out_lit(d, "}");
+                }
+                display_template_text(d, cstr_sv(vec_cstr_at(&template->texts, i)));
+            }
+            out_lit(d, "`");
+        }   break;
+        case TYPE_UNIQUE_SYMBOL:
+            out_lit(d, "unique symbol");
+            break;
+        case TYPE_ANY: out_lit(d, "any"); break;
+        case TYPE_UNKNOWN: out_lit(d, "unknown"); break;
+        case TYPE_NEVER: out_lit(d, "never"); break;
+        case TYPE_VOID: out_lit(d, "void"); break;
+        case TYPE_BOOLEAN: out_lit(d, "boolean"); break;
+        case TYPE_NUMBER: out_lit(d, "number"); break;
+        case TYPE_STRING: out_lit(d, "string"); break;
+        case TYPE_SYMBOL: out_lit(d, "symbol"); break;
+        case TYPE_BIGINT: out_lit(d, "bigint"); break;
+        case TYPE_VALUE: {
+            // Literals print normalized, like tsc's printer does a cloned literal node (`'a'` is `"a"`, `0x10` is 16)
+            Ty const* literal = ty_literal(me, &node->value);
+            if (literal->kind == TY_LITERAL && !(literal->flags & (TYF_BIGINT_LITERAL | TYF_BOOLEAN_LITERAL)) &&
+                !literal->literal.string && node->value.tag == VALUE_NUMBER && node->value.number < 0
+            ) {
+                out_lit(d, "-");
+                ty_display(me, d, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = -node->value.number }));
+            } else {
+                ty_display(me, d, literal);
+            }
+        }   break;
+    }
+    if (node->parenthesized) out_lit(d, ")");
+}
+
+// Whether an annotation says what is printed (tsc's typeNodeIsEquivalentToType: an optional parameter or property
+// without its `undefined`), so that it can be reprinted
+static bool annotation_is(Checker* me, TypeNode const* node, Ty const* ty, bool optional) {
+    if (!node->parsed || node->tag == TYPE_UNIQUE_SYMBOL) return false;
+    Ty const* annotated = node_type(me, node);
+    return annotated == ty || (optional && annotated == ty_without_undefined(me, ty));
+}
+
+// Prints `ty` by reprinting its declaration's annotation when that's allowed and says the same, else as a type
+static void display_annotated(Checker* me, TyDisplay d, TypeNode const* annotation, Ty const* ty, bool optional) {
+    if (annotation && d.underline && d.enclosing && annotation_is(me, annotation, ty, optional)) {
+        display_node(me, d, annotation);
+    } else if (annotation && d.underline && d.enclosing && !annotation->parsed) {
+        ty_display(me, reused_if(d, true), ty); // A missing type (`(a: ) => {}`), which tsc reuses as `any`
+    } else {
+        ty_display(me, d, ty);
+    }
 }
 
 // Whether a type may mention one of the type parameters. Conservative: object types that aren't references might
@@ -453,11 +795,6 @@ static TypeNode const* single_return_assertion(Checker* me, FunctionImpl const* 
     return &as_type->type;
 }
 
-static TyDisplay reused_if(TyDisplay d, bool reused) {
-    d.reused = reused;
-    return d;
-}
-
 static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable) {
     if (!params.len) return;
     out_lit(d, "<");
@@ -474,8 +811,8 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
         Ty const* constraint = ty_param_constraint(me, params.data[i]);
         if (constraint) {
             out_lit(d, " extends ");
-            bool reused = d.reused || (reusable && item && item->extends_explicit && reuses(me, d, &item->extends));
-            ty_display(me, reused_if(d, reused), constraint);
+            if (d.reused) ty_display(me, d, constraint);
+            else display_annotated(me, d, reusable && item && item->extends_explicit ? &item->extends : nullptr, constraint, false);
         }
         Ty const* fallback = ty_param_default(me, params.data[i]);
         if (fallback) {
@@ -592,9 +929,8 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
         FunctionArg const* this_decl = function ? vec_function_arg_at(&function->args, 0) : nullptr;
         Binding const* binding = this_decl ? &this_decl->initializer.binding : nullptr;
         bool reused = reusable && binding && binding->has_explicit_type &&
-            (!instantiated || (sig->this_type == root->this_type && !mentions(me, sig->this_type, d.fresh_params))) &&
-            reuses(me, d, &binding->explicit_type);
-        ty_display(me, reused_if(d, reused), sig->this_type);
+            (!instantiated || (sig->this_type == root->this_type && !mentions(me, sig->this_type, d.fresh_params)));
+        display_annotated(me, reused_if(d, false), reused ? &binding->explicit_type : nullptr, sig->this_type, false);
         if (param_count) out_lit(d, ", ");
     }
     for (u32 i = 0; i < param_count; i++) {
@@ -614,9 +950,8 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
         out_lit(d, ": ");
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
         bool reused = reusable && binding && binding->has_explicit_type &&
-            (!instantiated || (param->type == root->params[i].type && !mentions(me, param->type, d.fresh_params))) &&
-            reuses(me, d, &binding->explicit_type);
-        ty_display(me, reused_if(d, reused), param->type);
+            (!instantiated || (param->type == root->params[i].type && !mentions(me, param->type, d.fresh_params)));
+        display_annotated(me, reused_if(d, false), reused ? &binding->explicit_type : nullptr, param->type, param->optional);
     }
     out_lit(d, ")");
     out(d, csview_from(separator));
@@ -625,13 +960,20 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     TypeNode const* ret_annotation = !reusable ? nullptr : function->ret_explicit ? &function->ret :
         single_return_assertion(me, function, signature_return_type(me, root));
     bool reused = ret_annotation &&
-        (!instantiated || (ret == signature_return_type(me, root) && !mentions(me, ret, d.fresh_params))) &&
-        reuses(me, d, ret_annotation);
+        (!instantiated || (ret == signature_return_type(me, root) && !mentions(me, ret, d.fresh_params)));
     if (predicate) {
-        ty_display_predicate(me, reused_if(d, reusable && function->predicate), predicate);
+        TyDisplay predicate_d = reused_if(d, reusable && function->predicate);
+        if (predicate->asserts) out_lit(predicate_d, "asserts ");
+        out(predicate_d, atom_sv(predicate->param_name));
+        if (predicate->type) {
+            out_lit(predicate_d, " is ");
+            TypeNode const* annotation = reusable && function->predicate && function->predicate->has_type &&
+                (!instantiated || !mentions(me, predicate->type, d.fresh_params)) ? &function->predicate->type : nullptr;
+            display_annotated(me, predicate_d, annotation, predicate->type, false);
+        }
         return;
     }
-    ty_display(me, reused_if(d, reused), ret);
+    display_annotated(me, reused_if(d, false), reused ? ret_annotation : nullptr, ret, false);
 }
 
 // A destructured parameter's name the way tsc prints it in a signature: the pattern without its defaults
@@ -753,10 +1095,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ) {
             annotation = prop->node;
         }
-        TyDisplay prop_d = reused_if(d, annotation && (d.reused || reuses(me, d, annotation)));
-        // Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol
-        if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL) prop_d.reused = d.reused;
-        ty_display(me, prop_d, type);
+        // (Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol)
+        if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, type);
+        else display_annotated(me, d, annotation, type, (prop->flags & PROP_OPTIONAL) != 0);
         out_lit(d, "; ");
     }
     out_lit(d, "}");
