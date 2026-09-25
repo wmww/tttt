@@ -870,6 +870,8 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol);
 Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol);
 u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out); // malloc'd
 Atom const* ty_qualified_name(Checker* me, Symbol const* decl); // `A.B.name`
+// The symbol's name as printed: its name_span, but an anonymous class expression is called what it's assigned to
+Span ty_symbol_display_name(Symbol const* symbol);
 void ty_set_declared_type(Checker* me, Symbol const* decl, Ty const* type);
 TyList ty_type_params_of(Checker* me, Generic const* generic);
 Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);

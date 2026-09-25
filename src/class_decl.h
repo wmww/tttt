@@ -92,6 +92,9 @@ typedef enum ClassNamedEvaluation {
 typedef struct ClassDecl {
     Span full_span;
     Span name;
+    // An anonymous class expression: the name of what it's assigned to (tsc's getAssignedName: `const C = class {}`,
+    // `{ C: class {} }`, `x.C = class {}`), which messages and baselines call it. Invalid: `(Anonymous class)`
+    Span assigned_name;
     bool is_abstract;
     bool is_expression; // A class expression, which legacy decorators can't decorate the members of
     bool is_ambient; // `declare class`, or in an ambient context
@@ -108,6 +111,8 @@ typedef struct ClassDecl {
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
+/// What the class is called in messages and baselines: its name, else its assigned name, else `(Anonymous class)`
+Span class_decl_display_name(ClassDecl const* me);
 /// The first member of the class named `#name` (tsc's lookupSymbolForPrivateIdentifierDeclaration for one class)
 ClassItem const* class_decl_find_private_name(ClassDecl const* me, csview name);
 void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported, bool declared);

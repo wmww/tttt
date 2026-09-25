@@ -239,6 +239,14 @@ static void mark_named_evaluation(Expr* value, bool computed_key) {
     }
 }
 
+// tsc's getAssignedName(): an anonymous class expression that is directly (no parentheses) the value of a variable,
+// property assignment, binding element or the right operand of a binary expression is called by that name
+static void mark_assigned_name(Expr* value, Span name) {
+    if (value->tag != EXPR_CLASS_DECL || span_valid(value->class_decl->name)) return;
+    if (value->outer_span.sv.size != value->inner_span.sv.size) return;
+    value->class_decl->assigned_name = name;
+}
+
 static inline Parser parser(Parser* parent) {
 #ifdef DEBUG_BUILD
     check(!parent->has_panding_child);
@@ -2402,6 +2410,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         if (item.computed_key || !csview_equals(cstr_sv(&item.name_string), "__proto__")) {
             mark_named_evaluation(&item.value, item.computed_key);
         }
+        mark_assigned_name(&item.value, item.name_span);
     } else if (name_is_identifier && !item.computed_key && (*p.pos == ',' || *p.pos == '}' || *p.pos == '=')) {
         item.tag = OBJECT_ITEM_SHORTHAND;
         item.value = expr_identifier((IdentifierExpr){ .name = item.name_span, .shorthand = true });
@@ -3359,6 +3368,15 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     bool logical_or_plain = op == BINARY_OP_EQUAL || op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_OR_OR_EQUAL ||
         op == BINARY_OP_EH_EH_EQUAL;
     if (logical_or_plain && left_and_ret->tag == EXPR_IDENTIFIER) mark_named_evaluation(&right, false);
+    bool left_parenthesized = left_and_ret->outer_span.sv.size != left_and_ret->inner_span.sv.size;
+    if (left_and_ret->tag == EXPR_IDENTIFIER && !left_parenthesized) {
+        mark_assigned_name(&right, left_and_ret->identifier.name);
+    } else if (left_and_ret->tag == EXPR_PROPERTY && !left_parenthesized) {
+        // `a.C = class {}`: C. `a["C"] = class {}`: "C". `a[k] = class {}`: a[k]
+        Expr const* prop = &left_and_ret->property->prop;
+        bool named = left_and_ret->property->form == PROPERTY_EXPR_DOT || prop->tag == EXPR_LITERAL;
+        mark_assigned_name(&right, named ? prop->inner_span : left_and_ret->inner_span);
+    }
     expr_mark_binary_operand(left_and_ret);
     expr_mark_binary_operand(&right);
     *left_and_ret = expr_binary_op(span_between(left_and_ret->outer_span, right.outer_span), c_new(BinaryOpExpr, {
@@ -4676,6 +4694,7 @@ static bool parse_binding_element(Parser* parent, Binding* ret) {
         Expr default_value;
         expect_expr(&default_p, expr_ctx_null, &default_value);
         if (ret->tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(&default_value, false);
+        if (ret->tag == BINDING_IDENTIFIER) mark_assigned_name(&default_value, ret->content_span);
         ret->default_value = c_new(Expr, default_value);
         parse_success(&default_p);
     } else {
@@ -4972,7 +4991,10 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         }
 
         if (parse_initialization_or_set_to_default(&p, ctx, &initializer.value)) {
-            if (initializer.binding.tag == BINDING_IDENTIFIER) mark_named_evaluation(&initializer.value, false);
+            if (initializer.binding.tag == BINDING_IDENTIFIER) {
+                mark_named_evaluation(&initializer.value, false);
+                mark_assigned_name(&initializer.value, initializer.binding.content_span);
+            }
             end_of_initialization = p.pos;
             hop_whitespace(&p);
         }

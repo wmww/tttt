@@ -57,6 +57,12 @@ static void unify_type_params(Checker* me, TyList params, Generic const* other) 
     }
 }
 
+Span ty_symbol_display_name(Symbol const* symbol) {
+    if (span_valid(symbol->name_span) || !(symbol->flags & SYMBOL_CLASS)) return symbol->name_span;
+    ClassDecl const* class_decl = symbol_find_node(symbol, SYMBOL_DECL_CLASS);
+    return class_decl && class_decl->is_expression ? class_decl_display_name(class_decl) : symbol->name_span;
+}
+
 // `A.B.name`. TODO(plan 04 stage 3): tsc qualifies a name as far as needed to be reachable from where it's printed
 // (symbol accessibility). Always qualifying is what it does for error messages.
 static void append_qualified_name(cstr* out, Symbol const* symbol) {
@@ -66,12 +72,12 @@ static void append_qualified_name(cstr* out, Symbol const* symbol) {
         append_qualified_name(out, parent);
         cstr_append_lit(out, ".");
     }
-    cstr_append_span(out, symbol->name_span);
+    cstr_append_span(out, ty_symbol_display_name(symbol));
 }
 
 Atom const* ty_qualified_name(Checker* me, Symbol const* symbol) {
     Symbol const* parent = symbol->parent;
-    if (!parent || parent->is_module) return checker_atom(me, symbol->name_span.sv);
+    if (!parent || parent->is_module) return checker_atom(me, ty_symbol_display_name(symbol).sv);
     cstr qualified = cstr_null;
     append_qualified_name(&qualified, symbol);
     Atom const* ret = checker_atom(me, cstr_sv(&qualified));

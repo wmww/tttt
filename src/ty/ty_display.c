@@ -85,7 +85,7 @@ static bool find_alias_in_table(Checker* me, SymbolTable const* table, Symbol co
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     Symbol const* parent = symbol->parent;
     if (!parent || symbol->is_global_this) {
-        out(d, symbol->name_span.sv);
+        out(d, ty_symbol_display_name(symbol).sv);
         return;
     }
     bool quoted_parent = parent->name.size && (*parent->name.buf == '"' || *parent->name.buf == '\'');
@@ -1277,8 +1277,12 @@ static bool is_whole_enum(Checker* me, Ty const* ty) {
 static bool needs_parens_in_array(Checker* me, Ty const* ty) {
     if (ty->alias) return false;
     if ((ty->flags & TYF_BOOLEAN) || is_whole_enum(me, ty)) return false;
+    // `(typeof C)[]`: a type query is parenthesized too
+    bool type_query = ty->kind == TY_DECLARED &&
+        (ty->declared.kind == TY_DECLARED_CLASS_STATIC || ty->declared.kind == TY_DECLARED_ENUM_OBJECT ||
+            ty->declared.kind == TY_DECLARED_NAMESPACE) && ty->declared.name && ty->declared.name->len;
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || ty->kind == TY_CONDITIONAL || ty->kind == TY_KEYOF ||
-        is_function_like(me, ty);
+        type_query || is_function_like(me, ty);
 }
 
 static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyList args) {

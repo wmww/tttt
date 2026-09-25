@@ -731,7 +731,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     Symbol const* outer_class = ctx->class_symbol;
     ctx->class_symbol = my symbol;
     for_each (i, vec_class_item, &my items) {
-        class_item_compile_test_info(i, &my items, my name, ctx);
+        class_item_compile_test_info(i, &my items, is_expr ? class_decl_display_name(me) : my name, ctx);
     }
     ctx->class_symbol = outer_class;
 }

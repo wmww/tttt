@@ -189,6 +189,12 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
     }
 }
 
+Span class_decl_display_name(ClassDecl const* me) {
+    if (span_valid(my name)) return my name;
+    if (span_valid(my assigned_name)) return my assigned_name;
+    return sv_make_span(c_sv("(Anonymous class)"));
+}
+
 void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported, bool declared) {
     my is_ambient = declared || scope->ambient;
     scope_init_declaration(scope, &my symbol, (DeclProps){
