@@ -53,6 +53,7 @@ core_files = files(
     'ty/iterate.c',
     'ty/template.c',
     'ty/helpers.c',
+    'ty/jsx.c',
 )
 
 main_files = core_files + files('main.c')

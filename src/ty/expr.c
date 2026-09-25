@@ -46,6 +46,7 @@ static bool kind_uses_context(Expr const* expr) {
         case EXPR_CALL:
         case EXPR_AS_TYPE:
         case EXPR_TEMPLATE:
+        case EXPR_JSX_ATTRIBUTES:
             return true;
         case EXPR_UNARY_OP:
             return expr->unary_op->op == UNARY_OP_RIGHT_BANG;
@@ -1074,6 +1075,50 @@ static ObjectLiteralProp* literal_builder_add(LiteralBuilder* builder, ObjectLit
     return &builder->props[builder->count++];
 }
 
+// The properties of a spread object (tsc's getSpreadType, as far as the builder goes): they replace what's there,
+// except that an optional one adds to it
+static void literal_builder_spread(Checker* me, LiteralBuilder* builder, Ty const* spread) {
+    if (!(spread->flags & TYF_OBJECT)) return;
+    Members const* members = ty_members(me, spread);
+    for (u32 j = 0; j < members->prop_count; j++) {
+        Prop const* prop = members->props[j];
+        Prop const* origin = prop;
+        while (origin->target) origin = origin->target;
+        ObjectLiteralProp* existing = literal_builder_find(builder, prop->name);
+        if (existing && (prop->flags & PROP_OPTIONAL)) {
+            // An optional property may not be there: what was there before stays possible, and so does
+            // its being required (tsc's getSpreadType)
+            Ty const* left = existing->type;
+            Ty const* right = ty_without_undefined(me, prop_type(me, prop));
+            if (ty_without_undefined(me, left) != right) {
+                existing->type = union_of_two(me, left, right);
+                existing->asserted = nullptr;
+            }
+            u32 count = existing->decl_span_count + origin->decl_span_count;
+            Span* spans = arena_new_n(&my arena, Span, count ? count : 1);
+            for (u32 k = 0; k < existing->decl_span_count; k++) spans[k] = existing->decl_spans[k];
+            for (u32 k = 0; k < origin->decl_span_count; k++) spans[existing->decl_span_count + k] = origin->decl_spans[k];
+            existing->decl_spans = spans;
+            existing->decl_span_count = count;
+            continue;
+        }
+        // The annotation of the property it comes from still says what it is, unless instantiated
+        TypeNode const* annotation = origin->node && origin->node->parsed && !origin->lazy && !origin->function &&
+            !origin->overload_count && !origin->symbol && prop_type(me, prop) == prop_type(me, origin) ?
+            origin->node : nullptr;
+        literal_builder_add(builder, (ObjectLiteralProp){
+            .name = prop->name,
+            .flags = prop->flags & (u32)~PROP_READONLY,
+            .type = prop_type(me, prop),
+            .asserted = annotation,
+            .name_span = origin->name_span,
+            .decl_spans = origin->decl_spans,
+            .decl_span_count = origin->decl_span_count,
+            .name_is_value = origin->name_is_value,
+        });
+    }
+}
+
 static Signature const* single_call_signature(Checker* me, Ty const* ty) {
     Members const* members = ty_members(me, ty);
     if (members->call_count != 1) return nullptr;
@@ -1169,46 +1214,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (i->tag == OBJECT_ITEM_SPREAD) {
             Ty const* spread = ty_apparent_type(me, ty_expr_type(me, &i->value));
             if (spread->flags & TYF_ANY) spread_any = true; // The whole literal is any (tsc's getSpreadType)
-            if (spread->flags & TYF_OBJECT) {
-                Members const* members = ty_members(me, spread);
-                for (u32 j = 0; j < members->prop_count; j++) {
-                    Prop const* prop = members->props[j];
-                    Prop const* origin = prop;
-                    while (origin->target) origin = origin->target;
-                    ObjectLiteralProp* existing = literal_builder_find(&builder, prop->name);
-                    if (existing && (prop->flags & PROP_OPTIONAL)) {
-                        // An optional property may not be there: what was there before stays possible, and so does
-                        // its being required (tsc's getSpreadType)
-                        Ty const* left = existing->type;
-                        Ty const* right = ty_without_undefined(me, prop_type(me, prop));
-                        if (ty_without_undefined(me, left) != right) {
-                            existing->type = union_of_two(me, left, right);
-                            existing->asserted = nullptr;
-                        }
-                        u32 count = existing->decl_span_count + origin->decl_span_count;
-                        Span* spans = arena_new_n(&my arena, Span, count ? count : 1);
-                        for (u32 k = 0; k < existing->decl_span_count; k++) spans[k] = existing->decl_spans[k];
-                        for (u32 k = 0; k < origin->decl_span_count; k++) spans[existing->decl_span_count + k] = origin->decl_spans[k];
-                        existing->decl_spans = spans;
-                        existing->decl_span_count = count;
-                        continue;
-                    }
-                    // The annotation of the property it comes from still says what it is, unless instantiated
-                    TypeNode const* annotation = origin->node && origin->node->parsed && !origin->lazy && !origin->function &&
-                        !origin->overload_count && !origin->symbol && prop_type(me, prop) == prop_type(me, origin) ?
-                        origin->node : nullptr;
-                    literal_builder_add(&builder, (ObjectLiteralProp){
-                        .name = prop->name,
-                        .flags = prop->flags & (u32)~PROP_READONLY,
-                        .type = prop_type(me, prop),
-                        .asserted = annotation,
-                        .name_span = origin->name_span,
-                        .decl_spans = origin->decl_spans,
-                        .decl_span_count = origin->decl_span_count,
-                        .name_is_value = origin->name_is_value,
-                    });
-                }
-            }
+            literal_builder_spread(me, &builder, spread);
             continue;
         }
 
@@ -1404,6 +1410,137 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
     free(elements);
     free(flags);
     return ret;
+}
+
+// JSX attributes
+
+// The contextual type of one of several children (tsc's getContextualTypeForChildJsxExpression): of an array-like
+// children type, its element
+static Ty const* jsx_child_context(Checker* me, Ty const* children, u32 index, u32 count) {
+    if (!children || count == 1) return children;
+    TyList parts = children->kind == TY_UNION ? children->composite.types : (TyList){ .data = &children, .len = 1 };
+    TyBuf mapped = {0};
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* part = parts.data[i];
+        if (ty_extends_array(me, part)) {
+            Value value = value_number(index);
+            part = ty_access(me, part, ty_literal(me, &value));
+        }
+        if (part) ty_buf_push(&mapped, part);
+    }
+    Ty const* ret = mapped.len ? ty_union(me, mapped.data, mapped.len, nullptr, (TyList){0}) : nullptr;
+    ty_buf_drop(&mapped);
+    return ret;
+}
+
+// tsc's getSemanticJsxChildren: whitespace with a line break and empty `{}` aren't children
+bool ty_jsx_child_is_semantic(JsxChild const* child) {
+    return child->tag == JSX_CHILD_TEXT ? !child->whitespace_only : child->tag != JSX_CHILD_EMPTY_EXPR;
+}
+
+// The type of a child (tsc's checkJsxChildren)
+static Ty const* check_jsx_child(Checker* me, JsxChild const* child, Ty const* contextual) {
+    if (child->tag == JSX_CHILD_TEXT) return ty_intrinsic(me, TY_STRING);
+    return check_for_mutable_location(me, &child->expr, (ExprCtx){ .contextual = contextual });
+}
+
+// The attributes of an element as an object literal (tsc's createJsxAttributesTypeFromAttributesProperty), with the
+// children as one more property, named by JSX.ElementChildrenAttribute
+static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx) {
+    JsxElement const* element = jsx_attributes_element(expr);
+    LiteralBuilder builder = {0};
+    bool spread_any = false;
+    // Spreads of generic objects (`{...props}` with `props: T`) stay what they are: the attributes are their
+    // intersection with the rest (tsc's getSpreadType)
+    TyBuf generic_spreads = {0};
+    bool has_attribute = false, has_spread = false, has_children = false;
+    for_each (i, vec_jsx_attribute, &expr->jsx_attributes) {
+        has_attribute |= i->tag != JSX_ATTRIBUTE_SPREAD;
+        if (i->tag == JSX_ATTRIBUTE_SPREAD) {
+            has_spread = true;
+            Ty const* spread_type = ty_expr_type(me, &i->value);
+            if (spread_type->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
+                ty_buf_push(&generic_spreads, spread_type);
+                continue;
+            }
+            Ty const* spread = ty_apparent_type(me, spread_type);
+            if (spread->flags & TYF_ANY) spread_any = true;
+            literal_builder_spread(me, &builder, spread);
+            continue;
+        }
+        Atom const* name = checker_atom(me, i->name.sv);
+        Ty const* member_context = ctx.contextual ? contextual_prop_type(me, ctx.contextual, ty_prop_name_literal(me, name)) : nullptr;
+        Ty const* type;
+        switch (i->tag) {
+            case JSX_ATTRIBUTE_NO_VALUE: type = ty_intrinsic(me, TY_TRUE); break; // `<a x />` is `<a x={true} />`
+            case JSX_ATTRIBUTE_EMPTY_EXPR: type = any_type(me); break; // (the error type)
+            default: type = check_for_mutable_location(me, &i->value, (ExprCtx){ .contextual = member_context }); break;
+        }
+        Span* decl_span = arena_new(&my arena, Span);
+        *decl_span = i->span;
+        literal_builder_add(&builder, (ObjectLiteralProp){
+            .name = name,
+            .type = type,
+            .name_span = i->name,
+            .decl_spans = decl_span,
+            .decl_span_count = 1,
+            .own = true,
+        });
+    }
+
+    // The children
+    u32 child_count = 0;
+    for_each (i, vec_jsx_child, &element->children) child_count += ty_jsx_child_is_semantic(i);
+    if (child_count) {
+        Atom const* children_name = ty_jsx_children_prop_name(me, element);
+        Ty const* children_context = ctx.contextual && children_name && atom_sv(children_name).size ?
+            contextual_prop_type(me, ctx.contextual, ty_prop_name_literal(me, children_name)) : nullptr;
+        TyBuf types = {0};
+        u32 index = 0;
+        for_each (i, vec_jsx_child, &element->children) {
+            if (!ty_jsx_child_is_semantic(i)) continue;
+            ty_buf_push(&types, check_jsx_child(me, i, jsx_child_context(me, children_context, index++, child_count)));
+        }
+        if (!spread_any && children_name && atom_sv(children_name).size) {
+            Ty const* type = types.data[0];
+            if (types.len > 1) {
+                if (context_is_tuple_like(me, children_context, 0)) {
+                    unsigned char* flags = calloc(types.len, 1); // all required
+                    type = tuple_of(me, types.data, flags, types.len, false);
+                    free(flags);
+                } else {
+                    type = ty_array(me, ty_union(me, types.data, types.len, nullptr, (TyList){0}), false);
+                }
+            }
+            literal_builder_add(&builder, (ObjectLiteralProp){ .name = children_name, .type = type, .own = true });
+            has_children = true;
+        }
+        ty_buf_drop(&types);
+    }
+
+    // Fresh (excess properties are errors) if tsc made it with createJsxAttributesTypeHelper(): there's an attribute, or
+    // nothing was spread into it (children are spread in)
+    bool fresh = has_attribute || (!has_spread && !has_children);
+    Ty const* ret = spread_any ? any_type(me) : ty_object_literal(me, builder.props, builder.count, nullptr, 0,
+        fresh ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES);
+    if (!spread_any && generic_spreads.len) {
+        if (builder.count) ty_buf_push(&generic_spreads, ret);
+        ret = generic_spreads.len == 1 ? generic_spreads.data[0] :
+            ty_intersection(me, generic_spreads.data, generic_spreads.len, nullptr, (TyList){0});
+    }
+    ty_buf_drop(&generic_spreads);
+    free(builder.props);
+    return ret;
+}
+
+Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, JsxAttribute const* attribute) {
+    if (attribute->tag == JSX_ATTRIBUTE_NO_VALUE) return ty_intrinsic(me, TY_TRUE);
+    if (attribute->tag == JSX_ATTRIBUTE_EMPTY_EXPR) return any_type(me);
+    Ty const* type = ty_expr_type(me, attributes);
+    Prop const* prop = type->flags & TYF_OBJECT ? ty_get_prop(me, type, checker_atom(me, attribute->name.sv)) : nullptr;
+    // (Unless a later spread replaced it)
+    if (prop && prop->decl_span_count == 1 && span_eq(prop->decl_spans[0], attribute->span)) return prop_type(me, prop);
+    return widen_literals(me, ty_expr_type(me, &attribute->value));
 }
 
 Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* contextual) {
@@ -1664,8 +1801,8 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_REGEX: return ty_global_regexp_type(me);
         case EXPR_PRIVATE_NAME: return any_type(me);
-        // JSX is typed in plan 22 stage 2 (the JSX namespace); until then elements are `any`
-        case EXPR_JSX_ELEMENT: case EXPR_JSX_FRAGMENT: case EXPR_JSX_ATTRIBUTES: return any_type(me);
+        case EXPR_JSX_ELEMENT: case EXPR_JSX_FRAGMENT: return ty_jsx_element_type(me, expr->jsx);
+        case EXPR_JSX_ATTRIBUTES: return check_jsx_attributes(me, expr, ctx);
 
         case EXPR_TEMPLATE: {
             if (!expr->template_->tag) return check_template(me, expr, ctx);

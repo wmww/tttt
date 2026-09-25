@@ -297,6 +297,7 @@ struct Ty {
             TyList free_params;
             bool free_params_unknown;
             bool object_literal; // Made by an object literal expression (ty_object_literal())
+            bool jsx_attributes; // OBJECT_JSX_ATTRIBUTES(_FRESH): hyphenated names are never excess, and excess ones say so differently
             TyObjectState* state;
         } anonymous;
         struct {
@@ -551,6 +552,8 @@ typedef struct TyReportLine {
     // Heads the diagnostic in place of what the check would say (tsc: isRelatedTo reports it without
     // reportRelationError), at the check's span: the weak type errors
     bool replaces_head;
+    // The whole diagnostic goes to `span`, while this line stays where it is in the chain (an excess JSX attribute)
+    bool relocates;
 } TyReportLine;
 static inline void ty_report_line_drop(TyReportLine* me) { cstr_drop(&my message); }
 static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message = cstr_clone(me.message); return me; }
@@ -942,6 +945,26 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
 typedef struct AsTypeExpr AsTypeExpr;
 bool as_type_is_const(AsTypeExpr const* as_type);
 Ty const* ty_check_expr_in_const(Checker* me, Expr const* expr, Ty const* contextual, bool is_const);
+// JSX (jsx.c; the attributes are an object literal, see expr.c)
+struct JsxElement;
+struct JsxChild;
+struct JsxAttribute;
+typedef struct JsxIntrinsic {
+    Ty const* elements; // JSX.IntrinsicElements, null if there's none
+    Prop const* prop; // Its property the tag names
+    IndexInfo const* index; // ... else the index signature that admits the tag
+    Ty const* props; // What the attributes are checked against, null if the tag isn't there
+} JsxIntrinsic;
+Symbol const* ty_jsx_namespace(Checker* me, struct JsxElement const* element); // null if none
+Ty const* ty_jsx_type(Checker* me, struct JsxElement const* element, csview name); // `JSX.<name>`, null if none
+Ty const* ty_jsx_element_type(Checker* me, struct JsxElement const* element);
+Atom const* ty_jsx_children_prop_name(Checker* me, struct JsxElement const* element);
+JsxIntrinsic ty_jsx_intrinsic(Checker* me, struct JsxElement const* element);
+void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs);
+bool ty_jsx_child_is_semantic(struct JsxChild const* child);
+// The type of the property an attribute made (what the `.types` baseline shows at its name)
+Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, struct JsxAttribute const* attribute);
+
 // `f<A, B>` as a value: the type arguments applied to the signatures that take that many
 Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args);
 
@@ -962,6 +985,8 @@ typedef enum ObjectLiteralKind {
     OBJECT_SYNTHETIC, // Made up by the checker
     OBJECT_LITERAL, // The type of an object literal expression (tsc's ObjectFlags.ObjectLiteral), widened
     OBJECT_LITERAL_FRESH, // ... as the expression evaluates to it (TYF_FRESH_OBJECT)
+    OBJECT_JSX_ATTRIBUTES, // The attributes of a JSX element (tsc's ObjectFlags.JsxAttributes)
+    OBJECT_JSX_ATTRIBUTES_FRESH,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind

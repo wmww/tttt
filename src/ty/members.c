@@ -1619,7 +1619,7 @@ Ty const* ty_object_literal(
     Ty const* ret = intern_get(&my links, words.data, words.len);
     if (!ret) {
         MembersBuilder builder = {0};
-        u32 flags = TYF_OBJECT | (kind == OBJECT_LITERAL_FRESH ? TYF_FRESH_OBJECT : 0);
+        u32 flags = TYF_OBJECT | (kind == OBJECT_LITERAL_FRESH || kind == OBJECT_JSX_ATTRIBUTES_FRESH ? TYF_FRESH_OBJECT : 0);
         for (u32 i = 0; i < count; i++) {
             if (props[i].reuse) {
                 flags |= prop_type(me, props[i].reuse)->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
@@ -1649,6 +1649,7 @@ Ty const* ty_object_literal(
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         fresh->anonymous.free_params_unknown = true;
         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
+        fresh->anonymous.jsx_attributes = kind == OBJECT_JSX_ATTRIBUTES || kind == OBJECT_JSX_ATTRIBUTES_FRESH;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         fresh->anonymous.state->members = builder_finish(me, &builder);
         fresh->anonymous.state->members_state = LAZY_STATE_DONE;
@@ -1771,6 +1772,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
             u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
             for (u32 i = 0; i < index_count; i++) index[i] = members->index[i];
             ret = ty_object_literal(me, props, members->prop_count, index, index_count,
+                ty->anonymous.jsx_attributes ? (ty->flags & TYF_FRESH_OBJECT ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES) :
                 ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL);
         }
         free(props);

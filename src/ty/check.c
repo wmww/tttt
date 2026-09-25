@@ -35,6 +35,14 @@ static void attach_explanation(Error* error, VecTyReportLine const* lines, isize
     }
 }
 
+// Where an explanation says the diagnostic goes instead of `span` (TyReportLine.relocates)
+static Span relocated_span(VecTyReportLine const* lines, Span span) {
+    for_each (line, vec_ty_report_line, lines) {
+        if (line->relocates) return line->span;
+    }
+    return span;
+}
+
 // How the head of an assignability error reads: "<source_label> 'S' is not assignable to <target_label> 'T'."
 typedef struct AssignHead {
     char const* source_label;
@@ -74,6 +82,7 @@ static Error* report_unassignable(
     VecTyReportLine lines = {0};
     ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
     my instantiation_limit_hit = false;
+    span = relocated_span(&lines, span);
 
     isize_t first_nested = 0;
     Error* error;
@@ -285,6 +294,21 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
     return reported;
 }
 
+// tsc's elaborateJsxComponents: the attributes, like the properties of an object literal (hyphenated ones aren't checked
+// against anything). TODO(plan 22 stage 3): the children
+static bool elaborate_jsx_attributes(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
+    bool reported = false;
+    for_each (i, vec_jsx_attribute, &expr->jsx_attributes) {
+        if (i->tag == JSX_ATTRIBUTE_SPREAD || csview_contains(i->name.sv, "-")) continue;
+        bool has_value = i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR;
+        ElaborationItem item = { .error_span = i->name, .inner = has_value ? &i->value : nullptr };
+        item.name = checker_atom(me, i->name.sv);
+        item.name_type = ty_prop_name_literal(me, item.name);
+        reported |= elaborate_element(me, &item, source, target, errs);
+    }
+    return reported;
+}
+
 static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
     FunctionImpl const* function = expr->function;
     if (!span_valid(function->arrow_span) || !function->expression_body) return false;
@@ -378,6 +402,7 @@ static bool elaborate_error(
             return elaborate_error(me, head, &expr->binary_op->right, source, target, errs);
         case EXPR_OBJECT: return elaborate_object_literal(me, expr, source, target, errs);
         case EXPR_ARRAY: return elaborate_array_literal(me, expr, source, target, errs);
+        case EXPR_JSX_ATTRIBUTES: return elaborate_jsx_attributes(me, expr, source, target, errs);
         case EXPR_FUNCTION: return elaborate_arrow_function(me, expr, source, target, errs);
         default: return false;
     }
@@ -411,6 +436,7 @@ static Error* report_unrelated_with_head(
     VecTyReportLine lines = {0};
     ty_explain_unrelated(me, source, target, relation, &lines);
     my instantiation_limit_hit = false;
+    span = relocated_span(&lines, span);
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
     Error* error;

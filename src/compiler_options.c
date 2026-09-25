@@ -92,6 +92,7 @@ void compiler_options_drop(CompilerOptions* me) {
     cstr_drop(&my lib);
     cstr_drop(&my config_dir);
     cstr_drop(&my base_url);
+    c_drop(cstr, &my jsx_factory, &my jsx_fragment_factory, &my jsx_import_source, &my react_namespace);
     cstr_drop(&my paths_base);
     compiler_options_clear_paths(me);
     str_list_drop(&my root_dirs);
@@ -217,6 +218,16 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
         return COMPILER_OPTION_OK;
     }
 
+#define STRING_OPTION(lowercase, field) \
+    if (name_equals(name, lowercase)) { \
+        cstr_take(&my field, cstr_from_sv(value)); \
+        return COMPILER_OPTION_OK; \
+    }
+    STRING_OPTION("jsxfactory", jsx_factory)
+    STRING_OPTION("jsxfragmentfactory", jsx_fragment_factory)
+    STRING_OPTION("jsximportsource", jsx_import_source)
+    STRING_OPTION("reactnamespace", react_namespace)
+#undef STRING_OPTION
     if (name_equals(name, "baseurl")) {
         cstr_take(&my base_url, cstr_from_sv(value));
         my base_url_set = true;

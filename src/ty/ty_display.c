@@ -263,11 +263,7 @@ static void display_prop_name(Checker* me, TyDisplay d, Atom const* name);
 
 cstr ty_prop_name_cstr(Checker* me, Atom const* name) {
     cstr ret = cstr_null;
-    if (ty_unique_symbol_of_name(me, name)) {
-        display_prop_name(me, (TyDisplay){ .target = &ret }, name);
-    } else {
-        cstr_append_sv(&ret, atom_sv(name));
-    }
+    display_prop_name(me, (TyDisplay){ .target = &ret }, name);
     return ret;
 }
 

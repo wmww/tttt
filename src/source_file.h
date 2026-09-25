@@ -73,6 +73,12 @@ typedef struct SourceFile {
     // tsc's LanguageVariant.JSX (.tsx and JavaScript files): `<` at the start of an expression is a JSX element, never
     // a type assertion
     bool is_jsx;
+    // The JSX pragmas of the comments at the top of the file (tsc's `@jsx`, `@jsxFrag`, `@jsxRuntime` and
+    // `@jsxImportSource` in `/* */` comments): their argument, empty if there is none. The first `@jsx`/`@jsxFrag`
+    // counts, the last `@jsxRuntime`/`@jsxImportSource` (like tsc's uses of file.pragmas)
+    struct {
+        csview factory, fragment_factory, runtime, import_source;
+    } jsx_pragmas;
     // Semantic diagnostics (names, types) inside this file aren't reported: JavaScript without `checkJs` or a leading
     // `// @ts-check`, any file with `// @ts-nocheck`
     bool unchecked;

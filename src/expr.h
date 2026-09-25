@@ -532,8 +532,20 @@ typedef struct JsxElement {
     // The name in the closing tag, like tag_name (EXPR_IMPLICIT_ANY when self closing, a fragment, or missing)
     Expr closing_name;
     Span closing_span; // `</a>` / `</>`, invalid when self closing
+    // What the factory's first name (`React` of `React.createElement`, tsc's getJsxNamespace) finds where the element
+    // is, as a namespace (where `JSX` is looked up first, tsc's getJsxNamespaceAt) and as a value (the reference every
+    // element makes, tsc's markJsxAliasReferenced). Set by the resolve walk, null if nothing
+    Symbol const* factory_namespace;
+    Symbol const* factory_value;
+    // The file imports its factory implicitly from `<jsxImportSource>/jsx-runtime` (react-jsx, or pragmas: tsc's
+    // getJSXImplicitImportBase). TODO(plan 22 stage 4): that module and its JSX namespace
+    bool runtime_import;
 } JsxElement;
 
 void jsx_element_drop(JsxElement* me);
+// The element an EXPR_JSX_ATTRIBUTES belongs to (tsc's node.parent): it is always a JsxElement's `attributes`
+static inline JsxElement const* jsx_attributes_element(Expr const* attributes) {
+    return c_container_of(attributes, JsxElement const, attributes);
+}
 // tsc's isJsxIntrinsicTagName: `<div>`, `<my-elem>`, `<a:b>` name an entry of JSX.IntrinsicElements, not a value
 bool jsx_element_is_intrinsic(JsxElement const* me);

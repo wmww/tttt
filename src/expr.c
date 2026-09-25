@@ -814,11 +814,62 @@ static void mark_indirect_call(Expr* callee) {
     if (right->tag == EXPR_PROPERTY || eval) callee->binary_op->indirect_call = true;
 }
 
+// An entity name as written in a pragma or option: its first identifier (`React` of `React.createElement`)
+static csview first_identifier(csview sv) {
+    isize dot = csview_find(sv, ".");
+    return dot == c_NPOS ? sv : csview_slice(sv, 0, dot);
+}
+
+// tsc's getJsxNamespace: the name the factory of an element (or fragment) starts with
+static csview jsx_factory_name(SourceFile const* file, bool fragment) {
+    CompilerOptions const* options = compiler_options();
+    if (fragment) {
+        if (file && file->jsx_pragmas.fragment_factory.size) return first_identifier(file->jsx_pragmas.fragment_factory);
+        if (cstr_size(&options->jsx_fragment_factory)) return first_identifier(cstr_sv(&options->jsx_fragment_factory));
+    } else if (file && file->jsx_pragmas.factory.size) {
+        return first_identifier(file->jsx_pragmas.factory);
+    }
+    if (cstr_size(&options->jsx_factory)) return first_identifier(cstr_sv(&options->jsx_factory));
+    if (cstr_size(&options->react_namespace)) return cstr_sv(&options->react_namespace);
+    return c_sv("React");
+}
+
+// tsc's getJSXImplicitImportBase: whether elements import their factory from `<source>/jsx-runtime`
+static bool jsx_runtime_import(SourceFile const* file) {
+    CompilerOptions const* options = compiler_options();
+    csview runtime = file ? file->jsx_pragmas.runtime : c_sv("");
+    if (csview_equals(runtime, "classic")) return false;
+    return options->jsx == JSX_REACT_JSX || options->jsx == JSX_REACT_JSXDEV || cstr_size(&options->jsx_import_source) ||
+        (file && file->jsx_pragmas.import_source.size) || csview_equals(runtime, "automatic");
+}
+
+// tsc's markJsxAliasReferenced (and the namespace half of getJsxNamespaceAt): every element refers to its factory
+static void jsx_lookup_factory(JsxElement* el, bool fragment, Scope* names, ErrorCtx* errs) {
+    csview name = jsx_factory_name(names->file, fragment);
+    el->factory_namespace = scope_resolve(names, name, SYMBOL_NAMESPACE);
+    // TODO(plan 22 stage 4): the factory is referenced when the runtime module can't be found. For now it always is
+    el->runtime_import = jsx_runtime_import(names->file);
+    if (el->runtime_import) return;
+    JsxKind jsx = compiler_options()->jsx;
+    // `null` as the fragment factory (tsc allows it)
+    if (fragment && csview_equals(name, "null")) return;
+    u32 meaning = jsx == JSX_PRESERVE || jsx == JSX_REACT_NATIVE ? SYMBOL_VALUE & ~(u32)SYMBOL_ENUM : SYMBOL_VALUE;
+    Symbol* found = scope_resolve(names, name, meaning);
+    el->factory_value = found;
+    if (found) {
+        unused_mark_referenced(names, found, SYMBOL_VALUE);
+    } else if (jsx == JSX_REACT) {
+        Span at = fragment || !el->tag_name.inner_span.sv.size ? el->opening_span : el->tag_name.inner_span;
+        error_ctx_error_d(errs, at, 2874, "This JSX tag requires '", name, "' to be in scope, but it could not be found.");
+    }
+}
+
 // Not inlined, like jsx_typecheck()
 __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     switch (my tag) {
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT: {
+            jsx_lookup_factory(my jsx, my tag == EXPR_JSX_FRAGMENT, names, errs);
             // A value tag (`<Comp />`, `<this.x />`) is a reference, an intrinsic one (`<div />`) is a name
             // (a missing name, after a parse error, is nothing)
             bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
@@ -2072,6 +2123,8 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
             if (span_valid(my jsx->type_args_empty)) {
                 error_ctx_grammar_error_d(errs, my jsx->type_args_empty, 1099, "Type argument list cannot be empty.");
             }
+            // (What checks the attributes with their contextual type, before the walk gets to them)
+            ty_check_jsx_element(current_checker, me, errs);
             expr_typecheck(&my jsx->attributes, errs);
             for_each (i, vec_jsx_child, &my jsx->children) {
                 if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_typecheck(&i->expr, errs);

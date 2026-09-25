@@ -152,6 +152,11 @@ typedef struct CompilerOptions {
     JsxKind jsx;
     ModuleDetectionKind module_detection;
     cstr lib; // Comma separated, lowercase, as written ("es2015,dom"). Empty: the default library of the target
+    // As written, empty if not given
+    cstr jsx_factory; // `h`, `React.createElement`
+    cstr jsx_fragment_factory;
+    cstr jsx_import_source;
+    cstr react_namespace;
 
     // Module resolution (src/module_resolution.h reads these). Paths are as written: relative ones are relative to
     // config_dir (the directory of the tsconfig they came from), or to the current directory when that is empty

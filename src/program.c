@@ -394,6 +394,61 @@ static int source_check_directive(csview contents) {
     return ret;
 }
 
+static bool equals_ignoring_case(csview sv, const char* lowercase) {
+    isize len = (isize)strlen(lowercase);
+    if (sv.size != len) return false;
+    for (isize i = 0; i < len; i++) {
+        if (tolower((unsigned char)sv.buf[i]) != lowercase[i]) return false;
+    }
+    return true;
+}
+
+// tsc's processCommentPragmas as far as the JSX pragmas go: in each `/* */` comment at the top of the file, every
+// line's `@name args` (/@(\S+)(\s+(?:\S.*)?)?$/gm), the first word of args being the argument
+static void source_jsx_pragmas(SourceFile* file) {
+    csview contents = cstr_sv(&file->contents);
+    const char* c = contents.buf;
+    const char* end = contents.buf + contents.size;
+    while (c < end) {
+        while (c < end && (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n')) c++;
+        if (c + 1 >= end || c[0] != '/' || (c[1] != '/' && c[1] != '*')) break;
+        const char* comment_end;
+        if (c[1] == '/') {
+            comment_end = c;
+            while (comment_end < end && *comment_end != '\n') comment_end++;
+            c = comment_end;
+            continue;
+        }
+        csview rest = csview_from_range(c + 2, end);
+        isize close = csview_find_sv(rest, c_sv("*/"));
+        comment_end = close == c_NPOS ? end : rest.buf + close + 2;
+        for (const char* line = c; line < comment_end;) {
+            const char* line_end = line;
+            while (line_end < comment_end && *line_end != '\n' && *line_end != '\r') line_end++;
+            const char* at = memchr(line, '@', (size_t)(line_end - line));
+            if (at) {
+                const char* name_end = at + 1;
+                while (name_end < line_end && !isspace((unsigned char)*name_end)) name_end++;
+                const char* arg = name_end;
+                while (arg < line_end && isspace((unsigned char)*arg)) arg++;
+                const char* arg_end = arg;
+                while (arg_end < line_end && !isspace((unsigned char)*arg_end)) arg_end++;
+                csview name = csview_from_range(at + 1, name_end);
+                csview value = csview_from_range(arg, arg_end);
+                if (value.size) {
+                    if (equals_ignoring_case(name, "jsx") && !file->jsx_pragmas.factory.size) file->jsx_pragmas.factory = value;
+                    if (equals_ignoring_case(name, "jsxfrag") && !file->jsx_pragmas.fragment_factory.size) file->jsx_pragmas.fragment_factory = value;
+                    if (equals_ignoring_case(name, "jsxruntime")) file->jsx_pragmas.runtime = value;
+                    if (equals_ignoring_case(name, "jsximportsource")) file->jsx_pragmas.import_source = value;
+                }
+            }
+            line = line_end;
+            while (line < comment_end && (*line == '\n' || *line == '\r')) line++;
+        }
+        c = comment_end;
+    }
+}
+
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
@@ -438,6 +493,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
     source_file->is_js = path_is_js(path);
     source_file->is_jsx = source_file->is_js || csview_ends_with(path, ".tsx");
+    source_jsx_pragmas(source_file);
     int check_directive = source_check_directive(cstr_sv(&source_file->contents));
     source_file->unchecked = check_directive ? check_directive < 0 : source_file->is_js && !my options.check_js;
     // tsc's skipTypeChecking: declaration files aren't checked with skipLibCheck

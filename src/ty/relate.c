@@ -1169,6 +1169,14 @@ static Ternary index_signatures_related(Checker* me, RelationState* st, Ty const
                 bool symbol_named = ty_unique_symbol_of_name(me, prop->name) != nullptr;
                 if ((target_info->key->flags & TYF_NUMBER) && !is_numeric_prop_name(prop->name)) continue;
                 if (((target_info->key->flags & TYF_ES_SYMBOL) != 0) != symbol_named) continue;
+                // A pattern (`do-${string}`) applies to the names it matches (tsc's isApplicableIndexType)
+                if ((target_info->key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING) || target_info->key->kind == TY_INTERSECTION) &&
+                    !ty_is_related(me, ty_prop_name_literal(me, prop->name), target_info->key, TY_RELATION_ASSIGNABLE)
+                ) {
+                    continue;
+                }
+                // (tsc's isIgnoredJsxProperty)
+                if (source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes && csview_contains(atom_sv(prop->name), "-")) continue;
                 Ternary related = is_related_to(me, st, prop_type(me, prop), target_info->value, report);
                 if (!related) {
                     if (report) {
@@ -2967,12 +2975,13 @@ static Ty const* filter_excess_check_targets(Checker* me, Ty const* ty) {
 
 static bool has_excess_properties(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     if (!is_excess_property_check_target(target)) return false;
+    bool is_jsx = source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes;
     if (st->relation == TY_RELATION_ASSIGNABLE || st->relation == TY_RELATION_COMPARABLE ||
         st->relation == TY_RELATION_ASSIGNABLE_STRICT_NULLS
     ) {
         Ty const* object = global_type(me, GLOBAL_OBJECT);
         bool object_in_target = object && (target == object || (target->kind == TY_UNION && union_has_member(target, object)));
-        if (object_in_target || is_empty_object_type(me, target)) return false;
+        if (object_in_target || (!is_jsx && is_empty_object_type(me, target))) return false;
     }
     Ty const* reduced = target;
     bool check_types = false;
@@ -2984,8 +2993,21 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
         if (!prop->literal_own) continue;
+        // A hyphenated JSX attribute (`data-x`) is never excess (tsc's isIgnoredJsxProperty)
+        if (is_jsx && csview_contains(atom_sv(prop->name), "-")) continue;
         if (!is_known_property(me, reduced, prop->name)) {
-            if (report) {
+            if (report && is_jsx) {
+                // Not an object literal to the user: the error moves to the attribute, under the usual head
+                cstr name = ty_prop_name_cstr(me, prop->name);
+                cstr target_str = display_for_report(me, filter_excess_check_targets(me, reduced), false);
+                vec_ty_report_line_push(&st->lines, (TyReportLine){
+                    .ts_code = 2339,
+                    .message = cstr_d("Property '", name, "' does not exist on type '", target_str, "'."),
+                    .span = prop->name_span,
+                    .relocates = span_valid(prop->name_span), // (not the children, which aren't an attribute)
+                });
+                c_drop(cstr, &name, &target_str);
+            } else if (report) {
                 cstr name = ty_prop_name_cstr(me, prop->name);
                 cstr target_str = display_for_report(me, filter_excess_check_targets(me, reduced), false);
                 report_line_at(st, 2353, cstr_d(
@@ -3054,8 +3076,10 @@ static bool lacks_common_properties(Checker* me, RelationState* st, Ty const* so
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
     Members const* members = ty_members(me, apparent);
     if (!members->prop_count && !members->call_count && !members->construct_count) return false;
+    bool is_jsx = source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes;
     for (u32 i = 0; i < members->prop_count; i++) {
         if (is_known_property(me, target, members->props[i]->name)) return false;
+        if (is_jsx && csview_contains(atom_sv(members->props[i]->name), "-")) return false; // `data-x`
     }
     return true;
 }
