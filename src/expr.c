@@ -1171,6 +1171,172 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
         "The left-hand side of an assignment expression must be a variable or a property access.");
 }
 
+// tsc's PredicateSemantics: whether an expression is truthy (or nullish) always, never or sometimes
+typedef enum PredicateSemantics {
+    PREDICATE_ALWAYS = 1,
+    PREDICATE_NEVER = 2,
+    PREDICATE_SOMETIMES = PREDICATE_ALWAYS | PREDICATE_NEVER,
+} PredicateSemantics;
+
+// tsc's skipOuterExpressions: parentheses (implicit here), assertions, `!` and instantiation expressions
+static Expr const* skip_outer_expressions(Expr const* me) {
+    for (;;) {
+        if (my tag == EXPR_AS_TYPE) me = &my as_type->expr;
+        else if (my tag == EXPR_UNARY_OP && my unary_op->op == UNARY_OP_RIGHT_BANG) me = &my unary_op->expr;
+        else if (my tag == EXPR_GENERIC_PARAMS) me = &my generic_params->expr;
+        else return me;
+    }
+}
+
+// The global `undefined` (tsc's undefinedSymbol), which the parser makes a literal. Other undefined literals stand in
+// for missing expressions (`for (;;)`)
+static bool is_written_undefined(Expr const* me) {
+    return my tag == EXPR_LITERAL && my literal.tag == VALUE_UNDEFINED && csview_equals(my inner_span.sv, "undefined");
+}
+
+// tsc's getSyntacticTruthySemantics
+static PredicateSemantics truthy_semantics(Expr const* me) {
+    me = skip_outer_expressions(me);
+    switch (my tag) {
+        case EXPR_LITERAL:
+            switch (my literal.tag) {
+                case VALUE_NUMBER: // `while (1)` is fine
+                    return my literal.number == 0 || my literal.number == 1 ? PREDICATE_SOMETIMES : PREDICATE_ALWAYS;
+                case VALUE_BIGINT: return PREDICATE_ALWAYS;
+                case VALUE_NULL: return PREDICATE_NEVER;
+                case VALUE_STRING: return cstr_size(&my literal.string) ? PREDICATE_ALWAYS : PREDICATE_NEVER;
+                case VALUE_UNDEFINED: return is_written_undefined(me) ? PREDICATE_NEVER : PREDICATE_SOMETIMES;
+                default: return PREDICATE_SOMETIMES;
+            }
+        case EXPR_ARRAY:
+        case EXPR_FUNCTION:
+        case EXPR_CLASS_DECL:
+        case EXPR_OBJECT:
+        case EXPR_REGEX:
+            return PREDICATE_ALWAYS;
+        case EXPR_UNARY_OP:
+            return my unary_op->op == UNARY_OP_VOID ? PREDICATE_NEVER : PREDICATE_SOMETIMES;
+        case EXPR_TERNARY:
+            return truthy_semantics(&my ternary->yes) | truthy_semantics(&my ternary->no);
+        default:
+            return PREDICATE_SOMETIMES;
+    }
+}
+
+static Span node_error_span(Expr const* me);
+
+Span expr_error_span(Expr const* me) {
+    return expr_is_perenthisized(me) ? my outer_span : node_error_span(me);
+}
+
+// expr_error_span() of what is in the parentheses, if any
+static Span node_error_span(Expr const* me) {
+    Span span = my inner_span;
+    char const* start = span_start_ptr(span);
+    switch (my tag) {
+        case EXPR_AS_TYPE:
+            return my as_type->is_satisfies ? my as_type->keyword_span : span;
+        case EXPR_FUNCTION: {
+            FunctionImpl const* function = my function;
+            if (span_valid(function->arrow_span)) {
+                // Only the first line of a block body that spans several
+                char const* end = span_end_ptr(span);
+                if (function->expression_body) return span;
+                char const* line_end = span_end_ptr(function->arrow_span);
+                while (line_end < end && *line_end != '\n' && *line_end != '\r') line_end++;
+                return line_end < end ? span_make(span.source, start, line_end) : span;
+            }
+            if (span_valid(function->name)) return function->name;
+            break;
+        }
+        case EXPR_CLASS_DECL:
+            if (span_valid(my class_decl->name)) return my class_decl->name;
+            break;
+        default:
+            return span;
+    }
+    // The first token (`function`, `async` or `class`)
+    char const* end = start;
+    while (end < span_end_ptr(span) && (isalnum((unsigned char)*end) || *end == '_' || *end == '$')) end++;
+    return span_make(span.source, start, end);
+}
+
+// tsc's checkTruthinessOfType: a condition can't be void, nor something that is obviously always truthy or falsy
+void expr_check_truthiness(Expr const* me, ErrorCtx* errs) {
+    if (ty_expr_type(current_checker, me)->flags & TYF_VOID) {
+        error_ctx_error_d(errs, expr_error_span(me), 1345, "An expression of type 'void' cannot be tested for truthiness.");
+        return;
+    }
+    PredicateSemantics semantics = truthy_semantics(me);
+    if (semantics == PREDICATE_ALWAYS) {
+        error_ctx_error_d(errs, expr_error_span(me), 2872, "This kind of expression is always truthy.");
+    } else if (semantics == PREDICATE_NEVER) {
+        error_ctx_error_d(errs, expr_error_span(me), 2873, "This kind of expression is always falsy.");
+    }
+}
+
+// tsc's getSyntacticNullishnessSemantics
+static PredicateSemantics nullish_semantics(Expr const* me) {
+    me = skip_outer_expressions(me);
+    switch (my tag) {
+        case EXPR_CALL:
+        case EXPR_PROPERTY:
+        case EXPR_IMPLICIT_ANY:
+            return PREDICATE_SOMETIMES;
+        case EXPR_TEMPLATE:
+            return my template_->tag ? PREDICATE_SOMETIMES : PREDICATE_NEVER;
+        case EXPR_UNARY_OP:
+            switch (my unary_op->op) {
+                case UNARY_OP_AWAIT: case UNARY_OP_YIELD: case UNARY_OP_YIELD_STAR: return PREDICATE_SOMETIMES;
+                default: return PREDICATE_NEVER;
+            }
+        case EXPR_BINARY_OP:
+            switch (my binary_op->op) {
+                case BINARY_OP_EQUAL: case BINARY_OP_EH_EH: case BINARY_OP_EH_EH_EQUAL: case BINARY_OP_OR_OR:
+                case BINARY_OP_OR_OR_EQUAL: case BINARY_OP_AND_AND: case BINARY_OP_AND_AND_EQUAL:
+                    return PREDICATE_SOMETIMES;
+                case BINARY_OP_COMMA:
+                    return nullish_semantics(&my binary_op->right);
+                default:
+                    return PREDICATE_NEVER;
+            }
+        case EXPR_TERNARY:
+            return nullish_semantics(&my ternary->yes) | nullish_semantics(&my ternary->no);
+        case EXPR_LITERAL:
+            if (my literal.tag == VALUE_NULL || is_written_undefined(me)) return PREDICATE_ALWAYS;
+            return my literal.tag == VALUE_UNDEFINED ? PREDICATE_SOMETIMES : PREDICATE_NEVER;
+        case EXPR_IDENTIFIER:
+            return my identifier.keyword == KEYWORD_IDENTIFIER_SUPER ? PREDICATE_NEVER : PREDICATE_SOMETIMES;
+        default:
+            return PREDICATE_NEVER;
+    }
+}
+
+// tsc's checkNullishCoalesceOperands: `??` doesn't mix with `||`/`&&` without parentheses (TS5076), and its left
+// operand has to be possibly nullish, as far as its syntax tells
+static void nullish_coalesce_typecheck(Expr const* me, ErrorCtx* errs) {
+    Expr const* operands[] = { &my binary_op->left, &my binary_op->right };
+    for (u32 i = 0; i < 2; i++) {
+        Expr const* operand = operands[i];
+        if (operand->tag != EXPR_BINARY_OP || expr_is_perenthisized(operand)) continue;
+        BinaryOp op = operand->binary_op->op;
+        if (op != BINARY_OP_OR_OR && op != BINARY_OP_AND_AND) continue;
+        error_ctx_error_d(errs, operand->outer_span, 5076, "'", binary_op_get_zv(op).str,
+            "' and '?" "?' operations cannot be mixed without parentheses.");
+    }
+    Expr const* left = skip_outer_expressions(&my binary_op->left);
+    PredicateSemantics semantics = nullish_semantics(left);
+    if (semantics == PREDICATE_SOMETIMES) return;
+    if (my binary_op->is_operand) {
+        error_ctx_error_d(errs, node_error_span(left), 2870, "This binary expression is never nullish. Are you missing parentheses?");
+    } else if (semantics == PREDICATE_ALWAYS) {
+        error_ctx_error_d(errs, node_error_span(left), 2871, "This expression is always nullish.");
+    } else {
+        error_ctx_error_d(errs, node_error_span(left), 2869,
+            "Right operand of ?? is unreachable because the left operand is never nullish.");
+    }
+}
+
 // tsc's checkPrefixUnaryExpression/checkPostfixUnaryExpression for `++`/`--`: the operand has to be numeric, and then
 // a reference (tsc's checkReferenceExpression)
 static void increment_typecheck(Expr const* operand, ErrorCtx* errs) {
@@ -1367,6 +1533,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 break;
             }
             expr_typecheck(&my binary_op->left, errs);
+            if (my binary_op->op == BINARY_OP_AND_AND || my binary_op->op == BINARY_OP_OR_OR) {
+                expr_check_truthiness(&my binary_op->left, errs);
+            } else if (my binary_op->op == BINARY_OP_EH_EH) {
+                nullish_coalesce_typecheck(me, errs);
+            }
             expr_typecheck(&my binary_op->right, errs);
             binary_op_typecheck(
                 expr_get_type(&my binary_op->left),
@@ -1381,6 +1552,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             expr_typecheck(&my unary_op->expr, errs);
             switch (my unary_op->op) {
                 case UNARY_OP_LEFT_BANG:
+                    expr_check_truthiness(&my unary_op->expr, errs);
+                    break;
+
                 case UNARY_OP_TYPEOF:
                 case UNARY_OP_VOID:
                 case UNARY_OP_TILDE:
@@ -1453,6 +1627,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_TERNARY:
             expr_typecheck(&my ternary->condition, errs);
+            expr_check_truthiness(&my ternary->condition, errs);
             expr_typecheck(&my ternary->yes, errs);
             expr_typecheck(&my ternary->no, errs);
             break;
@@ -1592,8 +1767,11 @@ int binary_op_get_precedence(BinaryOp op) {
             return 40;
 
         case BINARY_OP_OR_OR:
-        case BINARY_OP_EH_EH:
             return 30;
+
+        // Below `||` (tsc's Coalesce): `a ?? b || c` is `a ?? (b || c)`, which is an error anyway (TS5076)
+        case BINARY_OP_EH_EH:
+            return 25;
 
         case BINARY_OP_EQUAL:
         case BINARY_OP_PLUS_EQUAL:

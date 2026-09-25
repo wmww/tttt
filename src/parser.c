@@ -3280,6 +3280,8 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     ctx.min_precedence = right_associative ? precedence - 1 : precedence;
     expect_expr(&p, ctx, &right);
 
+    expr_mark_binary_operand(left_and_ret);
+    expr_mark_binary_operand(&right);
     *left_and_ret = expr_binary_op(span_between(left_and_ret->outer_span, right.outer_span), c_new(BinaryOpExpr, {
         .left = *left_and_ret,
         .op = op,
@@ -3787,6 +3789,8 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
             return parse_success(&p);
         }
 
+        expr_mark_binary_operand(left_and_ret);
+        expr_mark_binary_operand(&expr);
         *left_and_ret = expr_binary_op(
             span_from(a),
             c_new(BinaryOpExpr, {
@@ -3999,8 +4003,11 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         expect_char(&p, '>');
         hop_whitespace(&p);
 
+        // The operand is a unary expression: `<T>a || b` is `(<T>a) || b`
         Expr e;
-        expect_expr(&p, ctx, &e);
+        ExprCtx operand_ctx = ctx;
+        operand_ctx.min_precedence = unary_op_get_precedence(UNARY_OP_LEFT_BANG);
+        expect_expr(&p, operand_ctx, &e);
         *ret = expr_as_type(span_from(a), c_new(AsTypeExpr, {
             .expr = e,
             .type = t,
@@ -4017,7 +4024,9 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
     ret->lazy_type = (LazyType){0};
 
-    while (parse_expr_right_side(&p, ctx, ret)) {}
+    // An arrow function is a whole assignment expression: nothing continues it (`() => {} || a` is missing a `;`)
+    bool is_arrow = ret->tag == EXPR_FUNCTION && span_valid(ret->function->arrow_span) && !expr_is_perenthisized(ret);
+    while (!is_arrow && parse_expr_right_side(&p, ctx, ret)) {}
 
     return parse_success(&p);
 }

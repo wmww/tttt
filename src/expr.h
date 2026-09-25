@@ -289,13 +289,23 @@ typedef enum BinaryOp {
 int binary_op_get_precedence(BinaryOp op);
 /// What tsc's getEffectiveCheckNode checks and reports at: `satisfies` skipped (and parentheses: use its inner_span)
 Expr const* expr_effective_check_node(Expr const* me);
+// Where an error about an expression goes (tsc's getErrorSpanForNode): a function or class expression's name, a
+// `satisfies` keyword, the first line of an arrow function...
+Span expr_error_span(Expr const* me);
+// tsc's checkTruthinessOfType, for a condition that has been typechecked
+void expr_check_truthiness(Expr const* me, ErrorCtx* errs);
 zsview binary_op_get_zv(BinaryOp op);
 
 typedef struct BinaryOpExpr {
     BinaryOp op;
     Expr left;
     Expr right;
+    bool is_operand; // An operand of another binary expression, without parentheses
 } BinaryOpExpr;
+
+static inline void expr_mark_binary_operand(Expr* me) {
+    if (my tag == EXPR_BINARY_OP && !expr_is_perenthisized(me)) my binary_op->is_operand = true;
+}
 
 // Unary op
 

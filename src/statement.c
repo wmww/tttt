@@ -1395,6 +1395,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             for_each (i, vec_expr, &my if_else.conditions) {
                 // Conditions do not have to be booleans
                 expr_typecheck(i, errs);
+                expr_check_truthiness(i, errs);
             }
             ctx.body = true;
             for_each (i, vec_statement, &my if_else.statements) {
@@ -1406,6 +1407,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
         case STATEMENT_FOR_LOOP: {
             statement_typecheck(&my for_loop->initialization, ctx, errs);
             expr_typecheck(&my for_loop->condition, errs);
+            expr_check_truthiness(&my for_loop->condition, errs);
             expr_typecheck(&my for_loop->afterthought, errs);
             ctx.break_allowed = true;
             ctx.continue_allowed = true;
@@ -1487,6 +1489,8 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                     );
                     break;
             }
+            // (After the variables, like tsc: whether it's assigned walks the loop, whose variables it then types)
+            expr_typecheck(&my for_each_loop->iterable, errs);
 
             ctx.break_allowed = true;
             ctx.continue_allowed = true;

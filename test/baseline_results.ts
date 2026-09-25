@@ -458,7 +458,7 @@ const baselines = {
     'aliasUsageInOrExpression': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'aliasUsageInTypeArgumentOfExtendsClause': {
         errors: true,
@@ -2326,7 +2326,7 @@ const baselines = {
         types: true,
     },
     'bestCommonTypeWithContextualTyping': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6551,12 +6551,12 @@ const baselines = {
         types: false,
     },
     'contextuallyTypingOrOperator': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'contextuallyTypingOrOperator2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7281,7 +7281,7 @@ const baselines = {
         types: true,
     },
     'declFileTypeAnnotationParenType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8031,17 +8031,17 @@ const baselines = {
         types: false,
     },
     'declarationEmitInferredTypeAlias1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'declarationEmitInferredTypeAlias2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'declarationEmitInferredTypeAlias3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8051,17 +8051,17 @@ const baselines = {
         types: false,
     },
     'declarationEmitInferredTypeAlias5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitInferredTypeAlias6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'declarationEmitInferredTypeAlias7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9426,7 +9426,7 @@ const baselines = {
         types: false,
     },
     'destructuringAssignmentWithExportedName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -9443,7 +9443,7 @@ const baselines = {
     'destructuringControlFlowNoCrash': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'destructuringFromUnionSpread': {
         errors: false,
@@ -9796,9 +9796,9 @@ const baselines = {
         types: true,
     },
     'doNotEmitDetachedCommentsAtStartOfLambdaFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'doNotEmitPinnedCommentNotOnTopOfFile': {
         errors: true,
@@ -22531,7 +22531,7 @@ const baselines = {
         types: true,
     },
     'nestedIfStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25131,7 +25131,7 @@ const baselines = {
         types: true,
     },
     'prefixUnaryOperatorsOnExportedVariables': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30711,7 +30711,7 @@ const baselines = {
         types: false,
     },
     'typePredicateInLoop': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32581,7 +32581,7 @@ const baselines = {
         types: true,
     },
     'voidAsOperator': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36951,7 +36951,7 @@ const baselines = {
         types: false,
     },
     'constEnum4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37101,7 +37101,7 @@ const baselines = {
         types: true,
     },
     'controlFlowForStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39406,7 +39406,7 @@ const baselines = {
         types: true,
     },
     'symbolType11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -40321,12 +40321,12 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames46_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames46_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40341,12 +40341,12 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames48_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'computedPropertyNames48_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -44738,7 +44738,7 @@ const baselines = {
     'exponentiationOperatorSyntaxError2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorWithAnyAndNumber': {
         errors: true,
@@ -46341,12 +46341,12 @@ const baselines = {
         types: true,
     },
     'logicalAndOperatorStrictMode': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'logicalAndOperatorWithEveryType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -46366,7 +46366,7 @@ const baselines = {
         types: true,
     },
     'logicalOrOperatorWithEveryType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46431,22 +46431,22 @@ const baselines = {
         types: true,
     },
     'conditionalOperatorConditionIsNumberType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'conditionalOperatorConditionIsObjectType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'conditionalOperatorConditoinIsAnyType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'conditionalOperatorConditoinIsStringType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46746,7 +46746,7 @@ const baselines = {
         types: true,
     },
     'nullishCoalescingOperator1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46781,9 +46781,9 @@ const baselines = {
         types: true,
     },
     'nullishCoalescingOperator5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator6': {
         errors: true,
@@ -47501,7 +47501,7 @@ const baselines = {
         types: true,
     },
     'typeGuardsInIfStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -50406,7 +50406,7 @@ const baselines = {
         types: false,
     },
     'checkJsdocReturnTag1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -56441,7 +56441,7 @@ const baselines = {
         types: true,
     },
     'parserRegularExpression3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61461,7 +61461,7 @@ const baselines = {
         types: true,
     },
     'ifDoWhileStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61721,7 +61721,7 @@ const baselines = {
         types: true,
     },
     'contextuallyTypeLogicalAnd03': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65591,7 +65591,7 @@ const baselines = {
         types: false,
     },
     'initializersWidened': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
