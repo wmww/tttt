@@ -600,6 +600,10 @@ void statement_add_names(Statement* me, Scope* scope) {
     }
 }
 
+bool namespace_decl_is_instantiated(NamespaceDecl const* me) {
+    return block_is_instantiated(&my contents, compiler_options()->preserve_const_enums);
+}
+
 // Control flow (flow.h). These follow the functions of the same names in tsc's binder
 
 // Statements that can validly be used before they appear: not part of an unreachable range

@@ -1108,6 +1108,13 @@ void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span
     c_drop(cstr, &rendered, &underline);
 }
 
+void baseline_test_case_add_type_text(BaselineTestCase* me, Span span, csview text) {
+    cstr underline = cstr_null;
+    for (isize i = 0; i < text.size; i++) cstr_push(&underline, "^");
+    add_type_rendered(me, span, span, text, &underline);
+    cstr_drop(&underline);
+}
+
 void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type) {
     baseline_test_case_add_type_recursive(me, span, span, type);
 }

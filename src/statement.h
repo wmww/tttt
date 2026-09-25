@@ -95,6 +95,8 @@ void namespace_decl_drop(NamespaceDecl* me);
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props);
 void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* errs);
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs);
+// tsc's getModuleInstanceState: the namespace has a value (it declares something other than types)
+bool namespace_decl_is_instantiated(NamespaceDecl const* me);
 
 // If statements
 

@@ -467,6 +467,14 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         }
         port_item_add_alias(i, ctx);
     }
+    // `with { type: "json" }`: the keys written as identifiers are any
+    if (my attributes) {
+        for_each (i, vec_import_attribute, &my attributes->elements) {
+            if (!span_valid(i->name) || i->name.sv.buf[0] == '"' || i->name.sv.buf[0] == '\'') continue;
+            ctx->any_keeps_underline = true;
+            baseline_test_case_add_type_node(ctx, i->name, &type_any);
+        }
+    }
 }
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
@@ -639,6 +647,16 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 }
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
+    if (my is_global && span_valid(my name)) {
+        // `declare global`: a namespace named `global` of its own in tsc, its value `typeof global` if it has one
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .declarations = vec_span_single(my full_span), .span = my name });
+        if (namespace_decl_is_instantiated(me)) {
+            baseline_test_case_add_type_text(ctx, my name, c_sv("typeof global"));
+        } else {
+            ctx->any_keeps_underline = true;
+            baseline_test_case_add_type_node(ctx, my name, &type_any);
+        }
+    }
     if (span_valid(my name) && my symbol) {
         // An augmentation of a file is that file's module symbol: named by its path, declared by the whole file
         // first
@@ -957,6 +975,8 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, undefined_array);
     } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
     } else if (my tag == EXPR_GENERIC_PARAMS) {
+    } else if (my tag == EXPR_IDENTIFIER && my identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
+        // The `import` of `import("m")` and `import.meta` isn't an expression of its own
     } else {
         // tsc prints an expression's regular type (getRegularTypeOfExpression)
         baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, ty_regular(current_checker, expr_get_type(me)));
@@ -1017,7 +1037,8 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                 break;
             }
             statement_compile_test_info(&my for_loop->initialization, ctx);
-            expr_compile_test_info(&my for_loop->condition, ctx);
+            // (`for (;;)` has a `true` condition the parser made up, with an empty span)
+            if (my for_loop->condition.inner_span.sv.size) expr_compile_test_info(&my for_loop->condition, ctx);
             if (my for_loop->afterthought.tag != EXPR_LITERAL ||
                 my for_loop->afterthought.literal.tag != VALUE_UNDEFINED
             ) {

@@ -121,6 +121,8 @@ typedef struct BaselineSym {
 // (and run_baseline_test_case() has returned) these should no longer be called.
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data);
 void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type);
+// A type line that is already text (nothing in it is reused)
+void baseline_test_case_add_type_text(BaselineTestCase* me, Span span, csview text);
 void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, TypeNode const* node); // A written type
 void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type);
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol const* declaration);
