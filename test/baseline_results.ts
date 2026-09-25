@@ -11781,7 +11781,7 @@ const baselines = {
         types: true,
     },
     'es6ImportDefaultBindingFollowedWithNamedImportWithExport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -11956,7 +11956,7 @@ const baselines = {
         types: false,
     },
     'es6ImportNamedImportWithExport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -21241,7 +21241,7 @@ const baselines = {
         types: true,
     },
     'moduleDuplicateIdentifiers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42221,7 +42221,7 @@ const baselines = {
         types: false,
     },
     'multipleDefaultExports04': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

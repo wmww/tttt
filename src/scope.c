@@ -670,6 +670,30 @@ void scope_check_export_merges(Scope* me, Span block) {
     }
 }
 
+void scope_check_duplicate_exports(Scope* me) {
+    if (!my container || !my container->exports) return;
+    SymbolTable const* exports = my container->exports;
+    for (u32 i = 0; i < exports->count; i++) {
+        Symbol const* symbol = exports->entries[i].symbol;
+        if (symbol->flags & SYMBOL_NAMESPACE) continue; // (Namespaces and enums merge)
+        u32 count = 0;
+        for (u32 d = 0; d < symbol->decl_count; d++) {
+            SymbolDecl const* decl = &symbol->decls[d];
+            if (decl->kind == SYMBOL_DECL_INTERFACE) continue;
+            if (decl->kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)decl->node)->has_body) continue;
+            count++;
+        }
+        // A type alias may merge with one value
+        if (count <= 1 || ((symbol->flags & SYMBOL_TYPE_ALIAS) && count <= 2)) continue;
+        for (u32 d = 0; d < symbol->decl_count; d++) {
+            SymbolDecl const* decl = &symbol->decls[d];
+            if (decl->kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)decl->node)->has_body) continue;
+            error_ctx_error_d(my errs, decl->name, 2323, "Cannot redeclare exported variable '", exports->entries[i].name,
+                "'.");
+        }
+    }
+}
+
 // Ports
 
 static bool port_item_declares_export(PortItem const* item) {

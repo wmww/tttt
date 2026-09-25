@@ -339,6 +339,8 @@ Scope* scope_new_file(Binder* binder, SourceFile* file);
 // tsc's checkExportsOnMergedDeclarations: a name the block (spanning `block`) declares both exported and locally has
 // to be so in different declaration spaces (TS2395)
 void scope_check_export_merges(Scope* me, Span block);
+// tsc's checkExternalModuleExports: a module can export a name only once (TS2323), except for merges
+void scope_check_duplicate_exports(Scope* me);
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared);
 // Child scope holding the type parameters, names looked up. Returns parent itself for an empty generic
 Scope* scope_new_generic(Scope* parent, Generic* generic, ErrorCtx* errs);

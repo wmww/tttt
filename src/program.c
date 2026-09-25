@@ -714,6 +714,7 @@ void program_resolve_names(Program* me) {
         SourceFile* source = *i;
         block_add_names(&source->ast, source->scope);
         scope_check_export_merges(source->scope, block_span(&source->ast));
+        if (source->is_module && !source->is_js) scope_check_duplicate_exports(source->scope);
     }
 
     if (my options.no_resolve) {
