@@ -2075,6 +2075,52 @@ static Ternary identity_structured(Checker* me, RelationState* st, Ty const* sou
     }
 }
 
+// The properties of an intersection target, each the intersection of its members' (tsc's propertiesRelatedTo on the
+// intersection with IntersectionState.None)
+static Ternary intersection_props_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    Ternary result = TERNARY_TRUE;
+    TyList members = target->composite.types;
+    for (u32 m = 0; m < members.len && result; m++) {
+        Members const* member = ty_members(me, members.data[m]);
+        for (u32 i = 0; i < member->prop_count && result; i++) {
+            Atom const* name = member->props[i]->name;
+            // Each name once: at the first member that has it
+            bool seen = false;
+            for (u32 earlier = 0; earlier < m && !seen; earlier++) seen = ty_get_prop(me, members.data[earlier], name) != nullptr;
+            if (seen) continue;
+            // (Only the members' own properties, not Object's: tsc's skipObjectFunctionPropertyAugment)
+            Ty const* parts[16];
+            u32 part_count = 0;
+            bool all_optional = true;
+            for (u32 j = m; j < members.len && part_count < c_arraylen(parts); j++) {
+                Prop const* part = ty_get_prop(me, members.data[j], name);
+                if (!part) continue;
+                parts[part_count++] = prop_type(me, part);
+                all_optional &= (part->flags & PROP_OPTIONAL) != 0;
+            }
+            FoundProp target_prop = { .found = true, .flags = all_optional ? PROP_OPTIONAL : 0,
+                .type = part_count == 1 ? parts[0] : ty_intersection(me, parts, part_count, nullptr, (TyList){0}) };
+            FoundProp source_prop = find_prop(me, apparent_type(me, source), name, 0);
+            if (!source_prop.found) continue; // (Missing ones were the members' business)
+            Ty const* target_type = target_prop.type;
+            Ty const* source_type = source_prop.type;
+            if (compiler_options()->strict_null_checks) {
+                Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
+                if (target_prop.flags & PROP_OPTIONAL) target_type = ty_union(me, (Ty const*[]){ target_type, undefined }, 2, nullptr, (TyList){0});
+                if (source_prop.flags & PROP_OPTIONAL) source_type = ty_union(me, (Ty const*[]){ source_type, undefined }, 2, nullptr, (TyList){0});
+            }
+            Ternary related = is_related_to(me, st, source_type, target_type, report);
+            if (!related && report) {
+                cstr prop_name = ty_prop_name_cstr(me, name);
+                report_line(st, 2326, cstr_d("Types of property '", prop_name, "' are incompatible."));
+                cstr_drop(&prop_name);
+            }
+            result &= related;
+        }
+    }
+    return result;
+}
+
 static Ternary structured_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     if (st->relation == TY_RELATION_IDENTITY) return identity_structured(me, st, source, target);
     bool comparable = st->relation == TY_RELATION_COMPARABLE;
@@ -2096,7 +2142,21 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
         }
         if (related || (!source_is_generic && source->kind != TY_INTERSECTION)) return related;
     }
-    if (target->kind == TY_INTERSECTION) return target_each_related(me, st, source, target->composite.types, report);
+    if (target->kind == TY_INTERSECTION) {
+        Ternary result = target_each_related(me, st, source, target->composite.types, report);
+        // The properties of the intersection as a whole too, as if not in one (tsc: IntersectionState.None): the
+        // weak type and excess property checks of what they combine to
+        bool generic = false;
+        for (u32 i = 0; i < target->composite.types.len; i++) {
+            Ty const* member = target->composite.types.data[i];
+            generic |= member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED) || !(member->flags & TYF_OBJECT) ||
+                ty_members(me, member)->mapped;
+        }
+        if (result && !st->intersection_target && !generic && (source->flags & TYF_OBJECT || source->kind == TY_INTERSECTION)) {
+            result &= intersection_props_related(me, st, source, target, report);
+        }
+        return result;
+    }
     if (source->kind == TY_INTERSECTION) {
         Ternary related = some_related(me, st, source->composite.types, target);
         if (related) return related;
@@ -2809,6 +2869,47 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
     return false;
 }
 
+static bool is_known_property(Checker* me, Ty const* target, Atom const* name);
+
+// tsc's isWeakType: an object type whose properties (at least one) are all optional, and nothing else
+static bool is_weak_type(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!is_weak_type(me, ty->composite.types.data[i])) return false;
+        }
+        return true;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, ty);
+    if (members->mapped || members->call_count || members->construct_count || members->index_count || !members->prop_count) {
+        return false;
+    }
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (!(members->props[i]->flags & PROP_OPTIONAL)) return false;
+    }
+    return true;
+}
+
+// tsc's isRelatedTo common property check: a source with properties or signatures shares none with a weak target
+static bool lacks_common_properties(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    if (st->relation == TY_RELATION_IDENTITY || st->intersection_target) return false;
+    if (st->relation == TY_RELATION_COMPARABLE && !(source->kind == TY_LITERAL || (source->flags & TYF_NULLABLE))) return false;
+    u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
+        TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE;
+    if (!(source->flags & (primitive | TYF_OBJECT)) && source->kind != TY_INTERSECTION) return false;
+    if (source == global_type(me, GLOBAL_OBJECT)) return false;
+    if (!(target->flags & TYF_OBJECT) && target->kind != TY_INTERSECTION) return false;
+    if (!is_weak_type(me, target)) return false;
+    Ty const* apparent = ty_apparent_type(me, source);
+    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+    Members const* members = ty_members(me, apparent);
+    if (!members->prop_count && !members->call_count && !members->construct_count) return false;
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (is_known_property(me, target, members->props[i]->name)) return false;
+    }
+    return true;
+}
+
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     // Relations (and their caches) only see regular literals (tsc's getNormalizedType)
     source = ty_regular(me, source);
@@ -2824,6 +2925,27 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         has_excess_properties(me, st, source, target, report)
     ) {
         if (report) report_relation_error(me, st, source, target);
+        return TERNARY_FALSE;
+    }
+    if (lacks_common_properties(me, st, source, target)) {
+        if (report) {
+            cstr source_str = display_for_report(me, source, false);
+            cstr target_str = display_for_report(me, target, false);
+            // Something callable whose result would fit
+            Ty const* apparent = ty_apparent_type(me, source);
+            Members const* members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
+            Signature const* sig = members && members->call_count ? members->call[0] :
+                members && members->construct_count ? members->construct[0] : nullptr;
+            if (sig && is_related_to(me, st, signature_return_type(me, sig), target, false)) {
+                report_line(st, 2560, cstr_d("Value of type '", source_str, "' has no properties in common with type '",
+                    target_str, "'. Did you mean to call it?"));
+            } else {
+                report_line(st, 2559, cstr_d("Type '", source_str, "' has no properties in common with type '", target_str, "'."));
+            }
+            isize_t count = vec_ty_report_line_size(&st->lines);
+            if (count) vec_ty_report_line_at_mut(&st->lines, count - 1)->replaces_head = true;
+            c_drop(cstr, &source_str, &target_str);
+        }
         return TERNARY_FALSE;
     }
     Ternary result = TERNARY_FALSE;

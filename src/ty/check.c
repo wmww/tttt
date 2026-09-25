@@ -80,9 +80,10 @@ static Error* report_unassignable(
     bool default_head = head.ts_code == 2322;
     TyReportLine const* natural_head = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
     if (natural_head && natural_head->related) natural_head = nullptr;
-    if (natural_head && span_valid(natural_head->span)) {
+    if (natural_head && (span_valid(natural_head->span) || natural_head->replaces_head)) {
         // An error that knows exactly where it is (an excess property) replaces the head, whatever it was
-        error = error_ctx_error_s(errs, natural_head->span, natural_head->ts_code, cstr_clone(natural_head->message));
+        error = error_ctx_error_s(errs, span_valid(natural_head->span) ? natural_head->span : span, natural_head->ts_code,
+            cstr_clone(natural_head->message));
         first_nested = 1;
     } else if (default_head && natural_head && natural_head->ts_code != 2322) {
         // Something more specific than "not assignable" (a missing property, say) takes the place of the head
@@ -413,10 +414,11 @@ static Error* report_unrelated_with_head(
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
     Error* error;
-    if (natural && span_valid(natural->span)) {
+    if (natural && (span_valid(natural->span) || natural->replaces_head)) {
         // An error that knows exactly where it is (an excess property) replaces the head
         cstr_drop(&head);
-        error = error_ctx_error_s(errs, natural->span, natural->ts_code, cstr_clone(natural->message));
+        error = error_ctx_error_s(errs, span_valid(natural->span) ? natural->span : span, natural->ts_code,
+            cstr_clone(natural->message));
         first = 1;
     } else {
         error = error_ctx_error_s(errs, span, ts_code, head);

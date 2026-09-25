@@ -12266,7 +12266,7 @@ const baselines = {
         types: true,
     },
     'excessPropertyChecksWithNestedIntersections': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32631,7 +32631,7 @@ const baselines = {
         types: false,
     },
     'weakType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46006,8 +46006,8 @@ const baselines = {
         types: false,
     },
     'assignmentTypeNarrowing': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'compoundAdditionAssignmentLHSCanBeAssigned': {
@@ -61861,9 +61861,9 @@ const baselines = {
         types: true,
     },
     'intersectionMemberOfUnionNarrowsCorrectly': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionNarrowing': {
         errors: false,
@@ -64481,7 +64481,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithObjectMembersOptionality2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

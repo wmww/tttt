@@ -548,6 +548,9 @@ typedef struct TyReportLine {
     // Related information (tsc's associateRelatedInfo) for the diagnostic the explanation ends up in, at `span`.
     // ty_explain_unrelated() lists these after all the other lines
     bool related;
+    // Heads the diagnostic in place of what the check would say (tsc: isRelatedTo reports it without
+    // reportRelationError), at the check's span: the weak type errors
+    bool replaces_head;
 } TyReportLine;
 static inline void ty_report_line_drop(TyReportLine* me) { cstr_drop(&my message); }
 static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message = cstr_clone(me.message); return me; }
