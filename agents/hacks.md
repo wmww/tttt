@@ -151,6 +151,17 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined). See triage: is it used?
 
 
+## Baselines (plan 21)
+- `ty_symbol_name_at` (symbols baseline qualification) strips a leading `import("m").` from what out_symbol_name()
+  prints for types: tsc's symbolToString names a module nothing names by nothing at all. A proper
+  getSymbolChain with SymbolFormatFlags would make the two modes one function.
+- `push_prop_qualifier` (traversal): a member reached through a namespace or module is named by its own symbol unless
+  the namespace we went through isn't its parent (an `export import c = x.c` alias: then the old container path).
+- `render_types_or_symbols_file` drops one trailing line break of every file but the test's last unit, because
+  load_test_source() ends each unit's lines (tsc joins them). A last unit followed by `// @link` lines still comes out
+  one line off (symbolLinkDeclarationEmitModuleNamesImportRef).
+- `arguments` resolution per target (`scope_has_arguments`) has no TS2815 (`arguments` in a class field initializer).
+
 ## Missing checks (plan 15: `unused.c`, `ty/check.c`, `statement.c`, `class_decl.c`)
 - `Symbol.referenced` (unused locals) is written by the resolve walk of the file that uses a name, also for globals
   (a script's top-level declarations) that other files share: a data race once files resolve in parallel. Only under

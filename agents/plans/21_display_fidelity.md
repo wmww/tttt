@@ -34,6 +34,21 @@ Symbols (1827 tests):
 | decls-differ / decls-missing | 157 + 109 | declaration lists: positions (tsc's node start includes modifiers like `declare`; a binding element with a property name starts at the property name), merged declarations (method overloads, interface merges, `T` of merged declarations: tttt has one symbol per declaration there) |
 | underlines/order only | 99 | order of lines |
 
+## Progress
+- **Execution session 1 (2026-09-24), suite 5471 -> 6016.** Stage 0 done (import keyword, empty `for` condition,
+  attribute keys, `declare global`: +40). Stage 1 done (+15). Stage 2 in part: members qualified from the use site
+  with out_symbol_name(), module exports through the import that names the module, parameter properties as class
+  members (+121 alone), scope-ordered alias lookup; plus what the samples showed along the way: `arguments` (symbol
+  line, arrow functions per target, TS2496/TS2522), Decl() positions (the `///` comment scan, ambient module
+  declarations, renamed binding elements), merged type parameters of interfaces/classes as one symbol (binder),
+  overloaded methods as one member in both baselines (+56), and the types/symbols file layout ported from tsc's
+  iterateBaseLine (+139). Left for stage 2: the traversal still only knows file/namespace scopes (2.1), so locals
+  and block-scoped names aren't resolved from their use site; enum members and `default` exports aren't qualified
+  like tsc; JS expando members (JS plan).
+- **Next: stage 3.** It needs the parser to keep a span per TypeNode (and whether it was parenthesized): a faithful
+  reprint of an annotation can't be made from the TypeNode as it is (no spans, parentheses dropped). Decide between
+  printing from the node (tsc's printer layout) and printing the normalized source text of simple annotations.
+
 ## Stages (in order; each is a commit with numbers, `./fasttest.sh -s` before committing)
 
 ### Stage 0: traversal fixes (cheap, measured first)

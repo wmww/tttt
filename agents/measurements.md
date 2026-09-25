@@ -2,6 +2,10 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-24, plan 21 execution session 1 (display fidelity), commit e98b6fb
+Suite **5471 -> 6016** full (errors 8653, symbols 10403, types 8377). Corpora unchanged (tsc 0, type-fest 165,
+valibot 240). No perf-relevant changes (traversal only, plus the binder's merged type parameters).
+
 ## 2026-09-24, plan 15 session 1 (missing checks), commit 228ccb7
 Suite **5164 -> 5471** full (errors 8644, symbols 9502, types 7946). Corpora: tsc 0 (also with `--noUnusedLocals`; 2
 with `--noUnusedParameters`, both real), type-fest 165, valibot 240. `./bench.sh` (a slower machine today: valibot
