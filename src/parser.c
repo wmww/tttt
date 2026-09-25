@@ -3414,9 +3414,36 @@ static bool parse_number(Parser* parent, double* ret) {
     if (!is_number_start_char(*parent->pos)) {
         return false;
     }
+    char const* start = parent->pos;
     const char* end = string_to_double(parent->pos, nullptr, true, true, true, ret);
     if (end) {
         parent->pos = end;
+        // tsc's scanNumber: a leading zero before more digits is a legacy octal (TS1121) or a decimal with a leading
+        // zero (TS1489)
+        if (start[0] == '0' && end - start > 1 && start[1] >= '0' && start[1] <= '9') {
+            bool octal = true;
+            char const* digits_end = start + 1;
+            while (digits_end < end && *digits_end >= '0' && *digits_end <= '9') {
+                if (*digits_end >= '8') octal = false;
+                digits_end++;
+            }
+            if (octal) {
+                double value = 0;
+                for (char const* i = start + 1; i < digits_end; i++) value = value * 8 + (*i - '0');
+                *ret = value;
+                parent->pos = end = digits_end;
+                bool minus = start > cstr_str(&parent->shared->source->contents) && start[-1] == '-';
+                char octal_text[64];
+                snprintf(octal_text, sizeof(octal_text), "%s0o%llo", minus ? "-" : "", (unsigned long long)value);
+                Span span = span_make(parent->shared->source, minus ? start - 1 : start, end);
+                parse_error(parent, span, 1121, "Octal literals are not allowed. Use the syntax '", octal_text, "'.");
+                return true;
+            }
+            char const* decimal_end = end;
+            while (decimal_end > start && (*(decimal_end - 1) == 'n')) decimal_end--;
+            parse_error(parent, span_make(parent->shared->source, start, decimal_end), 1489,
+                "Decimals with leading zeros are not allowed.");
+        }
         if (*parent->pos == 'e' || *parent->pos == 'E') {
             parent->pos++;
             parse_error(parent, span_from_pos(parent), 1124, "Digit expected.");

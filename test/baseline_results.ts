@@ -11426,7 +11426,7 @@ const baselines = {
         types: true,
     },
     'es5-oldStyleOctalLiteralInEnums': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18556,9 +18556,9 @@ const baselines = {
         types: false,
     },
     'isLiteral1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationErrorTypes1': {
         errors: true,
@@ -23573,7 +23573,7 @@ const baselines = {
     'numberLiteralsWithLeadingZeros': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numberOnLeftSideOfInExpression': {
         errors: true,
@@ -46721,12 +46721,12 @@ const baselines = {
         types: true,
     },
     'literals': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'strictModeOctalLiterals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47142,8 +47142,8 @@ const baselines = {
     },
     'propertyAccessNumericLiterals': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'propertyAccessStringIndexSignature': {
         errors: true,
@@ -57061,7 +57061,7 @@ const baselines = {
         types: false,
     },
     'octalLiteralInStrictModeES3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59126,14 +59126,14 @@ const baselines = {
         types: true,
     },
     'scannerES3NumericLiteral2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'scannerES3NumericLiteral3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerES3NumericLiteral4': {
         errors: true,
@@ -59191,14 +59191,14 @@ const baselines = {
         types: true,
     },
     'scannerNumericLiteral2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'scannerNumericLiteral3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerNumericLiteral4': {
         errors: true,
@@ -59221,12 +59221,12 @@ const baselines = {
         types: true,
     },
     'scannerNumericLiteral8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'scannerNumericLiteral9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62491,7 +62491,7 @@ const baselines = {
         types: false,
     },
     'objectTypeWithStringNamedNumericProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
