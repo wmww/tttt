@@ -24,7 +24,7 @@ types components) are the oracle, not the goal.
   mapper instantiation, two-pass inference, contextual typing, conditional/mapped/indexed/template types, flow graph +
   narrowing, module resolution + tsconfig, iteration protocol, generators, `this` types, elaboration. ~42k lines of C.
   `documentation.md` describes it, `hacks.md` lists what is approximated.
-- Absent: JSX (and the suite doesn't even run `.tsx` tests, see below), JS/JSDoc semantics, substitution types, lazy
+- Absent: JSX (the suite runs `.tsx` tests since 2026-09-25: 13540 tests, 457 with JSX, 17 pass; plan 22), JS/JSDoc semantics, substitution types, lazy
   reverse mapped types, decorator checking, declaration emit (out of scope).
 
 ## Course correction (insights after plan 13, 2026-09-24)
@@ -41,7 +41,7 @@ Where the failing suite tests are (`./failstats.py` + a one-off diff of the dump
   type (~400 tests, mixed causes). No single mechanism is huge, but together this is the biggest pool in the suite, and
   it's also what users read in error messages. **Plan 21 (display fidelity) gets a planning session**, which ranks the
   mechanisms properly and folds in triage.md's "Display fidelity" and "Class expressions and member symbols".
-- **`.tsx` tests aren't in the suite at all** (`baseline_test_suite.c` only collects `*.ts`: 328 test files). The pass
+- *(Done 2026-09-25: `.tsx` in the suite, plan 22 written.)* **`.tsx` tests aren't in the suite at all** (`baseline_test_suite.c` only collects `*.ts`: 328 test files). The pass
   rate never counted JSX, and JSX is part of the TypeScript language (every React code base). First bring them into
   the suite so the number is honest (it will drop), then a JSX plan (22).
 - **The modern corpora are the type-core oracle**, and plan 19's root causes are core rules, not polish: an identity

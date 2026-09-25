@@ -9,6 +9,7 @@ build/failstats/report.txt and build/failstats/tests.tsv (gitignored).
   ./failstats.py -f 'async.*'    only tests matching the regex (same as the harness's -f)
   ./failstats.py --no-run        reuse the dump from the last run
   ./failstats.py --code TS2322   list tests where that code is missing/spurious (after a run)
+  ./failstats.py --jsx           only tests with JSX (.tsx files, .ts ones with a .tsx unit or @jsx)
   ./failstats.py --syntax        where the parser first rejects valid syntax, by shape (after a run)
   ./failstats.py -n 25           rows per table
 """
@@ -135,10 +136,15 @@ def run_harness(filter_re):
         subprocess.run(['./fasttest.sh', '-f', '^$', '--summary'], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
     shutil.rmtree(DUMP, ignore_errors=True)
     os.makedirs(DUMP)
-    cmd = ['./release/baseline_tests', '--summary', '--dump', DUMP] + (['-f', filter_re] if filter_re else [])
+    # A list of names is run in chunks: the harness's regex engine silently matches nothing past a few kB of pattern
+    filters = [filter_re] if not isinstance(filter_re, list) else \
+        ['(' + '|'.join(filter_re[i:i + 30]) + ')' for i in range(0, len(filter_re), 30)]
+    code = 0
     with open(f'{OUT}/stderr.txt', 'wb') as err:
-        p = subprocess.run(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=err)
-    return p.returncode
+        for f in filters:
+            cmd = ['./release/baseline_tests', '--summary', '--dump', DUMP] + (['-f', f] if f else [])
+            code = code or subprocess.run(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=err).returncode
+    return code
 
 
 def table(title, counter, n, tests_by_key=None, width=100):
@@ -151,6 +157,18 @@ def table(title, counter, n, tests_by_key=None, width=100):
     return lines
 
 
+# The names of the tests that contain JSX, as regexes (for -f): .tsx test files, and .ts ones with a .tsx/.jsx unit or `@jsx`
+def jsx_filter():
+    unit = re.compile(r'@filename:\s*\S+\.(tsx|jsx)\b|@jsx:', re.I)
+    names = []
+    for root, _, files in os.walk('thirdparty/tsc/tests/cases'):
+        if 'fourslash' in root: continue
+        for f in files:
+            if f.endswith('.tsx') or (f.endswith('.ts') and unit.search(open(os.path.join(root, f), errors='replace').read())):
+                names.append(re.escape(f.rsplit('.', 1)[0]))
+    return sorted(names)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('-f', '--filter')
@@ -158,7 +176,10 @@ def main():
     ap.add_argument('--code')
     ap.add_argument('--syntax', action='store_true')
     ap.add_argument('-n', type=int, default=15)
+    ap.add_argument('--jsx', action='store_true', help='only tests with JSX: .tsx files and .ts files with a .tsx unit or @jsx')
     args = ap.parse_args()
+    if args.jsx:
+        args.filter = jsx_filter()
     os.makedirs(OUT, exist_ok=True)
 
     if args.syntax:
@@ -190,7 +211,7 @@ def main():
 
     rep = []
     commit = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
-    rep.append(f'failstats @ {commit}' + (f' filter={args.filter}' if args.filter else ''))
+    rep.append(f'failstats @ {commit}' + (' (JSX tests)' if args.jsx else f' filter={args.filter}' if args.filter else ''))
     if crashed_in:
         rep.append(f'!!! HARNESS DIED (exit {exit_code}) while running {crashed_in}; everything after it is missing. '
                    f'See build/failstats/stderr.txt')

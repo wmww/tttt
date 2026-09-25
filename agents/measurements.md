@@ -2,6 +2,15 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-25, `.tsx` tests in the suite (harness change, no checker change)
+The harness now collects `.tsx` test files: **13163 -> 13540 tests** (+377 configurations of 328 files). Suite 6912 ->
+**6914 / 13540** full (errors 9298, symbols 10512, types 8967): 2 of the new ones pass. `./failstats.py --jsx` (the
+`.tsx` files plus `.ts` ones with a `.tsx`/`.jsx` unit or `@jsx`): **457 tests, 17 pass** (errors 19, symbols 51,
+types 37); 419 have a spurious TS1xxx (225 of them expect no errors at all). Spurious there: TS2304 3306 in 375 tests,
+TS1005 2617 / 348, TS1109 2141 / 384, TS1128 1507 / 164, TS1110 664 / 206, TS2362 634 / 214, TS2749 500 / 147, TS6053
+(`/.lib/` references) 106 / 84. Missing: TS2322 133 / 57, TS1005 56 / 14, TS1003 49 / 11, TS2769 36 / 12, TS2874 31 /
+17, TS2741 27 / 18. Plan 22 is the JSX plan.
+
 ## 2026-09-25, plan 21 stages 4 and 5 (class expression names, T_1 renaming)
 Suite **6810 -> 6912** full (errors 9296, symbols 10494, types 8817 -> 8960; lost duplicateTypeParameters3 types).
 Corpora unchanged (tsc 0). `./bench.sh`: type-fest 0.29 s, valibot 0.58 s / 511 MB (unchanged; the new display state

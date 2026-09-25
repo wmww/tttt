@@ -31,7 +31,8 @@ def lines(path):
 def source_of(name):
     base = name.split('(')[0]
     for root, _, files in os.walk('thirdparty/tsc/tests/cases'):
-        if base + '.ts' in files: return os.path.join(root, base + '.ts')
+        for ext in ('.ts', '.tsx'):
+            if base + ext in files: return os.path.join(root, base + ext)
     return None
 
 JS = re.compile(r'@(allowjs|checkjs)\s*:\s*true|@filename:\s*\S+\.(js|jsx|cjs|mjs)\b', re.I)

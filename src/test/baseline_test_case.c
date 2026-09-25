@@ -87,8 +87,9 @@ Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview
 
 csview test_name_from_path(csview path) {
     csview name = basename_of(path);
-    check(csview_ends_with(name, ".ts"));
-    name = csview_subview(name, 0, csview_size(name) - 3);
+    isize extension = csview_ends_with(name, ".tsx") ? 4 : 3;
+    check(csview_ends_with(name, ".ts") || extension == 4);
+    name = csview_subview(name, 0, csview_size(name) - extension);
     return name;
 }
 

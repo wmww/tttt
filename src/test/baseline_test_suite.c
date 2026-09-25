@@ -28,13 +28,14 @@ static void show_collected_test_counts(BaselineTestSuite* me) {
     print("\rCollected ", color_good, vec_baseline_test_result_size(&my results), color_normal, " tests      ");
 }
 
-// Recursively collects every .ts file below the given directory. Directories that can't be listed are silently
+// Recursively collects every .ts and .tsx file below the given directory. Directories that can't be listed are silently
 // skipped, as was the case before (listdir has no way to report an error anyway)
 static void load_dir(BaselineTestSuite* me, csview dir_path) {
     for_each (item, fs_listdir, fs, dir_path) {
         if (fs_is_directory(fs, item.path)) {
             load_dir(me, item.path);
-        } else if (fs_is_reg_file(fs, item.path) && csview_ends_with(item.path, ".ts")) {
+        } else if (fs_is_reg_file(fs, item.path) &&
+                   (csview_ends_with(item.path, ".ts") || csview_ends_with(item.path, ".tsx"))) {
             // One test per configuration ("@target: es5,es2015" is two). Most files have exactly one
             cstr contents = cstr_null;
             VecCStr configs = {0};

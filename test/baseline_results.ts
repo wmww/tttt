@@ -1085,6 +1085,16 @@ const baselines = {
         symbols: true,
         types: false,
     },
+    'argumentsSpreadRestIterables(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'argumentsSpreadRestIterables(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
     'argumentsUsedInClassFieldInitializerOrStaticInitializationBlock': {
         errors: false,
         symbols: true,
@@ -2620,6 +2630,11 @@ const baselines = {
         symbols: true,
         types: false,
     },
+    'booleanLiteralsContextuallyTypedFromUnion': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'breakInIterationOrSwitchStatement1': {
         errors: true,
         symbols: true,
@@ -2829,6 +2844,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'callsOnComplexSignatures': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'cannotIndexGenericWritingError': {
         errors: false,
@@ -4920,6 +4940,126 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=commonjs,moduledetection=auto)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=commonjs,moduledetection=force)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=commonjs,moduledetection=legacy)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=system,moduledetection=auto)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=system,moduledetection=force)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=system,moduledetection=legacy)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react,module=commonjs,moduledetection=auto)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react,module=commonjs,moduledetection=force)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react,module=commonjs,moduledetection=legacy)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react,module=system,moduledetection=auto)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react,module=system,moduledetection=force)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react,module=system,moduledetection=legacy)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsx,module=commonjs,moduledetection=auto)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsx,module=commonjs,moduledetection=force)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsx,module=commonjs,moduledetection=legacy)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsx,module=system,moduledetection=auto)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsx,module=system,moduledetection=force)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsx,module=system,moduledetection=legacy)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsxdev,module=commonjs,moduledetection=auto)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsxdev,module=commonjs,moduledetection=force)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsxdev,module=commonjs,moduledetection=legacy)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsxdev,module=system,moduledetection=auto)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsxdev,module=system,moduledetection=force)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentsOnJSXExpressionsArePreserved(jsx=react-jsxdev,module=system,moduledetection=legacy)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'commentsOnObjectLiteral1': {
         errors: true,
         symbols: true,
@@ -5446,6 +5586,11 @@ const baselines = {
         types: false,
     },
     'conflictMarkerTrivia2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'conflictMarkerTrivia3': {
         errors: false,
         symbols: false,
         types: false,
@@ -6440,6 +6585,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'contextualTypingOfOptionalMembers': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'contextualTypingOfTooShortOverloads': {
         errors: true,
         symbols: true,
@@ -6501,6 +6651,16 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedJsxAttribute': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'contextuallyTypedJsxAttribute2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'contextuallyTypedJsxChildren': {
         errors: false,
         symbols: false,
         types: false,
@@ -9695,6 +9855,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'discriminatedUnionJsxElement': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'discriminatedUnionWithIndexSignature': {
         errors: true,
         symbols: true,
@@ -11191,6 +11356,11 @@ const baselines = {
         types: true,
     },
     'errorRecoveryWithDotFollowedByNamespaceKeyword': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'errorSpanForUnclosedJsxTag': {
         errors: false,
         symbols: false,
         types: false,
@@ -14930,6 +15100,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'genericInferenceDefaultTypeParameterJsxReact': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'genericInheritedDefaultConstructors': {
         errors: true,
         symbols: true,
@@ -15585,6 +15760,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'ignoredJsxAttributes': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'illegalGenericWrapping1': {
         errors: true,
         symbols: true,
@@ -16034,6 +16214,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'importHelpersInTsx': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'importHelpersNoEmitHelpersExportDefault': {
         errors: true,
@@ -19635,12 +19820,162 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'jsxAttributeMissingInitializer': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxAttributeWithoutExpressionReact': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxCallElaborationCheckNoCrash1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxCallbackWithDestructuring': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxChildWrongType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxChildrenArrayWrongType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxChildrenGenericContextualTypes': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxChildrenIndividualErrorElaborations': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxChildrenSingleChildConfusableWithMultipleChildrenNoError': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxChildrenWrongType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxClassAttributeResolution': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxComplexSignatureHasApplicabilityError': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxComponentTypeErrors': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxContainsOnlyTriviaWhiteSpacesNotCountedAsChild': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxDeclarationsWithEsModuleInteropNoCrash': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxElementClassTooManyParams': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxElementType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxElementTypeLiteral': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxElementTypeLiteralWithGeneric': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxElementsAsIdentifierNames': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxEmitAttributeWithPreserve': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'jsxEmitWithAttributes': {
         errors: false,
         symbols: false,
         types: false,
     },
+    'jsxEmptyExpressionNotCountedAsChild(jsx=react)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxEmptyExpressionNotCountedAsChild(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxEmptyExpressionNotCountedAsChild(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxEmptyExpressionNotCountedAsChild2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxExcessPropsAndAssignability': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxFactoryAndJsxFragmentFactory': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxFactoryAndJsxFragmentFactoryErrorNotIdentifier': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxFactoryAndJsxFragmentFactoryNull': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'jsxFactoryAndReactNamespace': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxFactoryButNoJsxFragmentFactory': {
         errors: false,
         symbols: false,
         types: false,
@@ -19690,7 +20025,237 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'jsxFragReactReferenceErrors(jsx=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxFragReactReferenceErrors(jsx=react-native)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxFragmentAndFactoryUsedOnFragmentUse': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxFragmentFactoryNoUnusedLocals': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxFragmentFactoryReference(jsx=preserve)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'jsxFragmentFactoryReference(jsx=react)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'jsxFragmentFactoryReference(jsx=react-jsx)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'jsxFragmentFactoryReference(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'jsxFragmentFactoryReference(jsx=react-native)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'jsxFragmentWrongType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxGenericComponentWithSpreadingResultOfGenericFunction': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxHasLiteralType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxHash': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxImportForSideEffectsNonExtantNoError': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxImportInAttribute': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxImportSourceNonPragmaComment': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxInExtendsClause': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxInferenceProducesLiteralAsExpected': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxIntrinsicDeclaredUsingTemplateLiteralTypeSignatures': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxIntrinsicElementsCompatability': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxIntrinsicElementsExtendsRecord': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxIntrinsicElementsTypeArgumentErrors': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxIntrinsicUnions': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxIssuesErrorWhenTagExpectsTooManyArguments': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxLibraryManagedAttributesUnusedGeneric': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxLocalNamespaceIndexSignatureNoCrash': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxMultilineAttributeStringValues': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxMultilineAttributeValuesReact': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceElementChildrenAttributeIgnoredWhenReactJsx(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceElementChildrenAttributeIgnoredWhenReactJsx(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceGlobalReexport': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceGlobalReexportMissingAliasTarget': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceImplicitImportJSXNamespace': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceImplicitImportJSXNamespaceFromConfigPickedOverGlobalOne(jsx=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceImplicitImportJSXNamespaceFromConfigPickedOverGlobalOne(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceImplicitImportJSXNamespaceFromPragmaPickedOverGlobalOne': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceNoElementChildrenAttributeReactJsx(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceNoElementChildrenAttributeReactJsx(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespacePrefixInName': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespacePrefixInNameReact': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespacePrefixIntrinsics': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespaceReexports': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNamespacedNameNotComparedToNonMatchingIndexSignature': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxNestedWithinTernaryParsesCorrectly': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxPartialSpread': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'jsxPreserveWithJsInput': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxPropsAsIdentifierNames': {
         errors: false,
         symbols: false,
         types: false,
@@ -19715,6 +20280,11 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'jsxSpreadFirstUnionNoErrors': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'jsxSpreadTag(target=es2015)': {
         errors: false,
         symbols: false,
@@ -19723,6 +20293,16 @@ const baselines = {
     'jsxSpreadTag(target=esnext)': {
         errors: false,
         symbols: false,
+        types: false,
+    },
+    'jsxViaImport.2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxViaImport': {
+        errors: false,
+        symbols: true,
         types: false,
     },
     'keepImportsInDts1': {
@@ -19784,6 +20364,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'keywordInJsxIdentifier': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'knockout': {
         errors: false,
@@ -25470,6 +26055,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'privateNameJsx': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'privateNameWeakMapCollision': {
         errors: false,
         symbols: true,
@@ -25980,7 +26570,62 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'reactDefaultPropsInferenceSuccess': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactHOCSpreadprops': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'reactImportDropped': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactImportUnusedInNewJSXEmit(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactImportUnusedInNewJSXEmit(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactJsxReactResolvedNodeNext': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactJsxReactResolvedNodeNextEsm': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactNamespaceImportPresevation': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactNamespaceInvalidInput': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactNamespaceJSXEmit': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactNamespaceMissingDeclaration': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactReadonlyHOCAssignabilityReal': {
         errors: false,
         symbols: false,
         types: false,
@@ -25988,6 +26633,21 @@ const baselines = {
     'reactReduxLikeDeferredInferenceAllowsAssignment': {
         errors: false,
         symbols: true,
+        types: false,
+    },
+    'reactSFCAndFunctionResolvable': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactTagNameComponentWithPropsNoOOM': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'reactTagNameComponentWithPropsNoOOM2': {
+        errors: false,
+        symbols: false,
         types: false,
     },
     'reactTransitiveImportHasValidDeclaration': {
@@ -27090,6 +27750,11 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'returnTypePredicateIsInstantiateInContextOfTarget': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'returnTypeTypeArguments': {
         errors: true,
         symbols: true,
@@ -28185,6 +28850,11 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'spellingSuggestionJSXAttribute': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'spellingSuggestionLeadingUnderscores01': {
         errors: false,
         symbols: true,
@@ -28228,6 +28898,11 @@ const baselines = {
     'spreadIntersection': {
         errors: false,
         symbols: true,
+        types: false,
+    },
+    'spreadIntersectionJsx': {
+        errors: false,
+        symbols: false,
         types: false,
     },
     'spreadInvalidArgumentType': {
@@ -30030,12 +30705,57 @@ const baselines = {
         symbols: true,
         types: true,
     },
+    'tsxAttributeQuickinfoTypesSameAsObjectLiteral': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributesHasInferrableIndex': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDeepAttributeAssignabilityError': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'tsxDefaultImports': {
         errors: true,
         symbols: false,
         types: false,
     },
+    'tsxDiscriminantPropertyInference': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'tsxFragmentChildrenCheck': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxInferenceShouldNotYieldAnyOnUnions': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxInvokeComponentType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxNoTypeAnnotatedSFC': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxNotUsingApparentTypeOfSFC': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactPropsInferenceSucceedsOnIntersections': {
         errors: false,
         symbols: false,
         types: false,
@@ -30045,9 +30765,29 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'tsxSpreadDoesNotReportExcessProps': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessComponentDefaultProps': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'tsxTypeArgumentPartialDefinitionStillErrors': {
         errors: false,
         symbols: false,
+        types: false,
+    },
+    'tsxUnionMemberChecksFilterDataProps': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxUnionSpread': {
+        errors: false,
+        symbols: true,
         types: false,
     },
     'tupleTypeInference': {
@@ -30394,6 +31134,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'typeInferenceWithExcessPropertiesJsx': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'typeInferenceWithTypeAnnotation': {
         errors: true,
@@ -31343,6 +32088,11 @@ const baselines = {
     'unionReductionMutualSubtypes': {
         errors: false,
         symbols: true,
+        types: false,
+    },
+    'unionReductionWithStringMappingAndIdenticalBaseTypeExistsNoCrash': {
+        errors: false,
+        symbols: false,
         types: false,
     },
     'unionRelationshipCheckPasses': {
@@ -32348,6 +33098,11 @@ const baselines = {
     'useBeforeDeclaration_destructuring': {
         errors: true,
         symbols: true,
+        types: false,
+    },
+    'useBeforeDeclaration_jsx': {
+        errors: false,
+        symbols: false,
         types: false,
     },
     'useBeforeDeclaration_propertyAssignment': {
@@ -37170,6 +37925,11 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'controlFlowOptionalChain3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'controlFlowParameter': {
         errors: true,
         symbols: true,
@@ -37809,6 +38569,11 @@ const baselines = {
         errors: false,
         symbols: true,
         types: true,
+    },
+    'multiline': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'ts-expect-error-js': {
         errors: true,
@@ -52000,6 +52765,181 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'checkJsxChildrenCanBeTupleType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty11': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty12': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty13': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty14': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty15': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty16': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty7': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxChildrenProperty9': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxGenericTagHasCorrectInferences': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxIntersectionElementPropsType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxNamespaceNamesQuestionableForms': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxSubtleSkipContextSensitiveBug': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'checkJsxUnionSFXContextualTypeInferredCorrectly': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'commentEmittingInPreserveJsx1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'correctlyMarkAliasAsReferences1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'correctlyMarkAliasAsReferences2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'correctlyMarkAliasAsReferences3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'correctlyMarkAliasAsReferences4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'inlineJsxAndJsxFragPragma': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'inlineJsxAndJsxFragPragmaOverridesCompilerOptions': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'inlineJsxFactoryDeclarations': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'inlineJsxFactoryDeclarationsLocalTypes': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'inlineJsxFactoryLocalTypeGlobalFallback': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'inlineJsxFactoryOverridesCompilerOption': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'inlineJsxFactoryWithFragmentIsError': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxAndTypeAssertion': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'jsxAttributeInitializer(jsx=preserve)': {
         errors: false,
         symbols: false,
@@ -52010,7 +52950,427 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'jsxCheckJsxNoTypeArgumentsAllowed': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxEsprimaFbTestSuite': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxInvalidEsprimaTestSuite': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxParsingError1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxParsingError2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxParsingError3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxParsingError4(strict=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxParsingError4(strict=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxParsingErrorImmediateSpreadInAttributeValue': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxReactTestSuite': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxSpreadOverwritesAttributeStrict': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'jsxUnclosedParserRecovery': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformChildren(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformChildren(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformCustomImport(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformCustomImport(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformCustomImportPragma(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformCustomImportPragma(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformKeyProp(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformKeyProp(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformKeyPropCustomImport(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformKeyPropCustomImport(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformKeyPropCustomImportPragma(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformKeyPropCustomImportPragma(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformNestedSelfClosingChild(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformNestedSelfClosingChild(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformSubstitutesNames(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformSubstitutesNames(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformSubstitutesNamesFragment(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxJsxsCjsTransformSubstitutesNamesFragment(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeErrors': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeInvalidNames': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'tsxAttributeResolution1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution11': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution12': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution13': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution14': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution15': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution16': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution7': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxAttributeResolution9': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxCorrectlyParseLessThanComparison1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDefaultAttributesResolution1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDefaultAttributesResolution2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDefaultAttributesResolution3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDynamicTagName1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDynamicTagName2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDynamicTagName3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDynamicTagName4': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'tsxDynamicTagName5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDynamicTagName6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDynamicTagName7': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'tsxDynamicTagName8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxDynamicTagName9': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution11': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution12': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution13': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution14': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution15': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution16': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution17': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution18': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution19': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'tsxElementResolution2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution7': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxElementResolution9': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxEmit1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxEmit2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxEmit3': {
         errors: false,
         symbols: false,
         types: false,
@@ -52030,6 +53390,236 @@ const baselines = {
         symbols: false,
         types: false,
     },
+    'tsxErrorRecovery1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxErrorRecovery2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxErrorRecovery3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxExternalModuleEmit1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxExternalModuleEmit2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxFragmentErrors': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxFragmentPreserveEmit': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxFragmentReactEmit': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericArrowFunctionParsing': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericAttributesType1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericAttributesType2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericAttributesType3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericAttributesType4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericAttributesType5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericAttributesType6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericAttributesType7': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericAttributesType8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxGenericAttributesType9': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxInArrowFunction': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxIntrinsicAttributeErrors': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxLibraryManagedAttributes': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxNamespacedAttributeName1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxNamespacedAttributeName2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxNamespacedTagName1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxNamespacedTagName2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxNoJsx': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxOpeningClosingNames': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxParseTests1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxParseTests2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxPreserveEmit1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxPreserveEmit2': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'tsxPreserveEmit3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'tsxReactComponentWithDefaultTypeParameter1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactComponentWithDefaultTypeParameter2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactComponentWithDefaultTypeParameter3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmit1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmit2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmit3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmit4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmit5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmit6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmit7': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmit8(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmit8(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmitEntities': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmitNesting': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'tsxReactEmitSpreadAttribute(target=es2015)': {
         errors: false,
         symbols: false,
@@ -52041,6 +53631,286 @@ const baselines = {
         types: false,
     },
     'tsxReactEmitSpreadAttribute(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmitWhitespace': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxReactEmitWhitespace2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSfcReturnNull': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'tsxSfcReturnNullStrictNullChecks': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'tsxSfcReturnUndefinedStrictNullChecks': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution10': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution11': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution12': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution13': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution14': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution15': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution16': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution17': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution7': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution8': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadAttributesResolution9': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadChildren': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadChildrenInvalidType(jsx=react,target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadChildrenInvalidType(jsx=react,target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadChildrenInvalidType(jsx=react-jsx,target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadChildrenInvalidType(jsx=react-jsx,target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxSpreadInvalidType': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentOverload1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentOverload2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentOverload3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentOverload4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentOverload5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentOverload6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentWithDefaultTypeParameter1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentWithDefaultTypeParameter2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponents1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponents2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponents3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentsWithTypeArguments1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentsWithTypeArguments2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentsWithTypeArguments3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentsWithTypeArguments4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxStatelessFunctionComponentsWithTypeArguments5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxTypeArgumentResolution': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxTypeArgumentsJsxPreserveOutput': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxTypeErrors': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxUnionElementType1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxUnionElementType2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxUnionElementType3': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxUnionElementType4': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxUnionElementType5': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxUnionElementType6': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxUnionTypeComponent1': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'tsxUnionTypeComponent2': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'unicodeEscapesInJsxtags': {
         errors: false,
         symbols: false,
         types: false,
@@ -61710,6 +63580,16 @@ const baselines = {
         symbols: true,
         types: false,
     },
+    'contextuallyTypedStringLiteralsInJsxAttributes01': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'contextuallyTypedStringLiteralsInJsxAttributes02': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
     'contextuallyTypeLogicalAnd01': {
         errors: true,
         symbols: true,
@@ -65541,6 +67421,11 @@ const baselines = {
         types: false,
     },
     'intraExpressionInferences': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'intraExpressionInferencesJsx': {
         errors: false,
         symbols: false,
         types: false,

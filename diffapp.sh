@@ -23,7 +23,7 @@ if test $# -gt 0; then
         TEST_PATH="$1"
     else
         # Argument is not a valid path, assume it's a test name and search for the test
-        TEST_PATH="$(find thirdparty/tsc/tests/cases/ -name "$1.ts" | head -n 1)"
+        TEST_PATH="$(find thirdparty/tsc/tests/cases/ \( -name "$1.ts" -o -name "$1.tsx" \) | head -n 1)"
         if test -z "$TEST_PATH"; then
             echo "Could not find test $1"
             exit 1

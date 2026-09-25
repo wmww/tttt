@@ -14,7 +14,7 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   names tttt can't find are `module` (116 tests, 94 of them in .js files), `require` (70), `exports` (28); then JSX
   names (`div`, `className`) and keywords after bad recovery (`with`, `await`, `yield`, `public`).
 - **Syntax gaps** (after plan 14: ~700 tests still have a spurious syntax error, `./failstats.py --syntax`): JSX
-  (whole feature, its own plan: ~100 tests in `--syntax`, more behind `@jsx`); recovery fidelity shapes (`''`, `'};'`,
+  (plan 22; `./failstats.py --jsx`); recovery fidelity shapes (`''`, `'};'`,
   `'{'`, `'];'`), among them parameter-list recovery after `a = yield =>` (tsc: "',' expected" and the function
   survives; tttt loses the function: FunctionDeclaration10_es6 & ~27 more) and malformed import types
   (nodeModulesImport*DeclarationEmitErrors). Private names outside classes (object literals, interfaces, parameters,
@@ -302,10 +302,12 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   like a hang too.
 - `./release/baseline_tests -f enumLiteralsSubtypeReduction -d` hangs (re-probed: >20 s) while the same run without
   `-d` takes 0.2 s: probably the diff of a huge output through a pipe that nobody drains.
+- The harness's `-f` regex (STC's cregex) silently matches *nothing* once the pattern is a few kB long (a 30-name
+  alternation works, ~100 names don't): no error, just 0 tests. `failstats.py --jsx` runs in 30-name chunks because
+  of it. A `-f @file` list of names would be the real fix.
 - `filetest.sh` always uses `/tmp/testfile`: two agents running it at once collide. Take the directory from `mktemp
   -d` or an env var.
-- `@libFiles` is ignored (`hacks.md`): 99 of its 100 uses are `react.d.ts,lib.d.ts`, so it's worth nothing until JSX
-  exists. `@baselineFile`, `@fullEmitPaths` too. Bad option values are ignored (tsc's harness throws).
+- `@libFiles` is ignored (`hacks.md`): plan 22 stage 0 mounts `/.lib`. `@baselineFile`, `@fullEmitPaths` too. Bad option values are ignored (tsc's harness throws).
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there.
   `./filetest.sh` on a multi-file probe shows the comment lines before the first `// @filename` as a file of their
   own in the errors baseline, so the errors component fails although the diagnostics match.
