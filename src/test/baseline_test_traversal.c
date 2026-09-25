@@ -213,15 +213,30 @@ static Ty const* optional_member_type(Ty const* type, bool optional) {
 
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
-        case INTERFACE_KEY_NAME:
+        case INTERFACE_KEY_NAME: {
+            // Overloaded method signatures are one member, declared by all of them (of every declaration of an
+            // interface), whose type has all the signatures
+            Prop const* merged = nullptr;
+            if (my key.name_is_member_function && ctx->member_owner) {
+                Checker* checker = current_checker;
+                Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
+                if (prop && prop->decl_span_count > 1 && (prop->flags & PROP_METHOD)) merged = prop;
+            }
+            VecSpan declarations = vec_span_init();
+            if (merged) {
+                for (u32 i = 0; i < merged->decl_span_count; i++) vec_span_push(&declarations, merged->decl_spans[i]);
+            } else {
+                declarations = vec_span_clone(my declarations);
+            }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = vec_span_clone(my declarations),
+                .declarations = declarations,
                 .namespaces = vec_span_single(scope),
                 .span = my key.span,
                 .name_is_value = my key.name_is_value,
             });
-            baseline_test_case_add_type(ctx, my key.span, optional_member_type(ty_of_node(&my type), my optional));
-            break;
+            Ty const* type = merged ? prop_type(current_checker, merged) : optional_member_type(ty_of_node(&my type), my optional);
+            baseline_test_case_add_type(ctx, my key.span, type);
+        }   break;
 
         case INTERFACE_KEY_INDEX:
             baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.index.name });
@@ -363,7 +378,12 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             }
             break;
 
-        case TYPE_INTERFACE: interface_compile_test_info(&my interface, span_null, ctx); break;
+        case TYPE_INTERFACE: {
+            Ty const* outer_owner = ctx->member_owner;
+            ctx->member_owner = ty_of_node(me);
+            interface_compile_test_info(&my interface, span_null, ctx);
+            ctx->member_owner = outer_owner;
+        }   break;
 
         case TYPE_ARRAY:
             type_compile_test_info(my array.element, ctx);
@@ -565,6 +585,26 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     }
 }
 
+// The members of a class merge when the first of a name (and staticness) is a method: then its overloads are one
+// symbol (a property or accessor first conflicts with the methods, which then stand alone)
+static bool overloads_merge(ClassItem const* me, VecClassItem const* items, u32* count) {
+    *count = 0;
+    bool first_seen = false, merge = false;
+    for_each (other, vec_class_item, items) {
+        bool is_method = other->tag == CLASS_ITEM_METHOD;
+        if (!is_method && other->tag != CLASS_ITEM_FIELD) continue;
+        if (is_method ? other->method.computed_key != nullptr : other->field.computed_key != nullptr) continue;
+        if (class_item_is_static((ClassItem*)other) != my method.is_static) continue;
+        if (!cstr_eq(is_method ? &other->method.name_string : &other->field.name_string, &my method.name_string)) continue;
+        if (!first_seen) {
+            first_seen = true;
+            merge = is_method && !other->method.accessor;
+        }
+        if (is_method && !other->method.accessor) (*count)++;
+    }
+    return merge;
+}
+
 void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span class_name, BaselineTestCase* ctx) {
     for_each (i, vec_expr, &my decorators) {
         expr_compile_test_info(i, ctx);
@@ -586,6 +626,15 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                         vec_span_push(&declarations, other->span);
                     }
                 }
+            } else if (!my method.computed_key && overloads_merge(me, items, &(u32){0})) {
+                // Overloads are declarations of one symbol
+                for_each (other, vec_class_item, items) {
+                    if (other->tag == CLASS_ITEM_METHOD && !other->method.accessor && !other->method.computed_key &&
+                        other->method.is_static == my method.is_static && cstr_eq(&other->method.name_string, &my method.name_string)
+                    ) {
+                        vec_span_push(&declarations, other->span);
+                    }
+                }
             } else {
                 vec_span_push(&declarations, my span);
             }
@@ -596,7 +645,19 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .name = my method.computed_key ? my method.computed_key->outer_span : span_null,
                 .name_is_value = my method.name_is_value || my method.computed_key,
             });
-            baseline_test_case_add_type(ctx, my method.name_span, optional_member_type(class_item_get_type(me), my method.is_optional));
+            // An overloaded method is all of its overloads (the member's type)
+            u32 overload_count = 0;
+            Ty const* type = class_item_get_type(me);
+            if (!my method.accessor && !my method.computed_key && ctx->class_symbol && overloads_merge(me, items, &overload_count) &&
+                overload_count > 1
+            ) {
+                Checker* checker = current_checker;
+                Ty const* owner = my method.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
+                    ty_declared_type_of(checker, ctx->class_symbol);
+                Prop const* prop = ty_get_prop(checker, owner, checker_atom(checker, cstr_sv(&my method.name_string)));
+                if (prop) type = prop_type(checker, prop);
+            }
+            baseline_test_case_add_type(ctx, my method.name_span, optional_member_type(type, my method.is_optional));
             if (my method.computed_key) expr_compile_test_info(my method.computed_key, ctx);
             function_impl_compile_test_info(&my method.func, ctx);
         }   break;
@@ -667,9 +728,12 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     for_each (i, vec_type, &my implements) {
         type_compile_test_info(i, ctx);
     }
+    Symbol const* outer_class = ctx->class_symbol;
+    ctx->class_symbol = my symbol;
     for_each (i, vec_class_item, &my items) {
         class_item_compile_test_info(i, &my items, my name, ctx);
     }
+    ctx->class_symbol = outer_class;
 }
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
@@ -697,7 +761,10 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
     for_each (i, vec_spanned_type, &my extends) {
         type_compile_test_info(&i->type, ctx);
     }
+    Ty const* outer_owner = ctx->member_owner;
+    ctx->member_owner = my symbol && !(my symbol->flags & SYMBOL_CLASS) ? ty_declared_type_of(current_checker, my symbol) : nullptr;
     interface_compile_test_info(&my type.interface, my name, ctx);
+    ctx->member_owner = outer_owner;
 }
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {

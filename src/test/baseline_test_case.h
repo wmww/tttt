@@ -64,6 +64,8 @@ typedef struct BaselineTestCase {
     struct Scope const* enclosing;
     // The class whose constructor's parameter properties are being walked: their names are its members (`C.x`)
     Span parameter_property_class;
+    struct Symbol const* class_symbol; // The class whose members are being walked
+    struct Ty const* member_owner; // The interface or type literal whose members are being walked
     // Set by the traversal right before adding a node whose `any` keeps its underline even without errors (tsc's
     // harness exempts children of property accesses and qualified names, binding elements, labels and import/export
     // names). The next types line consumes it
