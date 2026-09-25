@@ -310,7 +310,39 @@ static bool plausible_operand(Ty const* ty) {
     return (ty->flags & close_enough) != 0;
 }
 
+// tsc's checkIdentifier on an assignment target: only a variable can be assigned, and not a constant
+static bool report_invalid_assignment_target(IdentifierExpr const* me, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    if (!my assignment_target || !symbol || !my target || symbol->is_placeholder || my keyword) return false;
+    if (!(symbol->flags & SYMBOL_VARIABLE) && !(my name.source && my name.source->is_js && (symbol->flags & SYMBOL_VALUE_MODULE))) {
+        char const* what = symbol->flags & SYMBOL_ENUM ? "an enum" : symbol->flags & SYMBOL_CLASS ? "a class" :
+            symbol->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE) ? "a namespace" :
+            symbol->flags & SYMBOL_FUNCTION ? "a function" : symbol->flags & SYMBOL_ALIAS ? "an import" : nullptr;
+        unsigned code = symbol->flags & SYMBOL_ENUM ? 2628 : symbol->flags & SYMBOL_CLASS ? 2629 :
+            symbol->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE) ? 2631 : symbol->flags & SYMBOL_FUNCTION ? 2630 :
+            symbol->flags & SYMBOL_ALIAS ? 2632 : 2539;
+        if (what) {
+            error_ctx_error_d(errs, my name, code, "Cannot assign to '", my name, "' because it is ", what, ".");
+        } else {
+            error_ctx_error_d(errs, my name, code, "Cannot assign to '", my name, "' because it is not a variable.");
+        }
+        return true;
+    }
+    if (symbol->is_const) {
+        error_ctx_error_d(errs, my name, 2588, "Cannot assign to '", my name, "' because it is a constant.");
+        return true;
+    }
+    return false;
+}
+
+bool identifier_is_invalid_assignment_target(IdentifierExpr const* me) {
+    Symbol const* symbol = my symbol;
+    if (!my assignment_target || !symbol || !my target || symbol->is_placeholder || my keyword) return false;
+    return !(symbol->flags & SYMBOL_VARIABLE) || symbol->is_const;
+}
+
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
+    report_invalid_assignment_target(me, errs);
     switch (ty_identifier_flow_issue(current_checker, me)) {
         case IDENTIFIER_FLOW_OK: break;
         case IDENTIFIER_FLOW_UNASSIGNED:
@@ -1115,11 +1147,22 @@ Expr const* expr_effective_check_node(Expr const* me) {
 // checkDestructuringAssignment): each reference in it gets what it destructures to. Null `source` when that can't be
 // told (TODO: rest elements, iterables that aren't arrays), which checks the shape of the target only
 // `source_expr`: the right-hand side of a plain assignment, which a failure is elaborated into
+static bool is_written_undefined(Expr const* me);
 static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs) {
     Checker* checker = current_checker;
     if (source && (source->flags & TYF_ANY)) source = nullptr;
     switch (target->tag) {
+        case EXPR_LITERAL:
+            // `undefined = x`: tsc's undefinedSymbol, which isn't a variable
+            if (is_written_undefined(target) && !expr_is_perenthisized(target)) {
+                error_ctx_error_d(errs, target->inner_span, 2539, "Cannot assign to 'undefined' because it is not a variable.");
+                return;
+            }
+            break;
+
         case EXPR_IDENTIFIER:
+            // (Not assignable at all: said by identifier_expr_typecheck(), tsc's errorType)
+            if (identifier_is_invalid_assignment_target(&target->identifier)) return;
             if (source && target->identifier.target) {
                 Ty const* declared = ty_type_of_symbol(checker, target->identifier.target);
                 if (target->identifier.compound_like_target) declared = ty_base_type_of_literal(checker, declared);

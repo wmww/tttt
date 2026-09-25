@@ -63,6 +63,8 @@ void identifier_expr_drop(IdentifierExpr* me);
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs);
 Ty const* identifier_expr_evaluate_type(IdentifierExpr const* me);
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs);
+// A class, function, constant... being assigned to (the error is identifier_expr_typecheck()'s)
+bool identifier_is_invalid_assignment_target(IdentifierExpr const* me);
 
 typedef struct Expr {
     Span inner_span; // Just the content (also does not include identifier generic params)
