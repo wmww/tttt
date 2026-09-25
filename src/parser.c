@@ -5871,7 +5871,15 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         }
     }
 
-    source->has_parse_errors = vec_error_size(&shared.errors) > 0;
+    // tsc checks modifiers in the checker (checkGrammarModifiers): those don't count as parse errors, which quiet the
+    // checker's grammar errors
+    static unsigned const modifier_codes[] = { 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1184, 1248, 1253 };
+    source->has_parse_errors = false;
+    for_each (i, vec_error, &shared.errors) {
+        bool modifier = false;
+        for (u32 c = 0; c < c_arraylen(modifier_codes); c++) modifier |= i->ts_code == modifier_codes[c];
+        source->has_parse_errors |= !modifier;
+    }
     for_each (i, vec_error, &shared.errors) {
         error_ctx_append_error(errs, *i);
         *i = (Error){0};

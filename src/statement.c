@@ -244,6 +244,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     if (my is_ambient_module && my is_augmentation) my inner_scope->export_context = true;
 
     block_add_names(&my contents, my inner_scope);
+    scope_check_export_merges(my inner_scope, block_span(&my contents));
 }
 
 void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* errs) {

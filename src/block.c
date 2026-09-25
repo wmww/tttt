@@ -5,6 +5,7 @@
 #include "flow.h"
 #include "error.h"
 #include "ty/ty.h"
+#include "source_file.h"
 
 void block_drop(Block* me) {
     vec_statement_drop(&my statements);
@@ -90,6 +91,15 @@ void block_collect_return_types(Block const* me, TyBuf* out) {
     for_each (i, vec_statement, &my statements) {
         statement_collect_return_types(i, out);
     }
+}
+
+Span block_span(Block const* me) {
+    isize count = vec_statement_size(&my statements);
+    if (!count) return span_null;
+    Span first = vec_statement_at(&my statements, 0)->span;
+    Span last = vec_statement_at(&my statements, count - 1)->span;
+    if (!span_valid(first) || !span_valid(last) || first.source != last.source) return span_null;
+    return span_make(first.source, span_start_ptr(first), span_end_ptr(last));
 }
 
 Span block_first_token(Span at) {

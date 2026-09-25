@@ -713,6 +713,7 @@ void program_resolve_names(Program* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         block_add_names(&source->ast, source->scope);
+        scope_check_export_merges(source->scope, block_span(&source->ast));
     }
 
     if (my options.no_resolve) {

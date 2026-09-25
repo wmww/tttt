@@ -617,6 +617,59 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     *ret = symbol;
 }
 
+// tsc's getDeclarationSpaces (without aliases, which would need resolving)
+enum { SPACE_TYPE = 1, SPACE_VALUE = 2, SPACE_NAMESPACE = 4 };
+static u32 declaration_spaces(SymbolDecl const* decl) {
+    switch (decl->kind) {
+        case SYMBOL_DECL_INTERFACE:
+        case SYMBOL_DECL_TYPE_ALIAS:
+            return SPACE_TYPE;
+        case SYMBOL_DECL_NAMESPACE:
+            return decl->flags & SYMBOL_VALUE_MODULE ? SPACE_NAMESPACE | SPACE_VALUE : SPACE_NAMESPACE;
+        case SYMBOL_DECL_CLASS:
+        case SYMBOL_DECL_ENUM:
+        case SYMBOL_DECL_ENUM_MEMBER:
+            return SPACE_TYPE | SPACE_VALUE;
+        case SYMBOL_DECL_VARIABLE:
+        case SYMBOL_DECL_FUNCTION:
+            return SPACE_VALUE;
+        default:
+            return 0;
+    }
+}
+
+static bool span_within(Span inner, Span outer) {
+    return inner.source == outer.source && span_start_ptr(inner) >= span_start_ptr(outer) &&
+        span_end_ptr(inner) <= span_end_ptr(outer);
+}
+
+void scope_check_export_merges(Scope* me, Span block) {
+    if (!my container || !my container->exports || !span_valid(block)) return;
+    for (u32 i = 0; i < my locals.count; i++) {
+        Symbol const* local = my locals.entries[i].symbol;
+        Symbol const* exported = symbol_table_get(my container->exports, local->name);
+        if (!exported || exported == local) continue;
+        // The exported declarations of this block merge with its local ones (tsc: one local symbol)
+        u32 exported_spaces = 0, local_spaces = 0;
+        for (u32 d = 0; d < exported->decl_count; d++) {
+            if (span_within(exported->decls[d].full, block)) exported_spaces |= declaration_spaces(&exported->decls[d]);
+        }
+        for (u32 d = 0; d < local->decl_count; d++) local_spaces |= declaration_spaces(&local->decls[d]);
+        u32 common = exported_spaces & local_spaces;
+        if (!common) continue;
+        Symbol const* symbols[] = { local, exported };
+        for (u32 s = 0; s < 2; s++) {
+            for (u32 d = 0; d < symbols[s]->decl_count; d++) {
+                SymbolDecl const* decl = &symbols[s]->decls[d];
+                if (s == 1 && !span_within(decl->full, block)) continue;
+                if (!(declaration_spaces(decl) & common)) continue;
+                error_ctx_error_d(my errs, decl->name, 2395, "Individual declarations in merged declaration '", decl->name,
+                    "' must be all exported or all local.");
+            }
+        }
+    }
+}
+
 // Ports
 
 static bool port_item_declares_export(PortItem const* item) {

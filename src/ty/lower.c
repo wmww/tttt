@@ -1176,7 +1176,8 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
         bool named = false;
         for_each (item, vec_object_binding_item, &pattern->object) {
             if (item->target.rest || item->computed_key) continue;
-            if (checker_atom(me, cstr_sv(&item->source.string)) == prop->name) named = true;
+            bool is_number = false;
+            if (ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number) == prop->name) named = true;
         }
         if (named) continue;
         // (tsc's getSpreadSymbol: the same property unless that makes it writable)

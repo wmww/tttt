@@ -20496,7 +20496,7 @@ const baselines = {
         types: false,
     },
     'mergedDeclarationExports': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22001,7 +22001,7 @@ const baselines = {
         types: false,
     },
     'multivar': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -23441,7 +23441,7 @@ const baselines = {
         types: true,
     },
     'nonMergedOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -64051,7 +64051,7 @@ const baselines = {
         types: false,
     },
     'typeAliasesDoNotMerge': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
