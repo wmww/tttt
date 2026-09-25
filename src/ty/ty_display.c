@@ -52,7 +52,8 @@ static bool find_alias_in_table(Checker* me, SymbolTable const* table, Symbol co
         Symbol const* candidate = table->entries[i].symbol;
         if (!(candidate->flags & SYMBOL_ALIAS) || candidate->alias->state != ALIAS_DONE) continue;
         Symbol const* target = symbol_for_meaning(candidate, meaning);
-        if (target && same_symbol(me, target, symbol)) {
+        // (`import * as ns` resolves to a symbol whose members are the module's)
+        if (target && (same_symbol(me, target, symbol) || same_symbol(me, symbol_members(target), symbol))) {
             *name = table->entries[i].name;
             return true;
         }
@@ -93,6 +94,18 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         }
     }
     if (parent->is_module) {
+        // Of another module: through an import that names the module (`import * as ns`, `import ns = require()`)
+        for (Scope const* scope = d.enclosing; scope && scope->kind != SCOPE_GLOBAL; scope = scope->parent) {
+            csview alias_name;
+            if (find_alias_in_table(me, &scope->locals, parent, SYMBOL_NAMESPACE | SYMBOL_VALUE, &alias_name) ||
+                (scope->container && find_alias_in_table(me, scope->container->exports, parent, SYMBOL_NAMESPACE | SYMBOL_VALUE, &alias_name))
+            ) {
+                out(d, alias_name);
+                out_lit(d, ".");
+                out(d, symbol->name_span.sv);
+                return;
+            }
+        }
         // Of another module that nothing here names: `import("a").T`
         Scope const* file_scope = d.enclosing;
         while (file_scope->parent && file_scope->kind != SCOPE_MODULE && file_scope->kind != SCOPE_SCRIPT) {
@@ -110,6 +123,21 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         out_lit(d, ".");
     }
     out(d, symbol->name_span.sv);
+}
+
+cstr ty_symbol_name_at(Checker* me, Scope const* enclosing, Symbol const* symbol) {
+    cstr ret = cstr_null;
+    out_symbol_name(me, (TyDisplay){ .target = &ret, .enclosing = enclosing }, symbol, SYMBOL_ANY_MEANING);
+    // symbolToString names a module nothing here names by nothing at all (types print `import("m").`)
+    if (cstr_starts_with(&ret, "import(\"")) {
+        char const* close = strstr(cstr_str(&ret), "\").");
+        if (close) {
+            cstr rest = cstr_from(close + 3);
+            cstr_drop(&ret);
+            ret = rest;
+        }
+    }
+    return ret;
 }
 
 // The name of a declared type: by its symbol when it has one

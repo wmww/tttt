@@ -1118,6 +1118,9 @@ typedef struct TyDisplay {
     bool unique_symbols; // Print unique symbol types as `unique symbol` rather than `typeof sym` (types baseline)
     TyList infer_params; // Inside the extends type of a conditional type: its own `infer` type parameters
 } TyDisplay;
+// A symbol's name qualified as far as needed to reach it from `enclosing` (tsc's symbolToString with an enclosing
+// declaration), fully without one
+cstr ty_symbol_name_at(Checker* me, Scope const* enclosing, Symbol const* symbol);
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);

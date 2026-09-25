@@ -32,6 +32,7 @@ typedef struct PropSymbolInfo {
     u32 member_count; // Members of the object type that have the property
     bool missing_in_member; // Some member of a union has no such property: no symbol at all, like tsc
     Symbol const* parent;
+    Symbol const* member_symbol; // A namespace's or module's export: named by its symbol
     Span name_span;
     bool name_is_value;
     VecSpan declarations;
@@ -53,6 +54,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             if (!info->found) {
                 info->found = true;
                 info->parent = inner.parent;
+                info->member_symbol = inner.member_count == 1 ? inner.member_symbol : nullptr;
                 info->name_span = inner.name_span;
                 info->name_is_value = inner.name_is_value;
             }
@@ -80,6 +82,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     if (!info->found) {
         info->found = true;
         info->parent = prop->parent;
+        info->member_symbol = root->symbol;
         info->name_span = root->name_span;
         info->name_is_value = root->name_is_value;
     }
@@ -94,6 +97,38 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
 static void push_symbol_path(VecSpan* out, Symbol const* symbol) {
     if (symbol->parent && !symbol->parent->is_module) push_symbol_path(out, symbol->parent);
     vec_span_push(out, symbol->name_span);
+}
+
+// The container of a member qualified as tsc's symbolToString(symbol, node.parent) does: only as far as needed from where
+// it is used. `storage` holds the text, it has to outlive the symbol line
+static void push_accessible_path(VecSpan* out, Symbol const* container, BaselineTestCase* ctx, cstr* storage) {
+    if (!ctx->enclosing) {
+        push_symbol_path(out, container);
+        return;
+    }
+    *storage = ty_symbol_name_at(current_checker, ctx->enclosing, container);
+    vec_span_push(out, sv_make_span(cstr_sv(storage)));
+}
+
+// The qualifier of a property's symbol: its container's name from here, or for the export of a namespace or module
+// (a symbol with a parent) what its own name needs (`ns.x` through `import * as ns`, nothing for a module nothing names)
+static void push_prop_qualifier(VecSpan* out, PropSymbolInfo const* info, BaselineTestCase* ctx, cstr* storage) {
+    if (info->member_count != 1) return;
+    Symbol const* member = info->member_symbol;
+    if (member && member->parent && ctx->enclosing && !info->name_is_value &&
+        (!info->parent || info->parent->is_module || member->parent == info->parent)
+    ) {
+        cstr full = ty_symbol_name_at(current_checker, ctx->enclosing, member);
+        csview name = member->name_span.sv;
+        csview full_sv = cstr_sv(&full);
+        if (full_sv.size > name.size + 1 && csview_equals_sv(csview_slice(full_sv, full_sv.size - name.size, full_sv.size), name)) {
+            *storage = cstr_from_sv(csview_slice(cstr_sv(&full), 0, cstr_size(&full) - name.size - 1));
+            vec_span_push(out, sv_make_span(cstr_sv(storage)));
+        }
+        cstr_drop(&full);
+        return;
+    }
+    if (info->parent) push_accessible_path(out, info->parent, ctx, storage);
 }
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
@@ -721,7 +756,8 @@ static void private_name_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     collect_prop_symbol(checker, object, name, &info, 0);
     if (info.found) {
         VecSpan namespaces = vec_span_init();
-        if (info.parent && info.member_count == 1) push_symbol_path(&namespaces, info.parent);
+        cstr qualifier = cstr_null;
+        push_prop_qualifier(&namespaces, &info, ctx, &qualifier);
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = vec_span_clone(info.declarations),
             .allow_declaration_empty = true,
@@ -729,6 +765,7 @@ static void private_name_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             .span = my inner_span,
             .name = span_valid(info.name_span) ? info.name_span : my inner_span,
         });
+        cstr_drop(&qualifier);
     }
     vec_span_drop(&info.declarations);
 }
@@ -787,7 +824,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             }
             if (info.found) {
                 VecSpan namespaces = vec_span_init();
-                if (info.parent && info.member_count == 1) push_symbol_path(&namespaces, info.parent);
+                cstr qualifier = cstr_null;
+                push_prop_qualifier(&namespaces, &info, ctx, &qualifier);
                 if (my property->form == PROPERTY_EXPR_DOT) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = vec_span_clone(info.declarations),
@@ -812,6 +850,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     });
                 }
                 vec_span_drop(&namespaces);
+                cstr_drop(&qualifier);
             }
             vec_span_drop(&info.declarations);
 
