@@ -42,20 +42,27 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   through an import is refused by `program_load_module_ref` with `MODULE_REF_IS_JS` (TS7016-style), two paths.
 - `TTTT_IGNORE_UNDERLINES=1` (`compare_outputs`): the types component compared without its `^^^` lines, a
   measurement of what the underlines still cost (73 tests on 2026-09-22), not a mode to save results in.
-- Types baseline underlines (`ty_display.c` node reuse, see `documentation.md`), approximations of tsc's node builder:
-  - A reused annotation is *marked* reused but printed from the `Ty`. tsc re-prints the annotation itself, so where
-    the two differ the text is wrong (`w: Array<string>` prints `string[]`, `r: N.Q` written inside N prints `Q`,
-    binding pattern parameters print with their initializers `{ a, b = 1 }`).
-  - `annotation_accessible()` checks only the first name of each type reference against `enclosing`, treats every
-    type parameter as accessible and never looks into `typeof x`. tsc's `visitExistingNodeTreeSymbols` does much more.
-  - Instantiated signatures: "reused if the mapper left the type alone and it doesn't mention the signature's type
-    parameters" is fitted to probes, not ported; `mentions()` is conservative (any non-reference object type counts).
-    `f<number>` (instantiation expressions) reuse nothing in tsc, and we don't print that line at all yet.
-  - `single_return_assertion()`: only a body that is exactly `return x as T`; tsc allows other statements before
-    it, and runs its whole `typeFromExpression` (literals, object literals, arrows: `() => (X) => {}` prints `X`
-    synthetic there) which is not ported.
-  - Index signatures, tuple element names, mapped types, type parameter defaults: always synthetic (matches the
-    probes, not checked beyond).
+- Types baseline node reuse (`ty_display.c` `display_node()`/`display_annotated()`, see `documentation.md`),
+  approximations of tsc's node builder (`tryReuseExistingTypeNode`, `expressionToTypeNode.ts`):
+  - `name_accessible()` resolves the first name of an entity name from `enclosing`, which only knows file and namespace
+    scopes (plan 21 stage 2.1): a local of a function is never accessible (right: tsc's isDeclarationVisible), but a
+    name shadowed inside a function isn't seen. Type parameters and parameters are always accessible.
+  - Instantiated signatures: the declaration-level check is "the mapper left the type alone and it doesn't mention the
+    signature's type parameters" (tsc: uninstantiated annotation type == instantiated type, with fresh type parameters
+    tttt doesn't make, `mentions()` is conservative). `TyDisplay.mapped_by` (tsc's context.mapper, recovering mapped
+    type parameters inside a reused node) is only used for type predicates.
+  - Inaccessible names: `display_node_identifier()` names the target anew with `out_symbol_name()` and keeps the type
+    arguments; when that gives `import("m").A` it patches the underline so `import(` and `).` are reused, byte-offset
+    arithmetic that assumes an ASCII module name.
+  - Computed member names that can't be named print their value (`display_node_computed_name()`); the rest of tsc's
+    `ComputedPropertyName` handling (late-bound names, `trackComputedName`) isn't ported.
+  - Syntactic typing (`single_return_expr()`, `TyDisplay.syntactic_function`): only returned or parameter-initializer
+    *function expressions* (parameter declarations reused whole) and `as T` returns. tsc's `typeFromExpression` also
+    does object literals, `null`/`undefined`, literals in const contexts; those still print from the `Ty`, which gives
+    the same text but maybe other underlines. `FunctionImpl.syntactically_contextual` counts call expressions and
+    annotated initializers (variables, parameters, class fields), not JSX.
+  - Accessor properties: only object literal accessors (`Prop.function`), not class accessors printed structurally.
+  - Index signatures, tuple element names, type parameter defaults: always synthetic (matches the probes).
   - The `any` underline rule reads whether *tsc's* `.errors.txt` exists (`baseline_test_result_run`), so the types
     component doesn't inherit failures of the errors component. `BaselineTestCase.any_keeps_underline` is a one-shot
     flag set by the traversal right before the add; a site that sets it and then adds no types line leaks it to the

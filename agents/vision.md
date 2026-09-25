@@ -6,9 +6,10 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-24, insights after plan 13)
-- **Suite 6505 / 13163** fully pass (errors 9289, symbols 10449, types 8416; 5125 at the insights after plan 13: +307
+- **Suite 6810 / 13163** fully pass (errors 9289, symbols 10449, types 8817; 5125 at the insights after plan 13: +307
   from plan 15 session 1, +545 from plan 21's first execution session, +357 from plan 15 session 2, +132 from plan
-  15 session 3, which retired the plan: no missing code is worth 20 tests on its own any more). **Corpora**: tsc's
+  15 session 3, which retired the plan: no missing code is worth 20 tests on its own any more; +305 from plan 21
+  stage 3, annotations reprinted from the TypeNode). **Corpora**: tsc's
   `src/compiler` 0 diagnostics, type-fest 144, valibot 165 (all three are clean under tsc; 450 / 1871 before plan 19
   R5/R3/R2/R4/R1; some of the recent drop is ts-expect-error directives that new checks now satisfy).
   **Perf** (`measurements.md`, perf session after plan 15): tsc corpus 0.67 s vs tsgo 0.72 (single-threaded 1.23),

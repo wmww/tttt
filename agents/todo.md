@@ -2,8 +2,9 @@
 Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 13)")
 for why.
 
-1. **Execution: plan 21, stage 3 (+ the rest of 2).** The plan's Progress section says where it stands; stage 3
-   starts with the parser keeping type node spans and parentheses.
+1. **Execution: plan 21, stages 4 and 5** (class expressions and member symbols; `T_1` renaming, 71 tests alone).
+   The plan's Progress section says where it stands. Stage 2.1 (function/block scopes for the traversal) is still
+   open and can come with stage 4 if the samples ask for it.
 2. **Harness + planning: JSX.** Make `baseline_test_suite.c` collect `.tsx` tests (328 files; the pass count will drop,
    save the new baseline and say so in the commit and `measurements.md`), then write plan 22 (JSX parse, `JSX`
    namespace lookup, element/attribute typing, `@jsx` options, `@libFiles` react.d.ts). Measure how much `--syntax`

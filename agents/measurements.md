@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-25, plan 21 stage 3 (annotation reuse by reprinting the node)
+Suite **6505 -> 6810** full (errors 9289, symbols 10449, types 8416 -> 8817; nothing lost). Corpora unchanged (tsc 0,
+type-fest 144, valibot 165). CLI cost unchanged: tsc corpus 0.65 s best of 8 before and after (`./bench.sh` said 0.70,
+noise; typecheck 434 ms). `./displaydiff.py` TS tests fixed by one kind: other 573, underlines/order only 72 (was
+182), we-any 122, our-typeof 83, T_1-rename 71, line-extra 71, tsc-any 68, line-missing 65, tsc-import() 51,
+union-order 47, tsc-typeof+class-expression 45, tsc-typeof 40 (was 98), Array<>-reuse 0 (was 16). Types component:
+4345 failing, 999 of them at >= 95% of lines.
+
 ## 2026-09-24, perf session after plan 15
 Suite unchanged (6505), corpora unchanged (tsc 0, type-fest 144, valibot 165). `./bench.sh`: **tsc corpus 0.67 s**
 (typecheck 480 -> 424 ms) vs tsgo 0.72 (single-threaded 1.23); type-fest 0.28 s vs 1.23; valibot 0.59 s / 511 MB vs

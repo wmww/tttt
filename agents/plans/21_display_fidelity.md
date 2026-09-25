@@ -45,9 +45,20 @@ Symbols (1827 tests):
   iterateBaseLine (+139). Left for stage 2: the traversal still only knows file/namespace scopes (2.1), so locals
   and block-scoped names aren't resolved from their use site; enum members and `default` exports aren't qualified
   like tsc; JS expando members (JS plan).
-- **Next: stage 3.** It needs the parser to keep a span per TypeNode (and whether it was parenthesized): a faithful
-  reprint of an annotation can't be made from the TypeNode as it is (no spans, parentheses dropped). Decide between
-  printing from the node (tsc's printer layout) and printing the normalized source text of simple annotations.
+- **Execution session 2 (2026-09-24/25), suite 6505 -> 6810: stage 3 done.** `display_node()` in `ty_display.c`
+  reprints annotations from the TypeNode (the parser now keeps `parenthesized`; no spans were needed: tsc's printer
+  normalizes literals and layout anyway, so printing the node is right and printing source text would not be).
+  Reuse needs the annotation's type to be the printed one; inaccessible names recover per node (named anew with
+  their type arguments kept, computed member names print their value). Also ported what the underline samples
+  pointed at: predicates of instantiated signatures (`TyDisplay.mapped_by`), accessors, mapped type parameter
+  names, properties through instantiations, and tsc's syntactic typing of returned/default function expressions
+  (`FunctionImpl.syntactically_contextual`). `display.c`'s TypeNode printer wasn't usable as a base (debug layout)
+  and is still used for debug output only. Buckets after: `tsc-typeof` 98 -> 40 alone (the rest is class
+  expressions/expando functions, stage 4, and JS), `Array<>-reuse` 16 -> 0, underlines-only 182 -> ~70 (left:
+  union/array element identity picking another of two equal types, syntactic object literals, JS, `import()` of
+  symlinked packages).
+- **Next: stage 2.1 or 4/5**, in plan order stage 4 (class expressions) and 5 (`T_1`, 71 alone now); 2.1 (scopes of
+  functions/blocks for the traversal) still blocks name qualification of locals.
 
 ## Stages (in order; each is a commit with numbers, `./fasttest.sh -s` before committing)
 
