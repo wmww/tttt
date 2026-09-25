@@ -8008,7 +8008,7 @@ const baselines = {
     'declarationEmitDoesNotUseReexportedNamespaceAsLocal': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitDuplicateParameterDestructuring': {
         errors: true,
@@ -13258,7 +13258,7 @@ const baselines = {
     'exportStarNotElided': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportToString': {
         errors: true,
@@ -16263,52 +16263,52 @@ const baselines = {
     'importHelpersWithExportStarAs(esmoduleinterop=false,module=amd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=false,module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=false,module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=false,module=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=false,module=system)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=true,module=amd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=true,module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=true,module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=true,module=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithExportStarAs(esmoduleinterop=true,module=system)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=amd)': {
         errors: true,
@@ -21598,7 +21598,7 @@ const baselines = {
     'moduleAugmentationDoesNamespaceMergeOfReexport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleAugmentationDuringSyntheticDefaultCheck': {
         errors: true,
@@ -21608,7 +21608,7 @@ const baselines = {
     'moduleAugmentationEnumClassMergeOfReexportIsError': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleAugmentationExtendAmbientModule1': {
         errors: false,
@@ -38678,7 +38678,7 @@ const baselines = {
     'importCallExpressionCheckReturntype1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importCallExpressionDeclarationEmit1': {
         errors: true,
@@ -38693,7 +38693,7 @@ const baselines = {
     'importCallExpressionDeclarationEmit3': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importCallExpressionES5AMD': {
         errors: true,
@@ -39328,127 +39328,127 @@ const baselines = {
     'exportAsNamespace1(module=amd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace1(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace1(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace1(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace1(module=system)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace1(module=umd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace2(module=amd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace2(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace2(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace2(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace2(module=system)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace2(module=umd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace3(module=amd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace3(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace3(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace3(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace3(module=system)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace3(module=umd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace4(module=amd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace4(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace4(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace4(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace4(module=system)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace4(module=umd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace_exportAssignment': {
         errors: false,
@@ -49618,7 +49618,7 @@ const baselines = {
     'exportNamespace10': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportNamespace11': {
         errors: false,
@@ -49643,7 +49643,7 @@ const baselines = {
     'exportNamespace4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportNamespace5': {
         errors: false,
@@ -50263,12 +50263,12 @@ const baselines = {
     'importAssertion2(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion2(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion2(module=esnext)': {
         errors: true,
@@ -50313,12 +50313,12 @@ const baselines = {
     'importAttributes2(module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes2(module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes2(module=esnext)': {
         errors: true,
