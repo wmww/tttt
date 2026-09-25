@@ -7,6 +7,7 @@
 #include "class_decl.h"
 #include "port_statement.h"
 #include "unused.h"
+#include "interface_member.h"
 #include "statement.h"
 
 // Checks the statement/expression walk asks of the new core, and how their errors are worded.
@@ -894,6 +895,134 @@ static bool check_accessibility(
 static bool is_global_this(Ty const* ty) {
     return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.namespace_symbol &&
         ty->declared.namespace_symbol->is_global_this;
+}
+
+static Span with_member_separator(Span span);
+
+static Generic const* class_or_interface_generic(SymbolDecl const* decl) {
+    switch (decl->kind) {
+        case SYMBOL_DECL_CLASS: return &((ClassDecl const*)decl->node)->generic;
+        case SYMBOL_DECL_INTERFACE: return &((InterfaceDecl const*)decl->node)->generic;
+        default: return nullptr;
+    }
+}
+
+void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, ErrorCtx* errs) {
+    // tsc's localTypeParameters: the distinct names, in the order the declarations introduce them
+    GenericItem const* target[32];
+    u32 target_count = 0, declaration_count = 0;
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        Generic const* generic = class_or_interface_generic(&symbol->decls[d]);
+        if (!generic) continue;
+        declaration_count++;
+        for_each (i, vec_generic_item, &generic->items) {
+            bool seen = false;
+            for (u32 t = 0; t < target_count && !seen; t++) seen = csview_equals_sv(target[t]->name.sv, i->name.sv);
+            if (!seen && target_count < c_arraylen(target)) target[target_count++] = i;
+        }
+    }
+    if (declaration_count < 2) return;
+    // The declared type first: it makes the later declarations' type parameters the first one's (unify_type_params())
+    ty_declared_type_of(me, symbol);
+    // Defaults and constraints come from the first declaration that has one
+    TypeNode const* defaults[32] = {0};
+    TypeNode const* constraints[32] = {0};
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        Generic const* generic = class_or_interface_generic(&symbol->decls[d]);
+        for (u32 t = 0; generic && t < target_count; t++) {
+            for_each (i, vec_generic_item, &generic->items) {
+                if (!csview_equals_sv(target[t]->name.sv, i->name.sv)) continue;
+                if (!defaults[t] && i->fallback_explicit) defaults[t] = &i->fallback;
+                if (!constraints[t] && i->extends_explicit) constraints[t] = &i->extends;
+            }
+        }
+    }
+    u32 min_count = 0;
+    for (u32 t = 0; t < target_count; t++) if (!defaults[t]) min_count = t + 1;
+    Ty const* target_params[32];
+    for (u32 t = 0; t < target_count; t++) target_params[t] = ty_type_param(me, target[t]->owned_symbol);
+    bool identical = true;
+    for (u32 d = 0; d < symbol->decl_count && identical; d++) {
+        Generic const* generic = class_or_interface_generic(&symbol->decls[d]);
+        if (!generic) continue;
+        u32 count = (u32)vec_generic_item_size(&generic->items);
+        if (count < min_count || count > target_count) {
+            identical = false;
+            break;
+        }
+        // The declaration's own type parameters stand for the merged ones in what it writes
+        Ty const* source_params[32];
+        for (u32 i = 0; i < count; i++) source_params[i] = ty_type_param(me, vec_generic_item_at(&generic->items, i)->owned_symbol);
+        TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = source_params, .len = count }, (TyList){ .data = target_params, .len = count });
+        for (u32 i = 0; i < count && identical; i++) {
+            GenericItem const* source = vec_generic_item_at(&generic->items, i);
+            if (!csview_equals_sv(source->name.sv, target[i]->name.sv)) {
+                identical = false;
+            } else if (source->extends_explicit && constraints[i] && &source->extends != constraints[i]) {
+                Ty const* a = ty_instantiate(me, ty_of_node(&source->extends), mapper);
+                identical = ty_is_related(me, a, ty_of_node(constraints[i]), TY_RELATION_IDENTITY);
+            }
+            if (identical && source->fallback_explicit && defaults[i] && &source->fallback != defaults[i]) {
+                Ty const* a = ty_instantiate(me, ty_of_node(&source->fallback), mapper);
+                identical = ty_is_related(me, a, ty_of_node(defaults[i]), TY_RELATION_IDENTITY);
+            }
+        }
+    }
+    if (identical) return;
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        if (!class_or_interface_generic(&symbol->decls[d])) continue;
+        Span name = symbol->decls[d].name;
+        if (!name.source || name.source->is_stdlib) continue;
+        error_ctx_error_d(errs, name, 2428, "All declarations of '", symbol->name, "' must have identical type parameters.");
+    }
+}
+
+void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* const* members, u32 count, ErrorCtx* errs) {
+    typedef struct { Ty const* key; InterfaceMember const* member; } Entry;
+    Entry entries[64];
+    u32 entry_count = 0;
+    for (u32 i = 0; i < count; i++) {
+        InterfaceMember const* member = members[i];
+        if (member->key.tag != INTERFACE_KEY_INDEX) continue;
+        Ty const* key = ty_of_node(&member->key.index.type);
+        TyList keys = key->kind == TY_UNION ? key->composite.types : (TyList){ .data = &key, .len = 1 };
+        for (u32 k = 0; k < keys.len && entry_count < c_arraylen(entries); k++) {
+            entries[entry_count++] = (Entry){ keys.data[k], member };
+        }
+    }
+    for (u32 i = 0; i < entry_count; i++) {
+        u32 same = 0;
+        bool first = true;
+        for (u32 j = 0; j < entry_count; j++) {
+            if (entries[j].key != entries[i].key) continue;
+            same++;
+            if (j < i) first = false;
+        }
+        if (same < 2 || !first) continue;
+        cstr key_str = ty_to_cstr(me, entries[i].key);
+        for (u32 j = 0; j < entry_count; j++) {
+            if (entries[j].key != entries[i].key) continue;
+            Span at = vec_span_size(&entries[j].member->declarations) ? *vec_span_front(&entries[j].member->declarations) : entries[j].member->key.span;
+            // (A lib's declarations aren't checked; after a parse error the signature may not be what it was meant to be)
+            if (!at.source || at.source->is_stdlib || at.source->has_parse_errors) continue;
+            error_ctx_error_d(errs, with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");
+        }
+        cstr_drop(&key_str);
+    }
+}
+
+void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_type, ErrorCtx* errs) {
+    // `[k in T]` where a mapped type was meant is reported as that (tsc gives it the error type)
+    if (in_type && key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN) return;
+    Ty const* type = ty_expr_type(me, key);
+    bool nullable = type->kind != TY_UNION && (type->flags & TYF_NULLABLE);
+    u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE;
+    if (!nullable && type->kind != TY_UNION && (type->flags & key_like)) return;
+    if (!nullable) {
+        Ty const* keys[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
+        if (ty_is_related(me, type, ty_union(me, keys, 3, nullptr, (TyList){0}), TY_RELATION_ASSIGNABLE)) return;
+    }
+    error_ctx_error_d(errs, span, 2464, "A computed property name must be of type 'string', 'number', 'symbol', or 'any'.");
 }
 
 // Index constraints

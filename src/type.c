@@ -341,6 +341,14 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
         case TYPE_INTERFACE:
             // A type literal (an interface's body is checked by interface_decl_typecheck())
             interface_typecheck(&my interface, errs);
+            {
+                InterfaceMember const* indexes[16];
+                u32 index_count = 0;
+                for_each (i, vec_interface_member, &my interface.members) {
+                    if (i->key.tag == INTERFACE_KEY_INDEX && index_count < c_arraylen(indexes)) indexes[index_count++] = i;
+                }
+                if (index_count > 1) ty_check_duplicate_index_signatures(current_checker, indexes, index_count, errs);
+            }
             if (type_literal_has_index_constraints(me)) {
                 Ty const* type = ty_of_node(me);
                 ty_check_index_constraints(current_checker, type, nullptr, false, nullptr, 0, (Span){0}, errs);

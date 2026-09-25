@@ -68,6 +68,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             break;
 
         case INTERFACE_KEY_EXPR:
+            ty_check_computed_name(current_checker, my key.expr.ref, my key.span, true, errs);
             Ty const* key_type = expr_get_type(my key.expr.ref);
             // tsc's checkGrammarForInvalidDynamicName: a key that isn't a literal or unique symbol type is only an error if
             // it isn't an entity name either (those are late bound index signatures). An any key is never an error

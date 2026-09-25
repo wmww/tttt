@@ -271,6 +271,8 @@ static void class_computed_key_typecheck(ClassItem* item, ErrorCtx* errs) {
     bool field = item->tag == CLASS_ITEM_FIELD;
     Expr* key = field ? item->field.computed_key : item->method.computed_key;
     expr_typecheck(key, errs);
+    bool accessor = !field && item->method.accessor;
+    ty_check_computed_name(current_checker, key, field ? item->field.name_span : item->method.name_span, !accessor, errs);
     if (!field && item->method.func.has_body) return; // Only overload signatures are restricted
     Ty const* key_type = expr_get_type(key);
     // tsc's checkGrammarForInvalidDynamicName: an entity name that isn't a literal is a late bound index signature
@@ -457,6 +459,21 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     class_heritage_typecheck(me, errs);
     class_check_overloads(me, errs);
+    if (my symbol && symbol_find_node(my symbol, SYMBOL_DECL_CLASS) == me) {
+        ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);
+    }
+    {
+        InterfaceMember const* indexes[16];
+        u32 index_count = 0;
+        for_each (i, vec_class_item, &my items) {
+            if (i->tag == CLASS_ITEM_INTERFACE_MEMBER && !i->interface_member_static &&
+                i->interface_memeber.key.tag == INTERFACE_KEY_INDEX && index_count < c_arraylen(indexes)
+            ) {
+                indexes[index_count++] = &i->interface_memeber;
+            }
+        }
+        if (index_count > 1) ty_check_duplicate_index_signatures(current_checker, indexes, index_count, errs);
+    }
     if (my symbol) {
         Checker* checker = current_checker;
         ty_check_index_constraints(checker, ty_declared_type_of(checker, my symbol), my symbol, false, nullptr, 0, my name, errs);

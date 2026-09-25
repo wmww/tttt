@@ -7,6 +7,7 @@
 #include "scope.h"
 #include "unused.h"
 #include "flow.h"
+#include "source_file.h"
 
 void interface_decl_drop(InterfaceDecl* me) {
     generic_drop(&my generic);
@@ -173,6 +174,27 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     }
 
     interface_typecheck(&my type.interface, errs);
+    // Once for all declarations of the interface, by the first one that is checked (a lib's aren't)
+    InterfaceDecl const* first_checked = nullptr;
+    for (u32 d = 0; my symbol && d < my symbol->decl_count && !first_checked; d++) {
+        SymbolDecl const* decl = &my symbol->decls[d];
+        if (decl->kind == SYMBOL_DECL_INTERFACE && decl->name.source && !decl->name.source->is_stdlib) first_checked = decl->node;
+    }
+    if (first_checked == me && !(my symbol->flags & SYMBOL_CLASS)) { // A class checks its own
+        ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);
+    }
+    if (first_checked == me) {
+        InterfaceMember const* indexes[32];
+        u32 index_count = 0;
+        for (u32 d = 0; d < my symbol->decl_count; d++) {
+            if (my symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+            InterfaceDecl const* decl = my symbol->decls[d].node;
+            for_each (i, vec_interface_member, &decl->type.interface.members) {
+                if (i->key.tag == INTERFACE_KEY_INDEX && index_count < c_arraylen(indexes)) indexes[index_count++] = i;
+            }
+        }
+        if (index_count > 1) ty_check_duplicate_index_signatures(current_checker, indexes, index_count, errs);
+    }
     // TODO: off until checking `CallChainRoot extends CallChain` early stops making the corpus' aliases circular
     // (triage.md, "TS2430"); TS2415/TS2416/TS2420 for classes are on
     interface_heritage_typecheck(me, errs);

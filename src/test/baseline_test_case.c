@@ -413,6 +413,8 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
         cstr_drop(&unparsed_contents);
     }
+    // A file that says `/// <reference no-default-lib="true"/>` is the default library (tsc's hasNoDefaultLib)
+    bool no_default_lib = csview_find_sv(contents_sv, c_sv("no-default-lib=\"true\"")) != c_NPOS;
     cstr_drop(&unparsed_contents);
 
     for (isize i = 0; i + 1 < vec_cstr_size(&my links); i += 2) {
@@ -450,7 +452,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         config = csview_slice(config, end + 1, INTPTR_MAX);
     }
     compiler_options_resolve(program_options(my program));
-    cstr_take(&my lib_list, compiler_options_lib_files(program_options(my program)));
+    cstr_take(&my lib_list, no_default_lib ? cstr_null : compiler_options_lib_files(program_options(my program)));
 
     my did_run = true;
     return ok;

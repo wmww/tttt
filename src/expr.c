@@ -1440,6 +1440,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             for_each (i, vec_object_expr_item, &my object) {
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
+                    ty_check_computed_name(current_checker, i->computed_key, i->name_span, false, errs);
                 }
                 expr_typecheck(&i->value, errs);
             }

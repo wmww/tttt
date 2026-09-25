@@ -7661,7 +7661,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitComputedPropertyNameEnum3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -10413,7 +10413,7 @@ const baselines = {
     'elaboratedErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'elaboratedErrorsOnNullableTargets01': {
         errors: false,
@@ -13236,7 +13236,7 @@ const baselines = {
         types: true,
     },
     'extendedInterfacesWithDuplicateTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -14681,7 +14681,7 @@ const baselines = {
         types: true,
     },
     'genericClassesRedeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18046,7 +18046,7 @@ const baselines = {
         types: false,
     },
     'interfaceWithMultipleDeclarations': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -22822,7 +22822,7 @@ const baselines = {
     },
     'noDefaultLib': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'noEmitAndComposite': {
@@ -23416,7 +23416,7 @@ const baselines = {
         types: false,
     },
     'nonIdenticalTypeConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -39201,7 +39201,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39331,12 +39331,12 @@ const baselines = {
         types: false,
     },
     'symbolProperty53': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'symbolProperty54': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39361,7 +39361,7 @@ const baselines = {
         types: false,
     },
     'symbolProperty59': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -39971,22 +39971,22 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames14_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames14_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames15_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames15_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40001,12 +40001,12 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames17_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames17_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40381,12 +40381,12 @@ const baselines = {
         types: false,
     },
     'computedPropertyNames51_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'computedPropertyNames51_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -40401,22 +40401,22 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames5_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNames5_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNames6_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'computedPropertyNames6_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -40431,22 +40431,22 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames8_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'computedPropertyNames8_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'computedPropertyNames9_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames9_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40601,12 +40601,12 @@ const baselines = {
         types: true,
     },
     'computedPropertyNamesDeclarationEmit6_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'computedPropertyNamesDeclarationEmit6_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49611,7 +49611,7 @@ const baselines = {
         types: false,
     },
     'genericAndNonGenericInterfaceWithTheSameName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49701,22 +49701,22 @@ const baselines = {
         types: true,
     },
     'twoGenericInterfacesDifferingByTypeParameterName': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'twoGenericInterfacesDifferingByTypeParameterName2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'twoGenericInterfacesWithDifferentConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'twoGenericInterfacesWithTheSameNameButDifferentArity': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -57831,7 +57831,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName41': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62396,7 +62396,7 @@ const baselines = {
         types: false,
     },
     'duplicateStringIndexers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -62851,12 +62851,12 @@ const baselines = {
         types: true,
     },
     'multipleNumericIndexers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'multipleStringIndexers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

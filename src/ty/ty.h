@@ -1026,6 +1026,15 @@ void ty_check_index_constraints(
     Checker* me, Ty const* type, Symbol const* owner, bool is_static, Ty const* const* bases, u32 base_count, Span name,
     ErrorCtx* errs
 );
+// tsc's checkComputedPropertyName: the key of `[key]` (`span`, with the brackets) is a string, number or symbol (TS2464)
+// tsc's checkTypeForDuplicateIndexSignatures: of the index signatures among `members` (of all the declarations of an
+// interface, of a class or type literal), at most one per key type (TS2374)
+void ty_check_duplicate_index_signatures(Checker* me, struct InterfaceMember const* const* members, u32 count, ErrorCtx* errs);
+// tsc's checkTypeParameterListsIdentical: the class and interface declarations of `symbol` declare the same type
+// parameters (TS2428, on every declaration)
+void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, ErrorCtx* errs);
+// `in_type`: of a class, interface or type literal member
+void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_type, ErrorCtx* errs);
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS2345
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
