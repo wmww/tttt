@@ -2386,22 +2386,22 @@ const baselines = {
         types: false,
     },
     'binaryArithmatic1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'binaryArithmatic2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'binaryArithmatic3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'binaryArithmatic4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6506,12 +6506,12 @@ const baselines = {
         types: false,
     },
     'contextuallyTypedOptionalProperty(exactoptionalpropertytypes=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'contextuallyTypedOptionalProperty(exactoptionalpropertytypes=true)': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -28956,7 +28956,7 @@ const baselines = {
         types: true,
     },
     'superInConstructorParam1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44601,7 +44601,7 @@ const baselines = {
         types: false,
     },
     'compoundExponentiationAssignmentLHSCanBeAssigned1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44671,7 +44671,7 @@ const baselines = {
         types: true,
     },
     'emitExponentiationOperator4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44716,22 +44716,22 @@ const baselines = {
         types: true,
     },
     'exponentiationOperatorInTemplateStringWithSyntaxError1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exponentiationOperatorInTemplateStringWithSyntaxError2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exponentiationOperatorInTemplateStringWithSyntaxError3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exponentiationOperatorSyntaxError1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44771,17 +44771,17 @@ const baselines = {
         types: true,
     },
     'exponentiationOperatorWithNullValueAndInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exponentiationOperatorWithNullValueAndValidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exponentiationOperatorWithOnlyNullValueOrUndefinedValue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44801,12 +44801,12 @@ const baselines = {
         types: true,
     },
     'exponentiationOperatorWithUndefinedValueAndInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exponentiationOperatorWithUndefinedValueAndValidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46026,7 +46026,7 @@ const baselines = {
         types: true,
     },
     'compoundArithmeticAssignmentLHSCanBeAssigned': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46121,17 +46121,17 @@ const baselines = {
         types: true,
     },
     'arithmeticOperatorWithNullValueAndInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'arithmeticOperatorWithNullValueAndValidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'arithmeticOperatorWithOnlyNullValueOrUndefinedValue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46141,12 +46141,12 @@ const baselines = {
         types: true,
     },
     'arithmeticOperatorWithUndefinedValueAndInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'arithmeticOperatorWithUndefinedValueAndValidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46156,7 +46156,7 @@ const baselines = {
         types: true,
     },
     'comparisonOperatorWithIdenticalPrimitiveType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46231,7 +46231,7 @@ const baselines = {
         types: true,
     },
     'comparisonOperatorWithOneOperandIsNull': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46291,7 +46291,7 @@ const baselines = {
         types: true,
     },
     'inOperatorWithInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47671,7 +47671,7 @@ const baselines = {
         types: true,
     },
     'bitwiseNotOperatorWithAnyOtherType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47841,7 +47841,7 @@ const baselines = {
         types: false,
     },
     'negateOperatorWithAnyOtherType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47871,7 +47871,7 @@ const baselines = {
         types: true,
     },
     'plusOperatorWithAnyOtherType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49381,7 +49381,7 @@ const baselines = {
         types: true,
     },
     'parameterInitializersForwardReferencing1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -56911,7 +56911,7 @@ const baselines = {
         types: true,
     },
     'parserExpressionStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64686,7 +64686,7 @@ const baselines = {
         types: false,
     },
     'equalityStrictNulls': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

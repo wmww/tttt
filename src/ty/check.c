@@ -1677,11 +1677,12 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     }
 }
 
-// tsc's checkNonNullType: unknown and (under strictNullChecks) null or undefined are errors. Null if it reported
+// tsc's checkNonNullType: unknown (under strictNullChecks) and what may be null or undefined are errors (without
+// strictNullChecks only the null and undefined types themselves may be). Null if it reported and nothing is left
 Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, ErrorCtx* errs) {
     bool named = expr_is_entity_name(expr);
-    Span span = expr->inner_span;
-    if (type->flags & TYF_UNKNOWN) {
+    Span span = expr_error_span(expr);
+    if (compiler_options()->strict_null_checks && (type->flags & TYF_UNKNOWN)) {
         if (named) {
             error_ctx_error_d(errs, span, 18046, "'", span, "' is of type 'unknown'.");
         } else {
@@ -1689,16 +1690,15 @@ Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, 
         }
         return nullptr;
     }
-    if (!compiler_options()->strict_null_checks || (type->flags & TYF_ANY)) return type;
-    TyList parts = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
-    bool has_null = false, has_undefined = false;
-    for (u32 i = 0; i < parts.len; i++) {
-        has_null |= (parts.data[i]->flags & TYF_NULL) != 0;
-        has_undefined |= (parts.data[i]->flags & TYF_UNDEFINED) != 0;
-    }
+    bool has_null = ty_can_be_null(me, type), has_undefined = ty_can_be_undefined(me, type);
     if (!has_null && !has_undefined) return type;
+    bool bare = !expr_is_perenthisized(expr) && expr->tag == EXPR_LITERAL;
     char const* what = has_null && has_undefined ? "null' or 'undefined" : has_null ? "null" : "undefined";
-    if (named) {
+    if (bare && expr->literal.tag == VALUE_NULL) {
+        error_ctx_error_d(errs, span, 18050, "The value 'null' cannot be used here.");
+    } else if (bare && expr->literal.tag == VALUE_UNDEFINED && csview_equals(expr->inner_span.sv, "undefined")) {
+        error_ctx_error_d(errs, span, 18050, "The value 'undefined' cannot be used here.");
+    } else if (named) {
         error_ctx_error_d(errs, span, has_null && has_undefined ? 18049 : has_null ? 18047 : 18048,
             "'", span, "' is possibly '", what, "'.");
     } else {

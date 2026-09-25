@@ -3384,6 +3384,22 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         expect_expr(&p, ctx, &expr);
     }
 
+    // tsc's parseUnaryExpressionOrHigher: `-x ** 2` is ambiguous, so an error (still read as `(-x) ** 2`)
+    bool simple_unary = op == UNARY_OP_PLUS || op == UNARY_OP_MINUS || op == UNARY_OP_TILDE || op == UNARY_OP_LEFT_BANG ||
+        op == UNARY_OP_DELETE || op == UNARY_OP_TYPEOF || op == UNARY_OP_VOID || op == UNARY_OP_AWAIT;
+    if (simple_unary) {
+        Parser lookahead = parser(&p);
+        hop_whitespace(&lookahead);
+        bool exponent = lookahead.pos[0] == '*' && lookahead.pos[1] == '*' && lookahead.pos[2] != '=';
+        parse_fail(&lookahead);
+        if (exponent) {
+            csview op_text = csview_trim(zsview_sv(unary_op_get_zv(op)));
+            parse_error(&p, span_between(op_span, expr.outer_span), 17006, "An unary expression with the '",
+                op_text, "' operator is not allowed in the left-hand side of an exponentiation expression. "
+                "Consider enclosing the expression in parentheses.");
+        }
+    }
+
     *ret = expr_unary_op(
         op_span,
         c_new(UnaryOpExpr, {

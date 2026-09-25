@@ -1521,6 +1521,15 @@ static void binary_op_typecheck(
     switch (op) {
         case BINARY_OP_PLUS:
             // PERF: we also do this checks when evaluating the type, shouldn't need to duplicate them
+            // (tsc's isTypeAssignableToKind: without strictNullChecks null and undefined are strings too)
+            if (!ty_is_related(current_checker, left, ty_intrinsic(current_checker, TY_STRING), TY_RELATION_ASSIGNABLE) &&
+                !ty_is_related(current_checker, right, ty_intrinsic(current_checker, TY_STRING), TY_RELATION_ASSIGNABLE)
+            ) {
+                // Null or undefined operands are an error of their own (tsc's checkNonNullType), then any
+                Ty const* non_null_left = ty_check_non_null_type(current_checker, left, &expr->binary_op->left, errs);
+                Ty const* non_null_right = ty_check_non_null_type(current_checker, right, &expr->binary_op->right, errs);
+                if (non_null_left != left || non_null_right != right) break;
+            }
             if (extends_strict_nulls(left, TY_STRING) || extends_strict_nulls(right, TY_STRING)) {
             } else if (extends_strict_nulls(left, TY_NUMBER) && extends_strict_nulls(right, TY_NUMBER)) {
             } else {
@@ -1548,7 +1557,9 @@ static void binary_op_typecheck(
         case BINARY_OP_AND:
         case BINARY_OP_XOR:
         case BINARY_OP_OR:
-            if (!extends_strict_nulls(left, TY_NUMBER)) {
+            left = ty_check_non_null_type(current_checker, left, &expr->binary_op->left, errs);
+            right = ty_check_non_null_type(current_checker, right, &expr->binary_op->right, errs);
+            if (left && !extends_strict_nulls(left, TY_NUMBER)) {
                 error_ctx_error_d(
                     errs,
                     expr->binary_op->left.outer_span,
@@ -1556,7 +1567,7 @@ static void binary_op_typecheck(
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
                 );
             }
-            if (!extends_strict_nulls(right, TY_NUMBER)) {
+            if (right && !extends_strict_nulls(right, TY_NUMBER)) {
                 error_ctx_error_d(
                     errs,
                     expr->binary_op->right.outer_span,
@@ -1595,6 +1606,10 @@ static void binary_op_typecheck(
         case BINARY_OP_GREATER_EQUAL:
         case BINARY_OP_INSTANCEOF:
             // TODO: figure out rules and typecheck
+            if (op != BINARY_OP_INSTANCEOF) {
+                ty_check_non_null_type(current_checker, left, &expr->binary_op->left, errs);
+                ty_check_non_null_type(current_checker, right, &expr->binary_op->right, errs);
+            }
             break;
 
         case BINARY_OP_IN:
@@ -1684,11 +1699,14 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     expr_check_truthiness(&my unary_op->expr, errs);
                     break;
 
-                case UNARY_OP_TYPEOF:
-                case UNARY_OP_VOID:
                 case UNARY_OP_TILDE:
                 case UNARY_OP_PLUS:
                 case UNARY_OP_MINUS:
+                    ty_check_non_null_type(current_checker, ty_expr_type(current_checker, &my unary_op->expr), &my unary_op->expr, errs);
+                    break;
+
+                case UNARY_OP_TYPEOF:
+                case UNARY_OP_VOID:
                 case UNARY_OP_AWAIT:
                     // TODO: add typechecking
                     break;

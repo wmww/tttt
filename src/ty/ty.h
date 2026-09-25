@@ -966,6 +966,7 @@ bool ty_can_be_truthy(Checker* me, Ty const* ty);
 bool ty_can_be_falsy(Checker* me, Ty const* ty);
 bool ty_can_be_nullish(Checker* me, Ty const* ty);
 bool ty_can_be_undefined(Checker* me, Ty const* ty); // tsc's hasTypeFacts(ty, TypeFacts.IsUndefined)
+bool ty_can_be_null(Checker* me, Ty const* ty); // tsc's hasTypeFacts(ty, TypeFacts.IsNull)
 unsigned ty_undefined_or_null_facts(Checker* me, Ty const* ty); // tsc's getTypeFacts(ty, TypeFacts.IsUndefinedOrNull)
 // Declarations evaluate self-contained: not in uncached mode, and with no loop in progress (tsc's
 // checkExpressionCached()). What they evaluate to is complete and can be remembered

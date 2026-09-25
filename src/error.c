@@ -135,19 +135,13 @@ static int error_cmp(Error const* a, Error const* b) {
     if (!span_valid(a->span)) return -1;
     // TODO: sort based on sorce file
     int ret = span_cmp(a->span, b->span);
-    if (ret) {
-        return ret;
-    } else if (a->phase != b->phase) {
-        return a->phase > b->phase ? 1 : -1;
-    } else if (a->phase == ERROR_PHASE_TYPECHECK && a->ts_code != b->ts_code) {
-        // tsc's compareDiagnostics (what the harness sorts by): code, then message
-        return a->ts_code > b->ts_code ? 1 : -1;
-    } else if (a->phase == ERROR_PHASE_TYPECHECK) {
-        ret = cstr_cmp(&a->message, &b->message);
-        return ret > 0 ? 1 : ret < 0 ? -1 : 0;
-    } else {
-        return 0;
-    }
+    if (ret) return ret;
+    // (The parser's own order: the first of several at one position is the one that stays, see the dedupe)
+    if (a->phase == ERROR_PHASE_PARSE && b->phase == ERROR_PHASE_PARSE) return 0;
+    // tsc's compareDiagnostics (what the harness sorts by): code, then message
+    if (a->ts_code != b->ts_code) return a->ts_code > b->ts_code ? 1 : -1;
+    ret = cstr_cmp(&a->message, &b->message);
+    return ret > 0 ? 1 : ret < 0 ? -1 : 0;
 }
 
 // The same message chain (tsc's compareDiagnosticsSkipRelatedInformation: related information doesn't count)

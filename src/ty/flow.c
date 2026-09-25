@@ -397,6 +397,7 @@ bool ty_can_be_truthy(Checker* me, Ty const* ty) { return has_type_facts(me, ty,
 bool ty_can_be_falsy(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_FALSY); }
 bool ty_can_be_nullish(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_EQ_UNDEFINED_OR_NULL); }
 bool ty_can_be_undefined(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_IS_UNDEFINED); }
+bool ty_can_be_null(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_IS_NULL); }
 
 unsigned ty_undefined_or_null_facts(Checker* me, Ty const* ty) {
     return type_facts(me, ty, TF_IS_UNDEFINED_OR_NULL) & TF_IS_UNDEFINED_OR_NULL;
