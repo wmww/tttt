@@ -1,6 +1,7 @@
 #include "expr.h"
 #include "source_file.h"
 #include "stc/types.h"
+#include "port_statement.h"
 #include "type.h"
 #include "error.h"
 #include "scope.h"
@@ -207,6 +208,27 @@ static bool scope_has_arguments(Scope const* scope) {
     return false;
 }
 
+// TS1361/TS1362: a value that was imported or exported as a type only (tsc's
+// checkAndReportErrorForResolvingImportAliasToTypeOnlySymbol). Fine in `typeof x` types and ambient contexts
+static void check_type_only_value(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+    Symbol const* found = my symbol;
+    if (!found || !(found->flags & SYMBOL_ALIAS) || found->flags & SYMBOL_VALUE) return;
+    if (names->flow && (names->flow->in_type_query || names->flow->type_only_alias_ok)) return;
+    for (Scope const* scope = names; scope; scope = scope->parent) {
+        if (scope->ambient) return;
+    }
+    PortItem const* item = symbol_type_only_declaration(found);
+    // (what the type-only declaration names has to be a value: a merge further down the chain may be what is)
+    if (!item || !item->symbol || !(symbol_resolved_flags(item->symbol) & SYMBOL_VALUE)) return;
+    bool exported = port_item_is_export(item);
+    Error* error = error_ctx_error_d(errs, my name, exported ? 1362 : 1361, "'", my name, "' cannot be used as a value "
+        "because it was ", exported ? "exported using 'export type'." : "imported using 'import type'.");
+    if (error) {
+        error_add_related_d(error, item->decl_name, exported ? 1377 : 1376, "'", my name, "' was ",
+            exported ? "exported" : "imported", " here.");
+    }
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
@@ -260,6 +282,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     }
     my target = scope_get_value(names, my name.sv, &my symbol);
     if (my target) {
+        check_type_only_value(me, names, errs);
         check_declared_before_use(me, names, errs);
         check_parameter_reference(me, names, errs);
         my outer_reference = my target->flow_start && names->flow && names->flow->start != my target->flow_start;

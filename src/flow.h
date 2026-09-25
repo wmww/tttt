@@ -173,6 +173,9 @@ typedef struct FlowBuilder {
     uint8_t initializer_context; // InitializerContext
     struct ClassItem const* initializer_field; // The field whose initializer it is
     bool in_type_query; // Inside `typeof x` written as a type: never "used before assigned"
+    // Where a name imported with `import type` may be used (tsc's isValidTypeOnlyAliasUseSite, besides type queries): the
+    // identifier of `export default x`/`export = x`, computed names of abstract and `declare` members
+    bool type_only_alias_ok;
     bool nullish_condition; // The next expression is a condition by being the left side of `??`: FLOW_NULLISH
     // The statement list of the Block the next statement is a direct child of (TS7027 covers runs of statements there)
     VecStatement const* statement_list;

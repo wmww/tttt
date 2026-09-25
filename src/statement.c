@@ -981,8 +981,10 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             // `export = x` doesn't use x before its declaration: the emit moves it (tsc)
             bool saved_type_query = flow->in_type_query;
             if (my export_equals && my expr.tag == EXPR_IDENTIFIER) flow->in_type_query = true;
+            flow->type_only_alias_ok = my expr.tag == EXPR_IDENTIFIER;
             expr_lookup_names(&my expr, names, errs);
             flow->in_type_query = saved_type_query;
+            flow->type_only_alias_ok = false;
         }   break;
 
         case STATEMENT_THROW_EXPR:

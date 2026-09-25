@@ -1285,6 +1285,18 @@ Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning) {
     return nullptr;
 }
 
+PortItem const* symbol_type_only_declaration(Symbol const* me) {
+    for (int depth = 0; me && depth < ALIAS_CHAIN_MAX; depth++) {
+        if (!(my flags & SYMBOL_ALIAS) || !my alias || !my alias->item) return nullptr;
+        symbol_resolve_alias((Symbol*)me); // (what sets source_symbol)
+        PortItem const* item = my alias->item;
+        if (item->type_only) return item;
+        me = item->source_symbol;
+        if (me && me->flags & SYMBOL_VALUE) return nullptr; // Merged with a value along the way
+    }
+    return nullptr;
+}
+
 // Module augmentations (tsc's mergeModuleAugmentation)
 
 void binder_add_augmentation(Binder* me, NamespaceDecl* decl) {

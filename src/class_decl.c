@@ -139,7 +139,11 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_METHOD:
-            if (my method.computed_key) lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, errs);
+            if (my method.computed_key) {
+                names->flow->type_only_alias_ok = my method.is_abstract;
+                lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, errs);
+                names->flow->type_only_alias_ok = false;
+            }
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
             my method.func.is_method = !my method.accessor;
             my method.func.accessor = (uint8_t)my method.accessor;
@@ -148,7 +152,11 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_FIELD:
-            if (my field.computed_key) lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, errs);
+            if (my field.computed_key) {
+                names->flow->type_only_alias_ok = my field.is_abstract || my field.is_declare;
+                lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, errs);
+                names->flow->type_only_alias_ok = false;
+            }
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
             type_lookup_names(&my field.explicit_type, names, errs);
             if (my field.value.tag == EXPR_IMPLICIT_ANY) {

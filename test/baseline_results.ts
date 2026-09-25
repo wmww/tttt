@@ -48766,7 +48766,7 @@ const baselines = {
         types: false,
     },
     'chained': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -48801,17 +48801,17 @@ const baselines = {
         types: false,
     },
     'computedPropertyName': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'enums': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'exportDeclaration(isolatedmodules=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48831,7 +48831,7 @@ const baselines = {
         types: false,
     },
     'exportDeclaration_moduleSpecifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48846,7 +48846,7 @@ const baselines = {
         types: false,
     },
     'exportNamespace1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48866,7 +48866,7 @@ const baselines = {
         types: false,
     },
     'exportNamespace2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48921,7 +48921,7 @@ const baselines = {
         types: true,
     },
     'extendsClause': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -48951,12 +48951,12 @@ const baselines = {
         types: false,
     },
     'importClause_namedImports': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'importClause_namespaceImport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49121,7 +49121,7 @@ const baselines = {
         types: false,
     },
     'typeOnlyMerge2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
