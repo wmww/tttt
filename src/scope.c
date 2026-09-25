@@ -310,13 +310,23 @@ static int strict_reason(Scope const* me) {
     return my file && my file->is_module ? 1 : 0;
 }
 
-void scope_check_strict_identifier(Scope const* me, Span name) {
-    if (!my strict || my ambient || !span_valid(name) || !name.source || name.source->has_parse_errors) return;
+void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
+    if (my ambient || !span_valid(name) || !name.source || name.source->has_parse_errors) return;
     static char const* const reserved[] = { "implements", "interface", "let", "package", "private", "protected", "public",
         "static", "yield" };
     bool is_reserved = false;
     for (u32 i = 0; i < c_arraylen(reserved) && !is_reserved; i++) is_reserved = csview_equals(name.sv, reserved[i]);
-    if (!is_reserved) return;
+    if (!my strict || !is_reserved) {
+        // (tsc's checkContextualIdentifier: `await` and `yield` where they are operators)
+        // (Not in types: the parser has no await or yield context there)
+        bool await = !in_type && csview_equals(name.sv, "await"), yield = !in_type && csview_equals(name.sv, "yield");
+        if (await && my file && my file->is_module && !my function) {
+            error_ctx_error_d(my errs, name, 1262, "Identifier expected. '", name, "' is a reserved word at the top-level of a module.");
+        } else if ((await && my function && my function->is_async) || (yield && my function && my function->is_generator)) {
+            error_ctx_error_d(my errs, name, 1359, "Identifier expected. '", name, "' is a reserved word that cannot be used here.");
+        }
+        return;
+    }
     switch (strict_reason(me)) {
         case 2:
             error_ctx_error_d(my errs, name, 1213, "Identifier expected. '", name, "' is a reserved word in strict mode. "
@@ -640,7 +650,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         props.kind == SYMBOL_DECL_ENUM || props.kind == SYMBOL_DECL_NAMESPACE || props.kind == SYMBOL_DECL_INTERFACE ||
         props.kind == SYMBOL_DECL_TYPE_ALIAS || props.kind == SYMBOL_DECL_TYPE_PARAMETER
     ) {
-        scope_check_strict_identifier(me, props.name);
+        scope_check_strict_identifier(me, props.name, false);
     }
     // (Parameters and function names only outside ambient contexts, like tsc's bindParameter)
     if ((props.kind == SYMBOL_DECL_VARIABLE && !(props.is_parameter && me->ambient)) ||

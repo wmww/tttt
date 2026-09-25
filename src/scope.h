@@ -351,7 +351,7 @@ void scope_check_duplicate_exports(Scope* me);
 // Whether a block starts with a "use strict" directive
 bool block_has_use_strict(struct Block const* block);
 // tsc's checkStrictModeIdentifier: in strict mode code the future reserved words aren't names (TS1212/TS1213/TS1214)
-void scope_check_strict_identifier(Scope const* me, Span name);
+void scope_check_strict_identifier(Scope const* me, Span name, bool in_type);
 // tsc's checkStrictModeEvalOrArguments: `eval` and `arguments` can't be declared or assigned in strict mode code
 void scope_check_strict_eval_or_arguments(Scope const* me, Span name);
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared);

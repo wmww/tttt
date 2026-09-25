@@ -759,7 +759,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             }
             if (assignment_target) identifier_mark_assigned(&my identifier, names);
             if (!my identifier.keyword) {
-                scope_check_strict_identifier(names, my identifier.name);
+                scope_check_strict_identifier(names, my identifier.name, false);
                 if (assignment_target) scope_check_strict_eval_or_arguments(names, my identifier.name);
             }
             break;

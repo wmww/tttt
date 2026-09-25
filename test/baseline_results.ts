@@ -32951,7 +32951,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction5_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33166,7 +33166,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration5_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33231,7 +33231,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction5_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33481,7 +33481,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration5_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33546,7 +33546,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction5_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33811,7 +33811,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration5_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33836,7 +33836,7 @@ const baselines = {
         types: false,
     },
     'asyncOrYieldAsBindingIdentifier1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41856,7 +41856,7 @@ const baselines = {
         types: true,
     },
     'FunctionDeclaration5_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48646,52 +48646,52 @@ const baselines = {
         types: true,
     },
     'topLevelAwaitErrors.2(module=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'topLevelAwaitErrors.2(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'topLevelAwaitErrors.3(module=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'topLevelAwaitErrors.3(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'topLevelAwaitErrors.4(module=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'topLevelAwaitErrors.4(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'topLevelAwaitErrors.5(module=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'topLevelAwaitErrors.5(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'topLevelAwaitErrors.6(module=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'topLevelAwaitErrors.6(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
