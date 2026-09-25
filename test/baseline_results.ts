@@ -3996,7 +3996,7 @@ const baselines = {
         types: true,
     },
     'classWithDuplicateIdentifier': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -10051,7 +10051,7 @@ const baselines = {
         types: true,
     },
     'duplicateClassElements': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -10106,7 +10106,7 @@ const baselines = {
         types: false,
     },
     'duplicateIdentifierComputedName': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -10186,7 +10186,7 @@ const baselines = {
         types: true,
     },
     'duplicateInterfaceMembers1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -10306,7 +10306,7 @@ const baselines = {
         types: true,
     },
     'duplicateStringNamedProperty1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -12841,7 +12841,7 @@ const baselines = {
         types: false,
     },
     'exportEqualsClassRedeclarationError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13456,7 +13456,7 @@ const baselines = {
         types: true,
     },
     'fieldAndGetterWithSameName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13721,7 +13721,7 @@ const baselines = {
         types: true,
     },
     'functionAndPropertyNameConflict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14351,7 +14351,7 @@ const baselines = {
         types: true,
     },
     'functionWithSameNameAsField': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20646,7 +20646,7 @@ const baselines = {
         types: false,
     },
     'methodSignatureHandledDeclarationKindForSymbol': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23436,7 +23436,7 @@ const baselines = {
         types: false,
     },
     'nonMergedDeclarationsAndOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23591,7 +23591,7 @@ const baselines = {
         types: false,
     },
     'numericClassMembers1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -26031,7 +26031,7 @@ const baselines = {
         types: false,
     },
     'reassignStaticProp': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28317,8 +28317,8 @@ const baselines = {
     },
     'staticAsIdentifier': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'staticClassMemberError': {
         errors: false,
@@ -28436,7 +28436,7 @@ const baselines = {
         types: false,
     },
     'staticModifierAlreadySeen': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -36211,7 +36211,7 @@ const baselines = {
         types: false,
     },
     'privateNamesUnique-3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36413,7 +36413,7 @@ const baselines = {
     'autoAccessor11': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'autoAccessor2(target=es2015)': {
         errors: true,
@@ -36766,12 +36766,12 @@ const baselines = {
         types: false,
     },
     'propertyAndAccessorWithSameName': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'propertyAndFunctionWithSameName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36896,7 +36896,7 @@ const baselines = {
         types: true,
     },
     'twoAccessorsWithSameName2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -47246,12 +47246,12 @@ const baselines = {
         types: false,
     },
     'duplicatePropertiesInTypeAssertions01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'duplicatePropertiesInTypeAssertions02': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -49646,7 +49646,7 @@ const baselines = {
         types: true,
     },
     'mergedInterfacesWithConflictingPropertyNames': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -62926,7 +62926,7 @@ const baselines = {
         types: true,
     },
     'numericNamedPropertyDuplicates': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -62951,7 +62951,7 @@ const baselines = {
         types: true,
     },
     'stringNamedPropertyDuplicates': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

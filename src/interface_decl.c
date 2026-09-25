@@ -180,6 +180,17 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         SymbolDecl const* decl = &my symbol->decls[d];
         if (decl->kind == SYMBOL_DECL_INTERFACE && decl->name.source && !decl->name.source->is_stdlib) first_checked = decl->node;
     }
+    if (first_checked == me) {
+        VecInterfaceMember const* lists[16];
+        u32 list_count = 0;
+        for (u32 d = 0; d < my symbol->decl_count && list_count < c_arraylen(lists); d++) {
+            if (my symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+            lists[list_count++] = &((InterfaceDecl const*)my symbol->decls[d].node)->type.interface.members;
+        }
+        // (The declared type first: it makes the later declarations' type parameters the first one's)
+        if (list_count > 1) ty_declared_type_of(current_checker, my symbol);
+        ty_check_object_type_duplicate_members(current_checker, lists, list_count, errs);
+    }
     if (first_checked == me && !(my symbol->flags & SYMBOL_CLASS)) { // A class checks its own
         ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);
     }

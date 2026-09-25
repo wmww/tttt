@@ -459,6 +459,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     class_heritage_typecheck(me, errs);
     class_check_overloads(me, errs);
+    ty_check_class_duplicate_members(current_checker, me, errs);
     if (my symbol && symbol_find_node(my symbol, SYMBOL_DECL_CLASS) == me) {
         ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);
     }

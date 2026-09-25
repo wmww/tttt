@@ -1039,6 +1039,12 @@ void ty_check_duplicate_index_signatures(Checker* me, struct InterfaceMember con
 // tsc's checkTypeParameterListsIdentical: the class and interface declarations of `symbol` declare the same type
 // parameters (TS2428, on every declaration)
 void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, ErrorCtx* errs);
+// Duplicate members (TS2300, TS2804): tsc's binder conflicts in a class's member tables (a method, accessor or
+// property of the same name where the kinds don't merge) and its checkClassForDuplicateDeclarations
+void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorCtx* errs);
+// The same for the members of type literals and interfaces: `lists` are the member lists of the declarations (one for
+// a type literal), whose binder table is shared; checkObjectTypeForDuplicateDeclarations runs per list
+void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs);
 // `in_type`: of a class, interface or type literal member
 void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_type, ErrorCtx* errs);
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS2345

@@ -695,7 +695,8 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
         }
 
         hop_whitespace(&p);
-        if (p.whitespace == WHITESPACE_NEWLINE) {
+        // Only `static` can be followed by a line break (tsc's nextTokenCanFollowModifier): `static\n x` is static
+        if (p.whitespace == WHITESPACE_NEWLINE && !(is_member && span_equals(mod.span, "static"))) {
             goto loop_end;
         }
 

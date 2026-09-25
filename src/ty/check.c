@@ -1011,6 +1011,219 @@ void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* con
     }
 }
 
+// Duplicate members
+
+enum { MEMBER_PROPERTY = 1, MEMBER_METHOD = 2, MEMBER_GET = 4, MEMBER_SET = 8 };
+
+typedef struct MemberEntry {
+    Atom const* name;
+    uint8_t table; // Which symbol table: instance members, static members (exports)
+    uint8_t flags;
+    Span decls[8];
+    u32 decl_count;
+} MemberEntry;
+
+typedef struct MemberTables {
+    MemberEntry entries[128];
+    u32 count;
+} MemberTables;
+
+static uint8_t member_excludes(uint8_t kind) {
+    switch (kind) {
+        case MEMBER_METHOD: return MEMBER_PROPERTY | MEMBER_GET | MEMBER_SET; // Value & ~Method
+        case MEMBER_GET: return MEMBER_PROPERTY | MEMBER_METHOD | MEMBER_GET;
+        case MEMBER_SET: return MEMBER_PROPERTY | MEMBER_METHOD | MEMBER_SET;
+        default: return 0; // tsc's PropertyExcludes is None: the checker reports property duplicates
+    }
+}
+
+static void report_duplicate(Span name, ErrorCtx* errs) {
+    if (!span_valid(name) || !name.source || name.source->is_stdlib) return;
+    Error* existing = error_ctx_find(errs, name, 2300);
+    if (!existing) error_ctx_error_d(errs, name, 2300, "Duplicate identifier '", name, "'.");
+}
+
+// tsc's declareSymbol for a member: a conflict with what the table has (by the excludes of the new declaration) is
+// reported on every declaration, and the new one doesn't join
+static void declare_member(MemberTables* me, Atom const* name, uint8_t table, uint8_t kind, Span span, ErrorCtx* errs) {
+    MemberEntry* entry = nullptr;
+    for (u32 i = 0; i < my count && !entry; i++) {
+        if (my entries[i].name == name && my entries[i].table == table) entry = &my entries[i];
+    }
+    if (!entry) {
+        if (my count == c_arraylen(my entries)) return;
+        entry = &my entries[my count++];
+        *entry = (MemberEntry){ .name = name, .table = table };
+    } else if (entry->flags & member_excludes(kind)) {
+        for (u32 i = 0; i < entry->decl_count; i++) report_duplicate(entry->decls[i], errs);
+        report_duplicate(span, errs);
+        return;
+    }
+    entry->flags |= kind;
+    if (entry->decl_count < c_arraylen(entry->decls)) entry->decls[entry->decl_count++] = span;
+}
+
+// tsc's DeclarationMeaning in checkClassForDuplicateDeclarations
+enum { MEANING_GET = 1, MEANING_SET = 2, MEANING_GET_OR_SET = 3, MEANING_METHOD = 4, MEANING_PRIVATE_STATIC = 8 };
+
+typedef struct MeaningEntry {
+    Atom const* name;
+    uint8_t table; // 0: instance, 1: static, 2: private names (shared)
+    uint8_t meaning;
+} MeaningEntry;
+
+static void add_meaning(MeaningEntry* entries, u32* count, u32 cap, Atom const* name, uint8_t table, uint8_t meaning, Span at, ErrorCtx* errs) {
+    MeaningEntry* prev = nullptr;
+    for (u32 i = 0; i < *count && !prev; i++) {
+        if (entries[i].name == name && entries[i].table == table) prev = &entries[i];
+    }
+    if (!prev) {
+        if (*count < cap) entries[(*count)++] = (MeaningEntry){ name, table, meaning };
+        return;
+    }
+    if ((prev->meaning & MEANING_PRIVATE_STATIC) != (meaning & MEANING_PRIVATE_STATIC)) {
+        error_ctx_error_d(errs, at, 2804, "Duplicate identifier '", at,
+            "'. Static and instance elements cannot share the same private name.");
+        return;
+    }
+    bool prev_method = prev->meaning & MEANING_METHOD, is_method = meaning & MEANING_METHOD;
+    if (prev_method || is_method) {
+        if (prev_method != is_method) report_duplicate(at, errs);
+    } else if (prev->meaning & meaning & ~MEANING_PRIVATE_STATIC) {
+        report_duplicate(at, errs);
+    } else {
+        prev->meaning |= meaning;
+    }
+}
+
+static void check_subsequent_property(Checker* me, Span name, Ty const* first_type, Ty const* type, Span first_name, ErrorCtx* errs);
+
+void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorCtx* errs) {
+    // A field after another member of its name and staticness: the symbols merge (a property excludes nothing), and
+    // the field is a secondary declaration
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (i->tag != CLASS_ITEM_FIELD || i->field.computed_key || span_valid(class_item_private_name(i))) continue;
+        for_each (first, vec_class_item, &class_decl->items) {
+            if (first == i) break;
+            bool is_field = first->tag == CLASS_ITEM_FIELD;
+            if ((!is_field && first->tag != CLASS_ITEM_METHOD) || class_item_is_static(first) != i->field.is_static) continue;
+            if (is_field ? first->field.computed_key != nullptr : first->method.computed_key != nullptr) continue;
+            if (!cstr_eq(is_field ? &first->field.name_string : &first->method.name_string, &i->field.name_string)) continue;
+            check_subsequent_property(me, i->field.name_span, class_item_get_type(first), class_item_get_type(i),
+                is_field ? first->field.name_span : first->method.name_span, errs);
+            break;
+        }
+    }
+    MemberTables* tables = calloc(1, sizeof(MemberTables));
+    MeaningEntry meanings[128];
+    u32 meaning_count = 0;
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
+            for_each (arg, vec_function_arg, &i->constructor.func.args) {
+                Binding const* binding = &arg->initializer.binding;
+                if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
+                Atom const* name = checker_atom(me, binding->content_span.sv);
+                declare_member(tables, name, 0, MEMBER_PROPERTY, binding->content_span, errs);
+                add_meaning(meanings, &meaning_count, c_arraylen(meanings), name, 0, MEANING_GET_OR_SET, binding->content_span, errs);
+            }
+            continue;
+        }
+        if (i->tag != CLASS_ITEM_FIELD && i->tag != CLASS_ITEM_METHOD) continue;
+        bool is_field = i->tag == CLASS_ITEM_FIELD;
+        Span name_span = is_field ? i->field.name_span : i->method.name_span;
+        Span private_name = class_item_private_name(i);
+        bool is_static = class_item_is_static(i);
+        Atom const* name = span_valid(private_name) ? checker_atom(me, private_name.sv) :
+            ty_member_name(me, is_field ? &i->field.name_string : &i->method.name_string,
+                is_field ? i->field.computed_key : i->method.computed_key);
+        if (!name) continue;
+        uint8_t kind = is_field ? MEMBER_PROPERTY : i->method.accessor == CLASS_ACCESSOR_GET ? MEMBER_GET :
+            i->method.accessor == CLASS_ACCESSOR_SET ? MEMBER_SET : MEMBER_METHOD;
+        declare_member(tables, name, is_static, kind, name_span, errs);
+        uint8_t meaning = kind == MEMBER_PROPERTY ? MEANING_GET_OR_SET : kind == MEMBER_GET ? MEANING_GET :
+            kind == MEMBER_SET ? MEANING_SET : MEANING_METHOD;
+        if (span_valid(private_name) && is_static) meaning |= MEANING_PRIVATE_STATIC;
+        add_meaning(meanings, &meaning_count, c_arraylen(meanings), name, span_valid(private_name) ? 2 : is_static,
+            meaning, name_span, errs);
+    }
+    free(tables);
+}
+
+// TS2717: a property declared again (a duplicate class field, a property of a merged interface) has the type of the
+// first declaration of its name (tsc's checkVariableLikeDeclaration for a property's secondary declarations)
+static void check_subsequent_property(Checker* me, Span name, Ty const* first_type, Ty const* type, Span first_name, ErrorCtx* errs) {
+    Ty const* error = ty_intrinsic(me, TY_ERROR);
+    if (first_type == error || type == error || ty_is_related(me, first_type, type, TY_RELATION_IDENTITY)) return;
+    // HACK: a `unique symbol` is one per declaration in tttt, one per (merged) property symbol in tsc
+    if ((first_type->flags & TYF_UNIQUE_ES_SYMBOL) && (type->flags & TYF_UNIQUE_ES_SYMBOL)) return;
+    cstr first_str = ty_to_cstr(me, first_type);
+    cstr type_str = ty_to_cstr(me, type);
+    Error* e = error_ctx_error_d(errs, name, 2717, "Subsequent property declarations must have the same type.  Property '",
+        name, "' must be of type '", first_str, "', but here has type '", type_str, "'.");
+    error_add_related_d(e, first_name, 6203, "'", name, "' was also declared here.");
+    c_drop(cstr, &first_str, &type_str);
+}
+
+// The type an interface member declares its property with
+static Ty const* member_declared_type(Checker* me, InterfaceMember const* member) {
+    Ty const* type = ty_of_node(&member->type);
+    if (member->optional && compiler_options()->strict_null_checks && !(type->flags & TYF_ANY)) {
+        Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+        type = ty_union(me, types, 2, nullptr, (TyList){0});
+    }
+    return type;
+}
+
+void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs) {
+    MemberTables* tables = calloc(1, sizeof(MemberTables));
+    // A property signature after another member of its name (in any declaration)
+    for (u32 l = 0; l < list_count; l++) {
+        for_each (i, vec_interface_member, lists[l]) {
+            if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function) continue;
+            InterfaceMember const* first = nullptr;
+            for (u32 k = 0; k <= l && !first; k++) {
+                for_each (other, vec_interface_member, lists[k]) {
+                    if (other == i) break;
+                    if (other->key.tag == INTERFACE_KEY_NAME && cstr_eq(&other->key.name_string, &i->key.name_string)) {
+                        first = other;
+                        break;
+                    }
+                }
+            }
+            if (!first || !span_valid(first->key.span) || first->key.span.source->is_stdlib) continue;
+            check_subsequent_property(me, i->key.span, member_declared_type(me, first), member_declared_type(me, i), first->key.span, errs);
+        }
+    }
+    for (u32 l = 0; l < list_count; l++) {
+        for_each (i, vec_interface_member, lists[l]) {
+            if (i->key.tag != INTERFACE_KEY_NAME) continue;
+            Span name_span = i->key.span;
+            bool is_method = i->is_method || i->key.name_is_member_function;
+            declare_member(tables, checker_atom(me, cstr_sv(&i->key.name_string)), 0, is_method ? MEMBER_METHOD : MEMBER_PROPERTY,
+                name_span, errs);
+        }
+        // checkObjectTypeForDuplicateDeclarations: property signatures of one declaration
+        for_each (i, vec_interface_member, lists[l]) {
+            if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function) continue;
+            for_each (first, vec_interface_member, lists[l]) {
+                if (first == i) break;
+                if (first->key.tag != INTERFACE_KEY_NAME || first->is_method || first->key.name_is_member_function ||
+                    !cstr_eq(&first->key.name_string, &i->key.name_string)
+                ) {
+                    continue;
+                }
+                cstr name = cstr_clone(i->key.name_string);
+                Error* e1 = error_ctx_find(errs, first->key.span, 2300);
+                if (!e1) error_ctx_error_d(errs, first->key.span, 2300, "Duplicate identifier '", name, "'.");
+                if (!error_ctx_find(errs, i->key.span, 2300)) error_ctx_error_d(errs, i->key.span, 2300, "Duplicate identifier '", name, "'.");
+                cstr_drop(&name);
+                break;
+            }
+        }
+    }
+    free(tables);
+}
+
 void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_type, ErrorCtx* errs) {
     // `[k in T]` where a mapped type was meant is reported as that (tsc gives it the error type)
     if (in_type && key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN) return;

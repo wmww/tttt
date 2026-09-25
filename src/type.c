@@ -342,6 +342,8 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             // A type literal (an interface's body is checked by interface_decl_typecheck())
             interface_typecheck(&my interface, errs);
             {
+                VecInterfaceMember const* list = &my interface.members;
+                ty_check_object_type_duplicate_members(current_checker, &list, 1, errs);
                 InterfaceMember const* indexes[16];
                 u32 index_count = 0;
                 for_each (i, vec_interface_member, &my interface.members) {
