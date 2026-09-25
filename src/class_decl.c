@@ -211,7 +211,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
 
     my outer_class = scope_enclosing_class(names);
     unused_register(names, UNUSED_CLASS, me, span_null);
-    names = scope_new_generic(names, &my generic, errs);
+    names = scope_new_generic_merged(names, &my generic, my symbol, me, errs);
 
     for_each (i, vec_class_item, &my items) {
         if (i->tag == CLASS_ITEM_CONSTRUCTOR) {

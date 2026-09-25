@@ -339,6 +339,9 @@ Scope* scope_new_file(Binder* binder, SourceFile* file);
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared);
 // Child scope holding the type parameters, names looked up. Returns parent itself for an empty generic
 Scope* scope_new_generic(Scope* parent, Generic* generic, ErrorCtx* errs);
+// Of a declaration (`node`) of a class or interface `owner`: a type parameter named like one of an earlier declaration
+// of it is the same symbol (tsc declares them in the merged symbol's members)
+Scope* scope_new_generic_merged(Scope* parent, Generic* generic, Symbol const* owner, void const* node, ErrorCtx* errs);
 bool scope_has_function(Scope const* me);
 // Whether `var` and function declarations of nested blocks end up here
 static inline bool scope_is_var_container(Scope const* me) {

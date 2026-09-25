@@ -4027,7 +4027,7 @@ const baselines = {
     },
     'clinterfaces': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'cloduleAcrossModuleDefinitions': {
@@ -14777,7 +14777,7 @@ const baselines = {
     },
     'genericDefaultsErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericDefaultsJs': {
@@ -16762,12 +16762,12 @@ const baselines = {
     },
     'indexSignatureInOtherFile': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'indexSignatureInOtherFile1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'indexSignatureMustHaveTypeAnnotation': {
@@ -17792,7 +17792,7 @@ const baselines = {
     },
     'instantiateCrossFileMerge': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'instantiateTypeParameter': {
@@ -17997,7 +17997,7 @@ const baselines = {
     },
     'interfaceMergedUnconstrainedNoErrorIrrespectiveOfOrder': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interfaceNameAsIdentifier': {
@@ -23417,7 +23417,7 @@ const baselines = {
     },
     'nonIdenticalTypeConstraints': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nonInferrableTypePropagation1': {
@@ -32212,22 +32212,22 @@ const baselines = {
     },
     'unusedTypeParameters6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unusedTypeParameters7': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unusedTypeParameters8': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unusedTypeParameters9': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unusedTypeParametersCheckedByNoUnusedParameters': {
@@ -49622,7 +49622,7 @@ const baselines = {
     },
     'mergeThreeInterfaces': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergeThreeInterfaces2': {
@@ -49632,7 +49632,7 @@ const baselines = {
     },
     'mergeTwoInterfaces': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergeTwoInterfaces2': {
@@ -49682,42 +49682,42 @@ const baselines = {
     },
     'mergedInterfacesWithMultipleBases': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergedInterfacesWithMultipleBases2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergedInterfacesWithMultipleBases3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergedInterfacesWithMultipleBases4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'twoGenericInterfacesDifferingByTypeParameterName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'twoGenericInterfacesDifferingByTypeParameterName2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'twoGenericInterfacesWithDifferentConstraints': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'twoGenericInterfacesWithTheSameNameButDifferentArity': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'twoInterfacesDifferentRootModule': {
@@ -49737,7 +49737,7 @@ const baselines = {
     },
     'twoMergedInterfacesWithDifferingOverloads2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asiPreventsParsingAsInterface01': {
@@ -62697,7 +62697,7 @@ const baselines = {
     },
     'callSignaturesThatDifferOnlyByReturnType3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'callSignaturesWithAccessibilityModifiersOnParameters': {
@@ -62752,7 +62752,7 @@ const baselines = {
     },
     'identicalCallSignatures3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parametersWithNoAnnotationAreAny': {

@@ -158,9 +158,10 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   start of the member's declaration span (`ty_mark_member_referenced`).
 - `mark_jsdoc_links()` (unused.c): JSDoc `{@link X}` names count as uses by a text scan of the file, looked up from
   the file's scope (tsc resolves them where the comment is).
-- Type parameters of merged interface/class declarations are separate symbols in tttt (merged in tsc): unused.c
-  checks every declaration's type parameter at the same index (`type_parameter_is_unused`), and
-  `ty_check_type_parameter_lists_identical` maps each declaration's parameters to the merged list.
+- Type parameters of merged interface/class declarations are one symbol per name like in tsc
+  (`scope_new_generic_merged`), except when the earlier declaration is the shared lib program's (a global
+  augmentation of `Array<T>`): nothing is written to lib symbols, so those stay separate. unused.c still checks every
+  declaration's type parameter at the same index (`type_parameter_is_unused`) for that case.
 - `ty_check_index_constraints` on type literals only runs when the literal syntactically has an index signature and
   something to check against it (`type_literal_has_index_constraints`), and an alias body is evaluated through its
   alias first (`type_decl_typecheck`): evaluating a literal's type early gives it an id (union order) and loses the

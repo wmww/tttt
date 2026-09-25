@@ -133,7 +133,11 @@ static void push_prop_qualifier(VecSpan* out, PropSymbolInfo const* info, Baseli
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     for_each (i, vec_generic_item, &my items) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i->name, .declarations = vec_span_single(i->full_span) });
+        // (A type parameter of merged declarations is declared by all of them)
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .span = i->name,
+            .declarations = i->owned_symbol ? symbol_declaration_spans(i->owned_symbol) : vec_span_single(i->full_span),
+        });
         type_compile_test_info(&i->extends, ctx);
         if (i->fallback_explicit) {
             type_compile_test_info(&i->fallback, ctx);

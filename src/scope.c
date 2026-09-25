@@ -311,6 +311,52 @@ Scope* scope_new_generic(Scope* parent, Generic* generic, ErrorCtx* errs) {
     return ret;
 }
 
+// The type parameters of an earlier declaration of `owner` (a class or interface)
+static Generic const* earlier_generic(Symbol const* owner, void const* node, u32* index) {
+    for (u32 i = 0; i < owner->decl_count; i++) {
+        SymbolDecl const* decl = &owner->decls[i];
+        if (decl->node == node) return nullptr;
+        if (decl->kind == SYMBOL_DECL_INTERFACE || decl->kind == SYMBOL_DECL_CLASS) {
+            *index = i;
+            return decl->kind == SYMBOL_DECL_INTERFACE ? &((InterfaceDecl const*)decl->node)->generic :
+                &((ClassDecl const*)decl->node)->generic;
+        }
+    }
+    return nullptr;
+}
+
+Scope* scope_new_generic_merged(Scope* parent, Generic* generic, Symbol const* owner, void const* node, ErrorCtx* errs) {
+    if (generic_empty(generic)) return parent;
+    Scope* ret = scope_new(parent, SCOPE_BLOCK);
+    // Like tsc, which declares them in the members of the merged symbol: a type parameter of the same name as one of
+    // an earlier declaration is that one
+    u32 index;
+    Generic const* first = owner ? earlier_generic(owner, node, &index) : nullptr;
+    for_each (i, vec_generic_item, &generic->items) {
+        Symbol* shared = nullptr;
+        for_each (j, vec_generic_item, first ? &first->items : &(VecGenericItem){0}) {
+            // (Not one of the shared lib program: nothing is written to its symbols)
+            if (j->owned_symbol && j->owned_symbol->binder == ret->binder && csview_equals_sv(j->name.sv, i->name.sv)) {
+                shared = j->owned_symbol;
+            }
+        }
+        if (!shared || symbol_table_get(&ret->locals, i->name.sv)) {
+            scope_init_declaration(ret, &i->owned_symbol, (DeclProps){
+                .name = i->name, .full = i->full_span, .kind = SYMBOL_DECL_TYPE_PARAMETER, .node = i,
+            });
+        } else {
+            symbol_table_insert(&ret->locals, &ret->binder->arena, i->name.sv, symbol_name_hash(i->name.sv), shared);
+            symbol_add_decl(shared, (SymbolDecl){
+                .kind = SYMBOL_DECL_TYPE_PARAMETER, .flags = SYMBOL_TYPE_PARAMETER, .node = i, .name = i->name, .full = i->full_span,
+            });
+            i->owned_symbol = shared;
+        }
+        i->symbol_ref = i->owned_symbol;
+    }
+    generic_lookup_names(generic, ret, errs);
+    return ret;
+}
+
 bool scope_has_function(Scope const* me) {
     for (Scope const* i = me; i; i = i->parent) {
         if (i->kind == SCOPE_FUNCTION) return true;
