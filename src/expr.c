@@ -1320,7 +1320,7 @@ static void nullish_coalesce_typecheck(Expr const* me, ErrorCtx* errs) {
         Expr const* operand = operands[i];
         if (operand->tag != EXPR_BINARY_OP || expr_is_perenthisized(operand)) continue;
         BinaryOp op = operand->binary_op->op;
-        if (op != BINARY_OP_OR_OR && op != BINARY_OP_AND_AND) continue;
+        if ((op != BINARY_OP_OR_OR && op != BINARY_OP_AND_AND) || !operand->outer_span.source || operand->outer_span.source->has_parse_errors) continue;
         error_ctx_error_d(errs, operand->outer_span, 5076, "'", binary_op_get_zv(op).str,
             "' and '?" "?' operations cannot be mixed without parentheses.");
     }

@@ -346,7 +346,7 @@ const baselines = {
         types: true,
     },
     'accessorsInAmbientContext': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -721,7 +721,7 @@ const baselines = {
         types: true,
     },
     'ambientGetters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -766,7 +766,7 @@ const baselines = {
         types: false,
     },
     'ambientStatement1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5841,7 +5841,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloads6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12556,7 +12556,7 @@ const baselines = {
         types: false,
     },
     'exportDeclareClass1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13311,7 +13311,7 @@ const baselines = {
         types: true,
     },
     'externSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14386,7 +14386,7 @@ const baselines = {
         types: true,
     },
     'functionsWithModifiersInBlocks1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20636,7 +20636,7 @@ const baselines = {
         types: true,
     },
     'methodInAmbientClass1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54101,12 +54101,12 @@ const baselines = {
         types: true,
     },
     'parserAccessors5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserAccessors6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54366,7 +54366,7 @@ const baselines = {
         types: true,
     },
     'parserClassDeclaration18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55256,7 +55256,7 @@ const baselines = {
         types: true,
     },
     'parserFunctionDeclaration2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56771,7 +56771,7 @@ const baselines = {
         types: true,
     },
     'parserBlockStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56791,7 +56791,7 @@ const baselines = {
         types: true,
     },
     'parserDoStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56801,7 +56801,7 @@ const baselines = {
         types: true,
     },
     'parserES5ForOfStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56916,7 +56916,7 @@ const baselines = {
         types: true,
     },
     'parserForInStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56956,7 +56956,7 @@ const baselines = {
         types: false,
     },
     'parserForStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57001,7 +57001,7 @@ const baselines = {
         types: false,
     },
     'parserIfStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57011,7 +57011,7 @@ const baselines = {
         types: true,
     },
     'parserLabeledStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57021,17 +57021,17 @@ const baselines = {
         types: true,
     },
     'parserSwitchStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserThrowStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserTryStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57046,7 +57046,7 @@ const baselines = {
         types: true,
     },
     'parserWhileStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57861,7 +57861,7 @@ const baselines = {
         types: true,
     },
     'parserForOfStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -775,7 +775,7 @@ void program_typecheck(Program* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         if (!source->is_stdlib && !source->unchecked) {
-            block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
+            block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, my errs);
         }
     }
     // After everything is checked: the checker marks members it reads

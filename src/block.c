@@ -92,7 +92,59 @@ void block_collect_return_types(Block const* me, TyBuf* out) {
     }
 }
 
+Span block_first_token(Span at) {
+    if (!span_valid(at) || !at.sv.size) return span_null;
+    char const* start = at.sv.buf;
+    char const* limit = start + at.sv.size;
+    char const* end = start + 1;
+    unsigned char c = (unsigned char)*start;
+    if (isalnum(c) || c == '_' || c == '$' || c >= 0x80) {
+        while (end < limit && (isalnum((unsigned char)*end) || *end == '_' || *end == '$' || (unsigned char)*end >= 0x80)) end++;
+    } else if (c == '"' || c == '\'' || c == '`') {
+        while (end < limit && *end != (char)c) end += *end == '\\' ? 2 : 1;
+        if (end < limit) end++;
+    } else if ((c == '+' || c == '-') && end < limit && *end == (char)c) {
+        end++;
+    } else if (c == '.' && limit - start >= 3 && start[1] == '.' && start[2] == '.') {
+        end += 2;
+    }
+    return span_make(at.source, start, end < limit ? end : limit);
+}
+
+// tsc's checkGrammarStatementInAmbientContext: in an ambient context only declarations can be statements, which is
+// said once per block
+static bool is_ambient_disallowed(Statement const* me) {
+    switch (my tag) {
+        case STATEMENT_BLOCK:
+        case STATEMENT_IF_ELSE:
+        case STATEMENT_FOR_LOOP:
+        case STATEMENT_FOR_EACH_LOOP:
+        case STATEMENT_SWITCH:
+        case STATEMENT_TRY_CATCH:
+        case STATEMENT_LABELED:
+        case STATEMENT_BREAK:
+        case STATEMENT_CONTINUE:
+        case STATEMENT_EXPR:
+        case STATEMENT_RETURN_EXPR:
+        case STATEMENT_THROW_EXPR:
+            return true;
+        case STATEMENT_NOOP: // (`;`, not what the parser made of an error)
+            return span_valid(my span) && my span.sv.size && my span.sv.buf[0] == ';';
+        default:
+            return false;
+    }
+}
+
 void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
+    if (ctx.ambient && !ctx.ambient_reported) {
+        for_each (i, vec_statement, &my statements) {
+            // (A grammar error: not in a file with parse errors, like tsc's grammarErrorOnFirstToken)
+            if (!is_ambient_disallowed(i) || !i->span.source || i->span.source->has_parse_errors) continue;
+            error_ctx_error_d(errs, block_first_token(i->span), 1036, "Statements are not allowed in ambient contexts.");
+            break;
+        }
+    }
+    ctx.ambient_reported = false;
     for_each (i, vec_statement, &my statements) {
         statement_typecheck(i, ctx, errs);
     }

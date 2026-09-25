@@ -38,6 +38,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported) {
 
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_FUNCTION);
+    my ambient = names->ambient;
     if (my is_async) {
         my promise_decl = scope_get_type(names, c_sv("Promise"), nullptr);
     }
@@ -315,7 +316,19 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         error_ctx_error_d(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
     }
 
+    // tsc's checkGrammarStatementInAmbientContext for the body, which then covers the statements directly in it
+    if (my ambient && my has_body && !my expression_body && my full_span.source && !my full_span.source->has_parse_errors) {
+        // (The body's `{`: the first after the parameters and the return type)
+        char const* at = span_valid(my ret_span) && span_end_ptr(my ret_span) > span_end_ptr(my args_span) ?
+            span_end_ptr(my ret_span) : span_end_ptr(my args_span);
+        char const* end = span_end_ptr(my full_span);
+        while (at && at < end && *at != '{') at++;
+        Span body = at && at < end ? block_first_token(span_make(my full_span.source, at, end)) : span_null;
+        if (span_valid(body)) error_ctx_error_d(errs, body, 1183, "An implementation cannot be declared in ambient contexts.");
+    }
     BlockTypecheckCtx ctx = {
+        .ambient = my ambient,
+        .ambient_reported = true,
         .in_function = true,
         // TODO: returns in async functions and generators aren't checked, the declared type wraps what's returned
         .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret : &type_any,

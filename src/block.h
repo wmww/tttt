@@ -21,6 +21,7 @@ typedef struct BlockTypecheckCtx {
     bool continue_allowed;
     bool inside_label; // Labeled breaks are allowed
     bool ambient; // Inside a `declare namespace`/`declare module`, where every statement is implicitly declared
+    bool ambient_reported; // The block's statements can't be in an ambient context, and that's been said for them
     bool body; // The statement is the body of an `if` or a loop (through labels): no `let`, `const` or `using`
     bool in_function; // In a function body or class static block: a jump that finds no target crosses its boundary
     TypecheckLabel const* labels;
@@ -31,6 +32,8 @@ typedef struct Block {
 } Block;
 
 void block_drop(Block* me);
+// The token that starts at `at` (tsc's getSpanOfTokenAtPosition, roughly), invalid if `at` is
+Span block_first_token(Span at);
 void block_add_names(Block const* me, Scope* scope);
 // `export {}`, `export * from`, `export default x`: an ambient module with none of them exports everything
 bool block_has_export_declarations(Block const* me);
