@@ -3516,7 +3516,7 @@ const baselines = {
         types: false,
     },
     'classExpressionExtendingAbstractClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -17406,7 +17406,7 @@ const baselines = {
         types: true,
     },
     'inheritance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17436,17 +17436,17 @@ const baselines = {
         types: true,
     },
     'inheritanceMemberAccessorOverridingMethod': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'inheritanceMemberAccessorOverridingProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'inheritanceMemberFuncOverridingAccessor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17456,12 +17456,12 @@ const baselines = {
         types: true,
     },
     'inheritanceMemberFuncOverridingProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'inheritanceMemberPropertyOverridingAccessor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33911,7 +33911,7 @@ const baselines = {
         types: true,
     },
     'classAbstractExtends': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33921,7 +33921,7 @@ const baselines = {
         types: true,
     },
     'classAbstractGeneric': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33936,12 +33936,12 @@ const baselines = {
         types: true,
     },
     'classAbstractInheritance1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classAbstractInheritance2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33986,7 +33986,7 @@ const baselines = {
         types: true,
     },
     'classAbstractOverrideWithAbstract': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35071,7 +35071,7 @@ const baselines = {
         types: false,
     },
     'derivedClassFunctionOverridesBaseClassAccessor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36326,27 +36326,27 @@ const baselines = {
         types: true,
     },
     'accessorsOverrideMethod': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'accessorsOverrideProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'accessorsOverrideProperty2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'accessorsOverrideProperty3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'accessorsOverrideProperty4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36356,7 +36356,7 @@ const baselines = {
         types: true,
     },
     'accessorsOverrideProperty6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36491,32 +36491,32 @@ const baselines = {
         types: true,
     },
     'autoAccessor6(target=es2015,usedefineforclassfields=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'autoAccessor6(target=es2015,usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'autoAccessor6(target=es2022,usedefineforclassfields=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'autoAccessor6(target=es2022,usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'autoAccessor6(target=esnext,usedefineforclassfields=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'autoAccessor6(target=esnext,usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36786,27 +36786,27 @@ const baselines = {
         types: true,
     },
     'propertyOverridesAccessors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'propertyOverridesAccessors2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'propertyOverridesAccessors3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'propertyOverridesAccessors4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'propertyOverridesAccessors5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

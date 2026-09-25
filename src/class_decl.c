@@ -306,6 +306,176 @@ static Atom const* item_member_name(Checker* checker, ClassDecl const* me, Class
         is_field ? item->field.computed_key : item->method.computed_key);
 }
 
+// What an instance member of a class is, for tsc's checkKindsOfPropertyMemberOverrides()
+typedef enum MemberKind {
+    MEMBER_NONE,
+    MEMBER_PROPERTY,
+    MEMBER_ACCESSOR, // get/set, `accessor x`
+    MEMBER_METHOD,
+} MemberKind;
+
+typedef struct MemberInfo {
+    MemberKind kind;
+    bool is_abstract;
+    bool is_private;
+    bool is_declare;
+    bool uninitialized_field; // A property declaration without an initializer
+    bool definite; // `x!: T`
+    bool identifier_name;
+    Span name;
+} MemberInfo;
+
+static MemberInfo class_instance_member(Checker* checker, ClassDecl const* me, Atom const* name) {
+    MemberInfo ret = {0};
+    for_each (i, vec_class_item, &my items) {
+        if ((i->tag != CLASS_ITEM_FIELD && i->tag != CLASS_ITEM_METHOD) || class_item_is_static((ClassItem*)i)) continue;
+        if (item_member_name(checker, me, i) != name) continue;
+        if (i->tag == CLASS_ITEM_FIELD) {
+            ret.kind = i->field.is_auto_accessor ? MEMBER_ACCESSOR : MEMBER_PROPERTY;
+            ret.is_abstract = i->field.is_abstract;
+            ret.is_declare = i->field.is_declare;
+            ret.uninitialized_field = !i->field.is_auto_accessor && i->field.value.tag == EXPR_IMPLICIT_ANY;
+            // `x!: T` (the parser doesn't keep the `!`)
+            char const* after = span_valid(i->field.name_span) ? span_end_ptr(i->field.name_span) : nullptr;
+            while (after && (*after == ' ' || *after == '\t')) after++;
+            ret.definite = after && *after == '!';
+            ret.identifier_name = !i->field.computed_key && !i->field.name_is_value;
+            ret.name = i->field.name_span;
+        } else {
+            ret.kind = i->method.accessor ? MEMBER_ACCESSOR : MEMBER_METHOD;
+            ret.is_abstract = i->method.is_abstract;
+            ret.name = i->method.name_span;
+        }
+        ret.is_private = i->access == ACCESS_MODIFIER_PRIVATE;
+        return ret;
+    }
+    // `constructor(public x: T)`
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag != CLASS_ITEM_CONSTRUCTOR) continue;
+        for_each (arg, vec_function_arg, &i->constructor.func.args) {
+            if (!arg->is_parameter_property || arg->initializer.binding.tag != BINDING_IDENTIFIER) continue;
+            if (checker_atom(checker, arg->initializer.binding.content_span.sv) != name) continue;
+            ret.kind = MEMBER_PROPERTY;
+            ret.is_private = arg->access == ACCESS_MODIFIER_PRIVATE;
+            ret.name = arg->initializer.binding.content_span;
+            return ret;
+        }
+    }
+    return ret;
+}
+
+static ClassDecl const* class_of_prop(Prop const* prop) {
+    while (prop->target) prop = prop->target;
+    return prop->parent ? symbol_find_node(prop->parent, SYMBOL_DECL_CLASS) : nullptr;
+}
+
+// tsc's checkKindsOfPropertyMemberOverrides(): what an instance member of the base class is overridden with (a
+// property with an accessor or the other way around, a method with an accessor...), and the abstract members a
+// class that isn't abstract inherits without implementing
+static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const* base, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    CompilerOptions const* options = compiler_options();
+    Members const* base_members = ty_members(checker, base);
+    cstr missing = cstr_null; // The first four (all five when there are five), quoted
+    u32 missing_count = 0;
+    Atom const* first_missing = nullptr;
+    Atom const* five = nullptr; // The fifth: listed when it is the last
+    for (u32 i = 0; i < base_members->prop_count; i++) {
+        Prop const* base_prop = base_members->props[i];
+        if (base_prop->flags & PROP_STATIC) continue;
+        ClassDecl const* base_class = class_of_prop(base_prop);
+        if (!base_class) continue; // (an interface merged into the class)
+        MemberInfo base_info = class_instance_member(checker, base_class, base_prop->name);
+        if (!base_info.kind) continue;
+        Prop const* derived_prop = ty_get_prop(checker, type, base_prop->name);
+        if (!derived_prop) continue;
+        ClassDecl const* derived_class = class_of_prop(derived_prop);
+        if (!derived_class) continue;
+        if (derived_class == base_class) {
+            // Inherited as it is: an abstract member has to be implemented
+            if (base_info.is_abstract && !my is_abstract) {
+                if (!missing_count) first_missing = base_prop->name;
+                if (missing_count < 5) {
+                    if (missing_count == 4) five = base_prop->name;
+                    else cstr_append_d(&missing, DEFAULT_DISPLAY, missing_count ? ", '" : "'", atom_sv(base_prop->name), "'");
+                }
+                missing_count++;
+            }
+            continue;
+        }
+        if (derived_class != me) continue;
+        MemberInfo derived_info = class_instance_member(checker, derived_class, base_prop->name);
+        if (!derived_info.kind || base_info.is_private || derived_info.is_private) continue;
+        bool base_property_like = base_info.kind == MEMBER_PROPERTY || base_info.kind == MEMBER_ACCESSOR;
+        bool derived_property_like = derived_info.kind == MEMBER_PROPERTY || derived_info.kind == MEMBER_ACCESSOR;
+        Span at = derived_info.name;
+        if (base_property_like && derived_property_like) {
+            if (base_info.is_abstract && (base_info.kind != MEMBER_PROPERTY || base_info.uninitialized_field)) continue;
+            if (base_info.kind == MEMBER_ACCESSOR && derived_info.kind == MEMBER_PROPERTY) {
+                error_ctx_error_d(errs, at, 2610, "'", atom_sv(base_prop->name), "' is defined as an accessor in class '",
+                    base, "', but is overridden here in '", type, "' as an instance property.");
+            } else if (base_info.kind == MEMBER_PROPERTY && derived_info.kind == MEMBER_ACCESSOR) {
+                error_ctx_error_d(errs, at, 2611, "'", atom_sv(base_prop->name), "' is defined as a property in class '",
+                    base, "', but is overridden here in '", type, "' as an accessor.");
+            } else if (options->use_define_for_class_fields && derived_info.uninitialized_field && !base_info.is_abstract &&
+                !derived_info.is_abstract && !derived_info.is_declare && !my is_ambient
+            ) {
+                // TODO: whether the constructor initializes it (tsc's isPropertyInitializedInConstructor, flow
+                // analysis): until then only the cases that don't depend on it
+                bool has_constructor = false;
+                for_each (item, vec_class_item, &my items) {
+                    if (item->tag == CLASS_ITEM_CONSTRUCTOR && item->constructor.func.has_body) has_constructor = true;
+                }
+                if (derived_info.definite || !has_constructor || !derived_info.identifier_name || !options->strict_null_checks) {
+                    error_ctx_error_d(errs, at, 2612, "Property '", atom_sv(base_prop->name), "' will overwrite the base "
+                        "property in '", base, "'. If this is intentional, add an initializer. Otherwise, add a 'declare' "
+                        "modifier or remove the redundant declaration.");
+                }
+            }
+        } else if (base_info.kind == MEMBER_METHOD) {
+            if (derived_info.kind == MEMBER_ACCESSOR) {
+                error_ctx_error_d(errs, at, 2423, "Class '", base, "' defines instance member function '",
+                    atom_sv(base_prop->name), "', but extended class '", type, "' defines it as instance member accessor.");
+            }
+        } else if (base_info.kind == MEMBER_ACCESSOR) {
+            error_ctx_error_d(errs, at, 2426, "Class '", base, "' defines instance member accessor '",
+                atom_sv(base_prop->name), "', but extended class '", type, "' defines it as instance member function.");
+        } else {
+            error_ctx_error_d(errs, at, 2425, "Class '", base, "' defines instance member property '",
+                atom_sv(base_prop->name), "', but extended class '", type, "' defines it as instance member function.");
+        }
+    }
+    if (missing_count == 5) cstr_append_d(&missing, DEFAULT_DISPLAY, ", '", atom_sv(five), "'");
+    if (missing_count > 5) {
+        Span at = span_valid(my name) ? my name : block_first_token(my full_span);
+        if (my is_expression && !span_valid(my name)) {
+            error_ctx_error_d(errs, at, 2650, "Non-abstract class expression is missing implementations for the "
+                "following members of '", base, "': ", missing, " and ", missing_count - 4, " more.");
+        } else {
+            error_ctx_error_d(errs, at, 2655, "Non-abstract class '", type, "' is missing implementations for the "
+                "following members of '", base, "': ", missing, " and ", missing_count - 4, " more.");
+        }
+    } else if (missing_count) {
+        Span at = span_valid(my name) ? my name : block_first_token(my full_span);
+        if (my is_expression && !span_valid(my name)) {
+            if (missing_count == 1) {
+                error_ctx_error_d(errs, at, 2653, "Non-abstract class expression does not implement inherited abstract "
+                    "member '", atom_sv(first_missing), "' from class '", base, "'.");
+            } else {
+                error_ctx_error_d(errs, at, 2656, "Non-abstract class expression is missing implementations for the "
+                    "following members of '", base, "': ", missing, ".");
+            }
+        } else if (missing_count == 1) {
+            error_ctx_error_d(errs, at, 2515, "Non-abstract class '", type, "' does not implement inherited abstract "
+                "member ", atom_sv(first_missing), " from class '", base, "'.");
+        } else {
+            error_ctx_error_d(errs, at, 2654, "Non-abstract class '", type, "' is missing implementations for the "
+                "following members of '", base, "': ", missing, ".");
+        }
+    }
+    cstr_drop(&missing);
+}
+
 // tsc's checkClassLikeDeclaration: the class (with its own `this`) has to fit what it extends and implements, with
 // that `this`
 static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
@@ -333,6 +503,7 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
     // A class that extends itself through its bases is TS2506 in tsc, and nothing is compared
     if (base && ty_has_base_type(checker, base, declared)) base = nullptr;
     if (base && (base->flags & TYF_OBJECT)) {
+        class_check_member_overrides(me, declared, base, errs);
         ty_check_heritage(checker, type_with_this, ty_with_this_arg(checker, base, this_param), members, count, 2415,
             "Class", "incorrectly extends base class", span, errs);
     }
