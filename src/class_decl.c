@@ -458,13 +458,43 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     for_each (i, vec_expr, &my decorators) {
         expr_typecheck(i, errs);
     }
+    bool legacy = compiler_options()->experimental_decorators;
     for_each (i, vec_class_item, &my items) {
-        if (i->tag == CLASS_ITEM_FIELD && (i->field.is_declare || i->field.is_abstract) &&
-            vec_expr_size(&i->decorators) && !compiler_options()->experimental_decorators
-        ) {
-            // tsc's checkGrammarModifiers via nodeCanBeDecorated(), at the `@` of the first decorator
-            Span at = i->span;
-            at.sv = csview_from_n(span_start_ptr(i->span), 1);
+        // tsc's checkGrammarModifiers via nodeCanBeDecorated(), at the `@` of the first decorator
+        if (vec_expr_size(&i->decorators) && span_valid(i->span)) {
+            bool valid = false;
+            unsigned code = 1206;
+            switch (i->tag) {
+                case CLASS_ITEM_FIELD:
+                    valid = legacy ? !my is_expression : !(i->field.is_declare || i->field.is_abstract);
+                    break;
+                case CLASS_ITEM_METHOD:
+                    valid = i->method.func.has_body && (!legacy || !my is_expression);
+                    if (!i->method.func.has_body && !i->method.accessor) code = 1249;
+                    break;
+                default:
+                    break;
+            }
+            if (!valid) {
+                Span at = i->span;
+                at.sv = csview_from_n(span_start_ptr(i->span), 1);
+                if (code == 1249) {
+                    error_ctx_grammar_error_d(errs, at, 1249, "A decorator can only decorate a method implementation, not an overload.");
+                } else {
+                    error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
+                }
+            }
+        }
+        // Parameters: only legacy decorators, of methods, setters and constructors with a body in a class declaration
+        FunctionImpl const* function = i->tag == CLASS_ITEM_METHOD ? &i->method.func :
+            i->tag == CLASS_ITEM_CONSTRUCTOR ? &i->constructor.func : nullptr;
+        for (isize a = 0; function && a < vec_function_arg_size(&function->args); a++) {
+            FunctionArg const* arg = vec_function_arg_at(&function->args, a);
+            if (!vec_expr_size(&arg->decorators) || !span_valid(arg->span)) continue;
+            bool getter = i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_GET;
+            if (legacy && function->has_body && !getter && !my is_expression) continue;
+            Span at = arg->span;
+            at.sv = csview_from_n(span_start_ptr(arg->span), 1);
             error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
         }
         for_each (decorator, vec_expr, &i->decorators) {

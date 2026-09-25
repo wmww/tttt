@@ -2815,6 +2815,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 .field = {
                     .is_readonly = modifiers.includes[MODIFIER_READONLY],
                     .is_declare = modifiers.includes[MODIFIER_DECLARE],
+                    .is_abstract = modifiers.includes[MODIFIER_ABSTRACT],
                     .is_auto_accessor = modifiers.includes[MODIFIER_ACCESSOR],
                     .is_static = modifiers.includes[MODIFIER_STATIC],
                     .is_optional = optional,
@@ -3993,6 +3994,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
     } else if (parse_class_decl(&p, &parsed.class_decl)) {
+        parsed.class_decl.is_expression = true;
         *ret = expr_class_decl(span_from(a), c_new(ClassDecl, parsed.class_decl));
     } else if (parse_new_target(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "new")) {

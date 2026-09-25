@@ -86,6 +86,7 @@ typedef struct ClassDecl {
     Span full_span;
     Span name;
     bool is_abstract;
+    bool is_expression; // A class expression, which legacy decorators can't decorate the members of
     bool has_typechecked;
     VecExpr decorators; // TODO: only checked as expressions, not as decorators of this class
     Generic generic;
