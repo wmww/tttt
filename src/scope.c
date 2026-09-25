@@ -665,7 +665,7 @@ void scope_check_export_merges(Scope* me, Span block) {
             for (u32 d = 0; d < symbols[s]->decl_count; d++) {
                 SymbolDecl const* decl = &symbols[s]->decls[d];
                 if (s == 1 && !span_within(decl->full, block)) continue;
-                if (!(declaration_spaces(decl) & common)) continue;
+                if (!(declaration_spaces(decl) & common) || !span_valid(decl->name)) continue;
                 error_ctx_error_d(my errs, decl->name, 2395, "Individual declarations in merged declaration '", decl->name,
                     "' must be all exported or all local.");
             }
@@ -691,6 +691,7 @@ void scope_check_duplicate_exports(Scope* me) {
         for (u32 d = 0; d < symbol->decl_count; d++) {
             SymbolDecl const* decl = &symbol->decls[d];
             if (decl->kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)decl->node)->has_body) continue;
+            if (!span_valid(decl->name)) continue; // TODO: `export default function () {}` (tsc: the `default` keyword)
             error_ctx_error_d(my errs, decl->name, 2323, "Cannot redeclare exported variable '", exports->entries[i].name,
                 "'.");
         }
@@ -1547,9 +1548,85 @@ static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion*
     return false;
 }
 
+static bool name_is_one_of(csview name, char const* const* names, u32 count) {
+    for (u32 i = 0; i < count; i++) {
+        if (csview_equals(name, names[i])) return true;
+    }
+    return false;
+}
+
+// The lib a global comes from, if it isn't in ES5 (the names of tsc's getScriptTargetFeatures, first lib each)
+static char const* suggested_lib(csview name) {
+    static char const* const names[][2] = {
+        {"Array", "es2015"}, {"Iterator", "es2015"}, {"AsyncIterator", "es2015"}, {"ArrayBuffer", "es2024"},
+        {"Atomics", "es2017"}, {"SharedArrayBuffer", "es2017"}, {"AsyncIterable", "es2018"},
+        {"AsyncIterableIterator", "es2018"}, {"AsyncGenerator", "es2018"}, {"AsyncGeneratorFunction", "es2018"},
+        {"RegExp", "es2015"}, {"Reflect", "es2015"}, {"ArrayConstructor", "es2015"}, {"ObjectConstructor", "es2015"},
+        {"NumberConstructor", "es2015"}, {"Math", "es2015"}, {"Map", "es2015"}, {"MapConstructor", "es2024"},
+        {"Set", "es2015"}, {"PromiseConstructor", "es2015"}, {"Symbol", "es2015"}, {"WeakMap", "es2015"},
+        {"WeakSet", "es2015"}, {"String", "es2015"}, {"StringConstructor", "es2015"}, {"DateTimeFormat", "es2017"},
+        {"Promise", "es2015"}, {"RegExpMatchArray", "es2018"}, {"RegExpExecArray", "es2018"}, {"Intl", "es2018"},
+        {"NumberFormat", "es2018"}, {"SymbolConstructor", "es2020"}, {"DataView", "es2020"}, {"BigInt", "es2020"},
+        {"RelativeTimeFormat", "es2020"}, {"Int8Array", "es2022"}, {"Uint8Array", "es2022"},
+        {"Uint8ClampedArray", "es2022"}, {"Int16Array", "es2022"}, {"Uint16Array", "es2022"}, {"Int32Array", "es2022"},
+        {"Uint32Array", "es2022"}, {"Float16Array", "esnext"}, {"Float32Array", "es2022"}, {"Float64Array", "es2022"},
+        {"BigInt64Array", "es2020"}, {"BigUint64Array", "es2020"}, {"Error", "es2022"},
+    };
+    for (u32 i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
+        if (csview_equals(name, names[i][0])) return names[i][1];
+    }
+    return nullptr;
+}
+
+// tsc's getCannotFindNameDiagnosticForName (but `await` as a callee and shorthand properties)
+static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib) {
+    static char const* const dom[] = { "document", "console" };
+    static char const* const test_runner[] = { "describe", "suite", "it", "test" };
+    static char const* const node[] = { "process", "require", "Buffer", "module" };
+    static char const* const later_lib[] = {
+        "Map", "Set", "Promise", "Symbol", "WeakMap", "WeakSet", "Iterator", "AsyncIterator", "SharedArrayBuffer",
+        "Atomics", "AsyncIterable", "AsyncIterableIterator", "AsyncGenerator", "AsyncGeneratorFunction", "BigInt",
+        "Reflect", "BigInt64Array", "BigUint64Array",
+    };
+    bool types = compiler_options()->types_set;
+    csview n = name.sv;
+    if (name_is_one_of(n, dom, 2)) {
+        error_ctx_error_d(errs, name, 2584, "Cannot find name '", name, "'. Do you need to change your target library? "
+            "Try changing the 'lib' compiler option to include 'dom'.");
+    } else if (csview_equals(n, "$")) {
+        error_ctx_error_d(errs, name, types ? 2592 : 2581, "Cannot find name '", name, "'. Do you need to install type "
+            "definitions for jQuery? Try `npm i --save-dev @types/jquery`",
+            types ? " and then add 'jquery' to the types field in your tsconfig." : ".");
+    } else if (name_is_one_of(n, test_runner, 4)) {
+        error_ctx_error_d(errs, name, types ? 2593 : 2582, "Cannot find name '", name, "'. Do you need to install type "
+            "definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`",
+            types ? " and then add 'jest' or 'mocha' to the types field in your tsconfig." : ".");
+    } else if (name_is_one_of(n, node, 4)) {
+        error_ctx_error_d(errs, name, types ? 2591 : 2580, "Cannot find name '", name, "'. Do you need to install type "
+            "definitions for node? Try `npm i --save-dev @types/node`",
+            types ? " and then add 'node' to the types field in your tsconfig." : ".");
+    } else if (csview_equals(n, "Bun")) {
+        error_ctx_error_d(errs, name, types ? 2868 : 2867, "Cannot find name '", name, "'. Do you need to install type "
+            "definitions for Bun? Try `npm i --save-dev @types/bun`",
+            types ? " and then add 'bun' to the types field in your tsconfig." : ".");
+    } else if (lib && name_is_one_of(n, later_lib, sizeof(later_lib) / sizeof(later_lib[0]))) {
+        error_ctx_error_d(errs, name, 2583, "Cannot find name '", name, "'. Do you need to change your target library? "
+            "Try changing the 'lib' compiler option to '", lib, "' or later.");
+    } else {
+        error_ctx_error_d(errs, name, 2304, "Cannot find name '", name, "'.");
+    }
+}
+
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, ErrorCtx* errs) {
     Binder* binder = my binder;
     Suggestion suggestion = {0};
+    // A global of a later lib is said to be so rather than misspelled
+    char const* lib = suggested_lib(name.sv);
+    if (lib) {
+        binder->suggestion_count++;
+        error_cannot_find_name(errs, name, lib);
+        return;
+    }
     if (binder->suggestion_count++ < 10 && scope_suggest(me, name.sv, meaning, &suggestion)) {
         Error* error = error_ctx_error_d(errs, name, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
         Symbol const* symbol = suggestion.symbol;
@@ -1560,7 +1637,7 @@ void scope_report_not_found(Scope const* me, Span name, u32 meaning, ErrorCtx* e
         }
         return;
     }
-    error_ctx_error_d(errs, name, 2304, "Cannot find name '", name, "'.");
+    error_cannot_find_name(errs, name, nullptr);
 }
 
 typedef struct PendingNotFound {

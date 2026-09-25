@@ -277,10 +277,16 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             }
         }
     } else if (scope_get_type(names, my name.sv, nullptr)) {
-        error_ctx_error_d(
-            errs, my name, 2693,
-            "'", my name, "' only refers to a type, but is being used as a value here."
-        );
+        // (tsc's isES2015OrLaterConstructorName)
+        static char const* const later[] = { "Promise", "Symbol", "Map", "WeakMap", "Set", "WeakSet" };
+        bool later_lib = false;
+        for (u32 i = 0; i < c_arraylen(later); i++) later_lib |= csview_equals(my name.sv, later[i]);
+        if (later_lib) {
+            error_ctx_error_d(errs, my name, 2585, "'", my name, "' only refers to a type, but is being used as a value "
+                "here. Do you need to change your target library? Try changing the 'lib' compiler option to es2015 or later.");
+        } else {
+            error_ctx_error_d(errs, my name, 2693, "'", my name, "' only refers to a type, but is being used as a value here.");
+        }
     } else {
         scope_report_value_not_found(names, my name, errs);
     }

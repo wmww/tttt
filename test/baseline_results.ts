@@ -976,7 +976,7 @@ const baselines = {
         types: true,
     },
     'argumentsObjectIterator02_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9581,7 +9581,7 @@ const baselines = {
         types: true,
     },
     'didYouMeanSuggestionErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -13656,7 +13656,7 @@ const baselines = {
         types: false,
     },
     'forwardDeclaredCommonTypes01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -20581,7 +20581,7 @@ const baselines = {
         types: true,
     },
     'metadataImportType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -21266,7 +21266,7 @@ const baselines = {
         types: false,
     },
     'moduleExports1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21301,7 +21301,7 @@ const baselines = {
         types: false,
     },
     'moduleKeywordRepeatError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30921,7 +30921,7 @@ const baselines = {
         types: true,
     },
     'typecheckIfCondition': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32761,7 +32761,7 @@ const baselines = {
         types: false,
     },
     'ES5SymbolProperty2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -32781,7 +32781,7 @@ const baselines = {
         types: false,
     },
     'ES5SymbolProperty6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -38361,12 +38361,12 @@ const baselines = {
         types: true,
     },
     'useSharedArrayBuffer2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'useSharedArrayBuffer3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55011,7 +55011,7 @@ const baselines = {
         types: true,
     },
     'parserCommaInTypeMemberList2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -56251,7 +56251,7 @@ const baselines = {
         types: false,
     },
     'parser509534': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56301,7 +56301,7 @@ const baselines = {
         types: true,
     },
     'parser509693': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56331,7 +56331,7 @@ const baselines = {
         types: true,
     },
     'parser521128': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57196,47 +57196,47 @@ const baselines = {
         types: true,
     },
     'parserES5SymbolProperty1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserES5SymbolProperty2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserES5SymbolProperty3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserES5SymbolProperty4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserES5SymbolProperty5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserES5SymbolProperty6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserES5SymbolProperty7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserES5SymbolProperty8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserES5SymbolProperty9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61376,7 +61376,7 @@ const baselines = {
         types: true,
     },
     'ES5For-ofTypeCheck10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65806,22 +65806,22 @@ const baselines = {
         types: true,
     },
     'typingsSuggestion1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typingsSuggestion2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typingsSuggestionBun1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typingsSuggestionBun2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
