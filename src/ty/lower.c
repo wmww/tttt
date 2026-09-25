@@ -1407,8 +1407,15 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
                 types[i_index - placeholders] = ty_from_node(me, i, ctx);
             }
             len -= placeholders;
-            Ty const* ret = node->tag == TYPE_UNION ?
-                ty_union(me, types, len, alias, alias_args) :
+            // A written `string & {}` (or number, bigint) stays as it is: the idiom for "any string, but show the
+            // literals" (tsc's NoSupertypeReduction)
+            bool keep_empty_object = node->tag == TYPE_INTERSECTION && len == 2 &&
+                (types[0] == ty_intrinsic(me, TY_STRING) || types[0] == ty_intrinsic(me, TY_NUMBER) ||
+                    types[0] == ty_intrinsic(me, TY_BIGINT)) &&
+                vec_type_back(&node->composite)->tag == TYPE_INTERFACE &&
+                !vec_interface_member_size(&vec_type_back(&node->composite)->interface.members);
+            Ty const* ret = node->tag == TYPE_UNION ? ty_union(me, types, len, alias, alias_args) :
+                keep_empty_object ? ty_intersection_keeping_empty_object(me, types, len, alias, alias_args) :
                 ty_intersection(me, types, len, alias, alias_args);
             free(types);
             return ret;

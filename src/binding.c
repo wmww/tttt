@@ -162,6 +162,29 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
     }
 }
 
+// tsc's checkVariableLikeDeclaration for a declaration that isn't the symbol's first (`var x: A; var x: B`): the same
+// type (TS2403)
+static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    SymbolDecl const* first = nullptr;
+    for (u32 i = 0; i < symbol->decl_count && !first; i++) {
+        if (symbol->decls[i].flags & SYMBOL_VALUE) first = &symbol->decls[i];
+    }
+    if (!first || first->node == me) return;
+    Checker* checker = current_checker;
+    Ty const* type = ty_type_of_symbol(checker, symbol);
+    Ty const* declared = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
+    Ty const* error = ty_intrinsic(checker, TY_ERROR);
+    if (type == error || declared == error || ty_is_related(checker, type, declared, TY_RELATION_IDENTITY)) return;
+    cstr type_str = ty_to_cstr(checker, type);
+    cstr declared_str = ty_to_cstr(checker, declared);
+    Error* e = error_ctx_error_d(errs, my content_span, 2403,
+        "Subsequent variable declarations must have the same type.  Variable '", my content_span, "' must be of type '",
+        type_str, "', but here has type '", declared_str, "'.");
+    error_add_related_d(e, first->name, 6203, "'", my content_span, "' was also declared here.");
+    c_drop(cstr, &type_str, &declared_str);
+}
+
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
     if (my has_explicit_type) {
         type_typecheck(&my explicit_type, errs);
@@ -178,6 +201,7 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
 
         case BINDING_IDENTIFIER:
             if (my symbol) {
+                check_subsequent_declaration(me, errs);
                 Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
                 if ((type->flags & TYF_ERROR) && type == ty_intrinsic(current_checker, TY_ERROR) &&
                     compiler_options()->no_implicit_any && !my has_explicit_type

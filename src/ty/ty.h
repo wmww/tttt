@@ -679,6 +679,10 @@ static inline bool ty_is_fresh_object(Ty const* ty) { return ty->kind == TY_ANON
 // The freshness part of tsc's getWidenedType: fresh object literals (also inside unions, arrays and tuples, and in the
 // properties of the regular twin) become regular. What declarations, inferred return types and inferences hold
 Ty const* ty_widened_objects(Checker* me, Ty const* ty);
+// tsc's getWidenedType for null and undefined without strictNullChecks: any, also inside the elements of arrays and
+// tuples, the properties of object literals and the members of unions. HACK: tsc only widens the types of the `null`
+// and `undefined` expressions, tttt can't tell them from written ones (hacks.md)
+Ty const* ty_widened_nullable(Checker* me, Ty const* ty);
 Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl); // `symbol` if decl->key is null
 Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty); // A unique symbol at a mutable location is `symbol`
 // The type of a property name as a key: the unique symbol a `[sym]` member is named by (null if it isn't one), else
@@ -692,6 +696,8 @@ Atom const* ty_private_name(Checker* me, Symbol const* class_symbol, csview text
 Symbol const* ty_private_name_class(Checker* me, Atom const* name);
 Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
+// The same without dropping a `{}` next to a primitive: a written `string & {}` (tsc's NoSupertypeReduction)
+Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
 Ty const* ty_synthetic_type_param(Checker* me, csview name);
 // A fresh type parameter like `param` whose constraint and default are instantiated with `mapper` (set later if null),

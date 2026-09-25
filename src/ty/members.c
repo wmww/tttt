@@ -1687,6 +1687,84 @@ static Ty const* widen_objects(Checker* me, Ty const* ty) {
     return ret;
 }
 
+static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 16) return ty;
+    if (ty->kind != TY_UNION && (ty->flags & TYF_NULLABLE)) return ty_intrinsic(me, TY_ANY);
+    u64 key[2] = { KEY_WIDENED_NULLABLE, (u64)(uintptr_t)ty };
+    void const* known = intern_get(&my links, key, 2);
+    if (known) return known;
+    Ty const* ret = ty;
+    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
+        // Of nothing but null and undefined: any. Else the others widen (null and undefined vanish from the union)
+        TyList types = ty->composite.types;
+        bool all_nullable = true, changed = false;
+        TyBuf parts = {0};
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* member = types.data[i];
+            all_nullable &= (member->flags & TYF_NULLABLE) != 0;
+            Ty const* widened = member->flags & TYF_NULLABLE ? member : widen_nullable(me, member, depth + 1);
+            changed |= widened != member;
+            ty_buf_push(&parts, widened);
+        }
+        ret = all_nullable ? ty_intrinsic(me, TY_ANY) : changed ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : ty;
+        ty_buf_drop(&parts);
+    } else if (ty->kind == TY_REFERENCE && (ty_is_array(me, ty) || ty_is_tuple(ty))) {
+        TyList args = ty_reference_args(me, ty);
+        TyBuf parts = {0};
+        bool changed = false;
+        for (u32 i = 0; i < args.len; i++) {
+            Ty const* widened = widen_nullable(me, args.data[i], depth + 1);
+            changed |= widened != args.data[i];
+            ty_buf_push(&parts, widened);
+        }
+        if (changed) {
+            ret = ty_reference_with_this(me, ty->reference.target, (TyList){ .data = parts.data, .len = parts.len },
+                ty->reference.this_arg);
+        }
+        ty_buf_drop(&parts);
+    } else if (ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal) {
+        Members const* members = ty_members(me, ty);
+        ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
+        bool changed = false;
+        for (u32 i = 0; i < members->prop_count; i++) {
+            Prop const* prop = members->props[i];
+            Ty const* type = prop->function ? nullptr : prop_type(me, prop);
+            // HACK: tsc only widens its widening null and undefined (what the `null` and `undefined` expressions are),
+            // which tttt doesn't tell from written ones: a spread property (`{ ...x }` with `x: { a: undefined }`) keeps
+            // its type
+            Ty const* widened = type && prop->literal_own ? widen_nullable(me, type, depth + 1) : type;
+            changed |= widened != type;
+            props[i] = (ObjectLiteralProp){
+                .name = prop->name,
+                .flags = prop->flags,
+                .type = widened,
+                .accessor = prop->function,
+                .name_span = prop->name_span,
+                .decl_spans = prop->decl_spans,
+                .decl_span_count = prop->decl_span_count,
+                .name_is_value = prop->name_is_value,
+                .asserted = prop->asserted,
+                .own = prop->literal_own,
+            };
+        }
+        if (changed) {
+            IndexInfo index[8] = {0};
+            u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
+            for (u32 i = 0; i < index_count; i++) index[i] = members->index[i];
+            ret = ty_object_literal(me, props, members->prop_count, index, index_count,
+                ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL);
+        }
+        free(props);
+    }
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
+}
+
+Ty const* ty_widened_nullable(Checker* me, Ty const* ty) {
+    if (compiler_options()->strict_null_checks) return ty;
+    return widen_nullable(me, ty, 0);
+}
+
 Ty const* ty_widened_objects(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_FRESH_OBJECT)) return ty;
     u64 key[2] = { KEY_WIDENED_OBJECTS, (u64)(uintptr_t)ty };

@@ -182,26 +182,10 @@ static Ty const* widen_literals(Checker* me, Ty const* ty) {
 }
 
 // Without strictNullChecks `null` and `undefined` widen to `any`
-static Ty const* widen_nullable(Checker* me, Ty const* ty) {
-    if (compiler_options()->strict_null_checks) return ty;
-    if (ty->flags & TYF_NULLABLE) return any_type(me);
-    if (ty_is_array(me, ty) && ty->kind == TY_REFERENCE) {
-        TyList args = ty_reference_args(me, ty);
-        if (args.len == 1 && (args.data[0]->flags & TYF_NULLABLE)) return ty_array(me, any_type(me), false);
-    }
-    if (ty->kind == TY_UNION && !ty->alias) {
-        // A union of nothing but null and undefined
-        bool all = true;
-        for (u32 i = 0; i < ty->composite.types.len; i++) all &= (ty->composite.types.data[i]->flags & TYF_NULLABLE) != 0;
-        if (all) return any_type(me);
-    }
-    return ty;
-}
-
 Ty const* ty_widened_for_declaration(Checker* me, Ty const* ty, bool literals) {
     // Not regularised: `const e = E.x` holds the fresh `E.x`, `let x = a` with `a: "a"` the regular "a"
     if (literals) ty = ty_widened_unique_symbol(me, ty_widened_literal(me, ty));
-    return widen_nullable(me, ty_widened_objects(me, ty));
+    return ty_widened_nullable(me, ty_widened_objects(me, ty));
 }
 
 // Contextual types
@@ -328,7 +312,7 @@ Ty const* ty_widened_return_type(Checker* me, Ty const* ty, Ty const* contextual
     // Only a unit type widens: a function that returns 1 or "a" says so
     bool unit = ty->kind == TY_LITERAL;
     if (unit) ty = contextual && any_literal_of_contextual_type(me, ty, contextual) ? ty_regular(me, ty) : widen_literals(me, ty);
-    return widen_nullable(me, ty_widened_objects(me, ty));
+    return ty_widened_nullable(me, ty_widened_objects(me, ty));
 }
 
 // The signature a function expression is contextually typed by, null if there's none (or no single one)

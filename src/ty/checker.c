@@ -735,7 +735,25 @@ static bool extract_redundant_templates(Checker* me, Ty const** types, u32* len,
     return false;
 }
 
+// tsc's isEmptyAnonymousObjectType: `{}` (a type literal or anonymous object without members)
+static bool is_empty_anonymous_object(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS) return false;
+    Members const* members = ty_members(me, ty);
+    return !members->prop_count && !members->call_count && !members->construct_count && !members->index_count &&
+        !members->mapped;
+}
+
+static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object);
+
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
+    return intersection(me, types, len, alias, alias_args, false);
+}
+
+Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
+    return intersection(me, types, len, alias, alias_args, true);
+}
+
+static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object) {
     if (len == 1) return types[0];
     TyBuf buf = {0};
     ty_buf_add_flattened(&buf, TY_INTERSECTION, types, len);
@@ -825,8 +843,35 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
             if (literal && !is_never) is_never = extract_redundant_templates(me, buf.data, &out, literal);
         }
         // Nothing is both an object and null or undefined
-        if (compiler_options()->strict_null_checks && (includes & TYF_NULLABLE) && (includes & (TYF_OBJECT | TYF_NON_PRIMITIVE))) {
+        bool strict = compiler_options()->strict_null_checks;
+        if (strict && (includes & TYF_NULLABLE) && (includes & (TYF_OBJECT | TYF_NON_PRIMITIVE))) {
             is_never = true;
+        }
+        // `{}` next to something that is never null or undefined adds nothing (tsc's removeRedundantSupertypes):
+        // NonNullable<1> is 1
+        u32 empty_objects = 0, non_nullable = 0;
+        for (u32 i = 0; i < out; i++) {
+            if (is_empty_anonymous_object(me, buf.data[i])) {
+                empty_objects++;
+            } else if (buf.data[i]->flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT |
+                TYF_BIGINT_LITERAL | TYF_BOOLEAN | TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE | TYF_OBJECT |
+                TYF_NON_PRIMITIVE)
+            ) {
+                non_nullable++;
+            }
+        }
+        if (!is_never && empty_objects && non_nullable && !keep_empty_object) {
+            u32 kept = 0;
+            for (u32 i = 0; i < out; i++) {
+                if (!is_empty_anonymous_object(me, buf.data[i])) buf.data[kept++] = buf.data[i];
+            }
+            out = kept;
+        }
+        // Without strictNullChecks null and undefined are in every type: `T[] & null` is null (`{} & null` never)
+        if (!strict && !is_never && (includes & TYF_NULLABLE)) {
+            ret = my intrinsics[empty_objects ? TY_NEVER : includes & TYF_UNDEFINED ? TY_UNDEFINED : TY_NULL];
+            ty_buf_drop(&buf);
+            return ret;
         }
         if (!is_never && out >= 2 && has_conflicting_discriminants(me, buf.data, out)) is_never = true;
         if (is_never) {

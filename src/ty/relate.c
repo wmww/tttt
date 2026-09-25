@@ -1827,7 +1827,8 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
 // The identity relation (tsc's identityRelation in isRelatedTo and structuredTypeRelatedTo)
 
 // What tsc's TypeFlags say about a type, as opposed to the facts cached in them
-#define IDENTITY_FLAGS (~(u32)(TYF_ERROR | TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_FRESH_LITERAL | TYF_FRESH_OBJECT))
+#define IDENTITY_FLAGS (~(u32)(TYF_ERROR | TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_FRESH_LITERAL | TYF_FRESH_OBJECT | \
+    TYF_NON_INFERRABLE))
 
 static Ternary signatures_identical_in(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, bool partial, bool ignore_return
@@ -1835,7 +1836,10 @@ static Ternary signatures_identical_in(
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
 
 static Ternary identity_related(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
-    if (source->kind != target->kind || ((source->flags ^ target->flags) & IDENTITY_FLAGS)) return TERNARY_FALSE;
+    if ((source->flags ^ target->flags) & IDENTITY_FLAGS) return TERNARY_FALSE;
+    // tsc's TypeFlags.Object covers interfaces, references and type literals alike: `interface P { x: number }` is
+    // identical to `{ x: number }`
+    if (source->kind != target->kind && !(source->flags & TYF_OBJECT)) return TERNARY_FALSE;
     // Intrinsics of the same flags are the same (`any` and the error `any`), literals are interned, and a type
     // parameter is only identical to itself
     if (source->kind == TY_INTRINSIC) return TERNARY_TRUE;

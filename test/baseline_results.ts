@@ -2121,7 +2121,7 @@ const baselines = {
         types: false,
     },
     'augmentedTypesVar': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -2616,7 +2616,7 @@ const baselines = {
         types: true,
     },
     'booleanFilterAnyArray': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -2891,7 +2891,7 @@ const baselines = {
         types: true,
     },
     'capturedLetConstInLoop14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6063,7 +6063,7 @@ const baselines = {
     'contextualTypeArrayReturnType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeBasedOnIntersectionWithAnyInTheMix1': {
         errors: true,
@@ -7263,7 +7263,7 @@ const baselines = {
     'declFileRegressionTests': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileRestParametersOfFunctionAndFunctionType': {
         errors: true,
@@ -7418,12 +7418,12 @@ const baselines = {
     'declInput': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declInput3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declInput4': {
         errors: true,
@@ -10221,12 +10221,12 @@ const baselines = {
         types: false,
     },
     'duplicateLocalVariable3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'duplicateLocalVariable4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10351,12 +10351,12 @@ const baselines = {
         types: true,
     },
     'duplicateVariablesWithAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'duplicateVarsAcrossFileBoundaries': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -15101,7 +15101,7 @@ const baselines = {
         types: true,
     },
     'genericSignatureIdentity': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15561,12 +15561,12 @@ const baselines = {
         types: false,
     },
     'identityForSignaturesWithTypeParametersAndAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'identityForSignaturesWithTypeParametersSwitched': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17166,12 +17166,12 @@ const baselines = {
         types: true,
     },
     'inferenceOptionalProperties': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
     'inferenceOptionalPropertiesStrict': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -19131,7 +19131,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationDuplicateVariableErrorReported': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22886,7 +22886,7 @@ const baselines = {
         types: true,
     },
     'noExcessiveStackDepthError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23468,7 +23468,7 @@ const baselines = {
     'nonNullableAndObjectIntersections(strict=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonNullableAndObjectIntersections(strict=true)': {
         errors: true,
@@ -24106,7 +24106,7 @@ const baselines = {
         types: true,
     },
     'optionalParamterAndVariableDeclaration2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24131,7 +24131,7 @@ const baselines = {
         types: true,
     },
     'optionalTupleElementsAndUndefined': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -25526,27 +25526,27 @@ const baselines = {
         types: true,
     },
     'promiseIdentity': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'promiseIdentity2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'promiseIdentityWithAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'promiseIdentityWithAny2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'promiseIdentityWithConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26961,7 +26961,7 @@ const baselines = {
         types: false,
     },
     'restIntersection': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -27041,12 +27041,12 @@ const baselines = {
         types: true,
     },
     'restUnion': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
     'restUnion2': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -28226,7 +28226,7 @@ const baselines = {
         types: false,
     },
     'spreadIntersection': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -29538,7 +29538,7 @@ const baselines = {
     'templateLiteralIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralIntersection2': {
         errors: true,
@@ -32673,7 +32673,7 @@ const baselines = {
     'widenedTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'wideningWithTopLevelTypeParameter': {
         errors: true,
@@ -34791,7 +34791,7 @@ const baselines = {
         types: true,
     },
     'constructorParameterProperties': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: true,
     },
@@ -39143,7 +39143,7 @@ const baselines = {
     'symbolProperty19': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolProperty2': {
         errors: true,
@@ -39443,7 +39443,7 @@ const baselines = {
     'symbolType18': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolType19': {
         errors: true,
@@ -46501,7 +46501,7 @@ const baselines = {
         types: true,
     },
     'objectLiteralContextualTyping': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46731,7 +46731,7 @@ const baselines = {
         types: true,
     },
     'newOperatorConformance': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -46896,7 +46896,7 @@ const baselines = {
         types: false,
     },
     'objectLiteralGettersAndSetters': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -47226,7 +47226,7 @@ const baselines = {
         types: true,
     },
     'typeOfThisGeneral': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -47391,7 +47391,7 @@ const baselines = {
         types: true,
     },
     'typeGuardOfFormTypeOfEqualEqualHasNoEffect': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47406,7 +47406,7 @@ const baselines = {
         types: true,
     },
     'typeGuardOfFormTypeOfNotEqualHasNoEffect': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47698,7 +47698,7 @@ const baselines = {
     'decrementOperatorWithAnyOtherType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decrementOperatorWithAnyOtherTypeInvalidOperations': {
         errors: false,
@@ -47768,7 +47768,7 @@ const baselines = {
     'incrementOperatorWithAnyOtherType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incrementOperatorWithAnyOtherTypeInvalidOperations': {
         errors: false,
@@ -50206,7 +50206,7 @@ const baselines = {
         types: true,
     },
     'ModuleWithExportedAndNonExportedImportAlias': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -51686,7 +51686,7 @@ const baselines = {
         types: false,
     },
     'jsdocTypeTag': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -58396,7 +58396,7 @@ const baselines = {
         types: false,
     },
     'jsContainerMergeTsDeclaration': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -60993,12 +60993,12 @@ const baselines = {
     'usingDeclarationsWithObjectLiterals2(noimplicitany=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'usingDeclarationsWithObjectLiterals2(noimplicitany=true)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'validMultipleVariableDeclarations': {
         errors: true,
@@ -61356,7 +61356,7 @@ const baselines = {
         types: true,
     },
     'ES5For-of7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62281,7 +62281,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeModifiers': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -62321,7 +62321,7 @@ const baselines = {
         types: false,
     },
     'mappedTypes4': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -62652,8 +62652,8 @@ const baselines = {
     },
     'nonPrimitiveNarrow': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nonPrimitiveRhsSideOfInExpression': {
         errors: true,
@@ -62938,7 +62938,7 @@ const baselines = {
     'propertyNameWithoutTypeAnnotation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyNamesOfReservedWords': {
         errors: true,
@@ -63276,7 +63276,7 @@ const baselines = {
         types: true,
     },
     'unionTypeLiterals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63476,7 +63476,7 @@ const baselines = {
         types: false,
     },
     'spreadUnion': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -63891,7 +63891,7 @@ const baselines = {
         types: false,
     },
     'strictTupleLength': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63946,24 +63946,24 @@ const baselines = {
         types: true,
     },
     'wideningTuples1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'wideningTuples2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'wideningTuples3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'wideningTuples4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'wideningTuples5': {
         errors: false,
@@ -64161,7 +64161,7 @@ const baselines = {
         types: false,
     },
     'wrappedAndRecursiveConstraints2': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -64296,7 +64296,7 @@ const baselines = {
         types: true,
     },
     'anyAssignabilityInInheritance': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -64581,7 +64581,7 @@ const baselines = {
         types: true,
     },
     'enumAssignabilityInInheritance': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -65326,7 +65326,7 @@ const baselines = {
         types: false,
     },
     'unionTypeIdentity': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -65336,7 +65336,7 @@ const baselines = {
         types: false,
     },
     'contextualSignatureInstantiation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65586,7 +65586,7 @@ const baselines = {
         types: false,
     },
     'arrayLiteralWidened': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -65681,7 +65681,7 @@ const baselines = {
         types: false,
     },
     'unionTypeEquivalence': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
