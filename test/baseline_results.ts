@@ -9653,12 +9653,12 @@ const baselines = {
     'discriminateWithOptionalProperty1(exactoptionalpropertytypes=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminateWithOptionalProperty1(exactoptionalpropertytypes=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminateWithOptionalProperty2(exactoptionalpropertytypes=false)': {
         errors: false,
@@ -14553,7 +14553,7 @@ const baselines = {
     'genericCallInferenceConditionalType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallInferenceWithGenericLocalFunction': {
         errors: true,
@@ -24633,7 +24633,7 @@ const baselines = {
     'parameterReferenceInInitializer2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parameterReferencesOtherParameter1': {
         errors: true,
@@ -49383,12 +49383,12 @@ const baselines = {
     'parameterInitializersForwardReferencing1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parameterInitializersForwardReferencing1_es6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictBindCallApply1': {
         errors: false,

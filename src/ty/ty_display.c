@@ -1042,7 +1042,17 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
         bool reused = reusable && binding && binding->has_explicit_type &&
             (!instantiated || (param->type == root->params[i].type && !mentions(me, param->type, d.fresh_params)));
-        display_annotated(me, reused_if(d, false), reused ? &binding->explicit_type : nullptr, param->type, param->optional);
+        TyDisplay param_d = reused_if(d, false);
+        // A parameter whose initializer is a function expression gets the function's type syntactically (tsc's
+        // typeFromParameter -> typeFromExpression), unless something may type it contextually
+        Expr const* initializer = param->decl ? &param->decl->initializer.value : nullptr;
+        if (reusable && binding && !binding->has_explicit_type && binding->tag == BINDING_IDENTIFIER && initializer &&
+            initializer->tag == EXPR_FUNCTION && !initializer->function->syntactically_contextual &&
+            ty_without_undefined(me, param->type) == ty_expr_type(me, initializer)
+        ) {
+            param_d.syntactic_function = initializer->function;
+        }
+        display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, param->type, param->optional);
     }
     out_lit(d, ")");
     out(d, csview_from(separator));
@@ -1190,21 +1200,27 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
         out_lit(d, ": ");
         // The annotation of a property signature unless instantiated, or the type assertion of an object literal's
+        // The annotation of the property it was declared as (an instantiation too: display_annotated() checks that it
+        // still says the same), or the type assertion of an object literal's
+        Prop const* origin = prop;
+        while (origin->target) origin = origin->target;
         TypeNode const* annotation = prop->asserted;
-        if (prop->node && prop->node->parsed && !prop->target && !prop->lazy && !prop->function && !prop->overload_count &&
-            !prop->symbol
+        if (origin->node && origin->node->parsed && !origin->lazy && !origin->function && !origin->overload_count &&
+            !origin->symbol
         ) {
-            annotation = prop->node;
+            annotation = origin->node;
         }
         // An object literal's accessor: the getter's return annotation, else the setter's parameter's (tsc's
         // typeFromAccessor)
-        if ((prop->flags & (PROP_GETTER | PROP_SETTER)) && prop->function && !prop->target) {
-            FunctionImpl const* accessor = prop->function;
+        if ((origin->flags & (PROP_GETTER | PROP_SETTER)) && origin->function) {
+            FunctionImpl const* accessor = origin->function;
             Binding const* param = vec_function_arg_size(&accessor->args) ?
                 &vec_function_arg_at(&accessor->args, 0)->initializer.binding : nullptr;
-            if ((prop->flags & PROP_GETTER) && accessor->ret_explicit) annotation = &accessor->ret;
-            else if (!(prop->flags & PROP_GETTER) && param && param->has_explicit_type) annotation = &param->explicit_type;
+            if ((origin->flags & PROP_GETTER) && accessor->ret_explicit) annotation = &accessor->ret;
+            else if (!(origin->flags & PROP_GETTER) && param && param->has_explicit_type) annotation = &param->explicit_type;
         }
+        // (Instantiated in a signature that has fresh type parameters in tsc, not tttt: see TyDisplay.fresh_params)
+        if (origin != prop && mentions(me, type, d.fresh_params)) annotation = nullptr;
         // (Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol)
         if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, type);
         else display_annotated(me, d, annotation, type, (prop->flags & PROP_OPTIONAL) != 0);
