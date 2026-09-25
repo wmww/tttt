@@ -321,6 +321,8 @@ void binder_declare_global_this(Binder* me);
 // The ambient module of that name (no quotes), made if it doesn't exist yet: every `declare module "m"` block and
 // every augmentation of it (binder_link()) declare into the same symbol
 Symbol* binder_ambient_module(Binder* me, csview name, Span name_span);
+// A `declare module "m" {}` block of a script is a declaration of the ambient module
+void binder_add_module_declaration(Symbol* module, NamespaceDecl const* decl);
 // The module a string names: an ambient module, the file the program found for it if that is a module, a pattern
 // ambient module. Null if there is none (module_ref_is_missing() tells "not found" from "not a module")
 Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref);

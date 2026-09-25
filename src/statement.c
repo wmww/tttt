@@ -218,7 +218,10 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 module->exports = arena_new(&scope->binder->arena, SymbolTable);
                 binder_add_augmentation(scope->binder, me);
             }
-            if (!module) module = binder_ambient_module(scope->binder, cstr_sv(&my module_ref->path), my name);
+            if (!module) {
+                module = binder_ambient_module(scope->binder, cstr_sv(&my module_ref->path), my name);
+                binder_add_module_declaration(module, me);
+            }
             if (my is_shorthand) module->is_shorthand_module = true;
             my symbol = module;
             my inner_scope->container = module;

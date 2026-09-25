@@ -961,15 +961,15 @@ static void append_decl(cstr* target, Span span) {
 
             default: {
                 keep_going = false;
-                // Skip line comments, going backwards
-                const char* c = start - 1;
-                while (c > file_start && *c != '\n') {
-                    if (*(c - 1) == '/' && *c == '/') {
+                // Skip line comments, going backwards: the comment starts at the first `//` of the line (`///x`)
+                const char* line_start = start - 1;
+                while (line_start > file_start && line_start[-1] != '\n') line_start--;
+                for (const char* c = line_start; c + 1 < start; c++) {
+                    if (c[0] == '/' && c[1] == '/') {
                         keep_going = true;
-                        start = c - 1;
+                        start = c;
                         break;
                     }
-                    c--;
                 }
             }   break;
         }

@@ -720,10 +720,12 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         VecSpan own = declaration_get_spans(my symbol);
         for_each (i, vec_span, &own) vec_span_push(&decls, *i);
         vec_span_drop(&own);
+        // An ambient module's name is its string in double quotes
+        if (!file && my is_ambient_module && my module_ref) file_name = cstr_d("\"", my module_ref->path, "\"");
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = decls,
             .span = my name,
-            .name = file ? sv_make_span(cstr_sv(&file_name)) : span_null,
+            .name = cstr_size(&file_name) ? sv_make_span(cstr_sv(&file_name)) : span_null,
         });
         cstr_drop(&file_name);
         if (my symbol->flags & SYMBOL_VALUE) baseline_test_case_add_symbol_value(ctx, my name, my symbol);

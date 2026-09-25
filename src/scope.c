@@ -201,6 +201,14 @@ void binder_declare_global_this(Binder* me) {
     symbol_table_insert(&my globals, &my arena, name, symbol_name_hash(name), symbol);
 }
 
+static void symbol_add_decl(Symbol* me, SymbolDecl decl);
+
+void binder_add_module_declaration(Symbol* module, NamespaceDecl const* decl) {
+    symbol_add_decl(module, (SymbolDecl){
+        .kind = SYMBOL_DECL_NAMESPACE, .flags = SYMBOL_VALUE_MODULE, .node = decl, .name = decl->name, .full = decl->full_span,
+    });
+}
+
 Symbol* binder_ambient_module(Binder* me, csview name, Span name_span) {
     u64 hash = symbol_name_hash(name);
     // TODO: one of the shared lib program would want an overlay like the globals (no lib declares any)
