@@ -66,9 +66,21 @@ Symbols (1827 tests):
   identifiers except inside a reused node); the traversal tracks the type parameters in scope. T_1 bucket 71 alone ->
   1 (+61). Two findings on the way: tsc keeps member signatures uninstantiated when they can't reference the mapped
   parameters (`mentions_mapped()`, hacks.md), and `mentions()` now reads anonymous types' free params.
-- **Next: stage 2.1 + 2** (the symbols `name` bucket, 231 alone: over-qualification 71, under-qualification 98,
-  alias/other names 231 lines in the samples), then 6 (symbol lines/declarations, `line-missing` 311 alone in the
-  symbols baseline) and 7 (union origins, decide by sampling `other`).
+- **Execution session 4 (2026-09-25), suite 6918 -> 7152: stage 2 done.** `src/symbol_chain.c` ports getSymbolChain /
+  getAccessibleSymbolChain / needsQualification / getContainersOfSymbol and symbolToExpression's printing over the
+  Scope chain; the symbols baseline (no meaning) and the types printer (`out_symbol_name()`, with meaning and
+  `import("m")`) both use it. Every symbol line with a Symbol prints through it (identifiers, type references,
+  property accesses, import/export specifiers and `import x = A.B` paths, member declarations by their container's
+  chain). Symbols 10513 -> 10812, types 8969 -> 9125, nothing lost; `name` bucket 231 -> 19 alone, `tsc-import()` 51
+  -> below 10. **Stage 2.1 decided: not needed.** Function/block locals never alias anything and have no parent, so
+  the file/namespace scopes the traversal tracks name everything the same (hacks.md `symbol_chain.c`). Binder bug
+  found on the way: ambient export contexts exported their imports (corpora unchanged). Left in `name` (19): module
+  augmentation of an `export =` module (`augmentExportEquals*`: tsc names the augmented module by its importing
+  alias), self-imports (`import * as me from "./this"`), `export import X = Y` inside the namespace it names.
+- **Next: stage 6** (symbol lines/declarations: `line-missing` 334 alone in the symbols baseline, decls-missing 51,
+  decls-differ 44), then 7 (union origins, decide by sampling `other`). `our-typeof` (97 alone in types) is stage 1's
+  leftover: sample it before stage 6, it may be one mechanism (`>A : A<T>` for a class name in `implements`/`extends`
+  position, mixins).
 
 ## Stages (in order; each is a commit with numbers, `./fasttest.sh -s` before committing)
 

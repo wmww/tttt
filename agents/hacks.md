@@ -45,7 +45,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - Types baseline node reuse (`ty_display.c` `display_node()`/`display_annotated()`, see `documentation.md`),
   approximations of tsc's node builder (`tryReuseExistingTypeNode`, `expressionToTypeNode.ts`):
   - `name_accessible()` resolves the first name of an entity name from `enclosing`, which only knows file and namespace
-    scopes (plan 21 stage 2.1): a local of a function is never accessible (right: tsc's isDeclarationVisible), but a
+    scopes (see `symbol_chain.c` below): a local of a function is never accessible (right: tsc's isDeclarationVisible), but a
     name shadowed inside a function isn't seen. Type parameters and parameters are always accessible.
   - Instantiated signatures: the declaration-level check is "the mapper left the type alone and it doesn't mention the
     signature's type parameters" (tsc: uninstantiated annotation type == instantiated type, with fresh type parameters
@@ -57,7 +57,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
     reference the mapper's sources, like the anonymous types' free params already do), which would also save work.
   - `T_1` renaming (`TyParamNames`): the type parameters in scope at the print location come from the traversal
     (`baseline_test_case_enter_generic()`, with tsc's resolveName exceptions for static members and computed member
-    names re-stated by hand), not from a real scope chain (plan 21 stage 2.1). Mapped/conditional synthetic `T`s of
+    names re-stated by hand), not from a real scope chain. Mapped/conditional synthetic `T`s of
     tsc's node builder (distributive conditional rewriting, homomorphic mapped wrappers) aren't made.
   - Inaccessible names: `display_node_identifier()` names the target anew with `out_symbol_name()` and keeps the type
     arguments; when that gives `import("m").A` it patches the underline so `import(` and `).` are reused, byte-offset
@@ -167,11 +167,26 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 
 
 ## Baselines (plan 21)
-- `ty_symbol_name_at` (symbols baseline qualification) strips a leading `import("m").` from what out_symbol_name()
-  prints for types: tsc's symbolToString names a module nothing names by nothing at all. A proper
-  getSymbolChain with SymbolFormatFlags would make the two modes one function.
-- `push_prop_qualifier` (traversal): a member reached through a namespace or module is named by its own symbol unless
-  the namespace we went through isn't its parent (an `export import c = x.c` alias: then the old container path).
+- `symbol_chain.c` (tsc's getSymbolChain, used by both baselines) approximations:
+  - Scopes: the chain sees the scopes the traversal tracks (file, module, namespace: `BaselineTestCase.enclosing`), not
+    function/block/class scopes. Function/block locals never alias anything and have no parent, so naming them is the
+    same (plan 21 stage 2.1, decided not needed); what's lost is needsQualification by a *type* shadowed inside a
+    function, and class type parameters as a table.
+  - tsc's module/namespace `locals` also hold the exported declarations (a local whose `exportSymbol` is the export):
+    `try_locals_with_exports()` merges the block's locals with the exports declared in the same *file* (not the same
+    block) by source position. A duplicate declaration's detached symbol is found the same way.
+  - `getContainersOfSymbol` without the alternative containing modules (`getAlternativeContainingModules`: other
+    modules that re-export the symbol) and without the `firstVariableMatch` (a variable whose type is the container's,
+    only with meaning Value), and without the export='d-member-of-an-ambient-module case.
+  - `export default class C` is one symbol named `C` in tttt, in the exports as `default`; `export_name()` gives it tsc's
+    name (`default`) for lookups and printing. `import("m")` specifiers are `module_name_for_error()`'s path, not
+    tsc's getSpecifierForModuleSymbol (relative from the enclosing file, `node_modules` rules).
+  - No accessibility cache (tsc's `accessibleChainCache`): each lookup walks the tables. Test-only (error messages
+    have no enclosing scope), and the suite time didn't move.
+- Member lines (traversal `member_text()`/`prop_text()`): a member's name is its container's chain plus the member's
+  name as its first declaration writes it; tttt members aren't Symbols, so the container comes from the traversal
+  (`member_container`, `class_symbol`) or the Prop's `parent`, and a namespace object's member is looked up as the
+  namespace's export by the accessed name.
 - `render_types_or_symbols_file` drops one trailing line break of every file but the test's last unit, because
   load_test_source() ends each unit's lines (tsc joins them). A last unit followed by `// @link` lines still comes out
   one line off (symbolLinkDeclarationEmitModuleNamesImportRef).
@@ -237,9 +252,9 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   signature (signatureCombiningRestParameters2 lost its errors component).
 - `make_gather_target`: `import * as ns` / `import x = require()` / `export as namespace N` is an alias whose target is a
   namespace symbol of its own (`Symbol.gather_module` = the module, `symbol_members()` looks through it) instead of the
-  module symbol itself, so that its type prints as `typeof ns`. With `out_symbol_name()` in place the module symbol
-  could be the target and the display could find the alias in scope; not done, because the symbols baseline also goes
-  by the gather symbol's declaration.
+  module symbol itself, so that its type prints as `typeof ns`. With an enclosing scope the display now names the
+  module (`symbol_members()`) through the symbol chain like tsc; error messages still print the gather symbol's name.
+  The gather symbol could go (the target being the module) once messages name modules like tsc.
 - `declare global {}` merges into the globals wherever it is written, also inside a namespace where tsc rejects it
   (moduleAugmentationGlobal8).
 - Module augmentations (`merge_augmentations` in `scope.c`, tsc's mergeModuleAugmentation): each `declare module "m"

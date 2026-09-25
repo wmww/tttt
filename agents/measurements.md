@@ -2,6 +2,16 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-25, plan 21 stage 2 (symbol accessibility: `symbol_chain.c`)
+Suite **6918 -> 7152 / 13540** full (errors 9300, symbols 10513 -> 10812, types 8969 -> 9125; nothing lost). Corpora:
+tsc 0, type-fest 142, valibot 161 (unchanged; the binder fix of the session, ambient export contexts no longer
+exporting imports, didn't move them). `./bench.sh`:
+tsc corpus 0.79 s (typecheck 512 ms), type-fest 0.32 s, valibot 0.70 s / 505 MB: unchanged (the chain is only used
+with an enclosing scope, i.e. by the baselines). `./displaydiff.py` TS tests fixed by one kind: other 541, we-any 125,
+our-typeof 97, line-extra 90, underlines/order only 83, tsc-any 70, line-missing 69, union-order 50, tsc-typeof 28,
+tsc-import() < 10 (was 51). Symbols: line-missing 334 (+98 JS), other 74, decls-missing 51, decls-differ 44,
+underlines 26, name 19 (was 231).
+
 ## 2026-09-25, new dev box (AMD EPYC-Turin, 4 cores, 31 GB; Ubuntu 24.04, GCC 13.3, node 22, tsgo = `typescript@7.0.2`)
 Not comparable with the entries below (different machine, and tsgo is now the 7.0.2 release rather than a preview).
 Suite **6918 / 13542**, unchanged. tsc corpus 0 diagnostics; corpora: type-fest 142, valibot 161. `./bench.sh --runs 3`
