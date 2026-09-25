@@ -801,7 +801,15 @@ void scope_add_port(Scope* me, PortItem* item) {
             Symbol* symbol = declare_symbol(
                 me, &my binder->globals, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
             );
-            if (merged) return;
+            if (merged) {
+                // Merged into a global that isn't an alias yet (`declare global { namespace N {} }`): the alias
+                // still needs a target, or resolving the symbol dereferences a null scope
+                if (!symbol->alias->scope) {
+                    symbol->alias->item = item;
+                    symbol->alias->scope = me;
+                }
+                return;
+            }
             symbol->name_span = item->decl_name;
             symbol_add_decl(symbol, (SymbolDecl){
                 .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .node = item,

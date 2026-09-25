@@ -3809,7 +3809,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
 
     Span as_type_span;
-    bool is_satisfies;
+    bool is_satisfies = false;
     if (as_type_precedence > ctx.min_precedence && parse_as_type(&p, &parsed.type, &as_type_span, &is_satisfies)) {
         *left_and_ret = expr_as_type(
             span_from(a),

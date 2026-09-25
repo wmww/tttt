@@ -783,3 +783,6 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
   filtering, `expand_mapped` in members.c).
 - `ty_check_object_type_duplicate_members` (check.c): `MemberTables` is a fixed 128-entry array searched linearly;
   members past the 128th of a class are never checked for duplicates (TS2300). Quadratic in the member count too.
+- `raise_stack_limit` (`prelude.c`): a constructor raises the soft stack limit to 64 MB because the parser and checker
+  recurse once per nesting level (binderBinaryExpressionStress overflows 8 MB with GCC 13's frames). Recursion depth
+  is still unbounded; tsc walks binary chains iteratively. Threads (if we ever check in parallel) don't get this.

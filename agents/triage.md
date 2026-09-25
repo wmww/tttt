@@ -330,6 +330,11 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   a cheap regression check for lib-related changes.
 
 ## Perf (see `measurements.md` for numbers)
+- **tsgo baseline broke with TypeScript 7.0.2** (2026-09-25, new box): `bench.sh` takes whatever `tsc` >= 7 is on
+  PATH, now the 7.0.2 release, which exits 1 on the synthetic corpus (TS1540: `module X {}` namespaces are an error)
+  and on valibot (TS5108: `moduleResolution=node10` removed). Decide: pin tsgo to one version in `bench.sh`/setup
+  (reproducible across boxes), and/or rewrite `module` to `namespace` in `bench/make_corpus.py` and override the
+  valibot option for tsgo, so tsgo checks what tttt checks.
 - Alias variances are in (2026-09-25): two instantiations of one alias infer and relate by their type arguments
   (tsc's getAliasVariances). What's left of valibot's time is inference (`infer_from_signature_lists` ->
   `infer_from_returns` over schema objects' `~run`/`~standard` members) and `ty_conditional_resolve`'s `infer X` walks;

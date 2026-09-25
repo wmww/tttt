@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-25, new dev box (AMD EPYC-Turin, 4 cores, 31 GB; Ubuntu 24.04, GCC 13.3, node 22, tsgo = `typescript@7.0.2`)
+Not comparable with the entries below (different machine, and tsgo is now the 7.0.2 release rather than a preview).
+Suite **6918 / 13542**, unchanged. tsc corpus 0 diagnostics; corpora: type-fest 142, valibot 161. `./bench.sh --runs 3`
+(tttt / tsgo / tsgo single-threaded): synthetic 3.02 s / 3.69 / 6.22 (tttt 3413 MB vs 2593); tsc corpus 0.79 s /
+1.00 / 1.46 (typecheck 516 ms); type-fest 0.33 s / 1.66 / 1.99; valibot 0.70 s / 505 MB vs 1.36 / 821 MB. **tsgo
+7.0.2 exits 1** on the synthetic corpus (TS1540, `module X {}` namespaces are now an error) and on valibot (TS5108,
+`moduleResolution=node10` removed), so it may do less work there than a clean run (triage.md "Perf").
+
 ## 2026-09-25, alias variances (tsc's getAliasVariances)
 Suite 6914 -> **6918 / 13542** (+4: circularContextualReturnType, consistentAliasVsNonAliasRecordBehavior,
 unionTypeErrorMessageTypeRefs01, mappedTypes3; nothing lost). tsc corpus still 0 diagnostics. `./bench.sh`: tsc corpus
