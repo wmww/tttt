@@ -145,8 +145,11 @@ static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fa
     cstr ret = cstr_init();
     Symbol const* member = info->member_symbol;
     // A member of a namespace's or module's object is its export (maybe an alias: getSymbolAtLocation doesn't resolve)
+    // (by the name accessed: the export's own name may differ, `export default class C`)
+    csview accessed = fallback.sv;
+    if (accessed.size >= 2 && (accessed.buf[0] == '"' || accessed.buf[0] == '\'')) accessed = csview_slice(accessed, 1, accessed.size - 1);
     Symbol const* exported = info->member_count == 1 && info->namespace ?
-        symbol_get_export(info->namespace, name) : nullptr;
+        symbol_get_export(info->namespace, accessed) : nullptr;
     if (exported) {
         cstr_drop(&ret);
         return symbol_text(ctx, exported);

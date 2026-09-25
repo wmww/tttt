@@ -8757,8 +8757,8 @@ const baselines = {
     },
     'declarationEmitTypeofDefaultExport': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitTypeofRest': {
         errors: true,

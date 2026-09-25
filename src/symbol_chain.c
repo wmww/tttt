@@ -136,6 +136,7 @@ static bool chain_prepend(SymbolChain* chain, Symbol const* symbol) {
 }
 
 static bool needs_qualification(ChainCtx* me, Symbol const* symbol, u32 meaning);
+static csview export_name(Symbol const* symbol);
 static bool accessible_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, SymbolChain* out);
 
 static bool accessible_chain_from_table(
@@ -286,7 +287,7 @@ static bool try_table(
     bool local_lookup, SymbolChain* out
 ) {
     // Directly by its name
-    if (is_accessible(me, symbol, meaning, symbol_table_get(table, symbol->name), nullptr, ignore_qualification)) {
+    if (is_accessible(me, symbol, meaning, symbol_table_get(table, export_name(symbol)), nullptr, ignore_qualification)) {
         out->len = 0;
         chain_push(out, symbol);
         return true;
@@ -354,6 +355,19 @@ static Symbol const* declaring_module(Symbol const* symbol) {
     Symbol const* module = file->scope->container;
     if (symbol_table_get(&file->scope->locals, symbol->name) != symbol) return nullptr;
     return module;
+}
+
+// The name tsc's symbol has: `default` for an `export default` declaration (tttt declares it locally under its own
+// name and puts the same symbol in the module's exports as `default`)
+static csview export_name(Symbol const* symbol) {
+    if (!symbol->decl_count) return symbol->name;
+    SourceFile const* file = symbol->decls[0].name.source;
+    if (!file || !file->is_module || !file->scope || !file->scope->container) return symbol->name;
+    SymbolTable const* exports = file->scope->container->exports;
+    if (exports && symbol_table_get(exports, c_sv("default")) == symbol && !csview_equals(symbol->name, "default")) {
+        return c_sv("default");
+    }
+    return symbol->name;
 }
 
 // tsc's getAliasForSymbolInContainer
@@ -496,8 +510,7 @@ static csview written_name(Scope const* enclosing, Symbol const* symbol, bool fi
     Span display = ty_symbol_display_name(symbol);
     csview name = span_valid(display) ? display.sv : symbol->name;
     // An `export default` declaration is `default` except where it was declared
-    Symbol const* module = symbol->parent;
-    if (module && module->is_module && module->exports && symbol_table_get(module->exports, c_sv("default")) == symbol &&
+    if (csview_equals(export_name(symbol), "default") &&
         (!first || !symbol->decl_count || symbol->decls[0].name.source != file_of_scope(enclosing))
     ) {
         return c_sv("default");
