@@ -6,8 +6,8 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-24, insights after plan 13)
-- **Suite 6016 / 13163** fully pass (errors 8653, symbols 10403, types 8377; 5125 at the insights after plan 13: +307
-  from plan 15 session 1, +545 from plan 21's first execution session). **Corpora**: tsc's `src/compiler` 0
+- **Suite 6267 / 13163** fully pass (errors 9002, symbols 10403, types 8389; 5125 at the insights after plan 13: +307
+  from plan 15 session 1, +545 from plan 21's first execution session, +251 from plan 15 session 2). **Corpora**: tsc's `src/compiler` 0
   diagnostics, type-fest 173, valibot 328 (all three are clean under tsc; 450 / 1871 before plan 19 R5/R3/R2/R4/R1).
   **Perf** (`measurements.md`): tsc corpus 0.70 s vs tsgo 0.75 (single-threaded 1.29), type-fest 0.30 vs 1.29,
   valibot 0.57 s / 413 MB vs tsgo 0.82 s / 823 MB (2026-09-24, after the signature relation fixes): tttt now beats

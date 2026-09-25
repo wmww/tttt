@@ -233,13 +233,29 @@ here when there's something to know beyond the code.
   log_error. Not worth much; the log noise is the issue.
 - The `{ a = dflt }` default of a shorthand assignment pattern is now kept and resolved but not checked (neither the
   default's type against the property nor its display): `ObjectExprItem.shorthand_default`.
-- Overloads: TS2394 (implementation compatible with overloads) and the flag agreement codes (TS2383/2385/2386) aren't
-  done; tsc's checkFunctionOrConstructorSymbol has them next to what plan 15 did.
+- Overloads: the flag agreement codes (TS2383/2385/2386) aren't done; tsc's checkFunctionOrConstructorSymbol has them
+  next to TS2394.
 - abstractClassUnionInstantiation fails when run alone (`-f`), passes in the full run: its TS2511 errors land on an
   invalid span (the "Error added with invalid span" log_error in failstats); something order-dependent in the shared
   lib state.
 - The CLI (`program.c`) still loads the default lib when a file says `/// <reference no-default-lib="true"/>`; only
   the test harness honours it.
+
+### Found by plan 15 session 2 (2026-09-24)
+- contextuallyTypedOptionalProperty(exactOptionalPropertyTypes=true): `T` inferred from `match(y => y > 0)` for an
+  optional property keeps `undefined` (tsc's missing type is stripped), so the new operand check says TS18048.
+- mergeSymbolReexportedTypeAliasInstantiation: a `type Row2<T>` added by `declare module '.'` to a module that
+  re-exports an interface Row2 — tttt resolves the reference to the interface (spurious TS2315).
+- Default exports are separate symbols per declaration (`scope_default_export_table` reports TS2528 itself), so
+  TS2323/TS2813/TS2814 for two `export default`s are missing; tsc merges them into one `default` symbol.
+- Empty statements (`;`) aren't in the AST, so TS1036 for `;` in ambient blocks is missing (3 tests).
+- TS1117 is implemented but blocked by parser gaps in its tests: `\u0061` identifiers, `{ x = 1 }` outside
+  patterns (tsc: TS1312 recovery), `#z` in object literals; computed literal names aren't resolved for it either.
+- Property suggestions (TS2551) don't filter inaccessible members (tsc's isValidPropertyAccessForCompletions).
+- TS2311 (`await` as a callee) and TS2663 in class computed names need the identifier's parent / tsc's
+  includeClassComputedPropertyName.
+- The JSX `<T>` vs type assertion and arrow functions in `?:` recovery: `(a?) => {} ? b : c` and `() => {} || a`
+  are now parse errors like tsc, but tsc's exact recovery tokens (TS1005 vs ours) aren't checked.
 
 ## Harness and tools
 - `./release/baseline_tests -f complexRecursiveCollections --err` (outside `test.sh`) hangs forever in
