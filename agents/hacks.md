@@ -20,8 +20,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   diagnostics, `allowJs`/`checkJs`, `jsx`, module kind, `exactOptionalPropertyTypes`...) is carried but inert. `compiler_options()` is a global like the
   `ErrorConfig` it replaced, set around load/resolve/check by `program.c`; becomes a `Checker`/`Program` field read
   through a context when signatures get one.
-- `baseline_test_case.c: apply_setting`: harness-only directives that are still ignored: `@libFiles` (99 of its 100
-  uses are `react.d.ts`: nothing until JSX), `@baselineFile`, `@fullEmitPaths`. Bad option values are ignored too
+- `baseline_test_case.c: apply_setting`: harness-only directives that are still ignored: `@baselineFile`,
+  `@fullEmitPaths`. Bad option values are ignored too
   (tsc's harness throws). A `tsconfig.json` unit is honoured for options and roots; option diagnostics
   (`program_validate_options`) are skipped when there is one, since tsc then puts them on the option's json span.
 - `error_ctx_global_error_s`: diagnostics without a file are `Error`s with a null span, sorted first (by code, then
@@ -34,6 +34,16 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   aren't suppressed at all. Line breaks are `\n` only (tsc: also lone `\r`, U+2028/9) and `\s` is ASCII only.
   Directives are recorded by `hop_comment` (deduplicated in `source_file_add_comment_directive`), so this relies on
   every comment going through it and nothing that isn't a comment (JSX text) going through it.
+- `mount_test_lib_folder` (harness): tsc's `tests/lib` is *copied* into each test's mock filesystem (react16.d.ts is
+  2.7k lines) when the test mentions `/.lib/` or `@libFiles`, and parsed again by every such test. A read-only mount
+  in `MockFs` (and caching the parsed files like the default lib) would be the real thing if it ever shows in suite
+  time.
+- JSX parsing (`parser.c`, plan 22): `parse_jsx_attributes` approximates tsc's `isInSomeParsingContext` (whether a
+  token that can't start an attribute aborts the tag or is skipped) as "inside JSX children, always; elsewhere, when
+  it could start a statement" (`jsx_children_depth` + a character list). `parse_error_once` (tsc's one error per
+  position) is only used by the JSX code: the rest of the parser doesn't dedupe. JSX names with unicode escapes
+  (`<\u0061>`, TS17021) are compared and classified by their value (`jsx_name_value`, an inline decode in
+  `jsx_element_is_intrinsic`) but *resolved* by their raw text, like every other escaped identifier in tttt.
 - `SourceFile.unchecked` + `error_ctx_remove_unchecked`: the JS gate is a *filter* run after name resolution and
   after typechecking (semantic errors in an unchecked file are removed from the ErrorCtx), not a skip: names are
   still resolved (imports from an unchecked file need its exports) and `block_typecheck` is skipped only for the

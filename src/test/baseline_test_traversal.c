@@ -1195,7 +1195,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         // TODO(plan 22 stage 2): intrinsic tag names, attribute names and closing tags
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT:
-            if (my tag == EXPR_JSX_ELEMENT && !jsx_element_is_intrinsic(my jsx)) {
+            if (my tag == EXPR_JSX_ELEMENT && !jsx_element_is_intrinsic(my jsx) && my jsx->tag_name.inner_span.sv.size) {
                 expr_compile_test_info(&my jsx->tag_name, ctx);
             }
             expr_compile_test_info_inner(&my jsx->attributes, ctx);

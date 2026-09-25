@@ -554,7 +554,16 @@ bool jsx_element_is_intrinsic(JsxElement const* me) {
     if (my namespaced) return true;
     if (my tag_name.tag != EXPR_IDENTIFIER || my tag_name.identifier.keyword) return false;
     csview name = my tag_name.identifier.name.sv;
-    return (name.size && name.buf[0] >= 'a' && name.buf[0] <= 'z') || csview_contains(name, "-");
+    u32 first = name.size ? (uint8_t)name.buf[0] : 0;
+    if (first == '\\' && name.size > 2) {
+        // `\u0061` / `\u{61}` (TS17021, but the name is still `a`)
+        first = 0;
+        for (isize i = name.buf[2] == '{' ? 3 : 2; i < name.size && isxdigit((uint8_t)name.buf[i]); i++) {
+            first = first * 16 + (u32)(isdigit((uint8_t)name.buf[i]) ? name.buf[i] - '0' : (tolower((uint8_t)name.buf[i]) - 'a' + 10));
+            if (name.buf[2] != '{' && i == 5) break;
+        }
+    }
+    return (first >= 'a' && first <= 'z') || csview_contains(name, "-");
 }
 
 // `x as const` / `<const>x`: `const` isn't a type name (the new core checks the same, see is_const_assertion())
@@ -811,8 +820,11 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT: {
             // A value tag (`<Comp />`, `<this.x />`) is a reference, an intrinsic one (`<div />`) is a name
-            bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx);
+            // (a missing name, after a parse error, is nothing)
+            bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
+                !my jsx->tag_name.inner_span.sv.size;
             if (!intrinsic) expr_lookup_names(&my jsx->tag_name, names, errs);
+            for_each (i, vec_spanned_type, &my jsx->type_args) type_lookup_names(&i->type, names, errs);
             expr_lookup_names(&my jsx->attributes, names, errs);
             for_each (i, vec_jsx_child, &my jsx->children) {
                 if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_lookup_names(&i->expr, names, errs);
@@ -2050,8 +2062,16 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
             if (compiler_options()->jsx == JSX_NONE) {
                 error_ctx_error_d(errs, my jsx->opening_span, 17004, "Cannot use JSX unless the '--jsx' flag is provided.");
             }
-            bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx);
+            bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
+                !my jsx->tag_name.inner_span.sv.size;
             if (!intrinsic) expr_typecheck(&my jsx->tag_name, errs);
+            for_each (i, vec_spanned_type, &my jsx->type_args) type_typecheck(&i->type, errs);
+            if (span_valid(my jsx->type_args_trailing_comma)) {
+                error_ctx_grammar_error_d(errs, my jsx->type_args_trailing_comma, 1009, "Trailing comma not allowed.");
+            }
+            if (span_valid(my jsx->type_args_empty)) {
+                error_ctx_grammar_error_d(errs, my jsx->type_args_empty, 1099, "Type argument list cannot be empty.");
+            }
             expr_typecheck(&my jsx->attributes, errs);
             for_each (i, vec_jsx_child, &my jsx->children) {
                 if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_typecheck(&i->expr, errs);

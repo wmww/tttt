@@ -17,6 +17,8 @@ Can be compiled and run with `./test.sh` (debug build, under Valgrind, takes min
 
 Like tsc's harness, a multi-file test whose last file mentions `require(` or `reference path` (or that sets `@noImplicitReferences`) has that file as its only root: the others are part of the program only if something refers to them, and the root comes first in the baselines.
 
+Like tsc's harness, tsc's `tests/lib` folder is at `/.lib` in the mock filesystem (copied in only for tests that mention `/.lib/` or set `@libFiles`): `/// <reference path="/.lib/react16.d.ts" />` finds it, and `@libFiles: react.d.ts,lib.d.ts` makes those files roots after the test's own (a `lib.*.d.ts` among them is shown as `Decl(lib.d.ts, --, --)` and, saying `no-default-lib`, replaces the default lib). The types and symbols baselines go through tsc's `removeTestPathPrefixes` (`/.src/`, `/.lib/`, `/.ts/` disappear).
+
 The tests target includes most `tttt` code, as well as additional C code in [src/test](src/test/).
 
 ### diffapp
@@ -226,6 +228,9 @@ Anchors are helpful for making spans. They are created with `anchor(&p)`. `span_
 `hop_whitespace(&p)` needs to be called anywhere whitespace may appear.
 
 Newlines are generally ignored but change how js/ts are parsed in some cases. For this reason parsers keep track of if the last whitespace they hopped contained a newline. This gets propagated to the parent on success.
+
+### JSX
+In a JSX file (`SourceFile.is_jsx`: `.tsx` and JavaScript files, tsc's `LanguageVariant.JSX`) a `<` where an expression starts, followed by a name or `>`, is an element (`parse_jsx_element()`, tsc's parseJsxElementOrSelfClosingElementOrFragment), never a type assertion, and a generic arrow function has to be written `<T,>` or `<T extends X>` (`jsx_generic_arrow_start()`). There's no scanner mode: text between tags is read straight from the source, where `//` isn't a comment and `'` isn't a string. The AST is one `JsxElement` for `EXPR_JSX_ELEMENT` and `EXPR_JSX_FRAGMENT` (tag name as an identifier / `this` / property access expression, type arguments, attributes as one `EXPR_JSX_ATTRIBUTES` expression, children, the closing tag's name). Error recovery follows tsc's: a child that swallowed its parent's closing tag gives it back, `<a/><b/>` where one element is expected is a comma expression with TS2657, and tsc only reports the first error at a position (`parse_error_once()`, which the JSX code uses for its errors). Value tags (`<Comp>`, `<this.x>`) are references in the resolve walk; intrinsic ones (`<div>`, `<my-elem>`, `<a:b>`, `jsx_element_is_intrinsic()`) aren't.
 
 ### Function context
 Whether `await` and `yield` are operators or plain identifiers depends on the function being parsed. `ParserShared` keeps `in_async`, `in_generator` and `function_depth`; `function_ctx_enter()`/`function_ctx_leave()` wrap the parsing of every function's parameters and body (see `parse_non_arrow_function()` and `parse_arrow_function()`), and `FunctionFlags` carries `async`/`*` from whoever saw the keyword to the function parser. Since a source position is always inside the same function, this doesn't conflict with the fail cache.

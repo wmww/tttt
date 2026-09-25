@@ -273,14 +273,24 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - Property suggestions (TS2551) don't filter inaccessible members (tsc's isValidPropertyAccessForCompletions).
 - TS2311 (`await` as a callee) and TS2663 in class computed names need the identifier's parent / tsc's
   includeClassComputedPropertyName.
-- The JSX `<T>` vs type assertion and arrow functions in `?:` recovery: `(a?) => {} ? b : c` and `() => {} || a`
-  are now parse errors like tsc, but tsc's exact recovery tokens (TS1005 vs ours) aren't checked.
+- Arrow functions in `?:` recovery: `(a?) => {} ? b : c` and `() => {} || a` are now parse errors like tsc, but
+  tsc's exact recovery tokens (TS1005 vs ours) aren't checked.
+- JSX parse error long tail (plan 22 stage 1 left it; `./failstats.py --jsx --syntax`): jsxInvalidEsprimaTestSuite,
+  jsxNamespacePrefixInName(React) (`<:a>`, `<a:>`), tsxAttributeInvalidNames (`32data`: TS1351 and a number token),
+  conflictMarkerTrivia3 (merge conflict markers, TS1185, aren't recognised anywhere), jsxEsprimaFbTestSuite (non-ASCII
+  identifiers: `is_identifier_char` is ASCII only), jsFileCompilationTypeArgumentSyntaxOfCall (JS-only), and an
+  unclosed fragment's TS17014 span, which in tsc starts at the end of the previous token (the node's full start,
+  trivia included: tsxFragmentErrors). jsxAndTypeAssertion wants two errors at EOF (`':' expected` and `'</'
+  expected`) where tsc's one-error-per-position rule should have dropped one: not understood.
 
 ### Missing checks after plan 15 (retired 2026-09-24; counts: missing diagnostics / tests)
 - **Stack depth: binderBinaryExpressionStress passes at the default 8 MB stack and crashes at 7 MB.** Inlining one
   small helper into `expr_typecheck()` was enough to overflow it (session 3; fixed with `noinline`). Checking (and the
   resolve walk?) recurse once per operand of a long `a + b + c + ...` chain; tsc checks binary chains iteratively
   (checkBinaryExpression's state machine). Real code has such chains (generated files): worth a fix before it bites.
+  It bit again in plan 22 stage 1: the JSX cases of `expr_typecheck()` and `expr_lookup_names()` had to move into
+  `noinline` helpers (`jsx_typecheck`, `jsx_lookup_names`, `parse_jsx_element`). Every new case in those switches is
+  a potential overflow until the recursion is fixed.
 - Default exports: `default` should be one merged symbol like tsc's (TS2528 22/12, TS2813 19/16, TS2814 22/16,
   TS2323 for defaults): `scope_default_export_table` keeps one symbol per declaration. A session.
 - TS2774 (59/5, "function is always defined" in conditions), TS7053 (71/23, implicit-any element access), TS2537
@@ -315,7 +325,12 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   of it. A `-f @file` list of names would be the real fix.
 - `filetest.sh` always uses `/tmp/testfile`: two agents running it at once collide. Take the directory from `mktemp
   -d` or an env var.
-- `@libFiles` is ignored (`hacks.md`): plan 22 stage 0 mounts `/.lib`. `@baselineFile`, `@fullEmitPaths` too. Bad option values are ignored (tsc's harness throws).
+- `@baselineFile`, `@fullEmitPaths` are ignored. Bad option values are ignored (tsc's harness throws).
+- A test's units are joined with a line break after *every* line (`load_test_source`), tsc's `makeUnitsFromTest`
+  joins them without one after a unit's last line (unless the test file ends with one). So an error at EOF of a unit
+  that isn't the last is one line lower in tttt (jsxParsingError2's `'</' expected`). Doing it tsc's way was tried
+  (plan 22 stage 1) and changed ~2000 tests: the extra line break is load-bearing for how the errors baseline renders
+  files; both need to change together.
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there.
   `./filetest.sh` on a multi-file probe shows the comment lines before the first `// @filename` as a file of their
   own in the errors baseline, so the errors component fails although the diagnostics match.

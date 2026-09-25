@@ -62,6 +62,18 @@ pragmas or options 16, `LibraryManagedAttributes` 8.
   not as polish. Under `react-jsx`, the implicit import of `<jsxImportSource>/jsx-runtime` is a module reference (TS2875
   when it doesn't resolve, TS2792 hints).
 
+## Progress
+- **Stages 0 and 1 done (2026-09-25).** `/.lib` + `@libFiles` in the harness, the parser (see documentation.md
+  "JSX"), TS17004. JSX subset: errors 17 -> 243, symbols 51 -> 125, types 37 -> 39 of 457; spurious TS1xxx down to
+  the error-recovery long tail listed in triage.md ("JSX parse error long tail"). Everything JSX is `any` so far; the
+  types/symbols traversal only visits value tag names, attribute values and child expressions (TODO in
+  `expr_compile_test_info_inner`). Real React typings (react16.d.ts) load cleanly, after a program fix: a script's own
+  `declare module "react"` is what `"react"` means inside it (tsc's resolveToOwnAmbientModule).
+- Stage 2 notes: tag type arguments are looked up and `type_typecheck`ed already (so TS2749/TS2304 on them work),
+  TS2558 on them is stage 3. The top missing codes in the subset are the checker's: TS2322 (133 in 57 tests), TS2769,
+  TS2874 (factory not in scope), TS2741, TS2558, TS2786, TS2875; spurious TS7006 (50 in 17 tests: callbacks in
+  attributes without a contextual type) and TS6133 (unused React import: markJsxAliasReferenced).
+
 ## Stages
 Each stage ends with `./fasttest.sh --summary` clean of losses, `./fasttest.sh -s`, and a commit. Measure the JSX
 subset with `./failstats.py --jsx` (numbers in `measurements.md`).

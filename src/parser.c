@@ -35,6 +35,7 @@ typedef struct ParserShared {
     int function_depth;
     bool in_static_block; // Directly in a class `static {}` block, not in a function inside it
     bool in_parameters; // In the parameter list of the current function: `yield`/`await` there are TS2523/TS2524
+    int jsx_children_depth; // Inside the children of a JSX element (at any depth): see parse_jsx_attributes()
 } ParserShared;
 
 typedef struct FunctionFlags {
@@ -4115,13 +4116,49 @@ static bool last_error_starts_at(Parser* me, Span span) {
     return last->span.source == span.source && span_start_ptr(last->span) == span_start_ptr(span);
 }
 
-// A JSX identifier: an identifier name (keywords too) that may go on with hyphens, `data-x`, `my-elem`
-static bool parse_jsx_identifier(Parser* parent, Span* ret) {
+// A unicode escape in an identifier (`\u0061`, `\u{61}`) at c: its length, 0 if there is none
+static int identifier_escape_size(const char* c) {
+    if (c[0] != '\\' || c[1] != 'u') return 0;
+    if (c[2] == '{') {
+        int i = 3;
+        while (hex_digit_value(c[i]) >= 0) i++;
+        return i > 3 && c[i] == '}' ? i + 1 : 0;
+    }
+    for (int i = 2; i < 6; i++) {
+        if (hex_digit_value(c[i]) < 0) return 0;
+    }
+    return 6;
+}
+
+// A JSX identifier: an identifier name (keywords too) that may go on with hyphens, `data-x`, `my-elem` (not after a
+// dot: `hyphens`). Unicode escapes are read, and are TS17021
+static bool parse_jsx_identifier_hyphens(Parser* parent, bool hyphens, Span* ret) {
     Anchor a = anchor(parent);
-    if (!parse_identifier_or_keyword(parent, nullptr)) return false;
-    while (*parent->pos == '-' || is_identifier_char(*parent->pos)) parent->pos++;
+    bool escaped = false;
+    int escape = identifier_escape_size(parent->pos);
+    if (escape) {
+        parent->pos += escape;
+        escaped = true;
+    } else if (!parse_identifier_or_keyword(parent, nullptr)) {
+        return false;
+    }
+    while (true) {
+        if ((hyphens && *parent->pos == '-') || is_identifier_char(*parent->pos)) {
+            parent->pos++;
+        } else if ((escape = identifier_escape_size(parent->pos))) {
+            parent->pos += escape;
+            escaped = true;
+        } else {
+            break;
+        }
+    }
     *ret = span_from(a);
+    if (escaped) parse_error(parent, *ret, 17021, "Unicode escape sequence cannot appear here.");
     return true;
+}
+
+static bool parse_jsx_identifier(Parser* parent, Span* ret) {
+    return parse_jsx_identifier_hyphens(parent, true, ret);
 }
 
 // `ns:name` after the first part of a tag or attribute name (at `:`, maybe after whitespace). False if there's no `:`
@@ -4137,13 +4174,21 @@ static bool parse_jsx_namespace_rest(Parser* parent) {
     return parse_success(&p);
 }
 
+// The token at p, where `</` is one token in a JSX file
+static Span jsx_span_from_token(Parser* p) {
+    if (p->pos[0] == '<' && p->pos[1] == '/') return span_make(p->shared->source, p->pos, p->pos + 2);
+    return span_from_token(p);
+}
+
 // tsc's parseJsxElementName: an identifier, `this`, a namespaced name `a:b`, or property accesses on the first two
+static cstr jsx_name_value(csview name);
+
 static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced) {
     Anchor a = anchor(p);
     *namespaced = false;
     Span name;
     if (!parse_jsx_identifier(p, &name)) {
-        parse_error_once(p, span_from_token(p), 1003, "Identifier expected.");
+        parse_error_once(p, jsx_span_from_token(p), 1003, "Identifier expected.");
         *ret = expr_identifier((IdentifierExpr){ .name = span_from_pos(p) });
         return;
     }
@@ -4166,7 +4211,7 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced) {
         }
         hop_whitespace(&dot);
         Span prop;
-        if (!parse_identifier_or_keyword(&dot, &prop)) {
+        if (!parse_jsx_identifier_hyphens(&dot, false, &prop)) {
             // (a private name is read and dropped, tsc's parseRightSideOfDot, which reports after it)
             if (*dot.pos == '#' && is_identifier_start_char(dot.pos[1])) {
                 dot.pos++;
@@ -4181,18 +4226,48 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced) {
         parse_success(&dot);
         *ret = expr_property(span_from(a), c_new(PropertyExpr, {
             .expr = *ret,
-            .prop = expr_literal(prop, value_string(cstr_from_span(prop))),
+            .prop = expr_literal(prop, value_string(jsx_name_value(prop.sv))),
             .form = PROPERTY_EXPR_DOT,
         }));
     }
+}
+
+// A JSX name with its unicode escapes decoded
+static cstr jsx_name_value(csview name) {
+    cstr ret = cstr_null;
+    for (isize i = 0; i < name.size;) {
+        int escape = identifier_escape_size(name.buf + i);
+        if (!escape) {
+            cstr_append_n(&ret, name.buf + i, 1);
+            i++;
+            continue;
+        }
+        u32 code = 0;
+        for (int j = 2; j < escape; j++) {
+            int v = hex_digit_value(name.buf[i + j]);
+            if (v >= 0) code = code * 16 + (u32)v;
+        }
+        append_code_point(&ret, code);
+        i += escape;
+    }
+    return ret;
 }
 
 // tsc's tagNamesAreEquivalent
 static bool jsx_tag_names_equal(Expr const* a, Expr const* b) {
     if (a->tag != b->tag) return false;
     switch (a->tag) {
-        case EXPR_IDENTIFIER:
-            return a->identifier.keyword == b->identifier.keyword && csview_equals_sv((a->identifier.name).sv, (b->identifier.name).sv);
+        case EXPR_IDENTIFIER: {
+            if (a->identifier.keyword != b->identifier.keyword) return false;
+            csview x = a->identifier.name.sv, y = b->identifier.name.sv;
+            if (!csview_contains(x, "\\") && !csview_contains(y, "\\")) return csview_equals_sv(x, y);
+            // (by the names' values: `<\u0061></a>` is fine)
+            cstr cx = jsx_name_value(x), cy = jsx_name_value(y);
+            bool ret = cstr_eq(&cx, &cy);
+            cstr_drop(&cx);
+            cstr_drop(&cy);
+            return ret;
+        }
         case EXPR_PROPERTY:
             return csview_equals_sv((a->property->prop.inner_span).sv, (b->property->prop.inner_span).sv) &&
                 jsx_tag_names_equal(&a->property->expr, &b->property->expr);
@@ -4256,9 +4331,10 @@ static void parse_jsx_attributes(Parser* p, VecJsxAttribute* ret) {
         Span name;
         if (!parse_jsx_identifier(p, &name)) {
             // tsc's parseList: skips what can't start an attribute, unless something around could use it
-            // (isInSomeParsingContext; roughly, whatever starts a statement ends the tag: `<C<T> />` in a JS file)
-            parse_error_once(p, span_from_token(p), 1003, "Identifier expected.");
-            if (strchr("<([\"'`!-+~@#", c) || (c >= '0' && c <= '9')) break;
+            // (isInSomeParsingContext: anything is a JSX child; elsewhere, roughly, whatever starts a statement ends
+            // the tag: `<C<T> />` in a JS file)
+            parse_error_once(p, jsx_span_from_token(p), 1003, "Identifier expected.");
+            if (p->shared->jsx_children_depth || strchr("<([\"'`!-+~@#", c) || (c >= '0' && c <= '9')) break;
             if (!hop_start(p, "...")) hop_token(p);
             continue;
         }
@@ -4305,7 +4381,15 @@ static bool jsx_is_line_break(char c) {
 }
 
 // tsc's parseJsxChildren: until `</` (left for the caller) or the end of the file
+static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment);
+
 static void parse_jsx_children(Parser* p, JsxElement* el, bool is_fragment) {
+    p->shared->jsx_children_depth++;
+    parse_jsx_children_inner(p, el, is_fragment);
+    p->shared->jsx_children_depth--;
+}
+
+static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment) {
     while (true) {
         Anchor a = anchor(p);
         char c = *p->pos;
@@ -4392,8 +4476,36 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced);
         hop_whitespace(&p);
         attributes_a = anchor(&p);
-        if (!p.shared->source->is_js && *p.pos == '<') {
-            el->has_type_args = parse_generic_params(&p, false, &el->type_args);
+        if (!p.shared->source->is_js && *p.pos == '<' && p.pos[1] != '/') {
+            // tsc's parseBracketedList(TypeArguments): types separated by commas, anything else ends the list
+            Anchor type_args_a = anchor(&p);
+            p.pos++;
+            el->has_type_args = true;
+            el->type_args = vec_spanned_type_init();
+            hop_whitespace(&p);
+            if (*p.pos == '>') {
+                p.pos++;
+                el->type_args_empty = span_from(type_args_a);
+            } else while (true) {
+                hop_whitespace(&p);
+                Anchor type_a = anchor(&p);
+                TypeNode t;
+                if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+                    parse_error_once(&p, jsx_span_from_token(&p), 1110, "Type expected.");
+                    break;
+                }
+                vec_spanned_type_push(&el->type_args, spanned_type(span_from(type_a), t));
+                hop_whitespace(&p);
+                Anchor comma_a = anchor(&p);
+                if (!hop_char(&p, ',')) {
+                    if (!hop_char(&p, '>')) parse_error_once(&p, jsx_span_from_token(&p), 1005, "'>' expected.");
+                    break;
+                }
+                el->type_args_trailing_comma = span_from(comma_a);
+                hop_whitespace(&p);
+                if (hop_char(&p, '>')) break;
+                el->type_args_trailing_comma = span_null;
+            }
             hop_whitespace(&p);
             attributes_a = anchor(&p);
         }
@@ -4496,7 +4608,7 @@ __attribute__((noinline)) static bool at_jsx_element_start(Parser* parent) {
     Parser p = parser(parent);
     p.pos++;
     hop_whitespace(&p);
-    bool ret = *p.pos == '>' || is_identifier_start_char(*p.pos);
+    bool ret = *p.pos == '>' || is_identifier_start_char(*p.pos) || identifier_escape_size(p.pos);
     parse_fail(&p);
     return ret;
 }

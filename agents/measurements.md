@@ -2,6 +2,11 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-25, plan 22 stages 0+1 (JSX harness + parser)
+Suite 7152 -> **7162 / 13542**, nothing lost. `./failstats.py --jsx`: 457 tests, errors 17 -> 243, symbols 51 -> 125,
+types 37 -> 39 (all 20); JSX is `any` until stage 2. tsc corpus 0 diagnostics. `./bench.sh`: synthetic 3.02 s, tsc
+corpus 0.76 s (typecheck 503 ms), type-fest 0.30 s, valibot 0.66 s / 506 MB: unchanged.
+
 ## 2026-09-25, same box upgraded to Ubuntu 26.04 (GCC 15.2, node 22.22 from Ubuntu, tsgo = `typescript@7.0.2`)
 Suite **7152 / 13542**, unchanged, without the 64 MB stack-limit constructor. Corpora unchanged: tsc 0, type-fest 142,
 valibot 161. `./bench.sh --runs 3` (tttt / tsgo / tsgo single-threaded), all within noise of the 24.04 numbers:

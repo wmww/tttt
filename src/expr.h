@@ -524,6 +524,8 @@ typedef struct JsxElement {
     bool self_closing;
     bool has_type_args;
     VecSpannedType type_args; // `<C<string> />`
+    Span type_args_trailing_comma; // `<C<string,> />`: TS1009, a grammar error
+    Span type_args_empty; // `<C<> />`: TS1099, a grammar error
     Expr attributes; // EXPR_JSX_ATTRIBUTES (also for a fragment, with none)
     VecJsxChild children;
     Span opening_span; // `<a x="1">` / `<a />` / `<>`

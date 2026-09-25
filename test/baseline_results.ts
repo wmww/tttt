@@ -25436,7 +25436,7 @@ const baselines = {
         types: false,
     },
     'parseUnaryExpressionNoTypeAssertionInJsx4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
