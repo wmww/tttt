@@ -9271,7 +9271,7 @@ const baselines = {
         types: true,
     },
     'deleteOperatorInStrictMode': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40251,12 +40251,12 @@ const baselines = {
         types: false,
     },
     'computedPropertyNames3_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames3_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -57101,7 +57101,7 @@ const baselines = {
         types: true,
     },
     'parserStrictMode15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

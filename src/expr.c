@@ -815,6 +815,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_UNARY_OP: {
             Expr* operand = &my unary_op->expr;
+            // tsc's checkStrictModeDeleteExpression
+            if (my unary_op->op == UNARY_OP_DELETE && names->strict && operand->tag == EXPR_IDENTIFIER &&
+                !operand->identifier.keyword && !expr_is_perenthisized(operand)
+            ) {
+                error_ctx_error_d(errs, operand->inner_span, 1102, "'delete' cannot be called on an identifier in strict mode.");
+            }
             switch (my unary_op->op) {
                 case UNARY_OP_LEFT_BANG:
                     flow->true_target = false_target;
