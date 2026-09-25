@@ -2,8 +2,8 @@
 Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 13)")
 for why.
 
-1. **Execution: plan 15, session 2.** The plan's "Progress" section has the re-derived list (TS2394 first, then the
-   expression checks).
+1. **Execution: plan 15, session 3.** The plan's "Progress" section has the list (property suggestions first). Stop
+   when what's left is < ~20 tests per code; then retire the plan.
 2. **Execution: plan 21, stage 3 (+ the rest of 2).** The plan's Progress section says where it stands; stage 3
    starts with the parser keeping type node spans and parentheses.
 3. **Harness + planning: JSX.** Make `baseline_test_suite.c` collect `.tsx` tests (328 files; the pass count will drop,

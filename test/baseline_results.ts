@@ -876,7 +876,7 @@ const baselines = {
         types: false,
     },
     'anonymousClassExpression2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3756,7 +3756,7 @@ const baselines = {
         types: true,
     },
     'classImplementsClass6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3936,7 +3936,7 @@ const baselines = {
         types: false,
     },
     'classSideInheritance1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9856,7 +9856,7 @@ const baselines = {
         types: true,
     },
     'doYouNeedToChangeYourTargetLibraryES2015': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9866,7 +9866,7 @@ const baselines = {
         types: false,
     },
     'doYouNeedToChangeYourTargetLibraryES2023(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11051,7 +11051,7 @@ const baselines = {
         types: false,
     },
     'errorCause(target=es2021)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -11131,7 +11131,7 @@ const baselines = {
         types: true,
     },
     'errorMessageOnObjectLiteralType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12216,7 +12216,7 @@ const baselines = {
         types: false,
     },
     'exactSpellingSuggestion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13501,7 +13501,7 @@ const baselines = {
         types: false,
     },
     'findLast(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -16726,7 +16726,7 @@ const baselines = {
         types: true,
     },
     'indexAt(target=es2021)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -28446,12 +28446,12 @@ const baselines = {
         types: true,
     },
     'staticOffOfInstance1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'staticOffOfInstance2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28826,7 +28826,7 @@ const baselines = {
         types: true,
     },
     'superAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28996,7 +28996,7 @@ const baselines = {
         types: true,
     },
     'superPropertyAccess2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29706,7 +29706,7 @@ const baselines = {
         types: false,
     },
     'thisInOuterClassBody': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30966,7 +30966,7 @@ const baselines = {
         types: false,
     },
     'typeofClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38341,12 +38341,12 @@ const baselines = {
         types: false,
     },
     'useObjectValuesAndEntries2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'useObjectValuesAndEntries3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38986,7 +38986,7 @@ const baselines = {
         types: false,
     },
     'es2024SharedMemory': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -61606,17 +61606,17 @@ const baselines = {
         types: true,
     },
     'narrowExceptionVariableInCatchClause': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'narrowFromAnyWithInstanceof': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'narrowFromAnyWithTypePredicate': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

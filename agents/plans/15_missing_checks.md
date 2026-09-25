@@ -34,6 +34,18 @@ duplicate. Numbers drift: re-derive the table first (below).
   (spelling suggestions, 101/54: needs tsc's getSpellingSuggestion, a small algorithm; also feeds TS2561/TS2820),
   strict-mode reserved words TS1210/1212/1213/1359. TS2343 (59 alone) needs `importHelpers` + tslib semantics.
   22 tests also fail on a *spurious* TS2403 whose causes are type-core bugs (triage.md): worth a session of its own.
+- **Session 2 (2026-09-24), suite 6016 -> 6193.** Done: TS2394 (+ mapped-to-mapped relation), TS2356/2357/2777,
+  TS1345/TS2869-2873/TS5076 (+ `??` precedence, `<T>x` operand, arrow functions end an expression, for-in/of iterables
+  now typechecked), TS2703/2704/2790/18011 (+ object rest types, `object_rest_type()`), TS1036/TS1183, TS2395, TS2323
+  (not default exports), TS1117/1118/1119 (blocked by parser gaps in most tests), TS2552 + TS2662/2663 (spelling
+  suggestions, `spelling_suggestion()` is reusable), the name-specific not-found messages (TS2580-TS2585, TS18004),
+  TS2695, TS2314/2707/2315 (+ class property annotations now typechecked).
+- **Next (session 3), from `./failstats.py` after session 2:** TS2551/TS2561/TS2820 (property suggestions: reuse
+  `spelling_suggestion()`), TS2774, TS17006 (one file), strict-mode reserved words TS1210/1212/1213/1359, TS2311
+  (`await` as a callee, needs the parent), TS2323/TS2528/TS2813/TS2814 for default exports (make `default` one merged
+  symbol like tsc), TS1117 on literal-typed computed names. The big single-code buckets left are not missing
+  checks: spurious TS2580 (77 tests alone) is CommonJS in JS files (the JS plan), missing TS2322/TS2339 (68/66 alone)
+  are type-core answers, TS2343 needs importHelpers/tslib.
 
 ## How (a loop like plan 08)
 1. Re-derive: `./failstats.py`, then `./unimplemented_codes.sh` (missing codes `src/` never mentions, with their

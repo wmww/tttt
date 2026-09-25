@@ -10,6 +10,7 @@
 #include "interface_decl.h"
 #include <math.h>
 #include "ty/ty.h"
+#include "lib_features.h"
 #include "statement.h"
 #include "enum_decl.h"
 #include "unused.h"
@@ -1555,29 +1556,6 @@ static bool name_is_one_of(csview name, char const* const* names, u32 count) {
     return false;
 }
 
-// The lib a global comes from, if it isn't in ES5 (the names of tsc's getScriptTargetFeatures, first lib each)
-static char const* suggested_lib(csview name) {
-    static char const* const names[][2] = {
-        {"Array", "es2015"}, {"Iterator", "es2015"}, {"AsyncIterator", "es2015"}, {"ArrayBuffer", "es2024"},
-        {"Atomics", "es2017"}, {"SharedArrayBuffer", "es2017"}, {"AsyncIterable", "es2018"},
-        {"AsyncIterableIterator", "es2018"}, {"AsyncGenerator", "es2018"}, {"AsyncGeneratorFunction", "es2018"},
-        {"RegExp", "es2015"}, {"Reflect", "es2015"}, {"ArrayConstructor", "es2015"}, {"ObjectConstructor", "es2015"},
-        {"NumberConstructor", "es2015"}, {"Math", "es2015"}, {"Map", "es2015"}, {"MapConstructor", "es2024"},
-        {"Set", "es2015"}, {"PromiseConstructor", "es2015"}, {"Symbol", "es2015"}, {"WeakMap", "es2015"},
-        {"WeakSet", "es2015"}, {"String", "es2015"}, {"StringConstructor", "es2015"}, {"DateTimeFormat", "es2017"},
-        {"Promise", "es2015"}, {"RegExpMatchArray", "es2018"}, {"RegExpExecArray", "es2018"}, {"Intl", "es2018"},
-        {"NumberFormat", "es2018"}, {"SymbolConstructor", "es2020"}, {"DataView", "es2020"}, {"BigInt", "es2020"},
-        {"RelativeTimeFormat", "es2020"}, {"Int8Array", "es2022"}, {"Uint8Array", "es2022"},
-        {"Uint8ClampedArray", "es2022"}, {"Int16Array", "es2022"}, {"Uint16Array", "es2022"}, {"Int32Array", "es2022"},
-        {"Uint32Array", "es2022"}, {"Float16Array", "esnext"}, {"Float32Array", "es2022"}, {"Float64Array", "es2022"},
-        {"BigInt64Array", "es2020"}, {"BigUint64Array", "es2020"}, {"Error", "es2022"},
-    };
-    for (u32 i = 0; i < sizeof(names) / sizeof(names[0]); i++) {
-        if (csview_equals(name, names[i][0])) return names[i][1];
-    }
-    return nullptr;
-}
-
 // tsc's getCannotFindNameDiagnosticForName (but `await` as a callee and shorthand properties)
 static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, bool shorthand) {
     static char const* const dom[] = { "document", "console" };
@@ -1624,7 +1602,7 @@ void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorth
     Binder* binder = my binder;
     Suggestion suggestion = {0};
     // A global of a later lib is said to be so rather than misspelled
-    char const* lib = suggested_lib(name.sv);
+    char const* lib = lib_feature_of_global(name.sv);
     if (lib) {
         binder->suggestion_count++;
         error_cannot_find_name(errs, name, lib, shorthand);

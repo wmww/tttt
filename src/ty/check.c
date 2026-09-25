@@ -9,6 +9,7 @@
 #include "unused.h"
 #include "interface_member.h"
 #include "statement.h"
+#include "lib_features.h"
 
 // Checks the statement/expression walk asks of the new core, and how their errors are worded.
 
@@ -542,10 +543,73 @@ static cstr index_name(Checker* me, Ty const* index) {
     return ty_to_cstr(me, index);
 }
 
+// The class an instance type is of, if it is
+static Symbol const* instance_class(Ty const* object) {
+    Ty const* declared = object->kind == TY_REFERENCE ? object->reference.target : object;
+    if (declared->kind != TY_DECLARED || declared->declared.kind != TY_DECLARED_CLASS_INSTANCE) return nullptr;
+    return declared->declared.symbol;
+}
+
+// tsc's getSuggestedSymbolForNonexistentProperty: the property of `object` whose name is closest to `name` (of a union,
+// those all its members have)
+static Prop const* suggested_property(Checker* me, Ty const* object, csview name) {
+    TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
+    Ty const* first = nullptr;
+    for (u32 i = 0; i < parts.len && !first; i++) {
+        if (!(parts.data[i]->flags & TYF_NULLABLE)) first = ty_apparent_type(me, parts.data[i]);
+    }
+    if (!first || !(first->flags & TYF_OBJECT)) return nullptr;
+    Members const* members = ty_members(me, first);
+    if (!members->prop_count) return nullptr;
+    csview* names = malloc(sizeof(csview) * members->prop_count);
+    panic_if(!names, "out of memory");
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        csview candidate = atom_sv(prop->name);
+        bool everywhere = candidate.size && candidate.buf[0] != '#' && !(prop->flags & PROP_STATIC);
+        for (u32 j = 0; j < parts.len && everywhere; j++) {
+            if (parts.data[j]->flags & TYF_NULLABLE) continue;
+            everywhere = ty_get_prop(me, ty_apparent_type(me, parts.data[j]), prop->name) != nullptr;
+        }
+        names[i] = everywhere ? candidate : (csview){0};
+    }
+    isize best = spelling_suggestion(name, names, members->prop_count);
+    free(names);
+    return best >= 0 ? members->props[best] : nullptr;
+}
+
 static void report_no_property(Checker* me, Ty const* object, Ty const* index, unsigned ts_code, Span span, ErrorCtx* errs) {
     cstr name = index_name(me, index);
     cstr object_str = ty_to_cstr(me, object);
-    Error* error = error_ctx_error_d(errs, span, ts_code, "Property '", name, "' does not exist on type '", object_str, "'.");
+    Error* error;
+    Symbol const* class_symbol = ts_code == 2339 ? instance_class(object) : nullptr;
+    Atom const* atom = (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) ? index->literal.string : nullptr;
+    Prop const* suggestion = nullptr;
+    // (tsc's typeHasStaticProperty: a declared static member, `#x`s being keyed by their class there)
+    bool static_member = atom && class_symbol && atom->len && atom->str[0] != '#' && !csview_equals(atom_sv(atom), "prototype") &&
+        ty_get_prop(me, ty_static_type_of(me, class_symbol), atom);
+    // A member a later lib adds (tsc's getSuggestedLibForNonExistentProperty)
+    Ty const* apparent = ty_apparent_type(me, object);
+    Ty const* apparent_declared = apparent->kind == TY_REFERENCE ? apparent->reference.target : apparent;
+    char const* lib = atom && ts_code == 2339 && apparent_declared->kind == TY_DECLARED && apparent_declared->declared.symbol ?
+        lib_feature_of_member(apparent_declared->declared.symbol->name, atom_sv(atom)) : nullptr;
+    if (static_member) {
+        error = error_ctx_error_d(errs, span, 2576, "Property '", name, "' does not exist on type '", object_str,
+            "'. Did you mean to access the static member '", object_str, ".", name, "' instead?");
+    } else if (lib) {
+        error = error_ctx_error_d(errs, span, 2550, "Property '", name, "' does not exist on type '", object_str,
+            "'. Do you need to change your target library? Try changing the 'lib' compiler option to '", lib, "' or later.");
+    } else if (atom && ts_code == 2339 && !(object->flags & TYF_NEVER) && (suggestion = suggested_property(me, object, atom_sv(atom)))) {
+        error = error_ctx_error_d(errs, span, 2551, "Property '", name, "' does not exist on type '", object_str,
+            "'. Did you mean '", atom_sv(suggestion->name), "'?");
+        Prop const* declared = suggestion;
+        while (declared->target && !declared->decl_span_count) declared = declared->target;
+        if (error && declared->decl_span_count) {
+            error_add_related_d(error, declared->decl_spans[0], 2728, "'", atom_sv(suggestion->name), "' is declared here.");
+        }
+    } else {
+        error = error_ctx_error_d(errs, span, ts_code, "Property '", name, "' does not exist on type '", object_str, "'.");
+    }
     if (error && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
         // Which member it is that lacks it
         for (u32 i = 0; i < object->composite.types.len; i++) {
