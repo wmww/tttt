@@ -27,12 +27,6 @@ here when there's something to know beyond the code.
   top-level `for await`. Older: TS1161 for an unterminated regex (`parse_regex` just fails), TS1263/1264 misplaced `let
   x!`, `const c;` in ambient files, `override`/TS4112+, overloads of `*()`-style nameless members, TS2303 "Circular
   definition of import alias".
-- **Class expressions and member symbols** (re-probed; goes into plan 21, todo.md): a class expression prints as `''` in messages (tsc
-  `(Anonymous class)`, or `C` for `const C = class {}`), its instance type prints *empty* in the types baseline (`c : `)
-  and its constructor as `{ new (): ; prototype: ; }` (tsc `typeof C`); the mixin tests show the same (`class ''` in
-  TS2341/TS2445). Member symbols aren't qualified in the symbols baseline for parameter properties (`Symbol(q)` for
-  `Symbol(P.q)`), class expression members and enum members referenced in initializers (`Symbol(A)` for
-  `Symbol(SyntaxKind.A)`). One session, probably many types/symbols components.
 - **Binding patterns as types** (re-probed; tsc's getTypeFromBindingPattern, checkArrayLiteral inDestructuringPattern,
   checkObjectLiteral's contextualTypeHasPattern): a binding pattern isn't the contextual type of its initializer (`var
   [, , [, b]] = [3, 5, [0, 1]]` is a spurious TS2461 at ES5, declarationEmitDestructuringArrayPattern5; `let [a = 1, b]
@@ -44,30 +38,6 @@ here when there's something to know beyond the code.
   (`({ a = 1 }) => a` is `{ a?: number }` in tsc, `any` here); object rest (`{ a, ...rest }`) is the whole object
   instead of getRestType(); computed keys in patterns miss their symbol lines (probe `binding_pattern_display.ts`).
   Worth a plan.
-- **Display fidelity** (types baseline; recurring in every plan's leftovers; plan 21 gets planned from this, todo.md): tsc *reuses written annotations* when it
-  prints (`Comparator["operator"]` where we print the resolved `"<" | "<=" | "="`, `p: E.x` as `E.x` not `E`,
-  `ReturnType<typeof mk>["a"]`, `type R = ReturnType<typeof f>` resolved, optional parameters as `x?: T | undefined`
-  under strict, `get(k): T | undefined` without strictNullChecks where we drop the `| undefined` (re-probed); probes in
-  `test/probes/plan12/` and `returntype_index.ts`); union *origins* (the aliases a union was written with survive
-  narrowing/filtering: `FooBase[]` where we print `string | false`, spreadBooleanRespectsFreshness,
-  literalFreshnessPropagationOnNarrowing; a distributed intersection's origin, `LeftHandSideExpression &
-  BindableStaticNameExpression`; mappedTypeAsClauses `P & ("a" | "b")`); T_1-style renaming of clashing type
-  parameter names (overload lists `{ <A>(...): ...; <A_1>(...): ... }`, `createMCache : <T_1>() => MCache<T_1>` inside
-  `function per<T>`: probes plan11/memoizeOne.ts, nestedReturnContext.ts; the second overload of functions sharing a
-  type parameter name); union member order (tsc's is type id order and literals are made when the node is first
-  resolved; we lower annotations eagerly: `y: "p" | "q" | 1` as `1 | "p" | "q"` in stringLiteralsWithEqualityChecks03;
-  worth a failstats pass over diffs that differ only by order); `type Phantom<T> = {}` instantiations all print
-  `Phantom<T>` (re-probed: instantiating a node that mentions no type parameter returns the node's type, alias
-  arguments and all); string-named enum members print `E.b c` (re-probed, tsc `(typeof E)["b c"]`); `class C extends
-  Base<V[]>`'s expression prints `typeof Base` (tsc the instance `Base<V[]>`); interface method overloads print per
-  declaration (tsc the merged `{ (...): number; (): number; }` with both declarations, probe
-  `plan08/contextual_overloads.ts`); symbols of mapped-type properties (tsc `Symbol(flags, Decl(...))`, we
-  `Symbol(A.flags)`) and of union properties (tsc lists every member's declaration, we `Symbol(flags)`: probe
-  `plan08/mutable_union.ts`); `[]` in `outputs || []` under strict is `undefined[]` where tsc says `never[]`; TS2694
-  names namespaces inside an import type by bare name where tsc qualifies; a structurally printed type has no size
-  limit (`typeof globalThis` was 23 MB of error text and deadlocked the harness; tsc truncates at 160 characters by
-  default, `noErrorTruncation`). Most of these are one mechanism each; insights should decide whether annotation reuse
-  and origins get a plan.
 - **Substitution types** don't exist: in the true branch of `T[K] extends unknown[] ? (...args: T[K]) => void : never`
   tsc knows `T[K]` is an array (getSubstitutionType / getImpliedConstraint). Instances: @types/node events.d.ts (x4,
   hidden by skipLibCheck), stringMappingReduction (`EMap[C]` in `C extends Keys ? EMap[C] : ...` needs `C & Keys`:

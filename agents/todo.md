@@ -2,22 +2,17 @@
 Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 13)")
 for why.
 
-1. **Planning: plan 21, display fidelity.** Rank the mechanisms behind the ~2600 tests that pass errors but fail
-   types/symbols (vision.md has first numbers; `./displaydiff.py` buckets the types diffs by mechanism, extend it to
-   symbols). Start with the 274 tests whose lines all match (only underlines or line order differ). Decide how to do tsc's annotation reuse (`typeof a`, `Array<X>` as written) for real rather
-   than extending the fitted rules in `ty_display.c` (hacks.md "Types baseline underlines"). Fold in triage.md's
-   "Display fidelity" and "Class expressions and member symbols".
-2. **Execution: plan 21, first stages.**
-3. **Execution: plan 15, session 2.** The plan's "Progress" section has the re-derived list (TS2394 first, then the
+1. **Execution: plan 21, first stages** (0, 1, then 2: the symbol accessibility decision in stage 2.1 comes first).
+2. **Execution: plan 15, session 2.** The plan's "Progress" section has the re-derived list (TS2394 first, then the
    expression checks).
-4. **Harness + planning: JSX.** Make `baseline_test_suite.c` collect `.tsx` tests (328 files; the pass count will drop,
+3. **Harness + planning: JSX.** Make `baseline_test_suite.c` collect `.tsx` tests (328 files; the pass count will drop,
    save the new baseline and say so in the commit and `measurements.md`), then write plan 22 (JSX parse, `JSX`
    namespace lookup, element/attribute typing, `@jsx` options, `@libFiles` react.d.ts). Measure how much `--syntax`
    and TS2304 it accounts for.
-5. **Planning (+ execution if small): alias variances**, triage.md "Perf" first bullet: infer and relate two
+4. **Planning (+ execution if small): alias variances**, triage.md "Perf" first bullet: infer and relate two
    instantiations of one alias by their type arguments with measured variances. It's a correctness rule
    too (tsc does it); valibot no longer loses to tsgo (measurements.md), so perf is no longer the reason. Bench anyway.
-6. **Triage.** Drain triage.md. Try removing the `ctx.method` callback hack in `signature_resolve` (hacks.md), now that
+5. **Triage.** Drain triage.md. Try removing the `ctx.method` callback hack in `signature_resolve` (hacks.md), now that
    relate.c has tsc's callback rule. Also audit `hacks.md` against the code (several entries are stale after plans 13/16/18:
     "no nominal class rules", "no `as` clauses", the ambient module table note); delete what's fixed. Decide whether
     "binding patterns as types" gets a plan now.
