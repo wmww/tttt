@@ -383,7 +383,7 @@ const baselines = {
     'aliasBug': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'aliasDoesNotDuplicateSignatures': {
         errors: true,
@@ -1478,7 +1478,7 @@ const baselines = {
     'assertionFunctionWildcardImport1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assertionFunctionWildcardImport2': {
         errors: true,
@@ -4323,7 +4323,7 @@ const baselines = {
     'collisionExportsRequireAndInternalModuleAliasInGlobalFile': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionExportsRequireAndModule': {
         errors: false,
@@ -5748,7 +5748,7 @@ const baselines = {
     'constEnumExternalModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constEnumMergingWithValues1': {
         errors: true,
@@ -5793,12 +5793,12 @@ const baselines = {
     'constEnumNoEmitReexport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constEnumNoPreserveDeclarationReexport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constEnumOnlyModuleMerging': {
         errors: true,
@@ -5818,7 +5818,7 @@ const baselines = {
     'constEnumPreserveEmitReexport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constEnumSyntheticNodesComments': {
         errors: true,
@@ -7278,12 +7278,12 @@ const baselines = {
     'declFileExportImportChain': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileExportImportChain2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileForClassWithMultipleBaseClasses': {
         errors: true,
@@ -7598,7 +7598,7 @@ const baselines = {
     'declarationEmitAliasExportStar': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitAliasFromIndirectFile': {
         errors: true,
@@ -8048,7 +8048,7 @@ const baselines = {
     'declarationEmitExportAliasVisibiilityMarking': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitExportAssignedNamespaceNoTripleSlashTypesReference': {
         errors: false,
@@ -8413,7 +8413,7 @@ const baselines = {
     'declarationEmitObjectAssignedDefaultExport': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitObjectLiteralAccessors1': {
         errors: true,
@@ -8433,7 +8433,7 @@ const baselines = {
     'declarationEmitOfTypeofAliasedExport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks1': {
         errors: true,
@@ -8878,7 +8878,7 @@ const baselines = {
     'declarationImportTypeAliasInferredAndEmittable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationMaps': {
         errors: true,
@@ -8973,7 +8973,7 @@ const baselines = {
     'declareDottedExtend': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declareDottedModuleName': {
         errors: true,
@@ -9143,7 +9143,7 @@ const baselines = {
     'decoratorMetadataWithImportDeclarationNameCollision6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorMetadataWithImportDeclarationNameCollision7': {
         errors: false,
@@ -9273,7 +9273,7 @@ const baselines = {
     'defaultDeclarationEmitDefaultImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultDeclarationEmitNamedCorrectly': {
         errors: true,
@@ -9448,7 +9448,7 @@ const baselines = {
     'dependencyViaImportAlias': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deprecatedBool': {
         errors: true,
@@ -10058,7 +10058,7 @@ const baselines = {
     'dottedModuleName2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'dottedNamesInSystem': {
         errors: true,
@@ -11853,12 +11853,12 @@ const baselines = {
     'es6ExportClauseWithoutModuleSpecifier': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ExportClauseWithoutModuleSpecifierInEs5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ExportDefaultClassDeclaration': {
         errors: true,
@@ -11913,7 +11913,7 @@ const baselines = {
     'es6ImportDefaultBindingDts': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportDefaultBindingFollowedWithNamedImport': {
         errors: true,
@@ -11943,7 +11943,7 @@ const baselines = {
     'es6ImportDefaultBindingFollowedWithNamedImportDts1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportDefaultBindingFollowedWithNamedImportInEs5': {
         errors: true,
@@ -11983,7 +11983,7 @@ const baselines = {
     'es6ImportDefaultBindingFollowedWithNamespaceBindingDts1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportDefaultBindingFollowedWithNamespaceBindingInEs5': {
         errors: true,
@@ -12038,27 +12038,27 @@ const baselines = {
     'es6ImportNameSpaceImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportNameSpaceImportAmd': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportNameSpaceImportDts': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportNameSpaceImportInEs5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportNameSpaceImportMergeErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportNameSpaceImportNoNamedExports': {
         errors: true,
@@ -12068,7 +12068,7 @@ const baselines = {
     'es6ImportNameSpaceImportWithExport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportNamedImport': {
         errors: true,
@@ -12583,7 +12583,7 @@ const baselines = {
     'exportAssignedNamespaceIsVisibleInDeclarationEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignedTypeAsTypeAnnotation': {
         errors: false,
@@ -12593,12 +12593,12 @@ const baselines = {
     'exportAssignmentClass': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentEnum': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentError': {
         errors: true,
@@ -12623,7 +12623,7 @@ const baselines = {
     'exportAssignmentInternalModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentMembersVisibleInAugmentation': {
         errors: false,
@@ -13048,7 +13048,7 @@ const baselines = {
     'exportImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportImportAndClodule': {
         errors: true,
@@ -13063,7 +13063,7 @@ const baselines = {
     'exportImportMultipleFiles': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportImportNonInstantiatedModule': {
         errors: true,
@@ -13083,7 +13083,7 @@ const baselines = {
     'exportInterfaceClassAndValue': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportInterfaceClassAndValueWithDuplicatesInImportList': {
         errors: true,
@@ -13488,7 +13488,7 @@ const baselines = {
     'externalModuleAssignToVar': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'externalModuleExportingGenericClass': {
         errors: false,
@@ -13523,12 +13523,12 @@ const baselines = {
     'externalModuleResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'externalModuleResolution2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'externalModuleWithoutCompilerFlag1': {
         errors: true,
@@ -16023,7 +16023,7 @@ const baselines = {
     'importAliasAnExternalModuleInsideAnInternalModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAliasFromNamespace': {
         errors: true,
@@ -16583,7 +16583,7 @@ const baselines = {
     'importInTypePosition': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importInsideModule': {
         errors: false,
@@ -16663,7 +16663,7 @@ const baselines = {
     'importOnAliasedIdentifiers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importPropertyFromMappedType': {
         errors: true,
@@ -16673,7 +16673,7 @@ const baselines = {
     'importShadowsGlobalName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importShouldNotBeElidedInDeclarationEmit': {
         errors: true,
@@ -16728,7 +16728,7 @@ const baselines = {
     'import_reference-exported-alias': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'import_reference-to-type-alias': {
         errors: true,
@@ -17863,7 +17863,7 @@ const baselines = {
     'innerAliases2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'innerBoundLambdaEmit': {
         errors: true,
@@ -18478,7 +18478,7 @@ const baselines = {
     'internalImportInstantiatedModuleNotReferencingInstance': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'internalImportUnInstantiatedModuleMergedWithClassNotReferencingInstance': {
         errors: false,
@@ -21083,7 +21083,7 @@ const baselines = {
     'mergedDeclarationExports': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'mergedDeclarations1': {
         errors: true,
@@ -21513,7 +21513,7 @@ const baselines = {
     'moduleAliasInterface': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleAndInterfaceSharingName': {
         errors: true,
@@ -21818,7 +21818,7 @@ const baselines = {
     'moduleDeclarationExportStarShadowingGlobalIsNameable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleDetectionIsolatedModulesCjsFileScope': {
         errors: false,
@@ -21828,7 +21828,7 @@ const baselines = {
     'moduleDuplicateIdentifiers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleElementsInWrongContext': {
         errors: false,
@@ -22438,12 +22438,12 @@ const baselines = {
     'moduleVisibilityTest1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleVisibilityTest2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleVisibilityTest3': {
         errors: false,
@@ -25928,7 +25928,7 @@ const baselines = {
     'privacyGloImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyGloImportParseErrors': {
         errors: false,
@@ -25948,7 +25948,7 @@ const baselines = {
     'privacyImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyImportParseErrors': {
         errors: false,
@@ -26703,7 +26703,7 @@ const baselines = {
     'reboundIdentifierOnImportAlias': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'rectype': {
         errors: true,
@@ -27108,7 +27108,7 @@ const baselines = {
     'reexportDefaultIsCallable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reexportMissingDefault': {
         errors: true,
@@ -27748,7 +27748,7 @@ const baselines = {
     'returnTypeParameterWithModules': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'returnTypePredicateIsInstantiateInContextOfTarget': {
         errors: false,
@@ -29903,7 +29903,7 @@ const baselines = {
     'systemModule15': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'systemModule16': {
         errors: true,
@@ -30723,7 +30723,7 @@ const baselines = {
     'tsxDefaultImports': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxDiscriminantPropertyInference': {
         errors: false,
@@ -31708,7 +31708,7 @@ const baselines = {
     'typeofAmbientExternalModules': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofClass': {
         errors: true,
@@ -31723,7 +31723,7 @@ const baselines = {
     'typeofExternalModules': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofImportInstantiationExpression': {
         errors: true,
@@ -32408,7 +32408,7 @@ const baselines = {
     'unusedImportDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedImportWithSpread': {
         errors: true,
@@ -32423,17 +32423,17 @@ const baselines = {
     'unusedImports10': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedImports11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedImports12': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedImports13': {
         errors: false,
@@ -33148,7 +33148,7 @@ const baselines = {
     'usingModuleWithExportImportInValuePosition': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'validRegexp': {
         errors: true,
@@ -34683,7 +34683,7 @@ const baselines = {
     'classAbstractImportInstantiation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractInAModule': {
         errors: true,
@@ -35078,7 +35078,7 @@ const baselines = {
     'extendClassExpressionFromModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericClassExpressionInFunction': {
         errors: false,
@@ -37733,7 +37733,7 @@ const baselines = {
     'importElisionConstEnumMerge1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assertionTypePredicates1': {
         errors: false,
@@ -42873,17 +42873,17 @@ const baselines = {
     'exportsAndImports1-amd': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports1-es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports2-amd': {
         errors: true,
@@ -42903,17 +42903,17 @@ const baselines = {
     'exportsAndImports3-amd': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports3-es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports4-amd': {
         errors: true,
@@ -48958,17 +48958,17 @@ const baselines = {
     'exportAssignmentCircularModules': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentConstrainedGenericType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentGenericType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentMergedInterface': {
         errors: false,
@@ -48978,7 +48978,7 @@ const baselines = {
     'exportAssignmentMergedModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentOfExportNamespaceWithDefault': {
         errors: true,
@@ -48988,7 +48988,7 @@ const baselines = {
     'exportAssignmentTopLevelClodule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentTopLevelEnumdule': {
         errors: true,
@@ -49003,7 +49003,7 @@ const baselines = {
     'exportAssignmentTopLevelIdentifier': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportClassNameWithObjectAMD': {
         errors: false,
@@ -49028,7 +49028,7 @@ const baselines = {
     'exportDeclaredModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportDefaultClassNameWithObject': {
         errors: false,
@@ -49258,7 +49258,7 @@ const baselines = {
     'relativePathToDeclarationFile': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cjsErrors(module=node18)': {
         errors: false,
@@ -49648,7 +49648,7 @@ const baselines = {
     'exportNamespace5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportNamespace6': {
         errors: false,
@@ -49753,7 +49753,7 @@ const baselines = {
     'importEquals3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importEqualsDeclaration': {
         errors: false,
@@ -50863,12 +50863,12 @@ const baselines = {
     'importStatements': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importStatementsInterfaces': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nameCollision': {
         errors: true,
@@ -50973,7 +50973,7 @@ const baselines = {
     'ModuleWithExportedAndNonExportedImportAlias': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ModuleWithExportedAndNonExportedVariables': {
         errors: true,
@@ -51523,7 +51523,7 @@ const baselines = {
     'jsDeclarationsExportSpecifierNonlocal': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsExportSubAssignments': {
         errors: false,
@@ -51693,7 +51693,7 @@ const baselines = {
     'jsDeclarationsReexportAliases': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsReexportAliasesEsModuleInterop': {
         errors: false,

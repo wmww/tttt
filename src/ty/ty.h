@@ -1203,9 +1203,6 @@ typedef struct TyDisplay {
     struct FunctionImpl const* syntactic_function;
     TyParamNames* param_names; // Null: type parameters print as they're called
 } TyDisplay;
-// A symbol's name qualified as far as needed to reach it from `enclosing` (tsc's symbolToString with an enclosing
-// declaration), fully without one
-cstr ty_symbol_name_at(Checker* me, Scope const* enclosing, Symbol const* symbol);
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);

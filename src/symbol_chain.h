@@ -18,8 +18,9 @@ typedef struct SymbolChain {
     u32 len;
 } SymbolChain;
 
-// tsc's getSymbolChain(symbol, meaning, endOfChain = true). meaning 0 is tsc's `undefined`
-SymbolChain symbol_chain_at(Scope const* enclosing, Symbol const* symbol, u32 meaning);
+// tsc's getSymbolChain(symbol, meaning, endOfChain = true). meaning 0 is tsc's `undefined`. yield_module: a module
+// that nothing names can start the chain (the types printer then writes `import("m")`), else it's left out
+SymbolChain symbol_chain_at(Scope const* enclosing, Symbol const* symbol, u32 meaning, bool yield_module);
 // The chain of a container of members (a class, an interface, an enum...) that qualifies them: tsc's
 // getSymbolChain(container, Namespace, endOfChain = false) from getContainersOfSymbol of a member. Empty when the
 // member is named bare (the container is a module or an anonymous type)

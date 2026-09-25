@@ -13,6 +13,7 @@ typedef struct ScopeTable {
     // A module's or namespace's locals: tsc's also have the exported declarations of the block (a local whose
     // exportSymbol is the export), in declaration order. These are the exports, the ones declared in `file` count
     SymbolTable const* exports;
+    Symbol const* container;
     SourceFile const* file;
 } ScopeTable;
 
@@ -28,6 +29,7 @@ typedef struct ChainCtx {
     u32 table_count;
     bool in_external_module;
     bool only_external_aliasing;
+    bool yield_module;
     // tsc's visitedSymbolTablesMap: the tables being searched for each symbol, so that aliases of each other end
     VisitedTable visited[64];
     u32 visited_count;
@@ -44,7 +46,7 @@ static void add_table(ChainCtx* me, SymbolTable const* table, bool local_lookup)
 static void add_locals_with_exports(ChainCtx* me, SymbolTable const* locals, Symbol const* container, SourceFile const* file) {
     if (my table_count == SCOPE_TABLES_MAX) return;
     SymbolTable const* exports = container ? symbol_members(container)->exports : nullptr;
-    my tables[my table_count++] = (ScopeTable){ .table = locals, .local_lookup = true, .exports = exports, .file = file };
+    my tables[my table_count++] = (ScopeTable){ .table = locals, .local_lookup = true, .exports = exports, .container = container, .file = file };
     add_table(me, exports, true);
 }
 
@@ -232,6 +234,16 @@ static bool try_locals_with_exports(
         chain_push(out, symbol);
         return true;
     }
+    // A duplicate declaration (TS2300) has a symbol of its own that isn't in the exports, but the block's local of
+    // that name has it as its exportSymbol
+    if (merged(me, symbol->parent) == merged(me, scope_table->container) && declared_at(symbol, scope_table->file) &&
+        merged(me, symbol_table_get(exports, symbol->name)) != merged(me, symbol) &&
+        can_qualify(me, symbol, meaning)
+    ) {
+        out->len = 0;
+        chain_push(out, symbol);
+        return true;
+    }
     u32 count = locals->count + exports->count;
     LocalEntry* entries = malloc(sizeof(LocalEntry) * (count ? count : 1));
     u32 n = 0;
@@ -379,16 +391,6 @@ static Symbol const* file_symbol_exporting(ChainCtx* me, Symbol const* container
 static u32 containers_of(ChainCtx* me, Symbol const* symbol, u32 meaning, Symbol const** out) {
     u32 count = 0;
     Symbol const* container = symbol->parent ? merged(me, symbol->parent) : nullptr;
-    // A duplicate declaration's symbol isn't in its container (tsc makes a symbol of its own without a parent)
-    if (container && symbol_members(container)->exports) {
-        SymbolTable const* exports = symbol_members(container)->exports;
-        Symbol const* found = symbol_table_get(exports, symbol->name);
-        if (merged(me, found) != merged(me, symbol) && merged(me, symbol_table_get(exports, c_sv("default"))) != merged(me, symbol) &&
-            merged(me, symbol_table_get(exports, c_sv("export="))) != merged(me, symbol)
-        ) {
-            container = nullptr;
-        }
-    }
     if (container && !(symbol->flags & SYMBOL_TYPE_PARAMETER)) {
         Symbol const* additional = file_symbol_exporting(me, container);
         SymbolChain ignored;
@@ -438,13 +440,13 @@ static bool symbol_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, bool e
         *out = chain;
         return true;
     }
-    if (!end_of_chain && is_external_module_symbol(symbol)) return false;
+    if (!end_of_chain && !my yield_module && is_external_module_symbol(symbol)) return false;
     out->len = 0;
     chain_push(out, symbol);
     return true;
 }
 
-SymbolChain symbol_chain_at(Scope const* enclosing, Symbol const* symbol, u32 meaning) {
+SymbolChain symbol_chain_at(Scope const* enclosing, Symbol const* symbol, u32 meaning, bool yield_module) {
     SymbolChain ret = {0};
     if (!enclosing) {
         chain_push(&ret, symbol);
@@ -452,6 +454,7 @@ SymbolChain symbol_chain_at(Scope const* enclosing, Symbol const* symbol, u32 me
     }
     ChainCtx* ctx = malloc(sizeof(ChainCtx));
     chain_ctx_init(ctx, enclosing);
+    ctx->yield_module = yield_module;
     symbol_chain(ctx, symbol, meaning, true, 0, &ret);
     free(ctx);
     return ret;

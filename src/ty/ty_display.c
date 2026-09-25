@@ -7,6 +7,7 @@
 #include "statement.h"
 #include "source_file.h"
 #include "callable_type.h"
+#include "symbol_chain.h"
 
 // Prints a Ty the way tsc's typeToString() does, in its order of preference: alias name, reference name + arguments
 // (array and tuple syntax for those targets), declared name, structure.
@@ -59,37 +60,20 @@ static void display_list(Checker* me, TyDisplay d, TyList list) {
     }
 }
 
-// Symbol accessibility, a simplified getAccessibleSymbolChain(): how to name a symbol from a scope
-
 static bool same_symbol(Checker* me, Symbol const* a, Symbol const* b) {
     Binder const* binder = program_get_binder(my program);
     return binder_redirect(binder, a) == binder_redirect(binder, b);
 }
 
-// An alias among the entries of a table that names the symbol
-static bool find_alias_in_table(Checker* me, SymbolTable const* table, Symbol const* symbol, u32 meaning, csview* name) {
-    if (!table) return false;
-    for (u32 i = 0; i < table->count; i++) {
-        Symbol const* candidate = table->entries[i].symbol;
-        if (!(candidate->flags & SYMBOL_ALIAS) || candidate->alias->state != ALIAS_DONE) continue;
-        Symbol const* target = symbol_for_meaning(candidate, meaning);
-        // (`import * as ns` resolves to a symbol whose members are the module's)
-        if (target && (same_symbol(me, target, symbol) || same_symbol(me, symbol_members(target), symbol))) {
-            *name = table->entries[i].name;
-            return true;
-        }
-    }
-    return false;
-}
-
+// With TyDisplay.enclosing, qualified as far as needed from there (symbol_chain.h), else fully (error messages)
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     Symbol const* parent = symbol->parent;
-    if (!parent || symbol->is_global_this) {
+    if ((!parent && !d.enclosing) || symbol->is_global_this) {
         out(d, ty_symbol_display_name(symbol).sv);
         return;
     }
-    bool quoted_parent = parent->name.size && (*parent->name.buf == '"' || *parent->name.buf == '\'');
     if (!d.enclosing) {
+        bool quoted_parent = parent->name.size && (*parent->name.buf == '"' || *parent->name.buf == '\'');
         // Modules and ambient modules (`declare module "m"`) are containers too, but not part of a name
         if (!parent->is_module && !quoted_parent) {
             out_symbol_name(me, d, parent, SYMBOL_NAMESPACE);
@@ -98,70 +82,24 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         out(d, ty_symbol_display_name(symbol).sv);
         return;
     }
-    // tsc's getAccessibleSymbolChain walks the scopes from the inside, and in each looks for the symbol under its own
-    // name and then for an alias of it. (The globals aren't searched for aliases: nothing but `export as namespace`
-    // puts one there)
-    Symbol const* found = scope_resolve(d.enclosing, symbol->name, meaning);
-    bool own_name = found && same_symbol(me, symbol_for_meaning(found, meaning), symbol);
-    for (Scope const* scope = d.enclosing; scope && scope->kind != SCOPE_GLOBAL; scope = scope->parent) {
-        if (own_name && scope_declares_symbol(scope, found)) break;
-        csview alias_name;
-        if (find_alias_in_table(me, &scope->locals, symbol, meaning, &alias_name) ||
-            (scope->container && find_alias_in_table(me, scope->container->exports, symbol, meaning, &alias_name))
-        ) {
-            out(d, alias_name);
-            return;
-        }
+    // tsc's symbolToTypeNode: the chain accessible from here, `import("m")` when it starts at a module
+    SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, true);
+    u32 start = 0;
+    if (chain.len && chain.items[0]->is_module) {
+        cstr module_name = module_name_for_error(chain.items[0], nullptr, false);
+        out_lit(d, "import(");
+        out(d, cstr_sv(&module_name));
+        out_lit(d, ")");
+        cstr_drop(&module_name);
+        start = 1;
     }
-    if (own_name) {
-        out(d, symbol->name_span.sv);
-        return;
-    }
-    if (parent->is_module) {
-        // Of another module: through an import that names the module (`import * as ns`, `import ns = require()`)
-        for (Scope const* scope = d.enclosing; scope && scope->kind != SCOPE_GLOBAL; scope = scope->parent) {
-            csview alias_name;
-            if (find_alias_in_table(me, &scope->locals, parent, SYMBOL_NAMESPACE | SYMBOL_VALUE, &alias_name) ||
-                (scope->container && find_alias_in_table(me, scope->container->exports, parent, SYMBOL_NAMESPACE | SYMBOL_VALUE, &alias_name))
-            ) {
-                out(d, alias_name);
-                out_lit(d, ".");
-                out(d, symbol->name_span.sv);
-                return;
-            }
-        }
-        // Of another module that nothing here names: `import("a").T`
-        Scope const* file_scope = d.enclosing;
-        while (file_scope->parent && file_scope->kind != SCOPE_MODULE && file_scope->kind != SCOPE_SCRIPT) {
-            file_scope = file_scope->parent;
-        }
-        if (file_scope->container != parent) {
-            cstr module_name = module_name_for_error(parent, nullptr, false);
-            out_lit(d, "import(");
-            out(d, cstr_sv(&module_name));
-            out_lit(d, ").");
-            cstr_drop(&module_name);
-        }
-    } else if (!quoted_parent) {
-        out_symbol_name(me, d, parent, SYMBOL_NAMESPACE);
-        out_lit(d, ".");
-    }
-    out(d, symbol->name_span.sv);
-}
-
-cstr ty_symbol_name_at(Checker* me, Scope const* enclosing, Symbol const* symbol) {
-    cstr ret = cstr_null;
-    out_symbol_name(me, (TyDisplay){ .target = &ret, .enclosing = enclosing }, symbol, SYMBOL_ANY_MEANING);
-    // symbolToString names a module nothing here names by nothing at all (types print `import("m").`)
-    if (cstr_starts_with(&ret, "import(\"")) {
-        char const* close = strstr(cstr_str(&ret), "\").");
-        if (close) {
-            cstr rest = cstr_from(close + 3);
-            cstr_drop(&ret);
-            ret = rest;
-        }
-    }
-    return ret;
+    cstr text = cstr_init();
+    SymbolChain rest = { .len = chain.len - start };
+    memcpy(rest.items, chain.items + start, rest.len * sizeof(*rest.items));
+    if (start && rest.len) cstr_append_lit(&text, ".");
+    symbol_chain_append(&text, d.enclosing, &rest);
+    out(d, cstr_sv(&text));
+    cstr_drop(&text);
 }
 
 // The name of a declared type: by its symbol when it has one

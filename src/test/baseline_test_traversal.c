@@ -28,7 +28,7 @@ static inline VecSpan declaration_get_spans(Symbol const* me) {
 
 // tsc's symbolToString(symbol, node.parent): the name of a symbol as the symbols baseline prints it from here
 static cstr symbol_text(BaselineTestCase* ctx, Symbol const* symbol) {
-    SymbolChain chain = symbol_chain_at(ctx->enclosing, symbol, 0);
+    SymbolChain chain = symbol_chain_at(ctx->enclosing, symbol, 0, false);
     cstr ret = cstr_init();
     symbol_chain_append(&ret, ctx->enclosing, &chain);
     return ret;

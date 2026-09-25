@@ -851,7 +851,10 @@ void scope_add_port(Scope* me, PortItem* item) {
     if (port_item_is_export(item) && !(my container && my kind != SCOPE_ENUM)) {
         return; // TODO: TS1194 export declarations are not permitted in a namespace... and nowhere else either
     }
-    SymbolTable* table = scope_declaration_table(me, exported);
+    // (An alias is exported only by `export`: an ambient export context doesn't export imports, tsc's
+    // declareModuleMember)
+    SymbolTable* table = !exported && (my kind == SCOPE_MODULE || my kind == SCOPE_NAMESPACE) ? &my locals :
+        scope_declaration_table(me, exported);
     bool merged;
     Symbol* symbol = declare_symbol(
         me, table, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
