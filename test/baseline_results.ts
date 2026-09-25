@@ -388,7 +388,7 @@ const baselines = {
     'aliasDoesNotDuplicateSignatures': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'aliasErrors': {
         errors: false,
@@ -713,7 +713,7 @@ const baselines = {
     'ambientExternalModuleWithoutInternalImportDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientFundule': {
         errors: true,
@@ -2273,7 +2273,7 @@ const baselines = {
     'bangInModuleName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'baseCheck': {
         errors: true,
@@ -7358,7 +7358,7 @@ const baselines = {
     'declFileImportedTypeUseInTypeArgPosition': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileIndexSignatures': {
         errors: true,
@@ -7848,7 +7848,7 @@ const baselines = {
     'declarationEmitCrossFileImportTypeOfAmbientModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitDefaultExport1': {
         errors: true,
@@ -9013,12 +9013,12 @@ const baselines = {
     'declaredExternalModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declaredExternalModuleWithExportAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorInJsFile': {
         errors: false,
@@ -12868,7 +12868,7 @@ const baselines = {
     'exportDefaultVariable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportDefaultWithJSDoc1': {
         errors: true,
@@ -13028,7 +13028,7 @@ const baselines = {
     'exportEqualsOfModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportEqualsProperty': {
         errors: false,
@@ -23848,7 +23848,7 @@ const baselines = {
     'nodeColonModuleResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeColonModuleResolution2': {
         errors: true,
@@ -25978,12 +25978,12 @@ const baselines = {
     'privacyTopLevelAmbientExternalModuleImportWithExport': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyTopLevelAmbientExternalModuleImportWithoutExport': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyTopLevelInternalReferenceImportWithExport': {
         errors: true,
@@ -26308,7 +26308,7 @@ const baselines = {
     'propertyIdentityWithPrivacyMismatch': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyNamesWithStringLiteral': {
         errors: true,
@@ -26458,7 +26458,7 @@ const baselines = {
     'quotedModuleNameMustBeAmbient': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'quotedPropertyName1': {
         errors: true,
@@ -28863,7 +28863,7 @@ const baselines = {
     'spellingSuggestionModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spliceTuples': {
         errors: false,
@@ -33563,7 +33563,7 @@ const baselines = {
     'ambientDeclarationsExternal': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientDeclarationsPatterns': {
         errors: true,
@@ -33603,7 +33603,7 @@ const baselines = {
     'ambientErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientExternalModuleInsideNonAmbient': {
         errors: false,

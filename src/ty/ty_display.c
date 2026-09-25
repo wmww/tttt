@@ -87,8 +87,16 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
     u32 start = 0;
     if (chain.len && chain.items[0]->is_module) {
         cstr module_name = module_name_for_error(chain.items[0], nullptr, false);
+        csview name = cstr_sv(&module_name);
         out_lit(d, "import(");
-        out(d, cstr_sv(&module_name));
+        if (name.size >= 2 && name.buf[0] == '\'') {
+            // (a string literal the printer makes: double quotes)
+            out_lit(d, "\"");
+            out(d, csview_slice(name, 1, name.size - 1));
+            out_lit(d, "\"");
+        } else {
+            out(d, name);
+        }
         out_lit(d, ")");
         cstr_drop(&module_name);
         start = 1;
