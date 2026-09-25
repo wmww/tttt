@@ -6326,7 +6326,7 @@ const baselines = {
         types: true,
     },
     'contextualTyping39': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6341,7 +6341,7 @@ const baselines = {
         types: true,
     },
     'contextualTyping41': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15156,7 +15156,7 @@ const baselines = {
         types: false,
     },
     'genericTypeAssertions1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15266,7 +15266,7 @@ const baselines = {
         types: false,
     },
     'genericWithNoConstraintComparableWithCurlyCurly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20146,7 +20146,7 @@ const baselines = {
         types: true,
     },
     'literals-negative': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20486,7 +20486,7 @@ const baselines = {
         types: true,
     },
     'mergedClassNamespaceRecordCast': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22946,7 +22946,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyInCastExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45956,7 +45956,7 @@ const baselines = {
         types: true,
     },
     'asOperator2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45981,12 +45981,12 @@ const baselines = {
         types: true,
     },
     'asOperatorContextualType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asOperatorNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62091,7 +62091,7 @@ const baselines = {
         types: true,
     },
     'stringLiteralsAssertionsInEqualityComparisons02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63816,7 +63816,7 @@ const baselines = {
         types: false,
     },
     'castingTuple': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -64741,12 +64741,12 @@ const baselines = {
         types: true,
     },
     'typeAssertionsWithIntersectionTypes01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeAssertionsWithUnionTypes01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65296,7 +65296,7 @@ const baselines = {
         types: false,
     },
     'objectTypesIdentityWithPrivates3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

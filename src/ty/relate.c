@@ -1096,10 +1096,11 @@ static Ternary props_related(
         if ((target_prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
             Ty const* parts[2] = { target_type, undefined };
             target_type = ty_union(me, parts, 2, nullptr, (TyList){0});
-            if (source_prop.flags & PROP_OPTIONAL) {
-                Ty const* source_parts[2] = { source_type, undefined };
-                source_type = ty_union(me, source_parts, 2, nullptr, (TyList){0});
-            }
+        }
+        // (An optional source is only related to a required target when comparing: it may be undefined too)
+        if ((source_prop.flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+            Ty const* source_parts[2] = { source_type, undefined };
+            source_type = ty_union(me, source_parts, 2, nullptr, (TyList){0});
         }
         Ternary related = is_related_to(me, st, source_type, target_type, report);
         if (!related) {
@@ -1873,6 +1874,7 @@ static Ternary signatures_identical_in(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, bool partial, bool ignore_return
 );
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
+static bool is_deeply_nested_max(Ty const* ty, Ty const* const* stack, u32 depth, u32 max);
 
 static Ternary identity_related(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     if ((source->flags ^ target->flags) & IDENTITY_FLAGS) return TERNARY_FALSE;
@@ -2244,6 +2246,9 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
         }
 
         case TY_CONDITIONAL: {
+            // Already checking this conditional type as a source further up: don't recurse (tsc's
+            // isDeeplyNestedType(source, sourceStack, sourceDepth, 10); it is on the stack already)
+            if (st->depth && is_deeply_nested_max(source, st->source_stack, st->depth - 1, 10)) return TERNARY_MAYBE;
             Ternary related = is_related_to(me, st, ty_conditional_branch(me, source, true), target, false);
             if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), target, false);
             if (related) return related;
@@ -2425,14 +2430,18 @@ static Ty const* recursion_identity(Ty const* ty) {
 // tsc's isDeeplyNestedType: `ty` (about to go on the stack) and at least two types further up with the same recursion
 // identity, each newer (a higher id) than the previous one
 bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth) {
+    return is_deeply_nested_max(ty, stack, depth, 3);
+}
+
+static bool is_deeply_nested_max(Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
     Ty const* identity = recursion_identity(ty);
-    if (!identity || depth < 2) return false;
+    if (!identity || depth + 1 < max) return false;
     u32 count = 0;
     u32 last_id = 0;
     for (u32 i = 0; i <= depth; i++) {
         Ty const* other = i < depth ? stack[i] : ty;
         if (recursion_identity(other) != identity) continue;
-        if (other->id >= last_id && ++count >= 3) return true;
+        if (other->id >= last_id && ++count >= max) return true;
         last_id = other->id;
     }
     return false;

@@ -744,6 +744,8 @@ TyList ty_conditional_own_infers(Checker* me, Ty const* root); // The `infer` ty
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
 // tsc's checkNonNullType: unknown and (under strictNullChecks) null or undefined are errors. Null if it reported
 Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, ErrorCtx* errs);
+// tsc's checkAssertionDeferred: `x as T` where x's type and T don't overlap (TS2352)
+void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target, Span span, ErrorCtx* errs);
 // tsc's checkDeleteExpression: what `delete` deletes has to be an optional (and writable) property
 void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs);
 // tsc's getSingleSignature: the one call (or construct) signature of an object type that has none of the other kind.

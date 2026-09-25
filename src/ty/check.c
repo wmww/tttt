@@ -403,12 +403,12 @@ static bool check_assignable(
 // An error whose head says something of its own (`head`, taken), followed by why source isn't assignable to target.
 // `keep_natural_head`: the elaboration starts with "Type 'S' is not assignable to type 'T'." (tsc's containing message
 // chain) rather than having it replaced (tsc's head message)
-static Error* report_unassignable_with_head(
-    Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head, Span span,
-    ErrorCtx* errs
+static Error* report_unrelated_with_head(
+    Checker* me, TyRelation relation, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head,
+    Span span, ErrorCtx* errs
 ) {
     VecTyReportLine lines = {0};
-    ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
+    ty_explain_unrelated(me, source, target, relation, &lines);
     my instantiation_limit_hit = false;
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
@@ -421,10 +421,33 @@ static Error* report_unassignable_with_head(
     } else {
         error = error_ctx_error_s(errs, span, ts_code, head);
     }
-    if (natural && natural->ts_code == 2322 && !keep_natural_head) first = 1;
+    if (natural && (natural->ts_code == 2322 || natural->ts_code == 2678) && !keep_natural_head) first = 1;
     attach_explanation(error, &lines, first);
     vec_ty_report_line_drop(&lines);
     return error;
+}
+
+static Error* report_unassignable_with_head(
+    Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head, Span span,
+    ErrorCtx* errs
+) {
+    return report_unrelated_with_head(me, TY_RELATION_ASSIGNABLE, source, target, ts_code, head, keep_natural_head, span, errs);
+}
+
+void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target, Span span, ErrorCtx* errs) {
+    if (target == ty_intrinsic(me, TY_ERROR) || (target->flags & TYF_ANY)) return;
+    // tsc's checkAssertionDeferred: the operand's regular base type, widened, has to be comparable to the target
+    // either way
+    Ty const* source = ty_widened_objects(me, ty_base_type_of_literal(me, expr_type));
+    Ty const* widened = ty_widened_nullable(me, source);
+    if (ty_is_related(me, target, widened, TY_RELATION_COMPARABLE)) return;
+    if (ty_is_related(me, source, target, TY_RELATION_COMPARABLE)) return;
+    cstr source_str = ty_to_cstr(me, source);
+    cstr target_str = ty_to_cstr(me, target);
+    cstr head = cstr_d("Conversion of type '", source_str, "' to type '", target_str, "' may be a mistake because neither "
+        "type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.");
+    report_unrelated_with_head(me, TY_RELATION_COMPARABLE, source, target, 2352, head, false, span, errs);
+    c_drop(cstr, &source_str, &target_str);
 }
 
 static Ty const* heritage_prop_type(Checker* me, Prop const* prop) {

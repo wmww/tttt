@@ -1866,8 +1866,6 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_GENERIC_PARAMS: generic_params_expr_typecheck(my generic_params, errs); break;
 
         case EXPR_AS_TYPE:
-            // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
-            // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
             if (!my as_type->is_satisfies && !as_type_is_const_assertion(my as_type)) {
                 // The asserted type is the contextual type of the operand, which nobody has looked at yet
                 Ty const* asserted = ty_of_node(&my as_type->type);
@@ -1875,6 +1873,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             }
             expr_typecheck(&my as_type->expr, errs);
             type_typecheck(&my as_type->type, errs);
+            if (!my as_type->is_satisfies && !as_type_is_const_assertion(my as_type)) {
+                ty_check_type_assertion(current_checker, expr_get_type(&my as_type->expr), ty_of_node(&my as_type->type),
+                    my inner_span, errs);
+            }
             if (my as_type->is_satisfies) {
                 Checker* checker = current_checker;
                 ty_check_satisfies(checker, expr_get_type(&my as_type->expr), ty_of_node(&my as_type->type),
