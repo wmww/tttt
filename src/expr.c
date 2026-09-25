@@ -282,7 +282,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             "'", my name, "' only refers to a type, but is being used as a value here."
         );
     } else {
-        error_ctx_error_d(errs, my name, 2304, "Cannot find name '", my name, "'.");
+        scope_report_value_not_found(names, my name, errs);
     }
 }
 

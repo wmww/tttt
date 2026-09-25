@@ -303,6 +303,11 @@ typedef struct Binder {
     NamespaceDecl** augmentations; // malloc'd
     u32 augmentation_count;
     u32 augmentation_cap;
+    u32 suggestion_count; // Names not found so far: only the first ones get spelling suggestions (tsc's suggestionCount)
+    // Values not found in class members, reported once types are known (scope_report_missing_prefixes())
+    struct PendingNotFound* pending_not_found; // malloc'd
+    u32 pending_not_found_count;
+    u32 pending_not_found_cap;
 } Binder;
 
 Binder* binder_new(ErrorCtx* errs);
@@ -375,6 +380,17 @@ void scope_export_default_expr(Scope* me, Expr* expr, bool export_equals);
 // Whether the scope's own tables (its locals, its container's exports) have the symbol
 bool scope_declares_symbol(Scope const* me, Symbol const* symbol);
 // Lookup by meaning, seeing through aliases. The symbol found may be an alias, see symbol_declaration()
+// tsc's getSpellingSuggestion: the candidate name closest to `name`, if any is close enough. `names` are `count`
+// strings, returns the index of the best, or -1
+isize spelling_suggestion(csview name, csview const* names, isize count);
+// A name used with `meaning` wasn't found: TS2304, or TS2552 with the closest name in scope (tsc's
+// onFailedToResolveSymbol with getSuggestedSymbolForNonexistentSymbol)
+void scope_report_not_found(Scope const* me, Span name, u32 meaning, ErrorCtx* errs);
+// The same for a value used in an expression, which in a class may be a member missing `this.` (TS2663/TS2662): that
+// waits for the checker
+void scope_report_value_not_found(Scope const* me, Span name, ErrorCtx* errs);
+// Reports what scope_report_value_not_found() deferred, with the checker current
+void scope_report_missing_prefixes(Binder* me);
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning);
 // Same, returning the symbol that has the meaning (aliases resolved), *found is what the name itself refers to
 Symbol const* scope_get_value(Scope const* me, csview name, Symbol const** found);

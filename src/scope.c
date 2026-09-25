@@ -8,6 +8,8 @@
 #include "function_impl.h"
 #include "class_decl.h"
 #include "interface_decl.h"
+#include <math.h>
+#include "ty/ty.h"
 #include "statement.h"
 #include "enum_decl.h"
 #include "unused.h"
@@ -115,6 +117,7 @@ void binder_destroy(Binder* me) {
     free(my symbols);
     free(my pattern_modules);
     free(my augmentations);
+    free(my pending_not_found);
     free(my overlays.keys);
     free(my overlays.values);
     arena_drop(&my arena);
@@ -1424,6 +1427,201 @@ bool scope_declares_symbol(Scope const* me, Symbol const* symbol) {
     SymbolTable const* table = my kind == SCOPE_GLOBAL ? &my binder->globals : &my locals;
     if ((table->count || table->parent) && symbol_table_lookup(table, symbol->name, hash) == symbol) return true;
     return my container && my container->exports && symbol_table_lookup(my container->exports, symbol->name, hash) == symbol;
+}
+
+// tsc's levenshteinWithMax: case differences cost 0.1. A negative result: more than max
+static double levenshtein_with_max(csview s1, csview s2, double max) {
+    isize n = s2.size;
+    double stack[2][64] = {0};
+    double* previous = n + 1 <= 64 ? stack[0] : malloc(sizeof(double) * (size_t)(n + 1));
+    double* current = n + 1 <= 64 ? stack[1] : malloc(sizeof(double) * (size_t)(n + 1));
+    double big = max + 0.01;
+    for (isize i = 0; i <= n; i++) previous[i] = (double)i;
+    double result = -1;
+    bool gave_up = false;
+    for (isize i = 1; i <= s1.size && !gave_up; i++) {
+        char c1 = s1.buf[i - 1];
+        isize min_j = (isize)ceil((double)i > max ? (double)i - max : 1);
+        isize max_j = (isize)floor((double)n > max + (double)i ? max + (double)i : (double)n);
+        current[0] = (double)i;
+        double col_min = (double)i;
+        for (isize j = 1; j < min_j; j++) current[j] = big;
+        for (isize j = min_j; j <= max_j; j++) {
+            char c2 = s2.buf[j - 1];
+            double substitution = tolower((unsigned char)c1) == tolower((unsigned char)c2) ? previous[j - 1] + 0.1 : previous[j - 1] + 2;
+            double dist = c1 == c2 ? previous[j - 1] : fmin(fmin(previous[j] + 1, current[j - 1] + 1), substitution);
+            current[j] = dist;
+            if (dist < col_min) col_min = dist;
+        }
+        for (isize j = max_j + 1; j <= n; j++) current[j] = big;
+        if (col_min > max) gave_up = true;
+        double* temp = previous;
+        previous = current;
+        current = temp;
+    }
+    if (!gave_up) result = previous[n] > max ? -1 : previous[n];
+    if (n + 1 > 64) {
+        free(previous);
+        free(current);
+    }
+    return result;
+}
+
+static bool equals_ignoring_case(csview a, csview b) {
+    if (a.size != b.size) return false;
+    for (isize i = 0; i < a.size; i++) {
+        if (tolower((unsigned char)a.buf[i]) != tolower((unsigned char)b.buf[i])) return false;
+    }
+    return true;
+}
+
+isize spelling_suggestion(csview name, csview const* names, isize count) {
+    isize maximum_length_difference = name.size * 34 / 100 > 2 ? name.size * 34 / 100 : 2;
+    double best_distance = (double)(name.size * 4 / 10) + 1;
+    isize best = -1;
+    for (isize i = 0; i < count; i++) {
+        csview candidate = names[i];
+        if (!candidate.buf) continue;
+        isize difference = candidate.size > name.size ? candidate.size - name.size : name.size - candidate.size;
+        if (difference > maximum_length_difference || csview_equals_sv(candidate, name)) continue;
+        // Short names only when they differ by case
+        if (candidate.size < 3 && !equals_ignoring_case(candidate, name)) continue;
+        double distance = levenshtein_with_max(name, candidate, best_distance - 0.1);
+        if (distance < 0) continue;
+        best_distance = distance;
+        best = i;
+    }
+    return best;
+}
+
+typedef struct Suggestion {
+    csview name;
+    Symbol const* symbol; // Null for a primitive (`string` for `String`)
+} Suggestion;
+
+// tsc's getSuggestionForSymbolNameLookup on one table
+static bool suggest_in_table(SymbolTable const* table, bool globals, csview name, u32 meaning, Suggestion* out) {
+    u32 count = 0;
+    SymbolEntry* entries = symbol_table_collect(table, &count);
+    static char const* const primitives[] = { "string", "number", "boolean", "object", "bigint", "symbol" };
+    u32 extra = globals ? c_arraylen(primitives) : 0;
+    csview* names = malloc(sizeof(csview) * (count + extra + 1));
+    panic_if(!names, "out of memory");
+    for (u32 i = 0; i < extra; i++) {
+        names[i] = (csview){0};
+        if (!(meaning & SYMBOL_TYPE_ALIAS)) continue;
+        char capitalized[16];
+        size_t len = strlen(primitives[i]);
+        memcpy(capitalized, primitives[i], len);
+        capitalized[0] = (char)toupper((unsigned char)capitalized[0]);
+        if (symbol_table_get(table, csview_from_n(capitalized, (isize)len))) names[i] = csview_from(primitives[i]);
+    }
+    for (u32 i = 0; i < count; i++) {
+        Symbol const* symbol = entries[i].symbol;
+        csview candidate = entries[i].name;
+        // (Keyword types like `unknown` are no symbols in tsc)
+        bool builtin = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN;
+        bool fits = !symbol->is_placeholder && !builtin && candidate.size && candidate.buf[0] != '"' && candidate.buf[0] != '\'' &&
+            ((symbol->flags & meaning) || ((symbol->flags & SYMBOL_ALIAS) && (symbol_resolved_flags(symbol) & meaning)));
+        names[extra + i] = fits ? candidate : (csview){0};
+    }
+    isize best = spelling_suggestion(name, names, count + extra);
+    if (best >= 0) *out = (Suggestion){ names[best], best >= extra ? entries[best - extra].symbol : nullptr };
+    free(names);
+    free(entries);
+    return best >= 0;
+}
+
+// tsc's resolveNameForSymbolSuggestion: the innermost table with a close enough name decides
+static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out) {
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        bool globals = scope->kind == SCOPE_GLOBAL;
+        SymbolTable const* table = globals ? &scope->binder->globals : &scope->locals;
+        if ((table->count || table->parent || globals) && suggest_in_table(table, globals, name, meaning, out)) return true;
+        if (scope->container && scope->container->exports && scope->kind != SCOPE_GLOBAL &&
+            suggest_in_table(scope->container->exports, false, name, meaning, out)
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void scope_report_not_found(Scope const* me, Span name, u32 meaning, ErrorCtx* errs) {
+    Binder* binder = my binder;
+    Suggestion suggestion = {0};
+    if (binder->suggestion_count++ < 10 && scope_suggest(me, name.sv, meaning, &suggestion)) {
+        Error* error = error_ctx_error_d(errs, name, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
+        Symbol const* symbol = suggestion.symbol;
+        for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
+            if (!(symbol->decls[i].flags & SYMBOL_VALUE)) continue;
+            error_add_related_d(error, symbol->decls[i].name, 2728, "'", suggestion.name, "' is declared here.");
+            break;
+        }
+        return;
+    }
+    error_ctx_error_d(errs, name, 2304, "Cannot find name '", name, "'.");
+}
+
+typedef struct PendingNotFound {
+    Scope const* scope;
+    Span name;
+    ErrorCtx* errs;
+} PendingNotFound;
+
+void scope_report_value_not_found(Scope const* me, Span name, ErrorCtx* errs) {
+    bool in_class = false;
+    for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope->this_ref.class_decl;
+    if (!in_class || (my flow && my flow->in_type_query)) {
+        scope_report_not_found(me, name, SYMBOL_VALUE, errs);
+        return;
+    }
+    Binder* binder = my binder;
+    if (binder->pending_not_found_count == binder->pending_not_found_cap) {
+        binder->pending_not_found_cap = binder->pending_not_found_cap ? binder->pending_not_found_cap * 2 : 8;
+        binder->pending_not_found = realloc(binder->pending_not_found, sizeof(PendingNotFound) * binder->pending_not_found_cap);
+        panic_if(!binder->pending_not_found, "out of memory");
+    }
+    binder->pending_not_found[binder->pending_not_found_count++] = (PendingNotFound){ me, name, errs };
+}
+
+// tsc's checkAndReportErrorForMissingPrefix: from the `this` container (a class member, or a function in one) out, a
+// static member of a class around it, or an instance member of the class it is directly a member of
+static bool report_missing_prefix(Scope const* me, Span name, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    Atom const* atom = checker_atom(checker, name.sv);
+    bool container_found = false, direct = false;
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        ThisKind kind = scope->this_ref.kind;
+        if (!kind) continue;
+        bool first = !container_found;
+        container_found = true;
+        ClassDecl const* class_decl = scope->this_ref.class_decl;
+        if (!class_decl || !class_decl->symbol) continue;
+        direct = first;
+        if (ty_get_prop(checker, ty_static_type_of(checker, class_decl->symbol), atom)) {
+            error_ctx_error_d(errs, name, 2662, "Cannot find name '", name, "'. Did you mean the static member '",
+                class_decl->symbol->name, ".", name, "'?");
+            return true;
+        }
+        if (direct && kind == THIS_CLASS_INSTANCE && ty_get_prop(checker, ty_declared_type_of(checker, class_decl->symbol), atom)) {
+            error_ctx_error_d(errs, name, 2663, "Cannot find name '", name, "'. Did you mean the instance member 'this.", name, "'?");
+            return true;
+        }
+    }
+    return false;
+}
+
+void scope_report_missing_prefixes(Binder* me) {
+    for (u32 i = 0; i < my pending_not_found_count; i++) {
+        PendingNotFound const* pending = &my pending_not_found[i];
+        if (!report_missing_prefix(pending->scope, pending->name, pending->errs)) {
+            scope_report_not_found(pending->scope, pending->name, SYMBOL_VALUE, pending->errs);
+        }
+    }
+    free(my pending_not_found);
+    my pending_not_found = nullptr;
+    my pending_not_found_count = my pending_not_found_cap = 0;
 }
 
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {

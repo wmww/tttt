@@ -266,7 +266,7 @@ const baselines = {
         types: false,
     },
     'accessInstanceMemberFromStaticMethod01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1841,7 +1841,7 @@ const baselines = {
         types: true,
     },
     'assignmentRestElementWithErrorSourceType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2266,7 +2266,7 @@ const baselines = {
         types: false,
     },
     'baseCheck': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3111,7 +3111,7 @@ const baselines = {
         types: false,
     },
     'checkIndexConstraintOfJavascriptClassExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -3856,7 +3856,7 @@ const baselines = {
         types: false,
     },
     'classMemberInitializerWithLamdaScoping4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13176,7 +13176,7 @@ const baselines = {
         types: false,
     },
     'extendArray': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19946,7 +19946,7 @@ const baselines = {
         types: false,
     },
     'letDeclarations-scopes2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20426,7 +20426,7 @@ const baselines = {
         types: true,
     },
     'maximum10SpellingSuggestions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24581,7 +24581,7 @@ const baselines = {
         types: true,
     },
     'parameterNamesInTypeParameterList': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -25746,7 +25746,7 @@ const baselines = {
         types: true,
     },
     'propertySignatures': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -26116,7 +26116,7 @@ const baselines = {
         types: true,
     },
     'recursiveClassReferenceTest': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27206,17 +27206,17 @@ const baselines = {
         types: true,
     },
     'scopeCheckExtendedClassInsidePublicMethod2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'scopeCheckExtendedClassInsideStaticMethod1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'scopeCheckInsidePublicMethod1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28171,12 +28171,12 @@ const baselines = {
         types: true,
     },
     'spellingSuggestionGlobal2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'spellingSuggestionGlobal3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28191,7 +28191,7 @@ const baselines = {
         types: true,
     },
     'spellingSuggestionModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28471,7 +28471,7 @@ const baselines = {
         types: true,
     },
     'staticVisibility': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30661,7 +30661,7 @@ const baselines = {
         types: true,
     },
     'typeParametersAndParametersInComputedNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31496,7 +31496,7 @@ const baselines = {
         types: false,
     },
     'unqualifiedCallToClassStatic1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31546,7 +31546,7 @@ const baselines = {
         types: true,
     },
     'unspecializedConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -32926,7 +32926,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction10_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33136,7 +33136,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration13_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33201,7 +33201,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction10_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33441,7 +33441,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration13_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33521,7 +33521,7 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction10_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33776,7 +33776,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration13_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44111,7 +44111,7 @@ const baselines = {
         types: true,
     },
     'YieldExpression11_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56461,12 +56461,12 @@ const baselines = {
         types: true,
     },
     'parserRegularExpressionDivideAmbiguity1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserRegularExpressionDivideAmbiguity2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57381,7 +57381,7 @@ const baselines = {
         types: true,
     },
     'parser15.4.4.14-9-2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57581,7 +57581,7 @@ const baselines = {
         types: false,
     },
     'parserS7.3_A1.1_T2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59236,7 +59236,7 @@ const baselines = {
         types: false,
     },
     'scannerS7.3_A1.1_T2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
