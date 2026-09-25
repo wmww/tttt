@@ -2369,7 +2369,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         expect_expr(&p, expr_ctx_null, &item.value);
     } else if (name_is_identifier && !item.computed_key && (*p.pos == ',' || *p.pos == '}' || *p.pos == '=')) {
         item.tag = OBJECT_ITEM_SHORTHAND;
-        item.value = expr_identifier((IdentifierExpr){ .name = item.name_span });
+        item.value = expr_identifier((IdentifierExpr){ .name = item.name_span, .shorthand = true });
         if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
             // `{ a = 1 }` is only valid as a destructuring assignment target
             hop_char(&p, '=');

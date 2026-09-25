@@ -179,7 +179,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         my target = scope_get_type(names, my name.sv, &my symbol);
         if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
         unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
-        if (!my target) scope_report_not_found(names, my name, SYMBOL_TYPE, errs);
+        if (!my target) scope_report_not_found(names, my name, SYMBOL_TYPE, false, errs);
     }
 
     if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE)) {

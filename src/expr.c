@@ -288,7 +288,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             error_ctx_error_d(errs, my name, 2693, "'", my name, "' only refers to a type, but is being used as a value here.");
         }
     } else {
-        scope_report_value_not_found(names, my name, errs);
+        scope_report_value_not_found(names, my name, my shorthand, errs);
     }
 }
 

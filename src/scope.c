@@ -1579,7 +1579,7 @@ static char const* suggested_lib(csview name) {
 }
 
 // tsc's getCannotFindNameDiagnosticForName (but `await` as a callee and shorthand properties)
-static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib) {
+static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, bool shorthand) {
     static char const* const dom[] = { "document", "console" };
     static char const* const test_runner[] = { "describe", "suite", "it", "test" };
     static char const* const node[] = { "process", "require", "Buffer", "module" };
@@ -1612,19 +1612,22 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib) {
     } else if (lib && name_is_one_of(n, later_lib, sizeof(later_lib) / sizeof(later_lib[0]))) {
         error_ctx_error_d(errs, name, 2583, "Cannot find name '", name, "'. Do you need to change your target library? "
             "Try changing the 'lib' compiler option to '", lib, "' or later.");
+    } else if (shorthand) {
+        error_ctx_error_d(errs, name, 18004, "No value exists in scope for the shorthand property '", name,
+            "'. Either declare one or provide an initializer.");
     } else {
         error_ctx_error_d(errs, name, 2304, "Cannot find name '", name, "'.");
     }
 }
 
-void scope_report_not_found(Scope const* me, Span name, u32 meaning, ErrorCtx* errs) {
+void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
     Binder* binder = my binder;
     Suggestion suggestion = {0};
     // A global of a later lib is said to be so rather than misspelled
     char const* lib = suggested_lib(name.sv);
     if (lib) {
         binder->suggestion_count++;
-        error_cannot_find_name(errs, name, lib);
+        error_cannot_find_name(errs, name, lib, shorthand);
         return;
     }
     if (binder->suggestion_count++ < 10 && scope_suggest(me, name.sv, meaning, &suggestion)) {
@@ -1637,20 +1640,21 @@ void scope_report_not_found(Scope const* me, Span name, u32 meaning, ErrorCtx* e
         }
         return;
     }
-    error_cannot_find_name(errs, name, nullptr);
+    error_cannot_find_name(errs, name, nullptr, shorthand);
 }
 
 typedef struct PendingNotFound {
     Scope const* scope;
     Span name;
+    bool shorthand;
     ErrorCtx* errs;
 } PendingNotFound;
 
-void scope_report_value_not_found(Scope const* me, Span name, ErrorCtx* errs) {
+void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs) {
     bool in_class = false;
     for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope->this_ref.class_decl;
     if (!in_class || (my flow && my flow->in_type_query)) {
-        scope_report_not_found(me, name, SYMBOL_VALUE, errs);
+        scope_report_not_found(me, name, SYMBOL_VALUE, shorthand, errs);
         return;
     }
     Binder* binder = my binder;
@@ -1659,7 +1663,7 @@ void scope_report_value_not_found(Scope const* me, Span name, ErrorCtx* errs) {
         binder->pending_not_found = realloc(binder->pending_not_found, sizeof(PendingNotFound) * binder->pending_not_found_cap);
         panic_if(!binder->pending_not_found, "out of memory");
     }
-    binder->pending_not_found[binder->pending_not_found_count++] = (PendingNotFound){ me, name, errs };
+    binder->pending_not_found[binder->pending_not_found_count++] = (PendingNotFound){ me, name, shorthand, errs };
 }
 
 // tsc's checkAndReportErrorForMissingPrefix: from the `this` container (a class member, or a function in one) out, a
@@ -1693,7 +1697,7 @@ void scope_report_missing_prefixes(Binder* me) {
     for (u32 i = 0; i < my pending_not_found_count; i++) {
         PendingNotFound const* pending = &my pending_not_found[i];
         if (!report_missing_prefix(pending->scope, pending->name, pending->errs)) {
-            scope_report_not_found(pending->scope, pending->name, SYMBOL_VALUE, pending->errs);
+            scope_report_not_found(pending->scope, pending->name, SYMBOL_VALUE, pending->shorthand, pending->errs);
         }
     }
     free(my pending_not_found);

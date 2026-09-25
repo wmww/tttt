@@ -1081,7 +1081,7 @@ const baselines = {
         types: false,
     },
     'argumentsReferenceInObjectLiteral_Js': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -3096,7 +3096,7 @@ const baselines = {
         types: false,
     },
     'checkDestructuringShorthandAssigment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27416,7 +27416,7 @@ const baselines = {
         types: false,
     },
     'shorthandPropertyUndefined': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42341,7 +42341,7 @@ const baselines = {
         types: true,
     },
     'objectLiteralShorthandPropertiesErrorFromNoneExistingIdentifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

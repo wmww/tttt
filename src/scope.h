@@ -384,11 +384,11 @@ bool scope_declares_symbol(Scope const* me, Symbol const* symbol);
 // strings, returns the index of the best, or -1
 isize spelling_suggestion(csview name, csview const* names, isize count);
 // A name used with `meaning` wasn't found: TS2304, or TS2552 with the closest name in scope (tsc's
-// onFailedToResolveSymbol with getSuggestedSymbolForNonexistentSymbol)
-void scope_report_not_found(Scope const* me, Span name, u32 meaning, ErrorCtx* errs);
+// onFailedToResolveSymbol with getSuggestedSymbolForNonexistentSymbol). `shorthand`: the value of `{ a }` (TS18004)
+void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs);
 // The same for a value used in an expression, which in a class may be a member missing `this.` (TS2663/TS2662): that
 // waits for the checker
-void scope_report_value_not_found(Scope const* me, Span name, ErrorCtx* errs);
+void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs);
 // Reports what scope_report_value_not_found() deferred, with the checker current
 void scope_report_missing_prefixes(Binder* me);
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning);
