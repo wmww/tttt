@@ -9021,7 +9021,7 @@ const baselines = {
         types: true,
     },
     'decrementAndIncrementOperators': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16701,7 +16701,7 @@ const baselines = {
         types: true,
     },
     'incrementOnTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39466,7 +39466,7 @@ const baselines = {
         types: true,
     },
     'symbolType4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47721,17 +47721,17 @@ const baselines = {
         types: true,
     },
     'decrementOperatorWithNumberTypeInvalidOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'decrementOperatorWithUnsupportedBooleanType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'decrementOperatorWithUnsupportedStringType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47791,17 +47791,17 @@ const baselines = {
         types: true,
     },
     'incrementOperatorWithNumberTypeInvalidOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'incrementOperatorWithUnsupportedBooleanType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'incrementOperatorWithUnsupportedStringType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55206,7 +55206,7 @@ const baselines = {
         types: false,
     },
     'parserUnaryExpression1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -55216,12 +55216,12 @@ const baselines = {
         types: true,
     },
     'parserUnaryExpression3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserUnaryExpression4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55236,7 +55236,7 @@ const baselines = {
         types: true,
     },
     'parserUnaryExpression7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1171,6 +1171,31 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
         "The left-hand side of an assignment expression must be a variable or a property access.");
 }
 
+// tsc's checkPrefixUnaryExpression/checkPostfixUnaryExpression for `++`/`--`: the operand has to be numeric, and then
+// a reference (tsc's checkReferenceExpression)
+static void increment_typecheck(Expr const* operand, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    Ty const* type = ty_check_non_null_type(checker, ty_expr_type(checker, operand), operand, errs);
+    Ty const* numeric[] = { ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_BIGINT) };
+    Ty const* number_or_bigint = ty_union(checker, numeric, 2, nullptr, (TyList){});
+    if (type && !ty_is_related(checker, type, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
+        error_ctx_error_d(errs, operand->outer_span, 2356,
+            "An arithmetic operand must be of type 'any', 'number', 'bigint' or an enum type.");
+        return;
+    }
+    Expr const* reference = operand;
+    while (reference->tag == EXPR_AS_TYPE || (reference->tag == EXPR_UNARY_OP && reference->unary_op->op == UNARY_OP_RIGHT_BANG)) {
+        reference = reference->tag == EXPR_AS_TYPE ? &reference->as_type->expr : &reference->unary_op->expr;
+    }
+    if ((reference->tag != EXPR_IDENTIFIER || reference->identifier.keyword) && reference->tag != EXPR_PROPERTY) {
+        error_ctx_error_d(errs, operand->outer_span, 2357,
+            "The operand of an increment or decrement operator must be a variable or a property access.");
+    } else if (expr_is_optional_chain(reference)) {
+        error_ctx_error_d(errs, operand->outer_span, 2777,
+            "The operand of an increment or decrement operator may not be an optional property access.");
+    }
+}
+
 // tsc's checkYieldExpression: a `yield*` operand has to be iterable, and what is yielded has to be what the annotation
 // says the generator yields
 static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
@@ -1361,13 +1386,16 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 case UNARY_OP_TILDE:
                 case UNARY_OP_PLUS:
                 case UNARY_OP_MINUS:
+                case UNARY_OP_DELETE:
+                case UNARY_OP_AWAIT:
+                    // TODO: add typechecking
+                    break;
+
                 case UNARY_OP_LEFT_PLUS_PLUS:
                 case UNARY_OP_LEFT_MINUS_MINUS:
                 case UNARY_OP_RIGHT_PLUS_PLUS:
                 case UNARY_OP_RIGHT_MINUS_MINUS:
-                case UNARY_OP_DELETE:
-                case UNARY_OP_AWAIT:
-                    // TODO: add typechecking
+                    increment_typecheck(&my unary_op->expr, errs);
                     break;
 
                 case UNARY_OP_YIELD:

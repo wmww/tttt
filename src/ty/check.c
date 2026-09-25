@@ -1580,7 +1580,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
 }
 
 // tsc's checkNonNullType: unknown and (under strictNullChecks) null or undefined are errors. Null if it reported
-static Ty const* check_non_null_type(Checker* me, Ty const* type, Expr const* expr, ErrorCtx* errs) {
+Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, ErrorCtx* errs) {
     bool named = expr_is_entity_name(expr);
     Span span = expr->inner_span;
     if (type->flags & TYF_UNKNOWN) {
@@ -1639,13 +1639,13 @@ void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* righ
             cstr_drop(&right_str);
         }
     } else {
-        Ty const* left = check_non_null_type(me, ty_expr_type(me, left_expr), left_expr, errs);
+        Ty const* left = ty_check_non_null_type(me, ty_expr_type(me, left_expr), left_expr, errs);
         if (left) {
             Ty const* keys[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
             ty_check_assignable(me, left, ty_union(me, keys, 3, nullptr, (TyList){0}), left_expr->inner_span, errs);
         }
     }
-    right = check_non_null_type(me, right, right_expr, errs);
+    right = ty_check_non_null_type(me, right, right_expr, errs);
     if (right) ty_check_assignable(me, right, ty_intrinsic(me, TY_NON_PRIMITIVE), right_expr->inner_span, errs);
 }
 

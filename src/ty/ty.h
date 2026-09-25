@@ -742,6 +742,8 @@ Ty const* ty_conditional(
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 TyList ty_conditional_own_infers(Checker* me, Ty const* root); // The `infer` type parameters its extends type declares
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
+// tsc's checkNonNullType: unknown and (under strictNullChecks) null or undefined are errors. Null if it reported
+Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, ErrorCtx* errs);
 // tsc's getSingleSignature: the one call (or construct) signature of an object type that has none of the other kind.
 // `allow_members`: properties and index signatures may be there too
 Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members);
