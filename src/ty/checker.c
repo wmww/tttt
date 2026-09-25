@@ -1,17 +1,19 @@
 #include "ty/ty_internal.h"
 #include <math.h>
+#include <sys/mman.h>
 #include "lazy_type.h"
 #include "program.h"
 #include "scope.h"
 
 // Arena
 
-#define ARENA_CHUNK_SIZE (64 * 1024)
+#define ARENA_CHUNK_SIZE (1024 * 1024)
 
 struct ArenaChunk {
     ArenaChunk* next;
     size_t used;
     size_t cap;
+    size_t mapped; // Bytes mapped for the chunk, header included
     char data[];
 };
 
@@ -20,9 +22,14 @@ void* arena_alloc(Arena* me, size_t size) {
     my total += size;
     if (!my head || my head->used + size > my head->cap) {
         size_t cap = size > ARENA_CHUNK_SIZE ? size : ARENA_CHUNK_SIZE;
-        ArenaChunk* chunk = calloc(1, sizeof(ArenaChunk) + cap);
-        panic_if(!chunk, "out of memory");
+        // Straight from mmap: the kernel's pages are zero already (calloc() would memset them), and the ones the
+        // arena never reaches are never touched
+        size_t mapped = sizeof(ArenaChunk) + cap;
+        void* memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        panic_if(memory == MAP_FAILED, "out of memory");
+        ArenaChunk* chunk = memory;
         chunk->cap = cap;
+        chunk->mapped = mapped;
         if (my head && size > ARENA_CHUNK_SIZE) {
             // A big one-off allocation, keep filling the current chunk
             chunk->next = my head->next;
@@ -43,7 +50,7 @@ void arena_drop(Arena* me) {
     ArenaChunk* i = my head;
     while (i) {
         ArenaChunk* next = i->next;
-        free(i);
+        munmap(i, i->mapped);
         i = next;
     }
     *me = (Arena){0};
@@ -405,10 +412,47 @@ Ty const* ty_string_literal(Checker* me, csview sv) {
 
 // Unions and intersections
 
-static int ty_cmp_id(void const* a, void const* b) {
-    u32 a_id = (*(Ty const* const*)a)->id;
-    u32 b_id = (*(Ty const* const*)b)->id;
-    return a_id < b_id ? -1 : a_id > b_id;
+// Sorts by id. The input is usually a few sorted runs back to back (the members of the unions being combined, plus a
+// few more), so this is a natural merge sort: it merges the runs that are there instead of sorting from scratch
+static void sort_by_id(Ty const** data, u32 len) {
+    if (len <= 8) {
+        for (u32 i = 1; i < len; i++) {
+            Ty const* t = data[i];
+            u32 j = i;
+            for (; j && data[j - 1]->id > t->id; j--) data[j] = data[j - 1];
+            data[j] = t;
+        }
+        return;
+    }
+    // Run boundaries: run k is [bounds[k], bounds[k + 1])
+    u32* bounds = malloc(sizeof(u32) * (len + 1));
+    Ty const** tmp = malloc(sizeof(Ty const*) * len);
+    panic_if(!bounds || !tmp, "out of memory");
+    u32 runs = 0;
+    bounds[runs++] = 0;
+    for (u32 i = 1; i < len; i++) if (data[i - 1]->id > data[i]->id) bounds[runs++] = i;
+    bounds[runs] = len;
+    Ty const** src = data;
+    Ty const** dst = tmp;
+    while (runs > 1) {
+        u32 merged = 0;
+        for (u32 k = 0; k < runs; k += 2) {
+            u32 lo = bounds[k], mid = bounds[k + 1], hi = k + 2 <= runs ? bounds[k + 2] : mid;
+            u32 a = lo, b = mid, o = lo;
+            while (a < mid && b < hi) dst[o++] = src[b]->id < src[a]->id ? src[b++] : src[a++];
+            while (a < mid) dst[o++] = src[a++];
+            while (b < hi) dst[o++] = src[b++];
+            bounds[merged++] = lo;
+        }
+        bounds[merged] = len;
+        runs = merged;
+        Ty const** swap = src;
+        src = dst;
+        dst = swap;
+    }
+    if (src != data) memcpy(data, src, sizeof(Ty const*) * len);
+    free(tmp);
+    free(bounds);
 }
 
 static void ty_buf_add_flattened(TyBuf* me, TyKind kind, Ty const* const* types, u32 len) {
@@ -498,8 +542,8 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
     } else {
         // The members of a union are sorted: a filtered union (narrowing) comes in sorted already
         bool sorted = true;
-        for (u32 i = 1; i < buf.len && sorted; i++) sorted = ty_cmp_id(&buf.data[i - 1], &buf.data[i]) <= 0;
-        if (!sorted) qsort(buf.data, buf.len, sizeof(Ty const*), ty_cmp_id);
+        for (u32 i = 1; i < buf.len && sorted; i++) sorted = buf.data[i - 1]->id <= buf.data[i]->id;
+        if (!sorted) sort_by_id(buf.data, buf.len);
         bool strict_null_checks = compiler_options()->strict_null_checks;
         if (includes & TYF_FRESH_LITERAL) {
             // Drop fresh literals whose regular twin is here too, before the rest compacts the (sorted) buffer

@@ -970,8 +970,20 @@ static bool is_not_derived_from(Checker* me, Ty const* member, void const* arg) 
     return !is_type_derived_from(me, member, arg);
 }
 
-// tsc's getNarrowedType(): what a type predicate or `instanceof` makes of a type
+static Ty const* narrowed_type_uncached(Checker* me, Ty const* type, Ty const* candidate, bool assume_true, bool check_derived);
+
+// tsc's getNarrowedType(): what a type predicate or `instanceof` makes of a type. Cached like tsc does (the same guard
+// on the same declared type is typical: `isIdentifier(node)` all over a code base)
 static Ty const* narrowed_type(Checker* me, Ty const* type, Ty const* candidate, bool assume_true, bool check_derived) {
+    u64 key[4] = { KEY_FLOW_NARROWED, type->id, candidate->id, (u64)assume_true | (u64)check_derived << 1 };
+    Ty const* cached = intern_get(&my links, key, 4);
+    if (cached) return cached;
+    Ty const* ret = narrowed_type_uncached(me, type, candidate, assume_true, check_derived);
+    *intern_slot(me, &my links, key, 4) = ret;
+    return ret;
+}
+
+static Ty const* narrowed_type_uncached(Checker* me, Ty const* type, Ty const* candidate, bool assume_true, bool check_derived) {
     if (!assume_true) {
         if (type == candidate) return ty_intrinsic(me, TY_NEVER);
         if (check_derived) return filter_type(me, type, is_not_derived_from, candidate);

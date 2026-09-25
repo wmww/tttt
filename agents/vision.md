@@ -11,10 +11,10 @@ types components) are the oracle, not the goal.
   15 session 3, which retired the plan: no missing code is worth 20 tests on its own any more). **Corpora**: tsc's
   `src/compiler` 0 diagnostics, type-fest 144, valibot 165 (all three are clean under tsc; 450 / 1871 before plan 19
   R5/R3/R2/R4/R1; some of the recent drop is ts-expect-error directives that new checks now satisfy).
-  **Perf** (`measurements.md`, end of plan 15 session 3): tsc corpus 0.75 s vs tsgo 0.72 (single-threaded 1.23),
-  type-fest 0.30 vs 1.24, valibot 0.60 s / 511 MB vs tsgo 0.81 s / 834 MB. tttt beats multi-threaded tsgo on the
-  library corpora but no longer on tsc's own source: every check that goes in costs a little (plan 15's cost ~4%),
-  so perf needs its own sessions again (relations: `is_simple_related` alone is ~9% of instructions).
+  **Perf** (`measurements.md`, perf session after plan 15): tsc corpus 0.67 s vs tsgo 0.72 (single-threaded 1.23),
+  type-fest 0.28 vs 1.23, valibot 0.59 s / 511 MB vs tsgo 0.78 s / 834 MB: ahead of multi-threaded tsgo on all three
+  again. Every check that goes in costs a little (plan 15's cost ~4%), so a small perf session every few plans keeps
+  the margin; the next levers are in triage.md "Perf" (the parser is ~19% of the corpus' instructions).
 - Since the last insights (plan 08), eight plans each finished in one session without a redesign: 17 (two modern
   corpora), 19 stage 0 (module augmentation), 14 (syntax gaps), 18 (template literal types, `as` clauses), 20
   (conditional instantiation cache, valibot 4.4 -> 1.2 s), 13 (member modifiers, `super`), 16 (elaboration, related

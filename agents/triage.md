@@ -327,10 +327,16 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   `source/greater-than.d.ts`): the nested `[...] extends infer R extends [boolean, ...] ? ... : never` chain (two
   `infer R` in one declaration, the inner shadowing the outer) picks a wrong branch.
 - `./bench.sh`'s "stdlib only" section prints ~0 ms for every phase (seen after plan 17): probably checks nothing.
-- Corpus profile after plan 05: `is_simple_related` + `check_related` 24% (3.9 M `ty_is_comparable_either_way` from
-  discriminant/equality narrowing: tsc has a key property map for unions of 10+ members, `narrow_by_discriminant()`
-  asks every member every query), `ty_enum_of_member` -> `ty_declared_type_of` -> `intern_slot` 9% (cache the enum
-  type on the member literal), `narrowed_type` 8%, `ty_union_subtype_reduced` 2.5%.
+- tsc corpus profile after the 2026-09-24 perf session (6.0 G Ir): parsing is ~19% of instructions (~6000 per
+  source line: backtracking sub-parsers, `hop_start` chains, `parse_fail` 1.5 M times from `parse_expr` alone;
+  `hop_start_if_ends_on_word_break` 1.6% self). A first-char dispatch (or a real token) in `parse_expr`,
+  `parse_type` and the keyword probes is the lever; the binary operator switch alone didn't move wall time.
+  Checker: `is_simple_related` 6.7% self (7.6 M calls: `assigned_is_assignable`, `first_unfit_argument`,
+  `ty_union_subtype_reduced`, `ty_is_comparable_either_way` from discriminant narrowing; tsc keys unions of 10+
+  members by discriminant, `narrow_by_discriminant()` asks every member), `ty_union` 5.8% self (flatten + dedupe +
+  intern of big enum unions like `SyntaxKind | undefined`, rebuilt by `ty_optional_param_type`, `with_undefined`,
+  `filter_type`: cache the "+ undefined" results?), `ty_declared_type_of` -> `intern_slot` 1.4% (cache the enum type
+  on the member literal).
 - Name resolution is 77 ms on the corpus (plan 04 wanted 40): cache misses more than work; every identifier walks the
   scope chain (locals + container exports per level, value then type meaning on failure), declare + resolve are two
   walks of the AST. Ideas: one table probe per scope for all meanings, skip empty block scopes, merge the walks.

@@ -761,3 +761,5 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
   function type nodes (FunctionImpl.full_span) and type literals (Interface.span) only. Mapped properties of an `as`
   clause lose their declarations when the clause renamed the key (per key, tsc decides per mapped type: remapping vs
   filtering, `expand_mapped` in members.c).
+- `ty_check_object_type_duplicate_members` (check.c): `MemberTables` is a fixed 128-entry array searched linearly;
+  members past the 128th of a class are never checked for duplicates (TS2300). Quadratic in the member count too.

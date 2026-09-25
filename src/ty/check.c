@@ -1263,7 +1263,9 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
             break;
         }
     }
-    MemberTables* tables = calloc(1, sizeof(MemberTables));
+    MemberTables* tables = malloc(sizeof(MemberTables)); // Big, and only read below count
+    panic_if(!tables, "out of memory");
+    tables->count = 0;
     MeaningEntry meanings[128];
     u32 meaning_count = 0;
     for_each (i, vec_class_item, &class_decl->items) {
@@ -1324,7 +1326,9 @@ static Ty const* member_declared_type(Checker* me, InterfaceMember const* member
 }
 
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs) {
-    MemberTables* tables = calloc(1, sizeof(MemberTables));
+    MemberTables* tables = malloc(sizeof(MemberTables)); // Big, and only read below count
+    panic_if(!tables, "out of memory");
+    tables->count = 0;
     // A property signature after another member of its name (in any declaration)
     for (u32 l = 0; l < list_count; l++) {
         for_each (i, vec_interface_member, lists[l]) {

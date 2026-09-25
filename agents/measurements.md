@@ -2,6 +2,15 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-24, perf session after plan 15
+Suite unchanged (6505), corpora unchanged (tsc 0, type-fest 144, valibot 165). `./bench.sh`: **tsc corpus 0.67 s**
+(typecheck 480 -> 424 ms) vs tsgo 0.72 (single-threaded 1.23); type-fest 0.28 s vs 1.23; valibot 0.59 s / 511 MB vs
+tsgo 0.78 s / 834 MB. Callgrind of the tsc corpus 7.35 G -> 6.00 G Ir: `narrowed_type` cached by (type, candidate,
+flags) like tsc's getNarrowedType (-11%; `isIdentifier(node)`-style guards re-narrowed the same declared type
+every time), `ty_union` sorts with a natural merge sort instead of qsort (its input is a few sorted runs back to
+back; -5%), arena chunks straight from mmap (no calloc memset) and no calloc of `MemberTables`, the binary
+operator parser as a switch (no measurable wall change for the last two). Profile of what's left: triage.md "Perf".
+
 ## 2026-09-24, plan 15 session 3 (missing checks, plan retired), end of session
 Suite **6373 -> 6505** full (errors 9289, symbols 10449, types 8416). Corpora unchanged: tsc 0, type-fest 144,
 valibot 165. `./bench.sh`: tsc corpus 0.75 s vs tsgo 0.72 (single-threaded 1.23), typecheck 501 ms; type-fest 0.30 s

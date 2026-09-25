@@ -3242,57 +3242,91 @@ static bool parse_as_type(Parser* parent, TypeNode* ret, Span* keyword_span_ret,
     return parse_success(&p);
 }
 
+// Longest match first within each first character
 static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     Parser p = parser(parent);
-
-    // PERF: transform this into a big switch or hashmap or something
-    if (hop_start(&p, ">>>=")) *op = BINARY_OP_GREATER_GREATER_GREATER_EQUAL;
-    else if (hop_start(&p, "===")) *op = BINARY_OP_TRIPLE_EQUAL;
-    else if (hop_start(&p, "!==")) *op = BINARY_OP_TRIPLE_NOT_EQUAL;
-    else if (hop_start(&p, ">>>")) *op = BINARY_OP_GREATER_GREATER_GREATER;
-    else if (hop_start(&p, "<<=")) *op = BINARY_OP_LESS_LESS_EQUAL;
-    else if (hop_start(&p, ">>=")) *op = BINARY_OP_GREATER_GREATER_EQUAL;
-    else if (hop_start(&p, "&&=")) *op = BINARY_OP_AND_AND_EQUAL;
-    else if (hop_start(&p, "||=")) *op = BINARY_OP_OR_OR_EQUAL;
-    else if (hop_start(&p, "\?\?=")) *op = BINARY_OP_EH_EH_EQUAL;
-    else if (hop_start(&p, "++") || hop_start(&p, "--")) return parse_fail(&p);
-    else if (hop_start(&p, "**=")) *op = BINARY_OP_STAR_STAR_EQUAL;
-    else if (hop_start(&p, "**")) *op = BINARY_OP_STAR_STAR;
-    else if (hop_start(&p, "<<")) *op = BINARY_OP_LESS_LESS;
-    else if (hop_start(&p, ">>")) *op = BINARY_OP_GREATER_GREATER;
-    else if (hop_start(&p, "<=")) *op = BINARY_OP_LESS_EQUAL;
-    else if (hop_start(&p, ">=")) *op = BINARY_OP_GREATER_EQUAL;
-    else if (hop_start_if_ends_on_word_break(&p, "in")) *op = BINARY_OP_IN;
-    else if (hop_start_if_ends_on_word_break(&p, "instanceof")) *op = BINARY_OP_INSTANCEOF;
-    else if (hop_start(&p, "==")) *op = BINARY_OP_DOUBLE_EQUAL;
-    else if (hop_start(&p, "!=")) *op = BINARY_OP_NOT_EQUAL;
-    else if (hop_start(&p, "&&")) *op = BINARY_OP_AND_AND;
-    else if (hop_start(&p, "||")) *op = BINARY_OP_OR_OR;
-    else if (hop_start(&p, "\?\?")) *op = BINARY_OP_EH_EH;
-    else if (hop_start(&p, "+=")) *op = BINARY_OP_PLUS_EQUAL;
-    else if (hop_start(&p, "-=")) *op = BINARY_OP_MINUS_EQUAL;
-    else if (hop_start(&p, "*=")) *op = BINARY_OP_STAR_EQUAL;
-    else if (hop_start(&p, "/=")) *op = BINARY_OP_SLASH_EQUAL;
-    else if (hop_start(&p, "%=")) *op = BINARY_OP_MOD_EQUAL;
-    else if (hop_start(&p, "&=")) *op = BINARY_OP_AND_EQUAL;
-    else if (hop_start(&p, "^=")) *op = BINARY_OP_XOR_EQUAL;
-    else if (hop_start(&p, "|=")) *op = BINARY_OP_OR_EQUAL;
-    else if (hop_start(&p, "&")) *op = BINARY_OP_AND;
-    else if (hop_start(&p, "^")) *op = BINARY_OP_XOR;
-    else if (hop_start(&p, "|")) *op = BINARY_OP_OR;
-    else if (hop_start(&p, "<")) *op = BINARY_OP_LESS;
-    else if (hop_start(&p, ">")) *op = BINARY_OP_GREATER;
-    else if (hop_start(&p, "*")) *op = BINARY_OP_STAR;
-    else if (hop_start(&p, "/")) *op = BINARY_OP_SLASH;
-    else if (hop_start(&p, "%")) *op = BINARY_OP_MOD;
-    else if (hop_start(&p, "=>")) return parse_fail(&p);
-    else if (hop_start(&p, "=")) *op = BINARY_OP_EQUAL;
-    else if (hop_start(&p, "+")) *op = BINARY_OP_PLUS;
-    else if (hop_start(&p, "-")) *op = BINARY_OP_MINUS;
-    // else if (hop_start(&p, ",")) *op = BINARY_OP_COMMA; handled in parse_comma_ops_right_side()
-    else return parse_fail(&p);
-
-    return parse_success(&p);
+    bool matched = true;
+    switch (*p.pos) {
+        case '>':
+            if (hop_start(&p, ">>>=")) *op = BINARY_OP_GREATER_GREATER_GREATER_EQUAL;
+            else if (hop_start(&p, ">>>")) *op = BINARY_OP_GREATER_GREATER_GREATER;
+            else if (hop_start(&p, ">>=")) *op = BINARY_OP_GREATER_GREATER_EQUAL;
+            else if (hop_start(&p, ">>")) *op = BINARY_OP_GREATER_GREATER;
+            else if (hop_start(&p, ">=")) *op = BINARY_OP_GREATER_EQUAL;
+            else { p.pos++; *op = BINARY_OP_GREATER; }
+            break;
+        case '<':
+            if (hop_start(&p, "<<=")) *op = BINARY_OP_LESS_LESS_EQUAL;
+            else if (hop_start(&p, "<<")) *op = BINARY_OP_LESS_LESS;
+            else if (hop_start(&p, "<=")) *op = BINARY_OP_LESS_EQUAL;
+            else { p.pos++; *op = BINARY_OP_LESS; }
+            break;
+        case '=':
+            if (hop_start(&p, "===")) *op = BINARY_OP_TRIPLE_EQUAL;
+            else if (hop_start(&p, "==")) *op = BINARY_OP_DOUBLE_EQUAL;
+            else if (hop_start(&p, "=>")) matched = false;
+            else { p.pos++; *op = BINARY_OP_EQUAL; }
+            break;
+        case '!':
+            if (hop_start(&p, "!==")) *op = BINARY_OP_TRIPLE_NOT_EQUAL;
+            else if (hop_start(&p, "!=")) *op = BINARY_OP_NOT_EQUAL;
+            else matched = false;
+            break;
+        case '&':
+            if (hop_start(&p, "&&=")) *op = BINARY_OP_AND_AND_EQUAL;
+            else if (hop_start(&p, "&&")) *op = BINARY_OP_AND_AND;
+            else if (hop_start(&p, "&=")) *op = BINARY_OP_AND_EQUAL;
+            else { p.pos++; *op = BINARY_OP_AND; }
+            break;
+        case '|':
+            if (hop_start(&p, "||=")) *op = BINARY_OP_OR_OR_EQUAL;
+            else if (hop_start(&p, "||")) *op = BINARY_OP_OR_OR;
+            else if (hop_start(&p, "|=")) *op = BINARY_OP_OR_EQUAL;
+            else { p.pos++; *op = BINARY_OP_OR; }
+            break;
+        case '?':
+            if (hop_start(&p, "\?\?=")) *op = BINARY_OP_EH_EH_EQUAL;
+            else if (hop_start(&p, "\?\?")) *op = BINARY_OP_EH_EH;
+            else matched = false;
+            break;
+        case '*':
+            if (hop_start(&p, "**=")) *op = BINARY_OP_STAR_STAR_EQUAL;
+            else if (hop_start(&p, "**")) *op = BINARY_OP_STAR_STAR;
+            else if (hop_start(&p, "*=")) *op = BINARY_OP_STAR_EQUAL;
+            else { p.pos++; *op = BINARY_OP_STAR; }
+            break;
+        case '+':
+            if (hop_start(&p, "++")) matched = false;
+            else if (hop_start(&p, "+=")) *op = BINARY_OP_PLUS_EQUAL;
+            else { p.pos++; *op = BINARY_OP_PLUS; }
+            break;
+        case '-':
+            if (hop_start(&p, "--")) matched = false;
+            else if (hop_start(&p, "-=")) *op = BINARY_OP_MINUS_EQUAL;
+            else { p.pos++; *op = BINARY_OP_MINUS; }
+            break;
+        case '/':
+            if (hop_start(&p, "/=")) *op = BINARY_OP_SLASH_EQUAL;
+            else { p.pos++; *op = BINARY_OP_SLASH; }
+            break;
+        case '%':
+            if (hop_start(&p, "%=")) *op = BINARY_OP_MOD_EQUAL;
+            else { p.pos++; *op = BINARY_OP_MOD; }
+            break;
+        case '^':
+            if (hop_start(&p, "^=")) *op = BINARY_OP_XOR_EQUAL;
+            else { p.pos++; *op = BINARY_OP_XOR; }
+            break;
+        case 'i':
+            if (hop_start_if_ends_on_word_break(&p, "in")) *op = BINARY_OP_IN;
+            else if (hop_start_if_ends_on_word_break(&p, "instanceof")) *op = BINARY_OP_INSTANCEOF;
+            else matched = false;
+            break;
+        // ',' is handled in parse_comma_ops_right_side()
+        default:
+            matched = false;
+    }
+    return matched ? parse_success(&p) : parse_fail(&p);
 }
 
 static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
