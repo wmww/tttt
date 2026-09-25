@@ -2,11 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
-## 2026-09-24, plan 15 session 2 (missing checks), commit a3304de
-Suite **6016 -> 6267** full (errors 9002, symbols 10403, types 8389). Corpora: tsc 0, type-fest 149 (165: the
-ts-expect-errors that wanted TS2314), valibot 169 (240: 73 ts-expect-errors now used, mostly TS2352). `./bench.sh`
-mid-session (after TS2552/TS2663): valibot 0.64 s / 490 MB vs tsgo 0.87 s / 832 MB (single-threaded 1.65),
-typecheck 454 ms; no perf-relevant changes since (the TS2352 check only relates on `as`).
+## 2026-09-24, plan 15 session 2 (missing checks), end of session
+Suite **6016 -> 6373** full (errors 9140, symbols 10418, types 8396). Corpora: tsc 0, type-fest 144 (165: the
+ts-expect-errors that wanted TS2314, fewer weak-type false positives), valibot 165 (240: 73 ts-expect-errors now
+used, mostly TS2352). `./bench.sh`: tsc corpus 0.74 s vs tsgo 0.69 (single-threaded 1.21) — **tsgo is ahead there
+now**; type-fest 0.29 s vs 1.22; valibot 0.59 s / 510 MB vs tsgo 0.77 s / 831 MB. The session's checks cost ~3.7% of
+typecheck on the tsc corpus (min of 8 runs: 461 ms at 2376aa6, 478 ms now; callgrind +6.5% instructions, spread
+over relations: comparable in both directions, TS2352's comparable checks, weak types, intersection targets'
+combined properties). Worth a perf look (is_simple_related is 9.5% of the corpus' instructions).
 
 ## 2026-09-24, plan 21 execution session 1 (display fidelity), commit e98b6fb
 Suite **5471 -> 6016** full (errors 8653, symbols 10403, types 8377). Corpora unchanged (tsc 0, type-fest 165,
