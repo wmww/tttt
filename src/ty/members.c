@@ -1590,6 +1590,11 @@ Ty const* ty_object_literal(
     words_push(&words, KEY_STRUCTURAL);
     words_push(&words, kind);
     for (u32 i = 0; i < count; i++) {
+        if (props[i].reuse) {
+            words_push(&words, 2);
+            words_push(&words, (u64)(uintptr_t)props[i].reuse);
+            continue;
+        }
         words_push(&words, 1);
         words_push(&words, (u64)(uintptr_t)props[i].name);
         words_push(&words, props[i].flags | (u64)props[i].own << 32);
@@ -1607,6 +1612,11 @@ Ty const* ty_object_literal(
         MembersBuilder builder = {0};
         u32 flags = TYF_OBJECT | (kind == OBJECT_LITERAL_FRESH ? TYF_FRESH_OBJECT : 0);
         for (u32 i = 0; i < count; i++) {
+            if (props[i].reuse) {
+                flags |= prop_type(me, props[i].reuse)->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
+                builder_push(&builder, props, (Prop*)props[i].reuse);
+                continue;
+            }
             Prop* prop = arena_new(&my arena, Prop);
             prop->name = props[i].name;
             prop->flags = props[i].flags;

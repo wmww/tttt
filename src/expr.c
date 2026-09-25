@@ -1560,9 +1560,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 case UNARY_OP_TILDE:
                 case UNARY_OP_PLUS:
                 case UNARY_OP_MINUS:
-                case UNARY_OP_DELETE:
                 case UNARY_OP_AWAIT:
                     // TODO: add typechecking
+                    break;
+
+                case UNARY_OP_DELETE:
+                    ty_check_delete_operand(current_checker, &my unary_op->expr, errs);
                     break;
 
                 case UNARY_OP_LEFT_PLUS_PLUS:

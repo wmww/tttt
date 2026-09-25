@@ -783,6 +783,40 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
     return true;
 }
 
+void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
+    if (operand->tag != EXPR_PROPERTY) {
+        error_ctx_error_d(errs, operand->inner_span, 2703, "The operand of a 'delete' operator must be a property reference.");
+        return;
+    }
+    PropertyExpr const* access = operand->property;
+    Span name_span = access->prop.inner_span;
+    if (access->form == PROPERTY_EXPR_DOT && span_valid(name_span) && name_span.sv.buf[0] == '#') {
+        error_ctx_error_d(errs, operand->inner_span, 18011, "The operand of a 'delete' operator cannot be a private identifier.");
+    }
+    Atom const* name = access_name(me, access);
+    if (!name) return;
+    Ty const* object = ty_expr_type(me, &access->expr);
+    if (access->optional_chain || expr_is_optional_chain(&access->expr)) object = ty_non_nullable(me, object);
+    MemberRefs refs = {0};
+    int readonly = member_refs(me, object, name, &refs, 0);
+    if (readonly < 0 || !refs.len) return; // (No property: an index signature, or already an error)
+    if (readonly || is_namespace_import(&access->expr)) {
+        error_ctx_error_d(errs, operand->inner_span, 2704, "The operand of a 'delete' operator cannot be a read-only property.");
+        return;
+    }
+    if (!compiler_options()->strict_null_checks) return;
+    // The property tsc makes of them: optional if any is, of the union of their types
+    bool exact = compiler_options()->exact_optional_property_types;
+    for (u32 i = 0; i < refs.len; i++) {
+        Prop const* prop = refs.props[i];
+        if (exact ? (prop->flags & PROP_OPTIONAL) : (prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_STRIP_UNDEFINED)) return;
+        Ty const* type = prop_type(me, prop);
+        if (type->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER)) return;
+        if (!exact && ty_can_be_undefined(me, type)) return;
+    }
+    error_ctx_error_d(errs, operand->inner_span, 2790, "The operand of a 'delete' operator must be optional.");
+}
+
 bool ty_is_readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object) {
     MemberRefs refs = {0};
     return readonly_assignment(me, access, object, &refs);

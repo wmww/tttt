@@ -9251,22 +9251,22 @@ const baselines = {
         types: true,
     },
     'deleteExpressionMustBeOptional(strict=true)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'deleteExpressionMustBeOptional_exactOptionalPropertyTypes(exactoptionalpropertytypes=false)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'deleteExpressionMustBeOptional_exactOptionalPropertyTypes(exactoptionalpropertytypes=true)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'deleteOperator1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13633,7 +13633,7 @@ const baselines = {
     'forLoopWithDestructuringDoesNotElideFollowingStatement': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forOfStringConstituents': {
         errors: true,
@@ -16028,7 +16028,7 @@ const baselines = {
     'importHelpersInAmbientContext': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersInIsolatedModules': {
         errors: true,
@@ -22338,7 +22338,7 @@ const baselines = {
     'narrowingRestGenericCall': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingTruthyObject': {
         errors: true,
@@ -24573,7 +24573,7 @@ const baselines = {
     'parameterInitializerBeforeDestructuringEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parameterListAsTupleType': {
         errors: false,
@@ -27008,7 +27008,7 @@ const baselines = {
     'restParameterTypeInstantiation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restParameterWithBindingPattern1': {
         errors: true,
@@ -27041,12 +27041,12 @@ const baselines = {
         types: true,
     },
     'restUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'restUnion2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33106,12 +33106,12 @@ const baselines = {
         types: true,
     },
     'await_unaryExpression_es2017_1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'await_unaryExpression_es2017_2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33746,12 +33746,12 @@ const baselines = {
         types: true,
     },
     'await_unaryExpression_es6_1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'await_unaryExpression_es6_2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36186,7 +36186,7 @@ const baselines = {
         types: true,
     },
     'privateNamesNoDelete': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37056,7 +37056,7 @@ const baselines = {
         types: true,
     },
     'controlFlowDeleteOperator': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42756,12 +42756,12 @@ const baselines = {
         types: true,
     },
     'templateStringInDeleteExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInDeleteExpressionES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44761,7 +44761,7 @@ const baselines = {
         types: true,
     },
     'exponentiationOperatorWithInvalidSimpleUnaryExpressionOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47006,7 +47006,7 @@ const baselines = {
         types: true,
     },
     'deleteChain': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -47741,27 +47741,27 @@ const baselines = {
         types: false,
     },
     'deleteOperatorWithAnyOtherType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deleteOperatorWithBooleanType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deleteOperatorWithEnumType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'deleteOperatorWithNumberType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deleteOperatorWithStringType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57106,7 +57106,7 @@ const baselines = {
         types: true,
     },
     'parserStrictMode16': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -62598,7 +62598,7 @@ const baselines = {
     'nonPrimitiveAccessProperty': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonPrimitiveAndEmptyObject': {
         errors: true,
@@ -63203,7 +63203,7 @@ const baselines = {
     'objectRestPropertyMustBeLast': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectRestReadonly': {
         errors: true,

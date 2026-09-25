@@ -744,6 +744,8 @@ TyList ty_conditional_own_infers(Checker* me, Ty const* root); // The `infer` ty
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
 // tsc's checkNonNullType: unknown and (under strictNullChecks) null or undefined are errors. Null if it reported
 Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, ErrorCtx* errs);
+// tsc's checkDeleteExpression: what `delete` deletes has to be an optional (and writable) property
+void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs);
 // tsc's getSingleSignature: the one call (or construct) signature of an object type that has none of the other kind.
 // `allow_members`: properties and index signatures may be there too
 Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members);
@@ -912,6 +914,7 @@ typedef struct ObjectLiteralProp {
     bool name_is_value;
     TypeNode const* asserted; // See Prop.asserted
     bool own; // Written in the literal itself, not spread into it: only those get excess property checks
+    Prop const* reuse; // The property is this one as it is (tsc: the same symbol), the other fields are ignored
 } ObjectLiteralProp;
 typedef enum ObjectLiteralKind {
     OBJECT_SYNTHETIC, // Made up by the checker
@@ -962,6 +965,7 @@ Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty); // `"a"` -> string
 bool ty_can_be_truthy(Checker* me, Ty const* ty);
 bool ty_can_be_falsy(Checker* me, Ty const* ty);
 bool ty_can_be_nullish(Checker* me, Ty const* ty);
+bool ty_can_be_undefined(Checker* me, Ty const* ty); // tsc's hasTypeFacts(ty, TypeFacts.IsUndefined)
 unsigned ty_undefined_or_null_facts(Checker* me, Ty const* ty); // tsc's getTypeFacts(ty, TypeFacts.IsUndefinedOrNull)
 // Declarations evaluate self-contained: not in uncached mode, and with no loop in progress (tsc's
 // checkExpressionCached()). What they evaluate to is complete and can be remembered

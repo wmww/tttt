@@ -1144,6 +1144,63 @@ static Ty const* non_undefined_type(Checker* me, Ty const* ty) {
     return ty_without_undefined(me, ty);
 }
 
+// tsc's getRestType: `...rest` of an object pattern, without the properties the pattern names, private and protected
+// members and class methods, and with nothing readonly. TODO: a generic object is Omit<T, names> in tsc; it stays T
+static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* pattern) {
+    if (source->kind == TY_UNION) {
+        Ty const* stack[16];
+        TyList types = source->composite.types;
+        Ty const** mapped = types.len <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * types.len);
+        u32 len = 0;
+        for (u32 i = 0; i < types.len; i++) {
+            if (!(types.data[i]->flags & TYF_NULLABLE)) mapped[len++] = object_rest_type(me, types.data[i], pattern);
+        }
+        Ty const* ret = len ? ty_union(me, mapped, len, nullptr, (TyList){0}) : ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC);
+        if (mapped != stack) free((void*)mapped);
+        return ret;
+    }
+    if (source->flags & TYF_NEVER) return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC);
+    Ty const* apparent = ty_apparent_type(me, source);
+    if (!(apparent->flags & TYF_OBJECT) || ty_is_generic_index(source)) return source;
+    Members const* members = ty_members(me, apparent);
+    if (members->mapped) return source;
+    ObjectLiteralProp* props = malloc(sizeof(ObjectLiteralProp) * (members->prop_count ? members->prop_count : 1));
+    panic_if(!props, "out of memory");
+    u32 count = 0;
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) continue;
+        Prop const* origin = prop;
+        while (origin->target) origin = origin->target;
+        if ((prop->flags & (PROP_METHOD | PROP_GETTER | PROP_SETTER)) && origin->parent && (origin->parent->flags & SYMBOL_CLASS)) continue;
+        bool named = false;
+        for_each (item, vec_object_binding_item, &pattern->object) {
+            if (item->target.rest || item->computed_key) continue;
+            if (checker_atom(me, cstr_sv(&item->source.string)) == prop->name) named = true;
+        }
+        if (named) continue;
+        // (tsc's getSpreadSymbol: the same property unless that makes it writable)
+        if (!(prop->flags & PROP_READONLY)) {
+            props[count++] = (ObjectLiteralProp){ .reuse = prop };
+            continue;
+        }
+        Prop const* declared = prop;
+        while (declared->target && !declared->decl_span_count) declared = declared->target;
+        props[count++] = (ObjectLiteralProp){
+            .name = prop->name,
+            .flags = prop->flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR),
+            .type = prop_type(me, prop),
+            .name_span = declared->name_span,
+            .decl_spans = declared->decl_spans,
+            .decl_span_count = declared->decl_span_count,
+            .name_is_value = declared->name_is_value,
+        };
+    }
+    Ty const* ret = ty_object_literal(me, props, count, members->index, members->index_count, OBJECT_SYNTHETIC);
+    free(props);
+    return ret;
+}
+
 // What is assigned to a binding: the initializer for the root of a pattern, for an element the property or element
 // of what its pattern is assigned
 Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
@@ -1161,7 +1218,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     } else if (binding->rest && in_array) {
         ret = binding_rest_elements(me, object, binding->parent_index);
     } else if (binding->rest) {
-        ret = object; // TODO: without the properties the pattern names, methods and accessors (tsc's getRestType())
+        ret = object_rest_type(me, object, parent);
     } else if (in_array) {
         Value index = value_number(binding->parent_index);
         ret = ty_access(me, object, ty_literal(me, &index));
