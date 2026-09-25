@@ -136,6 +136,9 @@ typedef struct FlowBuilder {
     u32* next_id;
     u32 id_counter; // What next_id points at in the builder of a file
     u32 depth;
+    // Inside a call expression, or the initializer of a declaration with a type annotation (not counting a function's
+    // own), however deep: tsc's isContextuallyTyped (expressionToTypeNode.ts), see FunctionImpl.syntactically_contextual
+    u32 contextual_depth;
     ErrorCtx* errs;
     FunctionImpl const* function; // The container if it is a function, for "assigned in a closure"
     // The container is the constructor of this class, or an IIFE in one (tsc's getControlFlowContainer skips those)

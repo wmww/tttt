@@ -30,6 +30,7 @@ void flow_builder_init(FlowBuilder* me, FlowBuilder const* outer, Scope* scope, 
         .function = function,
         .ambient = scope->ambient,
         .depth = outer ? outer->depth + 1 : 0,
+        .contextual_depth = outer ? outer->contextual_depth : 0,
         // A class field initializer is still inside the statements of the function around it
         .statements = outer && !function ? outer->statements : nullptr,
     };

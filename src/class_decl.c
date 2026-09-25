@@ -166,6 +166,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
                 FlowBuilder* outer = names->flow;
                 FlowBuilder flow;
                 flow_builder_init(&flow, outer, names, nullptr, errs);
+                flow.contextual_depth += my field.has_explicit_type;
                 flow.current = flow_new_start(&flow, nullptr, false);
                 flow.initializer_context = my field.is_static ? INITIALIZER_STATIC_FIELD : INITIALIZER_INSTANCE_FIELD;
                 flow.initializer_field = me;

@@ -1180,6 +1180,9 @@ typedef struct TyDisplay {
     // Reprinting an annotation of this instantiated signature (tsc's context.mapper): its type parameters that the
     // instantiation maps aren't reused, they print what they're mapped to
     struct Signature const* mapped_by;
+    // A function expression that tsc types syntactically where it is printed (the returned function of
+    // typeFromSingleReturnExpression): its parameter declarations are reused, `: ` and all
+    struct FunctionImpl const* syntactic_function;
 } TyDisplay;
 // A symbol's name qualified as far as needed to reach it from `enclosing` (tsc's symbolToString with an enclosing
 // declaration), fully without one

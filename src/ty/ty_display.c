@@ -408,7 +408,15 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
     if (mapped || !name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) {
         isize_t start = cstr_size(d.target);
-        display_node_fallback(me, d, node);
+        // tsc names what it refers to anew (serializeTypeName) and keeps the type arguments, unless it's a local that
+        // no name reaches (then the reference prints its type)
+        Symbol const* target = identifier->target;
+        if (!mapped && target && !target->is_local && !(target->flags & SYMBOL_TYPE_PARAMETER)) {
+            out_symbol_name(me, reused_if(d, false), target, SYMBOL_TYPE);
+            display_node_args(me, d, &identifier->generic_params);
+        } else {
+            display_node_fallback(me, d, node);
+        }
         // tsc names it anew (serializeTypeName) in a node it marks as reused: of an `import("m").A` it made, the
         // `import(` and `).` are reused and the rest isn't
         char const* text = cstr_str(d.target) + start;
@@ -806,16 +814,74 @@ static bool mentions(Checker* me, Ty const* ty, TyList params) {
     }
 }
 
-// tsc's typeFromSingleReturnExpression(): a function without a return annotation whose body is just `return x as T`
-// (or an arrow `=> <T>x`) prints its return type by reusing `T`. HACK: only a body of that one statement, tsc allows
-// other statements before it
+// Whether a statement has a `return` in it (not counting nested functions)
+static bool block_has_return(Block const* block);
+static bool statements_have_return(VecStatement const* statements) {
+    for_each (i, vec_statement, statements) {
+        switch (i->tag) {
+            case STATEMENT_RETURN_EXPR: return true;
+            case STATEMENT_BLOCK: if (block_has_return(&i->block)) return true; break;
+            case STATEMENT_IF_ELSE: if (statements_have_return(&i->if_else.statements)) return true; break;
+            case STATEMENT_LABELED:
+                if (statements_have_return(&(VecStatement){ .data = i->labeled.body, .size = 1 })) return true;
+                break;
+            case STATEMENT_FOR_LOOP:
+                if (statements_have_return(&(VecStatement){ .data = &i->for_loop->body, .size = 1 })) return true;
+                break;
+            case STATEMENT_FOR_EACH_LOOP:
+                if (statements_have_return(&(VecStatement){ .data = &i->for_each_loop->body, .size = 1 })) return true;
+                break;
+            case STATEMENT_SWITCH:
+                for_each (c, vec_switch_case, &i->switch_->cases) {
+                    if (statements_have_return(&c->statements)) return true;
+                }
+                break;
+            case STATEMENT_TRY_CATCH:
+                if (block_has_return(&i->try_catch->try_block) || block_has_return(&i->try_catch->catch_block) ||
+                    block_has_return(&i->try_catch->finally_block)
+                ) {
+                    return true;
+                }
+                break;
+            default: break;
+        }
+    }
+    return false;
+}
+static bool block_has_return(Block const* block) { return statements_have_return(&block->statements); }
+
+// tsc's typeFromSingleReturnExpression(): the expression of a function's only `return`, when that is directly in its
+// body (or an arrow function's expression body), null otherwise
+static Expr const* single_return_expr(FunctionImpl const* function) {
+    if (!function->has_body || function->is_generator) return nullptr;
+    Expr const* found = nullptr;
+    for_each (i, vec_statement, &function->body.statements) {
+        if (i->tag == STATEMENT_RETURN_EXPR) {
+            if (found || i->expr.tag == EXPR_IMPLICIT_ANY) return nullptr;
+            found = &i->expr;
+        } else if (statements_have_return(&(VecStatement){ .data = (Statement*)i, .size = 1 })) {
+            return nullptr;
+        }
+    }
+    return found;
+}
+
+// A function without a return annotation whose only return is `return x as T` (or an arrow `=> <T>x`) prints its
+// return type by reusing `T`
 static TypeNode const* single_return_assertion(Checker* me, FunctionImpl const* function, Ty const* ret) {
-    if (!function->has_body || function->is_generator || vec_statement_size(&function->body.statements) != 1) return nullptr;
-    Statement const* statement = vec_statement_at(&function->body.statements, 0);
-    if (statement->tag != STATEMENT_RETURN_EXPR || statement->expr.tag != EXPR_AS_TYPE) return nullptr;
-    AsTypeExpr const* as_type = statement->expr.as_type;
-    if (as_type->is_satisfies || as_type_is_const(as_type) || ty_expr_type(me, &statement->expr) != ret) return nullptr;
+    Expr const* expr = single_return_expr(function);
+    if (!expr || expr->tag != EXPR_AS_TYPE) return nullptr;
+    AsTypeExpr const* as_type = expr->as_type;
+    if (as_type->is_satisfies || as_type_is_const(as_type) || ty_expr_type(me, expr) != ret) return nullptr;
     return &as_type->type;
+}
+
+// A function without a return annotation whose only return is a function expression prints its return type
+// syntactically (tsc's typeFromFunctionLikeExpression), unless something may type it contextually (isContextuallyTyped)
+static FunctionImpl const* single_return_function(Checker* me, FunctionImpl const* function, Ty const* ret) {
+    Expr const* expr = single_return_expr(function);
+    if (!expr || expr->tag != EXPR_FUNCTION || expr->function->syntactically_contextual) return nullptr;
+    return ty_expr_type(me, expr) == ret ? expr->function : nullptr;
 }
 
 static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable) {
@@ -941,6 +1007,8 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     if (instantiated && root->type_params.len && !this_only) d.fresh_params = root->type_params;
     FunctionImpl const* function = root->class_instance ? nullptr : root->function;
     bool reusable = d.underline && function;
+    bool syntactic = function && d.syntactic_function == function; // (Its parameter declarations are reused whole)
+    d.syntactic_function = nullptr;
     display_type_params(me, d, sig->type_params, reusable);
     out_lit(d, "(");
     u32 param_count = sig->param_count;
@@ -959,7 +1027,7 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     for (u32 i = 0; i < param_count; i++) {
         SigParam const* param = &params[i];
         if (i) out_lit(d, ", ");
-        if (param->rest) out_lit(d, "...");
+        if (param->rest) out(reused_if(d, d.reused || (syntactic && param->decl)), c_sv("..."));
         Binding const* name_binding = param->decl ? &param->decl->initializer.binding : nullptr;
         if (name_binding && (name_binding->tag == BINDING_ARRAY || name_binding->tag == BINDING_OBJECT)) {
             cstr pattern = cstr_init();
@@ -970,7 +1038,7 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
             out(reused_if(d, d.reused || param->decl), atom_sv(param->name));
         }
         if (param->optional) out_lit(d, "?");
-        out_lit(d, ": ");
+        out(reused_if(d, d.reused || (syntactic && param->decl)), c_sv(": "));
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
         bool reused = reusable && binding && binding->has_explicit_type &&
             (!instantiated || (param->type == root->params[i].type && !mentions(me, param->type, d.fresh_params)));
@@ -1004,7 +1072,9 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
         }
         return;
     }
-    display_annotated(me, reused_if(d, false), reused ? ret_annotation : nullptr, ret, false);
+    TyDisplay ret_d = reused_if(d, false);
+    if (reusable && !ret_annotation && !function->ret_explicit) ret_d.syntactic_function = single_return_function(me, function, ret);
+    display_annotated(me, ret_d, reused ? ret_annotation : nullptr, ret, false);
 }
 
 // A destructured parameter's name the way tsc prints it in a signature: the pattern without its defaults
@@ -1044,7 +1114,7 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
     out_lit(d, "{ ");
     if (mapped->readonly) out(d, mapped->readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
     out_lit(d, "[");
-    ty_display(me, d, mapped->type_param);
+    ty_display(me, reused_if(d, true), mapped->type_param); // (tsc reuses the name of the declared type parameter)
     out_lit(d, " in ");
     ty_display(me, d, mapped->constraint);
     if (mapped->name_type) {
@@ -1125,6 +1195,15 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             !prop->symbol
         ) {
             annotation = prop->node;
+        }
+        // An object literal's accessor: the getter's return annotation, else the setter's parameter's (tsc's
+        // typeFromAccessor)
+        if ((prop->flags & (PROP_GETTER | PROP_SETTER)) && prop->function && !prop->target) {
+            FunctionImpl const* accessor = prop->function;
+            Binding const* param = vec_function_arg_size(&accessor->args) ?
+                &vec_function_arg_at(&accessor->args, 0)->initializer.binding : nullptr;
+            if ((prop->flags & PROP_GETTER) && accessor->ret_explicit) annotation = &accessor->ret;
+            else if (!(prop->flags & PROP_GETTER) && param && param->has_explicit_type) annotation = &param->explicit_type;
         }
         // (Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol)
         if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, type);

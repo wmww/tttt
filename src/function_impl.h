@@ -79,6 +79,9 @@ typedef struct FunctionImpl {
     Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
     bool is_expression; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)
+    // Inside a call expression or an annotated declaration's initializer (FlowBuilder.contextual_depth): the types
+    // baseline doesn't type its single returned expression syntactically
+    bool syntactically_contextual;
     // What a `this` in it may be typed by (tsc's getContextualThisParameterType), set when resolving: the object literal
     // it is a method (or function-valued property) of, or the object of the property it is assigned to (`o.m = function`)
     struct Expr const* this_literal;

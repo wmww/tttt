@@ -3393,7 +3393,7 @@ const baselines = {
     'circularObjectLiteralAccessors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularOptionalityRemoval': {
         errors: false,
@@ -4408,7 +4408,7 @@ const baselines = {
     'collisionSuperAndParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionSuperAndParameter1': {
         errors: true,
@@ -4493,17 +4493,17 @@ const baselines = {
     'collisionThisExpressionAndNameResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionThisExpressionAndParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionThisExpressionAndPropertyNameAsConstuctorParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionThisExpressionAndVarInGlobal': {
         errors: true,
@@ -4938,7 +4938,7 @@ const baselines = {
     'commentsOnObjectLiteral4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsOnObjectLiteral5': {
         errors: true,
@@ -5958,12 +5958,12 @@ const baselines = {
     'contextualPropertyOfGenericFilteringMappedType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualPropertyOfGenericMappedType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualReturnTypeOfIIFE': {
         errors: false,
@@ -6013,7 +6013,7 @@ const baselines = {
     'contextualSignatureInstantiation2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualSignatureInstantiation3': {
         errors: true,
@@ -6548,7 +6548,7 @@ const baselines = {
     'contextuallyTypedSymbolNamedProperties': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypingOrOperator': {
         errors: true,
@@ -7243,7 +7243,7 @@ const baselines = {
     'declFileObjectLiteralWithOnlySetter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileOptionalInterfaceMethod': {
         errors: true,
@@ -7473,7 +7473,7 @@ const baselines = {
     'declarationEmitArrowFunctionNoRenaming': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitBindingPatternWithReservedWord': {
         errors: true,
@@ -7573,7 +7573,7 @@ const baselines = {
     'declarationEmitClassMemberNameConflict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitClassMemberNameConflict2': {
         errors: true,
@@ -8408,7 +8408,7 @@ const baselines = {
     'declarationEmitQualifiedAliasTypeArgument': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitReadonlyComputedProperty': {
         errors: false,
@@ -8453,7 +8453,7 @@ const baselines = {
     'declarationEmitRetainedAnnotationRetainsImportInOutput': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitRetainsJsdocyComments': {
         errors: true,
@@ -8518,7 +8518,7 @@ const baselines = {
     'declarationEmitTopLevelNodeFromCrossFile': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTopLevelNodeFromCrossFile2': {
         errors: true,
@@ -8793,7 +8793,7 @@ const baselines = {
     'declarationsIndirectGeneratedAliasReference': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationsWithRecursiveInternalTypesProduceUniqueTypeParams': {
         errors: false,
@@ -9238,7 +9238,7 @@ const baselines = {
     'definiteAssignmentOfDestructuredVariable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'definiteAssignmentWithErrorStillStripped': {
         errors: false,
@@ -11553,7 +11553,7 @@ const baselines = {
     'es5SetterparameterDestructuringNotElided': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5andes6module': {
         errors: true,
@@ -13433,7 +13433,7 @@ const baselines = {
     'fatarrowfunctionsOptionalArgs': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fatarrowfunctionsOptionalArgsErrors1': {
         errors: false,
@@ -14483,7 +14483,7 @@ const baselines = {
     'genericArgumentCallSigAssignmentCompat': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericArray0': {
         errors: true,
@@ -14588,7 +14588,7 @@ const baselines = {
     'genericCallWithinOwnBodyCastTypeParameterIdentity': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithoutArgs': {
         errors: false,
@@ -14923,7 +14923,7 @@ const baselines = {
     'genericInference2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericInferenceDefaultTypeParameter': {
         errors: true,
@@ -15153,7 +15153,7 @@ const baselines = {
     'genericTypeArgumentInference1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericTypeAssertions1': {
         errors: true,
@@ -18348,7 +18348,7 @@ const baselines = {
     'intersectionTypeInference1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionTypeNormalization': {
         errors: true,
@@ -19788,7 +19788,7 @@ const baselines = {
     'knockout': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lambdaASIEmit': {
         errors: true,
@@ -20248,12 +20248,12 @@ const baselines = {
     'mappedToToIndexSignatureInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeAndIndexSignatureRelation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeAsStringTemplate': {
         errors: true,
@@ -20303,7 +20303,7 @@ const baselines = {
     'mappedTypeInferenceAliasSubstitution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeInferenceCircularity': {
         errors: true,
@@ -20313,7 +20313,7 @@ const baselines = {
     'mappedTypeInferenceFromApparentType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeInferenceToMappedType': {
         errors: true,
@@ -20373,7 +20373,7 @@ const baselines = {
     'mappedTypeTupleConstraintAssignability': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeUnionConstrainTupleTreatedAsArrayLike': {
         errors: false,
@@ -22578,7 +22578,7 @@ const baselines = {
     'nestedRecursiveLambda': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedRedeclarationInES6AMD': {
         errors: true,
@@ -26378,7 +26378,7 @@ const baselines = {
     'recursiveTypeComparison2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveTypeIdentity': {
         errors: true,
@@ -27073,7 +27073,7 @@ const baselines = {
     'returnStatement1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'returnTypeInferenceNotTooBroad': {
         errors: true,
@@ -27148,7 +27148,7 @@ const baselines = {
     'reverseMappedTypeContextualTypeNotCircular': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypeContextualTypesPerElementOfTupleConstraint': {
         errors: false,
@@ -27178,7 +27178,7 @@ const baselines = {
     'reverseMappedTypePrimitiveConstraintProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypeRecursiveInference': {
         errors: false,
@@ -29058,7 +29058,7 @@ const baselines = {
     'super_inside-object-literal-getters-and-setters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'switchAssignmentCompat': {
         errors: true,
@@ -29633,7 +29633,7 @@ const baselines = {
     'thisExpressionInIndexExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisExpressionOfGenericObject': {
         errors: true,
@@ -29798,7 +29798,7 @@ const baselines = {
     'this_inside-object-literal-getters-and-setters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'throwWithoutNewLine1': {
         errors: false,
@@ -31218,7 +31218,7 @@ const baselines = {
     'underscoreMapFirst': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'underscoreTest1': {
         errors: false,
@@ -31983,12 +31983,12 @@ const baselines = {
     'unusedParametersInLambda1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedParametersInLambda2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedParametersThis': {
         errors: true,
@@ -37453,17 +37453,17 @@ const baselines = {
     'decoratedBlockScopedClass1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratedBlockScopedClass2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratedBlockScopedClass3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratedClassExportsCommonJS1': {
         errors: true,
@@ -37498,7 +37498,7 @@ const baselines = {
     'decoratorInstantiateModulesInFunctionBodies': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorOnClass1': {
         errors: true,
@@ -38548,7 +38548,7 @@ const baselines = {
     'es2020IntlAPIs': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'intlNumberFormatES2020': {
         errors: true,
@@ -38703,7 +38703,7 @@ const baselines = {
     'es2021LocalesObjectArgument': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'intlDateTimeFormatRangeES2021': {
         errors: true,
@@ -38983,7 +38983,7 @@ const baselines = {
     'es2022LocalesObjectArgument': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'es2024SharedMemory': {
         errors: true,
@@ -39138,7 +39138,7 @@ const baselines = {
     'symbolProperty18': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolProperty19': {
         errors: true,
@@ -39603,12 +39603,12 @@ const baselines = {
     'emitArrowFunctionWhenUsingArguments08': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments08_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments09': {
         errors: true,
@@ -42173,7 +42173,7 @@ const baselines = {
     'exportsAndImportsWithContextualKeywordNames01': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImportsWithContextualKeywordNames02': {
         errors: true,
@@ -61913,7 +61913,7 @@ const baselines = {
     'intersectionTypeInference2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionTypeInference3': {
         errors: true,
@@ -63733,7 +63733,7 @@ const baselines = {
     'thisTypeInClasses': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisTypeInFunctions': {
         errors: false,
@@ -64893,12 +64893,12 @@ const baselines = {
     'subtypingWithCallSignatures2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithCallSignatures3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithCallSignatures4': {
         errors: true,
@@ -65433,7 +65433,7 @@ const baselines = {
     'genericCallWithObjectTypeArgs2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithObjectTypeArgsAndConstraints': {
         errors: true,

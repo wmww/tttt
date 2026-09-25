@@ -1009,6 +1009,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         }   break;
 
         case EXPR_CALL: {
+            // (Undone after the switch. A `new` expression isn't a call to tsc's isContextuallyTyped)
+            if (!my call->uses_new) flow->contextual_depth++;
             mark_indirect_call(&my call->callable);
             if (my call->uses_new) my call->enclosing_class = scope_enclosing_class(names);
             if (expr_is_optional_chain(me)) {
@@ -1055,6 +1057,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 name_scope = scope_new(names, SCOPE_BLOCK);
                 function_impl_add_names(my function, name_scope, false);
             }
+            my function->syntactically_contextual = flow->contextual_depth > 0;
             function_impl_lookup_names_as(my function, FUNCTION_IS_EXPRESSION, !span_valid(my function->arrow_span), name_scope, errs);
         }   break;
 
@@ -1129,6 +1132,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             }
             break;
     }
+    if (my tag == EXPR_CALL && !my call->uses_new) flow->contextual_depth--;
 }
 
 static BinaryOp binary_op_without_assignment(BinaryOp op) {

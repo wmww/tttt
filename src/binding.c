@@ -282,7 +282,9 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     InitializedBinding const* outer = names->flow->initializing;
     names->flow->initializing = me;
     binding_lookup_names(&my binding, names, errs);
+    names->flow->contextual_depth += my binding.has_explicit_type;
     expr_lookup_names(&my value, names, errs);
+    names->flow->contextual_depth -= my binding.has_explicit_type;
     names->flow->initializing = outer;
     if (my value.tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);
 }
@@ -294,7 +296,9 @@ void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* n
     flow->parameter_initializing = &my binding;
     flow->parameter_function_scope = names->parent; // `names` is the parameter list's own scope
     binding_lookup_names(&my binding, names, errs);
+    flow->contextual_depth += my binding.has_explicit_type;
     expr_lookup_names_initializer(&my value, names, errs);
+    flow->contextual_depth -= my binding.has_explicit_type;
     flow->parameter_initializing = saved;
     flow->parameter_function_scope = saved_scope;
 }
