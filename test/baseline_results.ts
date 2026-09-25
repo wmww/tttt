@@ -33286,7 +33286,7 @@ const baselines = {
         types: false,
     },
     'asyncClass_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33301,12 +33301,12 @@ const baselines = {
         types: true,
     },
     'asyncEnum_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asyncGetter_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33316,7 +33316,7 @@ const baselines = {
         types: false,
     },
     'asyncInterface_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33326,7 +33326,7 @@ const baselines = {
         types: true,
     },
     'asyncModule_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33341,7 +33341,7 @@ const baselines = {
         types: false,
     },
     'asyncSetter_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33596,7 +33596,7 @@ const baselines = {
         types: false,
     },
     'asyncClass_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33611,12 +33611,12 @@ const baselines = {
         types: true,
     },
     'asyncEnum_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asyncGetter_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33626,7 +33626,7 @@ const baselines = {
         types: false,
     },
     'asyncInterface_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33636,7 +33636,7 @@ const baselines = {
         types: true,
     },
     'asyncModule_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33651,7 +33651,7 @@ const baselines = {
         types: false,
     },
     'asyncSetter_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

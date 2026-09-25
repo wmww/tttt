@@ -800,6 +800,15 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
     return parse_success(&p);
 }
 
+// tsc's checkGrammarAsyncModifier(): `async` on what isn't a function or a method
+static void report_misplaced_async(Parser* p, ModifierList const* modifiers) {
+    for_each (i, vec_spanned_modifier, &modifiers->spanned) {
+        if (i->tag != MODIFIER_ASYNC) continue;
+        parse_error(p, i->span, 1042, "'async' modifier cannot be used here.");
+        return;
+    }
+}
+
 static void modifier_list_validate_during_parse(Parser* parent, ModifierList const* me, Span name, ModifierValidationFlags flags) {
     ErrorCtx errs = { .phase = ERROR_PHASE_PARSE };
     modifier_list_validate(me, name, flags, &errs);
@@ -2811,6 +2820,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             };
         } else if (parse_function_fn(&p, function_flags, &func)) {
             modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_METHOD | flags);
+            if (is_getter || is_setter) report_misplaced_async(&p, &modifiers);
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_METHOD,
                 .method = {
@@ -2829,6 +2839,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             bool is_definitely_field = false;
 
             modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_FIELD | flags);
+            report_misplaced_async(&p, &modifiers);
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_FIELD,
                 .field = {
@@ -5720,6 +5731,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_class_decl(&p, &parsed.class)) {
+        report_misplaced_async(&p, &modifiers);
         parsed.class.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_CLASS,
@@ -5729,6 +5741,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_type_decl(&p, &parsed.type_decl)) {
+        report_misplaced_async(&p, &modifiers);
         parsed.type_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_TYPE,
@@ -5738,6 +5751,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_interface_decl(&p, &parsed.interface_decl)) {
+        report_misplaced_async(&p, &modifiers);
         parsed.interface_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_INTERFACE,
@@ -5747,6 +5761,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_enum_decl(&p, &parsed.enum_decl)) {
+        report_misplaced_async(&p, &modifiers);
         parsed.enum_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_ENUM,
@@ -5778,6 +5793,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .expr = parsed.expr,
         };
     } else if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT && parse_namespace(&p, &ret->decl.namespace)) {
+        report_misplaced_async(&p, &modifiers);
         ret->decl.namespace.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_NAMESPACE,
