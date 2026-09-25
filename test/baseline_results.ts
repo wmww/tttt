@@ -566,7 +566,7 @@ const baselines = {
         types: false,
     },
     'alwaysStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -576,17 +576,17 @@ const baselines = {
         types: true,
     },
     'alwaysStrictES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'alwaysStrictModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'alwaysStrictModule2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -611,7 +611,7 @@ const baselines = {
         types: true,
     },
     'alwaysStrictNoImplicitUseStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5886,12 +5886,12 @@ const baselines = {
         types: true,
     },
     'constructorStaticParamName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'constructorStaticParamNameErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9951,7 +9951,7 @@ const baselines = {
         types: true,
     },
     'downlevelLetConst11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19076,7 +19076,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationBindErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19871,7 +19871,7 @@ const baselines = {
         types: true,
     },
     'letAsIdentifierInStrictMode': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27346,7 +27346,7 @@ const baselines = {
         types: true,
     },
     'shadowedReservedCompilerDeclarationsWithNoEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28536,7 +28536,7 @@ const baselines = {
         types: true,
     },
     'strictModeReservedWord2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28546,7 +28546,7 @@ const baselines = {
         types: false,
     },
     'strictModeReservedWordInDestructuring': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28556,7 +28556,7 @@ const baselines = {
         types: true,
     },
     'strictModeReservedWordInModuleDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38046,7 +38046,7 @@ const baselines = {
         types: true,
     },
     'importCallExpressionInScriptContext2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -39646,7 +39646,7 @@ const baselines = {
         types: false,
     },
     'emitArrowFunctionWhenUsingArguments12_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44046,7 +44046,7 @@ const baselines = {
         types: true,
     },
     'VariableDeclaration11_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44146,7 +44146,7 @@ const baselines = {
         types: false,
     },
     'YieldExpression18_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56341,7 +56341,7 @@ const baselines = {
         types: true,
     },
     'parser553699': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56376,12 +56376,12 @@ const baselines = {
         types: false,
     },
     'parser642331': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parser642331_1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57071,22 +57071,22 @@ const baselines = {
         types: true,
     },
     'parserStrictMode10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserStrictMode11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserStrictMode12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserStrictMode13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57111,7 +57111,7 @@ const baselines = {
         types: true,
     },
     'parserStrictMode2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57126,7 +57126,7 @@ const baselines = {
         types: false,
     },
     'parserStrictMode4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57151,12 +57151,12 @@ const baselines = {
         types: false,
     },
     'parserStrictMode8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserStrictMode9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57376,7 +57376,7 @@ const baselines = {
         types: true,
     },
     'parser10.1.1-8gs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57801,7 +57801,7 @@ const baselines = {
         types: false,
     },
     'parserComputedPropertyName36': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -57811,12 +57811,12 @@ const baselines = {
         types: false,
     },
     'parserComputedPropertyName38': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserComputedPropertyName39': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59156,7 +59156,7 @@ const baselines = {
         types: true,
     },
     'scanner10.1.1-8gs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -143,6 +143,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         }
         return;
     }
+    if (!my keyword) scope_check_strict_identifier(names, vec_span_size(&my namespaces) ? *my namespaces.data : my name);
 
     if (vec_span_size(&my namespaces)) {
         Symbol const* namespace = nullptr;

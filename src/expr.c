@@ -758,6 +758,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (declared == flow->binding_root) my identifier.assume_initialized = true;
             }
             if (assignment_target) identifier_mark_assigned(&my identifier, names);
+            if (!my identifier.keyword) {
+                scope_check_strict_identifier(names, my identifier.name);
+                if (assignment_target) scope_check_strict_eval_or_arguments(names, my identifier.name);
+            }
             break;
 
         case EXPR_BINARY_OP: {

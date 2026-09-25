@@ -269,6 +269,8 @@ typedef struct Scope {
     // The inside of the declaration of this symbol (a function, class, interface, type alias, enum or namespace
     // declaration): a use of it from here isn't a reference (tsc's isSelfReferenceLocation)
     Symbol const* self;
+    // Strict mode code (tsc's inStrictMode): a module, alwaysStrict, a "use strict" prologue, a class body
+    bool strict;
 } Scope;
 
 // Symbol pointer -> symbol pointer, open addressing
@@ -346,6 +348,12 @@ Scope* scope_new_file(Binder* binder, SourceFile* file);
 void scope_check_export_merges(Scope* me, Span block);
 // tsc's checkExternalModuleExports: a module can export a name only once (TS2323), except for merges
 void scope_check_duplicate_exports(Scope* me);
+// Whether a block starts with a "use strict" directive
+bool block_has_use_strict(struct Block const* block);
+// tsc's checkStrictModeIdentifier: in strict mode code the future reserved words aren't names (TS1212/TS1213/TS1214)
+void scope_check_strict_identifier(Scope const* me, Span name);
+// tsc's checkStrictModeEvalOrArguments: `eval` and `arguments` can't be declared or assigned in strict mode code
+void scope_check_strict_eval_or_arguments(Scope const* me, Span name);
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared);
 // Child scope holding the type parameters, names looked up. Returns parent itself for an empty generic
 Scope* scope_new_generic(Scope* parent, Generic* generic, ErrorCtx* errs);

@@ -284,8 +284,67 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
     ret->ambient = parent->ambient;
     ret->flow = parent->flow;
     ret->file = parent->file;
+    ret->strict = parent->strict;
     if (kind == SCOPE_BLOCK) ret->function = parent->function;
     return ret;
+}
+
+bool block_has_use_strict(Block const* block) {
+    for_each (i, vec_statement, &block->statements) {
+        if (i->tag != STATEMENT_EXPR || i->expr.tag != EXPR_LITERAL || i->expr.literal.tag != VALUE_STRING ||
+            expr_is_perenthisized(&i->expr)
+        ) {
+            return false;
+        }
+        csview text = i->expr.inner_span.sv;
+        if (csview_equals(text, "\"use strict\"") || csview_equals(text, "'use strict'")) return true;
+    }
+    return false;
+}
+
+// 2: in a class, 1: in a module (which says why the code is strict), else 0
+static int strict_reason(Scope const* me) {
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        if (scope->this_ref.class_decl) return 2;
+    }
+    return my file && my file->is_module ? 1 : 0;
+}
+
+void scope_check_strict_identifier(Scope const* me, Span name) {
+    if (!my strict || my ambient || !span_valid(name) || !name.source || name.source->has_parse_errors) return;
+    static char const* const reserved[] = { "implements", "interface", "let", "package", "private", "protected", "public",
+        "static", "yield" };
+    bool is_reserved = false;
+    for (u32 i = 0; i < c_arraylen(reserved) && !is_reserved; i++) is_reserved = csview_equals(name.sv, reserved[i]);
+    if (!is_reserved) return;
+    switch (strict_reason(me)) {
+        case 2:
+            error_ctx_error_d(my errs, name, 1213, "Identifier expected. '", name, "' is a reserved word in strict mode. "
+                "Class definitions are automatically in strict mode.");
+            break;
+        case 1:
+            error_ctx_error_d(my errs, name, 1214, "Identifier expected. '", name, "' is a reserved word in strict mode. "
+                "Modules are automatically in strict mode.");
+            break;
+        default:
+            error_ctx_error_d(my errs, name, 1212, "Identifier expected. '", name, "' is a reserved word in strict mode.");
+    }
+}
+
+void scope_check_strict_eval_or_arguments(Scope const* me, Span name) {
+    if (!my strict || !span_valid(name) || (!csview_equals(name.sv, "eval") && !csview_equals(name.sv, "arguments"))) return;
+    switch (strict_reason(me)) {
+        case 2:
+            error_ctx_error_d(my errs, name, 1210, "Code contained in a class is evaluated in JavaScript's strict mode which "
+                "does not allow this use of '", name, "'. For more information, see "
+                "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode.");
+            break;
+        case 1:
+            error_ctx_error_d(my errs, name, 1215, "Invalid use of '", name, "'. Modules are automatically in strict mode.");
+            break;
+        default:
+            error_ctx_error_d(my errs, name, 1100, "Invalid use of '", name, "' in strict mode.");
+    }
 }
 
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared) {
@@ -300,6 +359,9 @@ Scope* scope_new_file(Binder* binder, SourceFile* file) {
     Scope* ret = scope_new(binder->global_scope, file->is_module ? SCOPE_MODULE : SCOPE_SCRIPT);
     ret->file = file;
     ret->ambient = file->is_declaration;
+    // (tsc's bindInStrictMode)
+    ret->strict = (compiler_options()->always_strict && !file->is_declaration) || file->is_module ||
+        block_has_use_strict(&file->ast);
     if (file->is_module) {
         ret->container = binder_new_module_symbol(binder, file);
         ret->export_context = ret->ambient && !block_has_export_declarations(&file->ast);
@@ -573,6 +635,18 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     Scope* scope = me;
     if (props.function_scoped) {
         while (!scope_is_var_container(scope) && scope->parent) scope = scope->parent;
+    }
+    if (props.kind == SYMBOL_DECL_VARIABLE || props.kind == SYMBOL_DECL_FUNCTION || props.kind == SYMBOL_DECL_CLASS ||
+        props.kind == SYMBOL_DECL_ENUM || props.kind == SYMBOL_DECL_NAMESPACE || props.kind == SYMBOL_DECL_INTERFACE ||
+        props.kind == SYMBOL_DECL_TYPE_ALIAS || props.kind == SYMBOL_DECL_TYPE_PARAMETER
+    ) {
+        scope_check_strict_identifier(me, props.name);
+    }
+    // (Parameters and function names only outside ambient contexts, like tsc's bindParameter)
+    if ((props.kind == SYMBOL_DECL_VARIABLE && !(props.is_parameter && me->ambient)) ||
+        (props.kind == SYMBOL_DECL_FUNCTION && !me->ambient)
+    ) {
+        scope_check_strict_eval_or_arguments(me, props.name);
     }
 
     u32 includes, excludes;

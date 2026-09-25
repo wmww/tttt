@@ -196,6 +196,7 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
     this_scope->this_ref = (ThisRef){
         .kind = static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, .symbol = my symbol, .class_decl = me
     };
+    this_scope->strict = true;
 
     for_each (i, vec_class_item, &my items) {
         if (class_item_is_static(i) == static_members) {

@@ -80,6 +80,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
     function_scope->flow = &flow;
     function_scope->function = me;
+    function_scope->strict |= my has_body && block_has_use_strict(&my body);
 
     if (this_is_any) function_scope->this_ref = (ThisRef){ .kind = THIS_ANY, .function = me, .type_boundary = true };
 
