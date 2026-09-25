@@ -14847,7 +14847,7 @@ const baselines = {
     },
     'genericClassesInModule2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericClassesRedeclaration': {
@@ -25212,7 +25212,7 @@ const baselines = {
     },
     'parameterReferenceInInitializer1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parameterReferenceInInitializer2': {
@@ -27007,7 +27007,7 @@ const baselines = {
     },
     'recursiveSpecializationOfSignatures': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'recursiveTupleTypeInference': {
@@ -29557,7 +29557,7 @@ const baselines = {
     },
     'superCallFromClassThatHasNoBaseType1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'superCallFromFunction1': {
@@ -29652,7 +29652,7 @@ const baselines = {
     },
     'superNewCall1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'superNoModifiersCrash': {
@@ -33267,12 +33267,12 @@ const baselines = {
     },
     'varianceProblingAndZeroOrderIndexSignatureRelationsAlign': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'varianceProblingAndZeroOrderIndexSignatureRelationsAlign2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'varianceReferences': {
@@ -47252,7 +47252,7 @@ const baselines = {
     },
     'generatedContextualTyping': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'getSetAccessorContextualTyping': {
@@ -47287,12 +47287,12 @@ const baselines = {
     },
     'superCallParameterContextualTyping1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'superCallParameterContextualTyping2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'superCallParameterContextualTyping3': {
@@ -56242,7 +56242,7 @@ const baselines = {
     },
     'parserClassDeclaration19': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserClassDeclaration2': {
@@ -56252,7 +56252,7 @@ const baselines = {
     },
     'parserClassDeclaration20': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserClassDeclaration21': {
@@ -59432,7 +59432,7 @@ const baselines = {
     },
     'parserRealSource8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserRealSource9': {

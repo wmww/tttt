@@ -227,9 +227,13 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
 
 void binding_compile_test_info(Binding const* me, BaselineTestCase* ctx) {
     binding_content_compile_test_info(me, ctx);
+    // (the parameters of a parameter property's type are no members)
+    Span parameter_property_class = ctx->parameter_property_class;
+    ctx->parameter_property_class = span_null;
     if (my has_explicit_type) {
         type_compile_test_info(&my explicit_type, ctx);
     }
+    ctx->parameter_property_class = parameter_property_class;
 }
 
 void initialized_binding_compile_test_info(
@@ -418,6 +422,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_CALLABLE: {
+            Span parameter_property_class = ctx->parameter_property_class;
+            ctx->parameter_property_class = span_null;
             u32 saved = baseline_test_case_enter_generic(ctx, &my callable->function->generic);
             generic_compile_test_info(&my callable->function->generic, ctx);
             for_each (i, vec_function_arg, &my callable->function->args) {
@@ -432,6 +438,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 type_compile_test_info(&my callable->function->ret, ctx);
             }
             baseline_test_case_leave_generic(ctx, saved);
+            ctx->parameter_property_class = parameter_property_class;
         }   break;
 
         case TYPE_INTERFACE: {
@@ -505,6 +512,8 @@ static void type_predicate_compile_test_info(TypePredicateNode* me, BaselineTest
 }
 
 void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
+    Span outer_parameter_property_class = ctx->parameter_property_class;
+    ctx->parameter_property_class = span_null;
     u32 saved = baseline_test_case_enter_generic(ctx, &my generic);
     if (span_valid(my name)) {
         baseline_test_case_add_declaration(ctx, my name, my symbol);
@@ -528,6 +537,7 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     }
     block_compile_test_info(&my body, ctx);
     baseline_test_case_leave_generic(ctx, saved);
+    ctx->parameter_property_class = outer_parameter_property_class;
 }
 
 // An alias shows its own declaration as the symbol and the value of what it resolves to as the type
@@ -680,10 +690,12 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
         case CLASS_ITEM_METHOD: {
             u32 saved_generic = baseline_test_case_enter_generic(ctx, &my method.func.generic);
             VecSpan declarations = {0};
+            Span written_name = my method.name_span;
             if (my method.accessor && my method.accessor_first) {
                 // Both halves of an accessor pair declare the same property. Items live in one vec, so walk forward
                 // from the first
                 ClassItem* first = my method.accessor_first;
+                written_name = first->method.name_span;
                 vec_span_push(&declarations, first->span);
                 for_each (other, vec_class_item, items) {
                     if (other != first && other->tag == CLASS_ITEM_METHOD && other->method.accessor_first == first) {
@@ -696,16 +708,18 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                     if (other->tag == CLASS_ITEM_METHOD && !other->method.accessor && !other->method.computed_key &&
                         other->method.is_static == my method.is_static && cstr_eq(&other->method.name_string, &my method.name_string)
                     ) {
+                        if (vec_span_is_empty(&declarations)) written_name = other->method.name_span;
                         vec_span_push(&declarations, other->span);
                     }
                 }
             } else {
                 vec_span_push(&declarations, my span);
             }
+            // (named as its first declaration writes it)
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my method.name_span,
-                .text = member_text(ctx, ctx->class_symbol, class_name, my method.name_span.sv, false),
+                .text = member_text(ctx, ctx->class_symbol, class_name, written_name.sv, false),
             });
             // An overloaded method is all of its overloads (the member's type)
             u32 overload_count = 0;
