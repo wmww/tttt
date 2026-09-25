@@ -133,6 +133,20 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     cstr_drop(&module_name);
 }
 
+// tsc's resolveNameHelper at a class: a static member can't see the class's type parameters (TS2302)
+static void check_static_type_parameter_reference(IdentifierType const* me, Scope const* names, ErrorCtx* errs) {
+    for (Scope const* scope = names; scope; scope = scope->parent) {
+        if (scope_declares_symbol(scope, my target)) return;
+        if (scope->this_ref.kind != THIS_CLASS_STATIC || !scope->this_ref.class_decl) continue;
+        for_each (i, vec_generic_item, &scope->this_ref.class_decl->generic.items) {
+            if (i->owned_symbol == my target || i->symbol_ref == my target) {
+                error_ctx_error_d(errs, my name, 2302, "Static members cannot reference class type parameters.");
+                return;
+            }
+        }
+    }
+}
+
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
 
@@ -183,6 +197,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
         unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
         if (!my target) scope_report_not_found(names, my name, SYMBOL_TYPE, false, errs);
+        if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER)) check_static_type_parameter_reference(me, names, errs);
     }
 
     if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE)) {

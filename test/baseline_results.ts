@@ -3966,7 +3966,7 @@ const baselines = {
         types: true,
     },
     'classTypeParametersInStatics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -14641,7 +14641,7 @@ const baselines = {
         types: false,
     },
     'genericClassWithStaticsUsingTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28416,7 +28416,7 @@ const baselines = {
         types: true,
     },
     'staticMethodReferencingTypeArgument1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -28426,7 +28426,7 @@ const baselines = {
         types: true,
     },
     'staticMethodsReferencingClassTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -30666,17 +30666,17 @@ const baselines = {
         types: true,
     },
     'typeParametersInStaticAccessors': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'typeParametersInStaticMethods': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'typeParametersInStaticProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -34906,7 +34906,7 @@ const baselines = {
         types: true,
     },
     'staticIndexers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -35041,7 +35041,7 @@ const baselines = {
         types: false,
     },
     'staticPropertyNotInClassType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -40191,12 +40191,12 @@ const baselines = {
         types: false,
     },
     'computedPropertyNames34_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'computedPropertyNames34_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -63321,7 +63321,7 @@ const baselines = {
         types: true,
     },
     'typeofClassWithPrivates': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -64221,7 +64221,7 @@ const baselines = {
         types: false,
     },
     'staticMembersUsingClassTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
