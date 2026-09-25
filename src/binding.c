@@ -53,7 +53,10 @@ void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNa
 
         case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
-                props.full = i->target.rest ? i->target.element_span : i->target.content_span;
+                // The element starts at its property name (`{ x: a }` declares `a` at `x`)
+                props.full = i->target.rest ? i->target.element_span :
+                    span_valid(i->source_span) && span_start_ptr(i->source_span) < span_start_ptr(i->target.content_span) ?
+                        span_between(i->source_span, i->target.content_span) : i->target.content_span;
                 i->target.parent = me;
                 i->target.parent_item = i;
                 binding_add_names(&i->target, nullptr, scope, props);

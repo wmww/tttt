@@ -2467,7 +2467,7 @@ const baselines = {
     },
     'blockScopedBindingUsedBeforeDef': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'blockScopedBindingsInDownlevelGenerator': {
@@ -5207,12 +5207,12 @@ const baselines = {
     },
     'computedPropertiesInDestructuring2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertiesInDestructuring2_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertiesNarrowed': {
@@ -5237,7 +5237,7 @@ const baselines = {
     },
     'computedPropertyNameWithImportedKey': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedTypesKeyofNoIndexSignatureType': {
@@ -7627,7 +7627,7 @@ const baselines = {
     },
     'declarationEmitComputedNameCausesImportToBePainted': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitComputedNameConstEnumAlias': {
@@ -9407,12 +9407,12 @@ const baselines = {
     },
     'destructuredLateBoundNameHasCorrectTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuredMaappedTypeIsNotImplicitlyAny': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringAssignmentWithDefault': {
@@ -11072,7 +11072,7 @@ const baselines = {
     },
     'errorElaboration': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'errorElaborationDivesIntoApparentlyPresentPropsOnly': {
@@ -19842,7 +19842,7 @@ const baselines = {
     },
     'lateBoundDestructuringImplicitAnyError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'lateBoundFunctionMemberAssignmentDeclarations': {
@@ -26432,7 +26432,7 @@ const baselines = {
     },
     'redeclareParameterInCatchBlock': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'redefineArray': {
@@ -26642,7 +26642,7 @@ const baselines = {
     },
     'renamingDestructuredPropertyInFunctionType3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'reorderProperties': {
@@ -26957,7 +26957,7 @@ const baselines = {
     },
     'restElementWithNumberPropertyName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restIntersection': {
@@ -31607,7 +31607,7 @@ const baselines = {
     },
     'unusedDestructuring': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unusedDestructuringParameters': {
@@ -31792,7 +31792,7 @@ const baselines = {
     },
     'unusedLocalsAndObjectSpread2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unusedLocalsAndParameters': {
@@ -34497,12 +34497,12 @@ const baselines = {
     },
     'classStaticBlock22(target=es2022)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classStaticBlock22(target=esnext)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classStaticBlock23(target=es2022)': {
@@ -35562,17 +35562,17 @@ const baselines = {
     },
     'privateNameComputedPropertyName1(target=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'privateNameComputedPropertyName1(target=es2022)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'privateNameComputedPropertyName1(target=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'privateNameComputedPropertyName2(target=es2015)': {
@@ -37032,12 +37032,12 @@ const baselines = {
     },
     'controlFlowBindingElement': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'controlFlowBindingPatternOrder': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowCommaOperator': {
@@ -37172,7 +37172,7 @@ const baselines = {
     },
     'controlFlowParameter': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowStringIndex': {
@@ -40872,32 +40872,32 @@ const baselines = {
     },
     'destructuringObjectBindingPatternAndAssignment6(target=es5)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructuringObjectBindingPatternAndAssignment6(target=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructuringObjectBindingPatternAndAssignment7(target=es5)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructuringObjectBindingPatternAndAssignment7(target=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructuringObjectBindingPatternAndAssignment8(target=es5)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringObjectBindingPatternAndAssignment8(target=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringObjectBindingPatternAndAssignment9SiblingInitializer': {
@@ -41497,7 +41497,7 @@ const baselines = {
     },
     'restElementWithBindingPattern2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'restElementWithInitializer1': {
@@ -41522,7 +41522,7 @@ const baselines = {
     },
     'for-of-excess-declarations': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'for-of1': {
@@ -49382,12 +49382,12 @@ const baselines = {
     },
     'parameterInitializersForwardReferencing1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parameterInitializersForwardReferencing1_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'strictBindCallApply1': {
@@ -61287,7 +61287,7 @@ const baselines = {
     },
     'ES5For-of27': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5For-of28': {
@@ -61297,7 +61297,7 @@ const baselines = {
     },
     'ES5For-of29': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5For-of3': {
@@ -61327,7 +61327,7 @@ const baselines = {
     },
     'ES5For-of35': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5For-of36': {
