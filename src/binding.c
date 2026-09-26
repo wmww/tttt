@@ -233,11 +233,14 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
 }
 
 // The type a pattern's elements are taken from, as far as reporting what it lacks goes (tsc's
-// getBindingElementTypeFromParentType): null when nothing is reported (any, or nothing an element could be missing from)
+// getBindingElementTypeFromParentType): null when nothing is reported (any, or nothing an element could be missing from).
+// An object pattern lacks every property of unknown (TS2339), an array pattern reports it once (TS2461)
 static Ty const* element_parent_type(Binding const* me) {
     Checker* checker = current_checker;
     Ty const* type = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
-    if (type->flags & (TYF_ANY | TYF_UNKNOWN)) return nullptr;
+    if (type->flags & TYF_ANY || (type->flags & TYF_UNKNOWN && my tag == BINDING_ARRAY)) return nullptr;
+    // (tsc takes the non-nullable part: `{}` without strictNullChecks, unknown itself with them)
+    if (type->flags & TYF_UNKNOWN) return compiler_options()->strict_null_checks ? type : ty_empty_object_type(checker);
     // (What can be null or undefined is reported about the whole pattern)
     type = ty_non_nullable(checker, type);
     if (type->flags & TYF_NEVER) return nullptr;
@@ -245,8 +248,9 @@ static Ty const* element_parent_type(Binding const* me) {
 }
 
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
-    if (my has_explicit_type) {
-        type_typecheck(&my explicit_type, errs);
+    if (my has_explicit_type) type_typecheck(&my explicit_type, errs);
+    // (A catch variable's annotation isn't assigned anything: TS1196 is its only check)
+    if (my has_explicit_type && (my parent || my source)) {
         ty_check_assignable_expr(current_checker, ty_binding_assigned_type(current_checker, me),
             ty_of_node(&my explicit_type), my content_span, initializer, errs);
     }

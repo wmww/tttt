@@ -897,6 +897,7 @@ Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
 // The type of a binding (a variable, a parameter, an element of a destructuring pattern): what is written (lowered
 // with `ctx`), else what is assigned to it
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx);
+Ty const* ty_empty_object_type(Checker* me); // `{}`
 // tsc's getTypeFromBindingPattern. include_pattern: as the contextual type of an initializer (TYF_BINDING_PATTERN)
 Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
 bool ty_is_array(Checker* me, Ty const* ty); // A reference to Array<T> (not ReadonlyArray, not a tuple)

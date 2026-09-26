@@ -6097,6 +6097,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                     try_catch.catch_var = (Binding){0};
                 }
                 hop_whitespace(&p);
+                if (parse_binding_type(&p, &try_catch.catch_var)) hop_whitespace(&p);
 
                 expect_char(&p, ')');
                 hop_whitespace(&p);

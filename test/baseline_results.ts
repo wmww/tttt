@@ -6923,7 +6923,7 @@ const baselines = {
     'controlFlowForCatchAndFinally': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowForCompoundAssignmentToThisMember': {
         errors: true,
@@ -9521,24 +9521,24 @@ const baselines = {
         types: true,
     },
     'destructureCatchClause(strict=false,useunknownincatchvariables=false)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'destructureCatchClause(strict=false,useunknownincatchvariables=true)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'destructureCatchClause(strict=true,useunknownincatchvariables=false)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'destructureCatchClause(strict=true,useunknownincatchvariables=true)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'destructureComputedProperty': {
         errors: false,
@@ -17456,7 +17456,7 @@ const baselines = {
         types: false,
     },
     'inferredRestTypeFixedOnce': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -22713,7 +22713,7 @@ const baselines = {
     'narrowByBooleanComparison': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowByClauseExpressionInSwitchTrue1': {
         errors: true,
@@ -23176,7 +23176,7 @@ const baselines = {
         types: true,
     },
     'nestedSuperCallEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30658,7 +30658,7 @@ const baselines = {
     'tryCatchFinallyControlFlow': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tryStatementInternalComments': {
         errors: true,
@@ -33136,9 +33136,9 @@ const baselines = {
         types: true,
     },
     'useUnknownInCatchVariables01': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'usedImportNotElidedInJs': {
         errors: true,
@@ -37761,9 +37761,9 @@ const baselines = {
         types: true,
     },
     'controlFlowAliasingCatchVariables(useunknownincatchvariables=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowAssignmentExpression': {
         errors: true,
@@ -56176,9 +56176,9 @@ const baselines = {
         types: true,
     },
     'parserCatchClauseWithTypeAnnotation1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClass1': {
         errors: true,
@@ -63427,8 +63427,8 @@ const baselines = {
     },
     'catchClauseWithTypeAnnotation': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'invalidTryStatements': {
         errors: false,

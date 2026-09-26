@@ -18,6 +18,10 @@ CORPORA=(
     "type-fest https://github.com/sindresorhus/type-fest.git 2b98d9f2ac8921b79ed07ceeef278a5406edbe05 ."
     # valibot v1.0.0, the library package: schema library with inference chains + vitest tests (expectTypeOf)
     "valibot https://github.com/fabian-hiller/valibot.git 15e430e97267711ffd9f0633bc81bb49ce60a247 library"
+    # bulletproof-react (May 2026), the Vite app: a React 18 application (react-query, react-router, radix,
+    # react-hook-form + zod, tailwind) with vitest/testing-library tests; the lock is npm's resolution of its
+    # package.json (upstream ships a yarn.lock)
+    "bulletproof-react https://github.com/alan2207/bulletproof-react.git 9506629ed003a561c6627735480cce4994244bb4 apps/react-vite"
 )
 
 mkdir -p corpora

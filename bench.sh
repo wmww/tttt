@@ -79,17 +79,23 @@ echo "tttt phases (one run):"
 
 # The modern corpora (plan 17, thirdparty/ensure-corpora.sh): type-level heavy, clean under tsc 5.8. tttt still reports
 # plenty there (./realworld.py --corpus NAME), so these times are of an incomplete check. tsgo 7 dropped
-# moduleResolution node10, so it gets bundler/esnext instead (valibot: 2 TS2554 of its own, a TS 7 change)
+# moduleResolution node10, so it gets bundler/esnext instead (valibot: 2 TS2554 of its own, a TS 7 change), and
+# removed baseUrl, so the React app (plan 25) gets a generated tsconfig.tsgo.json that unsets it (its paths are
+# relative to the tsconfig either way)
 thirdparty/ensure-corpora.sh
-for CORPUS in type-fest valibot/library; do
+REACT=bulletproof-react/apps/react-vite
+echo '{"extends": "./tsconfig.json", "compilerOptions": {"baseUrl": null}}' > thirdparty/corpora/$REACT/tsconfig.tsgo.json
+for CORPUS in type-fest valibot/library $REACT; do
     DIR=thirdparty/corpora/$CORPUS
+    TSGO_ARGS="--moduleResolution bundler --module esnext -p $DIR"
+    if test $CORPUS = $REACT; then TSGO_ARGS="-p $DIR/tsconfig.tsgo.json"; fi
     echo
     echo "corpus $CORPUS: $(node thirdparty/tsc/lib/tsc.js -p $DIR --noEmit --listFilesOnly | grep -c .) files incl. dependencies and libs"
     measure "tttt" ./release/tttt -q --keep-going -p $DIR
     measure "tsc (node)" node thirdparty/tsc/lib/tsc.js --noEmit -p $DIR
     if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
-        measure "tsgo" tsc --noEmit --moduleResolution bundler --module esnext -p $DIR
-        measure "tsgo single-threaded" tsc --noEmit --moduleResolution bundler --module esnext --singleThreaded -p $DIR
+        measure "tsgo" tsc --noEmit $TSGO_ARGS
+        measure "tsgo single-threaded" tsc --noEmit --singleThreaded $TSGO_ARGS
     fi
     echo "tttt phases (one run):"
     (./release/tttt -q --time --keep-going -p $DIR 2>&1 > /dev/null || true) | grep -a '^time:' | sed 's/^/  /'

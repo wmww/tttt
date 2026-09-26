@@ -1505,7 +1505,11 @@ static Ty const* binding_default_type(Checker* me, Binding const* element) {
 // of what its pattern is assigned
 Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     Binding const* parent = binding->parent;
-    if (!parent) return binding->source ? lazy_type_get(binding->source) : ty_intrinsic(me, TY_ANY);
+    // A catch variable (the only root without a source) is any, or unknown under useUnknownInCatchVariables
+    if (!parent && !binding->source) {
+        return ty_intrinsic(me, compiler_options()->use_unknown_in_catch_variables ? TY_UNKNOWN_ : TY_ANY);
+    }
+    if (!parent) return lazy_type_get(binding->source);
     Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
     bool in_array = parent->tag == BINDING_ARRAY;
     // An array pattern takes elements of an array (or tuple) by index, of anything else what iterating it gives
@@ -1563,7 +1567,12 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
 
 // The type of a binding: what is written, else what is assigned. `ctx` is what a written type is lowered with
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx) {
-    if (binding->has_explicit_type) return ty_from_node(me, &binding->explicit_type, ctx);
+    if (binding->has_explicit_type) {
+        Ty const* type = ty_from_node(me, &binding->explicit_type, ctx);
+        // A catch variable annotated with anything but any or unknown is any (TS1196)
+        if (!binding->parent && !binding->source && !(type->flags & (TYF_ANY | TYF_UNKNOWN))) return ty_intrinsic(me, TY_ANY);
+        return type;
+    }
     return ty_binding_assigned_type(me, binding);
 }
 

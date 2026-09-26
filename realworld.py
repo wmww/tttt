@@ -6,7 +6,7 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
   ./realworld.py                 # tttt -p thirdparty/tsc/src/compiler (its tsconfig.json)
   ./realworld.py path/to/entry.ts --options '--strict' -n 40
   ./realworld.py --code TS1005   # list the places a code is reported
-  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot)
+  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react)
 """
 import argparse, collections, re, resource, subprocess, sys, time
 
@@ -16,6 +16,7 @@ CORPORA = {
     'tsc': 'thirdparty/tsc/src/compiler',
     'type-fest': 'thirdparty/corpora/type-fest',
     'valibot': 'thirdparty/corpora/valibot/library',
+    'react': 'thirdparty/corpora/bulletproof-react/apps/react-vite',
 }
 
 KEYWORDS = set('''else in of as is asserts new function catch export import type default case satisfies this void

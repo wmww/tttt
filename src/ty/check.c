@@ -990,7 +990,10 @@ static void check_access(
     if (object->kind == TY_TYPE_PARAM && object->param.state->is_this) object = ty_apparent_type(me, object);
     if (object->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) return;
     if (object->flags & TYF_UNKNOWN) {
-        if (object_is_named) {
+        // A destructured property (no object expression), or without strictNullChecks: what unknown lacks
+        if (!span_valid(object_span) || !compiler_options()->strict_null_checks) {
+            if (error_if_not_found) report_no_property(me, object, index, 2339, index_span, errs);
+        } else if (object_is_named) {
             error_ctx_error_d(errs, object_span, 18046, "'", object_span, "' is of type 'unknown'.");
         } else {
             error_ctx_error_d(errs, object_span, 2571, "Object is of type 'unknown'.");
