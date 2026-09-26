@@ -3343,7 +3343,7 @@ const baselines = {
     'circularBaseConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularBaseTypes': {
         errors: false,
@@ -5518,7 +5518,7 @@ const baselines = {
     'conditionalTypeDiscriminatingLargeUnionRegularTypeFetchingSpeedReasonable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypeDoesntSpinForever': {
         errors: false,
@@ -5548,7 +5548,7 @@ const baselines = {
     'conditionalTypeVarianceBigArrayConstraintsPerformance': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypesASI': {
         errors: true,
@@ -9193,7 +9193,7 @@ const baselines = {
     'deepComparisons': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deepElaborationsIntoArrowExpressions': {
         errors: false,
@@ -11078,7 +11078,7 @@ const baselines = {
     'enumLiteralsSubtypeReduction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumMapBackIntoItself': {
         errors: true,
@@ -11283,7 +11283,7 @@ const baselines = {
     'errorInfoForRelatedIndexTypesNoConstraintElaboration': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorLocationForInterfaceExtension': {
         errors: false,
@@ -12458,7 +12458,7 @@ const baselines = {
     'excessivelyLargeTupleSpread': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exhaustiveSwitchCheckCircularity': {
         errors: true,
@@ -15503,7 +15503,7 @@ const baselines = {
     'genericsManyTypeParameters': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericsWithDuplicateTypeParameters1': {
         errors: true,
@@ -15763,7 +15763,7 @@ const baselines = {
     'ignoredJsxAttributes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'illegalGenericWrapping1': {
         errors: true,
@@ -15893,7 +15893,7 @@ const baselines = {
     'implicitAnyGenericTypeInference': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implicitAnyGenerics': {
         errors: true,
@@ -17503,7 +17503,7 @@ const baselines = {
     'infiniteConstraints': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'infiniteExpandingTypeThroughInheritanceInstantiation': {
         errors: true,
@@ -19833,7 +19833,7 @@ const baselines = {
     'jsxCallElaborationCheckNoCrash1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxCallbackWithDestructuring': {
         errors: true,
@@ -19843,7 +19843,7 @@ const baselines = {
     'jsxChildWrongType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxChildrenArrayWrongType': {
         errors: false,
@@ -19858,7 +19858,7 @@ const baselines = {
     'jsxChildrenIndividualErrorElaborations': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxChildrenSingleChildConfusableWithMultipleChildrenNoError': {
         errors: true,
@@ -19908,12 +19908,12 @@ const baselines = {
     'jsxElementTypeLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxElementTypeLiteralWithGeneric': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxElementsAsIdentifierNames': {
         errors: true,
@@ -19933,17 +19933,17 @@ const baselines = {
     'jsxEmptyExpressionNotCountedAsChild(jsx=react)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxEmptyExpressionNotCountedAsChild(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxEmptyExpressionNotCountedAsChild(jsx=react-jsxdev)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxEmptyExpressionNotCountedAsChild2': {
         errors: false,
@@ -20073,12 +20073,12 @@ const baselines = {
     'jsxFragmentWrongType': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxGenericComponentWithSpreadingResultOfGenericFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxHasLiteralType': {
         errors: true,
@@ -20093,7 +20093,7 @@ const baselines = {
     'jsxImportForSideEffectsNonExtantNoError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxImportInAttribute': {
         errors: true,
@@ -20113,7 +20113,7 @@ const baselines = {
     'jsxInferenceProducesLiteralAsExpected': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxIntrinsicDeclaredUsingTemplateLiteralTypeSignatures': {
         errors: true,
@@ -20123,7 +20123,7 @@ const baselines = {
     'jsxIntrinsicElementsCompatability': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxIntrinsicElementsExtendsRecord': {
         errors: true,
@@ -20133,17 +20133,17 @@ const baselines = {
     'jsxIntrinsicElementsTypeArgumentErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxIntrinsicUnions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxIssuesErrorWhenTagExpectsTooManyArguments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxLibraryManagedAttributesUnusedGeneric': {
         errors: true,
@@ -20263,22 +20263,22 @@ const baselines = {
     'jsxRuntimePragma(jsx=preserve)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxRuntimePragma(jsx=react)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxRuntimePragma(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxRuntimePragma(jsx=react-jsxdev)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxSpreadFirstUnionNoErrors': {
         errors: true,
@@ -20628,7 +20628,7 @@ const baselines = {
     'libCompileChecks': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'libMembers': {
         errors: false,
@@ -20813,7 +20813,7 @@ const baselines = {
     'mapGroupBy': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mapOnTupleTypes01': {
         errors: true,
@@ -24113,7 +24113,7 @@ const baselines = {
     'nonnullAssertionPropegatesContextualType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonstrictTemplateWithNotOctalPrintsAsIs': {
         errors: true,
@@ -24338,7 +24338,7 @@ const baselines = {
     'objectGroupBy': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectIndexer': {
         errors: true,
@@ -25683,7 +25683,7 @@ const baselines = {
     'performanceComparisonOfStructurallyIdenticalInterfacesWithGenericSignatures': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'pickOfLargeObjectUnionWorks': {
         errors: true,
@@ -26183,7 +26183,7 @@ const baselines = {
     'promiseTypeStrictNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'promiseVoidErrorCallback': {
         errors: true,
@@ -26578,7 +26578,7 @@ const baselines = {
     'reactHOCSpreadprops': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactImportDropped': {
         errors: true,
@@ -27598,7 +27598,7 @@ const baselines = {
     'resolvingClassDeclarationWhenInBaseTypeResolution': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'restArgAssignmentCompat': {
         errors: true,
@@ -27753,7 +27753,7 @@ const baselines = {
     'returnTypePredicateIsInstantiateInContextOfTarget': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'returnTypeTypeArguments': {
         errors: true,
@@ -29458,7 +29458,7 @@ const baselines = {
     'substitutionTypePassedToExtends': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'substitutionTypesCompareCorrectlyInRestrictiveInstances': {
         errors: true,
@@ -30743,7 +30743,7 @@ const baselines = {
     'tsxInvokeComponentType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxNoTypeAnnotatedSFC': {
         errors: true,
@@ -30753,7 +30753,7 @@ const baselines = {
     'tsxNotUsingApparentTypeOfSFC': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactPropsInferenceSucceedsOnIntersections': {
         errors: true,
@@ -30783,7 +30783,7 @@ const baselines = {
     'tsxUnionMemberChecksFilterDataProps': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxUnionSpread': {
         errors: true,
@@ -31848,7 +31848,7 @@ const baselines = {
     'uncalledFunctionChecksInConditional2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'uncalledFunctionChecksInConditionalPerf': {
         errors: true,
@@ -33163,7 +33163,7 @@ const baselines = {
     'valueOfTypedArray': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'varAndFunctionShareName': {
         errors: true,
@@ -33228,7 +33228,7 @@ const baselines = {
     'variableDeclarationInStrictMode1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'variableDeclarationInnerCommentEmit': {
         errors: true,
@@ -33303,12 +33303,12 @@ const baselines = {
     'verifyDefaultLib_dom': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'verifyDefaultLib_webworker': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'visSyntax': {
         errors: true,
@@ -33503,7 +33503,7 @@ const baselines = {
     'yieldStarContextualType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'yieldStringLiteral': {
         errors: false,
@@ -37928,7 +37928,7 @@ const baselines = {
     'controlFlowOptionalChain3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowParameter': {
         errors: true,
@@ -38573,7 +38573,7 @@ const baselines = {
     'multiline': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ts-expect-error-js': {
         errors: true,
@@ -52768,7 +52768,7 @@ const baselines = {
     'checkJsxChildrenCanBeTupleType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsxChildrenProperty1': {
         errors: true,
@@ -52808,7 +52808,7 @@ const baselines = {
     'checkJsxChildrenProperty16': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsxChildrenProperty2': {
         errors: true,
@@ -52873,7 +52873,7 @@ const baselines = {
     'checkJsxUnionSFXContextualTypeInferredCorrectly': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentEmittingInPreserveJsx1': {
         errors: true,
@@ -53013,92 +53013,92 @@ const baselines = {
     'jsxJsxsCjsTransformChildren(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformChildren(jsx=react-jsxdev)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformCustomImport(jsx=react-jsx)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformCustomImport(jsx=react-jsxdev)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformCustomImportPragma(jsx=react-jsx)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformCustomImportPragma(jsx=react-jsxdev)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformKeyProp(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformKeyProp(jsx=react-jsxdev)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformKeyPropCustomImport(jsx=react-jsx)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformKeyPropCustomImport(jsx=react-jsxdev)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformKeyPropCustomImportPragma(jsx=react-jsx)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformKeyPropCustomImportPragma(jsx=react-jsxdev)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformNestedSelfClosingChild(jsx=react-jsx)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformNestedSelfClosingChild(jsx=react-jsxdev)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformSubstitutesNames(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformSubstitutesNames(jsx=react-jsxdev)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformSubstitutesNamesFragment(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformSubstitutesNamesFragment(jsx=react-jsxdev)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxAttributeErrors': {
         errors: true,
@@ -53603,12 +53603,12 @@ const baselines = {
     'tsxReactEmit8(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactEmit8(jsx=react-jsxdev)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactEmitEntities': {
         errors: true,
@@ -64288,7 +64288,7 @@ const baselines = {
     'objectTypeHidingMembersOfExtendedObject': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypeHidingMembersOfObject': {
         errors: true,
@@ -64368,7 +64368,7 @@ const baselines = {
     'objectTypeWithStringIndexerHidingObjectIndexer': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypeWithStringNamedNumericProperty': {
         errors: true,

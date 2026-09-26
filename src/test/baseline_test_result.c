@@ -42,6 +42,19 @@ static cstr without_underlines(csview text) {
     return ret;
 }
 
+// tsc's harness puts some of its checker's counters (relation cache sizes, type and instantiation counts, rounded) at
+// the top of a types baseline when they're big (harnessIO.ts generateBaseLine). They measure tsc's implementation, not
+// the types, so they aren't compared: the block goes from the expected baseline
+static csview perf_stats_block(csview expected) {
+    csview marker = c_sv("=== Performance Stats ===\n");
+    isize_t start = csview_find_sv(expected, marker);
+    if (start == c_NPOS) return (csview){0};
+    csview rest = csview_slice(expected, start, expected.size);
+    isize_t end = csview_find_sv(rest, c_sv("\n\n"));
+    if (end == c_NPOS) return (csview){0};
+    return csview_slice(expected, start, start + end + 2);
+}
+
 static bool compare_outputs(
     csview test_name,
     const char* output_name,
@@ -63,6 +76,14 @@ static bool compare_outputs(
     }
 
     csview expected_sv = cstr_sv(&expected);
+    csview stats = strcmp(output_name, "types") == 0 ? perf_stats_block(expected_sv) : (csview){0};
+    if (stats.size) {
+        cstr without = cstr_from_sv(csview_slice(expected_sv, 0, stats.buf - expected_sv.buf));
+        cstr_append_sv(&without, csview_slice(expected_sv, stats.buf + stats.size - expected_sv.buf, expected_sv.size));
+        cstr_drop(&expected);
+        expected = without;
+        expected_sv = cstr_sv(&expected);
+    }
     if (getenv("TTTT_IGNORE_UNDERLINES")) {
         // Measurement: how the types component would do if the `^^^` underline lines (tsc's declaration emitter
         // marking which parts of a printed type it synthesised, see agents/plans/07_underlines.md) were right
