@@ -580,6 +580,16 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
         case EXPR_BINARY_OP:
             return (expr->binary_op->op == BINARY_OP_OR_OR || expr->binary_op->op == BINARY_OP_EH_EH) &&
                 (ty_expr_is_context_sensitive(&expr->binary_op->left) || ty_expr_is_context_sensitive(&expr->binary_op->right));
+        case EXPR_JSX_ATTRIBUTES: {
+            // Its attributes, and the children of its element
+            for_each (i, vec_jsx_attribute, &expr->jsx_attributes) {
+                if (i->tag == JSX_ATTRIBUTE_EXPR && ty_expr_is_context_sensitive(&i->value)) return true;
+            }
+            for_each (i, vec_jsx_child, &jsx_attributes_element(expr)->children) {
+                if (i->tag == JSX_CHILD_EXPR && !i->spread && ty_expr_is_context_sensitive(&i->expr)) return true;
+            }
+            return false;
+        }
         default:
             return false;
     }
@@ -1050,6 +1060,7 @@ typedef struct LiteralBuilder {
     u32 count, cap;
     IndexInfo index[3];
     u32 index_count;
+    bool empty_object; // Spreads: nothing, tsc's emptyObjectType, rather than an object literal without properties
 } LiteralBuilder;
 
 static ObjectLiteralProp* literal_builder_find(LiteralBuilder* builder, Atom const* name) {
@@ -1075,41 +1086,84 @@ static ObjectLiteralProp* literal_builder_add(LiteralBuilder* builder, ObjectLit
     return &builder->props[builder->count++];
 }
 
-// The properties of a spread object (tsc's getSpreadType, as far as the builder goes): they replace what's there,
-// except that an optional one adds to it
-static void literal_builder_spread(Checker* me, LiteralBuilder* builder, Ty const* spread) {
-    if (!(spread->flags & TYF_OBJECT)) return;
-    Members const* members = ty_members(me, spread);
+static void literal_builder_drop(LiteralBuilder* builder) {
+    free(builder->props);
+    *builder = (LiteralBuilder){0};
+}
+
+static LiteralBuilder literal_builder_clone(LiteralBuilder const* builder) {
+    LiteralBuilder ret = *builder;
+    ret.cap = builder->count;
+    ret.props = builder->count ? malloc(sizeof(ObjectLiteralProp) * builder->count) : nullptr;
+    panic_if(builder->count && !ret.props, "out of memory");
+    if (builder->count) memcpy(ret.props, builder->props, sizeof(ObjectLiteralProp) * builder->count);
+    return ret;
+}
+
+// Spreads (tsc's getSpreadType): what `{ ...a, x: 1, ...b }` is made of, in the order tsc makes it. Spreading `right`
+// into `left` gives right's properties (in its order), then those of left that right doesn't have; an optional
+// property of right adds to left's of that name rather than replacing it. The properties written between spreads are
+// spread into what came before like that too. A union is spread member by member (the result is a union), a generic
+// object stays itself (the result is an intersection with it)
+
+// The properties of an object type as a spread takes them (tsc's isSpreadableProperty and getSpreadSymbol): not
+// private or protected ones, nor methods of classes, and none readonly. `partial`: each one optional (tsc's
+// getAnonymousPartialType)
+static void spread_props_of(Checker* me, Ty const* object, bool partial, LiteralBuilder* out) {
+    if (object->kind == TY_INTERSECTION) {
+        // The properties of all of its members, each of the type the intersection has for it: every member's
+        // properties are spread, then made what the intersection says (optional only if optional everywhere)
+        LiteralBuilder all = {0};
+        for (u32 i = 0; i < object->composite.types.len; i++) {
+            Ty const* member = ty_apparent_type(me, object->composite.types.data[i]);
+            if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+            LiteralBuilder part = {0};
+            spread_props_of(me, member, partial, &part);
+            for (u32 j = 0; j < part.count; j++) {
+                ObjectLiteralProp* existing = literal_builder_find(&all, part.props[j].name);
+                if (!existing) {
+                    literal_builder_add(&all, part.props[j]);
+                } else if (!(part.props[j].flags & PROP_OPTIONAL)) {
+                    existing->flags &= ~(u32)PROP_OPTIONAL;
+                }
+            }
+            for (u32 j = 0; j < part.index_count && all.index_count < c_arraylen(all.index); j++) all.index[all.index_count++] = part.index[j];
+            literal_builder_drop(&part);
+        }
+        for (u32 j = 0; j < all.count; j++) {
+            Ty const* type = ty_access(me, object, ty_prop_name_literal(me, all.props[j].name));
+            if (type && (all.props[j].flags & PROP_OPTIONAL) && !partial) type = ty_without_undefined(me, type);
+            if (type) {
+                all.props[j].type = (all.props[j].flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks ?
+                    optional_type(me, type) : type;
+                all.props[j].asserted = nullptr;
+            }
+            literal_builder_add(out, all.props[j]);
+        }
+        for (u32 j = 0; j < all.index_count && out->index_count < c_arraylen(out->index); j++) out->index[out->index_count++] = all.index[j];
+        literal_builder_drop(&all);
+        return;
+    }
+    Members const* members = ty_members(me, object);
     for (u32 j = 0; j < members->prop_count; j++) {
         Prop const* prop = members->props[j];
+        if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) continue;
+        if ((prop->flags & PROP_METHOD) && prop->function) continue; // (a class method)
         Prop const* origin = prop;
         while (origin->target) origin = origin->target;
-        ObjectLiteralProp* existing = literal_builder_find(builder, prop->name);
-        if (existing && (prop->flags & PROP_OPTIONAL)) {
-            // An optional property may not be there: what was there before stays possible, and so does
-            // its being required (tsc's getSpreadType)
-            Ty const* left = existing->type;
-            Ty const* right = ty_without_undefined(me, prop_type(me, prop));
-            if (ty_without_undefined(me, left) != right) {
-                existing->type = union_of_two(me, left, right);
-                existing->asserted = nullptr;
-            }
-            u32 count = existing->decl_span_count + origin->decl_span_count;
-            Span* spans = arena_new_n(&my arena, Span, count ? count : 1);
-            for (u32 k = 0; k < existing->decl_span_count; k++) spans[k] = existing->decl_spans[k];
-            for (u32 k = 0; k < origin->decl_span_count; k++) spans[existing->decl_span_count + k] = origin->decl_spans[k];
-            existing->decl_spans = spans;
-            existing->decl_span_count = count;
-            continue;
+        Ty const* type = prop_type(me, prop);
+        u32 flags = prop->flags & (u32)~PROP_READONLY;
+        if (partial && !(flags & PROP_OPTIONAL)) {
+            flags |= PROP_OPTIONAL;
+            if (compiler_options()->strict_null_checks) type = optional_type(me, type);
         }
         // The annotation of the property it comes from still says what it is, unless instantiated
-        TypeNode const* annotation = origin->node && origin->node->parsed && !origin->lazy && !origin->function &&
-            !origin->overload_count && !origin->symbol && prop_type(me, prop) == prop_type(me, origin) ?
-            origin->node : nullptr;
-        literal_builder_add(builder, (ObjectLiteralProp){
+        TypeNode const* annotation = !partial && origin->node && origin->node->parsed && !origin->lazy && !origin->function &&
+            !origin->overload_count && !origin->symbol && type == prop_type(me, origin) ? origin->node : nullptr;
+        literal_builder_add(out, (ObjectLiteralProp){
             .name = prop->name,
-            .flags = prop->flags & (u32)~PROP_READONLY,
-            .type = prop_type(me, prop),
+            .flags = flags,
+            .type = type,
             .asserted = annotation,
             .name_span = origin->name_span,
             .decl_spans = origin->decl_spans,
@@ -1117,6 +1171,185 @@ static void literal_builder_spread(Checker* me, LiteralBuilder* builder, Ty cons
             .name_is_value = origin->name_is_value,
         });
     }
+    for (u32 j = 0; j < members->index_count && out->index_count < c_arraylen(out->index); j++) {
+        out->index[out->index_count++] = members->index[j];
+    }
+}
+
+// tsc's getSpreadType of two object types, `left` (tsc's emptyObjectType if `left_empty`) becoming the result
+static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const* right) {
+    LiteralBuilder result = {0};
+    for (u32 i = 0; i < right->count; i++) {
+        ObjectLiteralProp const* r = &right->props[i];
+        ObjectLiteralProp* l = literal_builder_find(left, r->name);
+        if (!l || !(r->flags & PROP_OPTIONAL)) {
+            literal_builder_add(&result, *r);
+            continue;
+        }
+        // Optional: what was there stays possible, and so does its being required
+        ObjectLiteralProp merged = *l;
+        merged.flags = l->flags & (PROP_OPTIONAL | PROP_METHOD);
+        merged.own = false;
+        Ty const* right_type = ty_without_undefined(me, r->type);
+        if (l->type && ty_without_undefined(me, l->type) != right_type) {
+            Ty const* both[2] = { l->type, right_type };
+            merged.type = ty_union_subtype_reduced(me, both, 2);
+            merged.asserted = nullptr;
+        }
+        u32 count = l->decl_span_count + r->decl_span_count;
+        Span* spans = arena_new_n(&my arena, Span, count ? count : 1);
+        for (u32 k = 0; k < l->decl_span_count; k++) spans[k] = l->decl_spans[k];
+        for (u32 k = 0; k < r->decl_span_count; k++) spans[l->decl_span_count + k] = r->decl_spans[k];
+        merged.decl_spans = spans;
+        merged.decl_span_count = count;
+        literal_builder_add(&result, merged);
+    }
+    for (u32 i = 0; i < left->count; i++) {
+        if (!literal_builder_find((LiteralBuilder*)right, left->props[i].name)) literal_builder_add(&result, left->props[i]);
+    }
+    // Index signatures: right's into nothing, else the keys both have (tsc's getUnionIndexInfos)
+    if (left->empty_object) {
+        result.index_count = right->index_count;
+        for (u32 i = 0; i < right->index_count; i++) result.index[i] = right->index[i];
+    } else {
+        for (u32 i = 0; i < left->index_count; i++) {
+            for (u32 j = 0; j < right->index_count; j++) {
+                if (left->index[i].key != right->index[j].key) continue;
+                // (A new one, without a declaration)
+                IndexInfo info = { .key = left->index[i].key, .param_name = checker_atom(me, c_sv("x")) };
+                info.value = union_of_two(me, left->index[i].value, right->index[j].value);
+                info.readonly = left->index[i].readonly && right->index[j].readonly;
+                result.index[result.index_count++] = info;
+            }
+        }
+    }
+    free(left->props);
+    *left = result;
+}
+
+typedef struct SpreadAcc {
+    LiteralBuilder* alts; // What was spread so far (tsc's `spread`): one object per member of a union
+    u32 alt_count;
+    TyBuf generics; // Generic objects spread in
+    bool any; // Something `any` was spread: the whole literal is any
+} SpreadAcc;
+
+static void spread_acc_push(SpreadAcc* acc, LiteralBuilder alt) {
+    acc->alts = realloc(acc->alts, sizeof(LiteralBuilder) * (acc->alt_count + 1));
+    panic_if(!acc->alts, "out of memory");
+    acc->alts[acc->alt_count++] = alt;
+}
+
+// Properties spread into what was spread so far (the ones written since the last spread, an object spread)
+static void spread_acc_props(Checker* me, SpreadAcc* acc, LiteralBuilder const* right) {
+    if (!acc->alt_count) spread_acc_push(acc, (LiteralBuilder){ .empty_object = true });
+    for (u32 i = 0; i < acc->alt_count; i++) spread_into(me, &acc->alts[i], right);
+}
+
+// Empty for tsc's spread purposes (isEmptyObjectTypeOrSpreadsIntoEmptyObject): no properties, or a primitive
+static bool spreads_into_nothing(Checker* me, Ty const* ty) {
+    if (ty->flags & (TYF_NULLABLE | TYF_BOOLEAN | TYF_BOOLEAN_LITERAL | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT |
+        TYF_BIGINT_LITERAL | TYF_STRING_LIKE | TYF_ENUM | TYF_NON_PRIMITIVE | TYF_VOID)) {
+        return true;
+    }
+    if (ty->kind == TY_KEYOF) return true;
+    if (!(ty->flags & TYF_OBJECT) || (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) return false;
+    Members const* members = ty_members(me, ty);
+    return !members->prop_count && !members->index_count && !members->call_count && !members->construct_count;
+}
+
+// Something spread: `...x`
+static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
+    if (type->flags & TYF_ANY) {
+        acc->any = true;
+        return;
+    }
+    TyList members = type->kind == TY_UNION && !(type->flags & TYF_BOOLEAN) ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+    // A union of one object with things that spread into nothing is that object, every property optional (tsc's
+    // tryMergeUnionOfObjectTypeAndEmptyObject)
+    Ty const* partial = nullptr;
+    if (members.len > 1) {
+        u32 objects = 0;
+        for (u32 i = 0; i < members.len; i++) {
+            if (!spreads_into_nothing(me, members.data[i])) {
+                objects++;
+                partial = members.data[i];
+            }
+        }
+        if (objects == 0) return;
+        if (objects != 1) partial = nullptr;
+    }
+    if (partial || members.len == 1) {
+        Ty const* object = partial ? partial : members.data[0];
+        if (!partial && ty_is_generic_object(me, object)) {
+            ty_buf_push(&acc->generics, object);
+            return;
+        }
+        Ty const* apparent = ty_apparent_type(me, object);
+        if (apparent->flags & TYF_ANY) {
+            acc->any = true;
+            return;
+        }
+        if (!(apparent->flags & TYF_OBJECT) && apparent->kind != TY_INTERSECTION) return;
+        if (spreads_into_nothing(me, object)) return;
+        LiteralBuilder right = { .empty_object = false };
+        spread_props_of(me, apparent, partial != nullptr, &right);
+        spread_acc_props(me, acc, &right);
+        literal_builder_drop(&right);
+        return;
+    }
+    // Member by member, each into each of what was spread so far
+    if (!acc->alt_count) spread_acc_push(acc, (LiteralBuilder){ .empty_object = true });
+    SpreadAcc next = {0};
+    for (u32 i = 0; i < acc->alt_count; i++) {
+        for (u32 j = 0; j < members.len; j++) {
+            LiteralBuilder alt = literal_builder_clone(&acc->alts[i]);
+            Ty const* apparent = ty_apparent_type(me, members.data[j]);
+            if (!spreads_into_nothing(me, members.data[j]) && ((apparent->flags & TYF_OBJECT) || apparent->kind == TY_INTERSECTION)) {
+                LiteralBuilder right = {0};
+                spread_props_of(me, apparent, false, &right);
+                spread_into(me, &alt, &right);
+                literal_builder_drop(&right);
+            }
+            spread_acc_push(&next, alt);
+        }
+        literal_builder_drop(&acc->alts[i]);
+    }
+    free(acc->alts);
+    acc->alts = next.alts;
+    acc->alt_count = next.alt_count;
+}
+
+// What the literal is. `own`: the properties written after the last spread (the whole literal if nothing was spread)
+static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* own, ObjectLiteralKind kind) {
+    Ty const* ret;
+    if (acc->any) {
+        ret = any_type(me);
+    } else if (!acc->alt_count && !acc->generics.len) {
+        ret = ty_object_literal(me, own->props, own->count, own->index, own->index_count, kind);
+    } else {
+        if (own->count || own->index_count) spread_acc_props(me, acc, own);
+        TyBuf objects = {0};
+        for (u32 i = 0; i < acc->alt_count; i++) {
+            LiteralBuilder const* alt = &acc->alts[i];
+            // (Nothing but generics spread: they are all there is)
+            if (acc->generics.len && acc->alt_count == 1 && !alt->count && !alt->index_count) continue;
+            ty_buf_push(&objects, ty_object_literal(me, alt->props, alt->count, alt->index, alt->index_count, kind));
+        }
+        Ty const* object = objects.len ? ty_union(me, objects.data, objects.len, nullptr, (TyList){0}) : nullptr;
+        ty_buf_drop(&objects);
+        if (acc->generics.len) {
+            if (object) ty_buf_push(&acc->generics, object);
+            ret = acc->generics.len == 1 ? acc->generics.data[0] :
+                ty_intersection(me, acc->generics.data, acc->generics.len, nullptr, (TyList){0});
+        } else {
+            ret = object ? object : ty_object_literal(me, nullptr, 0, nullptr, 0, kind);
+        }
+    }
+    for (u32 i = 0; i < acc->alt_count; i++) literal_builder_drop(&acc->alts[i]);
+    free(acc->alts);
+    ty_buf_drop(&acc->generics);
+    return ret;
 }
 
 static Signature const* single_call_signature(Checker* me, Ty const* ty) {
@@ -1205,16 +1438,16 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             *intern_slot(me, &my links, parent_key, 2) = expr;
         }
     }
-    LiteralBuilder builder = {0};
-    bool spread_any = false;
+    LiteralBuilder builder = {0}; // What was written since the last spread (tsc's propertiesTable)
+    SpreadAcc spread = {0};
     // Accessor pairs share a property: the declarations of both halves
     Span* accessor_spans = nullptr;
 
     for_each (i, vec_object_expr_item, object) {
         if (i->tag == OBJECT_ITEM_SPREAD) {
-            Ty const* spread = ty_apparent_type(me, ty_expr_type(me, &i->value));
-            if (spread->flags & TYF_ANY) spread_any = true; // The whole literal is any (tsc's getSpreadType)
-            literal_builder_spread(me, &builder, spread);
+            if (builder.count || builder.index_count) spread_acc_props(me, &spread, &builder);
+            literal_builder_drop(&builder);
+            spread_acc_type(me, &spread, ty_expr_type(me, &i->value));
             continue;
         }
 
@@ -1317,8 +1550,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         });
     }
     free(accessor_spans);
-    Ty const* ret = spread_any ? ty_intrinsic(me, TY_ANY) :
-        ty_object_literal(me, builder.props, builder.count, builder.index, builder.index_count, OBJECT_LITERAL_FRESH);
+    Ty const* ret = spread_acc_finish(me, &spread, &builder, OBJECT_LITERAL_FRESH);
     free(builder.props);
     return ret;
 }
@@ -1341,7 +1573,10 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
         name = checker_atom(me, cstr_sv(&item->name_string));
     }
     Prop const* prop = name && (type->flags & TYF_OBJECT) ? ty_get_prop(me, type, name) : nullptr;
-    if (prop) return prop_type(me, prop);
+    // (Unless a later spread replaced it)
+    bool own = prop && (!prop->decl_span_count || span_eq(prop->decl_spans[0], item->span) ||
+        (prop->decl_span_count == 2 && span_eq(prop->decl_spans[1], item->span)));
+    if (prop && own) return prop_type(me, prop);
     // A computed key that made no property
     Ty const* value = ty_expr_type(me, &item->value);
     if (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) {
@@ -1448,24 +1683,16 @@ static Ty const* check_jsx_child(Checker* me, JsxChild const* child, Ty const* c
 // children as one more property, named by JSX.ElementChildrenAttribute
 static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx) {
     JsxElement const* element = jsx_attributes_element(expr);
-    LiteralBuilder builder = {0};
-    bool spread_any = false;
-    // Spreads of generic objects (`{...props}` with `props: T`) stay what they are: the attributes are their
-    // intersection with the rest (tsc's getSpreadType)
-    TyBuf generic_spreads = {0};
+    LiteralBuilder builder = {0}; // The attributes since the last spread
+    SpreadAcc spread = {0};
     bool has_attribute = false, has_spread = false, has_children = false;
     for_each (i, vec_jsx_attribute, &expr->jsx_attributes) {
         has_attribute |= i->tag != JSX_ATTRIBUTE_SPREAD;
         if (i->tag == JSX_ATTRIBUTE_SPREAD) {
             has_spread = true;
-            Ty const* spread_type = check_with(me, &i->value, (ExprCtx){ .contextual = ctx.contextual });
-            if (spread_type->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
-                ty_buf_push(&generic_spreads, spread_type);
-                continue;
-            }
-            Ty const* spread = ty_apparent_type(me, spread_type);
-            if (spread->flags & TYF_ANY) spread_any = true;
-            literal_builder_spread(me, &builder, spread);
+            if (builder.count) spread_acc_props(me, &spread, &builder);
+            literal_builder_drop(&builder);
+            spread_acc_type(me, &spread, check_with(me, &i->value, (ExprCtx){ .contextual = ctx.contextual }));
             continue;
         }
         Atom const* name = checker_atom(me, i->name.sv);
@@ -1501,7 +1728,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
             if (!ty_jsx_child_is_semantic(i)) continue;
             ty_buf_push(&types, check_jsx_child(me, i, jsx_child_context(me, children_context, index++, child_count)));
         }
-        if (!spread_any && children_name && atom_sv(children_name).size) {
+        if (!spread.any && children_name && atom_sv(children_name).size) {
             Ty const* type = types.data[0];
             if (types.len > 1) {
                 if (context_is_tuple_like(me, children_context, 0)) {
@@ -1512,7 +1739,13 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
                     type = ty_array(me, ty_union(me, types.data, types.len, nullptr, (TyList){0}), false);
                 }
             }
-            literal_builder_add(&builder, (ObjectLiteralProp){ .name = children_name, .type = type, .own = true });
+            // Spread in after the attributes
+            if (builder.count) spread_acc_props(me, &spread, &builder);
+            literal_builder_drop(&builder);
+            LiteralBuilder children = {0};
+            literal_builder_add(&children, (ObjectLiteralProp){ .name = children_name, .type = type, .own = true });
+            spread_acc_props(me, &spread, &children);
+            literal_builder_drop(&children);
             has_children = true;
         }
         ty_buf_drop(&types);
@@ -1521,14 +1754,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
     // Fresh (excess properties are errors) if tsc made it with createJsxAttributesTypeHelper(): there's an attribute, or
     // nothing was spread into it (children are spread in)
     bool fresh = has_attribute || (!has_spread && !has_children);
-    Ty const* ret = spread_any ? any_type(me) : ty_object_literal(me, builder.props, builder.count, nullptr, 0,
-        fresh ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES);
-    if (!spread_any && generic_spreads.len) {
-        if (builder.count) ty_buf_push(&generic_spreads, ret);
-        ret = generic_spreads.len == 1 ? generic_spreads.data[0] :
-            ty_intersection(me, generic_spreads.data, generic_spreads.len, nullptr, (TyList){0});
-    }
-    ty_buf_drop(&generic_spreads);
+    Ty const* ret = spread_acc_finish(me, &spread, &builder, fresh ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES);
     free(builder.props);
     return ret;
 }

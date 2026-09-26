@@ -131,11 +131,11 @@ static bool is_or_has_generic_conditional(Ty const* ty) {
 }
 
 // tsc's isGenericObjectType, roughly: what an indexed access stays deferred on
-static bool is_generic_object(Checker* me, Ty const* ty) {
+bool ty_is_generic_object(Checker* me, Ty const* ty) {
     if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) return true;
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {
-            if (is_generic_object(me, ty->composite.types.data[i])) return true;
+            if (ty_is_generic_object(me, ty->composite.types.data[i])) return true;
         }
         return false;
     }
@@ -175,11 +175,11 @@ static Prop const* target_prop_of(Checker* me, Ty const* target, Atom const* nam
 
 // tsc's getBestMatchIndexedAccessTypeOrUndefined
 static Ty const* best_match_indexed_access(Checker* me, Ty const* source, Ty const* target, Ty const* name_type) {
-    if (is_generic_object(me, target)) return nullptr;
+    if (ty_is_generic_object(me, target)) return nullptr;
     Ty const* ret = ty_access(me, target, name_type);
     if (ret || target->kind != TY_UNION) return ret;
     Ty const* best = ty_best_matching_type(me, source, target);
-    return best && !is_generic_object(me, best) ? ty_access(me, best, name_type) : nullptr;
+    return best && !ty_is_generic_object(me, best) ? ty_access(me, best, name_type) : nullptr;
 }
 
 // A property or element of a literal to elaborate on (tsc's ElaborationIterator item)
@@ -213,7 +213,7 @@ static bool elaborate_element(
     if (!error) return true;
     // Where the expected type comes from
     Prop const* declared = item->name ? target_prop_of(me, target, item->name) : nullptr;
-    if (!declared && !is_generic_object(me, target)) {
+    if (!declared && !ty_is_generic_object(me, target)) {
         IndexInfo const* info = ty_applicable_index_info(me, ty_apparent_type(me, target), item->name_type);
         if (info && !in_lib(info->decl_span)) {
             error_add_related_d(error, info->decl_span, 6501, "The expected type comes from this index signature.");
@@ -603,6 +603,40 @@ void ty_report_unfit_argument(
 
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
     check_assignable(me, HEAD_THIS, source, target, span, nullptr, errs);
+}
+
+// TS2786 (tsc's checkJsxReturnAssignableToAppropriateBound and the JSX.ElementType check): "'C' cannot be used as a JSX
+// component." over what isn't valid about it ("Its return type 'R' is not a valid JSX element."), over why `source`
+// isn't assignable to `target`. False if it isn't (then it was reported)
+bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Span tag_name, JsxComponentCheck kind, ErrorCtx* errs) {
+    if ((source->flags & TYF_ANY) || ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return true;
+    VecTyReportLine lines = {0};
+    ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
+    my instantiation_limit_hit = false;
+    Error* error = error_ctx_error_d(errs, tag_name, 2786, "'", tag_name, "' cannot be used as a JSX component.");
+    cstr source_str = ty_to_cstr(me, source);
+    switch (kind) {
+        case JSX_COMPONENT_RETURN: error_sub_error_d(error, span_null, TS_CODE_NONE, "Its return type '", source_str, "' is not a valid JSX element."); break;
+        case JSX_COMPONENT_INSTANCE: error_sub_error_d(error, span_null, TS_CODE_NONE, "Its instance type '", source_str, "' is not a valid JSX element."); break;
+        case JSX_COMPONENT_ELEMENT: error_sub_error_d(error, span_null, TS_CODE_NONE, "Its element type '", source_str, "' is not a valid JSX element."); break;
+        case JSX_COMPONENT_TYPE: error_sub_error_d(error, span_null, TS_CODE_NONE, "Its type '", source_str, "' is not a valid JSX element type."); break;
+    }
+    cstr_drop(&source_str);
+    // The explanation goes under that line, less the generic "Type 'S' is not assignable" its message replaces
+    Error* chain = vec_error_back_mut(&error->sub_errors);
+    TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
+    isize_t first = natural && !natural->related && natural->ts_code == 2322 ? 1 : 0;
+    for (isize_t i = first; i < vec_ty_report_line_size(&lines); i++) {
+        TyReportLine const* line = vec_ty_report_line_at(&lines, i);
+        if (line->related) continue;
+        error_sub_error_s(chain, (Span){0}, TS_CODE_NONE, cstr_clone(line->message));
+        chain = vec_error_back_mut(&chain->sub_errors);
+    }
+    for_each (line, vec_ty_report_line, &lines) {
+        if (line->related) error_add_related_s(error, line->span, line->ts_code, cstr_clone(line->message));
+    }
+    vec_ty_report_line_drop(&lines);
+    return false;
 }
 
 // tsc's isValidSpreadType

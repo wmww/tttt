@@ -4183,7 +4183,7 @@ static Span jsx_span_from_token(Parser* p) {
 // tsc's parseJsxElementName: an identifier, `this`, a namespaced name `a:b`, or property accesses on the first two
 static cstr jsx_name_value(csview name);
 
-static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced) {
+static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* broken) {
     Anchor a = anchor(p);
     *namespaced = false;
     Span name;
@@ -4212,6 +4212,7 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced) {
         hop_whitespace(&dot);
         Span prop;
         if (!parse_jsx_identifier_hyphens(&dot, false, &prop)) {
+            *broken = true;
             // (a private name is read and dropped, tsc's parseRightSideOfDot, which reports after it)
             if (*dot.pos == '#' && is_identifier_start_char(dot.pos[1])) {
                 dot.pos++;
@@ -4473,7 +4474,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     Anchor attributes_a = anchor(&p);
     VecJsxAttribute attributes = {0};
     if (!is_fragment) {
-        parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced);
+        parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced, &el->tag_name_broken);
         hop_whitespace(&p);
         attributes_a = anchor(&p);
         if (!p.shared->source->is_js && *p.pos == '<' && p.pos[1] != '/') {
@@ -4551,8 +4552,8 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                 el->closing_span = span_from(closing_a);
             } else {
                 hop_whitespace(&p);
-                bool namespaced;
-                parse_jsx_tag_name(&p, &el->closing_name, &namespaced);
+                bool namespaced, broken = false;
+                parse_jsx_tag_name(&p, &el->closing_name, &namespaced, &broken);
                 hop_whitespace(&p);
                 if (!hop_char(&p, '>')) parse_error_once(&p, span_from_token(&p), 1005, "'>' expected.");
                 el->closing_span = span_from(closing_a);

@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, plan 22 stage 3 part 1 (JSX components)
+Suite 7310 -> **7342 / 13540** full (errors 9621, symbols 11175, types 9366); 2 accepted losses (plan 22 Progress).
+`./failstats.py --jsx`: pass 188, errors 311, symbols 399, types 253 of 457. Corpora: tsc 0, type-fest 142, valibot
+161 -> 152. `./bench.sh`: synthetic 3.04 s, tsc corpus 0.77 s (typecheck 504 ms), type-fest 0.31 s, valibot 0.68 s /
+508 MB: unchanged.
+
 ## 2026-09-25, plan 22 stages 0+1 (JSX harness + parser)
 Suite 7152 -> **7162 / 13542**, nothing lost. `./failstats.py --jsx`: 457 tests, errors 17 -> 243, symbols 51 -> 125,
 types 37 -> 39 (all 20); JSX is `any` until stage 2. tsc corpus 0 diagnostics. `./bench.sh`: synthetic 3.02 s, tsc

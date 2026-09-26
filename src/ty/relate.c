@@ -425,6 +425,7 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         report_missing_constraint(me, st, source, target);
         return;
     }
+    if (ty_jsx_skips_head(me, source, target)) return;
     bool widen = report_widens(me, target);
     Ty const* generalized = widen ? ty_base_type_of_literal(me, source) : source;
     cstr source_str = display_for_report(me, generalized, widen);
@@ -1177,7 +1178,14 @@ static Ternary index_signatures_related(Checker* me, RelationState* st, Ty const
                 }
                 // (tsc's isIgnoredJsxProperty)
                 if (source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes && csview_contains(atom_sv(prop->name), "-")) continue;
-                Ternary related = is_related_to(me, st, prop_type(me, prop), target_info->value, report);
+                // An optional property's undefined doesn't count (tsc's membersRelatedToIndexer)
+                Ty const* type = prop_type(me, prop);
+                if ((prop->flags & PROP_OPTIONAL) && !(target_info->key->flags & TYF_NUMBER) && !(type->flags & TYF_UNDEFINED) &&
+                    !compiler_options()->exact_optional_property_types
+                ) {
+                    type = ty_without_undefined(me, type);
+                }
+                Ternary related = is_related_to(me, st, type, target_info->value, report);
                 if (!related) {
                     if (report) {
                         cstr name = ty_prop_name_cstr(me, prop->name);
@@ -3555,13 +3563,29 @@ bool ty_type_params_identical(Checker* me, TyList source, TyList target) {
 // most one member is overloaded, its signatures combined with the others'. Null (and 0) if there are none
 Signature* const* ty_union_signatures(Checker* me, TyList members, bool construct, u32* count_out) {
     *count_out = 0;
-    SignatureList* lists = malloc(sizeof(SignatureList) * members.len);
+    Signature* const** lists = malloc(sizeof(Signature* const*) * members.len);
+    u32* lens = malloc(sizeof(u32) * members.len);
+    panic_if(!lists || !lens, "out of memory");
+    for (u32 i = 0; i < members.len; i++) {
+        Members const* m = ty_members(me, ty_apparent_type(me, members.data[i]));
+        lists[i] = construct ? m->construct : m->call;
+        lens[i] = construct ? m->construct_count : m->call_count;
+    }
+    Signature* const* ret = ty_union_signature_lists(me, lists, lens, members.len, count_out);
+    free(lists);
+    free(lens);
+    return ret;
+}
+
+// The same for the signatures of each member as given (JSX takes a member's construct signatures, else its call ones)
+Signature* const* ty_union_signature_lists(Checker* me, Signature* const* const* member_lists, u32 const* lens, u32 member_count, u32* count_out) {
+    *count_out = 0;
+    SignatureList* lists = malloc(sizeof(SignatureList) * member_count);
     panic_if(!lists, "out of memory");
     u32 total = 0;
     i32 overloaded = -2; // -2: no list with more than one signature, -1: several
-    for (u32 i = 0; i < members.len; i++) {
-        Members const* m = ty_members(me, ty_apparent_type(me, members.data[i]));
-        lists[i] = construct ? (SignatureList){ m->construct, m->construct_count } : (SignatureList){ m->call, m->call_count };
+    for (u32 i = 0; i < member_count; i++) {
+        lists[i] = (SignatureList){ member_lists[i], lens[i] };
         if (!lists[i].len) {
             free(lists);
             return nullptr;
@@ -3571,15 +3595,15 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
     }
     Signature** result = arena_new_n(&my arena, Signature*, total);
     u32 result_count = 0;
-    Signature** matches = malloc(sizeof(Signature*) * members.len);
+    Signature** matches = malloc(sizeof(Signature*) * member_count);
     panic_if(!matches, "out of memory");
-    for (u32 i = 0; i < members.len; i++) {
+    for (u32 i = 0; i < member_count; i++) {
         for (u32 j = 0; j < lists[i].len; j++) {
             Signature* sig = lists[i].data[j];
             signature_resolve(me, sig);
             SignatureList so_far = { result, result_count };
             if (result_count && find_matching_signature(me, so_far, sig, false, true)) continue;
-            u32 match_count = find_matching_signatures(me, lists, members.len, sig, i, matches);
+            u32 match_count = find_matching_signatures(me, lists, member_count, sig, i, matches);
             if (!match_count) continue;
             result[result_count++] = match_count > 1 ? union_signature(me, sig, matches, match_count) : sig;
         }
@@ -3590,7 +3614,7 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
         Signature** combined = arena_new_n(&my arena, Signature*, master.len);
         for (u32 j = 0; j < master.len; j++) combined[j] = master.data[j];
         bool compatible = true;
-        for (u32 i = 0; i < members.len && compatible; i++) {
+        for (u32 i = 0; i < member_count && compatible; i++) {
             if (lists[i].data == master.data) continue;
             Signature* sig = lists[i].data[0];
             signature_resolve(me, sig);

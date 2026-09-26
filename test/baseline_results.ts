@@ -2633,7 +2633,7 @@ const baselines = {
     'booleanLiteralsContextuallyTypedFromUnion': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'breakInIterationOrSwitchStatement1': {
         errors: true,
@@ -6586,7 +6586,7 @@ const baselines = {
         types: true,
     },
     'contextualTypingOfOptionalMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6651,9 +6651,9 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedJsxAttribute': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedJsxAttribute2': {
         errors: false,
@@ -6661,7 +6661,7 @@ const baselines = {
         types: false,
     },
     'contextuallyTypedJsxChildren': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -9608,7 +9608,7 @@ const baselines = {
     'destructuringFromUnionSpread': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringInVariableDeclarations1': {
         errors: true,
@@ -9651,7 +9651,7 @@ const baselines = {
         types: true,
     },
     'destructuringInitializerContextualTypeFromContext': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -12428,7 +12428,7 @@ const baselines = {
     'excessPropertyCheckWithUnions': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'excessPropertyCheckingIntersectionWithConditional': {
         errors: true,
@@ -14728,7 +14728,7 @@ const baselines = {
     'genericCallInferenceWithGenericLocalFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallOnMemberReturningClosedOverObject': {
         errors: true,
@@ -15102,7 +15102,7 @@ const baselines = {
     },
     'genericInferenceDefaultTypeParameterJsxReact': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericInheritedDefaultConstructors': {
@@ -15136,7 +15136,7 @@ const baselines = {
         types: false,
     },
     'genericIsNeverEmptyObject': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15761,7 +15761,7 @@ const baselines = {
         types: true,
     },
     'ignoredJsxAttributes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -17363,7 +17363,7 @@ const baselines = {
     'inferenceOptionalPropertiesToIndexSignatures': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'inferenceOuterResultNotIncorrectlyInstantiatedWithInnerResult': {
         errors: true,
@@ -18518,7 +18518,7 @@ const baselines = {
     'intersectionPropertyCheck': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionReductionGenericStringLikeType': {
         errors: true,
@@ -19836,7 +19836,7 @@ const baselines = {
         types: false,
     },
     'jsxCallbackWithDestructuring': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -19876,7 +19876,7 @@ const baselines = {
         types: false,
     },
     'jsxComplexSignatureHasApplicabilityError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19906,12 +19906,12 @@ const baselines = {
         types: false,
     },
     'jsxElementTypeLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'jsxElementTypeLiteralWithGeneric': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20166,12 +20166,12 @@ const baselines = {
         types: true,
     },
     'jsxNamespaceElementChildrenAttributeIgnoredWhenReactJsx(jsx=react-jsx)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsxNamespaceElementChildrenAttributeIgnoredWhenReactJsx(jsx=react-jsxdev)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20283,7 +20283,7 @@ const baselines = {
     'jsxSpreadFirstUnionNoErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxSpreadTag(target=es2015)': {
         errors: true,
@@ -24348,7 +24348,7 @@ const baselines = {
     'objectInstantiationFromUnionSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLitArrayDeclNoNew': {
         errors: false,
@@ -24418,7 +24418,7 @@ const baselines = {
     'objectLiteralFreshnessWithSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralFunctionArgContextualTyping': {
         errors: true,
@@ -26572,12 +26572,12 @@ const baselines = {
     },
     'reactDefaultPropsInferenceSuccess': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reactHOCSpreadprops': {
-        errors: true,
-        symbols: false,
+        errors: false,
+        symbols: true,
         types: false,
     },
     'reactImportDropped': {
@@ -26627,7 +26627,7 @@ const baselines = {
     },
     'reactReadonlyHOCAssignabilityReal': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reactReduxLikeDeferredInferenceAllowsAssignment': {
@@ -28881,9 +28881,9 @@ const baselines = {
         types: true,
     },
     'spreadExpressionContextualType': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadExpressionContextualTypeWithNamespace': {
         errors: true,
@@ -28896,7 +28896,7 @@ const baselines = {
         types: false,
     },
     'spreadIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30038,7 +30038,7 @@ const baselines = {
     'taggedTemplateStringsWithCurriedFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithMultilineTemplate': {
         errors: true,
@@ -30688,7 +30688,7 @@ const baselines = {
     'tslibMultipleMissingHelper': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tslibNotFoundDifferentModules': {
         errors: false,
@@ -30708,7 +30708,7 @@ const baselines = {
     'tsxAttributeQuickinfoTypesSameAsObjectLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxAttributesHasInferrableIndex': {
         errors: true,
@@ -30716,7 +30716,7 @@ const baselines = {
         types: false,
     },
     'tsxDeepAttributeAssignabilityError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30741,7 +30741,7 @@ const baselines = {
         types: false,
     },
     'tsxInvokeComponentType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30767,16 +30767,16 @@ const baselines = {
     },
     'tsxSpreadDoesNotReportExcessProps': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'tsxStatelessComponentDefaultProps': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'tsxTypeArgumentPartialDefinitionStillErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31136,8 +31136,8 @@ const baselines = {
         types: true,
     },
     'typeInferenceWithExcessPropertiesJsx': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeInferenceWithTypeAnnotation': {
@@ -38571,7 +38571,7 @@ const baselines = {
         types: true,
     },
     'multiline': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41793,7 +41793,7 @@ const baselines = {
     'destructuringSpread': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringTypeAssertionsES5_1': {
         errors: true,
@@ -52787,12 +52787,12 @@ const baselines = {
     },
     'checkJsxChildrenProperty12': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'checkJsxChildrenProperty13': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'checkJsxChildrenProperty14': {
@@ -52817,7 +52817,7 @@ const baselines = {
     },
     'checkJsxChildrenProperty3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'checkJsxChildrenProperty4': {
@@ -52866,7 +52866,7 @@ const baselines = {
         types: false,
     },
     'checkJsxSubtleSkipContextSensitiveBug': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53121,9 +53121,9 @@ const baselines = {
         types: true,
     },
     'tsxAttributeResolution10': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxAttributeResolution11': {
         errors: false,
@@ -53141,7 +53141,7 @@ const baselines = {
         types: true,
     },
     'tsxAttributeResolution14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53191,13 +53191,13 @@ const baselines = {
         types: true,
     },
     'tsxAttributeResolution9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxCorrectlyParseLessThanComparison1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'tsxDefaultAttributesResolution1': {
@@ -53246,7 +53246,7 @@ const baselines = {
         types: true,
     },
     'tsxDynamicTagName7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53276,12 +53276,12 @@ const baselines = {
         types: true,
     },
     'tsxElementResolution11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxElementResolution12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53351,7 +53351,7 @@ const baselines = {
         types: true,
     },
     'tsxElementResolution8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53447,12 +53447,12 @@ const baselines = {
     },
     'tsxGenericAttributesType3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'tsxGenericAttributesType4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'tsxGenericAttributesType5': {
@@ -53656,7 +53656,7 @@ const baselines = {
         types: true,
     },
     'tsxSfcReturnUndefinedStrictNullChecks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53696,12 +53696,12 @@ const baselines = {
         types: true,
     },
     'tsxSpreadAttributesResolution16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxSpreadAttributesResolution17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53822,7 +53822,7 @@ const baselines = {
     },
     'tsxStatelessFunctionComponents2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'tsxStatelessFunctionComponents3': {
@@ -53871,12 +53871,12 @@ const baselines = {
         types: true,
     },
     'tsxUnionElementType1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxUnionElementType2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53902,11 +53902,11 @@ const baselines = {
     },
     'tsxUnionTypeComponent1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'tsxUnionTypeComponent2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63581,9 +63581,9 @@ const baselines = {
         types: false,
     },
     'contextuallyTypedStringLiteralsInJsxAttributes01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedStringLiteralsInJsxAttributes02': {
         errors: false,
@@ -65063,7 +65063,7 @@ const baselines = {
     'objectRestForOf': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectRestNegative': {
         errors: false,
@@ -65251,7 +65251,7 @@ const baselines = {
         types: false,
     },
     'objectSpread': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -65278,17 +65278,17 @@ const baselines = {
     'objectSpreadNoTransform': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectSpreadRepeatedComplexity': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectSpreadRepeatedNullCheckPerf': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectSpreadSetonlyAccessor': {
         errors: false,
@@ -65333,7 +65333,7 @@ const baselines = {
     'spreadNonPrimitive': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadObjectOrFalsy': {
         errors: true,
@@ -65356,18 +65356,18 @@ const baselines = {
         types: false,
     },
     'spreadUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'spreadUnion2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadUnion3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'spreadUnion4': {

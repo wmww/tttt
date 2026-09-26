@@ -612,9 +612,16 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
             }
         }
         if (!found && (target_info->key->flags & TYF_STRING) && source->kind == TY_ANONYMOUS && source_members->prop_count) {
-            // An object literal against `{ [key: string]: T }`: the union of its property types
+            // An object literal against `{ [key: string]: T }`: the union of its property types, an optional one's
+            // without undefined (tsc's getImplicitIndexTypeOfType)
             Ty const** types = malloc(sizeof(Ty const*) * source_members->prop_count);
-            for (u32 j = 0; j < source_members->prop_count; j++) types[j] = prop_type(me, source_members->props[j]);
+            for (u32 j = 0; j < source_members->prop_count; j++) {
+                Prop const* prop = source_members->props[j];
+                types[j] = prop_type(me, prop);
+                if ((prop->flags & PROP_OPTIONAL) && !compiler_options()->exact_optional_property_types) {
+                    types[j] = ty_without_undefined(me, types[j]);
+                }
+            }
             infer_from(me, inf, ty_union(me, types, source_members->prop_count, nullptr, (TyList){0}), target_info->value);
             free(types);
         }

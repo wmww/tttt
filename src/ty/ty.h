@@ -619,6 +619,7 @@ struct Checker {
     u32 flow_inline_level; // Aliased conditions being narrowed by (ty/flow.c), across nested flow queries like tsc's inlineLevel
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
+    struct JsxElement const* jsx_element; // The JSX element being checked (relation errors about its attributes)
     bool instantiation_limit_hit; // Set when ty_instantiate() gave up; whoever reports errors turns it into TS2589
     RelationCache relations[TY_RELATION_COUNT];
     struct RelationState* relating; // The relation check in progress, if any (relate.c)
@@ -845,6 +846,7 @@ Signature const* ty_union_signature(Checker* me, Signature const* base, Signatur
 bool ty_type_params_identical(Checker* me, TyList source, TyList target);
 bool ty_is_discriminant_property(Checker* me, Ty const* type, Atom const* name); // flow.c
 Signature* const* ty_union_signatures(Checker* me, TyList members, bool construct, u32* count_out);
+Signature* const* ty_union_signature_lists(Checker* me, Signature* const* const* lists, u32 const* lens, u32 member_count, u32* count_out);
 typedef struct CallEffects {
     bool has_predicate;
     bool returns_never;
@@ -963,7 +965,18 @@ Ty const* ty_jsx_type(Checker* me, struct JsxElement const* element, csview name
 Ty const* ty_jsx_element_type(Checker* me, Expr const* expr); // Of an EXPR_JSX_ELEMENT or EXPR_JSX_FRAGMENT
 Atom const* ty_jsx_children_prop_name(Checker* me, struct JsxElement const* element);
 JsxIntrinsic ty_jsx_intrinsic(Checker* me, struct JsxElement const* element);
+JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, struct JsxElement const* element, csview name);
 void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs);
+bool ty_jsx_skips_head(Checker* me, Ty const* source, Ty const* target);
+Ty const* ty_jsx_signature_props(Checker* me, struct JsxElement const* element, Signature const* sig, TyMapper const* mapper, bool class_component);
+typedef struct JsxResolution {
+    Signature const* sig; // What the element resolved to, null if the tag isn't typed or nothing fit
+    TyMapper const* mapper;
+    Ty const* ret; // What the call returns
+    bool class_component; // The tag has construct signatures (tsc's JsxReferenceKind.Component)
+    bool function_component; // ... only call signatures (JsxReferenceKind.Function). Neither: Mixed
+} JsxResolution;
+JsxResolution ty_resolve_jsx_element(Checker* me, struct JsxElement const* element, ErrorCtx* errs); // call.c
 bool ty_jsx_child_is_semantic(struct JsxChild const* child);
 // The type of the property an attribute made (what the `.types` baseline shows at its name)
 Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, struct JsxAttribute const* attribute);
@@ -1140,6 +1153,14 @@ void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_typ
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS2345
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
 void ty_check_spread_type(Checker* me, Ty const* type, Span span, ErrorCtx* errs); // `...x` in a literal: TS2698
+typedef enum JsxComponentCheck {
+    JSX_COMPONENT_RETURN, // A function component's return type against JSX.Element | null
+    JSX_COMPONENT_INSTANCE, // A class component's instance type against JSX.ElementClass
+    JSX_COMPONENT_ELEMENT, // Either, against both
+    JSX_COMPONENT_TYPE, // The tag's type against JSX.ElementType
+} JsxComponentCheck;
+bool ty_is_generic_object(Checker* me, Ty const* ty); // tsc's isGenericObjectType, roughly (check.c)
+bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Span tag_name, JsxComponentCheck kind, ErrorCtx* errs);
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
 Ty const* ty_of_node(TypeNode const* node); // A written type, by the current checker
 // tsc's createUnionOrIntersectionProperty: a union has no property that is private or protected in some member unless

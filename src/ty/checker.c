@@ -798,6 +798,59 @@ Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* typ
     return intersection(me, types, len, alias, alias_args, true);
 }
 
+static bool union_has(Ty const* ty, u32 flag) {
+    if (ty->kind != TY_UNION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty->composite.types.data[i]->flags & flag) return true;
+    }
+    return false;
+}
+
+// tsc's getIntersectionType with unions among `buf` (not yet distributed), before the cross product: when every member
+// is a union with undefined (or null) in it, that is taken out, `(A | undefined) & (B | undefined)` being
+// `(A & B) | undefined`; three or more members are intersected in halves, which usually makes far fewer combinations
+// than the whole cross product; one of 100000 or more combinations is the error type (tsc's TS2590, not reported).
+// Null if the plain cross product it is. `len`: how many types the intersection was asked for
+static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const* alias, TyList alias_args) {
+    u32 flags[2] = { TYF_UNDEFINED, TYF_NULL };
+    for (u32 f = 0; f < 2; f++) {
+        bool all = true;
+        for (u32 i = 0; i < buf->len && all; i++) all = union_has(buf->data[i], flags[f]);
+        if (!all) continue;
+        Ty const** rest = malloc(sizeof(Ty const*) * buf->len);
+        panic_if(!rest, "out of memory");
+        for (u32 i = 0; i < buf->len; i++) {
+            TyList members = buf->data[i]->composite.types;
+            Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+            panic_if(!kept, "out of memory");
+            u32 kept_len = 0;
+            for (u32 j = 0; j < members.len; j++) {
+                if (!(members.data[j]->flags & flags[f])) kept[kept_len++] = members.data[j];
+            }
+            rest[i] = ty_union(me, kept, kept_len, nullptr, (TyList){0});
+            free(kept);
+        }
+        Ty const* both[2] = { ty_intersection(me, rest, buf->len, nullptr, (TyList){0}),
+            my intrinsics[f == 0 ? TY_UNDEFINED : TY_NULL] };
+        free(rest);
+        return ty_union(me, both, 2, alias, alias_args);
+    }
+    if (buf->len >= 3 && len > 2) {
+        u32 middle = buf->len / 2;
+        Ty const* halves[2] = {
+            ty_intersection(me, buf->data, middle, nullptr, (TyList){0}),
+            ty_intersection(me, buf->data + middle, buf->len - middle, nullptr, (TyList){0}),
+        };
+        return intersection(me, halves, 2, alias, alias_args, false);
+    }
+    // (tsc's checkCrossProductUnion)
+    double size = 1;
+    for (u32 i = 0; i < buf->len; i++) {
+        if (buf->data[i]->kind == TY_UNION) size *= buf->data[i]->composite.types.len;
+    }
+    return size >= 100000 ? my intrinsics[TY_ERROR] : nullptr;
+}
+
 static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object) {
     if (len == 1) return types[0];
     TyBuf buf = {0};
@@ -829,6 +882,8 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         ret = my intrinsics[silent ? TY_SILENT_NEVER : TY_NEVER];
     } else if (includes & TYF_ANY) {
         ret = my intrinsics[includes_error ? TY_ERROR : TY_ANY];
+    } else if (first_union && (ret = intersect_unions(me, &buf, len, alias, alias_args))) {
+        // (Handled)
     } else if (first_union) {
         // A & (B | C) is (A & B) | (A & C)
         TyBuf results = {0};

@@ -521,6 +521,7 @@ typedef struct JsxElement {
     // property access `a.b.c`. EXPR_IMPLICIT_ANY for a fragment
     Expr tag_name;
     bool namespaced;
+    bool tag_name_broken; // `<a.#b>`, `<a.>`: the name is missing after a dot (untyped)
     bool self_closing;
     bool has_type_args;
     VecSpannedType type_args; // `<C<string> />`

@@ -46,6 +46,32 @@ typedef struct ParamShape {
     Ty const* rest_variadic; // a rest parameter that's neither array nor tuple (a type parameter, mostly)
 } ParamShape;
 
+typedef struct Candidate {
+    Signature const* sig;
+    TyMapper const* mapper; // inferred type arguments, null if the signature isn't generic
+    TyList inferred_type_params; // what the returned function is generic in, see infer_type_arguments()
+} Candidate;
+
+typedef struct Resolution {
+    Candidate chosen; // sig is null if nothing fit
+    Ty const* ret;
+} Resolution;
+
+// What a call brings besides its arguments
+typedef struct CallInfo {
+    CallExpr const* call; // Null for a JSX element
+    // A JSX element whose tag is resolved like a call (tsc's JsxCallLike): its one argument is its attributes, checked
+    // against what each signature takes as props (ty_jsx_signature_props())
+    JsxElement const* jsx;
+    bool jsx_class; // The tag has construct signatures (tsc's JsxReferenceKind.Component)
+    Ty const* contextual; // contextual type of the call expression, may be null
+    VecSpannedType const* type_arg_nodes; // explicit type arguments, null if none
+    TyList type_args;
+    Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
+    Ty const* this_arg; // What `this` is in the call (the receiver of a method call, else void), see this_argument()
+    Span this_span; // Where a `this` that doesn't fit is reported
+} CallInfo;
+
 static void args_push(Args* args, Arg arg) {
     args->data = realloc(args->data, sizeof(Arg) * (args->len + 1));
     panic_if(!args->data, "out of memory");
@@ -172,6 +198,8 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
     while (shape.min > 0 && shape.min <= shape.count && accepts_void(shape.types[shape.min - 1])) shape.min--;
     return shape;
 }
+
+static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper);
 
 static bool shape_has_rest(ParamShape const* shape) {
     return shape->rest_element || shape->rest_variadic;
@@ -425,12 +453,14 @@ static void infer_from_annotated_params(Checker* me, Inference* inf, FunctionImp
 
 // `*inferred_out`: the type parameters of generic function arguments that the return type is now generic in
 static TyMapper const* infer_type_arguments(
-    Checker* me, Signature const* sig, Args* args, Ty const* contextual, Ty const* this_arg, bool skip_sensitive,
-    bool skip_generic, TyList* inferred_out
+    Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic,
+    TyList* inferred_out
 ) {
+    Ty const* contextual = info->contextual;
+    Ty const* this_arg = info->this_arg;
     Inference inf;
     inference_init(&inf, sig->type_params);
-    ParamShape shape = param_shape(me, sig, nullptr);
+    ParamShape shape = call_param_shape(me, info, sig, nullptr);
 
     // Nested in an argument of another generic call, the contextual type mentions its type parameters: what it has
     // inferred so far stands in for them
@@ -646,27 +676,22 @@ static i32 first_unfit_argument(
     return -1;
 }
 
-typedef struct Candidate {
-    Signature const* sig;
-    TyMapper const* mapper; // inferred type arguments, null if the signature isn't generic
-    TyList inferred_type_params; // what the returned function is generic in, see infer_type_arguments()
-} Candidate;
+// The parameters a call's arguments are checked against. A JSX element has one argument, its attributes, which any
+// signature takes (tsc's hasCorrectArity: a class's argumentless constructor too), as the props of the signature
+static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper) {
+    if (!info->jsx) return param_shape(me, sig, mapper);
+    signature_resolve(me, sig);
+    ParamShape shape = { .count = 1, .min = sig->min_args ? 1 : 0 };
+    shape.types = malloc(sizeof(Ty const*));
+    panic_if(!shape.types, "out of memory");
+    shape.types[0] = ty_jsx_signature_props(me, info->jsx, sig, mapper, info->jsx_class);
+    return shape;
+}
 
-typedef struct Resolution {
-    Candidate chosen; // sig is null if nothing fit
-    Ty const* ret;
-} Resolution;
-
-// What a call brings besides its arguments
-typedef struct CallInfo {
-    CallExpr const* call;
-    Ty const* contextual; // contextual type of the call expression, may be null
-    VecSpannedType const* type_arg_nodes; // explicit type arguments, null if none
-    TyList type_args;
-    Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
-    Ty const* this_arg; // What `this` is in the call (the receiver of a method call, else void), see this_argument()
-    Span this_span; // Where a `this` that doesn't fit is reported
-} CallInfo;
+// What the errors about a call are reported at: the callee, a JSX element's tag name
+static Span callee_span(CallInfo const* info) {
+    return info->jsx ? info->jsx->tag_name.inner_span : info->call->callable.inner_span;
+}
 
 static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) {
     Ty const* ret = ty_instantiate(me, signature_return_type(me, candidate->sig), candidate->mapper);
@@ -684,7 +709,7 @@ static Span span_of_args(Args const* args, u32 from, u32 to) {
 }
 
 static void report_arity(
-    Checker* me, Signature* const* signatures, u32 count, Args const* args, CallExpr const* call, ErrorCtx* errs
+    Checker* me, Signature* const* signatures, u32 count, Args const* args, CallInfo const* info, ErrorCtx* errs
 ) {
     u32 min = UINT32_MAX;
     u32 max = 0;
@@ -694,7 +719,7 @@ static void report_arity(
     bool any_below = false;
     Signature const* closest = nullptr;
     for (u32 i = 0; i < count; i++) {
-        ParamShape shape = param_shape(me, signatures[i], nullptr);
+        ParamShape shape = call_param_shape(me, info, signatures[i], nullptr);
         if (shape.min < min) {
             min = shape.min;
             closest = signatures[i];
@@ -708,7 +733,7 @@ static void report_arity(
         has_rest |= shape_has_rest(&shape);
         free(shape.types);
     }
-    Span name_span = call->callable.inner_span;
+    Span name_span = callee_span(info);
     if (args->spread_index >= 0) {
         error_ctx_error_d(errs, args->data[args->spread_index].expr->outer_span, 2556,
             "A spread argument must either have a tuple type or be passed to a rest parameter.");
@@ -760,13 +785,17 @@ static Span report_unfit_argument(
         ty_report_unfit_this(me, info->this_arg, target, info->this_span, errs);
         return info->this_span;
     }
-    ParamShape shape = param_shape(me, candidate->sig, candidate->mapper);
+    ParamShape shape = call_param_shape(me, info, candidate->sig, candidate->mapper);
     check_args(me, &shape, args, false);
     Ty const* arg_type = nullptr;
     Ty const* param_type = nullptr;
     i32 index = first_unfit_argument(me, &shape, args, TY_RELATION_ASSIGNABLE, false, &arg_type, &param_type);
     Span span = call_span;
-    if (index >= 0) {
+    if (index >= 0 && info->jsx) {
+        // The attributes, at the tag name (tsc's checkApplicableSignatureForJsxCallLikeElement)
+        span = callee_span(info);
+        ty_check_assignable_expr(me, arg_type, param_type, span, &info->jsx->attributes, errs);
+    } else if (index >= 0) {
         Arg const* arg = &args->data[index];
         bool is_rest_tuple = arg_type != arg->type;
         Expr const* effective = expr_effective_check_node(arg->expr);
@@ -803,7 +832,7 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
     Signature* impl_sig = (Signature*)sig;
     bool fits = resolve_with_signatures(me, &impl_sig, 1, args, info, call_span, nullptr).chosen.sig;
     // The arguments stay typed as checked against the overload (what the types baseline shows)
-    ParamShape shape = param_shape(me, candidate->sig, candidate->mapper);
+    ParamShape shape = call_param_shape(me, info, candidate->sig, candidate->mapper);
     check_args(me, &shape, args, false);
     free(shape.types);
     if (!fits) return;
@@ -833,7 +862,6 @@ static void report_no_match(
     Checker* me, Candidate const* unfit, u32 unfit_count, u32 signature_count, Args* args, CallInfo const* info,
     Span call_span, ErrorCtx* errs
 ) {
-    CallExpr const* call = info->call;
     ErrorCtx collected = error_ctx_init();
     collected.phase = errs->phase;
     if (unfit_count == 1 || unfit_count > 3) {
@@ -906,7 +934,7 @@ static void report_no_match(
     for_each (r, vec_error, &related) vec_error_push(&head.sub_errors, *r);
     related.size = 0;
     vec_error_drop(&related);
-    head.span = any && same_span && span_valid(common_span) ? common_span : call->callable.inner_span;
+    head.span = any && same_span && span_valid(common_span) ? common_span : callee_span(info);
     add_implementation_success(me, &unfit[0], args, info, call_span, &head);
     error_ctx_append_error(errs, head);
 }
@@ -986,7 +1014,7 @@ static Candidate make_candidate(
     Candidate ret = { .sig = sig };
     if (!sig->type_params.len) return ret;
     ret.mapper = info->type_arg_nodes ? explicit_type_arguments(me, sig, info) :
-        infer_type_arguments(me, sig, args, info->contextual, info->this_arg, skip_sensitive, skip_generic, &ret.inferred_type_params);
+        infer_type_arguments(me, sig, args, info, skip_sensitive, skip_generic, &ret.inferred_type_params);
     return ret;
 }
 
@@ -994,7 +1022,6 @@ static Resolution resolve_with_signatures(
     Checker* me, Signature* const* signatures, u32 count, Args* args, CallInfo const* info, Span call_span,
     ErrorCtx* errs
 ) {
-    CallExpr const* call = info->call;
     Resolution ret = {0};
     Candidate* unfit = calloc(count ? count : 1, sizeof(Candidate));
     u32 unfit_count = 0;
@@ -1013,12 +1040,12 @@ static Resolution resolve_with_signatures(
             signature_resolve(me, sig);
             if (!has_correct_type_argument_arity(me, sig, info)) continue;
             type_argument_arity_ok = true;
-            ParamShape uninstantiated = param_shape(me, sig, nullptr);
+            ParamShape uninstantiated = call_param_shape(me, info, sig, nullptr);
             bool arity_ok = has_correct_arity(&uninstantiated, args);
             free(uninstantiated.types);
             if (!arity_ok) continue;
             Candidate candidate = make_candidate(me, sig, args, info, skip_sensitive, false);
-            ParamShape shape = param_shape(me, sig, candidate.mapper);
+            ParamShape shape = call_param_shape(me, info, sig, candidate.mapper);
             check_args(me, &shape, args, skip_sensitive);
             Ty const* arg_type;
             Ty const* param_type;
@@ -1028,7 +1055,7 @@ static Resolution resolve_with_signatures(
                 skip_sensitive = false;
                 free(shape.types);
                 candidate = make_candidate(me, sig, args, info, false, false);
-                shape = param_shape(me, sig, candidate.mapper);
+                shape = call_param_shape(me, info, sig, candidate.mapper);
                 check_args(me, &shape, args, false);
                 fits = first_unfit_argument(me, &shape, args, rounds[round], false, &arg_type, &param_type) < 0;
             }
@@ -1052,7 +1079,7 @@ static Resolution resolve_with_signatures(
             } else if (unfit_count) {
                 report_no_match(me, unfit, unfit_count, count, args, info, call_span, errs);
             } else {
-                report_arity(me, signatures, count, args, call, errs);
+                report_arity(me, signatures, count, args, info, errs);
             }
         }
         // What the call is taken to return anyway: the candidate that got furthest, or every possibility
@@ -1063,7 +1090,7 @@ static Resolution resolve_with_signatures(
             if (fallback.sig->type_params.len && !info->type_arg_nodes) {
                 fallback = make_candidate(me, fallback.sig, args, info, true, true);
                 // (The arguments are left as checked against the candidate, which is what the types baseline shows)
-                ParamShape shape = param_shape(me, unfit[unfit_count - 1].sig, unfit[unfit_count - 1].mapper);
+                ParamShape shape = call_param_shape(me, info, unfit[unfit_count - 1].sig, unfit[unfit_count - 1].mapper);
                 check_args(me, &shape, args, false);
                 free(shape.types);
             }
@@ -1238,6 +1265,147 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     if (info->chosen_out) *info->chosen_out = resolution.chosen;
     free(args.data);
     free(signatures);
+    return ret;
+}
+
+// A signature taking `param` (none if null) and returning `ret`, for the tags that aren't components
+static Signature* jsx_synthetic_signature(Checker* me, Ty const* param, Ty const* ret) {
+    SigParam* params = nullptr;
+    if (param) {
+        params = arena_new(&my arena, SigParam);
+        *params = (SigParam){ .name = checker_atom(me, c_sv("props")), .type = param };
+    }
+    Signature* sig = arena_new(&my arena, Signature);
+    *sig = (Signature){
+        .state = LAZY_STATE_DONE,
+        .params = params,
+        .param_count = param ? 1 : 0,
+        .min_args = param ? 1 : 0,
+        .ret_state = LAZY_STATE_DONE,
+        .ret = ret,
+        .predicate_done = true,
+    };
+    return sig;
+}
+
+static Signature* const* jsx_signatures_of(Checker* me, JsxElement const* element, Ty const* type, u32 depth, u32* count_out);
+
+// tsc's getUnionSignatures of the members' JSX signatures
+static Signature* const* jsx_union_signatures(Checker* me, JsxElement const* element, TyList types, u32 depth, u32* count_out) {
+    Signature* const** lists = malloc(sizeof(Signature* const*) * types.len);
+    u32* lens = malloc(sizeof(u32) * types.len);
+    panic_if(!lists || !lens, "out of memory");
+    for (u32 i = 0; i < types.len; i++) lists[i] = jsx_signatures_of(me, element, types.data[i], depth + 1, &lens[i]);
+    Signature* const* ret = ty_union_signature_lists(me, lists, lens, types.len, count_out);
+    free(lists);
+    free(lens);
+    return ret;
+}
+
+// tsc's getUninstantiatedJsxSignaturesOfType: what a tag of this type is called with. `string` takes anything, a
+// string literal is an intrinsic element taking its props, anything else its construct signatures, else its call
+// signatures, else (a union) the union of its members'
+static Signature* const* jsx_signatures_of(Checker* me, JsxElement const* element, Ty const* type, u32 depth, u32* count_out) {
+    *count_out = 0;
+    if (type->kind == TY_INTRINSIC && (type->flags & TYF_STRING)) {
+        Signature** ret = arena_new(&my arena, Signature*);
+        *ret = jsx_synthetic_signature(me, nullptr, ty_intrinsic(me, TY_ANY));
+        *count_out = 1;
+        return ret;
+    }
+    if (type->kind == TY_LITERAL && (type->flags & TYF_STRING_LITERAL) && type->literal.string) {
+        // (tsc's createSignatureForJSXIntrinsic; its TS2339 for a tag that isn't there isn't reported here)
+        JsxIntrinsic intrinsic = ty_jsx_intrinsic_named(me, element, atom_sv(type->literal.string));
+        Ty const* element_type = ty_jsx_type(me, element, c_sv("Element"));
+        Signature** ret = arena_new(&my arena, Signature*);
+        *ret = jsx_synthetic_signature(me, intrinsic.props ? intrinsic.props : ty_intrinsic(me, TY_ERROR),
+            element_type ? element_type : ty_intrinsic(me, TY_ERROR));
+        *count_out = 1;
+        return ret;
+    }
+    Ty const* apparent = ty_apparent_type(me, type);
+    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && apparent->kind != TY_UNION) return nullptr;
+    if (apparent->kind == TY_UNION) {
+        Signature* const* ret = ty_union_signatures(me, apparent->composite.types, true, count_out);
+        if (!*count_out) ret = ty_union_signatures(me, apparent->composite.types, false, count_out);
+        if (!*count_out && depth < 8) ret = jsx_union_signatures(me, element, apparent->composite.types, depth, count_out);
+        return ret;
+    }
+    Members const* members = ty_members(me, apparent);
+    if (members->construct_count) {
+        *count_out = members->construct_count;
+        return members->construct;
+    }
+    *count_out = members->call_count;
+    return members->call;
+}
+
+// A JSX element with a value tag (`<Comp />`, `<this.x />`): the construct signatures of the tag's type, else its call
+// signatures, called with the attributes as the one argument (tsc's resolveJsxOpeningLikeElement,
+// getUninstantiatedJsxSignaturesOfType). `sig` is null if the tag isn't typed or nothing fit
+JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, ErrorCtx* errs) {
+    JsxResolution ret = {0};
+    Ty const* tag_type = ty_expr_type(me, &element->tag_name);
+    Ty const* apparent = ty_apparent_type(me, tag_type);
+    if ((tag_type->flags & TYF_ANY) || (apparent->flags & TYF_ANY) || (tag_type->flags & TYF_STRING)) return ret;
+    Signature* const* signatures = nullptr;
+    u32 count = 0;
+    if (apparent->kind == TY_UNION) {
+        signatures = ty_union_signatures(me, apparent->composite.types, true, &count);
+        ret.class_component = count > 0;
+        if (!count) {
+            signatures = ty_union_signatures(me, apparent->composite.types, false, &count);
+            ret.function_component = count > 0;
+        }
+        if (!count) signatures = jsx_union_signatures(me, element, apparent->composite.types, 0, &count);
+    } else if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+        TyList parts = apparent->kind == TY_INTERSECTION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
+        for (u32 pass = 0; pass < 2 && !count; pass++) {
+            for (u32 i = 0; i < parts.len; i++) {
+                Members const* members = ty_members(me, ty_apparent_type(me, parts.data[i]));
+                Signature* const* list = pass == 0 ? members->construct : members->call;
+                u32 list_count = pass == 0 ? members->construct_count : members->call_count;
+                if (!list_count) continue;
+                Signature** grown = arena_new_n(&my arena, Signature*, count + list_count);
+                for (u32 j = 0; j < count; j++) grown[j] = signatures[j];
+                for (u32 j = 0; j < list_count; j++) grown[count + j] = list[j];
+                signatures = grown;
+                count += list_count;
+            }
+            if (count) {
+                ret.class_component = pass == 0;
+                ret.function_component = pass == 1;
+            }
+        }
+    }
+    if (!count) {
+        // Something callable that isn't typed (tsc's isUntypedFunctionCall: a Function) is fine
+        Ty const* function = ty_global_function_type(me);
+        bool untyped = apparent->kind != TY_UNION && !(apparent->flags & TYF_NEVER) && function &&
+            ty_is_related(me, tag_type, function, TY_RELATION_ASSIGNABLE);
+        if (!untyped && errs) {
+            error_ctx_error_d(errs, element->tag_name.inner_span, 2604, "JSX element type '", element->tag_name.inner_span,
+                "' does not have any construct or call signatures.");
+        }
+        return ret;
+    }
+    CallInfo info = { .jsx = element, .jsx_class = ret.class_component };
+    Ty const* type_args[32];
+    if (!vec_spanned_type_is_empty(&element->type_args)) {
+        info.type_arg_nodes = &element->type_args;
+        u32 len = 0;
+        for_each (i, vec_spanned_type, info.type_arg_nodes) {
+            if (len < c_arraylen(type_args)) type_args[len++] = ty_from_node(me, &i->type, (LowerCtx){ .generic = true });
+        }
+        info.type_args = (TyList){ .data = type_args, .len = len };
+    }
+    Args args = { .spread_index = -1 };
+    args_push(&args, (Arg){ .expr = &element->attributes, .context_sensitive = ty_expr_is_context_sensitive(&element->attributes) });
+    Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &info, element->tag_name.inner_span, errs);
+    free(args.data);
+    ret.sig = resolution.chosen.sig;
+    ret.mapper = resolution.chosen.mapper;
+    ret.ret = resolution.ret;
     return ret;
 }
 

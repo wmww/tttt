@@ -56,7 +56,6 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
         }
         return !walk->only || walk->only == ty;
     }
-    if (ty->flags & TYF_DEFERRED) return true;
     if (depth > MENTION_MAX_DEPTH || walk->visited_len >= MENTION_MAX_VISITED) return true;
     if (!mention_visit(walk, ty->id + 1)) return false;
     switch ((TyKind)ty->kind) {
@@ -108,8 +107,35 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             }
             return false;
         }
+        // Deferred types mention what their parts do (a signature's own `IE[T]` doesn't make it generic)
+        case TY_KEYOF:
+            return mentions_type_variables(me, ty->keyof.operand, walk, depth + 1);
+        case TY_INDEXED:
+            return mentions_type_variables(me, ty->indexed.object, walk, depth + 1) ||
+                mentions_type_variables(me, ty->indexed.index, walk, depth + 1);
+        case TY_TEMPLATE_LITERAL:
+            for (u32 i = 0; i < ty->template_literal.types.len; i++) {
+                if (mentions_type_variables(me, ty->template_literal.types.data[i], walk, depth + 1)) return true;
+            }
+            return false;
+        case TY_STRING_MAPPING:
+            return mentions_type_variables(me, ty->string_mapping.type, walk, depth + 1);
+        case TY_CONDITIONAL: {
+            // Its own `infer` type parameters are bound in it
+            Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
+            TyList infers = ty_conditional_own_infers(me, root);
+            u32 saved = walk->bound_len;
+            if (walk->bound_len + infers.len > c_arraylen(walk->bound)) return true;
+            for (u32 j = 0; j < infers.len; j++) walk->bound[walk->bound_len++] = infers.data[j];
+            bool found = mentions_type_variables(me, ty->conditional.check, walk, depth + 1) ||
+                mentions_type_variables(me, ty->conditional.extends, walk, depth + 1) ||
+                mentions_type_variables(me, ty_conditional_branch(me, ty, true), walk, depth + 1) ||
+                mentions_type_variables(me, ty_conditional_branch(me, ty, false), walk, depth + 1);
+            walk->bound_len = saved;
+            return found;
+        }
         default:
-            // Template literals, string mappings, and whatever else: trust the flag
+            // Whatever else: trust the flag
             return true;
     }
 }

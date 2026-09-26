@@ -292,8 +292,9 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         Symbol const* namespace_decl = nullptr;
         if (object->tag == EXPR_IDENTIFIER) namespace_decl = object->identifier.target;
         namespace_decl = symbol_for_meaning(namespace_decl, SYMBOL_NAMESPACE);
-        if (namespace_decl && !namespace_decl->is_placeholder && name->tag == EXPR_IDENTIFIER) {
-            decl = symbol_get_export(namespace_decl, name->identifier.name.sv);
+        // (The name of a dot access is a literal)
+        if (namespace_decl && !namespace_decl->is_placeholder && (name->tag == EXPR_IDENTIFIER || name->tag == EXPR_LITERAL)) {
+            decl = symbol_get_export(namespace_decl, name->inner_span.sv);
         }
     }
     // The name was looked up as a value, the class is the same symbol
@@ -1702,7 +1703,9 @@ static Ty const* widen_objects(Checker* me, Ty const* ty) {
         index[i] = members->index[i];
         index[i].value = ty_widened_objects(me, index[i].value);
     }
-    Ty const* ret = ty_object_literal(me, props, members->prop_count, index, index_count, OBJECT_LITERAL);
+    // (JSX attributes stay what they are: hyphenated names are still never excess nor weak-type failures)
+    Ty const* ret = ty_object_literal(me, props, members->prop_count, index, index_count,
+        ty->anonymous.jsx_attributes ? OBJECT_JSX_ATTRIBUTES : OBJECT_LITERAL);
     free(props);
     return ret;
 }

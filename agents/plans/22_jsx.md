@@ -73,6 +73,22 @@ pragmas or options 16, `LibraryManagedAttributes` 8.
   TS2558 on them is stage 3. The top missing codes in the subset are the checker's: TS2322 (133 in 57 tests), TS2769,
   TS2874 (factory not in scope), TS2741, TS2558, TS2786, TS2875; spurious TS7006 (50 in 17 tests: callbacks in
   attributes without a contextual type) and TS6133 (unused React import: markJsxAliasReferenced).
+- **Stage 2 done, stage 3 part 1 (2026-09-26).** Value tags resolve through `ty/call.c` (`ty_resolve_jsx_element`:
+  CallInfo.jsx, one argument = the attributes, `call_param_shape` gives each signature's props via
+  `ty_jsx_signature_props`: first parameter or ElementAttributesProperty, LibraryManagedAttributes,
+  IntrinsicClassAttributes, IntrinsicAttributes), `jsx_signatures_of` (tsc's getUninstantiatedJsxSignaturesOfType:
+  string -> any signature, string literals -> intrinsic signatures, unions recursively), TS2604/TS2607/TS2786
+  (return bound, ElementClass, ElementType), string-literal tags, tsc's getSpreadType for object literals and
+  attributes (unions spread member by member, partial for `T | undefined`, getUnionIndexInfos), no "not assignable"
+  head for attributes against `IntrinsicAttributes & P` (reportErrorResults). Fixes along the way: intersections of
+  unions no longer build the whole cross product (tsc's undefined/null factoring, halving, 100000 limit:
+  reactTagNameComponentWithPropsNoOOM ran the suite out of memory), `mentions_type_variables` walks deferred types
+  (a signature's own `IE[T]` doesn't keep a conditional deferred), widened JSX attributes stay JSX attributes.
+  Suite 7310 -> 7342. **Accepted losses** (errors, need features outside JSX): `tsxStatelessComponentDefaultProps`
+  (function expandos: `BackButton.defaultProps = ...`, triage "expando"), `reactHOCSpreadprops` (permissive
+  instantiation in `ty_conditional_resolve`: hacks.md). Left in stage 3: children elaboration (TS2745/TS2746/TS2747,
+  tsc's elaborateJsxComponents: checkJsxChildrenProperty2 & co. report a TS2322 chain instead), TS2558 on tag type
+  arguments, TS2783, TS2769 overload reporting for tags, types/symbols of components.
 
 ## Stages
 Each stage ends with `./fasttest.sh --summary` clean of losses, `./fasttest.sh -s`, and a commit. Measure the JSX

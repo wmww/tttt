@@ -808,3 +808,10 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
   filtering, `expand_mapped` in members.c).
 - `ty_check_object_type_duplicate_members` (check.c): `MemberTables` is a fixed 128-entry array searched linearly;
   members past the 128th of a class are never checked for duplicates (TS2300). Quadratic in the member count too.
+- `intersect_unions` (checker.c): tsc's TS2590 ("Expression produces a union type that is too complex to represent")
+  for a cross product of 100000+ isn't reported, the intersection is just the error type.
+- `jsx_signatures_of` (call.c): the fake signature of a string-literal tag that isn't in JSX.IntrinsicElements takes
+  the error type, without tsc's TS2339 from createSignatureForJSXIntrinsic.
+- `Checker.jsx_element`: the element being checked, so `report_relation_error` can apply tsc's JSX head rule
+  (`ty_jsx_skips_head`); tsc passes the error node instead. Relations about attributes outside `ty_check_jsx_element`
+  don't see it.

@@ -125,7 +125,12 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   `{ foo?: undefined } | { foo: number }` needs tsc's discriminated-union decomposition of the source
   (`typeRelatedToDiscriminatedType`).
 - Permissive instantiation for conditional types is missing (`ty_conditional_resolve` defers where tsc picks the
-  false branch); a flat `TyMapper` can't say "every type parameter -> any".
+  false branch); a flat `TyMapper` can't say "every type parameter -> any". Now costs `reactHOCSpreadprops` (React's LibraryManagedAttributes
+  over `ComponentClass<P>`: tsc resolves it to the false branch). Plan-worthy: a wildcard type + cached permissive
+  instantiation, see plan 22 Progress.
+- TS function expandos (`function f() {}; f.defaultProps = ...`) now cost `tsxStatelessComponentDefaultProps` (React's
+  Defaultize never sees `defaultProps`). tsc: binder bindSpecialPropertyAssignment for function symbols, members in
+  resolveAnonymousTypeMembers. Deserves a small plan (TS subset of JS expandos).
 - Circular aliases: `type N<T, K extends string> = T | { [P in K]: N<T, K> }[K]` is TS2589 + TS2615 in tsc
   (recursivelyExpandingUnionNoStackoverflow, re-probed), here it prints `N<number, "M">`. TS2456 is only a TODO in
   `ty_declared_type_of`.

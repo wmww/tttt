@@ -38,12 +38,10 @@ Ty const* ty_jsx_element_type(Checker* me, Expr const* expr) {
     return type ? type : ty_intrinsic(me, expr->tag == EXPR_JSX_FRAGMENT ? TY_ANY : TY_ERROR);
 }
 
-// tsc's getJsxElementChildrenPropertyName: the name of the one property of JSX.ElementChildrenAttribute, an empty name
-// if it has none, null if there is no such type (then children aren't an attribute at all)
-Atom const* ty_jsx_children_prop_name(Checker* me, JsxElement const* element) {
-    JsxKind jsx = compiler_options()->jsx;
-    if (jsx == JSX_REACT_JSX || jsx == JSX_REACT_JSXDEV) return checker_atom(me, c_sv("children"));
-    Ty const* container = ty_jsx_type(me, element, c_sv("ElementChildrenAttribute"));
+// tsc's getNameFromJsxElementAttributesContainer: the name of the one property of `JSX.<container>`, an empty name if
+// it has none, null if there is no such type (or it has several)
+static Atom const* container_prop_name(Checker* me, JsxElement const* element, csview container_name) {
+    Ty const* container = ty_jsx_type(me, element, container_name);
     if (!container || !(container->flags & TYF_OBJECT)) return nullptr;
     Members const* members = ty_members(me, container);
     if (members->prop_count == 0) return checker_atom(me, c_sv(""));
@@ -51,12 +49,100 @@ Atom const* ty_jsx_children_prop_name(Checker* me, JsxElement const* element) {
     return nullptr; // TODO: TS2608 on its declaration
 }
 
+// tsc's getJsxElementChildrenPropertyName: JSX.ElementChildrenAttribute's (then children aren't an attribute at all
+// without one)
+Atom const* ty_jsx_children_prop_name(Checker* me, JsxElement const* element) {
+    JsxKind jsx = compiler_options()->jsx;
+    if (jsx == JSX_REACT_JSX || jsx == JSX_REACT_JSXDEV) return checker_atom(me, c_sv("children"));
+    return container_prop_name(me, element, c_sv("ElementChildrenAttribute"));
+}
+
+// tsc's instantiateAliasOrInterfaceWithDefaults: a generic alias or interface with these first type arguments, the
+// others defaulted. Null if it takes fewer
+static Ty const* instantiate_with_defaults(Checker* me, Symbol const* symbol, Ty const* const* args, u32 count) {
+    symbol = binder_redirect(my binder, symbol);
+    Ty const* declared = ty_declared_type_of(me, symbol);
+    bool alias = (symbol->flags & SYMBOL_TYPE_ALIAS) != 0;
+    TyList params = alias ? ty_alias_type_params(me, symbol) :
+        declared->kind == TY_DECLARED ? declared->declared.type_params : (TyList){0};
+    if (params.len < count) return nullptr;
+    if (!params.len) return declared;
+    Ty const** filled = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 i = 0; i < params.len; i++) {
+        if (i < count) {
+            filled[i] = args[i];
+            continue;
+        }
+        Ty const* fallback = ty_param_default(me, params.data[i]);
+        TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = params.data, .len = i }, (TyList){ .data = filled, .len = i });
+        filled[i] = fallback ? ty_instantiate(me, fallback, mapper) : ty_intrinsic(me, TY_UNKNOWN_);
+    }
+    TyList list = { .data = filled, .len = params.len };
+    return alias ? ty_alias_instance(me, symbol, list) : ty_reference(me, declared, list);
+}
+
+static Ty const* intersect(Checker* me, Ty const* a, Ty const* b) {
+    if (!a) return b;
+    if (!b) return a;
+    Ty const* both[2] = { a, b };
+    return ty_intersection(me, both, 2, nullptr, (TyList){0});
+}
+
+// tsc's getJsxManagedAttributesFromLocatedAttributes: JSX.LibraryManagedAttributes<the tag's type, props>, if there is
+// such a type
+static Ty const* managed_attributes(Checker* me, JsxElement const* element, Ty const* props) {
+    Symbol const* ns = ty_jsx_namespace(me, element);
+    Symbol const* managed = ns ? export_with_meaning(ns, c_sv("LibraryManagedAttributes"), SYMBOL_TYPE) : nullptr;
+    if (!managed) return props;
+    // (tsc's getStaticTypeOfReferencedJsxConstructor)
+    Ty const* args[2] = { ty_expr_type(me, &element->tag_name), props };
+    Ty const* ret = instantiate_with_defaults(me, managed, args, 2);
+    return ret ? ret : props;
+}
+
+// tsc's getEffectiveFirstArgumentForJsxSignature: what the attributes are checked against for a signature of the tag.
+// A function component's props are its first parameter, a class component's the property of its instance type that
+// JSX.ElementAttributesProperty names (else its constructor's first parameter), with IntrinsicClassAttributes
+Ty const* ty_jsx_signature_props(Checker* me, JsxElement const* element, Signature const* sig, TyMapper const* mapper, bool class_component) {
+    signature_resolve(me, sig);
+    Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
+    Ty const* first_param = sig->param_count ? ty_instantiate(me, ty_signature_param_type_at(me, sig, 0), mapper) : unknown;
+    Ty const* intrinsic_attributes = ty_jsx_type(me, element, c_sv("IntrinsicAttributes"));
+    if (!class_component) return intersect(me, intrinsic_attributes, managed_attributes(me, element, first_param));
+
+    Atom const* location = container_prop_name(me, element, c_sv("ElementAttributesProperty"));
+    Ty const* props = first_param;
+    Ty const* instance = nullptr;
+    if (location) {
+        instance = ty_instantiate(me, signature_return_type(me, sig), mapper);
+        if (!atom_sv(location).size || (instance->flags & TYF_ANY)) {
+            props = instance;
+        } else {
+            Ty const* apparent = ty_apparent_type(me, instance);
+            Prop const* prop = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_get_prop(me, apparent, location) : nullptr;
+            if (!prop && apparent->kind == TY_INTERSECTION) props = ty_access(me, apparent, ty_prop_name_literal(me, location));
+            else props = prop ? prop_type(me, prop) : nullptr;
+            if (!props) return unknown; // (TS2607, see check_class_component_props())
+        }
+    }
+    props = managed_attributes(me, element, props);
+    if (props->flags & TYF_ANY) return props;
+    Symbol const* ns = ty_jsx_namespace(me, element);
+    Symbol const* class_attributes = ns ? export_with_meaning(ns, c_sv("IntrinsicClassAttributes"), SYMBOL_TYPE) : nullptr;
+    if (class_attributes) {
+        if (!instance) instance = ty_instantiate(me, signature_return_type(me, sig), mapper);
+        Ty const* host = instantiate_with_defaults(me, class_attributes, &instance, 1);
+        if (!host) host = ty_declared_type_of(me, binder_redirect(my binder, class_attributes));
+        props = intersect(me, host, props);
+    }
+    return intersect(me, intrinsic_attributes, props);
+}
+
 // tsc's getIntrinsicTagSymbol and getIntrinsicAttributesTypeFromJsxOpeningLikeElement: what JSX.IntrinsicElements has
 // for the tag, a property or else an index signature
-JsxIntrinsic ty_jsx_intrinsic(Checker* me, JsxElement const* element) {
+JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, JsxElement const* element, csview name) {
     JsxIntrinsic ret = { .elements = ty_jsx_type(me, element, c_sv("IntrinsicElements")) };
-    if (!ret.elements || element->tag_name.tag != EXPR_IDENTIFIER) return ret;
-    csview name = element->tag_name.identifier.name.sv;
+    if (!ret.elements) return ret;
     Ty const* apparent = ty_apparent_type(me, ret.elements);
     if (apparent->flags & TYF_OBJECT) ret.prop = ty_get_prop(me, apparent, checker_atom(me, name));
     if (ret.prop) {
@@ -66,6 +152,11 @@ JsxIntrinsic ty_jsx_intrinsic(Checker* me, JsxElement const* element) {
     ret.index = ty_applicable_index_info(me, apparent, ty_string_literal(me, name));
     if (ret.index) ret.props = ret.index->value;
     return ret;
+}
+
+JsxIntrinsic ty_jsx_intrinsic(Checker* me, JsxElement const* element) {
+    if (element->tag_name.tag != EXPR_IDENTIFIER) return (JsxIntrinsic){ .elements = ty_jsx_type(me, element, c_sv("IntrinsicElements")) };
+    return ty_jsx_intrinsic_named(me, element, element->tag_name.identifier.name.sv);
 }
 
 // The errors of looking an intrinsic tag up, at the opening or closing tag (tsc checks both)
@@ -117,16 +208,114 @@ static void check_children(Checker* me, JsxElement const* element, ErrorCtx* err
     error_ctx_error_d(errs, span, 2710, "'", name, "' are specified twice. The attribute named '", name, "' will be overwritten.");
 }
 
+// A tag's type against JSX.ElementType, if there is one (TS2786). Returns whether there is
+static bool check_element_type(Checker* me, JsxElement const* element, Ty const* tag_type, ErrorCtx* errs) {
+    Symbol const* ns = ty_jsx_namespace(me, element);
+    Symbol const* symbol = ns ? export_with_meaning(ns, c_sv("ElementType"), SYMBOL_TYPE) : nullptr;
+    Ty const* constraint = symbol ? instantiate_with_defaults(me, symbol, nullptr, 0) : nullptr;
+    if (!constraint || (constraint->flags & TYF_ANY)) return false;
+    ty_check_jsx_component(me, tag_type, constraint, element->tag_name.inner_span, JSX_COMPONENT_TYPE, errs);
+    return true;
+}
+
+// tsc's checkJsxReturnAssignableToAppropriateBound: what a component returns (a function component) or makes (a class
+// component) must be JSX.Element (or null) or JSX.ElementClass
+static void check_return_bound(Checker* me, JsxElement const* element, JsxResolution const* resolution, ErrorCtx* errs) {
+    Ty const* ret = resolution->ret;
+    if (!ret) return;
+    Ty const* element_type = ty_jsx_type(me, element, c_sv("Element"));
+    Ty const* stateless = nullptr;
+    if (element_type) {
+        Ty const* parts[2] = { element_type, ty_intrinsic(me, TY_NULL) };
+        stateless = ty_union(me, parts, 2, nullptr, (TyList){0});
+    }
+    Ty const* element_class = ty_jsx_type(me, element, c_sv("ElementClass"));
+    Span name = element->tag_name.inner_span;
+    if (resolution->function_component) {
+        if (stateless) ty_check_jsx_component(me, ret, stateless, name, JSX_COMPONENT_RETURN, errs);
+    } else if (resolution->class_component) {
+        if (element_class) ty_check_jsx_component(me, ret, element_class, name, JSX_COMPONENT_INSTANCE, errs);
+    } else if (stateless && element_class) {
+        Ty const* parts[2] = { stateless, element_class };
+        ty_check_jsx_component(me, ret, ty_union(me, parts, 2, nullptr, (TyList){0}), name, JSX_COMPONENT_ELEMENT, errs);
+    }
+}
+
+static bool is_string_literal(Ty const* ty) {
+    return (ty->flags & TYF_STRING_LITERAL) && !(ty->flags & TYF_ENUM_LITERAL) && ty->literal.string;
+}
+
+// A value tag whose type is a string literal (or a union of them) names intrinsic elements (tsc's
+// getIntrinsicAttributesTypeFromStringLiteralType and its fake signatures, of which a union takes the intersection of
+// the props)
+static void check_string_literal_tag(Checker* me, JsxElement const* element, Ty const* tag_type, ErrorCtx* errs) {
+    TyList names = tag_type->kind == TY_UNION ? tag_type->composite.types : (TyList){ .data = &tag_type, .len = 1 };
+    TyBuf all = {0};
+    for (u32 i = 0; i < names.len; i++) {
+        csview name = atom_sv(names.data[i]->literal.string);
+        JsxIntrinsic intrinsic = ty_jsx_intrinsic_named(me, element, name);
+        if (intrinsic.elements && !intrinsic.props) {
+            error_ctx_error_d(errs, element->opening_span, 2339, "Property '", name, "' does not exist on type 'JSX.IntrinsicElements'.");
+        }
+        if (intrinsic.props) ty_buf_push(&all, intrinsic.props);
+    }
+    if (all.len == names.len && all.len) {
+        Ty const* each = all.len == 1 ? all.data[0] : ty_intersection(me, all.data, all.len, nullptr, (TyList){0});
+        Ty const* props = intersect(me, ty_jsx_type(me, element, c_sv("IntrinsicAttributes")), managed_attributes(me, element, each));
+        Ty const* source = ty_check_expr(me, &element->attributes, props);
+        ty_check_assignable_expr(me, source, props, element->tag_name.inner_span, &element->attributes, errs);
+    }
+    ty_buf_drop(&all);
+}
+
+// tsc's getJsxPropsTypeFromClassType: JSX.ElementAttributesProperty names a property the instance type doesn't have
+// (TS2607, only when there are attributes)
+static void check_class_component_props(Checker* me, JsxElement const* element, JsxResolution const* resolution, ErrorCtx* errs) {
+    if (!resolution->class_component || !resolution->sig || vec_jsx_attribute_is_empty(&element->attributes.jsx_attributes)) return;
+    Atom const* location = container_prop_name(me, element, c_sv("ElementAttributesProperty"));
+    if (!location || !atom_sv(location).size) return;
+    Ty const* instance = ty_instantiate(me, signature_return_type(me, resolution->sig), resolution->mapper);
+    if (instance->flags & TYF_ANY) return;
+    Ty const* apparent = ty_apparent_type(me, instance);
+    if (ty_access(me, apparent, ty_prop_name_literal(me, location))) return;
+    error_ctx_error_d(errs, element->opening_span, 2607, "JSX element class does not support attributes because it does not have a '",
+        atom_sv(location), "' property.");
+}
+
+// tsc's resolveJsxOpeningLikeElement and checkJsxOpeningLikeElementOrOpeningFragment for a value tag (`<Comp />`)
+static void check_value_tag(Checker* me, JsxElement const* element, ErrorCtx* errs) {
+    if (element->tag_name_broken) return;
+    Ty const* tag_type = ty_expr_type(me, &element->tag_name);
+    bool string_literals = is_string_literal(tag_type);
+    for (u32 i = 0; tag_type->kind == TY_UNION && i < tag_type->composite.types.len; i++) {
+        string_literals = is_string_literal(tag_type->composite.types.data[i]);
+        if (!string_literals) break;
+    }
+    if (string_literals) {
+        check_string_literal_tag(me, element, tag_type, errs);
+        check_element_type(me, element, tag_type, errs);
+        return;
+    }
+    JsxResolution resolution = ty_resolve_jsx_element(me, element, errs);
+    check_class_component_props(me, element, &resolution, errs);
+    if (!check_element_type(me, element, tag_type, errs)) check_return_bound(me, element, &resolution, errs);
+}
+
 // tsc's checkJsxOpeningLikeElementOrOpeningFragment, and resolveJsxOpeningLikeElement's intrinsic tags: the attributes
 // are checked against JSX.IntrinsicElements[tag], with IntrinsicAttributes as part of their contextual type
-void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
+static void check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
     JsxElement const* element = expr->jsx;
     // (tsc's checkJsxPreconditions has a TS2602 for a missing JSX.Element that can't happen: getJsxType() gives the
     // error type, not undefined)
     check_children(me, element, errs);
-    if (expr->tag == EXPR_JSX_FRAGMENT || !element->tag_name.inner_span.sv.size || !jsx_element_is_intrinsic(element)) {
-        return; // TODO(plan 22 stage 3): fragments and components resolve like calls
+    if (expr->tag == EXPR_JSX_FRAGMENT || !element->tag_name.inner_span.sv.size) {
+        return; // TODO(plan 22 stage 4): fragments resolve like calls of the fragment factory
     }
+    if (!jsx_element_is_intrinsic(element)) {
+        check_value_tag(me, element, errs);
+        return;
+    }
+    check_element_type(me, element, ty_string_literal(me, element->tag_name.identifier.name.sv), errs);
     JsxIntrinsic intrinsic = ty_jsx_intrinsic(me, element);
     report_intrinsic_lookup(me, element, &intrinsic, element->opening_span, errs);
     if (!element->self_closing && span_valid(element->closing_span)) {
@@ -141,4 +330,27 @@ void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
     }
     Ty const* source = ty_check_expr(me, &element->attributes, context);
     ty_check_assignable_expr(me, source, intrinsic.props, element->tag_name.inner_span, &element->attributes, errs);
+}
+
+void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
+    JsxElement const* outer = my jsx_element;
+    my jsx_element = expr->jsx;
+    check_jsx_element(me, expr, errs);
+    my jsx_element = outer;
+}
+
+// tsc's reportErrorResults: attributes that don't fit `JSX.IntrinsicAttributes & props` (or IntrinsicClassAttributes)
+// get no "not assignable" head of their own, when both of those types exist
+bool ty_jsx_skips_head(Checker* me, Ty const* source, Ty const* target) {
+    if (!my jsx_element || source->kind != TY_ANONYMOUS || !source->anonymous.jsx_attributes || target->kind != TY_INTERSECTION) {
+        return false;
+    }
+    Ty const* attributes = ty_jsx_type(me, my jsx_element, c_sv("IntrinsicAttributes"));
+    Ty const* class_attributes = ty_jsx_type(me, my jsx_element, c_sv("IntrinsicClassAttributes"));
+    if (!attributes || !class_attributes) return false;
+    for (u32 i = 0; i < target->composite.types.len; i++) {
+        Ty const* member = target->composite.types.data[i];
+        if (member == attributes || member == class_attributes) return true;
+    }
+    return false;
 }
