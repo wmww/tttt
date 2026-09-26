@@ -2501,7 +2501,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             type_typecheck(&my as_type->type, errs);
             if (!my as_type->is_satisfies && !as_type_is_const_assertion(my as_type)) {
                 ty_check_type_assertion(current_checker, expr_get_type(&my as_type->expr), ty_of_node(&my as_type->type),
-                    my inner_span, errs);
+                    my as_type->type.from_jsdoc ? my as_type->keyword_span : my inner_span, errs);
             }
             if (my as_type->is_satisfies) {
                 Checker* checker = current_checker;

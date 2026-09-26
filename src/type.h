@@ -100,6 +100,10 @@ typedef struct TypeNode {
     bool parsed : 1;
     bool parenthesized : 1; // Written in parentheses (the types baseline reprints annotations as written)
     bool placeholder : 1; // The empty operand before a leading `|` or `&` (`| A | B`), not written
+    // JSDoc `T=`: the union `T | undefined` it means, which an `@param` takes for an optional parameter of type `T`
+    bool jsdoc_optional : 1;
+    bool from_jsdoc : 1;
+    bool synthesized : 1; // Not written: the `undefined` of JSDoc's `T=`, the `null` of `?T` (not reused when printed) // An annotation that a JSDoc tag gave (the root of its type): not part of the baselines' walk
     union {
         struct {
             bool self_referential_error;

@@ -28,7 +28,24 @@ typedef struct IdentifierType {
     // `typeof import("./a").A.foo`: from this index on (namespaces, then name) the names are properties of the type of
     // `target`, not exports. -1 if all are exports
     int import_prop_start;
+    // Written in a JSDoc comment: tsc's JSDoc names (`String` is string, `Object` any...), see jsdoc_intrinsic
+    bool jsdoc;
+    // What a JSDoc name means instead of what it would find (tsc's getIntendedTypeFromJSDocTypeReference), set when
+    // resolving: nothing is looked up then
+    uint8_t jsdoc_intrinsic;
 } IdentifierType;
+
+typedef enum JsDocIntrinsic {
+    JSDOC_INTRINSIC_NONE = 0,
+    JSDOC_INTRINSIC_STRING,
+    JSDOC_INTRINSIC_NUMBER,
+    JSDOC_INTRINSIC_BIGINT,
+    JSDOC_INTRINSIC_BOOLEAN,
+    JSDOC_INTRINSIC_VOID,
+    JSDOC_INTRINSIC_UNDEFINED,
+    JSDOC_INTRINSIC_NULL,
+    JSDOC_INTRINSIC_ANY, // `Object` without noImplicitAny
+} JsDocIntrinsic;
 
 void identifier_type_drop(IdentifierType* me);
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs);

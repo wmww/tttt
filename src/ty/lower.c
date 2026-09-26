@@ -317,6 +317,17 @@ static bool symbol_is_generic_alias(Symbol const* symbol) {
 }
 
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
+    switch ((JsDocIntrinsic)identifier->jsdoc_intrinsic) {
+        case JSDOC_INTRINSIC_NONE: break;
+        case JSDOC_INTRINSIC_STRING: return ty_intrinsic(me, TY_STRING);
+        case JSDOC_INTRINSIC_NUMBER: return ty_intrinsic(me, TY_NUMBER);
+        case JSDOC_INTRINSIC_BIGINT: return ty_intrinsic(me, TY_BIGINT);
+        case JSDOC_INTRINSIC_BOOLEAN: return ty_intrinsic(me, TY_BOOLEAN);
+        case JSDOC_INTRINSIC_VOID: return ty_intrinsic(me, TY_VOID);
+        case JSDOC_INTRINSIC_UNDEFINED: return ty_intrinsic(me, TY_UNDEFINED);
+        case JSDOC_INTRINSIC_NULL: return ty_intrinsic(me, TY_NULL);
+        case JSDOC_INTRINSIC_ANY: return ty_intrinsic(me, TY_ANY);
+    }
     Symbol const* decl = canonical(me, identifier->target);
     if (span_valid(identifier->import_span)) {
         // `import("./a").B`: an unresolved one was reported, or is any by design (shorthand ambient module)

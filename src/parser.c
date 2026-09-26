@@ -22,6 +22,13 @@
 #define g_key uint8_t, u8
 #include <cleat/generic/vec.h>
 
+typedef struct JsDocRange {
+    const char* start; // The `/**`
+    const char* end; // Past the `*/`
+} JsDocRange;
+#define g_key JsDocRange, jsdoc_range
+#include <cleat/generic/vec.h>
+
 #define MAX_ERRORS 500 // Must be less than the max value storable in Parser.error_count
 
 typedef struct ParserShared {
@@ -39,6 +46,13 @@ typedef struct ParserShared {
     // What moduleDetection looks at (SourceFile.has_import_meta, has_jsx): set by attempts that backtrack too
     bool saw_import_meta;
     bool saw_jsx;
+    // JavaScript files: every `/** */` comment hopped so far (not `/**/`), sorted by start. Hosts find theirs by looking
+    // back from their first token (jsdoc_before())
+    VecJsDocRange jsdoc_comments;
+    // Parsing a type inside a JSDoc comment: a line's leading `*` is whitespace, `*/` ends everything, the JSDoc-only
+    // type forms (`?T`, `T=`, `*`, `function(...)`...) are allowed
+    bool in_jsdoc;
+    const char* jsdoc_end; // The `*/` of the comment being parsed, with in_jsdoc
 } ParserShared;
 
 typedef struct FunctionFlags {
@@ -57,6 +71,7 @@ typedef struct FunctionCtx {
 
 void parser_shared_drop(ParserShared* me) {
     vec_u8_drop(&my fail_cache);
+    vec_jsdoc_range_drop(&my jsdoc_comments);
     vec_error_drop(&my errors);
 }
 
@@ -488,6 +503,13 @@ static void note_comment_directive(Parser* parent, const char* start, const char
     source_file_add_comment_directive((SourceFile*)parent->shared->source, start, end, expect_error);
 }
 
+// Backtracking hops comments repeatedly: only what is past the last one recorded is new
+static void note_jsdoc_comment(Parser* parent, const char* start, const char* end) {
+    VecJsDocRange* comments = &parent->shared->jsdoc_comments;
+    if (comments->size && vec_jsdoc_range_back(comments)->start >= start) return;
+    vec_jsdoc_range_push(comments, (JsDocRange){ .start = start, .end = end });
+}
+
 static inline bool hop_comment(Parser* parent) {
     if (*parent->pos != '/') {
         return false;
@@ -526,6 +548,7 @@ static inline bool hop_comment(Parser* parent) {
             }
             pos++;
             parent->pos = pos;
+            if (start[2] == '*' && start[3] != '/' && parent->shared->source->is_js) note_jsdoc_comment(parent, start, pos);
             // The last line, trimmed, against /^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)/
             const char* c = last_line_start;
             while (is_js_ascii_space(*c)) c++;
@@ -579,6 +602,11 @@ static inline void hop_whitespace_full(Parser* parent, bool hop_comments, bool h
                 }
                 parent->whitespace = WHITESPACE_NEWLINE;
                 parent->pos++;
+                if (parent->shared->in_jsdoc) {
+                    // tsc's skipJsDocLeadingAsterisks: the `*` a comment's line starts with isn't part of the type
+                    while (*parent->pos == ' ' || *parent->pos == '\t') parent->pos++;
+                    if (*parent->pos == '*' && parent->pos[1] != '/') parent->pos++;
+                }
                 break;
 
             case '/':
@@ -1132,11 +1160,79 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
 
 }
 
+// tsc's nextTokenIsStartOfType, roughly: after a postfix `?`, a type means a conditional type's true branch
+static bool is_type_start_char(char c) {
+    return is_identifier_start_char(c) || (c >= '0' && c <= '9') || (uint8_t)c >= 0x80 || c == '"' || c == '\'' ||
+        c == '`' || c == '{' || c == '[' || c == '(' || c == '<' || c == '-' || c == '*' || c == '?' || c == '!' ||
+        c == '|' || c == '&' || c == '.';
+}
+
+static TypeNode jsdoc_synthesized(TypeNode node) {
+    node.parsed = true;
+    node.synthesized = true;
+    return node;
+}
+
+// JSDoc's type forms that come first: `*` (any), `?` alone (any), `?T` (T | null), `!T` (T)
+static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
+    Parser p = parser(parent);
+    if (hop_char(&p, '*')) {
+        *ret = type_any;
+        return parse_success(&p);
+    }
+    if (hop_char(&p, '?')) {
+        hop_whitespace(&p);
+        char c = *p.pos;
+        if (c == ',' || c == '}' || c == ')' || c == '>' || c == '=' || c == '|' || c == ']' || !c) {
+            *ret = type_any;
+            return parse_success(&p);
+        }
+        TypeNode inner;
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &inner);
+        *ret = type_composite_without_simplify(TYPE_UNION, inner, jsdoc_synthesized(type_null));
+        return parse_success(&p);
+    }
+    if (hop_char(&p, '!')) {
+        hop_whitespace(&p);
+        expect_type(&p, TYPE_PRECEDENCE_OPERATOR, ret);
+        return parse_success(&p);
+    }
+    return parse_fail(&p);
+}
+
+// JSDoc's postfix type forms: `T?` (T | null), `T!` (T), `T=` (optional: T | undefined)
+static bool parse_jsdoc_postfix_type(Parser* parent, TypeNode* left_and_ret) {
+    Parser p = parser(parent);
+    if (hop_char(&p, '=')) {
+        *left_and_ret = type_composite_without_simplify(TYPE_UNION, *left_and_ret, jsdoc_synthesized(type_undefined));
+        left_and_ret->jsdoc_optional = true;
+        return parse_success(&p);
+    }
+    if (hop_char(&p, '!')) {
+        return parse_success(&p);
+    }
+    if (hop_char(&p, '?')) {
+        Parser next = parser(&p);
+        hop_whitespace(&next);
+        bool type_follows = is_type_start_char(*next.pos) && !(next.pos[0] == '*' && next.pos[1] == '/');
+        parse_fail(&next);
+        if (!type_follows) {
+            *left_and_ret = type_composite_without_simplify(TYPE_UNION, *left_and_ret, jsdoc_synthesized(type_null));
+            return parse_success(&p);
+        }
+    }
+    return parse_fail(&p);
+}
+
 static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence, TypeNode* left_and_ret) {
     Parser p = parser(parent);
     TypeNode type;
 
     hop_whitespace(&p);
+
+    if (p.shared->in_jsdoc && parse_jsdoc_postfix_type(&p, left_and_ret)) {
+        return parse_success(&p);
+    }
 
     if (p.whitespace != WHITESPACE_NEWLINE && hop_char(&p, '[')) {
         hop_whitespace(&p);
@@ -1199,6 +1295,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
 
     hop_whitespace(&p);
     while (hop_char(&p, '.')) {
+        if (p.shared->in_jsdoc && *p.pos == '<') break; // `Array.<T>`
         vec_span_push(&namespaces, name);
         hop_whitespace(&p);
         // After the dot any identifier name goes, keywords too (`AtRule.default`)
@@ -1428,7 +1525,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     }
 
     Anchor value_anchor = anchor(&p);
-    if (hop_start_if_ends_on_word_break(&p, "any")) {
+    if (p.shared->in_jsdoc && parse_jsdoc_prefix_type(&p, ret)) {
+    } else if (hop_start_if_ends_on_word_break(&p, "any")) {
         *ret = type_any;
     } else if (hop_start_if_ends_on_word_break(&p, "unknown")) {
         *ret = type_unknown;
@@ -1502,6 +1600,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     } else if (parse_unique_symbol_type(&p)) {
         *ret = (TypeNode){ .tag = TYPE_UNIQUE_SYMBOL };
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
+        parsed.identifier.jsdoc = p.shared->in_jsdoc;
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &parsed.tuple_elements)){
         *ret = type_tuple(parsed.tuple_elements, false);
@@ -1524,6 +1623,9 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     // (Some branches above only write part of `ret`, over what a failed attempt may have left)
     ret->parenthesized = parenthesized;
     ret->placeholder = placeholder;
+    if (!p.shared->in_jsdoc || ret->tag != TYPE_UNION) ret->jsdoc_optional = false;
+    ret->from_jsdoc = false;
+    ret->synthesized = false;
 
     if (span_valid(readonly_span)) {
         // `readonly` applies to the whole postfix chain: `readonly T[][]` is a readonly array of `T[]`
@@ -1557,6 +1659,349 @@ static inline bool parse_type_or_set_to_default(Parser* parent, TypePrecedence m
     } else {
         *ret = (TypeNode){0};
         return false;
+    }
+}
+
+// JSDoc (JavaScript files only). tsc parses the `/** */` comments in a node's leading trivia and attaches them to it;
+// here whoever parses a host looks back from its first token for the comment that ends there (jsdoc_before()) and
+// moves what the tags say into the node's own slots (an `@type` is the annotation, an `@param` a parameter's...), so
+// the checker can't tell a JSDoc annotation from a written one. Types in tags are parsed by the type parser, pointed
+// into the comment with `in_jsdoc` set
+
+typedef enum JsDocTagKind {
+    JSDOC_TAG_OTHER = 0,
+    JSDOC_TAG_TYPE,
+    JSDOC_TAG_PARAM, // Also `@arg`, `@argument`
+    JSDOC_TAG_RETURNS, // Also `@return`
+    JSDOC_TAG_TEMPLATE,
+    JSDOC_TAG_TYPEDEF,
+    JSDOC_TAG_CALLBACK,
+    JSDOC_TAG_PROPERTY, // Also `@prop`
+    JSDOC_TAG_ENUM,
+    JSDOC_TAG_THIS,
+    JSDOC_TAG_EXTENDS, // Also `@augments`
+    JSDOC_TAG_IMPLEMENTS,
+    JSDOC_TAG_CLASS, // Also `@constructor`
+    JSDOC_TAG_OVERLOAD,
+    JSDOC_TAG_SATISFIES,
+    JSDOC_TAG_IMPORT,
+    JSDOC_TAG_THROWS,
+    JSDOC_TAG_PRIVATE,
+    JSDOC_TAG_PROTECTED,
+    JSDOC_TAG_PUBLIC,
+    JSDOC_TAG_READONLY,
+    JSDOC_TAG_OVERRIDE,
+} JsDocTagKind;
+
+typedef struct JsDocTag {
+    JsDocTagKind kind;
+    Span tag_name; // `param` of `@param`
+    bool has_type;
+    TypeNode type; // Of the `{T}`, owned while has_type
+    Span type_span; // Inside the braces
+    bool variadic; // `{...T}`
+    Span name; // `@param {T} name`, `@typedef {T} Name`, `@template T`: the name (maybe dotted: `o.a`)
+    bool bracketed; // `[name]`, `[name=default]`: optional
+} JsDocTag;
+
+static void jsdoc_tag_drop(JsDocTag* me) {
+    if (my has_type) type_drop(&my type);
+}
+
+#define g_class_key JsDocTag, jsdoc_tag
+#define g_no_clone
+#include <cleat/generic/vec.h>
+
+static inline bool is_jsdoc_space(char c) {
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+}
+
+// Past whitespace, newlines and the leading `*`s of lines, not past `end`
+static const char* jsdoc_skip_space(const char* c, const char* end) {
+    while (c < end) {
+        if (is_jsdoc_space(*c)) {
+            c++;
+            continue;
+        }
+        if (*c != '*') break;
+        const char* line = c;
+        while (line[-1] == ' ' || line[-1] == '\t') line--;
+        if (line[-1] != '\n') break;
+        c++;
+    }
+    return c;
+}
+
+// Parses `{T}` at `*pos` (which must be the `{`) into `tag`, moves `*pos` past it. The parse errors of JSDoc types are
+// dropped
+static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const char* end, JsDocTag* tag) {
+    Parser p = parser(parent);
+    p.pos = *pos + 1;
+    p.whitespace_end = nullptr;
+    bool outer_in_jsdoc = p.shared->in_jsdoc;
+    const char* outer_end = p.shared->jsdoc_end;
+    p.shared->in_jsdoc = true;
+    p.shared->jsdoc_end = end;
+    hop_whitespace(&p);
+    bool variadic = hop_start(&p, "...");
+    Anchor a = anchor(&p);
+    TypeNode type;
+    if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+        Span type_span = span_from(a);
+        hop_whitespace(&p);
+        if (p.pos < end) {
+            if (tag->has_type) type_drop(&tag->type);
+            tag->has_type = true;
+            tag->type = type;
+            tag->type_span = type_span;
+            tag->variadic = variadic;
+            if (*p.pos == '}') p.pos++;
+            *pos = p.pos;
+        } else {
+            type_drop(&type);
+        }
+    }
+    // Past the braces even when the type didn't parse (tsc: `{` starts a type expression that ends at `}`)
+    if (!tag->has_type) {
+        const char* c = *pos;
+        while (c < end && *c != '}' && *c != '\n') c++;
+        *pos = c < end && *c == '}' ? c + 1 : c;
+    }
+    p.shared->in_jsdoc = outer_in_jsdoc;
+    p.shared->jsdoc_end = outer_end;
+    parse_fail(&p);
+}
+
+static const char* jsdoc_parse_name(const char* c, const char* end, Span* ret, SourceFile const* source) {
+    const char* start = c;
+    while (c < end && (is_identifier_char(*c) || *c == '.' || (uint8_t)*c >= 0x80 ||
+        (*c == '[' && c[1] == ']'))
+    ) {
+        c += *c == '[' ? 2 : 1;
+    }
+    *ret = c > start ? span_make(source, start, c) : span_null;
+    return c;
+}
+
+// `@param {T} name`, `@param name {T}`, `@param {T} [name=default]`
+static const char* parse_jsdoc_param_like(Parser* parent, const char* c, const char* end, JsDocTag* tag) {
+    SourceFile const* source = parent->shared->source;
+    c = jsdoc_skip_space(c, end);
+    if (c < end && *c == '{') {
+        parse_jsdoc_type_expression(parent, &c, end, tag);
+        c = jsdoc_skip_space(c, end);
+    }
+    if (c < end && *c == '[') {
+        tag->bracketed = true;
+        c = jsdoc_skip_space(c + 1, end);
+        c = jsdoc_parse_name(c, end, &tag->name, source);
+        // The default, up to the closing bracket
+        int depth = 0;
+        while (c < end && (*c != ']' || depth)) {
+            if (*c == '[') depth++;
+            else if (*c == ']') depth--;
+            c++;
+        }
+        if (c < end) c++;
+    } else {
+        c = jsdoc_parse_name(c, end, &tag->name, source);
+    }
+    if (!tag->has_type) {
+        const char* after = jsdoc_skip_space(c, end);
+        if (after < end && *after == '{') {
+            parse_jsdoc_type_expression(parent, &after, end, tag);
+            c = after;
+        }
+    }
+    return c;
+}
+
+static JsDocTagKind jsdoc_tag_kind(csview name) {
+    static const struct { const char* name; JsDocTagKind kind; } kinds[] = {
+        {"type", JSDOC_TAG_TYPE}, {"param", JSDOC_TAG_PARAM}, {"arg", JSDOC_TAG_PARAM}, {"argument", JSDOC_TAG_PARAM},
+        {"returns", JSDOC_TAG_RETURNS}, {"return", JSDOC_TAG_RETURNS}, {"template", JSDOC_TAG_TEMPLATE},
+        {"typedef", JSDOC_TAG_TYPEDEF}, {"callback", JSDOC_TAG_CALLBACK}, {"property", JSDOC_TAG_PROPERTY},
+        {"prop", JSDOC_TAG_PROPERTY}, {"enum", JSDOC_TAG_ENUM}, {"this", JSDOC_TAG_THIS},
+        {"extends", JSDOC_TAG_EXTENDS}, {"augments", JSDOC_TAG_EXTENDS}, {"implements", JSDOC_TAG_IMPLEMENTS},
+        {"class", JSDOC_TAG_CLASS}, {"constructor", JSDOC_TAG_CLASS}, {"overload", JSDOC_TAG_OVERLOAD},
+        {"satisfies", JSDOC_TAG_SATISFIES}, {"import", JSDOC_TAG_IMPORT}, {"throws", JSDOC_TAG_THROWS},
+        {"exception", JSDOC_TAG_THROWS}, {"private", JSDOC_TAG_PRIVATE}, {"protected", JSDOC_TAG_PROTECTED},
+        {"public", JSDOC_TAG_PUBLIC}, {"readonly", JSDOC_TAG_READONLY}, {"override", JSDOC_TAG_OVERRIDE},
+    };
+    for (u32 i = 0; i < c_arraylen(kinds); i++) {
+        if (csview_equals(name, kinds[i].name)) return kinds[i].kind;
+    }
+    return JSDOC_TAG_OTHER;
+}
+
+// The tag at `c` (its `@`): appends it, returns where its own syntax ends (what follows is its comment)
+static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* end, VecJsDocTag* tags) {
+    SourceFile const* source = parent->shared->source;
+    const char* name_start = ++c;
+    while (c < end && (is_identifier_char(*c) || *c == '-')) c++;
+    JsDocTag tag = {
+        .kind = jsdoc_tag_kind(csview_from_range(name_start, c)),
+        .tag_name = span_make(source, name_start, c),
+    };
+    switch (tag.kind) {
+        case JSDOC_TAG_PARAM:
+        case JSDOC_TAG_PROPERTY:
+            c = parse_jsdoc_param_like(parent, c, end, &tag);
+            break;
+        case JSDOC_TAG_TYPEDEF:
+        case JSDOC_TAG_CALLBACK:
+        case JSDOC_TAG_TEMPLATE:
+            c = jsdoc_skip_space(c, end);
+            if (tag.kind != JSDOC_TAG_CALLBACK && c < end && *c == '{') {
+                parse_jsdoc_type_expression(parent, &c, end, &tag);
+                c = jsdoc_skip_space(c, end);
+            }
+            c = jsdoc_parse_name(c, end, &tag.name, source);
+            break;
+        case JSDOC_TAG_TYPE:
+        case JSDOC_TAG_RETURNS:
+        case JSDOC_TAG_ENUM:
+        case JSDOC_TAG_THIS:
+        case JSDOC_TAG_SATISFIES:
+        case JSDOC_TAG_THROWS:
+        case JSDOC_TAG_EXTENDS:
+        case JSDOC_TAG_IMPLEMENTS: {
+            const char* after = jsdoc_skip_space(c, end);
+            if (after < end && *after == '{') {
+                parse_jsdoc_type_expression(parent, &after, end, &tag);
+                c = after;
+            }
+        }   break;
+        default:
+            break;
+    }
+    vec_jsdoc_tag_push(tags, tag);
+    return c;
+}
+
+// The tags of the comment `range` (tsc's parseJSDocCommentWorker: a tag starts at an `@` at the start of a line, after
+// whitespace and at most one `*`, or after whitespace and before something else anywhere; nothing in backticks)
+static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* tags) {
+    const char* c = range.start + 3;
+    const char* end = range.end - 2;
+    bool line_start = true;
+    bool saw_asterisk = false;
+    bool in_backticks = false;
+    while (c < end) {
+        char ch = *c;
+        if (ch == '\n') {
+            line_start = true;
+            saw_asterisk = false;
+            c++;
+        } else if (ch == ' ' || ch == '\t' || ch == '\r') {
+            c++;
+        } else if (ch == '*' && line_start && !saw_asterisk) {
+            saw_asterisk = true;
+            c++;
+        } else if (ch == '@' && !in_backticks && (line_start || ((c[-1] == ' ' || c[-1] == '\t') && !is_jsdoc_space(c[1])))) {
+            c = parse_jsdoc_tag(parent, c, end, tags);
+            line_start = false;
+        } else {
+            if (ch == '`' && !line_start) in_backticks = !in_backticks;
+            line_start = false;
+            c++;
+        }
+    }
+}
+
+// The JSDoc comment that ends right before `pos` (only whitespace between), parsed into `tags`: false if there is
+// none. tsc attaches every JSDoc comment of the leading trivia, but takes the tags of the last one only
+// (filterOwnedJSDocTags; the others' `@overload` tags aside)
+static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
+    VecJsDocRange const* comments = &parent->shared->jsdoc_comments;
+    if (!comments->size) return false;
+    const char* file_start = source_file_start(parent->shared->source);
+    const char* c = pos;
+    while (c > file_start && is_js_ascii_space(c[-1])) c--;
+    if (c - file_start < 4 || c[-1] != '/' || c[-2] != '*') return false;
+    // Binary search for the comment ending at c
+    isize lo = 0, hi = comments->size;
+    while (lo < hi) {
+        isize mid = (lo + hi) / 2;
+        if (comments->data[mid].end < c) lo = mid + 1;
+        else hi = mid;
+    }
+    if (lo >= comments->size || comments->data[lo].end != c) return false;
+    parse_jsdoc_comment(parent, comments->data[lo], tags);
+    return true;
+}
+
+// The first tag of a kind that has a type, null if there is none
+static JsDocTag* jsdoc_find_typed(VecJsDocTag* tags, JsDocTagKind kind) {
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind == kind && i->has_type) return i;
+    }
+    return nullptr;
+}
+
+// Moves a tag's type into an annotation slot
+static TypeNode jsdoc_take_type(JsDocTag* tag, Span* span_ret) {
+    tag->has_type = false;
+    if (span_ret) *span_ret = tag->type_span;
+    tag->type.from_jsdoc = true;
+    return tag->type;
+}
+
+// `@type` on a declaration with no annotation of its own
+static void jsdoc_apply_type_to_binding(VecJsDocTag* tags, Binding* binding) {
+    if (binding->has_explicit_type) return;
+    JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
+    if (!tag) return;
+    binding->explicit_type = jsdoc_take_type(tag, &binding->explicit_type_span);
+    binding->has_explicit_type = true;
+}
+
+// The `@param` tag for a function's parameter (tsc's getJSDocParameterTags): by name, or for a pattern by position
+static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function, FunctionArg const* arg) {
+    Binding const* binding = &arg->initializer.binding;
+    if (binding->tag == BINDING_IDENTIFIER) {
+        for_each (i, vec_jsdoc_tag, tags) {
+            if (i->kind == JSDOC_TAG_PARAM && span_valid(i->name) && csview_equals_sv(i->name.sv, binding->content_span.sv)) {
+                return i->has_type ? i : nullptr;
+            }
+        }
+        return nullptr;
+    }
+    isize index = arg - function->args.data;
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind != JSDOC_TAG_PARAM) continue;
+        if (!index--) return i->has_type ? i : nullptr;
+    }
+    return nullptr;
+}
+
+// What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
+static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
+    for_each (i, vec_function_arg, &function->args) {
+        Binding* binding = &i->initializer.binding;
+        if (binding->has_explicit_type) continue;
+        JsDocTag* tag = jsdoc_param_tag(tags, function, i);
+        if (!tag) continue;
+        bool variadic = tag->variadic;
+        bool bracketed = tag->bracketed;
+        binding->explicit_type = jsdoc_take_type(tag, &binding->explicit_type_span);
+        binding->has_explicit_type = true;
+        if (binding->explicit_type.jsdoc_optional || bracketed) {
+            // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
+            if (i->initializer.value.tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
+        }
+        if (variadic && i->rest) {
+            binding->explicit_type = type_array(c_new(TypeNode, binding->explicit_type), false);
+            binding->explicit_type.parsed = true;
+        }
+        binding->explicit_type.from_jsdoc = true;
+    }
+    if (!function->ret_explicit) {
+        JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_RETURNS);
+        if (tag) {
+            function->ret = jsdoc_take_type(tag, &function->ret_span);
+            function->ret_explicit = true;
+        }
     }
 }
 
@@ -2035,6 +2480,12 @@ static bool parse_function_args_inner(
 
                 parse_binding_type_or_set_to_default(&p, &initializer.binding);
                 hop_whitespace(&p);
+                if (p.shared->source->is_js && !initializer.binding.has_explicit_type) {
+                    // `function f(/** @type {T} */ a)`
+                    VecJsDocTag tags = {0};
+                    if (jsdoc_before(&p, arg_start.start, &tags)) jsdoc_apply_type_to_binding(&tags, &initializer.binding);
+                    vec_jsdoc_tag_drop(&tags);
+                }
 
                 parse_initialization_or_set_to_default(&p, expr_ctx_null, &initializer.value);
                 if (initializer.binding.tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(&initializer.value, false);
@@ -4642,6 +5093,28 @@ static bool jsx_generic_arrow_start(Parser* parent) {
     return ret;
 }
 
+// `/** @type {T} */ (x)` is a type assertion, `/** @satisfies {T} */ (x)` a satisfies expression (tsc: a parenthesized
+// expression with those tags). `span` is the parenthesized expression's
+static void jsdoc_apply_parenthesized(Parser* p, const char* start, Span span, Expr* ret) {
+    VecJsDocTag tags = {0};
+    if (!jsdoc_before(p, start, &tags)) return;
+    JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
+    bool is_satisfies = !tag;
+    if (!tag) tag = jsdoc_find_typed(&tags, JSDOC_TAG_SATISFIES);
+    if (tag) {
+        // (The parentheses are the assertion's: tsc's ParenthesizedExpression has the asserted type)
+        Expr inner = *ret;
+        inner.outer_span = inner.inner_span;
+        *ret = expr_as_type(span, c_new(AsTypeExpr, {
+            .expr = inner,
+            .keyword_span = tag->type_span, // (Where tsc reports what's wrong with a JSDoc assertion: its type)
+            .type = jsdoc_take_type(tag, nullptr),
+            .is_satisfies = is_satisfies,
+        }));
+    }
+    vec_jsdoc_tag_drop(&tags);
+}
+
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -4719,6 +5192,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         hop_whitespace(&p);
         expect_char(&p, ')');
         inner_span_set = true;
+        if (p.shared->source->is_js) jsdoc_apply_parenthesized(&p, a.start, span_from(a), ret);
     } else if (at_jsx_element_start(&p)) {
         // The operand of a unary operator is a unary expression, which a comma expression isn't (tsc's mustBeUnary)
         bool must_be_unary = ctx.min_precedence >= unary_op_get_precedence(UNARY_OP_LEFT_BANG);
@@ -6514,6 +6988,47 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     return parse_success(&p);
 }
 
+// The function an expression is, directly (tsc: a parenthesized one has no JSDoc host above it)
+static FunctionImpl* jsdoc_function_of(Expr* expr) {
+    if (expr->tag != EXPR_FUNCTION || expr->outer_span.sv.size != expr->inner_span.sv.size) return nullptr;
+    return expr->function;
+}
+
+// What a statement's JSDoc says (tsc's getJSDocCommentsAndTags / getNextJSDocCommentLocation, from the host down):
+// a variable statement's `@type` is its single declaration's annotation, and like the tags of an assignment statement
+// or `return` its `@param`s/`@returns` are for the function it gives
+static void jsdoc_apply_statement(Parser* p, const char* start, Statement* statement) {
+    VecJsDocTag tags = {0};
+    if (!jsdoc_before(p, start, &tags)) return;
+    switch (statement->tag) {
+        case STATEMENT_DECL_VARIABLE: {
+            VecInitializedBinding* list = &statement->decl.variable.initializers;
+            if (vec_initialized_binding_size(list) != 1) break;
+            InitializedBinding* initializer = list->data;
+            jsdoc_apply_type_to_binding(&tags, &initializer->binding);
+            FunctionImpl* function = jsdoc_function_of(&initializer->value);
+            if (function) jsdoc_apply_function(&tags, function);
+        }   break;
+        case STATEMENT_DECL_FUNCTION:
+            jsdoc_apply_function(&tags, statement->decl.function.impl);
+            break;
+        case STATEMENT_EXPR:
+            if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
+                FunctionImpl* function = jsdoc_function_of(&statement->expr.binary_op->right);
+                if (function) jsdoc_apply_function(&tags, function);
+            }
+            break;
+        case STATEMENT_RETURN_EXPR:
+        case STATEMENT_EXPORT_DEFAULT_EXPR: {
+            FunctionImpl* function = jsdoc_function_of(&statement->expr);
+            if (function) jsdoc_apply_function(&tags, function);
+        }   break;
+        default:
+            break;
+    }
+    vec_jsdoc_tag_drop(&tags);
+}
+
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -6581,6 +7096,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->jump_label = label;
     }
     ret->span = span_from(a);
+    if (p.shared->source->is_js) jsdoc_apply_statement(&p, a.start, ret);
 
     reset_fail_cache(&p);
     return parse_success(&p);

@@ -677,7 +677,7 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
 
 // Prints an annotation as written, as reused
 static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
-    d.reused = true;
+    d.reused = !node->synthesized;
     if (node->parenthesized) out_lit(d, "(");
     switch (node->tag) {
         case TYPE_IDENTIFIER:

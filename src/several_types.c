@@ -148,6 +148,38 @@ static void check_static_type_parameter_reference(IdentifierType* me, Scope cons
     }
 }
 
+// tsc's getIntendedTypeFromJSDocTypeReference: what some names mean in JSDoc whatever is in scope. False for a name
+// that is looked up as usual
+static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names) {
+    static const struct { const char* name; JsDocIntrinsic intrinsic; } intrinsics[] = {
+        {"String", JSDOC_INTRINSIC_STRING}, {"Number", JSDOC_INTRINSIC_NUMBER}, {"BigInt", JSDOC_INTRINSIC_BIGINT},
+        {"Boolean", JSDOC_INTRINSIC_BOOLEAN}, {"Void", JSDOC_INTRINSIC_VOID}, {"Undefined", JSDOC_INTRINSIC_UNDEFINED},
+        {"Null", JSDOC_INTRINSIC_NULL},
+    };
+    for (u32 i = 0; i < c_arraylen(intrinsics); i++) {
+        if (csview_equals(my name.sv, intrinsics[i].name)) {
+            my jsdoc_intrinsic = intrinsics[i].intrinsic;
+            return true;
+        }
+    }
+    bool no_args = !vec_spanned_type_size(&my generic_params);
+    bool implicit_any = !compiler_options()->no_implicit_any;
+    // `function` is the global Function type, `array`/`promise` without arguments are `Array`/`Promise` of any
+    const char* global = span_equals(my name, "function") ? "Function" :
+        span_equals(my name, "array") && no_args && implicit_any ? "Array" :
+        span_equals(my name, "promise") && no_args && implicit_any ? "Promise" : nullptr;
+    if (global) {
+        my target = scope_get_type(names, csview_from(global), &my symbol);
+        return true;
+    }
+    // TODO: `Object.<K, V>` is an index signature
+    if (span_equals(my name, "Object") && (vec_spanned_type_size(&my generic_params) == 2 || (no_args && implicit_any))) {
+        my jsdoc_intrinsic = JSDOC_INTRINSIC_ANY;
+        return true;
+    }
+    return false;
+}
+
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
 
@@ -186,6 +218,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         if (namespace) {
             my target = get_symbol_from_namespace(namespace, prev_name.sv, my name, SYMBOL_TYPE, &my symbol, errs);
         }
+    } else if (my jsdoc && jsdoc_lookup_intended(me, names)) {
     } else if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
             ThisRef this_ref = scope_get_this(names, true);

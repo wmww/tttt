@@ -391,6 +391,7 @@ void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCa
 static void type_predicate_compile_test_info(TypePredicateNode* me, BaselineTestCase* ctx);
 
 void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
+    if (my from_jsdoc) return; // tsc's walk doesn't go into JSDoc
     switch (my tag) {
         case TYPE_UNKNOWN:
         case TYPE_NEVER:
