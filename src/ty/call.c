@@ -1099,8 +1099,20 @@ static Resolution resolve_with_signatures(
                 report_arity(me, signatures, count, args, info, errs);
             }
         }
-        // What the call is taken to return anyway: the candidate that got furthest, or every possibility
-        if (unfit_count) {
+        // What the call is taken to return anyway (tsc's getCandidateForOverloadFailure): of several non-generic
+        // overloads, all of their returns at once (createUnionOfSignaturesForOverloadFailure: `string & number` is
+        // never), else the candidate that got furthest, or every possibility
+        bool some_generic = false;
+        for (u32 i = 0; i < count; i++) {
+            signature_resolve(me, signatures[i]);
+            some_generic |= signatures[i]->type_params.len > 0;
+        }
+        if (count > 1 && !some_generic) {
+            Ty const** return_types = malloc(sizeof(Ty const*) * count);
+            for (u32 i = 0; i < count; i++) return_types[i] = signature_return_type(me, signatures[i]);
+            ret.ret = ty_intersection(me, return_types, count, nullptr, (TyList){0});
+            free(return_types);
+        } else if (unfit_count) {
             // Inferred again from what doesn't depend on the candidate: context-sensitive and generic function
             // arguments left out (tsc's inferSignatureInstantiationForOverloadFailure)
             Candidate fallback = unfit[unfit_count - 1];

@@ -11218,7 +11218,7 @@ const baselines = {
     'errorCause(target=es2021)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorCause(target=es2022)': {
         errors: true,
@@ -14108,7 +14108,7 @@ const baselines = {
     'functionOverloads': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloads1': {
         errors: true,
@@ -14168,7 +14168,7 @@ const baselines = {
     'functionOverloads2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloads20': {
         errors: true,
@@ -14208,7 +14208,7 @@ const baselines = {
     'functionOverloads27': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloads28': {
         errors: true,
@@ -14218,7 +14218,7 @@ const baselines = {
     'functionOverloads29': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloads3': {
         errors: true,
@@ -14248,7 +14248,7 @@ const baselines = {
     'functionOverloads34': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloads35': {
         errors: true,
@@ -14263,7 +14263,7 @@ const baselines = {
     'functionOverloads37': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloads38': {
         errors: true,
@@ -14283,12 +14283,12 @@ const baselines = {
     'functionOverloads40': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloads41': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloads42': {
         errors: true,
@@ -24776,9 +24776,9 @@ const baselines = {
         types: true,
     },
     'orderMattersForSignatureGroupIdentity': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'out-flag': {
         errors: true,
@@ -24848,7 +24848,7 @@ const baselines = {
     'overload1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overload2': {
         errors: true,
@@ -25033,7 +25033,7 @@ const baselines = {
     'overloadResolutionTest1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadResolutionWithAny': {
         errors: true,
@@ -25073,7 +25073,7 @@ const baselines = {
     'overloadingOnConstants2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadingOnConstantsInImplementation': {
         errors: true,
@@ -25088,7 +25088,7 @@ const baselines = {
     'overloadresolutionWithConstraintCheckingDeferred': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadsAndTypeArgumentArity': {
         errors: true,
@@ -25118,7 +25118,7 @@ const baselines = {
     'overloadsWithProvisionalErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadsWithinClasses': {
         errors: true,
@@ -37898,7 +37898,7 @@ const baselines = {
     'controlFlowIterationErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowIterationErrorsAsync': {
         errors: false,
