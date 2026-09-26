@@ -790,19 +790,32 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         }
     }
     generic_compile_test_info(&my generic, ctx);
-    if (my extends.tag != EXPR_IMPLICIT_ANY) {
+    if (my extends.tag == EXPR_GENERIC_PARAMS) {
+        // `Base<number>`: the base type with its arguments at the name (tsc's getBaseTypes), then the name's parts
+        Expr* base = &my extends.generic_params->expr;
+        Ty const* instance = ty_class_base_instance(current_checker, me);
+        // (A class that is its own base has none: then it's the expression's type, like any other)
+        if (instance && my symbol && ty_has_base_type(current_checker, instance, ty_declared_type_of(current_checker, my symbol))) {
+            instance = nullptr;
+        }
+        if (instance) {
+            baseline_test_case_add_type_recursive(ctx, base->outer_span, base->inner_span, instance);
+            expr_compile_test_info_inner(base, ctx);
+        } else {
+            expr_compile_test_info(base, ctx);
+        }
+        for_each (i, vec_spanned_type, &my extends.generic_params->params) type_compile_test_info(&i->type, ctx);
+    } else if (my extends.tag != EXPR_IMPLICIT_ANY) {
         // tsc shows the instance type at the name of the base class, not `typeof Base`
         Ty const* extends_type = ty_expr_type(current_checker, &my extends);
         if (extends_type->kind == TY_DECLARED && extends_type->declared.kind == TY_DECLARED_CLASS_STATIC &&
             extends_type->declared.symbol
         ) {
-            if (my extends.tag != EXPR_GENERIC_PARAMS) {
-                Members const* statics = ty_members(current_checker, extends_type);
-                Ty const* instance = statics->construct_count ?
-                    signature_return_type(current_checker, statics->construct[0]) :
-                    extends_type;
-                baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, instance);
-            }
+            Members const* statics = ty_members(current_checker, extends_type);
+            Ty const* instance = statics->construct_count ?
+                signature_return_type(current_checker, statics->construct[0]) :
+                extends_type;
+            baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, instance);
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
             expr_compile_test_info(&my extends, ctx);
