@@ -89,7 +89,9 @@ typedef struct FunctionImpl {
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);
-void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported);
+// hoisted: a function declaration of a nested block in non-strict code, which is declared in the enclosing function (or
+// file) like a `var` (tsc's declareSymbolAndAddToSymbolTable outside of strict mode)
+void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted);
 typedef enum FunctionFlowKind {
     FUNCTION_IS_DECLARATION, // Function declarations, class members, signatures: a control flow graph of their own
     // Function expressions, arrow functions, object literal methods: narrowings of the flow they're made in can

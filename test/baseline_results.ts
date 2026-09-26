@@ -2041,7 +2041,7 @@ const baselines = {
         types: false,
     },
     'augmentedClassWithPrototypePropertyOnModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2541,14 +2541,14 @@ const baselines = {
         types: true,
     },
     'blockScopedFunctionDeclarationES5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'blockScopedFunctionDeclarationES6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'blockScopedFunctionDeclarationInStrictClass': {
         errors: false,
@@ -2576,13 +2576,13 @@ const baselines = {
         types: false,
     },
     'blockScopedSameNameFunctionDeclarationES5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'blockScopedSameNameFunctionDeclarationES6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'blockScopedSameNameFunctionDeclarationStrictES5': {
@@ -4086,7 +4086,7 @@ const baselines = {
         types: true,
     },
     'cloduleWithDuplicateMember1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10291,7 +10291,7 @@ const baselines = {
         types: false,
     },
     'duplicateIdentifierInCatchBlock': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10341,7 +10341,7 @@ const baselines = {
         types: false,
     },
     'duplicateIdentifiersAcrossContainerBoundaries': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20441,7 +20441,7 @@ const baselines = {
         types: false,
     },
     'letAndVarRedeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21076,7 +21076,7 @@ const baselines = {
         types: true,
     },
     'mergedClassWithNamespacePrototype': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -50731,12 +50731,12 @@ const baselines = {
         types: true,
     },
     'ClassAndModuleThatMergeWithModulesExportedGenericFunctionAndGenericClassStaticFunctionOfTheSameName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ClassAndModuleThatMergeWithModulesExportedGenericFunctionAndNonGenericClassStaticFunctionOfTheSameName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50746,7 +50746,7 @@ const baselines = {
         types: true,
     },
     'ClassAndModuleThatMergeWithStaticFunctionAndExportedFunctionThatShareAName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50756,7 +50756,7 @@ const baselines = {
         types: true,
     },
     'ClassAndModuleThatMergeWithStaticVariableAndExportedVarThatShareAName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

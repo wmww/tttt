@@ -1466,12 +1466,16 @@ void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* con
 
 // Duplicate members
 
-enum { MEMBER_PROPERTY = 1, MEMBER_METHOD = 2, MEMBER_GET = 4, MEMBER_SET = 8 };
+enum {
+    MEMBER_PROPERTY = SYMBOL_PROPERTY, MEMBER_METHOD = SYMBOL_METHOD, MEMBER_GET = SYMBOL_GET_ACCESSOR,
+    MEMBER_SET = SYMBOL_SET_ACCESSOR,
+};
 
 typedef struct MemberEntry {
     Atom const* name;
     uint8_t table; // Which symbol table: instance members, static members (exports)
-    uint8_t flags;
+    bool has_member; // Not only exports of a namespace merged with the class, which the binder checked already
+    u32 flags; // SymbolFlags
     Span decls[8];
     u32 decl_count;
 } MemberEntry;
@@ -1481,39 +1485,73 @@ typedef struct MemberTables {
     u32 count;
 } MemberTables;
 
-static uint8_t member_excludes(uint8_t kind) {
-    switch (kind) {
-        case MEMBER_METHOD: return MEMBER_PROPERTY | MEMBER_GET | MEMBER_SET; // Value & ~Method
-        case MEMBER_GET: return MEMBER_PROPERTY | MEMBER_METHOD | MEMBER_GET;
-        case MEMBER_SET: return MEMBER_PROPERTY | MEMBER_METHOD | MEMBER_SET;
-        default: return 0; // tsc's PropertyExcludes is None: the checker reports property duplicates
-    }
-}
-
 static void report_duplicate(Span name, ErrorCtx* errs) {
     if (!span_valid(name) || !name.source || name.source->is_stdlib) return;
     Error* existing = error_ctx_find(errs, name, 2300);
     if (!existing) error_ctx_error_d(errs, name, 2300, "Duplicate identifier '", name, "'.");
 }
 
-// tsc's declareSymbol for a member: a conflict with what the table has (by the excludes of the new declaration) is
-// reported on every declaration, and the new one doesn't join
-static void declare_member(MemberTables* me, Atom const* name, uint8_t table, uint8_t kind, Span span, ErrorCtx* errs) {
-    MemberEntry* entry = nullptr;
-    for (u32 i = 0; i < my count && !entry; i++) {
-        if (my entries[i].name == name && my entries[i].table == table) entry = &my entries[i];
+static MemberEntry* find_member(MemberTables* me, Atom const* name, uint8_t table) {
+    for (u32 i = 0; i < my count; i++) {
+        if (my entries[i].name == name && my entries[i].table == table) return &my entries[i];
     }
+    return nullptr;
+}
+
+// tsc's declareSymbol for a member (or an export of a namespace merged with a class, is_member false): a conflict with
+// what the table has (by the excludes of the new declaration) is reported on every declaration, and the new one doesn't
+// join
+static void declare_symbol_flags(
+    MemberTables* me, Atom const* name, uint8_t table, u32 includes, Span span, bool is_member, ErrorCtx* errs
+) {
+    MemberEntry* entry = find_member(me, name, table);
     if (!entry) {
         if (my count == c_arraylen(my entries)) return;
         entry = &my entries[my count++];
         *entry = (MemberEntry){ .name = name, .table = table };
-    } else if (entry->flags & member_excludes(kind)) {
+    } else if (entry->flags & symbol_excludes(includes)) {
+        if (!entry->has_member && !is_member) return;
         for (u32 i = 0; i < entry->decl_count; i++) report_duplicate(entry->decls[i], errs);
         report_duplicate(span, errs);
         return;
     }
-    entry->flags |= kind;
+    entry->flags |= includes;
+    entry->has_member |= is_member;
     if (entry->decl_count < c_arraylen(entry->decls)) entry->decls[entry->decl_count++] = span;
+}
+
+static void declare_member(MemberTables* me, Atom const* name, uint8_t table, u32 kind, Span span, ErrorCtx* errs) {
+    declare_symbol_flags(me, name, table, kind, span, true, errs);
+}
+
+// The exports a namespace declaration merged with a class adds to the table of static members
+static void declare_namespace_exports(Checker* me, MemberTables* tables, Symbol const* symbol, SymbolDecl const* ns, ErrorCtx* errs) {
+    SymbolTable const* exports = symbol->exports;
+    for (u32 i = 0; exports && i < exports->count; i++) {
+        Symbol const* exported = exports->entries[i].symbol;
+        for (u32 d = 0; d < exported->decl_count; d++) {
+            SymbolDecl const* decl = &exported->decls[d];
+            if (decl->name.source != ns->full.source || span_start_ptr(decl->full) < span_start_ptr(ns->full) ||
+                span_end_ptr(decl->full) > span_end_ptr(ns->full)
+            ) {
+                continue;
+            }
+            declare_symbol_flags(tables, checker_atom(me, exports->entries[i].name), 1, decl->flags, decl->name, false, errs);
+        }
+    }
+}
+
+// tsc's bindClassLikeDeclaration: the class's static side has a `prototype`, which replaces what the table had there
+// (a namespace's export of that name is a duplicate)
+static void declare_prototype(Checker* me, MemberTables* tables, ErrorCtx* errs) {
+    Atom const* name = checker_atom(me, c_sv("prototype"));
+    MemberEntry* entry = find_member(tables, name, 1);
+    if (entry && entry->decl_count) report_duplicate(entry->decls[0], errs);
+    if (!entry) {
+        if (tables->count == c_arraylen(tables->entries)) return;
+        entry = &tables->entries[tables->count++];
+    }
+    *entry = (MemberEntry){ .name = name, .table = 1, .flags = SYMBOL_PROPERTY, .has_member = true };
 }
 
 // tsc's DeclarationMeaning in checkClassForDuplicateDeclarations
@@ -1570,6 +1608,16 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
     MemberTables* tables = malloc(sizeof(MemberTables)); // Big, and only read below count
     panic_if(!tables, "out of memory");
     tables->count = 0;
+    // The static members share a table with the exports of the namespaces the class merges with, declared in binding
+    // order: those before the class, the class's `prototype`, its members, those after
+    Symbol const* symbol = class_decl->is_expression ? nullptr : class_decl->symbol;
+    u32 class_index = 0;
+    while (symbol && class_index < symbol->decl_count && symbol->decls[class_index].node != class_decl) class_index++;
+    if (symbol && class_index == symbol->decl_count) symbol = nullptr;
+    for (u32 d = 0; symbol && d < class_index; d++) {
+        if (symbol->decls[d].kind == SYMBOL_DECL_NAMESPACE) declare_namespace_exports(me, tables, symbol, &symbol->decls[d], errs);
+    }
+    declare_prototype(me, tables, errs);
     MeaningEntry meanings[128];
     u32 meaning_count = 0;
     for_each (i, vec_class_item, &class_decl->items) {
@@ -1592,7 +1640,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
             ty_member_name(me, is_field ? &i->field.name_string : &i->method.name_string,
                 is_field ? i->field.computed_key : i->method.computed_key);
         if (!name) continue;
-        uint8_t kind = is_field ? MEMBER_PROPERTY : i->method.accessor == CLASS_ACCESSOR_GET ? MEMBER_GET :
+        u32 kind = is_field ? MEMBER_PROPERTY : i->method.accessor == CLASS_ACCESSOR_GET ? MEMBER_GET :
             i->method.accessor == CLASS_ACCESSOR_SET ? MEMBER_SET : MEMBER_METHOD;
         declare_member(tables, name, is_static, kind, name_span, errs);
         uint8_t meaning = kind == MEMBER_PROPERTY ? MEANING_GET_OR_SET : kind == MEMBER_GET ? MEANING_GET :
@@ -1600,6 +1648,9 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         if (span_valid(private_name) && is_static) meaning |= MEANING_PRIVATE_STATIC;
         add_meaning(meanings, &meaning_count, c_arraylen(meanings), name, span_valid(private_name) ? 2 : is_static,
             meaning, name_span, errs);
+    }
+    for (u32 d = class_index + 1; symbol && d < symbol->decl_count; d++) {
+        if (symbol->decls[d].kind == SYMBOL_DECL_NAMESPACE) declare_namespace_exports(me, tables, symbol, &symbol->decls[d], errs);
     }
     free(tables);
 }

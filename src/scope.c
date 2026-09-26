@@ -576,6 +576,27 @@ static Symbol* clone_parent_symbol(Binder* binder, Symbol const* original) {
 
 static void scope_declare_default_local(Scope* me, Symbol* symbol, Span name, u32 excludes);
 
+u32 symbol_excludes(u32 includes) {
+    u32 ret = 0;
+    if (includes & SYMBOL_BLOCK_SCOPED_VARIABLE) ret |= SYMBOL_BLOCK_SCOPED_VARIABLE_EXCLUDES;
+    if (includes & SYMBOL_FUNCTION_SCOPED_VARIABLE) ret |= SYMBOL_FUNCTION_SCOPED_VARIABLE_EXCLUDES;
+    if (includes & SYMBOL_PROPERTY) ret |= SYMBOL_PROPERTY_EXCLUDES;
+    if (includes & SYMBOL_ENUM_MEMBER) ret |= SYMBOL_ENUM_MEMBER_EXCLUDES;
+    if (includes & SYMBOL_FUNCTION) ret |= SYMBOL_FUNCTION_EXCLUDES;
+    if (includes & SYMBOL_CLASS) ret |= SYMBOL_CLASS_EXCLUDES;
+    if (includes & SYMBOL_INTERFACE) ret |= SYMBOL_INTERFACE_EXCLUDES;
+    if (includes & SYMBOL_REGULAR_ENUM) ret |= SYMBOL_REGULAR_ENUM_EXCLUDES;
+    if (includes & SYMBOL_CONST_ENUM) ret |= SYMBOL_CONST_ENUM_EXCLUDES;
+    if (includes & SYMBOL_VALUE_MODULE) ret |= SYMBOL_VALUE_MODULE_EXCLUDES;
+    if (includes & SYMBOL_METHOD) ret |= SYMBOL_METHOD_EXCLUDES;
+    if (includes & SYMBOL_GET_ACCESSOR) ret |= SYMBOL_GET_ACCESSOR_EXCLUDES;
+    if (includes & SYMBOL_SET_ACCESSOR) ret |= SYMBOL_SET_ACCESSOR_EXCLUDES;
+    if (includes & SYMBOL_TYPE_PARAMETER) ret |= SYMBOL_TYPE_PARAMETER_EXCLUDES;
+    if (includes & SYMBOL_TYPE_ALIAS) ret |= SYMBOL_TYPE_ALIAS_EXCLUDES;
+    if (includes & SYMBOL_ALIAS) ret |= SYMBOL_ALIAS_EXCLUDES;
+    return ret;
+}
+
 // `number`, `any`... (program_add_builtins())
 static bool symbol_is_builtin_type(Symbol const* symbol) {
     return symbol && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN && symbol->flags & SYMBOL_TYPE_ALIAS;

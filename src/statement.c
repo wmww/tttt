@@ -493,6 +493,10 @@ static void block_hoist_names(Block* me, Scope* scope) {
 // into functions. The blocks they're in skip them when their turn comes (scope_init_declaration())
 void statement_hoist_names(Statement* me, Scope* scope) {
     switch (my tag) {
+        case STATEMENT_DECL_FUNCTION:
+            if (!scope->strict) function_impl_add_names(my decl.function.impl, scope, DECL_EXPORTED_NO, true);
+            break;
+
         case STATEMENT_BLOCK:
             block_hoist_names(&my block, scope);
             break;
@@ -563,7 +567,8 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            function_impl_add_names(my decl.function.impl, scope, my decl.props.exported);
+            function_impl_add_names(my decl.function.impl, scope, my decl.props.exported,
+                scope->kind == SCOPE_BLOCK && !scope->strict);
             break;
 
         case STATEMENT_DECL_ENUM:
