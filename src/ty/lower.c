@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "program.h"
 #include "compiler_options.h"
 #include "scope.h"
 #include "enum_decl.h"
@@ -1264,6 +1265,92 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
     }
     Ty const* ret = ty_object_literal(me, props, count, members->index, members->index_count, OBJECT_SYNTHETIC);
     free(props);
+    return ret;
+}
+
+// tsc's getTypeFromBindingElement: a default's type widened (and optional), a nested pattern's own type, else any
+static Ty const* binding_element_implied_type(Checker* me, Binding const* element) {
+    if (element->default_value) {
+        Ty const* type = ty_widened_for_declaration(me, ty_expr_type(me, element->default_value), true);
+        if (!compiler_options()->strict_null_checks) return type;
+        Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+        return ty_union(me, parts, 2, nullptr, (TyList){0});
+    }
+    if (element->tag == BINDING_OBJECT || element->tag == BINDING_ARRAY) return ty_binding_pattern_type(me, element);
+    return ty_intrinsic(me, TY_ANY);
+}
+
+// tsc's getTypeFromBindingPattern: what an unannotated `{ a, b = 1 }` or `[a, b = 1]` parameter takes, `{ a: any; b?:
+// number }` or `[any, number?]`
+Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern) {
+    if (pattern->tag == BINDING_OBJECT) {
+        ObjectLiteralProp* props = nullptr;
+        u32 count = 0;
+        IndexInfo index = {0};
+        u32 index_count = 0;
+        for_each (item, vec_object_binding_item, &pattern->object) {
+            if (item->target.rest) {
+                index = (IndexInfo){ .key = ty_intrinsic(me, TY_STRING), .value = ty_intrinsic(me, TY_ANY),
+                    .param_name = checker_atom(me, c_sv("x")) };
+                index_count = 1;
+                continue;
+            }
+            if (item->computed_key) continue;
+            bool is_number = false;
+            Atom const* name = ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number);
+            if (!name) continue;
+            props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
+            panic_if(!props, "out of memory");
+            props[count++] = (ObjectLiteralProp){
+                .name = name,
+                .flags = item->target.default_value ? PROP_OPTIONAL : 0,
+                .type = binding_element_implied_type(me, &item->target), // (tsc's symbol has no declaration)
+            };
+        }
+        Ty const* ret = ty_object_literal(me, props, count, index_count ? &index : nullptr, index_count, OBJECT_SYNTHETIC);
+        free(props);
+        return ret;
+    }
+    if (pattern->tag != BINDING_ARRAY) return ty_intrinsic(me, TY_ANY);
+    u32 len = (u32)vec_binding_size(&pattern->array);
+    Binding const* last = len ? vec_binding_at(&pattern->array, len - 1) : nullptr;
+    bool has_rest = last && last->rest;
+    if (!len || (len == 1 && has_rest)) {
+        // Anything iterable
+        Symbol const* iterable = compiler_options()->target >= SCRIPT_TARGET_ES2015 ?
+            program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE) : nullptr;
+        Ty const* declared = iterable ? ty_declared_type_of(me, iterable) : nullptr;
+        Ty const* any = ty_intrinsic(me, TY_ANY);
+        if (declared && declared->kind == TY_DECLARED && declared->declared.type_params.len) {
+            TyList params = declared->declared.type_params;
+            Ty const** args = arena_new_n(&my arena, Ty const*, params.len);
+            for (u32 i = 0; i < params.len; i++) args[i] = any;
+            return ty_reference(me, declared, (TyList){ .data = args, .len = params.len });
+        }
+        return ty_array(me, any, false);
+    }
+    // Required up to the last element that has no default and isn't a hole or the rest
+    u32 min = 0;
+    for (u32 i = 0; i < len; i++) {
+        Binding const* element = vec_binding_at(&pattern->array, i);
+        if (!(element->rest || element->tag == BINDING_NOOP || element->default_value)) min = i + 1;
+    }
+    Ty const** elements = arena_new_n(&my arena, Ty const*, len);
+    unsigned char* flags = calloc(len, 1);
+    panic_if(!flags, "out of memory");
+    for (u32 i = 0; i < len; i++) {
+        Binding const* element = vec_binding_at(&pattern->array, i);
+        elements[i] = element->tag == BINDING_NOOP ? ty_intrinsic(me, TY_ANY) : binding_element_implied_type(me, element);
+        if (element->rest) {
+            flags[i] = TUPLE_ELEMENT_REST;
+            elements[i] = ty_array(me, elements[i], false);
+        } else if (i >= min) {
+            flags[i] = TUPLE_ELEMENT_OPTIONAL;
+        }
+    }
+    TupleShape shape = { .arity = len, .flags = flags };
+    Ty const* ret = ty_reference(me, ty_tuple_target(me, &shape), (TyList){ .data = elements, .len = len });
+    free(flags);
     return ret;
 }
 

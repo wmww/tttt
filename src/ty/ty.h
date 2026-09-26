@@ -868,6 +868,7 @@ Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
 // The type of a binding (a variable, a parameter, an element of a destructuring pattern): what is written (lowered
 // with `ctx`), else what is assigned to it
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx);
+Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern); // tsc's getTypeFromBindingPattern
 // A class as written inside itself: `C<T, U>` with its own type parameters as the arguments
 Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol);
 Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding);

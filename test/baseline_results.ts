@@ -1123,7 +1123,7 @@ const baselines = {
     'arityErrorRelatedSpanBindingPattern': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayAssignmentTest1': {
         errors: false,
@@ -1938,7 +1938,7 @@ const baselines = {
     'asyncFunctionTempVariableScoping': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionWithForStatementNoInitializer': {
         errors: true,
@@ -4838,7 +4838,7 @@ const baselines = {
     'commentsAfterSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsArgumentsOfCallExpression1': {
         errors: true,
@@ -11238,7 +11238,7 @@ const baselines = {
     'errorElaboration': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorElaborationDivesIntoApparentlyPresentPropsOnly': {
         errors: true,
@@ -25153,7 +25153,7 @@ const baselines = {
     'parameterDestructuringObjectLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parameterInitializerBeforeDestructuringEmit': {
         errors: true,
@@ -32363,7 +32363,7 @@ const baselines = {
     'unusedDestructuringParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedFunctionsinNamespaces1': {
         errors: true,
@@ -32748,7 +32748,7 @@ const baselines = {
     'unusedParametersWithUnderscore': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedParametersinConstructor1': {
         errors: true,
@@ -41691,7 +41691,7 @@ const baselines = {
         types: false,
     },
     'destructuringParameterDeclaration1ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41701,17 +41701,17 @@ const baselines = {
         types: false,
     },
     'destructuringParameterDeclaration3ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'destructuringParameterDeclaration3ES5iterable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'destructuringParameterDeclaration3ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41733,12 +41733,12 @@ const baselines = {
     'destructuringParameterDeclaration7ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration7ES5iterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration8': {
         errors: false,
@@ -41873,17 +41873,17 @@ const baselines = {
     'emptyArrayBindingPatternParameter01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyArrayBindingPatternParameter02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyArrayBindingPatternParameter03': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyArrayBindingPatternParameter04': {
         errors: true,
@@ -41953,17 +41953,17 @@ const baselines = {
     'emptyObjectBindingPatternParameter01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyObjectBindingPatternParameter02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyObjectBindingPatternParameter03': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyObjectBindingPatternParameter04': {
         errors: true,
@@ -42006,9 +42006,9 @@ const baselines = {
         types: true,
     },
     'iterableArrayPattern10': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern11': {
         errors: true,
@@ -42021,7 +42021,7 @@ const baselines = {
         types: true,
     },
     'iterableArrayPattern13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53816,9 +53816,9 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponents1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxStatelessFunctionComponents2': {
         errors: true,

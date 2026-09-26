@@ -345,6 +345,10 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
         Ty const* contextual = ty_contextual_parameter_type(checker, me);
         if (contextual) return contextual;
         if (my is_rest_parameter && my value.tag == EXPR_IMPLICIT_ANY) return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
+        // An unannotated pattern without a default takes what the pattern implies (tsc's getWidenedTypeForVariableLikeDeclaration)
+        if (my value.tag == EXPR_IMPLICIT_ANY && !my is_rest_parameter && (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY)) {
+            return ty_binding_pattern_type(checker, &my binding);
+        }
     }
     if (is_auto_typed(me)) return ty_intrinsic(checker, TY_AUTO);
     // A call of a single non-generic signature has its type without its arguments being checked (tsc's
