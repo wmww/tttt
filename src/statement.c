@@ -1344,6 +1344,29 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
     if (implementation && overload_count) {
         ty_check_overloads_compatible(current_checker, implementation, implementation->name, overloads, names, overload_count, errs);
     }
+    // A function merged with a class that isn't ambient: TS2813 on each class, TS2814 on each function declaration
+    bool non_ambient_class = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_CLASS) continue;
+        non_ambient_class |= !((ClassDecl const*)symbol->decls[i].node)->is_ambient;
+    }
+    for (u32 i = 0; non_ambient_class && i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        Error* error;
+        if (decl->kind == SYMBOL_DECL_CLASS) {
+            error = error_ctx_error_d(errs, decl->name, 2813, "Class declaration cannot implement overload list for '",
+                symbol->name, "'.");
+        } else if (decl->kind == SYMBOL_DECL_FUNCTION) {
+            error = error_ctx_error_d(errs, decl->name, 2814,
+                "Function with bodies can only merge with classes that are ambient.");
+        } else {
+            continue;
+        }
+        for (u32 j = 0; j < symbol->decl_count; j++) {
+            if (symbol->decls[j].kind != SYMBOL_DECL_CLASS) continue;
+            error_add_related_d(error, symbol->decls[j].name, 6506, "Consider adding a 'declare' modifier to this class.");
+        }
+    }
     u32 bodies = 0;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (symbol->decls[i].kind == SYMBOL_DECL_FUNCTION && ((FunctionImpl const*)symbol->decls[i].node)->has_body) bodies++;

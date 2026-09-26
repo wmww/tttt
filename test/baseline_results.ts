@@ -2061,7 +2061,7 @@ const baselines = {
         types: true,
     },
     'augmentedTypesClass2a': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2096,7 +2096,7 @@ const baselines = {
         types: false,
     },
     'augmentedTypesFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -2796,27 +2796,27 @@ const baselines = {
         types: true,
     },
     'callOverloads1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'callOverloads2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'callOverloads3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'callOverloads4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'callOverloads5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3931,12 +3931,12 @@ const baselines = {
         types: true,
     },
     'classOverloadForFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classOverloadForFunction2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13871,7 +13871,7 @@ const baselines = {
         types: true,
     },
     'funClodule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22626,7 +22626,7 @@ const baselines = {
         types: true,
     },
     'nameCollisions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28996,7 +28996,7 @@ const baselines = {
         types: true,
     },
     'staticClassMemberError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
