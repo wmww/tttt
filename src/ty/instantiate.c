@@ -140,7 +140,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return nullptr;
 
     MappedInfo const* mapped = ty_members(me, ty)->mapped;
-    if (!mapped || mapped->name_type || !mapped->modifiers_type || mapped->modifiers_type->kind != TY_TYPE_PARAM) return nullptr;
+    if (!mapped || !mapped->modifiers_type || mapped->modifiers_type->kind != TY_TYPE_PARAM) return nullptr;
     Ty const* list = ty_instantiate(me, mapped->modifiers_type, mapper);
     if (list == mapped->modifiers_type) return nullptr;
     u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
@@ -162,7 +162,8 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         free(parts);
         return ret;
     }
-    if (list->kind != TY_REFERENCE) return nullptr;
+    // (With an `as` clause, arrays and tuples map like any object)
+    if (list->kind != TY_REFERENCE || mapped->name_type) return nullptr;
 
     if (ty_is_array(me, list)) {
         bool readonly = mapped->readonly ? mapped->readonly > 0 : list->reference.target == my readonly_array_target;
@@ -175,8 +176,27 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (shape->arity > 32) return nullptr;
     Ty const* mapped_elements[32];
     unsigned char flags[32];
+    // Past the first rest element, each element maps as the element of an array of it, a variadic one as a whole
+    // (tsc's instantiateMappedTupleType)
+    bool past_rest = false;
     for (u32 i = 0; i < shape->arity; i++) {
-        if (shape->flags[i] & TUPLE_ELEMENT_REST) return nullptr; // TODO: rest and variadic elements
+        past_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+        if (past_rest) {
+            Ty const* element = elements.data[i];
+            bool rest = (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+            flags[i] = shape->flags[i];
+            if (rest && element->kind == TY_TYPE_PARAM) {
+                mapped_elements[i] = ty_instantiate(me, ty, mapper_with(me, mapper, mapped->modifiers_type, element));
+                continue;
+            }
+            Ty const* array = rest ? element : ty_array(me, element, false);
+            if (!ty_is_array(me, array)) return nullptr;
+            TyMapper const* element_mapper = mapper_with(me, mapper_with(me, mapper, mapped->modifiers_type, array),
+                mapped->type_param, ty_intrinsic(me, TY_NUMBER));
+            Ty const* mapped_element = ty_instantiate(me, mapped->template, element_mapper);
+            mapped_elements[i] = rest ? ty_array(me, mapped_element, false) : mapped_element;
+            continue;
+        }
         cstr index = cstr_d(i);
         Ty const* key = ty_string_literal(me, cstr_sv(&index));
         cstr_drop(&index);
@@ -185,7 +205,6 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         if (mapped->optional > 0) flags[i] |= TUPLE_ELEMENT_OPTIONAL;
         if (mapped->optional < 0) flags[i] &= ~(unsigned)TUPLE_ELEMENT_OPTIONAL;
     }
-    (void)elements;
     TupleShape new_shape = {
         .arity = shape->arity,
         .readonly = mapped->readonly ? mapped->readonly > 0 : shape->readonly,

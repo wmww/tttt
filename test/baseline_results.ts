@@ -27816,7 +27816,7 @@ const baselines = {
         types: true,
     },
     'reverseMappedTypeContextualTypesPerElementOfTupleConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -64232,8 +64232,8 @@ const baselines = {
     },
     'mappedTypesGenericTuples2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'recursiveMappedTypes': {
         errors: false,

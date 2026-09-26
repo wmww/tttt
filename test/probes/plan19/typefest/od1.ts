@@ -1,0 +1,17 @@
+import type {OmitDeep, OmitDeepWithOnePath, OmitDeepArrayWithOnePath, OmitDeepObjectWithOnePath} from './od_lib';
+declare function expectType<T>(v: T): void;
+type Arr = Array<{a: 1; b: 2}>;
+declare const r1: OmitDeep<{array: Arr}, `array.${number}.a`>;
+expectType<{array: Array<{b: 2}>}>(r1);
+declare const w1: OmitDeepWithOnePath<{array: Arr}, `array.${number}.a`>;
+expectType<{array: Array<{b: 2}>}>(w1);
+declare const w2: OmitDeepArrayWithOnePath<Arr, `${number}.a`>;
+expectType<Array<{b: 2}>>(w2);
+declare const w3: OmitDeepWithOnePath<{a: 1; b: 2}, `a`>;
+expectType<{b: 2}>(w3);
+declare const w4: OmitDeepObjectWithOnePath<{array: Arr}, `array.${number}.a`>;
+expectType<{array: Array<{b: 2}>}>(w4);
+expectType<{array: Array<{c: 2}>}>(w4);
+type BaseType = { objectArray: Array<{a: 1; b: 2}>; 0: number; };
+declare const r2: OmitDeep<{array: BaseType['objectArray']}, `array.${number}.a`>;
+expectType<{array: Array<{b: 2}>}>(r2);
