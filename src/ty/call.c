@@ -1324,14 +1324,51 @@ static bool signature_has_literal_types(Signature const* sig) {
 
 // Overloads with a literal parameter are tried first, in their order (tsc's reorderCandidates, "specialized
 // signatures"). TODO: tsc also orders the groups of merged declarations
-static void reorder_candidates(Signature** signatures, u32 count) {
-    u32 specialized = 0;
+static TyDeclGroup const* signature_decl_group(Checker* me, Signature const* sig) {
+    while (sig->target) sig = sig->target;
+    return sig->function ? ty_decl_group(me, sig->function) : nullptr;
+}
+
+// tsc's reorderCandidates: signatures with literal types first; and of the same interface, each declaration's
+// signatures go before those of its declarations before (in their own order): lib.es2015.promise's tuple overload of
+// Promise.all is tried before lib.es2015.iterable's Iterable one. Another interface's (a base's) come after
+static void reorder_candidates(Checker* me, Signature** signatures, u32 count) {
+    static char const sentinel = 0; // Stands for the symbol and declaration of signatures not from an interface
+    Signature** result = malloc(sizeof(Signature*) * (count ? count : 1));
+    panic_if(!result, "out of memory");
+    u32 len = 0, cutoff = 0, index = 0;
+    i32 specialized = -1;
+    Symbol const* last_symbol = nullptr;
+    void const* last_parent = nullptr;
     for (u32 i = 0; i < count; i++) {
-        if (!signature_has_literal_types(signatures[i])) continue;
-        Signature* moved = signatures[i];
-        memmove(&signatures[specialized + 1], &signatures[specialized], sizeof(Signature*) * (i - specialized));
-        signatures[specialized++] = moved;
+        TyDeclGroup const* group = signature_decl_group(me, signatures[i]);
+        Symbol const* symbol = group ? group->symbol : (Symbol const*)(void const*)&sentinel;
+        void const* parent = group ? group->declaration : &sentinel;
+        if (!last_symbol || symbol == last_symbol) {
+            if (last_parent && parent == last_parent) {
+                index++;
+            } else {
+                last_parent = parent;
+                index = cutoff;
+            }
+        } else {
+            index = cutoff = len;
+            last_parent = parent;
+        }
+        last_symbol = symbol;
+        u32 splice;
+        if (signature_has_literal_types(signatures[i])) {
+            splice = (u32)++specialized;
+            cutoff++;
+        } else {
+            splice = index;
+        }
+        memmove(&result[splice + 1], &result[splice], sizeof(Signature*) * (len - splice));
+        result[splice] = signatures[i];
+        len++;
     }
+    memcpy(signatures, result, sizeof(Signature*) * count);
+    free(result);
 }
 
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
@@ -1458,7 +1495,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
         }
         if (any_this) with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);
     }
-    reorder_candidates(signatures, count);
+    reorder_candidates(me, signatures, count);
     Args args = collect_args(me, call);
     Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &with_this, call_span, errs);
     ret = resolution.ret;

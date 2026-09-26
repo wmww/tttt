@@ -19,6 +19,7 @@ typedef struct MembersBuilder {
     IndexInfo* index;
     u32 index_count, index_cap;
     MappedInfo const* mapped;
+    TyDeclGroup const* decl_group; // The interface declaration being added (overload order, see reorder_candidates)
 } MembersBuilder;
 
 #define builder_push(me, field, value) do { \
@@ -139,6 +140,29 @@ static bool function_is_thisless(FunctionImpl const* function) {
 }
 
 // Adds the members written in (or, for classes/enums/namespaces, evaluated by the legacy checker into) an Interface
+static void set_decl_group(Checker* me, FunctionImpl const* function, TyDeclGroup const* group) {
+    u64 key[2] = { KEY_DECL_GROUP, (u64)(uintptr_t)function };
+    *intern_slot(me, &my links, key, 2) = group;
+}
+
+// The interface declaration a method or call signature was written in, null if it's not an interface's
+TyDeclGroup const* ty_decl_group(Checker* me, FunctionImpl const* function) {
+    u64 key[2] = { KEY_DECL_GROUP, (u64)(uintptr_t)function };
+    return intern_get(&my links, key, 2);
+}
+
+static TyDeclGroup const* decl_group_of(Checker* me, Symbol const* symbol, SymbolDecl const* node) {
+    u64 key[2] = { KEY_DECL_GROUP, (u64)(uintptr_t)node };
+    void const** slot = intern_slot(me, &my links, key, 2);
+    if (!*slot) {
+        TyDeclGroup* group = arena_new(&my arena, TyDeclGroup);
+        group->symbol = symbol;
+        group->declaration = node;
+        *slot = group;
+    }
+    return *slot;
+}
+
 static void builder_add_interface_member(
     Checker* me, MembersBuilder* builder, InterfaceMember const* i, LowerCtx ctx, Symbol const* parent
 ) {
@@ -156,6 +180,7 @@ static void builder_add_interface_member(
                 }
                 bool is_method = i->key.tag == INTERFACE_KEY_NAME && (i->is_method || i->key.name_is_member_function) &&
                     i->type.tag == TYPE_CALLABLE;
+                if (is_method && builder->decl_group) set_decl_group(me, i->type.callable->function, builder->decl_group);
                 Prop* existing = builder_find_prop(builder, name);
                 if (existing) {
                     // Overloads are separate members in the legacy interface and one method with several signatures here
@@ -231,6 +256,9 @@ static void builder_add_interface_member(
             }   break;
 
             case INTERFACE_KEY_CALLABLE: {
+                if (i->type.tag == TYPE_CALLABLE && builder->decl_group) {
+                    set_decl_group(me, i->type.callable->function, builder->decl_group);
+                }
                 Signature* sig = i->type.tag == TYPE_CALLABLE ?
                     builder_add_callable(me, builder, i->type.callable->function, ctx) : nullptr;
                 if (sig) {
@@ -807,7 +835,9 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 if (node->kind == SYMBOL_DECL_INTERFACE) {
                     InterfaceDecl const* interface_decl = node->node;
                     check(interface_decl->type.tag == TYPE_INTERFACE);
+                    builder.decl_group = decl_group_of(me, decl, node);
                     builder_add_interface(me, &builder, &interface_decl->type.interface, ctx, decl);
+                    builder.decl_group = nullptr;
                 } else if (node->kind == SYMBOL_DECL_CLASS) {
                     builder_add_class_items(me, &builder, node->node, false, ctx, decl);
                 }

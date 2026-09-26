@@ -53,6 +53,7 @@ enum {
     KEY_CONTEXT_THIS,   // FunctionImpl -> the `this` type its contextual signature declares
     KEY_LITERAL_CONTEXT, // Object literal Expr -> the contextual type it is being checked with (for `this` in methods)
     KEY_LITERAL_PARENT, // Object literal Expr -> the object literal it is the value of a property of
+    KEY_DECL_GROUP,     // FunctionImpl of an interface member, or a SymbolDecl -> TyDeclGroup
     KEY_FUNCTION,       // FunctionImpl -> Ty, see ty_function_type()
     KEY_ITERATION_TYPES, // (type id, which) -> TyIterationTypes, see iterate.c
     KEY_UNIQUE_SYMBOL_NAME, // Escaped property name atom (`__@sym@12`) -> the unique symbol type it stands for
@@ -210,6 +211,13 @@ typedef struct FoundProp {
     Prop const* prop; // The property found (of an intersection: of its first member that has one)
 } FoundProp;
 FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name);
+// Where an interface's method or call signature was declared: tsc's signature.declaration symbol and parent, which
+// overload resolution orders by (reorder_candidates)
+typedef struct TyDeclGroup {
+    Symbol const* symbol; // The interface
+    void const* declaration; // Which of its declarations
+} TyDeclGroup;
+TyDeclGroup const* ty_decl_group(Checker* me, FunctionImpl const* function);
 Ty const* ty_rest_element_type(Checker* me, Ty const* rest);
 // Type parameter `index` of a generic declared type was measured as contravariant
 bool ty_type_param_is_contravariant(Checker* me, Ty const* target, u32 index);

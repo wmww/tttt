@@ -2217,7 +2217,7 @@ const baselines = {
     },
     'awaitedType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitedTypeCrash': {
@@ -7051,9 +7051,9 @@ const baselines = {
         types: true,
     },
     'correctOrderOfPromiseMethod': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'correlatedUnions': {
         errors: false,
@@ -24863,12 +24863,12 @@ const baselines = {
     'overloadBindingAcrossDeclarationBoundaries': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadBindingAcrossDeclarationBoundaries2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadCallTest': {
         errors: true,
@@ -32183,7 +32183,7 @@ const baselines = {
     'unknownLikeUnionObjectFlagsNotPropagated': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unknownPropertiesAreAssignableToObjectUnion': {
         errors: true,
