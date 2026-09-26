@@ -1,4 +1,5 @@
 #include "binding.h"
+#include "port_statement.h"
 #include "flow.h"
 #include "scope.h"
 #include "several_types.h"
@@ -331,6 +332,8 @@ void object_binding_item_drop(ObjectBindingItem* me) {
 }
 
 void initialized_binding_drop(InitializedBinding* me) {
+    for (u32 i = 0; i < my require_port_count; i++) port_item_drop(&my require_ports[i]);
+    free(my require_ports);
     binding_drop(&my binding);
     expr_drop(&my value);
     lazy_type_drop(&my lazy_type);
@@ -339,7 +342,25 @@ void initialized_binding_drop(InitializedBinding* me) {
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_INITIALIZED_BINDING);
     my abstract_literals = props.abstract_literals;
-    binding_add_names(&my binding, &my lazy_type, scope, props);
+    if (!my require_port_count) {
+        binding_add_names(&my binding, &my lazy_type, scope, props);
+        return;
+    }
+    // The names are aliases (see require_ports), exported like `export import x = require()`
+    my binding.source = &my lazy_type;
+    for (u32 i = 0; i < my require_port_count; i++) my require_ports[i].export_import = props.exported;
+    if (my binding.tag == BINDING_IDENTIFIER) {
+        scope_add_port(scope, &my require_ports[0]);
+        my binding.symbol = my require_ports[0].symbol;
+        return;
+    }
+    for_each (i, vec_object_binding_item, &my binding.object) {
+        i->target.parent = &my binding;
+        i->target.parent_item = i;
+        PortItem* port = &my require_ports[i_index];
+        scope_add_port(scope, port);
+        i->target.symbol = port->symbol;
+    }
 }
 
 // A `const` declaration of a variable can have a unique symbol type: its annotation and a `Symbol()` initializer say so
@@ -355,6 +376,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
             &my binding.explicit_type, &my value
         );
     }
+    if (my require_port_count) module_ref_report(my require_ports[0].module_ref, names, errs);
     InitializedBinding const* outer = names->flow->initializing;
     names->flow->initializing = me;
     binding_lookup_names(&my binding, names, errs);

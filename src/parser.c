@@ -6065,6 +6065,59 @@ static bool using_declaration_follows(Parser const* parent, bool disallow_of) {
     return ret;
 }
 
+// tsc's isVariableDeclarationInitializedToBareOrAccessedRequire: in a JavaScript file `const x = require("m")`,
+// `const { a, b: c } = require("m")` and `const a = require("m").a` declare aliases, like imports
+static void note_require_declaration(InitializedBinding* initializer) {
+    if (initializer->binding.has_explicit_type) return;
+    Expr* value = &initializer->value;
+    Span accessed = span_null;
+    if (value->tag == EXPR_PROPERTY && !expr_is_perenthisized(value) && value->property->form == PROPERTY_EXPR_DOT &&
+        !value->property->optional_chain
+    ) {
+        accessed = value->property->prop.inner_span;
+        value = &value->property->expr;
+    }
+    if (!expr_is_require_call(value) || expr_is_perenthisized(value)) return;
+    ModuleRef* ref = value->call->callable.identifier.module_ref;
+    if (!ref) return;
+    Binding const* binding = &initializer->binding;
+    if (binding->tag == BINDING_OBJECT && span_valid(accessed)) return;
+    for_each (i, vec_object_binding_item, binding->tag == BINDING_OBJECT ? &binding->object : &(VecObjectBindingItem){0}) {
+        if (i->computed_key || i->target.tag != BINDING_IDENTIFIER || i->target.rest || i->target.default_value ||
+            !span_valid(i->source_span)
+        ) {
+            return;
+        }
+    }
+    if (binding->tag != BINDING_IDENTIFIER && (binding->tag != BINDING_OBJECT || !vec_object_binding_item_size(&binding->object))) return;
+    ((Expr*)value)->call->callable.identifier.require_call = 2;
+    if (binding->tag == BINDING_IDENTIFIER) {
+        initializer->require_ports = c_new(PortItem, {
+            .tag = span_valid(accessed) ? PORT_IMPORT_SPECIFIC : PORT_IMPORT_GATHER,
+            .decl_name = binding->content_span,
+            .full_span = binding->content_span,
+            .source_name = accessed,
+            .is_require = !span_valid(accessed),
+            .module_ref = ref,
+        });
+        initializer->require_port_count = 1;
+        return;
+    }
+    u32 count = (u32)vec_object_binding_item_size(&binding->object);
+    initializer->require_ports = calloc(count, sizeof(PortItem));
+    initializer->require_port_count = count;
+    for_each (i, vec_object_binding_item, &binding->object) {
+        Span name = i->target.content_span;
+        initializer->require_ports[i_index] = (PortItem){
+            .tag = PORT_IMPORT_SPECIFIC,
+            .decl_name = name,
+            .full_span = span_start_ptr(i->source_span) < span_start_ptr(name) ? span_between(i->source_span, name) : name,
+            .source_name = i->source_span,
+            .module_ref = ref,
+        };
+    }
+}
+
 // in_for: the declaration of a `for` loop, where `using of` is `for (using of x)`
 static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, VariableStatement* ret) {
     Parser p = parser(parent);
@@ -6169,6 +6222,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
             hop_whitespace(&p);
         }
 
+        if (p.shared->source->is_js) note_require_declaration(&initializer);
         vec_initialized_binding_push(&ret->initializers, initializer);
 
         if (*p.pos == ';' ||

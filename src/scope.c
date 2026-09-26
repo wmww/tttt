@@ -1128,7 +1128,8 @@ static void declare_commonjs_export(Scope* me, csview name, Span name_span, Expr
     Symbol* symbol = declare_symbol(me, my container->exports, name, name_span, includes, 0, false, &merged);
     if (!merged) {
         symbol->name = name;
-        symbol->name_span = name_span;
+        // (`export=` is named that, not by what is written)
+        symbol->name_span = csview_equals(name, "export=") ? span_null : name_span;
         symbol->parent = my container;
         symbol->exported = true;
     }

@@ -1427,7 +1427,8 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol 
         .span = span,
         .name = declaration->name_span,
     });
-    if (declaration->flags & SYMBOL_VALUE) {
+    // (An alias here is a variable declared by `require()` in JavaScript)
+    if (declaration->flags & (SYMBOL_VALUE | SYMBOL_ALIAS)) {
         baseline_test_case_add_symbol_value(me, span, declaration);
     } else if (declaration->flags & SYMBOL_TYPE) {
         baseline_test_case_add_type(me, span, ty_declared_type_of(current_checker, declaration));

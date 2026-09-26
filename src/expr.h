@@ -52,8 +52,9 @@ typedef struct IdentifierExpr {
     // isOuterVariable), as far as the resolve walk knows (a `var` whose declaration comes later isn't)
     bool outer_reference;
     bool is_arguments; // The implicit `arguments` of the function around it (tsc's argumentsSymbol)
-    // The callee of `require(x)` in a JavaScript file (module_ref is the module if x is a string literal)
-    bool require_call;
+    // The callee of `require(x)` in a JavaScript file (module_ref is the module if x is a string literal): 1, or 2 when
+    // the call is what a declaration's aliases import (InitializedBinding.require_ports, which report the module)
+    uint8_t require_call;
     bool shorthand; // The value of a shorthand property `{ a }`
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
@@ -212,6 +213,9 @@ static inline Expr expr_implicit_any(Span span) {
 static inline bool expr_is_perenthisized(Expr const* me) {
     return span_start_ptr(my inner_span) != span_start_ptr(my outer_span);
 }
+
+// What there is to say about a module name that an import-like construct uses (TS2307 & co.)
+void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs);
 
 // CommonJS in JavaScript files: what the left operand of an `=` declares (tsc's getAssignmentDeclarationKind)
 typedef enum CommonJsTarget {

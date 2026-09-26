@@ -757,12 +757,12 @@ const baselines = {
     },
     'ambientRequireFunction(module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ambientRequireFunction(module=preserve)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ambientStatement1': {
@@ -3207,7 +3207,7 @@ const baselines = {
     },
     'checkJsTypeDefNoUnusedLocalMarked': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'checkJsdocTypeTagOnExportAssignment1': {
@@ -16187,12 +16187,12 @@ const baselines = {
     },
     'importHelpersCommonJSJavaScript(verbatimmodulesyntax=false)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersCommonJSJavaScript(verbatimmodulesyntax=true)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersDeclarations': {
@@ -19077,7 +19077,7 @@ const baselines = {
     },
     'javascriptCommonjsModule': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'javascriptDefinePropertyPrototypeNonConstructor': {
@@ -19112,12 +19112,12 @@ const baselines = {
     },
     'jsDeclarationEmitExportAssignedArray': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationEmitExportAssignedFunctionWithExtraTypedefsMembers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationEmitExportedClassWithExtends': {
@@ -19212,7 +19212,7 @@ const baselines = {
     },
     'jsFileClassPropertyInitalizationInObjectLiteral': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsFileClassPropertyType': {
@@ -23386,7 +23386,7 @@ const baselines = {
         types: false,
     },
     'noCrashOnParameterNamedRequire': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26402,7 +26402,7 @@ const baselines = {
     },
     'pushTypeGetTypeOfAlias': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'qualifiedModuleLocals': {
@@ -51402,7 +51402,7 @@ const baselines = {
     },
     'jsDeclarationsComputedNames': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsConstsAsNamespacesWithReferences': {
@@ -51462,12 +51462,12 @@ const baselines = {
     },
     'jsDeclarationsExportAssignedClassInstance1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsExportAssignedClassInstance2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsExportAssignedClassInstance3': {
@@ -51497,7 +51497,7 @@ const baselines = {
     },
     'jsDeclarationsExportAssignmentWithKeywordName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsExportDefinePropertyEmit': {
@@ -51607,7 +51607,7 @@ const baselines = {
     },
     'jsDeclarationsImportTypeBundled': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsInterfaces': {
@@ -51706,7 +51706,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsReferenceToClassInstanceCrossFile': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51742,12 +51742,12 @@ const baselines = {
     },
     'jsDeclarationsTypeReassignmentFromDeclaration': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsTypeReassignmentFromDeclaration2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsTypeReferences': {
@@ -51768,7 +51768,7 @@ const baselines = {
     'jsDeclarationsTypeReferences4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsTypedefAndImportTypes': {
         errors: true,
@@ -51792,7 +51792,7 @@ const baselines = {
     },
     'jsDeclarationsTypedefPropertyAndExportAssignment': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsUniqueSymbolUsage': {
@@ -52557,7 +52557,7 @@ const baselines = {
     },
     'paramTagTypeResolution': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'paramTagTypeResolution2': {
@@ -52667,7 +52667,7 @@ const baselines = {
     },
     'typeTagModuleExports': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeTagNoErasure': {
@@ -52707,7 +52707,7 @@ const baselines = {
     },
     'typedefCrossModule4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typedefCrossModule5': {
@@ -54442,17 +54442,17 @@ const baselines = {
     },
     'nodeModulesAllowJsExportAssignment(module=node16)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nodeModulesAllowJsExportAssignment(module=node18)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nodeModulesAllowJsExportAssignment(module=nodenext)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nodeModulesAllowJsExportlessJsModuleDetectionAuto(module=node16)': {
@@ -60052,7 +60052,7 @@ const baselines = {
     },
     'binderUninitializedModuleExportsAssignment': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'chainedPrototypeAssignment': {
@@ -60076,13 +60076,13 @@ const baselines = {
         types: false,
     },
     'commonJSAliasedExport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'commonJSImportClassTypeReference': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'commonJSImportExportedClassExpression': {
@@ -60097,7 +60097,7 @@ const baselines = {
     },
     'commonJSReexport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'conflictingCommonJSES2015Exports': {
@@ -60298,12 +60298,12 @@ const baselines = {
     'lateBoundAssignmentDeclarationSupport2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'lateBoundAssignmentDeclarationSupport3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'lateBoundAssignmentDeclarationSupport4': {
         errors: false,
@@ -60392,7 +60392,7 @@ const baselines = {
     },
     'moduleExportAliasImported': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleExportAliasUnknown': {
@@ -60412,7 +60412,7 @@ const baselines = {
     },
     'moduleExportAssignment3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleExportAssignment4': {
@@ -60627,7 +60627,7 @@ const baselines = {
     },
     'reExportJsFromTs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'requireAssertsFromTypescript': {
@@ -60642,7 +60642,7 @@ const baselines = {
     },
     'requireTwoPropertyAccesses': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceFileMergeWithFunction': {
@@ -60988,7 +60988,7 @@ const baselines = {
     'varRequireFromTypescript': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'scannerES3NumericLiteral1': {
         errors: true,

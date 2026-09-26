@@ -229,6 +229,16 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
     }
 }
 
+// What there is to say about a module name that an import-like construct uses
+void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
+    if (!ref) return;
+    if (ref->file) {
+        module_ref_report_resolved(ref, errs);
+    } else if (!binder_module_of_ref(names->binder, ref)) {
+        module_ref_report_unresolved(ref, errs);
+    }
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
@@ -283,13 +293,9 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     my target = scope_get_value(names, my name.sv, &my symbol);
     if (!my target && names->file && names->file->is_js) {
         if (my require_call) {
-            // tsc's requireSymbol, and the module like an import's
+            // tsc's requireSymbol, and the module like an import's (a declaration's aliases report it themselves)
             my target = my symbol = binder_require_symbol(names->binder);
-            if (my module_ref && my module_ref->file) {
-                module_ref_report_resolved(my module_ref, errs);
-            } else if (my module_ref && !binder_module_of_ref(names->binder, my module_ref)) {
-                module_ref_report_unresolved(my module_ref, errs);
-            }
+            if (my require_call == 1) module_ref_report(my module_ref, names, errs);
             return;
         }
         if (names->file->is_commonjs && span_equals(my name, "exports")) {

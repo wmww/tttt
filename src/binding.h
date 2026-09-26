@@ -90,6 +90,10 @@ typedef struct InitializedBinding {
     LazyType lazy_type;
     // The unannotated parameter of a setter: the getter of the same property, whose return type it has
     struct FunctionImpl const* getter;
+    // JavaScript: `const x = require("m")`, `const { a, b: c } = require("m")`, `const a = require("m").a` declare
+    // aliases like imports (tsc's isVariableDeclarationInitializedToBareOrAccessedRequire), one per name (owned)
+    struct PortItem* require_ports;
+    u32 require_port_count;
 } InitializedBinding;
 
 void initialized_binding_drop(InitializedBinding* me);
