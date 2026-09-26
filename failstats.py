@@ -265,8 +265,8 @@ def main():
         else: cats['both missing and spurious'] += 1
     rep += table('  by shape:', cats, 10)
     syntax = [r for r in fails if any(c.startswith('TS1') and len(c) == 6 for c in r['spurious'])]
-    rep.append(f'  {len(syntax)} tests have a spurious TS1xxx, ie the parser rejects syntax tsc accepts (typechecking is '
-               f'skipped for those, so their types/symbols fail too); {sum(1 for r in syntax if r["expected_errors"] == 0)} '
+    rep.append(f'  {len(syntax)} tests have a spurious TS1xxx, ie the parser rejects or recovers differently '
+               f'from tsc (./syntaxstats.py breaks them down); {sum(1 for r in syntax if r["expected_errors"] == 0)} '
                f'of them expect no errors at all')
     missing, spurious, alone = collections.Counter(), collections.Counter(), collections.Counter()
     missing_t, spurious_t = collections.defaultdict(set), collections.defaultdict(set)

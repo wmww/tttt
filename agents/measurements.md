@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, parser baseline for plan 27 (`./syntaxstats.py`, at 2b74f47)
+687 tests' parser diagnostics differ from tsc's (48 JS). TS tests by divergence: A (tsc's parser silent) 183, B (ours
+first) 111, C (same position, other code) 103, D (tsc's first) 67, E (recovery diverges later) 78, M (only tsc) 97.
+Clusters: lexical literals 92, identifiers 37; permissive modifiers 68, yield/await 28, index signatures 26, heritage
+22, `with` 17, private names 17, decorators 9; recovery list-context 56, object literal 18, TS1011 15; other 234
+(A 47, B 23, C 21, D 30, E 30, M 83). 224 of the 639 match tsc on every non-parse diagnostic.
+
 ## 2026-09-26, JS baseline for plan 26 (`./jsstats.py`, at d8ab92a)
 1049 JS tests, **160 pass**, 889 fail. Failing tests by category (only / involved): CommonJS 87 / 211, expandos & JS
 classes 72 / 255, basic JSDoc 113 / 421, other JSDoc tags 13 / 145, JS leniency 5 / 87, JS syntax diagnostics 42 / 162,

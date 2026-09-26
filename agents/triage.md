@@ -264,9 +264,8 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   smaller stacks still.
 - `parse_label` should refuse reserved words (`default:`/`case x:` are fine today only because of parse order).
 - A leading `&`/`|` in a type becomes an `any`/`never` operand (`parse_type`), which every consumer has to know to skip.
-- No tokenizer + backtracking with fail cache. Fine for speed in principle (`parse_fail`/
-  `hop_start_if_ends_on_word_break` are ~5% of the corpus profile), but parse-error fidelity against tsc is what the
-  errors baseline measures.
+- No tokenizer + backtracking with fail cache: kept (plan 27 decided). `parse_fail`/`hop_start_if_ends_on_word_break`
+  are ~5% of the corpus profile; parse is 113 of react's 310 ms, the perf session should profile it.
 
 ### Found by plan 15 session 1 (2026-09-24)
 - **TS2403 false positives = type-core bugs** (each test's errors fail on a spurious TS2403 because tttt computes two

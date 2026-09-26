@@ -42,13 +42,12 @@ types components) are the oracle, not the goal; real projects that are clean und
   are JS, and they are the source of most spurious TS2304/TS2580. It's a real part of what tsc checks
   (`checkJs` projects, mixed code bases), and its binder side (CommonJS exports, expando assignments as
   declarations) is foundational, so it must be designed rather than trickled in.
-- **Parser recovery gets an architecture question (plan 27).** 613 TS tests have a spurious syntax error, so they
-  are never typechecked and fail every component; that's the biggest TS-only pool left. The parser was chosen for
-  speed with "watch error-recovery fidelity" as its known risk, and the risk is now 4.5% of the suite. Before more
-  piecemeal fixes, a planning session decides whether tsc's list recovery fits the backtracking parser or the parser
-  needs a tsc-shaped scanner (which could also pay for itself in perf: the parser is ~19% of the corpus'
-  instructions). Recovery on invalid code matters less to users than checker correctness, which is why it's
-  planned after the corpora and JS, not before.
+- **Parser recovery: decided, no rewrite (plan 27).** 639 TS tests' parse errors differ from tsc's, but only ~1/3
+  is recovery; the rest is permissive grammar (tsc parses `with`, modifiers anywhere, odd index signatures and
+  heritage clauses, then complains from the checker: ~190) and lexical diagnostics (escapes, numbers, templates,
+  unicode identifiers: ~130). A scanner fixes neither. Recovery gets one framework (tsc's parsingContext mask, list
+  terminators, skip-or-abort, commit points instead of backtracking past them), then patching. Parser perf is the
+  perf session's question, not a rewrite's.
 - **The rest of the suite is the type core's long tail.** Missing and spurious TS2322/TS2339 (~200 tests with a
   single-code diff), `./displaydiff.py`'s `other` (378 TS tests): mostly checker bugs that the types baseline shows
   first. Work them like a corpus (sample, reduce, fix the tsc rule), not as display polish. Union origins stay
@@ -85,7 +84,7 @@ state is in `Checker`; the AST is read-only while checking.
 The five foundational problems the first insights found are all fixed: value-semantic types (-> interned `Ty`),
 string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05), scopes discarded after resolution
 (-> plan 04), checker state in the AST (-> per-`Checker` slots). What's left to watch:
-- **Parser**: error-recovery fidelity (plan 27's question), unbounded recursion depth (binary chains need ~8 MB of
+- **Parser**: error-recovery fidelity (plan 27: lists and commit points, no rewrite), unbounded recursion depth (binary chains need ~8 MB of
   stack; tsc walks them iteratively), backtracking cost.
 - **Binder**: still writes to shared tables and one arena (`hacks.md`, "Parallelism contract audit"), the one phase
   that doesn't shard per file. JS support will add declarations from assignments; design it with that in mind.
@@ -100,7 +99,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
   Checks accumulate cost silently between perf sessions.
 - JS/JSDoc is a second front end on top of the checker: the risk is a parallel type world for JSDoc. It must lower
   into the same `Ty` machinery.
-- Parser rewrites are tempting and expensive; plan 27 must justify one with test counts and perf, not taste.
+- Parser rewrites are tempting and expensive; plan 27 looked and found no case for one. Revisit only with a profile.
 
 ## Where this is going (rough order)
 1. ~~Tooling, type core, first corpus, binder, flow, modules, underlines, corpus to zero, second corpora, plan 19
