@@ -92,6 +92,11 @@ pragmas or options 16, `LibraryManagedAttributes` 8.
   subset: pass 195, errors 325, symbols 400, types 253 of 457. Left in stage 3: TS2558 on tag type arguments, TS2783,
   TS2769 overload reporting for tags, types/symbols of components; the rest of the children tests' diffs are display
   (union order, `ReactChild` alias vs expanded union: plan 21).
+  Later the same day: JSX attribute discrimination of union props (discriminateContextualTypeByJSXAttributes, and the
+  missing-optional-property half for object literals too), TS2558 on intrinsic tag type arguments, TS2783, relation
+  heads for JSX (excess properties keep theirs, a failing intersection member becomes it). Stage 3 is essentially done;
+  what's left in the subset is mostly general (inference through union parameters and other triage items, display)
+  or stage 4 (TS2875/TS2792: the react-jsx runtime import). TS2769 for overloaded components wasn't looked at.
 
 ## Stages
 Each stage ends with `./fasttest.sh --summary` clean of losses, `./fasttest.sh -s`, and a commit. Measure the JSX

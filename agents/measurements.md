@@ -2,11 +2,17 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
-## 2026-09-26, plan 22 stage 3 part 1 (JSX components)
-Suite 7310 -> **7342 / 13540** full (errors 9621, symbols 11175, types 9366); 2 accepted losses (plan 22 Progress).
-`./failstats.py --jsx`: pass 188, errors 311, symbols 399, types 253 of 457. Corpora: tsc 0, type-fest 142, valibot
-161 -> 152. `./bench.sh`: synthetic 3.04 s, tsc corpus 0.77 s (typecheck 504 ms), type-fest 0.31 s, valibot 0.68 s /
-508 MB: unchanged.
+## 2026-09-26, plan 22 stage 3 (JSX components) and what it turned up
+Suite 7310 -> **7567 / 13540** full (errors 9718, symbols 11182, types 9601); 2 accepted losses (plan 22 Progress).
+General fixes found through JSX carried most of it: bare names in messages (+48), `extends Base<T>` in the types
+baseline (+94), tsc's Performance Stats block no longer compared (+45), binding-pattern parameter types (+16), TS2344
+on type references (+8). `./failstats.py --jsx`: pass 188 -> 233, errors 311 -> 329, symbols 399 -> 405, types 253 ->
+303 of 457. Corpora: tsc 0; type-fest 142 -> 162, valibot 161 -> 164: all of it TS2344 from the new type-reference
+constraint check (type-fest's unused-`@ts-expect-error` TS2578 went 10 -> 6, i.e. some are right); the rest are
+conditional/relation evaluation bugs the check exposes (triage.md). `./bench.sh`: tsc corpus 0.77 s (typecheck 503
+ms), type-fest 0.31 s, valibot 0.69 s / 511 MB: unchanged. **The synthetic corpus is not comparable with earlier
+entries**: it's built from fully passing tests and the newly passing ones are heavy (927 tests x 200, 2.48M lines):
+tttt 4.73 s / 4065 MB, tsc 28.8 s, tsgo 7.97 s (exit 1: it rejects something in it), tsgo single-threaded 10.35 s.
 
 ## 2026-09-25, plan 22 stages 0+1 (JSX harness + parser)
 Suite 7152 -> **7162 / 13542**, nothing lost. `./failstats.py --jsx`: 457 tests, errors 17 -> 243, symbols 51 -> 125,

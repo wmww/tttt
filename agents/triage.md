@@ -415,3 +415,8 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   + n })` types `n` as unknown (tsc: string); with `p: PropsWithConvert<T>` it works. The context-sensitive argument
   is skipped whole in call.c's first pass and checked against `Props<unknown>` in the second. Costs
   tsxInferenceShouldNotYieldAnyOnUnions (types) and likely more.
+- TS2344 on type references (new, 2026-09-26) fires spuriously in the corpora where tttt evaluates type-level
+  equality/path helpers wrongly: type-fest `test-d/get.ts` (`MismatchInfo<Get<...>>`, `StrictEqualUsingTSInternal...`
+  conditionals), `test-d/pick-deep.ts` (`Paths<T>` not containing `"nested.deep.deeper.value"`), valibot
+  `getDefaults.test-d.ts` / `keyof.test-d.ts` (a mapped "Expected: ..., Actual: ..." type). Each is a conditional or
+  mapped-type evaluation bug; `./realworld.py --corpus type-fest --code TS2344` lists them.
