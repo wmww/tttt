@@ -1,13 +1,14 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-26 (insights after plan 23)**: type-fest 168 (TS2345 102, TS2344 30, TS2322 13, TS2589 13, TS2578 6),
-valibot 164 (TS2578 46, TS2344 27, TS2322 26, TS2339 24, TS2345 15, TS18046 7, TS2589 6). Nobody has worked these
-since R9 (~30 sessions of suite work): the rankings below are from 2026-09-24 and must be re-sampled first. Plan 25
-adds a React corpus whose root causes join this plan; from then on it covers all corpora. The rise from 142 to 168 in
-type-fest is TS2344 on type references exposing evaluation bugs (triage.md): those are this plan's too.
+**Status 2026-09-26 (after plan 25)**: tsc 0, type-fest 168 (TS2345 102, TS2344 30, TS2322 13, TS2589 13, TS2578 6),
+valibot **147** (was 164: the interface-extends-intersection fix below also fixed vitest's `Assertion.not`), **react 80**
+(`--corpus react`, bulletproof-react's Vite app, plan 25: 362 at first run). The type-fest/valibot rankings below
+are from 2026-09-24 and must be re-sampled before picking from them; the react ranking (R10-R15) is fresh. The rise
+from 142 to 168 in type-fest is TS2344 on type references exposing evaluation bugs (triage.md): those are this plan's
+too.
 
-`./realworld.py --corpus valibot` and `--corpus type-fest` (tsc 5.8 reports 0 on both; tsgo only 2 TS2554 in valibot
-under its different moduleResolution). Work them down root cause by root cause, suite and the tsc corpus
+`./realworld.py --corpus valibot`, `--corpus type-fest` and `--corpus react` (tsc 5.8 reports 0 on all; tsgo only 2
+TS2554 in valibot under its different moduleResolution). Work them down root cause by root cause, suite and the tsc corpus
 (`./realworld.py`, must stay 0) as regression checks. Rank by root cause, not by code: sample the biggest groups,
 reduce each to a probe in `test/probes/plan19/`, fix the tsc rule behind it. Each session: record both counts in the
 commit message and `measurements.md`.
@@ -189,3 +190,71 @@ considering with it: a real permissive instantiation (every type parameter to a 
 ~~R5 and R3, R2, R6, R4, R1, R9~~ (done). valibot's 30 TS2344 left are unrelated expect-type mismatches (readonly
 members `key04`, `Partial<Record<...>>` index signatures, `[]` vs array methods, Promise `then`): re-sample. Then the R7 checks one by one (valibot's
 TS2578), R8's vitest `.not`. Re-sample type-fest's TS2345 before picking its next root cause.
+
+## React corpus (plan 25, 2026-09-26): 362 -> 80
+Fixed in plan 25's session: `catch (e: any)` didn't parse (and catch variables are now unknown under
+useUnknownInCatchVariables), `typeof x ? {...} : never` parsed a ternary as the type query's operand, `import { type,
+a }`, interfaces extending an intersection alias inherited nothing (lucide's `LucideProps`, 46; also valibot -17),
+exports conditions didn't fall through to the next condition when a target doesn't resolve (class-variance-authority,
+TS7016 then `any` everywhere), a fresh `{}` was a subtype of weak types (`config || {}`), `[T] extends [W]`
+conditionals weren't deferred (Storybook's `StoryObj`, 19). Probes of all of these are in `test/probes/plan25/`.
+What remains, by root cause:
+
+### R10. First inference pass skips a whole object literal with a context-sensitive member (react ~70 of 80)
+tsc checks such an argument with `CheckMode.SkipContextSensitive` in the first pass: only the context-sensitive
+function members become the non-inferrable `anyFunctionType`, the other members (`schema`, `mutationFn: deleteUser`)
+still infer. tttt `continue`s past the whole argument (`call.c` first-pass loop: `if (arg->context_sensitive ||
+arg->generic_call) { any_sensitive = true; continue; }`, `check_args(..., skip_sensitive)`, `waits_for_sensitive()`);
+JSX attributes are one such argument (`call.c` ~1461). So type parameters are fixed with nothing inferred: react-hook-
+form's `<Form schema=.. onSubmit={(values) => ..}>` gets `TFormValues = FieldValues` (22 `FieldError | Merge<...>`,
+9 attribute TS2322, the `FieldValues` TS2345s), react-query's `useMutation({ onSuccess: (...args) => .., mutationFn })`
+gets `TVariables = void` (7 TS2322 + 7 TS2345 at `.mutate(x)` + 7 `unknown` data). Size: medium (a skip-sensitive
+mode in `ExprCtx`: bypass `check_with()`'s memo, type sensitive function members as a non-inferrable any-function
+without fixing their parameters; then infer from the result). Probes `plan25/rhf/skip_sensitive_objlit.ts` (minimal),
+`rhf/formdefault.ts`, `rhf/mutation.ts`, `jsx/generic_component_sensitive_attrs.tsx`,
+`misc/context_sensitive_member_before_inference_source.ts`. triage.md's older "inference from object literals with
+context-sensitive members" item is this.
+```ts
+declare function g4<S>(p: { s: S; cb: (v: S) => void }): S;
+const b4 = g4({ s: 1, cb: (v) => {} });   // tsc number, tttt unknown
+```
+
+### R11. Intra-expression inference (react 3-4, builds on R10)
+Both members context-sensitive: tsc checks them in source order in the second pass and infers after each, so
+`queryFn`'s return type feeds `getNextPageParam(lastPage)` (TS 4.7). tttt checks the literal as a whole. 3x TS18046
+`'lastPage' is of type 'unknown'` (useInfiniteQuery). Probes `rhf/intra.ts`, `misc/context_sensitive_members_in_order.ts`.
+Size: medium.
+
+### R12. The apparent type of an intersection has `this` bound to the intersection (react 2)
+`(ReactRenderer & { T: TArgs })['component']` where `component: (props: this['T']) => ..`: tsc's
+getApparentTypeOfIntersectionType is `getTypeWithThisArgument(type, type)`, so `this['T']` is `TArgs`; tttt gives
+`unknown` (Storybook `Meta`'s `component:`). `apparent_type()` (relate.c) has no intersection case, and
+`ty_with_this_arg` returns early when `ty == this_arg`. Probe `misc/this_type_through_intersection_indexed_access.ts`.
+Size: small-medium (cache the result).
+
+### R13. Indexed access on a missing property instantiates to unknown (react 2)
+falso's `type Return<T, O> = [O] extends [never] ? T : O['length'] extends number ? T[] : T` with `O = { withAccents:
+false }`: `O['length']` instantiated without an access node is `unknown` in tsc (getIndexedAccessType), tttt keeps it
+deferred (`try_resolve_indexed`/`ty_indexed`, checker.c), so the conditional never resolves. Keep the error at
+declaration sites. Probe `misc/falso_return_conditional.ts`. Size: small. Probably also in type-fest/valibot (R8's
+`O['condition']` with `O = {}` looks like the same rule).
+
+### R14. Implicit index signature inference from intersections (react 1)
+`Object.entries(x)` with `x: Mapped & { [SYMBOL]: .. }` (@mswjs/data's `FactoryAPI`): tsc's
+isObjectTypeWithInferableIndex accepts intersections of inferable object types and only counts properties whose key
+fits the index key type (symbol keys don't count for a string index). tttt's implicit-index branch in
+`infer_from_objects` (infer.c) requires `TY_ANONYMOUS` and doesn't filter keys. Probe
+`misc/entries_of_intersection_with_symbol_key.ts`. Size: small.
+
+### R15. Conditional types deferred on a check type that only mentions an outer type parameter (react 1)
+`L1<(x: E) => void, {e: E}>` inside a generic function stays deferred: tsc only defers when the check type is a
+generic object/index type, and otherwise tries the permissive instantiation (type parameters -> wildcard) to pick the
+false branch. `ty_conditional_resolve`'s `mentions ? nullptr : ...` HACK (hacks.md). `LibraryManagedAttributes` of a
+generic component inside a generic component (`table.tsx`). Probe `jsx/lma_deferred.tsx`. Size: medium; the same
+permissive instantiation R9 left undone.
+
+Unreduced: `form.tsx:198/201` (2 TS2345, `useForm({ ...options, resolver })` in a generic component; a simplified
+version passes, retry after R10).
+
+### Suggested order (react)
+R10 (most of the corpus, and a core inference rule the suite exercises too), then R12/R13/R14 (small), R11, R15.

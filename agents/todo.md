@@ -4,10 +4,8 @@ Written by the insights after plan 23 (2026-09-26); `vision.md` "Course correcti
 sessions out of this budget: when 10 sessions have run (count the commits since this file was written), the next
 session is insights, whatever is left here. New work goes into plans or triage.md, not ahead of the insights entry.
 
-1. **Execution: plan 25** (React corpus): pick, pin, wire into `realworld.py`/`bench.sh`, measure, rank its root
-   causes into plan 19.
-2. **Execution: plan 19** (corpora to zero), re-sample all three corpora first: the rankings are two days and ~30
-   sessions old.
+2. **Execution: plan 19** (corpora to zero): start with R10 (react ~70 of 80, a core inference rule), then re-sample
+   type-fest/valibot, whose rankings are two days and ~30 sessions old. (Entry 1, plan 25, is done: 2026-09-26.)
 3. **Execution: plan 19**, second session.
 4. **Planning: JS/JSDoc** (write plan 26). ~1050 tests (157 pass; 17% of all failing tests), most of the spurious
    TS2304/TS2580. The design question is the binder: CommonJS `module.exports`/`require`, expando assignments

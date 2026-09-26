@@ -2,6 +2,27 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, plan 25 (React corpus)
+Suite 8202 -> **8219 / 13540** full (errors 9980 -> 9992, symbols 11832 -> 11842, types 9990 -> 10006); one errors
+component lost (inferredRestTypeFixedOnce, triage.md). Corpora: tsc 0, type-fest 168, valibot 164 -> **147**, and
+the new **react 362 -> 80** (bulletproof-react's Vite app: 128 own files, 1511 with dependencies and libs).
+`./bench.sh --runs 3` (best wall; tttt / tsc 5.8 / tsgo 7.0.2 / tsgo single-threaded):
+
+| corpus | tttt | tsc | tsgo | tsgo 1 thread |
+|---|---|---|---|---|
+| synthetic (200 copies) | see below | 37.7 s | 9.19 s | 11.96 s |
+| tsc `src/compiler` | 0.89 s / 398 MB | 7.54 s | 1.27 s / 412 MB | 1.73 s |
+| type-fest | 0.37 s / 98 MB | 5.44 s | 1.96 s | 2.33 s |
+| valibot | 0.82 s / 530 MB | 9.08 s | 1.62 s / 822 MB | 2.43 s |
+| react | 0.31 s / 232 MB | 3.80 s | 1.06 s / 545 MB | 0.94 s / 319 MB |
+
+(The synthetic tttt line scrolled out of the captured output; phase split 1.49 s parse, 0.77 s resolve, 3.20 s
+typecheck.) React phases: parse 113 ms, resolve 49 ms, typecheck 115 ms: it is dependency-parse heavy (skipLibCheck,
+1511 files), which is where tsgo's threads help least (its single-threaded run is faster than its multi-threaded
+one). tttt's react check is still incomplete (80 diagnostics, most from R10's missing inference), so the typecheck
+share will grow. The tsc corpus is at 0.89 s here vs 0.78 s in the plan 21 entry: the drift the perf session in
+todo.md is for (a noisier machine may account for part of it; tsgo also measured 1.27 vs 1.10).
+
 ## 2026-09-26, plan 23 (symbol merging)
 Suite 8139 -> **8202 / 13540** full (errors 9901 -> 9980, symbols 11791 -> 11832, types 9980 -> 9990), nothing lost.
 Tests failing on TS2300: 60 -> 51 (the rest: `@pretty` output, parser gaps), TS2528 13 -> 2, TS2323 10 -> 2, TS2813/TS2814

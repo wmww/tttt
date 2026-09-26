@@ -10,11 +10,15 @@ types components) are the oracle, not the goal; real projects that are clean und
   JS tests (`@allowJs`/`.js` units) 157 / 1049. Since the insights after plan 13 (5125 / 13163): plans 15 (missing
   checks), 21 (display fidelity), 22 (JSX: 313 of 457 JSX tests pass), 24 (binding patterns), 23 (symbol merging).
   History per plan is in `measurements.md` and git.
-- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **168**, valibot **164**. Flat since
-  plan 19's R9 (2026-09-24); the small rise in type-fest is a new TS2344 check exposing evaluation bugs.
-- **Perf** (`measurements.md`, 2026-09-25/26; tsgo = typescript 7.0.2 on 4 cores): tsc corpus 0.78 s vs tsgo 1.10
-  (single-threaded 1.51), type-fest 0.31 vs 1.69, valibot 0.69 s / 511 MB vs 1.44 s / 825 MB. Ahead everywhere,
-  single-threaded. The tsc corpus has drifted from 0.67 s (after the last perf session) to ~0.8 s as checks went in.
+- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **168**, valibot **147**, react
+  **80** (bulletproof-react's Vite app, added by plan 25: React 18 + react-query/router, radix, react-hook-form + zod,
+  Storybook, vitest; 362 at first run, 7 parser/binder/resolution/relation bugs fixed the same session). ~70 of the
+  react 80 are one inference rule (plan 19 R10: the first pass skips object literals / JSX attributes that have a
+  context-sensitive member), so real React code is closer than the count looks.
+- **Perf** (`measurements.md`, 2026-09-26; tsgo = typescript 7.0.2 on 4 cores): tsc corpus 0.89 s vs tsgo 1.27
+  (single-threaded 1.73), type-fest 0.37 vs 1.96, valibot 0.82 s / 530 MB vs 1.62 s / 822 MB, react 0.31 s / 232 MB
+  vs 1.06 s / 545 MB (tsgo single-threaded 0.94). Ahead everywhere, single-threaded; react is parse-dominated
+  (1511 dependency files). The tsc corpus has drifted from 0.67 s (after the last perf session) to ~0.8-0.9 s.
 - **Built and holding**: hand-written backtracking parser (JSX included), tsc-shaped binder with persistent symbols
   and merging, interned `Ty` core with id-keyed relations and tsc's identity relation, mapper instantiation, two-pass
   inference with priorities, contextual typing, conditional/mapped/indexed/template types, flow graph + narrowing,
@@ -29,7 +33,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   (symbols, JSX, binding patterns, merging are language features, not test-chasing), but this is exactly the pattern
   the corpus rule exists to catch: nobody was scheduled on them. **Every todo window from now on has corpus
   sessions**, and plan 19 is renamed "corpora to zero" and covers every corpus.
-- **A React corpus is the next oracle (plan 25), decided.** It answers plan 22's open question: the suite's JSX tests
+- **A React corpus is the next oracle (plan 25, done: `--corpus react`).** It answers plan 22's open question: the suite's JSX tests
   are hand-written namespaces, real React is `@types/react` overloads, `LibraryManagedAttributes`, HOCs and hooks'
   inference, and it's the benchmark where tsgo is weakest. Its root causes join plan 19.
 - **JS/JSDoc starts now: planning in this window, first stage right after.** 892 of the 5338 failing tests (17%)
@@ -89,7 +93,8 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 ## Risks / concerns
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order by
   type id, origins, truncation). The interned design can mimic creation order; keep it that way when adding types.
-- Perf: deep generic code is where tsc's caches and shortcuts matter; React (plan 25) is an untested workload.
+- Perf: deep generic code is where tsc's caches and shortcuts matter; React is measured now (plan 25:
+  ahead of tsgo, but checked incompletely until plan 19's R10 lands).
   Checks accumulate cost silently between perf sessions.
 - JS/JSDoc is a second front end on top of the checker: the risk is a parallel type world for JSDoc. It must lower
   into the same `Ty` machinery.
