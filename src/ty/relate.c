@@ -2217,6 +2217,8 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
     return result;
 }
 
+static bool is_empty_object_type(Checker* me, Ty const* ty);
+
 static Ternary structured_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     if (st->relation == TY_RELATION_IDENTITY) return identity_structured(me, st, source, target);
     bool comparable = st->relation == TY_RELATION_COMPARABLE;
@@ -2227,6 +2229,13 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
         return each_related(me, st, source->composite.types, target, report);
     }
     bool source_is_generic = source->kind == TY_TYPE_PARAM || (source->flags & TYF_DEFERRED) != 0;
+    // A fresh empty object literal is never a subtype target of something non-empty, so `c || {}` reduces to c's type
+    // rather than to whichever of two mutual subtypes comes first (tsc's structuredTypeRelatedToWorker)
+    if (st->relation == TY_RELATION_STRICT_SUBTYPE && !source_is_generic && target->flags & TYF_FRESH_OBJECT &&
+        target->kind != TY_UNION && is_empty_object_type(me, target) && !is_empty_object_type(me, source)
+    ) {
+        return TERNARY_FALSE;
+    }
     if (target->kind == TY_UNION) {
         // A generic source can still be related through its constraint, further down. The members of the union don't
         // check excess properties, the union as a whole did (tsc relates the regular object literal)

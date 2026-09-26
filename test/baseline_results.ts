@@ -10926,9 +10926,9 @@ const baselines = {
         types: true,
     },
     'emptyObjectNotSubtypeOfIndexSignatureContainingObject1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyObjectNotSubtypeOfIndexSignatureContainingObject2': {
         errors: true,
@@ -40163,7 +40163,7 @@ const baselines = {
     'symbolType1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolType10': {
         errors: true,
