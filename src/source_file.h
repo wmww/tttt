@@ -31,6 +31,8 @@ typedef struct ModuleRef {
     Span span; // Of the string literal
     // `declare module "m" {}`: an ambient module (script) or an augmentation (module), not an import
     bool is_declaration;
+    // Never resolved to a file, only an ambient module (or pattern) can be it: the implicit jsx-runtime import of a script
+    bool ambient_only;
     ModuleRefSyntax syntax;
     // ImportResolutionOverride (import_attributes.h): `resolution-mode` of a type-only import or an import type
     uint8_t resolution_override;
@@ -39,6 +41,7 @@ typedef struct ModuleRef {
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
     cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any
     Symbol* module; // Memo of binder_module_of_ref()
+    bool jsx_runtime_reported; // SourceFile.jsx_runtime_ref: that it can't be found was said (once per file, like tsc)
     AliasState module_state;
 } ModuleRef;
 
@@ -73,6 +76,10 @@ typedef struct SourceFile {
     // tsc's LanguageVariant.JSX (.tsx and JavaScript files): `<` at the start of an expression is a JSX element, never
     // a type assertion
     bool is_jsx;
+    // The parser saw `import.meta` / a JSX element or fragment (what moduleDetection `auto` looks for besides imports and
+    // exports: tsc's isFileProbablyExternalModule, isFileModuleFromUsingJSXTag)
+    bool has_import_meta;
+    bool has_jsx;
     // The JSX pragmas of the comments at the top of the file (tsc's `@jsx`, `@jsxFrag`, `@jsxRuntime` and
     // `@jsxImportSource` in `/* */` comments): their argument, empty if there is none. The first `@jsx`/`@jsxFrag`
     // counts, the last `@jsxRuntime`/`@jsxImportSource` (like tsc's uses of file.pragmas)
@@ -96,6 +103,10 @@ typedef struct SourceFile {
     // With `importHelpers`, a module that isn't a declaration file imports "tslib" implicitly (tsc's
     // externalHelpersModuleReference). The first of module_refs, with an empty span at the start of the file
     ModuleRef* helpers_ref; // (the first of module_refs)
+    // The factory's module with react-jsx or pragmas (tsc's getJSXRuntimeImport: `react/jsx-runtime`), null if the file
+    // doesn't import one. One of module_refs (after helpers_ref), resolved like an import in a module or a JavaScript
+    // file (tsc's collectExternalModuleReferences), `ambient_only` in a script
+    ModuleRef* jsx_runtime_ref;
     SourceFile* index_file; // The index(.d).ts file in the same directory as this file
     CommentDirective* comment_directives; // Owned, sorted by position (and so by line), recorded by the parser
     u32 comment_directive_count;
@@ -110,6 +121,9 @@ SourceFile source_file_make(cstr canonical_path, cstr contents);
 void source_file_drop(SourceFile* me);
 // Takes path
 ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span);
+// tsc's getJSXRuntimeImport(getJSXImplicitImportBase()): `react/jsx-runtime` (react-jsx), `preact/jsx-dev-runtime`
+// (react-jsxdev with `@jsxImportSource preact`), null if the file's JSX doesn't import its factory
+cstr source_file_jsx_runtime_import(SourceFile const* me);
 
 // Records a directive comment the parser came across (again, possibly: backtracking parses hop comments repeatedly)
 void source_file_add_comment_directive(SourceFile* me, const char* start, const char* end, bool expect_error);

@@ -525,6 +525,26 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     for_each (i, vec_statement, &source_file->ast.statements) {
         program_handle_statement(me, source_file, i);
     }
+    // tsc's setExternalModuleIndicator by moduleDetection: `force` makes every file that isn't a declaration file a
+    // module, `auto` (the default) too for `import.meta`, a module format (.mts/.cts/.mjs/.cjs, an ESM package), and
+    // a JSX tag under react-jsx
+    if (!source_file->is_module && !source_file->is_declaration && !my loading_stdlib) {
+        csview name = cstr_sv(&source_file->canonical_path);
+        switch (my options.module_detection) {
+            case MODULE_DETECTION_FORCE:
+                source_file->is_module = true;
+                break;
+            case MODULE_DETECTION_AUTO:
+                source_file->is_module = source_file->has_import_meta || source_file->is_esm ||
+                    csview_ends_with(name, ".mts") || csview_ends_with(name, ".cts") ||
+                    csview_ends_with(name, ".mjs") || csview_ends_with(name, ".cjs") ||
+                    (source_file->has_jsx && (my options.jsx == JSX_REACT_JSX || my options.jsx == JSX_REACT_JSXDEV));
+                break;
+            case MODULE_DETECTION_LEGACY:
+                source_file->is_module = source_file->has_import_meta;
+                break;
+        }
+    }
     if (my options.import_helpers && source_file->is_module && !source_file->is_declaration && !my loading_stdlib) {
         Span at = { .source = source_file, .sv = csview_from_n(source_file_start(source_file), 0) };
         source_file->helpers_ref = source_file_add_module_ref(source_file, cstr_lit("tslib"), at);
@@ -535,6 +555,21 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         // Resolved like the import the emitter writes: a `require()` in CommonJS output
         if (ty_emits_commonjs_like(source_file)) source_file->helpers_ref->syntax = MODULE_REF_REQUIRE;
     }
+    cstr jsx_runtime = my loading_stdlib ? cstr_null : source_file_jsx_runtime_import(source_file);
+    if (cstr_size(&jsx_runtime)) {
+        Span at = { .source = source_file, .sv = csview_from_n(source_file_start(source_file), 0) };
+        ModuleRef* ref = source_file_add_module_ref(source_file, jsx_runtime, at);
+        // Right after the helpers, before what the file imports itself (tsc's order of file.imports)
+        u32 first = source_file->helpers_ref ? 1 : 0;
+        memmove(source_file->module_refs + first + 1, source_file->module_refs + first,
+            sizeof(ModuleRef*) * (source_file->module_ref_count - first - 1));
+        source_file->module_refs[first] = ref;
+        ref->ambient_only = !source_file->is_js && (source_file->is_declaration ||
+            !(source_file->is_module || my options.isolated_modules || my options.verbatim_module_syntax));
+        source_file->jsx_runtime_ref = ref;
+    } else {
+        cstr_drop(&jsx_runtime);
+    }
 
     // Every module the file mentions, wherever (the parser lists them). By index: loading parses, never this file
     for (u32 i = 0; i < source_file->module_ref_count; i++) {
@@ -542,6 +577,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         // `declare module "./a" {}` in a module augments a file. In a script it declares an ambient module, and so
         // does a name that finds no file
         if (ref->is_declaration && !source_file->is_module) continue;
+        if (ref->ambient_only) continue;
         if (my options.no_resolve) continue; // program_resolve_names(), once every root is loaded
         // A name the file declares an ambient module for is that module, not a file (tsc's resolveToOwnAmbientModule):
         // `import * as React from "react"` inside react16.d.ts's `declare module "react/jsx-runtime"`
@@ -801,7 +837,7 @@ void program_resolve_names(Program* me) {
             SourceFile* source = *i;
             for (u32 j = 0; j < source->module_ref_count; j++) {
                 ModuleRef* ref = source->module_refs[j];
-                if (!ref->is_declaration || source->is_module) program_load_module_ref(me, source, ref);
+                if ((!ref->is_declaration || source->is_module) && !ref->ambient_only) program_load_module_ref(me, source, ref);
             }
         }
     }

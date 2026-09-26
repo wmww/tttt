@@ -834,13 +834,23 @@ static csview jsx_factory_name(SourceFile const* file, bool fragment) {
     return c_sv("React");
 }
 
-// tsc's getJSXImplicitImportBase: whether elements import their factory from `<source>/jsx-runtime`
-static bool jsx_runtime_import(SourceFile const* file) {
-    CompilerOptions const* options = compiler_options();
-    csview runtime = file ? file->jsx_pragmas.runtime : c_sv("");
-    if (csview_equals(runtime, "classic")) return false;
-    return options->jsx == JSX_REACT_JSX || options->jsx == JSX_REACT_JSXDEV || cstr_size(&options->jsx_import_source) ||
-        (file && file->jsx_pragmas.import_source.size) || csview_equals(runtime, "automatic");
+// tsc's getJsxNamespaceContainerForImplicitImport: the module the file's elements import their factory from, null if
+// there is none. When it can't be found, the first element of the file says so
+static Symbol* jsx_runtime_module(Span at, Scope* names, ErrorCtx* errs) {
+    ModuleRef* ref = names->file ? names->file->jsx_runtime_ref : nullptr;
+    if (!ref) return nullptr;
+    Symbol* module = binder_module_of_ref(names->binder, ref);
+    if (module || ref->jsx_runtime_reported) return module;
+    ref->jsx_runtime_reported = true;
+    if (!ref->ambient_only && ref->failure != MODULE_REF_NOT_FOUND) return nullptr; // TODO: TS7016 for a JavaScript module
+    if (compiler_options()->module_resolution == MODULE_RESOLUTION_CLASSIC) {
+        error_ctx_error_d(errs, at, 2792, "Cannot find module '", ref->path, "'. Did you mean to set the "
+            "'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?");
+    } else {
+        error_ctx_error_d(errs, at, 2875, "This JSX tag requires the module path '", ref->path, "' to exist, but none "
+            "could be found. Make sure you have types for the appropriate package installed.");
+    }
+    return nullptr;
 }
 
 static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview name, Scope* names, ErrorCtx* errs) {
@@ -857,12 +867,15 @@ static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview
 }
 
 // tsc's markJsxAliasReferenced (and the namespace half of getJsxNamespaceAt): every element refers to its factory
-static void jsx_lookup_factory(JsxElement* el, bool fragment, Scope* names, ErrorCtx* errs) {
+static void jsx_lookup_factory(Expr* expr, Scope* names, ErrorCtx* errs) {
+    JsxElement* el = expr->jsx;
+    bool fragment = expr->tag == EXPR_JSX_FRAGMENT;
     csview name = jsx_factory_name(names->file, fragment);
     el->factory_namespace = scope_resolve(names, name, SYMBOL_NAMESPACE);
-    // TODO(plan 22 stage 4): the factory is referenced when the runtime module can't be found. For now it always is
-    el->runtime_import = jsx_runtime_import(names->file);
-    if (el->runtime_import) return;
+    // With a runtime module the factory isn't referenced at all (tsc's markJsxAliasReferenced)
+    // (Blamed on the element, only the opening `<>` of a fragment: whichever tsc asks at first)
+    el->runtime_module = jsx_runtime_module(fragment ? el->opening_span : expr->outer_span, names, errs);
+    if (el->runtime_module) return;
     // `null` as the fragment factory (tsc allows it)
     if (!(fragment && csview_equals(name, "null"))) el->factory_value = jsx_reference_factory(el, fragment, name, names, errs);
     // A fragment refers to the element factory too
@@ -874,7 +887,7 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
     switch (my tag) {
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT: {
-            jsx_lookup_factory(my jsx, my tag == EXPR_JSX_FRAGMENT, names, errs);
+            jsx_lookup_factory(me, names, errs);
             // A value tag (`<Comp />`, `<this.x />`) is a reference, an intrinsic one (`<div />`) is a name
             // (a missing name, after a parse error, is nothing)
             bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||

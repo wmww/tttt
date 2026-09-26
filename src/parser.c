@@ -36,6 +36,9 @@ typedef struct ParserShared {
     bool in_static_block; // Directly in a class `static {}` block, not in a function inside it
     bool in_parameters; // In the parameter list of the current function: `yield`/`await` there are TS2523/TS2524
     int jsx_children_depth; // Inside the children of a JSX element (at any depth): see parse_jsx_attributes()
+    // What moduleDetection looks at (SourceFile.has_import_meta, has_jsx): set by attempts that backtrack too
+    bool saw_import_meta;
+    bool saw_jsx;
 } ParserShared;
 
 typedef struct FunctionFlags {
@@ -1361,6 +1364,7 @@ static bool parse_import_keyword_expr(Parser* parent, IdentifierExpr* ret) {
     hop_whitespace(&ahead);
     if (*ahead.pos == '.') {
         parse_fail(&ahead);
+        p.shared->saw_import_meta = true;
         return parse_success(&p);
     }
     if (!hop_char(&ahead, '(')) {
@@ -4571,6 +4575,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         }
     }
 
+    p.shared->saw_jsx = true;
     *ret = (Expr){
         .tag = is_fragment ? EXPR_JSX_FRAGMENT : EXPR_JSX_ELEMENT,
         .jsx = el,
@@ -6616,6 +6621,8 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     // tsc checks modifiers in the checker (checkGrammarModifiers): those don't count as parse errors, which quiet the
     // checker's grammar errors
     static unsigned const modifier_codes[] = { 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1184, 1248, 1253 };
+    source->has_import_meta = shared.saw_import_meta;
+    source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;
     for_each (i, vec_error, &shared.errors) {
         bool modifier = false;

@@ -13,9 +13,11 @@ static Symbol const* export_with_meaning(Symbol const* container, csview name, u
     return found && !found->is_placeholder ? found : nullptr;
 }
 
-// tsc's getJsxNamespaceAt: `JSX` of the factory's namespace (`React.JSX`), else the global one. Null if neither
+// tsc's getJsxNamespaceAt: `JSX` of the runtime module or else the factory's namespace (`React.JSX`), else the global
+// one. Null if neither
 Symbol const* ty_jsx_namespace(Checker* me, JsxElement const* element) {
-    Symbol const* factory = symbol_for_meaning(element->factory_namespace, SYMBOL_NAMESPACE);
+    Symbol const* factory = element->runtime_module ? module_export_equals((Symbol*)element->runtime_module) :
+        symbol_for_meaning(element->factory_namespace, SYMBOL_NAMESPACE);
     if (factory && !factory->is_placeholder) {
         Symbol const* jsx = export_with_meaning(factory, c_sv("JSX"), SYMBOL_NAMESPACE);
         if (jsx) return jsx;
@@ -162,8 +164,6 @@ JsxIntrinsic ty_jsx_intrinsic(Checker* me, JsxElement const* element) {
 // The errors of looking an intrinsic tag up, at the opening or closing tag (tsc checks both)
 static void report_intrinsic_lookup(Checker* me, JsxElement const* element, JsxIntrinsic const* intrinsic, Span at, ErrorCtx* errs) {
     if (!intrinsic->elements) {
-        // (TODO(plan 22 stage 4): the JSX namespace of the runtime module, until then it's not known to be missing)
-        if (element->runtime_import) return;
         if (compiler_options()->no_implicit_any) {
             error_ctx_error_d(errs, at, 7026, "JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.");
         }
@@ -182,7 +182,8 @@ static void check_children(Checker* me, JsxElement const* element, ErrorCtx* err
         // `{...x}` as a child: x has to be an array (TS2609)
         if (i->tag == JSX_CHILD_EXPR && i->spread) {
             Ty const* type = ty_expr_type(me, &i->expr);
-            if (!(type->flags & TYF_ANY) && !ty_is_array(me, type)) {
+            // (tsc compares with anyType: the error type isn't exempt)
+            if (type != ty_intrinsic(me, TY_ANY) && !ty_is_array(me, type)) {
                 error_ctx_error_d(errs, i->span, 2609, "JSX spread child must be an array type.");
             }
         }

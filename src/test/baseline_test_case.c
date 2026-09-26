@@ -410,7 +410,6 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         csview_end_ptr(cstr_sv(&unparsed_contents))
     );
 
-    bool has_line = false;
     bool seen_filename = false;
     csview current_filename = basename_of(my source_path);
     my current_unit = current_filename;
@@ -425,7 +424,6 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
                     }
                     source_contents = cstr_null;
                 }
-                has_line = false;
                 seen_filename = true;
                 current_filename = tag_value;
                 my current_unit = current_filename;
@@ -433,14 +431,16 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
                 apply_setting(me, tag_key, tag_value);
             }
         } else {
+            // tsc's makeUnitsFromTest: a unit's lines joined by line breaks, leading empty lines dropped (so there's
+            // no line break before the next `@filename`)
+            if (cstr_size(&source_contents)) cstr_append(&source_contents, "\r\n");
             cstr_append_sv(&source_contents, i);
-            if ((has_line || csview_size(i)) &&
-                csview_end_ptr(i) < csview_end_ptr(contents_sv)
-            ) {
-                cstr_append(&source_contents, "\r\n");
-                has_line = true;
-            }
         }
+    }
+    // (the empty line after the test file's last line break is a line of the last unit too; a lone `\r` at the end,
+    // which tsc's harness keeps, breaks a line when rendered)
+    if (cstr_size(&source_contents) && (csview_ends_with(contents_sv, "\n") || csview_ends_with(contents_sv, "\r"))) {
+        cstr_append(&source_contents, "\r\n");
     }
 
     cstr_take(&my last_unit, cstr_from_sv(current_filename));
@@ -921,12 +921,6 @@ static void render_types_or_symbols_file(
     bool drop_any_underlines
 ) {
     cstr_append_d(target, DEFAULT_DISPLAY, "=== ", source_path, " ===\r\n");
-    // tsc's harness joins a unit's lines with line breaks (makeUnitsFromTest), load_test_source() ends each line of a
-    // unit but the test file's last with one
-    if (!is_last_file && csview_ends_with(source_contents, "\n")) {
-        source_contents.size--;
-        if (csview_ends_with(source_contents, "\r")) source_contents.size--;
-    }
     CodeLines code = split_code_lines(source_contents);
     i64 last = -2; // -2: nothing written yet
     for_each (i, vec_line_numbered_str, lines) {
@@ -1040,9 +1034,6 @@ static void render_lines_woven_with_file(
         }
     }
 
-    if (!newline_if_next_line_non_empty && !is_last_file) {
-        newlines_at_end_of_source--;
-    }
 
     for (intptr_t i = 0; i < newlines_at_end_of_source; i++) {
         cstr_append_d(target, DEFAULT_DISPLAY, "\r\n", line_indent);

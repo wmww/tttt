@@ -538,9 +538,9 @@ typedef struct JsxElement {
     // element makes, tsc's markJsxAliasReferenced). Set by the resolve walk, null if nothing
     Symbol const* factory_namespace;
     Symbol const* factory_value;
-    // The file imports its factory implicitly from `<jsxImportSource>/jsx-runtime` (react-jsx, or pragmas: tsc's
-    // getJSXImplicitImportBase). TODO(plan 22 stage 4): that module and its JSX namespace
-    bool runtime_import;
+    // The module the file imports its factory from implicitly, `<jsxImportSource>/jsx-runtime` (react-jsx, or pragmas:
+    // tsc's getJsxNamespaceContainerForImplicitImport), if it exists. Its `JSX` is the JSX namespace
+    Symbol const* runtime_module;
 } JsxElement;
 
 void jsx_element_drop(JsxElement* me);

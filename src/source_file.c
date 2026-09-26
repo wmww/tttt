@@ -109,6 +109,17 @@ ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span) {
     return ret;
 }
 
+cstr source_file_jsx_runtime_import(SourceFile const* me) {
+    CompilerOptions const* options = compiler_options();
+    csview runtime = my jsx_pragmas.runtime;
+    if (csview_equals(runtime, "classic")) return cstr_null;
+    bool automatic = options->jsx == JSX_REACT_JSX || options->jsx == JSX_REACT_JSXDEV ||
+        cstr_size(&options->jsx_import_source) || my jsx_pragmas.import_source.size || csview_equals(runtime, "automatic");
+    if (!automatic) return cstr_null;
+    csview base = my jsx_pragmas.import_source.size ? my jsx_pragmas.import_source :
+        cstr_size(&options->jsx_import_source) ? cstr_sv(&options->jsx_import_source) : c_sv("react");
+    return cstr_d(base, options->jsx == JSX_REACT_JSXDEV ? "/jsx-dev-runtime" : "/jsx-runtime");
+}
 
 void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
