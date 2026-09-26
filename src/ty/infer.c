@@ -243,12 +243,15 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
         signature_resolve(me, target);
     }
     TyMapper const* base = base_signature_mapper(me, source);
-    // Parameters are a contravariant position. Without strictFunctionTypes (and for methods) they compare
-    // bivariantly, and tsc infers as if they were covariant
-    bool flip = compiler_options()->strict_function_types && !(target->flags & SIGNATURE_METHOD);
+    // Parameters are a contravariant position. Without strictFunctionTypes they compare bivariantly and tsc infers as
+    // if they were covariant; the parameters of a method (and everything nested in them) are bivariant too
+    bool flip = compiler_options()->strict_function_types;
+    bool saved_bivariant = inf->bivariant;
+    inf->bivariant |= (target->flags & SIGNATURE_METHOD) != 0;
     if (flip) inf->contravariant = !inf->contravariant;
     infer_from_params(me, inf, (InferStep){0}, source, target, base);
     if (flip) inf->contravariant = !inf->contravariant;
+    inf->bivariant = saved_bivariant;
     infer_from_returns(me, inf, (InferStep){0}, source, target, base);
 }
 
@@ -792,7 +795,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             param->has_priority = true;
         }
         if (inf->priority == param->priority) {
-            if (inf->contravariant) {
+            if (inf->contravariant && !inf->bivariant) {
                 candidates_push(&param->contra, &param->contra_len, source);
             } else {
                 candidates_push(&param->co, &param->co_len, source);
@@ -927,6 +930,7 @@ void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target
 static void infer_types_from(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority, bool contravariant) {
     inf->priority = priority;
     inf->contravariant = contravariant;
+    inf->bivariant = false;
     inf->original_target = target;
     inf->depth = 0;
     if (inf->visited_len) {

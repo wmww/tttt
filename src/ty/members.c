@@ -1448,9 +1448,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         LowerCtx ctx = sig->ctx;
         // A function can be anywhere, a function type is lowered knowing whether some type parameter is in scope
         ctx.generic |= !function->is_type || sig->type_params.len > 0;
-        // HACK: a method signature written as a type lowers its parameter types as methods too, which stands in for
-        // tsc comparing the callback parameters of a bivariantly compared signature bivariantly (hacks.md)
-        if (!function->is_type) ctx.method = false;
+        ctx.method = false; // Parameter types aren't methods (callbacks are compared with tsc's callback rule)
         u32 count = (u32)vec_function_arg_size(&function->args);
         SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
         bool counting_required = true;

@@ -519,7 +519,7 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
                     case INTERFACE_KEY_CALLABLE:
                         break;
                     case INTERFACE_KEY_EXPR:
-                        out->unknown = true;
+                        // A computed name in a type has a literal or unique symbol type (TS1170): no type parameter
                         break;
                     case INTERFACE_KEY_INDEX:
                         collect_free_params(me, &i->key.index.type, out);

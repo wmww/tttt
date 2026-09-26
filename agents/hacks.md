@@ -411,13 +411,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   mapped keys and `key.expr.owned` + `ref` on interface members only existed for clones, one pointer each would do;
   `LAZY_TYPE_FUNCTION` memoises `ty_function_type()`, which is interned already (the LazyType could go, its users
   are `value_entry_type`, `class_item_get_type` and the test traversal).
-- `signature_resolve`: a method signature *written as a type* (`FunctionImpl.is_type`, `ctx.method`) lowers its
-  parameter types with `ctx.method` still set, so a callback parameter of an interface method is itself a "method"
-  signature (bivariant parameters) wherever that type ends up. This was an accident of the old `CallableType` path
-  and stood in for tsc's rule (callbacks of a bivariantly compared signature are compared bivariantly, `Callback`
-  check mode in compareSignaturesRelated). Without it `Array<X>` -> `ReadonlyArray<Y>` failed in
-  `nonInferrableTypePropagation2`. Class methods (not `is_type`) don't get it. `compare_signatures` has tsc's callback
-  rule now (`CallbackMode`), so this is probably removable: try it.
 - `ty_binding_assigned_type`: not memoised per binding (the root's LazyType is, the accesses down a nested pattern
   are redone per query); arrays only, no iterables; an object rest is the whole object.
 - `FunctionImpl.constructed_class`: a class constructor's return type is `ty_class_instance_type()` of its class,

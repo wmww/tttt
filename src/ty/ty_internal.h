@@ -139,6 +139,9 @@ typedef struct Inference {
     Ty const** array_literals;
     u32 array_literal_count;
     bool contravariant;
+    // Inside the parameters of a method (tsc's bivariant): contravariant positions there give covariant candidates, and
+    // that holds for the callbacks nested in them too
+    bool bivariant;
     Ty const* original_target;
     u32 depth;
     Ty const* visiting_sources[INFER_MAX_DEPTH];

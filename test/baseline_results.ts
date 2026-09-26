@@ -63798,7 +63798,7 @@ const baselines = {
     'intersectionTypeInference3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionTypeMembers': {
         errors: true,
