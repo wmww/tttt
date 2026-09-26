@@ -5149,7 +5149,9 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         hop_whitespace(&p);
     }
 
+    Anchor star = anchor(&p);
     if (hop_char(&p, '*')) {
+        a = star; // (tsc's NamespaceImport/NamespaceExport starts at the `*`, after `type`)
         hop_whitespace(&p);
         statement.main.tag = is_export ? PORT_REEXPORT_GATHER : PORT_IMPORT_GATHER;
 

@@ -21847,7 +21847,7 @@ const baselines = {
     },
     'moduleExportNonStructured': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleExports1': {
@@ -39662,7 +39662,7 @@ const baselines = {
     },
     'arbitraryModuleNamespaceIdentifiers_exportEmpty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arbitraryModuleNamespaceIdentifiers_importEmpty': {
@@ -49617,7 +49617,7 @@ const baselines = {
     },
     'exportNamespace10': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportNamespace11': {
@@ -49642,7 +49642,7 @@ const baselines = {
     },
     'exportNamespace4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportNamespace5': {
@@ -49742,7 +49742,7 @@ const baselines = {
     },
     'importEquals1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importEquals2': {
@@ -50277,12 +50277,12 @@ const baselines = {
     },
     'importAssertion3(module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importAssertion3(module=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importAssertion4': {
@@ -50327,12 +50327,12 @@ const baselines = {
     },
     'importAttributes3(module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importAttributes3(module=esnext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importAttributes4': {
@@ -53072,12 +53072,12 @@ const baselines = {
     },
     'jsxJsxsCjsTransformNestedSelfClosingChild(jsx=react-jsx)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsxJsxsCjsTransformNestedSelfClosingChild(jsx=react-jsxdev)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsxJsxsCjsTransformSubstitutesNames(jsx=react-jsx)': {

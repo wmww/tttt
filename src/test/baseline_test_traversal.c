@@ -656,7 +656,9 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
             continue;
         }
         if (i->decl_name.sv.buf != i->source_name.sv.buf) {
-            if (i->source_symbol) {
+            // (a string literal name, `{ "<X>" as x }`, is no expression to tsc's walker: no line)
+            bool quoted = i->source_name.sv.size && (i->source_name.sv.buf[0] == '"' || i->source_name.sv.buf[0] == '\'');
+            if (i->source_symbol && !quoted) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = symbol_declaration_spans(i->source_symbol),
                     .span = i->source_name,
