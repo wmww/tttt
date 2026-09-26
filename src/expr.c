@@ -299,6 +299,11 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                     "method in ES5. Consider using a standard function or method.");
             }
         }
+    } else if (names->flow && names->flow->type_only_alias_ok &&
+        (my symbol = scope_resolve(names, my name.sv, SYMBOL_ANY_MEANING))
+    ) {
+        // `export = N`, `export default N`: a name exports whatever it means (tsc's checkExportAssignment resolves it
+        // with every meaning), a namespace or a type is fine. No target: it has no value type
     } else if (scope_get_type(names, my name.sv, nullptr)) {
         // (tsc's isES2015OrLaterConstructorName)
         static char const* const later[] = { "Promise", "Symbol", "Map", "WeakMap", "Set", "WeakSet" };
@@ -874,7 +879,7 @@ static void jsx_lookup_factory(Expr* expr, Scope* names, ErrorCtx* errs) {
     el->factory_namespace = scope_resolve(names, name, SYMBOL_NAMESPACE);
     // With a runtime module the factory isn't referenced at all (tsc's markJsxAliasReferenced)
     // (Blamed on the element, only the opening `<>` of a fragment: whichever tsc asks at first)
-    el->runtime_module = jsx_runtime_module(fragment ? el->opening_span : expr->outer_span, names, errs);
+    el->runtime_module = jsx_runtime_module(fragment ? el->opening_span : expr->inner_span, names, errs);
     if (el->runtime_module) return;
     // `null` as the fragment factory (tsc allows it)
     if (!(fragment && csview_equals(name, "null"))) el->factory_value = jsx_reference_factory(el, fragment, name, names, errs);
