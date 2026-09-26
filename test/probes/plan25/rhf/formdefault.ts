@@ -1,3 +1,5 @@
+// Form (react-hook-form + zod) shape: Schema comes from `schema`, TFormValues from its default Infer<Schema>.
+// tttt skips the whole argument in pass 1, so the default sees no Schema and falls to the constraint FieldValues
 type FieldValues = Record<string, any>;
 interface ZodType<Output = any, Def = any, Input = Output> { _output: Output; }
 type Infer<T extends ZodType<any, any, any>> = T["_output"];

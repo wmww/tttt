@@ -251,6 +251,42 @@ static void builder_add_interface(
 }
 
 static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const* base) {
+    if (base->kind == TY_INTERSECTION) {
+        // Every member of every part; a property several parts have is one of the intersection's own, with the
+        // intersected type (tsc's getPropertiesOfType on the base, createUnionOrIntersectionProperty)
+        for (u32 i = 0; i < base->composite.types.len; i++) {
+            Ty const* part = base->composite.types.data[i];
+            if (!(part->flags & TYF_OBJECT)) continue;
+            Members const* members = ty_members(me, part);
+            for (u32 j = 0; j < members->prop_count; j++) {
+                Prop* prop = members->props[j];
+                if (builder_find_prop(builder, prop->name)) continue;
+                u32 owners = 0;
+                for (u32 k = 0; k < base->composite.types.len; k++) {
+                    Ty const* other = base->composite.types.data[k];
+                    owners += (other->flags & TYF_OBJECT) && ty_get_prop(me, other, prop->name);
+                }
+                if (owners > 1) {
+                    FoundProp found = ty_find_prop(me, base, prop->name);
+                    Prop* merged = arena_new(&my arena, Prop);
+                    *merged = (Prop){
+                        .name = prop->name, .flags = found.flags, .parent = prop->parent, .target = prop,
+                        .type = found.type, .type_state = LAZY_STATE_DONE,
+                    };
+                    prop = merged;
+                }
+                builder_push(builder, props, prop);
+            }
+            for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, members->call[j]);
+            for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, members->construct[j]);
+            for (u32 j = 0; j < members->index_count; j++) {
+                bool has_own = false;
+                for (u32 k = 0; k < builder->index_count; k++) has_own |= builder->index[k].key == members->index[j].key;
+                if (!has_own) builder_push(builder, index, members->index[j]);
+            }
+        }
+        return;
+    }
     Members const* members = ty_members(me, base);
     for (u32 i = 0; i < members->prop_count; i++) {
         // A static `#x` stays the base's (tsc's isStaticPrivateIdentifierProperty in addInheritedMembers)
@@ -787,7 +823,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     InterfaceDecl const* interface_decl = node->node;
                     for_each (extends, vec_spanned_type, &interface_decl->extends) {
                         Ty const* base = ty_from_node(me, &extends->type, ctx);
-                        if (base != ty && (base->flags & TYF_OBJECT)) {
+                        // An object type or an intersection of them (tsc's isValidBaseType)
+                        if (base != ty && (base->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
                             builder_add_inherited(me, &builder, this_param ? ty_with_this_arg(me, base, this_param) : base);
                         }
                     }
