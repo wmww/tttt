@@ -1,3 +1,4 @@
+#include "source_file.h"
 #include "ty/ty_internal.h"
 #include "program.h"
 #include "compiler_options.h"
@@ -358,6 +359,9 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     }
     Ty const* args_buf[MAX_TYPE_ARGS];
 
+    // A value in JSDoc means its type (tsc's getTypeFromJSDocValueReference)
+    if (identifier->jsdoc && !(decl->flags & SYMBOL_TYPE) && (decl->flags & SYMBOL_VALUE)) return ty_type_of_symbol(me, decl);
+
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_intrinsic(me, TY_ERROR); // TS2526: no `this` type in statics
 
     Ty const* declared = ty_declared_type_of(me, decl);
@@ -705,6 +709,40 @@ static Ty* make_namespace(Checker* me, Symbol const* symbol) {
     return ret;
 }
 
+// The `module` of a CommonJS file: `{ exports: <what the module exports> }` (tsc builds it in
+// getTypeOfVariableOrParameterOrPropertyWorker for SymbolFlags.ModuleExports)
+Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
+    Symbol* module = file->scope ? file->scope->container : nullptr;
+    if (!module) return ty_intrinsic(me, TY_ANY);
+    Span* file_span = arena_new(&my arena, Span);
+    *file_span = (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) };
+    Symbol* assigned = module_export_equals(module);
+    Ty const* exports;
+    if (assigned != module) {
+        exports = ty_type_of_symbol(me, assigned);
+    } else {
+        // The module's namespace object under the name `module.exports` (tsc gives `module` a copy of the file's
+        // symbol by that name)
+        u64 key[2] = { KEY_COMMONJS_EXPORTS, (u64)(uintptr_t)module };
+        exports = intern_get(&my links, key, 2);
+        if (!exports) {
+            Ty* made = make_namespace(me, module);
+            made->declared.name = checker_atom(me, c_sv("module.exports"));
+            made->declared.commonjs_exports = true;
+            *intern_slot(me, &my links, key, 2) = made;
+            exports = made;
+        }
+    }
+    ObjectLiteralProp prop = {
+        .name = checker_atom(me, c_sv("exports")),
+        .type = exports,
+        .name_span = *file_span,
+        .decl_spans = file_span,
+        .decl_span_count = 1,
+    };
+    return ty_object_literal(me, &prop, 1, nullptr, 0, OBJECT_SYNTHETIC);
+}
+
 // The value of a namespace (or of a module, through `import * as ns`): a property per value it declares
 Ty const* ty_namespace_type(Checker* me, Symbol const* symbol) {
     u64 key[2] = { KEY_NAMESPACE, (u64)(uintptr_t)symbol };
@@ -755,6 +793,11 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         case SYMBOL_DECL_BUILTIN: return ty_from_node(me, decl->node, (LowerCtx){0});
         // `export default e` (exportDefaultStripsFreshness)
         case SYMBOL_DECL_EXPR: return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
+        case SYMBOL_DECL_ASSIGNMENT:
+            // tsc's getInitializerTypeFromAssignmentDeclaration: `exports.x = 1` exports `1`, `module.exports = 1` number
+            if (csview_equals(symbol->name, "export=")) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
+            return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
+        case SYMBOL_DECL_COMMONJS_MODULE: return ty_commonjs_module_object(me, decl->node);
         case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
         case SYMBOL_DECL_CLASS:
         case SYMBOL_DECL_ENUM:
@@ -786,6 +829,19 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, TY_ANY);
     // `typeof import("./a")`, `import("./a")`, `globalThis`
     if (symbol->is_module || symbol->is_global_this) return ty_namespace_type(me, symbol);
+    if (symbol->decl_count > 1 && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) {
+        // tsc's getWidenedTypeForAssignmentDeclaration: the union of what every assignment assigns
+        // TODO: a JSDoc type on one of them is the type
+        Ty const* stack[16];
+        Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
+        u32 count = 0;
+        for (u32 i = 0; i < symbol->decl_count; i++) {
+            if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT) types[count++] = value_entry_type(me, symbol, &symbol->decls[i]);
+        }
+        Ty const* ret = ty_union(me, types, count, nullptr, (TyList){0});
+        if (types != stack) free(types);
+        return ret;
+    }
     SymbolDecl const* only = nullptr;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (!decl_contributes_value(symbol, i)) continue;

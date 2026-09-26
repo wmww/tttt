@@ -84,6 +84,14 @@ typedef struct BaselineTestCase {
     // harness exempts children of property accesses and qualified names, binding elements, labels and import/export
     // names). The next types line consumes it
     bool any_keeps_underline;
+    // Symbols lines at these spans show another symbol (tsc's getSpecialPropertyAssignmentSymbol: the parts of a
+    // CommonJS assignment's target show what it declares). Set around the traversal of such a target
+    struct {
+        Span span;
+        cstr text;
+        VecSpan declarations;
+    } symbol_overrides[8];
+    u32 symbol_override_count;
     bool error_type; // The types line being added is the error type (see LineNumberedStr.error_type)
     cstr lib_list;
     cstr lib_files; // `@libFiles: react.d.ts,lib.d.ts`: files of tsc's tests/lib (at /.lib) that are roots too

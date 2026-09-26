@@ -115,6 +115,8 @@ typedef enum SymbolDeclKind {
     SYMBOL_DECL_NAMESPACE,      // NamespaceDecl
     SYMBOL_DECL_ALIAS,          // PortItem
     SYMBOL_DECL_EXPR,           // Expr: `export default <expr>`
+    SYMBOL_DECL_ASSIGNMENT,     // Expr: the value of a JavaScript assignment that declares (`exports.x = <expr>`)
+    SYMBOL_DECL_COMMONJS_MODULE, // SourceFile: the `module` of a CommonJS file, `{ exports: ... }`
     SYMBOL_DECL_BUILTIN,        // TypeNode const*: `number`, `globalThis`... (program_add_builtins())
 } SymbolDeclKind;
 
@@ -339,6 +341,9 @@ typedef struct Binder {
     NamespaceDecl** augmentations; // malloc'd
     u32 augmentation_count;
     u32 augmentation_cap;
+    // What `require` is in `require("m")` in a JavaScript file where nothing else is called that (tsc's requireSymbol:
+    // any). Made when first needed
+    Symbol* require_symbol;
     u32 suggestion_count; // Names not found so far: only the first ones get spelling suggestions (tsc's suggestionCount)
     // Values not found in class members, reported once types are known (scope_report_missing_prefixes())
     struct PendingNotFound* pending_not_found; // malloc'd
@@ -416,6 +421,13 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props);
 void scope_add_port(Scope* me, PortItem* item);
 // `export default <expr>`, export_equals: `export = x`, under the name `export=` like in tsc
 void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool export_equals);
+// An assignment in a CommonJS file: `exports.x = v`, `module.exports.x = v` and `module.exports = v` declare exports
+// (tsc's bindExportsPropertyAssignment, bindModuleExportsAssignment). Anything else is ignored
+void scope_add_commonjs_export(Scope* me, Expr* assignment, Span statement);
+// The `module` of a CommonJS file that mentions `module.exports` (tsc declares it at the first such access)
+void scope_add_commonjs_module(Scope* me);
+// `require` in a `require("m")` of a JavaScript file that doesn't declare the name
+Symbol* binder_require_symbol(Binder* me);
 
 // Whether the scope's own tables (its locals, its container's exports) have the symbol
 bool scope_declares_symbol(Scope const* me, Symbol const* symbol);

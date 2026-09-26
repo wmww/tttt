@@ -52,6 +52,8 @@ typedef struct IdentifierExpr {
     // isOuterVariable), as far as the resolve walk knows (a `var` whose declaration comes later isn't)
     bool outer_reference;
     bool is_arguments; // The implicit `arguments` of the function around it (tsc's argumentsSymbol)
+    // The callee of `require(x)` in a JavaScript file (module_ref is the module if x is a string literal)
+    bool require_call;
     bool shorthand; // The value of a shorthand property `{ a }`
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
@@ -210,6 +212,19 @@ static inline Expr expr_implicit_any(Span span) {
 static inline bool expr_is_perenthisized(Expr const* me) {
     return span_start_ptr(my inner_span) != span_start_ptr(my outer_span);
 }
+
+// CommonJS in JavaScript files: what the left operand of an `=` declares (tsc's getAssignmentDeclarationKind)
+typedef enum CommonJsTarget {
+    COMMONJS_TARGET_NONE = 0,
+    COMMONJS_TARGET_EXPORTS_PROPERTY, // `exports.x`, `module.exports.x`, `exports["x"]`: an export named x
+    COMMONJS_TARGET_MODULE_EXPORTS, // `module.exports`: the module's `export=`
+} CommonJsTarget;
+// `name_ret` (may be null): the name of the property an EXPORTS_PROPERTY target exports (in the source, no quotes)
+CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret);
+// `module.exports` (tsc's isModuleExportsAccessExpression)
+bool expr_is_module_exports(Expr const* me);
+// `require("m")` with a single argument (tsc's isRequireCall without the string literal requirement)
+bool expr_is_require_call(Expr const* me);
 
 // Should only be used in the typecheck phase
 static inline Ty const* expr_get_type(Expr* me) {

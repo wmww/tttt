@@ -532,6 +532,11 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     for_each (i, vec_statement, &source_file->ast.statements) {
         program_handle_statement(me, source_file, i);
     }
+    // tsc's setCommonJsModuleIndicator: ES imports and exports win
+    if (source_file->is_js && source_file->has_commonjs && !source_file->is_module) {
+        source_file->is_module = true;
+        source_file->is_commonjs = true;
+    }
     // tsc's setExternalModuleIndicator by moduleDetection: `force` makes every file that isn't a declaration file a
     // module, `auto` (the default) too for `import.meta`, a module format (.mts/.cts/.mjs/.cjs, an ESM package), and
     // a JSX tag under react-jsx
@@ -876,6 +881,7 @@ void program_resolve_names(Program* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         block_add_names(&source->ast, source->scope);
+        scope_add_commonjs_module(source->scope);
         scope_check_export_merges(source->scope, block_span(&source->ast));
         if (source->is_module && !source->is_js) scope_check_duplicate_exports(source->scope);
     }

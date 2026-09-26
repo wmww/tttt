@@ -80,6 +80,13 @@ typedef struct SourceFile {
     // exports: tsc's isFileProbablyExternalModule, isFileModuleFromUsingJSXTag)
     bool has_import_meta;
     bool has_jsx;
+    // A JavaScript file with a `require()` call or an assignment to `exports.x`/`module.exports` (tsc's
+    // commonJsModuleIndicator): a module, unless it has ES imports or exports (see is_commonjs)
+    bool has_commonjs;
+    // A JavaScript file that is a CommonJS module: `exports.x =` and `module.exports =` declare its exports, `module`,
+    // `exports` and `require` mean something
+    bool is_commonjs;
+    Span module_exports_span; // The `module` of the first `module.exports` of a JavaScript file (where tsc declares it)
     // The JSX pragmas of the comments at the top of the file (tsc's `@jsx`, `@jsxFrag`, `@jsxRuntime` and
     // `@jsxImportSource` in `/* */` comments): their argument, empty if there is none. The first `@jsx`/`@jsxFrag`
     // counts, the last `@jsxRuntime`/`@jsxImportSource` (like tsc's uses of file.pragmas)

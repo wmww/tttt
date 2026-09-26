@@ -635,6 +635,10 @@ void statement_hoist_names(Statement* me, Scope* scope) {
 
 void statement_add_names(Statement* me, Scope* scope) {
     switch (my tag) {
+        case STATEMENT_EXPR:
+            scope_add_commonjs_export(scope, &my expr, my span);
+            break;
+
         case STATEMENT_EXPORT_DEFAULT_EXPR:
             scope_export_default_expr(scope, &my expr, my span, my export_equals);
             break;
@@ -688,7 +692,6 @@ void statement_add_names(Statement* me, Scope* scope) {
         case STATEMENT_TRY_CATCH:
         case STATEMENT_BREAK:
         case STATEMENT_CONTINUE:
-        case STATEMENT_EXPR:
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             break;

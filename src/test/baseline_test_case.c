@@ -1223,6 +1223,15 @@ static void append_decl(cstr* target, Span span) {
 
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     unsigned line_for_placement = span_line_index(data.span);
+    for (u32 i = 0; i < my symbol_override_count; i++) {
+        if (my symbol_overrides[i].span.sv.buf != data.span.sv.buf || my symbol_overrides[i].span.sv.size != data.span.sv.size) continue;
+        cstr_drop(&data.text);
+        vec_span_drop(&data.declarations);
+        data.text = cstr_clone(my symbol_overrides[i].text);
+        data.declarations = vec_span_clone(my symbol_overrides[i].declarations);
+        data.allow_declaration_empty = true;
+        break; // (The first one: an assignment's target is what it declares first)
+    }
 
     cstr text = cstr_d(">", data.span, " : Symbol(");
 

@@ -116,6 +116,10 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
     Symbol const* symbol = declared->declared.symbol;
     if (!symbol) symbol = declared->declared.merged_value;
     if (!symbol && declared->declared.kind == TY_DECLARED_NAMESPACE) symbol = declared->declared.namespace_symbol;
+    if (declared->kind == TY_DECLARED && declared->declared.commonjs_exports) {
+        out(d, atom_sv(declared->declared.name));
+        return;
+    }
     // A module's object, also through `import * as ns` (whose symbol stands for the module): named from here like tsc
     if (d.enclosing && symbol && symbol_members(symbol)->is_module) {
         out_symbol_name(me, d, symbol_members(symbol), meaning);

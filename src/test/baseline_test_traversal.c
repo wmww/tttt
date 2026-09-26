@@ -40,6 +40,39 @@ static cstr symbol_text(BaselineTestCase* ctx, Symbol const* symbol) {
     return ret;
 }
 
+static void add_symbol_override(BaselineTestCase* ctx, Span span, Symbol const* symbol) {
+    if (!symbol || ctx->symbol_override_count >= c_arraylen(ctx->symbol_overrides)) return;
+    ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+        .span = span,
+        .text = symbol_text(ctx, symbol),
+        .declarations = declaration_get_spans(symbol),
+    };
+}
+
+// tsc's getSpecialPropertyAssignmentSymbolFromEntityName: in `exports.x = v` the access, `exports` and `x` are the
+// export x; in `module.exports = v` `module` and `exports` are the `export=` (the access itself is `module.exports`)
+static void commonjs_symbol_overrides(Expr const* left, BaselineTestCase* ctx) {
+    SourceFile const* file = left->inner_span.source;
+    if (!file || !file->is_commonjs || !file->scope || !file->scope->container) return;
+    Symbol const* module = file->scope->container;
+    Span name = span_null;
+    switch (expr_commonjs_target(left, &name)) {
+        case COMMONJS_TARGET_NONE:
+            break;
+        case COMMONJS_TARGET_EXPORTS_PROPERTY: {
+            Symbol const* symbol = module->exports ? symbol_table_get(module->exports, name.sv) : nullptr;
+            add_symbol_override(ctx, left->inner_span, symbol);
+            add_symbol_override(ctx, left->property->expr.inner_span, symbol);
+            add_symbol_override(ctx, left->property->prop.outer_span, symbol);
+        }   break;
+        case COMMONJS_TARGET_MODULE_EXPORTS: {
+            Symbol const* symbol = module->exports ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
+            add_symbol_override(ctx, left->property->expr.inner_span, symbol);
+            add_symbol_override(ctx, left->property->prop.outer_span, symbol);
+        }   break;
+    }
+}
+
 // `A.B.C` as spans
 // What the symbols baseline says about a property access, gathered over the members of a union or intersection
 typedef struct PropSymbolInfo {
@@ -1062,6 +1095,23 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         }
         return;
     }
+    if (my target && my target->is_module && my target->module->file) {
+        // `exports` in a CommonJS file: the file's symbol, `"a"` declared by the whole file
+        SourceFile const* file = my target->module->file;
+        VecSpan declarations = vec_span_init();
+        vec_span_push(&declarations, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = declarations,
+            .span = my name,
+            .text = module_name_for_error(my target, nullptr, false),
+        });
+        return;
+    }
+    if (my require_call && my target && csview_equals(my target->name, "require") && !span_valid(my target->name_span)) {
+        // tsc's requireSymbol, which has no declaration
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my name, .allow_declaration_empty = true });
+        return;
+    }
     Symbol const* shown = my target ? shown_declaration(my symbol, my target) : nullptr;
     // (an alias of an anonymous declaration, `export default class {}`, has a name)
     if (shown && (span_valid(my target->name_span) || span_valid(shown->name_span))) {
@@ -1189,6 +1239,95 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
     baseline_test_case_add_type(ctx, name->inner_span, value ? ty_type_of_symbol(checker, value) : ty_intrinsic(checker, TY_ANY));
 }
 
+static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    if (ty_is_import_meta(me)) {
+        // The symbol of ImportMeta's type, and `meta` as the property of tsc's synthetic ImportMetaExpression
+        Ty const* type = ty_import_meta_type(current_checker);
+        Symbol const* symbol = type->kind == TY_DECLARED ? type->declared.symbol : nullptr;
+        if (symbol) {
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = declaration_get_spans(symbol),
+                .span = my inner_span,
+                .text = symbol_text(ctx, symbol),
+            });
+        }
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .span = my property->prop.outer_span,
+            .allow_declaration_empty = true,
+            .text = cstr_lit("ImportMetaExpression.meta"),
+        });
+        ctx->any_keeps_underline = true;
+        baseline_test_case_add_type(ctx, my property->prop.outer_span, type);
+        return;
+    }
+    bool has_compiled_expr_info = false;
+    // The symbol of the property: the declarations of the property of every member of the (apparent) object
+    // type that has one, like tsc's synthetic union/intersection property symbols. The parent is the first
+    // member's, so a union of two interfaces gets the plain name like tsc's synthetic symbol
+    Checker* checker = current_checker;
+    Ty const* object = ty_expr_type(checker, &my property->expr);
+    Ty const* key = ty_access_key_type(checker, my property);
+    PropSymbolInfo info = {0};
+    if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL)) {
+        collect_prop_symbol(checker, object, ty_literal_name(checker, key), &info, 0);
+    }
+    if (info.found) {
+        if (my property->form == PROPERTY_EXPR_DOT) {
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = vec_span_clone(info.declarations),
+                .allow_declaration_empty = true,
+                .span = my inner_span,
+                .text = prop_text(&info, ctx, my property->prop.outer_span),
+            });
+        }
+        expr_compile_test_info(&my property->expr, ctx);
+        has_compiled_expr_info = true;
+        // tsc has no line for the name in a private name access (`a.#b`)
+        if (my property->prop.tag == EXPR_LITERAL && !csview_starts_with(my property->prop.outer_span.sv, "#")) {
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = vec_span_clone(info.declarations),
+                .allow_declaration_empty = true,
+                .span = my property->prop.outer_span,
+                .text = prop_text(&info, ctx, my property->prop.outer_span),
+            });
+        }
+    }
+    vec_span_drop(&info.declarations);
+    if (!info.found && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
+        !(key->flags & TYF_ENUM_LITERAL) && my property->prop.tag == EXPR_LITERAL &&
+        !csview_starts_with(my property->prop.outer_span.sv, "#")
+    ) {
+        // Through a declared index signature: `__index`, on the access and on the name (not of a type
+        // parameter's constraint, not in element accesses: tsc has no symbol there)
+        // Only types whose members have an `__index` symbol: declared ones and written type literals, not
+        // what spreads and the like synthesize (tsc's getIndexSymbolFromSymbolTable)
+        Ty const* root = object->kind == TY_ANONYMOUS ? object : nullptr;
+        while (root && root->anonymous.target) root = root->anonymous.target;
+        bool declared = object->kind == TY_DECLARED || object->kind == TY_REFERENCE ||
+            (root && root->anonymous.node && !root->anonymous.object_literal);
+        if (my property->form == PROPERTY_EXPR_DOT && declared &&
+            index_symbol_compile_test_info(ctx, object, key, my inner_span, false)
+        ) {
+            expr_compile_test_info(&my property->expr, ctx);
+            has_compiled_expr_info = true;
+            index_symbol_compile_test_info(ctx, object, key, my property->prop.outer_span, false);
+        }
+    }
+
+    bool dot = my property->form != PROPERTY_EXPR_BRACKET;
+    if (!has_compiled_expr_info) {
+        ctx->any_keeps_underline = dot; // The object of a property access
+        expr_compile_test_info(&my property->expr, ctx);
+    }
+
+    if (!dot) {
+        expr_compile_test_info(&my property->prop, ctx);
+    } else if (!csview_starts_with(my property->prop.outer_span.sv, "#")) {
+        ctx->any_keeps_underline = true;
+        baseline_test_case_add_type(ctx, my property->prop.outer_span, ty_regular(current_checker, expr_get_type((Expr*)me)));
+    }
+}
+
 void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
@@ -1222,10 +1361,17 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             }
             break;
 
-        case EXPR_BINARY_OP:
+        case EXPR_BINARY_OP: {
+            u32 overrides = ctx->symbol_override_count;
+            if (my binary_op->op == BINARY_OP_EQUAL) commonjs_symbol_overrides(&my binary_op->left, ctx);
             expr_compile_test_info(&my binary_op->left, ctx);
+            while (ctx->symbol_override_count > overrides) {
+                ctx->symbol_override_count--;
+                cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
+                vec_span_drop(&ctx->symbol_overrides[ctx->symbol_override_count].declarations);
+            }
             expr_compile_test_info(&my binary_op->right, ctx);
-            break;
+        }   break;
 
         case EXPR_UNARY_OP:
             if (my unary_op->op != UNARY_OP_YIELD || my unary_op->expr.tag != EXPR_IMPLICIT_ANY) { // Not a bare `yield`
@@ -1234,94 +1380,30 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_PROPERTY: {
-            if (ty_is_import_meta(me)) {
-                // The symbol of ImportMeta's type, and `meta` as the property of tsc's synthetic ImportMetaExpression
-                Ty const* type = ty_import_meta_type(current_checker);
-                Symbol const* symbol = type->kind == TY_DECLARED ? type->declared.symbol : nullptr;
-                if (symbol) {
-                    baseline_test_case_add_symbol(ctx, (BaselineSym){
-                        .declarations = declaration_get_spans(symbol),
-                        .span = my inner_span,
-                        .text = symbol_text(ctx, symbol),
-                    });
-                }
-                baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .span = my property->prop.outer_span,
-                    .allow_declaration_empty = true,
-                    .text = cstr_lit("ImportMetaExpression.meta"),
-                });
-                ctx->any_keeps_underline = true;
-                baseline_test_case_add_type(ctx, my property->prop.outer_span, type);
-                break;
-            }
-            bool has_compiled_expr_info = false;
-            // The symbol of the property: the declarations of the property of every member of the (apparent) object
-            // type that has one, like tsc's synthetic union/intersection property symbols. The parent is the first
-            // member's, so a union of two interfaces gets the plain name like tsc's synthetic symbol
-            Checker* checker = current_checker;
-            Ty const* object = ty_expr_type(checker, &my property->expr);
-            Ty const* key = ty_access_key_type(checker, my property);
-            PropSymbolInfo info = {0};
-            if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL)) {
-                collect_prop_symbol(checker, object, ty_literal_name(checker, key), &info, 0);
-            }
-            if (info.found) {
-                if (my property->form == PROPERTY_EXPR_DOT) {
-                    baseline_test_case_add_symbol(ctx, (BaselineSym){
-                        .declarations = vec_span_clone(info.declarations),
-                        .allow_declaration_empty = true,
-                        .span = my inner_span,
-                        .text = prop_text(&info, ctx, my property->prop.outer_span),
-                    });
-                }
-                expr_compile_test_info(&my property->expr, ctx);
-                has_compiled_expr_info = true;
-                // tsc has no line for the name in a private name access (`a.#b`)
-                if (my property->prop.tag == EXPR_LITERAL && !csview_starts_with(my property->prop.outer_span.sv, "#")) {
-                    baseline_test_case_add_symbol(ctx, (BaselineSym){
-                        .declarations = vec_span_clone(info.declarations),
-                        .allow_declaration_empty = true,
-                        .span = my property->prop.outer_span,
-                        .text = prop_text(&info, ctx, my property->prop.outer_span),
-                    });
-                }
-            }
-            vec_span_drop(&info.declarations);
-            if (!info.found && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
-                !(key->flags & TYF_ENUM_LITERAL) && my property->prop.tag == EXPR_LITERAL &&
-                !csview_starts_with(my property->prop.outer_span.sv, "#")
+            u32 overrides = ctx->symbol_override_count;
+            Expr const* module = &my property->expr;
+            if (expr_is_module_exports(me) && module->identifier.target && module->identifier.target->decl_count &&
+                module->identifier.target->decls[0].kind == SYMBOL_DECL_COMMONJS_MODULE &&
+                ctx->symbol_override_count + 2 <= c_arraylen(ctx->symbol_overrides)
             ) {
-                // Through a declared index signature: `__index`, on the access and on the name (not of a type
-                // parameter's constraint, not in element accesses: tsc has no symbol there)
-                // Only types whose members have an `__index` symbol: declared ones and written type literals, not
-                // what spreads and the like synthesize (tsc's getIndexSymbolFromSymbolTable)
-                Ty const* root = object->kind == TY_ANONYMOUS ? object : nullptr;
-                while (root && root->anonymous.target) root = root->anonymous.target;
-                bool declared = object->kind == TY_DECLARED || object->kind == TY_REFERENCE ||
-                    (root && root->anonymous.node && !root->anonymous.object_literal);
-                if (my property->form == PROPERTY_EXPR_DOT && declared &&
-                    index_symbol_compile_test_info(ctx, object, key, my inner_span, false)
-                ) {
-                    expr_compile_test_info(&my property->expr, ctx);
-                    has_compiled_expr_info = true;
-                    index_symbol_compile_test_info(ctx, object, key, my property->prop.outer_span, false);
+                // tsc's synthetic `exports` property of `module`, named after it and declared by the file
+                SourceFile const* file = module->identifier.target->decls[0].node;
+                Span spans[2] = { my inner_span, my property->prop.outer_span };
+                for (u32 i = 0; i < 2; i++) {
+                    VecSpan declarations = vec_span_init();
+                    vec_span_push(&declarations, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
+                    ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+                        .span = spans[i], .text = cstr_lit("module.exports"), .declarations = declarations,
+                    };
                 }
             }
-
-            bool dot = my property->form != PROPERTY_EXPR_BRACKET;
-            if (!has_compiled_expr_info) {
-                ctx->any_keeps_underline = dot; // The object of a property access
-                expr_compile_test_info(&my property->expr, ctx);
-            }
-
-            if (!dot) {
-                expr_compile_test_info(&my property->prop, ctx);
-            } else if (!csview_starts_with(my property->prop.outer_span.sv, "#")) {
-                ctx->any_keeps_underline = true;
-                baseline_test_case_add_type(ctx, my property->prop.outer_span, ty_regular(current_checker, expr_get_type((Expr*)me)));
+            property_compile_test_info(me, ctx);
+            while (ctx->symbol_override_count > overrides) {
+                ctx->symbol_override_count--;
+                cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
+                vec_span_drop(&ctx->symbol_overrides[ctx->symbol_override_count].declarations);
             }
         }   break;
-
         case EXPR_GENERIC_PARAMS:
             expr_compile_test_info(&my generic_params->expr, ctx);
             for_each (i, vec_spanned_type, &my generic_params->params) {

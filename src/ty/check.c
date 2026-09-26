@@ -1333,8 +1333,16 @@ static bool is_namespace_import(Expr const* expr) {
 }
 
 // tsc's isAssignmentToReadonlyEntity for a property
+// `exports.x = v` in a CommonJS file declares x (whatever else declares it: the target of an alias export is a const)
+static bool is_commonjs_export_assignment(PropertyExpr const* access) {
+    SourceFile const* file = access->prop.outer_span.source;
+    if (!file || !file->is_commonjs) return false;
+    Expr left = { .tag = EXPR_PROPERTY, .property = (PropertyExpr*)access };
+    return expr_commonjs_target(&left, nullptr) == COMMONJS_TARGET_EXPORTS_PROPERTY;
+}
+
 static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object, MemberRefs* refs) {
-    if (!access->assignment_target) return false;
+    if (!access->assignment_target || is_commonjs_export_assignment(access)) return false;
     Atom const* name = access_name(me, access);
     if (!name) return false;
     int readonly = member_refs(me, object, name, refs, 0);

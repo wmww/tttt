@@ -180,7 +180,21 @@ static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names) {
     return false;
 }
 
+static void identifier_type_lookup_names_inner(IdentifierType* me, Scope* names, ErrorCtx* errs);
+
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
+    if (!my jsdoc) {
+        identifier_type_lookup_names_inner(me, names, errs);
+        return;
+    }
+    // HACK: until @typedef, @callback, @template and @import declare names (plan 26 stage 3), what a JSDoc type can't
+    // find is any, silently
+    ErrorCtx dropped = error_ctx_init();
+    identifier_type_lookup_names_inner(me, names, &dropped);
+    error_ctx_drop(&dropped);
+}
+
+static void identifier_type_lookup_names_inner(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
 
     if (my import_ref || span_valid(my import_span)) {
@@ -234,7 +248,8 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER)) check_static_type_parameter_reference(me, names, errs);
     }
 
-    if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE)) {
+    // (A value in JSDoc is its type: tsc's getTypeFromJSDocValueReference)
+    if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE) && !my jsdoc) {
         cstr name_str = identifier_type_make_name_str(me);
         Span error_span = span_between(vec_span_size(&my namespaces) ? *my namespaces.data : my name, my name);
         error_ctx_error_d(errs, error_span, 2749,

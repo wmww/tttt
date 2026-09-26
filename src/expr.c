@@ -281,6 +281,23 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         return;
     }
     my target = scope_get_value(names, my name.sv, &my symbol);
+    if (!my target && names->file && names->file->is_js) {
+        if (my require_call) {
+            // tsc's requireSymbol, and the module like an import's
+            my target = my symbol = binder_require_symbol(names->binder);
+            if (my module_ref && my module_ref->file) {
+                module_ref_report_resolved(my module_ref, errs);
+            } else if (my module_ref && !binder_module_of_ref(names->binder, my module_ref)) {
+                module_ref_report_unresolved(my module_ref, errs);
+            }
+            return;
+        }
+        if (names->file->is_commonjs && span_equals(my name, "exports")) {
+            // The module itself (tsc's resolveNameHelper: `exports` in a CommonJS file is the file's symbol)
+            my target = my symbol = names->file->scope->container;
+            return;
+        }
+    }
     if (my target) {
         check_type_only_value(me, names, errs);
         check_declared_before_use(me, names, errs);
@@ -2831,4 +2848,43 @@ void object_expr_item_drop(ObjectExprItem* me) {
         free(my shorthand_default);
     }
     expr_drop(&my value);
+}
+
+static bool expr_is_plain_identifier(Expr const* me, const char* name) {
+    return my tag == EXPR_IDENTIFIER && !my identifier.keyword && !expr_is_perenthisized(me) &&
+        csview_equals(my identifier.name.sv, name);
+}
+
+// `a.b` or `a["b"]`: the name b, else an invalid span
+static Span static_property_name(Expr const* me) {
+    if (my tag != EXPR_PROPERTY || expr_is_perenthisized(me) || my property->optional_chain) return span_null;
+    Expr const* prop = &my property->prop;
+    if (prop->tag != EXPR_LITERAL || prop->literal.tag != VALUE_STRING) return span_null;
+    if (my property->form == PROPERTY_EXPR_DOT) return prop->inner_span;
+    // Without the quotes
+    Span ret = prop->inner_span;
+    if (ret.sv.size < 2) return span_null;
+    ret.sv.buf++;
+    ret.sv.size -= 2;
+    return ret;
+}
+
+bool expr_is_module_exports(Expr const* me) {
+    Span name = static_property_name(me);
+    return span_valid(name) && csview_equals(name.sv, "exports") && expr_is_plain_identifier(&my property->expr, "module");
+}
+
+CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret) {
+    if (expr_is_module_exports(left)) return COMMONJS_TARGET_MODULE_EXPORTS;
+    Span name = static_property_name(left);
+    if (!span_valid(name)) return COMMONJS_TARGET_NONE;
+    Expr const* object = &left->property->expr;
+    if (!expr_is_plain_identifier(object, "exports") && !expr_is_module_exports(object)) return COMMONJS_TARGET_NONE;
+    if (name_ret) *name_ret = name;
+    return COMMONJS_TARGET_EXPORTS_PROPERTY;
+}
+
+bool expr_is_require_call(Expr const* me) {
+    return my tag == EXPR_CALL && !my call->uses_new && vec_expr_size(&my call->args) == 1 &&
+        expr_is_plain_identifier(&my call->callable, "require");
 }

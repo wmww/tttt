@@ -255,6 +255,9 @@ struct Ty {
             TyDeclaredKind kind;
             Symbol const* symbol; // null for tuple targets and synthetics
             struct Symbol const* namespace_symbol; // TY_DECLARED_NAMESPACE only: the namespace, enum or module
+            // TY_DECLARED_NAMESPACE of a CommonJS module as its `module.exports` (tsc's synthetic symbol of that name):
+            // named `name` wherever it's printed
+            bool commonjs_exports;
             // Set if this is the value of a declaration with several value declarations (a namespace merged with a
             // function, class or enum): the members are those of all of them, see ty_merged_value_type()
             Symbol const* merged_value;
@@ -912,6 +915,7 @@ Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
 // with `ctx`), else what is assigned to it
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx);
 Ty const* ty_empty_object_type(Checker* me); // `{}`
+Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file); // `module` of a CommonJS file
 // What a context-sensitive function is while context-sensitive arguments are skipped (tsc's anyFunctionType): no
 // members, non-inferrable, related to every function type
 Ty const* ty_any_function_type(Checker* me);

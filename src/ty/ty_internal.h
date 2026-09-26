@@ -40,6 +40,7 @@ enum {
     KEY_ALIAS_INSTANCE, // (alias Symbol, argument ids) -> Ty
     KEY_NODE,           // TYPE_INTERFACE/TYPE_CALLABLE node -> Ty
     KEY_NAMESPACE,      // Symbol -> Ty
+    KEY_COMMONJS_EXPORTS, // Module symbol -> its namespace object as `module.exports`
     KEY_MERGED_VALUE,   // Symbol -> Ty, see ty_merged_value_type()
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE node, mapper pairs) -> Ty
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()

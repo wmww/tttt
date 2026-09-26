@@ -751,6 +751,8 @@ static void symbol_flags_of_props(DeclProps const* props, u32* includes, u32* ex
             *excludes = SYMBOL_ENUM_MEMBER_EXCLUDES;
             return;
         case SYMBOL_DECL_ALIAS:
+        case SYMBOL_DECL_ASSIGNMENT:
+        case SYMBOL_DECL_COMMONJS_MODULE:
         case SYMBOL_DECL_NONE:
             break;
     }
@@ -1112,6 +1114,108 @@ void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool expor
             .name = statement, .full = statement,
         });
     }
+}
+
+// CommonJS
+
+// `exports.x = v`: an alias when v is a name (tsc's isAliasableExpression), else a property whose type is what is
+// assigned (several assignments merge)
+static void declare_commonjs_export(Scope* me, csview name, Span name_span, Expr* value, Span left, Span statement) {
+    symbol_ensure_exports(my container);
+    bool alias = value->tag == EXPR_IDENTIFIER && !value->identifier.keyword;
+    u32 includes = alias ? SYMBOL_ALIAS : SYMBOL_PROPERTY;
+    bool merged;
+    Symbol* symbol = declare_symbol(me, my container->exports, name, name_span, includes, 0, false, &merged);
+    if (!merged) {
+        symbol->name = name;
+        symbol->name_span = name_span;
+        symbol->parent = my container;
+        symbol->exported = true;
+    }
+    if (alias) {
+        if (!symbol->alias) symbol->alias = arena_new(&my binder->arena, SymbolAlias);
+        symbol->alias->scope = me;
+        symbol->alias->name = value->identifier.name;
+        symbol_add_decl(symbol, (SymbolDecl){
+            .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = left, .full = statement,
+        });
+    } else {
+        symbol_add_decl(symbol, (SymbolDecl){
+            .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_PROPERTY, .node = value, .name = left, .full = statement,
+        });
+    }
+}
+
+// tsc's getRightMostAssignedExpression: `module.exports = exports = x` assigns x
+static Expr* rightmost_assigned(Expr* value) {
+    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+        value = &value->binary_op->right;
+    }
+    return value;
+}
+
+static void add_commonjs_export(Scope* me, BinaryOpExpr* op, Span statement);
+
+void scope_add_commonjs_export(Scope* me, Expr* assignment, Span statement) {
+    if (my kind != SCOPE_MODULE || !my file || !my file->is_commonjs || !my container) return;
+    // Every assignment of a chain (`exports = module.exports = C`)
+    while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL) {
+        add_commonjs_export(me, assignment->binary_op, statement);
+        assignment = &assignment->binary_op->right;
+    }
+}
+
+static void add_commonjs_export(Scope* me, BinaryOpExpr* op, Span statement) {
+    Span name = span_null;
+    switch (expr_commonjs_target(&op->left, &name)) {
+        case COMMONJS_TARGET_NONE:
+            break;
+        case COMMONJS_TARGET_EXPORTS_PROPERTY:
+            declare_commonjs_export(me, name.sv, name, &op->right, op->left.outer_span, statement);
+            break;
+        case COMMONJS_TARGET_MODULE_EXPORTS: {
+            Expr* value = rightmost_assigned(&op->right);
+            if (value->tag == EXPR_OBJECT) {
+                // `module.exports = {}` declares nothing, `{ a, b }` its shorthands (tsc's
+                // bindExportAssignedObjectMemberAlias)
+                bool shorthands = true;
+                for_each (i, vec_object_expr_item, &value->object) shorthands &= i->tag == OBJECT_ITEM_SHORTHAND;
+                if (shorthands) {
+                    for_each (i, vec_object_expr_item, &value->object) {
+                        declare_commonjs_export(me, i->name_span.sv, i->name_span, &i->value, i->name_span, i->span);
+                    }
+                    break;
+                }
+            }
+            declare_commonjs_export(me, c_sv("export="), op->left.outer_span, value, op->left.outer_span, statement);
+        }   break;
+    }
+}
+
+void scope_add_commonjs_module(Scope* me) {
+    SourceFile* file = my file;
+    if (my kind != SCOPE_MODULE || !file || !file->is_commonjs || !span_valid(file->module_exports_span)) return;
+    if (symbol_table_get(&my locals, c_sv("module"))) return;
+    bool merged;
+    Span name = file->module_exports_span;
+    Symbol* symbol = declare_symbol(me, &my locals, name.sv, name, SYMBOL_FUNCTION_SCOPED_VARIABLE, 0, false, &merged);
+    symbol->name = name.sv;
+    symbol->name_span = name;
+    symbol->is_local = true;
+    symbol_add_decl(symbol, (SymbolDecl){
+        .kind = SYMBOL_DECL_COMMONJS_MODULE, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE, .node = file, .name = name,
+        .full = name,
+    });
+}
+
+Symbol* binder_require_symbol(Binder* me) {
+    if (!my require_symbol) {
+        my require_symbol = binder_new_symbol(me, c_sv("require"), SYMBOL_FUNCTION_SCOPED_VARIABLE);
+        symbol_add_decl(my require_symbol, (SymbolDecl){
+            .kind = SYMBOL_DECL_BUILTIN, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE, .node = &type_any,
+        });
+    }
+    return my require_symbol;
 }
 
 // Modules

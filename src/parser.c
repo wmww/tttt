@@ -46,6 +46,8 @@ typedef struct ParserShared {
     // What moduleDetection looks at (SourceFile.has_import_meta, has_jsx): set by attempts that backtrack too
     bool saw_import_meta;
     bool saw_jsx;
+    Span module_exports_span; // See SourceFile.module_exports_span
+    bool saw_commonjs; // A `require()` call, an assignment to `exports.x` or `module.exports` (a JavaScript file's)
     // JavaScript files: every `/** */` comment hopped so far (not `/**/`), sorted by start. Hosts find theirs by looking
     // back from their first token (jsdoc_before())
     VecJsDocRange jsdoc_comments;
@@ -1702,6 +1704,8 @@ typedef struct JsDocTag {
     bool variadic; // `{...T}`
     Span name; // `@param {T} name`, `@typedef {T} Name`, `@template T`: the name (maybe dotted: `o.a`)
     bool bracketed; // `[name]`, `[name=default]`: optional
+    // A `@param`/`@returns` of a `@callback`, a `@property` of a `@typedef`: part of that, not about the host
+    bool nested;
 } JsDocTag;
 
 static void jsdoc_tag_drop(JsDocTag* me) {
@@ -1887,6 +1891,7 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
     bool line_start = true;
     bool saw_asterisk = false;
     bool in_backticks = false;
+    JsDocTagKind owner = JSDOC_TAG_OTHER; // The @typedef or @callback the tags are part of, if any
     while (c < end) {
         char ch = *c;
         if (ch == '\n') {
@@ -1901,6 +1906,19 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
         } else if (ch == '@' && !in_backticks && (line_start || ((c[-1] == ' ' || c[-1] == '\t') && !is_jsdoc_space(c[1])))) {
             c = parse_jsdoc_tag(parent, c, end, tags);
             line_start = false;
+            // tsc's parseCallbackTag/parseTypedefTag take the tags that follow as their children
+            JsDocTag* tag = vec_jsdoc_tag_back_mut(tags);
+            if (tag->kind == JSDOC_TAG_TYPEDEF || tag->kind == JSDOC_TAG_CALLBACK) {
+                owner = tag->kind;
+            } else if (owner == JSDOC_TAG_CALLBACK && (tag->kind == JSDOC_TAG_PARAM || tag->kind == JSDOC_TAG_RETURNS ||
+                tag->kind == JSDOC_TAG_TEMPLATE)
+            ) {
+                tag->nested = true;
+            } else if (owner == JSDOC_TAG_TYPEDEF && (tag->kind == JSDOC_TAG_PROPERTY || tag->kind == JSDOC_TAG_TEMPLATE)) {
+                tag->nested = true;
+            } else {
+                owner = JSDOC_TAG_OTHER;
+            }
         } else {
             if (ch == '`' && !line_start) in_backticks = !in_backticks;
             line_start = false;
@@ -1934,7 +1952,7 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
 // The first tag of a kind that has a type, null if there is none
 static JsDocTag* jsdoc_find_typed(VecJsDocTag* tags, JsDocTagKind kind) {
     for_each (i, vec_jsdoc_tag, tags) {
-        if (i->kind == kind && i->has_type) return i;
+        if (i->kind == kind && i->has_type && !i->nested) return i;
     }
     return nullptr;
 }
@@ -1961,7 +1979,7 @@ static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function
     Binding const* binding = &arg->initializer.binding;
     if (binding->tag == BINDING_IDENTIFIER) {
         for_each (i, vec_jsdoc_tag, tags) {
-            if (i->kind == JSDOC_TAG_PARAM && span_valid(i->name) && csview_equals_sv(i->name.sv, binding->content_span.sv)) {
+            if (i->kind == JSDOC_TAG_PARAM && !i->nested && span_valid(i->name) && csview_equals_sv(i->name.sv, binding->content_span.sv)) {
                 return i->has_type ? i : nullptr;
             }
         }
@@ -1969,10 +1987,16 @@ static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function
     }
     isize index = arg - function->args.data;
     for_each (i, vec_jsdoc_tag, tags) {
-        if (i->kind != JSDOC_TAG_PARAM) continue;
+        if (i->kind != JSDOC_TAG_PARAM || i->nested) continue;
         if (!index--) return i->has_type ? i : nullptr;
     }
     return nullptr;
+}
+
+// The function an expression is, directly (tsc: a parenthesized one has no JSDoc host above it)
+static FunctionImpl* jsdoc_function_of(Expr* expr) {
+    if (expr->tag != EXPR_FUNCTION || expr->outer_span.sv.size != expr->inner_span.sv.size) return nullptr;
+    return expr->function;
 }
 
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
@@ -1996,7 +2020,7 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
         }
         binding->explicit_type.from_jsdoc = true;
     }
-    if (!function->ret_explicit) {
+    if (!function->ret_explicit && !function->is_constructor) {
         JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_RETURNS);
         if (tag) {
             function->ret = jsdoc_take_type(tag, &function->ret_span);
@@ -2932,6 +2956,13 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     }
 
     item.span = span_from(a);
+    if (p.shared->source->is_js && item.tag != OBJECT_ITEM_SHORTHAND) {
+        // The tags of a method, or of a property whose value is a function, are the function's
+        VecJsDocTag tags = {0};
+        FunctionImpl* function = jsdoc_function_of(&item.value);
+        if (function && jsdoc_before(&p, a.start, &tags)) jsdoc_apply_function(&tags, function);
+        vec_jsdoc_tag_drop(&tags);
+    }
     *ret = item;
     return parse_success(&p);
 }
@@ -3221,6 +3252,29 @@ static bool parse_class_computed_key(Parser* parent, Expr** ret) {
     return parse_success(&p);
 }
 
+// A class member's JSDoc: a property's `@type`, a method's (or a function-valued property's) `@param`s and `@returns`
+static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item) {
+    VecJsDocTag tags = {0};
+    if (!jsdoc_before(p, start, &tags)) return;
+    switch (item->tag) {
+        case CLASS_ITEM_CONSTRUCTOR: jsdoc_apply_function(&tags, &item->constructor.func); break;
+        case CLASS_ITEM_METHOD: jsdoc_apply_function(&tags, &item->method.func); break;
+        case CLASS_ITEM_FIELD: {
+            if (!item->field.has_explicit_type) {
+                JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
+                if (tag) {
+                    item->field.explicit_type = jsdoc_take_type(tag, &item->field.explicit_type_span);
+                    item->field.has_explicit_type = true;
+                }
+            }
+            FunctionImpl* function = jsdoc_function_of(&item->field.value);
+            if (function) jsdoc_apply_function(&tags, function);
+        }   break;
+        default: break;
+    }
+    vec_jsdoc_tag_drop(&tags);
+}
+
 static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -3235,6 +3289,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
     }
     ret->decorators = decorators;
     ret->span = span_from(a);
+    if (p.shared->source->is_js) jsdoc_apply_class_item(&p, a.start, ret);
     return parse_success(&p);
 }
 
@@ -3877,6 +3932,9 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
         bool named = left_and_ret->property->form == PROPERTY_EXPR_DOT || prop->tag == EXPR_LITERAL;
         mark_assigned_name(&right, named ? prop->inner_span : left_and_ret->inner_span);
     }
+    if (op == BINARY_OP_EQUAL && p.shared->source->is_js && expr_commonjs_target(left_and_ret, nullptr)) {
+        p.shared->saw_commonjs = true;
+    }
     expr_mark_binary_operand(left_and_ret);
     expr_mark_binary_operand(&right);
     *left_and_ret = expr_binary_op(span_between(left_and_ret->outer_span, right.outer_span), c_new(BinaryOpExpr, {
@@ -4257,6 +4315,17 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 .args = parsed.args,
             })
         );
+        if (p.shared->source->is_js && !optional_chain && expr_is_require_call(left_and_ret)) {
+            // tsc's collectRequireCalls: `require("m")` names a module in a JavaScript file, wherever it is
+            p.shared->saw_commonjs = true;
+            left_and_ret->call->callable.identifier.require_call = true;
+            Expr const* arg = vec_expr_at(&left_and_ret->call->args, 0);
+            if (arg->tag == EXPR_LITERAL && arg->literal.tag == VALUE_STRING) {
+                ModuleRef* ref = add_module_ref(&p, cstr_clone(arg->literal.string), arg->inner_span);
+                ref->syntax = MODULE_REF_REQUIRE;
+                left_and_ret->call->callable.identifier.module_ref = ref;
+            }
+        }
         return parse_success(&p);
     }
 
@@ -4289,6 +4358,11 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 .optional_chain = parsed.optional_chain,
             })
         );
+        if (p.shared->source->is_js && expr_is_module_exports(left_and_ret)) {
+            Span module = left_and_ret->property->expr.inner_span;
+            Span* first = &p.shared->module_exports_span;
+            if (!span_valid(*first) || span_start_ptr(module) < span_start_ptr(*first)) *first = module;
+        }
         return parse_success(&p);
     }
 
@@ -6988,12 +7062,6 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     return parse_success(&p);
 }
 
-// The function an expression is, directly (tsc: a parenthesized one has no JSDoc host above it)
-static FunctionImpl* jsdoc_function_of(Expr* expr) {
-    if (expr->tag != EXPR_FUNCTION || expr->outer_span.sv.size != expr->inner_span.sv.size) return nullptr;
-    return expr->function;
-}
-
 // What a statement's JSDoc says (tsc's getJSDocCommentsAndTags / getNextJSDocCommentLocation, from the host down):
 // a variable statement's `@type` is its single declaration's annotation, and like the tags of an assignment statement
 // or `return` its `@param`s/`@returns` are for the function it gives
@@ -7168,6 +7236,8 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     // checker's grammar errors
     static unsigned const modifier_codes[] = { 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1184, 1248, 1253 };
     source->has_import_meta = shared.saw_import_meta;
+    source->has_commonjs = shared.saw_commonjs;
+    source->module_exports_span = shared.module_exports_span;
     source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;
     for_each (i, vec_error, &shared.errors) {
