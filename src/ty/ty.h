@@ -791,6 +791,10 @@ Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple);
 bool ty_node_reaches_alias_in_flight(Checker* me, TypeNode const* node);
 // The type of parameter i (a rest parameter stands for every position from its own on), null if there's none
 Ty const* ty_signature_param_type_at(Checker* me, Signature const* sig, u32 i);
+// How many parameters a signature has, a rest tuple of fixed length counted as its elements (tsc's getParameterCount)
+u32 ty_signature_param_count(Signature const* sig);
+// Takes any number of arguments: a rest parameter that isn't a tuple of fixed length (tsc's hasEffectiveRestParameter)
+bool ty_signature_has_rest(Signature const* sig);
 // The signature a function expression gets its parameter types from, given its contextual type, null if none
 Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual);
 Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow); // tsc's getQuickTypeOfExpression, null if none // The array a tuple also is
@@ -969,6 +973,7 @@ JsxIntrinsic ty_jsx_intrinsic(Checker* me, struct JsxElement const* element);
 JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, struct JsxElement const* element, csview name);
 void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs);
 bool ty_jsx_skips_head(Checker* me, Ty const* source, Ty const* target);
+bool ty_jsx_tag_arity_fits(Checker* me, struct JsxElement const* element, Ty const* tag_type, ErrorCtx* errs);
 Ty const* ty_jsx_signature_props(Checker* me, struct JsxElement const* element, Signature const* sig, TyMapper const* mapper, bool class_component);
 typedef struct JsxResolution {
     Signature const* sig; // What the element resolved to, null if the tag isn't typed or nothing fit

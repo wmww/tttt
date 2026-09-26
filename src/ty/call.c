@@ -1401,6 +1401,9 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
     }
     Args args = { .spread_index = -1 };
     args_push(&args, (Arg){ .expr = &element->attributes, .context_sensitive = ty_expr_is_context_sensitive(&element->attributes) });
+    // A component that needs more arguments than the factory gives fits no signature, which is all that's said
+    // (checkApplicableSignatureForJsxCallLikeElement checks the arity before the attributes)
+    if (!ty_jsx_tag_arity_fits(me, element, tag_type, errs)) errs = nullptr;
     Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &info, element->tag_name.inner_span, errs);
     free(args.data);
     ret.sig = resolution.chosen.sig;

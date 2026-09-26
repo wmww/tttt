@@ -20141,7 +20141,7 @@ const baselines = {
         types: true,
     },
     'jsxIssuesErrorWhenTagExpectsTooManyArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -3,6 +3,7 @@
 #include "scope.h"
 #include "program.h"
 #include "error.h"
+#include "source_file.h"
 
 // JSX (tsc's checkJsx* family): the JSX namespace, the element type and intrinsic elements. The attributes of an
 // element are an object literal (check_jsx_attributes() in expr.c). Components, ie value tags, resolve like calls:
@@ -361,5 +362,95 @@ bool ty_jsx_skips_head(Checker* me, Ty const* source, Ty const* target) {
         Ty const* member = target->composite.types.data[i];
         if (member == attributes || member == class_attributes) return true;
     }
+    return false;
+}
+
+// The factory's entity name (tsc's getJsxFactoryEntity): the file's `@jsx` pragma, the jsxFactory option, else
+// `<reactNamespace>.createElement`. Invalid names count as not given
+static cstr jsx_factory_entity(JsxElement const* element) {
+    CompilerOptions const* options = compiler_options();
+    SourceFile const* file = element->opening_span.source;
+    if (file && compiler_option_is_entity_name(file->jsx_pragmas.factory)) return cstr_from_sv(file->jsx_pragmas.factory);
+    if (compiler_option_is_entity_name(cstr_sv(&options->jsx_factory))) return cstr_clone(options->jsx_factory);
+    if (!cstr_size(&options->jsx_factory) && cstr_size(&options->react_namespace)) {
+        return cstr_d(options->react_namespace, ".createElement");
+    }
+    return cstr_lit("React.createElement");
+}
+
+// tsc's resolveEntityName on the factory: its first name as the resolve walk found it, then exports of namespaces
+static Symbol const* jsx_factory_symbol(Checker* me, JsxElement const* element, csview entity) {
+    isize dot = csview_find(entity, ".");
+    Symbol* symbol = (Symbol*)(dot == c_NPOS ? element->factory_value : element->factory_namespace);
+    while (symbol && dot != c_NPOS) {
+        if (symbol->flags & SYMBOL_ALIAS) symbol = symbol_resolve_alias(symbol);
+        if (!symbol) return nullptr;
+        entity = csview_slice(entity, dot + 1, entity.size);
+        dot = csview_find(entity, ".");
+        csview name = dot == c_NPOS ? entity : csview_slice(entity, 0, dot);
+        symbol = (Symbol*)symbol_for_meaning(symbol_get_export(symbol, name), dot == c_NPOS ? SYMBOL_VALUE : SYMBOL_NAMESPACE);
+    }
+    if (symbol && symbol->flags & SYMBOL_ALIAS) symbol = symbol_resolve_alias(symbol);
+    return symbol && (symbol->flags & SYMBOL_VALUE) ? binder_redirect(my binder, symbol) : nullptr;
+}
+
+// tsc's checkTagNameDoesNotExpectTooManyArguments: a function component must not require more arguments than any
+// signature of the factory passes to what its first parameter is (React.createElement: props and context). False
+// (and TS6229) if it does
+bool ty_jsx_tag_arity_fits(Checker* me, JsxElement const* element, Ty const* tag_type, ErrorCtx* errs) {
+    if (element->runtime_module) return true;
+    Ty const* apparent = ty_apparent_type(me, tag_type);
+    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) || apparent->kind == TY_UNION) return true;
+    Members const* tag_members = ty_members(me, apparent);
+    if (!tag_members->call_count) return true;
+    cstr entity = jsx_factory_entity(element);
+    Symbol const* factory = jsx_factory_symbol(me, element, cstr_sv(&entity));
+    Members const* factory_members = factory ? ty_members(me, ty_apparent_type(me, ty_type_of_symbol(me, factory))) : nullptr;
+    bool fits = true;
+    u32 max_params = 0;
+    bool component_params = false;
+    for (u32 i = 0; factory_members && i < factory_members->call_count && fits; i++) {
+        Signature const* sig = factory_members->call[i];
+        signature_resolve(me, sig);
+        Ty const* first = ty_signature_param_type_at(me, sig, 0);
+        if (!first) continue;
+        Members const* first_members = ty_members(me, ty_apparent_type(me, first));
+        for (u32 j = 0; j < first_members->call_count; j++) {
+            Signature const* param_sig = first_members->call[j];
+            signature_resolve(me, param_sig);
+            component_params = true;
+            if (ty_signature_has_rest(param_sig)) {
+                fits = false; // (any number of arguments: nothing to check)
+                break;
+            }
+            u32 count = ty_signature_param_count(param_sig);
+            if (count > max_params) max_params = count;
+        }
+    }
+    if (!fits || !component_params) {
+        cstr_drop(&entity);
+        return true;
+    }
+    u32 min_args = UINT32_MAX;
+    for (u32 i = 0; i < tag_members->call_count; i++) {
+        signature_resolve(me, tag_members->call[i]);
+        if (tag_members->call[i]->min_args < min_args) min_args = tag_members->call[i]->min_args;
+    }
+    if (min_args <= max_params) {
+        cstr_drop(&entity);
+        return true;
+    }
+    if (errs) {
+        Span tag = element->tag_name.inner_span;
+        Error* error = error_ctx_error_d(errs, tag, 6229, "Tag '", tag, "' expects at least '", min_args,
+            "' arguments, but the JSX factory '", entity, "' provides at most '", max_params, "'.");
+        Symbol const* symbol = element->tag_name.tag == EXPR_IDENTIFIER ? element->tag_name.identifier.symbol : nullptr;
+        for (u32 i = 0; error && symbol && !(symbol->flags & SYMBOL_ALIAS) && i < symbol->decl_count; i++) {
+            if (!(symbol->decls[i].flags & SYMBOL_VALUE)) continue;
+            error_add_related_d(error, symbol->decls[i].name, 2728, "'", tag, "' is declared here.");
+            break;
+        }
+    }
+    cstr_drop(&entity);
     return false;
 }

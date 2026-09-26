@@ -649,7 +649,7 @@ static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
 Ty const* ty_signature_param_type_at(Checker* me, Signature const* sig, u32 i) { return param_type_at(me, sig, i); }
 
 // How many parameters a signature has, with a rest tuple of fixed length counted as its elements
-static u32 param_count_of(Signature const* sig) {
+u32 ty_signature_param_count(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return sig->param_count;
     Ty const* rest = sig->params[sig->param_count - 1].type;
     if (!ty_is_tuple(rest)) return sig->param_count;
@@ -657,7 +657,7 @@ static u32 param_count_of(Signature const* sig) {
 }
 
 // Takes any number of arguments: a rest parameter that isn't a tuple of fixed length
-static bool has_rest(Checker* me, Signature const* sig) {
+bool ty_signature_has_rest(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return false;
     Ty const* rest = sig->params[sig->param_count - 1].type;
     if (!ty_is_tuple(rest)) return true;
@@ -700,8 +700,8 @@ static Ternary compare_signatures(
         source = ty_instantiate_signature_in_context_of(me, source, target, nullptr);
     }
 
-    u32 target_count = param_count_of(target);
-    if (!has_rest(me, target) && source->min_args > target_count) {
+    u32 target_count = ty_signature_param_count(target);
+    if (!ty_signature_has_rest(target) && source->min_args > target_count) {
         if (report) {
             report_line(st, 2849, cstr_d(
                 "Target signature provides too few arguments. Expected ", source->min_args, " or more, but got ",
@@ -725,7 +725,7 @@ static Ternary compare_signatures(
         }
         result &= related;
     }
-    u32 source_count = param_count_of(source);
+    u32 source_count = ty_signature_param_count(source);
     u32 count = source_count > target_count ? source_count : target_count;
     for (u32 i = 0; i < count; i++) {
         Ty const* source_type = param_type_at(me, source, i);
@@ -3323,8 +3323,8 @@ static Ternary signatures_identical_in(
     if (source == target) return TERNARY_TRUE;
     signature_resolve(me, source);
     signature_resolve(me, target);
-    bool same_shape = param_count_of(source) == param_count_of(target) && source->min_args == target->min_args &&
-        has_rest(me, source) == has_rest(me, target);
+    bool same_shape = ty_signature_param_count(source) == ty_signature_param_count(target) && source->min_args == target->min_args &&
+        ty_signature_has_rest(source) == ty_signature_has_rest(target);
     if (!same_shape && !(partial && source->min_args <= target->min_args)) return TERNARY_FALSE;
     if (source->type_params.len != target->type_params.len) return TERNARY_FALSE;
     if (target->type_params.len && source->type_params.data != target->type_params.data) {
@@ -3353,7 +3353,7 @@ static Ternary signatures_identical_in(
         result &= sig_types_compare(me, st, source->this_type, target->this_type, partial);
         if (!result) return TERNARY_FALSE;
     }
-    u32 target_len = param_count_of(target);
+    u32 target_len = ty_signature_param_count(target);
     for (u32 i = 0; i < target_len; i++) {
         result &= sig_types_compare(me, st, type_at_position(me, target, i), type_at_position(me, source, i), partial);
         if (!result) return TERNARY_FALSE;
@@ -3487,13 +3487,13 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
     signature_resolve(me, right);
     TyMapper const* mapper = left->type_params.len && right->type_params.len ?
         ty_mapper_new(me, right->type_params, left->type_params) : nullptr;
-    u32 left_count = param_count_of(left);
-    u32 right_count = param_count_of(right);
+    u32 left_count = ty_signature_param_count(left);
+    u32 right_count = ty_signature_param_count(right);
     Signature const* longest = left_count >= right_count ? left : right;
     Signature const* shorter = longest == left ? right : left;
     u32 longest_count = longest == left ? left_count : right_count;
-    bool either_rest = has_rest(me, left) || has_rest(me, right);
-    bool extra_rest = either_rest && !has_rest(me, longest);
+    bool either_rest = ty_signature_has_rest(left) || ty_signature_has_rest(right);
+    bool extra_rest = either_rest && !ty_signature_has_rest(longest);
     u32 count = longest_count + (extra_rest ? 1 : 0);
     SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
     Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
