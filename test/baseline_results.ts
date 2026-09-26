@@ -96,7 +96,7 @@ const baselines = {
         types: true,
     },
     'ClassDeclaration24': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -166,7 +166,7 @@ const baselines = {
         types: true,
     },
     'InterfaceDeclaration8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11166,7 +11166,7 @@ const baselines = {
         types: false,
     },
     'enumWithPrimitiveName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15301,7 +15301,7 @@ const baselines = {
         types: true,
     },
     'genericSpecializations2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25771,17 +25771,17 @@ const baselines = {
         types: false,
     },
     'primitiveTypeAsClassName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'primitiveTypeAsInterfaceName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'primitiveTypeAsInterfaceNameGeneric': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31171,12 +31171,12 @@ const baselines = {
         types: true,
     },
     'typeNamedUndefined1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeNamedUndefined2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31936,7 +31936,7 @@ const baselines = {
         types: true,
     },
     'undefinedTypeAssignment1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34926,7 +34926,7 @@ const baselines = {
         types: true,
     },
     'classWithPredefinedTypesAsNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37646,7 +37646,7 @@ const baselines = {
         types: false,
     },
     'twoAccessorsWithSameName': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -40221,7 +40221,7 @@ const baselines = {
         types: true,
     },
     'symbolType20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56271,7 +56271,7 @@ const baselines = {
         types: false,
     },
     'parserClassDeclaration24': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57551,7 +57551,7 @@ const baselines = {
         types: true,
     },
     'parserInterfaceDeclaration8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65101,7 +65101,7 @@ const baselines = {
         types: false,
     },
     'objectTypesWithPredefinedTypesAsName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

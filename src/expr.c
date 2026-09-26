@@ -1777,6 +1777,60 @@ static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
     free(seen);
 }
 
+// tsc's binder declares the members of an object literal like any symbols: properties and methods exclude nothing, an
+// accessor excludes every other value but its other half. A conflict is TS2300 on every declaration of the name so far
+// and on the new one, which then starts over (this is not a grammar check: also with parse errors)
+static void object_bind_members(Expr const* me, ErrorCtx* errs) {
+    enum { PROPERTY = 1, METHOD = 2, GET = 4, SET = 8, VALUE = PROPERTY | METHOD | GET | SET };
+    ObjectExpr const* object = &my object;
+    isize count = vec_object_expr_item_size(object);
+    // Per item: the flags of the symbol it was declared into, and the item that symbol started with
+    uint8_t* flags = calloc(count ? (size_t)count : 1, 1);
+    isize* start = malloc(sizeof(isize) * (count ? (size_t)count : 1));
+    panic_if(!flags || !start, "out of memory");
+    for (isize n = 0; n < count; n++) {
+        ObjectExprItem const* item = vec_object_expr_item_at(object, n);
+        uint8_t includes, excludes;
+        switch (item->tag) {
+            case OBJECT_ITEM_PROPERTY: case OBJECT_ITEM_SHORTHAND: includes = PROPERTY; excludes = 0; break;
+            case OBJECT_ITEM_METHOD: includes = METHOD; excludes = 0; break;
+            case OBJECT_ITEM_GETTER: includes = GET; excludes = VALUE & ~SET; break;
+            case OBJECT_ITEM_SETTER: includes = SET; excludes = VALUE & ~GET; break;
+            default: start[n] = -1; continue;
+        }
+        start[n] = n;
+        if (item->computed_key || !span_valid(item->name_span)) {
+            start[n] = -1;
+            continue;
+        }
+        // The symbol of that name: the latest item declared under it
+        isize last = -1;
+        for (isize j = n - 1; j >= 0 && last < 0; j--) {
+            ObjectExprItem const* other = vec_object_expr_item_at(object, j);
+            if (start[j] >= 0 && cstr_equals_sv(&other->name_string, cstr_sv(&item->name_string))) last = j;
+        }
+        if (last < 0) {
+            flags[n] = includes;
+            continue;
+        }
+        if (!(flags[last] & excludes)) {
+            flags[n] = flags[last] | includes;
+            start[n] = start[last];
+            continue;
+        }
+        for (isize j = start[last]; j < n; j++) {
+            ObjectExprItem const* other = vec_object_expr_item_at(object, j);
+            if (start[j] != start[last]) continue;
+            Span at = other->name_span;
+            if (!error_ctx_find(errs, at, 2300)) error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", at, "'.");
+        }
+        error_ctx_error_d(errs, item->name_span, 2300, "Duplicate identifier '", item->name_span, "'.");
+        flags[n] = includes;
+    }
+    free(flags);
+    free(start);
+}
+
 // tsc's isSideEffectFree
 static bool is_side_effect_free(Expr const* me) {
     switch (my tag) {
@@ -2493,6 +2547,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             break;
 
         case EXPR_OBJECT: {
+            object_bind_members(me, errs);
             object_check_duplicate_names(me, errs);
             TyWrittenProp* written = nullptr;
             u32 written_count = 0;

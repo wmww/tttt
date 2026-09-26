@@ -576,6 +576,34 @@ static Symbol* clone_parent_symbol(Binder* binder, Symbol const* original) {
 
 static void scope_declare_default_local(Scope* me, Symbol* symbol, Span name, u32 excludes);
 
+// `number`, `any`... (program_add_builtins())
+static bool symbol_is_builtin_type(Symbol const* symbol) {
+    return symbol && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN && symbol->flags & SYMBOL_TYPE_ALIAS;
+}
+
+// tsc's checkTypeNameIsReserved: the predefined type keywords can't name a type
+static void check_type_name_is_reserved(ErrorCtx* errs, Span name, SymbolDeclKind kind) {
+    static char const* const reserved[] = {
+        "any", "unknown", "never", "number", "bigint", "boolean", "string", "symbol", "void", "object", "undefined",
+    };
+    char const* what;
+    unsigned code;
+    switch (kind) {
+        case SYMBOL_DECL_CLASS: what = "Class"; code = 2414; break;
+        case SYMBOL_DECL_INTERFACE: what = "Interface"; code = 2427; break;
+        case SYMBOL_DECL_ENUM: what = "Enum"; code = 2431; break;
+        case SYMBOL_DECL_TYPE_ALIAS: what = "Type alias"; code = 2457; break;
+        case SYMBOL_DECL_TYPE_PARAMETER: what = "Type parameter"; code = 2368; break;
+        default: return;
+    }
+    if (!span_valid(name) || !name.source || name.source->is_stdlib) return;
+    for (u32 i = 0; i < c_arraylen(reserved); i++) {
+        if (!csview_equals(name.sv, reserved[i])) continue;
+        error_ctx_error_d(errs, name, code, what, " name cannot be '", name, "'.");
+        return;
+    }
+}
+
 // tsc's declareSymbol(). *merged is whether the symbol existed already. default_export: a declaration of the `default`
 // export of a module, which conflicts with the others as TS2528
 static Symbol* declare_symbol(
@@ -586,6 +614,9 @@ static Symbol* declare_symbol(
     u64 hash = symbol_name_hash(name);
     *merged = false;
     Symbol* existing = symbol_table_get_own(table, name, hash);
+    // `class number {}` (TS2414): the keyword wins, the declaration is a symbol of its own
+    Symbol const* builtin = existing ? existing : table->parent ? symbol_table_lookup(table->parent, name, hash) : nullptr;
+    if (symbol_is_builtin_type(builtin) && builtin->flags & excludes) return binder_new_symbol(binder, name, includes);
     if (!existing && table->parent) {
         Symbol* inherited = symbol_table_lookup(table->parent, name, hash);
         if (inherited) {
@@ -720,6 +751,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         scope_check_strict_eval_or_arguments(me, props.name);
     }
 
+    check_type_name_is_reserved(me->errs, props.name, props.kind);
     u32 includes, excludes;
     symbol_flags_of_props(&props, &includes, &excludes);
     if (props.default_export && !(scope->container && scope->container->is_module)) {
