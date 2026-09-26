@@ -1023,7 +1023,7 @@ static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) 
         } else {
             ret = primary[0];
             for (u32 i = 1; i < primary_len; i++) {
-                if (ret != primary[i] && ty_is_related(me, ret, primary[i], TY_RELATION_STRICT_SUBTYPE)) ret = primary[i];
+                if (ret != primary[i] && ty_is_related(me, ret, primary[i], TY_RELATION_SUBTYPE)) ret = primary[i];
             }
         }
         if (nullable_len && compiler_options()->strict_null_checks) {
@@ -1038,7 +1038,7 @@ static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) 
 static Ty const* common_subtype(Checker* me, Ty const* const* types, u32 len) {
     Ty const* ret = types[0];
     for (u32 i = 1; i < len; i++) {
-        if (ret != types[i] && ty_is_related(me, types[i], ret, TY_RELATION_STRICT_SUBTYPE)) ret = types[i];
+        if (ret != types[i] && ty_is_related(me, types[i], ret, TY_RELATION_SUBTYPE)) ret = types[i];
     }
     return ret;
 }

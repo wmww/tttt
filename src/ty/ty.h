@@ -538,8 +538,12 @@ typedef enum TyRelation {
     // Assignable, except that null and undefined are never assignable to other types, whatever strictNullChecks says.
     // HACK: what the legacy operator checks mean by "extends number"
     TY_RELATION_ASSIGNABLE_STRICT_NULLS,
-    // What union (subtype) reduction uses: `any` is only a subtype of `any`/`unknown`, and a type that lacks an
-    // optional property of the target isn't a subtype of it
+    // tsc's subtypeRelation (overload resolution's first round, common supertypes, narrowing's fallback): `any` is only
+    // a subtype of `any`/`unknown`, and a type that lacks an optional property of the target isn't a subtype of it
+    TY_RELATION_SUBTYPE,
+    // What union (subtype) reduction uses (tsc's strictSubtypeRelation): the subtype relation, except that only fresh
+    // object literals have an implicit index signature and a fresh `{}` is a supertype of nothing non-empty, so that
+    // two different types are never mutual strict subtypes
     TY_RELATION_STRICT_SUBTYPE,
     // tsc's identityRelation: the same kind of type with identical parts (never reports)
     TY_RELATION_IDENTITY,
@@ -1125,6 +1129,7 @@ static inline void ty_flow_restore(Checker* me, FlowIsolation saved) {
 }
 
 // iterate.c: the iteration protocol (tsc's IterationUse and getIterationTypesOfIterable)
+Ty const* ty_for_in_key_type(Checker* me, Ty const* iterable); // `k` of `for (k in x)`
 typedef enum IterationUse {
     ITERATION_ALLOWS_SYNC = 1 << 0,
     ITERATION_ALLOWS_ASYNC = 1 << 1,
@@ -1254,6 +1259,8 @@ void ty_check_property_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
     bool error_if_not_found, ErrorCtx* errs
 );
+// `o[k]` under noImplicitAny that finds nothing: TS7053, TS7015, TS7052... (`span`: the whole access)
+void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
 bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index);
 void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecSpannedType const* args, ErrorCtx* errs);
 

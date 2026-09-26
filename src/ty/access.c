@@ -127,13 +127,22 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         Ty const** parts = malloc(sizeof(Ty const*) * object->composite.types.len);
         Ty const* ret = nullptr;
         u32 len = 0;
-        bool missing = false;
+        bool missing = false, short_tuple = false, found_in_some = false;
         for (u32 i = 0; i < object->composite.types.len && !missing; i++) {
             Ty const* member = object->composite.types.data[i];
             if (member->flags & TYF_NULLABLE) continue;
             Ty const* part = access(me, member, index, depth + 1);
+            // A tuple too short to have the element has undefined there when others have it (tsc's
+            // createUnionOrIntersectionProperty: its index signature applies, and the rest element or undefined is read)
+            if (!part && (index->flags & TYF_NUMBER_LITERAL) && ty_is_tuple(ty_apparent_type(me, member))) {
+                part = ty_intrinsic(me, TY_UNDEFINED);
+                short_tuple = true;
+            } else if (part) {
+                found_in_some = true;
+            }
             if (part) parts[len++] = part; else missing = true;
         }
+        missing |= short_tuple && !found_in_some;
         if (!missing && len) ret = ty_union(me, parts, len, nullptr, (TyList){0});
         free(parts);
         Atom const* name = ret ? ty_literal_name(me, index) : nullptr;

@@ -822,7 +822,7 @@ static i32 first_unfit_argument(
             break;
         }
         bool fits = (source->flags & TYF_ANY) || ty_is_related(me, source, target, relation);
-        if (!fits && relation == TY_RELATION_STRICT_SUBTYPE && arg->context_sensitive) {
+        if (!fits && relation == TY_RELATION_SUBTYPE && arg->context_sensitive) {
             fits = ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
         }
         if (!fits) {
@@ -1185,7 +1185,7 @@ static Resolution resolve_with_signatures(
     Candidate* unfit = calloc(count ? count : 1, sizeof(Candidate));
     u32 unfit_count = 0;
     bool type_argument_arity_ok = false;
-    TyRelation rounds[2] = { TY_RELATION_STRICT_SUBTYPE, TY_RELATION_ASSIGNABLE };
+    TyRelation rounds[2] = { TY_RELATION_SUBTYPE, TY_RELATION_ASSIGNABLE };
     // With a choice to make, candidates are first tried without their context-sensitive arguments, which are only
     // checked (and typed for good) against the first candidate the rest fit (tsc's argCheckMode)
     bool skip_sensitive = false;

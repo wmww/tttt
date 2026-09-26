@@ -186,7 +186,7 @@ static bool is_function_object(Checker* me, Ty const* ty) {
     if (members->call_count || members->construct_count) return true;
     Ty const* function = ty_global_function_type(me);
     return function && (ty == function || (
-        ty_get_prop(me, ty, checker_atom(me, c_sv("bind"))) && ty_is_related(me, ty, function, TY_RELATION_STRICT_SUBTYPE)
+        ty_get_prop(me, ty, checker_atom(me, c_sv("bind"))) && ty_is_related(me, ty, function, TY_RELATION_SUBTYPE)
     ));
 }
 
@@ -935,15 +935,20 @@ static bool is_strict_subtype(Checker* me, Ty const* source, Ty const* target) {
     return ty_is_related(me, source, target, TY_RELATION_STRICT_SUBTYPE);
 }
 
+static bool is_subtype(Checker* me, Ty const* source, Ty const* target) {
+    return ty_is_related(me, source, target, TY_RELATION_SUBTYPE);
+}
+
 // One member of the candidate of getNarrowedType(): the members of `type` that are it, or that it is
 static Ty const* narrowed_by_candidate_member(Checker* me, Ty const* type, Ty const* c, bool check_derived) {
     TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
     TyBuf parts = {0};
     for (u32 i = 0; i < members.len; i++) {
         Ty const* t = members.data[i];
-        // HACK: tsc tries the strict subtype relation and then the subtype relation, there's only the strict one here
         if (check_derived ? is_type_derived_from(me, t, c) : is_strict_subtype(me, t, c)) ty_buf_push(&parts, t);
         else if (check_derived ? is_type_derived_from(me, c, t) : is_strict_subtype(me, c, t)) ty_buf_push(&parts, c);
+        else if (!check_derived && is_subtype(me, t, c)) ty_buf_push(&parts, t);
+        else if (!check_derived && is_subtype(me, c, t)) ty_buf_push(&parts, c);
     }
     if (!parts.len) {
         // A type parameter whose constraint the candidate fits is both
@@ -952,7 +957,7 @@ static Ty const* narrowed_by_candidate_member(Checker* me, Ty const* type, Ty co
             if (!(t->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) continue;
             Ty const* constraint = ty_base_constraint(me, t);
             if (!constraint || constraint == t) constraint = ty_intrinsic(me, TY_UNKNOWN_);
-            if (check_derived ? is_type_derived_from(me, c, constraint) : is_strict_subtype(me, c, constraint)) {
+            if (check_derived ? is_type_derived_from(me, c, constraint) : is_subtype(me, c, constraint)) {
                 Ty const* both[2] = { t, c };
                 ty_buf_push(&parts, ty_intersection(me, both, 2, nullptr, (TyList){0}));
             }
@@ -1007,7 +1012,7 @@ static Ty const* narrowed_type_uncached(Checker* me, Ty const* type, Ty const* c
     Ty const* narrowed = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
     ty_buf_drop(&parts);
     if (!(narrowed->flags & TYF_NEVER)) return narrowed;
-    if (is_strict_subtype(me, candidate, type)) return candidate;
+    if (is_subtype(me, candidate, type)) return candidate;
     if (ty_is_related(me, type, candidate, TY_RELATION_ASSIGNABLE)) return type;
     if (ty_is_related(me, candidate, type, TY_RELATION_ASSIGNABLE)) return candidate;
     Ty const* both[2] = { type, candidate };
@@ -1266,7 +1271,7 @@ static Ty const* map_by_type_facts(Checker* me, Ty const* ty, void const* arg) {
     if (ty_is_related(me, ty, a->implied, TY_RELATION_STRICT_SUBTYPE)) {
         return has_type_facts(me, ty, a->facts) ? ty : ty_intrinsic(me, TY_NEVER);
     }
-    if (ty_is_related(me, a->implied, ty, TY_RELATION_STRICT_SUBTYPE)) return a->implied;
+    if (ty_is_related(me, a->implied, ty, TY_RELATION_SUBTYPE)) return a->implied;
     if (!has_type_facts(me, ty, a->facts)) return ty_intrinsic(me, TY_NEVER);
     Ty const* types[2] = { ty, a->implied };
     return ty_intersection(me, types, 2, nullptr, (TyList){0});

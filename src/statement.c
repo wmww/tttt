@@ -382,8 +382,7 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
     if (iterable == ty_intrinsic(checker, TY_CIRCULAR)) return iterable; // Self-referential
     switch (my keyword) {
         case FOR_EACH_LOOP_IN:
-            // TODO: `Extract<keyof T, string>` for a type parameter
-            return ty_intrinsic(checker, TY_STRING);
+            return ty_for_in_key_type(checker, iterable);
 
         case FOR_EACH_LOOP_OF:
             return ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable,

@@ -3976,7 +3976,7 @@ const baselines = {
         types: true,
     },
     'classStaticPropertyAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6913,7 +6913,7 @@ const baselines = {
     'controlFlowFavorAssertedTypeThroughTypePredicate': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowFinallyNoCatchAssignments': {
         errors: true,
@@ -13768,7 +13768,7 @@ const baselines = {
     'forInStatement3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forInStatement4': {
         errors: true,
@@ -15918,7 +15918,7 @@ const baselines = {
     'implicitAnyInCatch': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implicitAnyNewExprLackConstructorSignature': {
         errors: true,
@@ -16828,7 +16828,7 @@ const baselines = {
     'inOperatorWithGeneric': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incompatibleAssignmentOfIdenticallyNamedTypes': {
         errors: false,
@@ -17056,7 +17056,7 @@ const baselines = {
         types: false,
     },
     'indexedAccessImplicitlyAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17096,9 +17096,9 @@ const baselines = {
         types: true,
     },
     'indexedAccessWithFreshObjectLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexedAccessWithVariableElement': {
         errors: false,
@@ -47916,7 +47916,7 @@ const baselines = {
         types: true,
     },
     'propertyAccessStringIndexSignatureNoImplicitAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62996,7 +62996,7 @@ const baselines = {
         types: true,
     },
     'for-inStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63006,7 +63006,7 @@ const baselines = {
         types: false,
     },
     'for-inStatementsArrayErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63846,7 +63846,7 @@ const baselines = {
         types: false,
     },
     'keyofAndForIn': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -64521,12 +64521,12 @@ const baselines = {
         types: false,
     },
     'nonPrimitiveIndexingWithForInNoImplicitAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nonPrimitiveIndexingWithForInSupressError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

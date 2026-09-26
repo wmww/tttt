@@ -1053,6 +1053,150 @@ void ty_check_property_access(
     check_access(me, object, index, object_span, index_span, object_is_named, error_if_not_found, 0, errs);
 }
 
+// tsc's getSuggestionForNonexistentIndexSignature: `o[k]` on something with a `get(k)` (`set(k, v)` when written)
+// taking k, as `o.get` (the method's name alone unless o is an entity name)
+static bool suggested_index_method(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* index, cstr* out) {
+    char const* method = access->assignment_target ? "set" : "get";
+    if (object->kind == TY_UNION || object->kind == TY_INTERSECTION) return false; // (getPropertyOfObjectType)
+    FoundProp prop = ty_find_prop(me, object, checker_atom(me, csview_from(method)));
+    if (!prop.found) return false;
+    Signature const* sig = ty_single_signature(me, ty_apparent_type(me, prop.type), false, true);
+    if (!sig || sig->min_args < 1 || !ty_is_related(me, index, ty_signature_param_type_at(me, sig, 0), TY_RELATION_ASSIGNABLE)) {
+        return false;
+    }
+    *out = cstr_null;
+    if (expr_is_entity_name(&access->expr)) {
+        cstr_append_sv(out, csview_trim(access->expr.inner_span.sv));
+        cstr_append(out, ".");
+    }
+    cstr_append(out, method);
+    return true;
+}
+
+// The first member of the index `object` has nothing for (tsc reports that one and suppresses the others), null if
+// there's none
+static Ty const* missing_index_member(Checker* me, Ty const* object, Ty const* index) {
+    if (index->kind != TY_UNION || (index->flags & TYF_BOOLEAN)) return ty_access(me, object, index) ? nullptr : index;
+    for (u32 i = 0; i < index->composite.types.len; i++) {
+        Ty const* member = index->composite.types.data[i];
+        if (!ty_access(me, object, member)) return member;
+    }
+    return nullptr;
+}
+
+// The noImplicitAny errors of tsc's getPropertyTypeForIndexType for an element access `o[k]` that finds nothing:
+// TS7053 (with what is missing), TS7015 (a number index signature and a key that isn't a number), TS7052 (a `get`
+// method to call instead), TS2551, TS2576, and TS2339 on an object literal expression
+void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
+    if (!compiler_options()->no_implicit_any || access->form != PROPERTY_EXPR_BRACKET) return;
+    Span index_span = access->prop.outer_span;
+    if (index_span.source && index_span.source->is_js) return; // TODO: JS literal types (any)
+    Ty const* full_index = ty_regular(me, ty_access_key_type(me, access));
+    u32 key_like = TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
+    if (full_index->flags & (TYF_ANY | TYF_NEVER | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_NULLABLE | TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        return;
+    }
+    if (full_index->kind == TY_UNION && !(full_index->flags & TYF_BOOLEAN)) {
+        for (u32 i = 0; i < full_index->composite.types.len; i++) {
+            if (!(ty_key_flags(full_index->composite.types.data[i]) & key_like)) return; // TS2538's business
+        }
+    } else if (!(ty_key_flags(full_index) & key_like)) {
+        return;
+    }
+    // (Written to, the object is widened: no longer an object literal. tsc's isObjectLiteralType)
+    bool object_literal = ty_is_fresh_object(object) && !access->assignment_target;
+    // The rest of what check_access() lets through or reports itself
+    object = ty_non_nullable(me, object);
+    if (object->flags & (TYF_ANY | TYF_NEVER | TYF_UNKNOWN | TYF_DEFERRED)) return;
+    if (object->kind == TY_TYPE_PARAM && !ty_param_constraint(me, object)) {
+        if (!compiler_options()->strict_null_checks) return; // TODO: `{}`
+        object = ty_intrinsic(me, TY_UNKNOWN_);
+    } else {
+        object = ty_apparent_type(me, object);
+    }
+    Ty const* index = (object->flags & TYF_UNKNOWN) ? full_index : missing_index_member(me, object, full_index);
+    if (!index) return;
+    if (!(object->flags & TYF_UNKNOWN)) {
+        if (object->flags & (TYF_ANY | TYF_NEVER | TYF_UNKNOWN | TYF_DEFERRED | TYF_TYPE_PARAM)) return;
+        if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION))) return;
+        if (object->kind == TY_UNION) {
+            for (u32 i = 0; i < object->composite.types.len; i++) {
+                if (!(object->composite.types.data[i]->flags & (TYF_OBJECT | TYF_INTERSECTION))) return;
+            }
+        }
+        if (ty_is_tuple(object) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493
+        if (object->flags & TYF_OBJECT) {
+            // HACK: as in check_access(): no expando members, mapped types over something generic, unresolved bases
+            Members const* members = ty_members(me, object);
+            if (members->call_count && !members->construct_count) return;
+            if (members->mapped && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+            if (ty_has_unresolved_base(me, object)) return;
+        }
+        if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT && object->declared.symbol &&
+            (object->declared.symbol->flags & SYMBOL_CONST_ENUM)
+        ) {
+            return;
+        }
+    }
+    cstr object_str = ty_to_cstr(me, object);
+    Atom const* name = (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) ? index->literal.string : nullptr;
+    Prop const* suggestion = nullptr;
+    cstr method = cstr_null;
+    Symbol const* class_symbol = instance_class(object);
+    if (object_literal) {
+        if (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
+            cstr index_str = index_name(me, index);
+            error_ctx_error_d(errs, span, 2339, "Property '", index_str, "' does not exist on type '", object_str, "'.");
+            cstr_drop(&index_str);
+            cstr_drop(&object_str);
+            return;
+        }
+        if (index->flags & (TYF_STRING | TYF_NUMBER)) {
+            cstr_drop(&object_str);
+            return;
+        }
+    }
+    bool number_index = false;
+    if (object->flags & TYF_OBJECT) {
+        Members const* members = ty_members(me, object);
+        for (u32 i = 0; i < members->index_count; i++) number_index |= (members->index[i].key->flags & TYF_NUMBER) != 0;
+    }
+    if (name && class_symbol && !csview_equals(atom_sv(name), "prototype") &&
+        ty_get_prop(me, ty_static_type_of(me, class_symbol), name)
+    ) {
+        error_ctx_error_d(errs, span, 2576, "Property '", atom_sv(name), "' does not exist on type '", object_str,
+            "'. Did you mean to access the static member '", object_str, "[", csview_trim(access->prop.inner_span.sv),
+            "]' instead?");
+    } else if (number_index) {
+        error_ctx_error_d(errs, index_span, 7015,
+            "Element implicitly has an 'any' type because index expression is not of type 'number'.");
+    } else if (name && !(object->flags & TYF_UNKNOWN) && (suggestion = suggested_property(me, object, atom_sv(name)))) {
+        error_ctx_error_d(errs, index_span, 2551, "Property '", atom_sv(name), "' does not exist on type '", object_str,
+            "'. Did you mean '", atom_sv(suggestion->name), "'?");
+    } else if (!(object->flags & TYF_UNKNOWN) && suggested_index_method(me, access, object, index, &method)) {
+        error_ctx_error_d(errs, span, 7052, "Element implicitly has an 'any' type because type '", object_str,
+            "' has no index signature. Did you mean to call '", method, "'?");
+    } else {
+        cstr full_str = ty_to_cstr(me, full_index);
+        Error* error = error_ctx_error_d(errs, span, 7053, "Element implicitly has an 'any' type because expression of type '",
+            full_str, "' can't be used to index type '", object_str, "'.");
+        cstr index_str = index_name(me, index);
+        if (!error) {
+        } else if (index->flags & (TYF_ENUM_LITERAL | TYF_UNIQUE_ES_SYMBOL)) {
+            error_sub_error_d(error, (Span){0}, TS_CODE_NONE, "Property '[", index_str, "]' does not exist on type '",
+                object_str, "'.");
+        } else if (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
+            error_sub_error_d(error, (Span){0}, TS_CODE_NONE, "Property '", index_str, "' does not exist on type '",
+                object_str, "'.");
+        } else if (index->flags & (TYF_STRING | TYF_NUMBER)) {
+            error_sub_error_d(error, (Span){0}, TS_CODE_NONE, "No index signature with a parameter of type '", index_str,
+                "' was found on type '", object_str, "'.");
+        }
+        c_drop(cstr, &full_str, &index_str);
+    }
+    c_drop(cstr, &object_str, &method);
+}
+
 // tsc's checkTypeArgumentConstraints for a type reference `T<A, B>` to a generic class, interface or alias: each
 // argument against its parameter's constraint, instantiated with the arguments (defaults for the ones not given).
 // TS2344, the first one only

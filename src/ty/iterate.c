@@ -624,3 +624,16 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
     u32 count = target->declared.type_params.len < 3 ? target->declared.type_params.len : 3;
     return ty_reference(me, target, (TyList){ .data = args, .len = count });
 }
+
+// The variable of `for (k in x)` (tsc's getTypeForVariableLikeDeclaration): `Extract<keyof X, string>` when X is
+// generic, string otherwise
+Ty const* ty_for_in_key_type(Checker* me, Ty const* iterable) {
+    Ty const* string = ty_intrinsic(me, TY_STRING);
+    Ty const* keys = ty_keyof(me, ty_non_nullable(me, iterable));
+    if ((keys->kind != TY_TYPE_PARAM && keys->kind != TY_KEYOF) || !(keys->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return string;
+    Symbol const* extract = program_get_global(my program, c_sv("Extract"), SYMBOL_TYPE);
+    if (extract) extract = binder_redirect(my binder, extract);
+    if (!extract || !(extract->flags & SYMBOL_TYPE_ALIAS) || ty_alias_type_params(me, extract).len != 2) return string;
+    Ty const* args[2] = { keys, string };
+    return ty_alias_instance(me, extract, (TyList){ .data = args, .len = 2 });
+}

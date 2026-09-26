@@ -771,7 +771,7 @@ static bool extract_redundant_templates(Checker* me, Ty const** types, u32* len,
     for (u32 i = 0; i < *len; i++) {
         Ty const* t = types[i];
         if (t->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) {
-            if (ty_is_related(me, literal, t, TY_RELATION_STRICT_SUBTYPE)) continue;
+            if (ty_is_related(me, literal, t, TY_RELATION_SUBTYPE)) continue;
             if (ty_is_pattern_literal(t)) return true;
         }
         types[out++] = t;

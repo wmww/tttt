@@ -363,8 +363,10 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   members `getNarrowedType()` starts from), erasure of generic construct signatures in `constructor_instance_type()`.
   Destructured discriminants and the `in` rule show as spurious TS18048 / TS2339 (dependentDestructuredVariables,
   inKeywordTypeguard).
-- `narrowed_by_candidate_member()`: tsc tries the strict subtype relation, then the (non-strict) subtype relation.
-  There is only `TY_RELATION_STRICT_SUBTYPE` here.
+- `ty_check_element_implicit_any()` (TS7053 & co.) skips what `check_access()` skips for lack of expandos: callable
+  objects (`fn["x"]` is TS7053 in tsc unless fn is a function declaration with expando assignments), mapped types over
+  something generic, unresolved bases, JS files. `is_for_in_numeric_variable()` doesn't check that the access is inside
+  the loop's body.
 - `prop_has_explicit_type()`: a property of a mapped type (`Readonly<Services>`) counts as explicitly typed; tsc asks
   the property it was mapped from. Object literal members never count (right), but neither does anything tsc finds
   through a JSDoc type.

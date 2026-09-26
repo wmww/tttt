@@ -286,12 +286,16 @@ static bool same_literal_value(Ty const* s, Ty const* t) {
 
 // Simple relations: decided by flags and identity alone (tsc's isSimpleTypeRelatedTo)
 
+static bool is_subtype_relation(TyRelation relation) {
+    return relation == TY_RELATION_SUBTYPE || relation == TY_RELATION_STRICT_SUBTYPE;
+}
+
 static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s, Ty const* t) {
     u32 sf = s->flags;
     u32 tf = t->flags;
     if ((tf & (TYF_ANY | TYF_UNKNOWN)) || (sf & TYF_NEVER)) return true;
     if (tf & TYF_NEVER) return false;
-    if (sf & TYF_ANY) return st->relation != TY_RELATION_STRICT_SUBTYPE;
+    if (sf & TYF_ANY) return !is_subtype_relation(st->relation);
     if ((sf & TYF_STRING_LIKE) && (tf & TYF_STRING)) return true;
     if ((sf & TYF_NUMBER_LITERAL) && (tf & TYF_NUMBER)) return true;
     if ((sf & TYF_BIGINT_LITERAL) && (tf & TYF_BIGINT)) return true;
@@ -300,7 +304,7 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     if ((sf & TYF_UNDEFINED) && (tf & (TYF_UNDEFINED | TYF_VOID))) return true;
     if ((sf & TYF_NULL) && (tf & TYF_NULL)) return true;
     if ((sf & TYF_NULLABLE) && !compiler_options()->strict_null_checks &&
-        st->relation != TY_RELATION_ASSIGNABLE_STRICT_NULLS && st->relation != TY_RELATION_STRICT_SUBTYPE
+        st->relation != TY_RELATION_ASSIGNABLE_STRICT_NULLS && !is_subtype_relation(st->relation)
     ) {
         return true;
     }
@@ -1104,7 +1108,7 @@ static Ternary props_related(
         if (!source_prop.found) {
             // Subtypes need the optional properties too, unless an object literal, [] or a tuple leaves them out
             // (tsc's requireOptionalProperties)
-            if ((target_prop->flags & PROP_OPTIONAL) && (st->relation != TY_RELATION_STRICT_SUBTYPE || !requires_optional_properties(me, source))) {
+            if ((target_prop->flags & PROP_OPTIONAL) && (!is_subtype_relation(st->relation) || !requires_optional_properties(me, source))) {
                 continue;
             }
             return TERNARY_FALSE;
@@ -1190,8 +1194,9 @@ static Ternary index_signatures_related(Checker* me, RelationState* st, Ty const
                 return TERNARY_FALSE;
             }
             result &= related;
-        } else if (has_inferable_index(source)) {
-            // An object literal type is related if each of its properties the signature applies to is
+        } else if (has_inferable_index(source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || (source->flags & TYF_FRESH_OBJECT))) {
+            // An object literal type is related if each of its properties the signature applies to is. Not in the strict
+            // subtype relation unless it's fresh: `{ [k: string]: X }` is a strict subtype of `{}`, not vice versa
             for (u32 j = 0; j < source_members->prop_count; j++) {
                 Prop const* prop = source_members->props[j];
                 bool symbol_named = ty_unique_symbol_of_name(me, prop->name) != nullptr;
@@ -3329,7 +3334,7 @@ static bool types_identical(Checker* me, Ty const* a, Ty const* b) {
 // How signatures_identical() compares two types: by identity (inside the identity relation `st` if there is one), or
 // with `partial`, by strict subtype (tsc's compareTypesSubtypeOf)
 static Ternary sig_types_compare(Checker* me, RelationState* st, Ty const* t, Ty const* s, bool partial) {
-    if (partial) return t == s || ty_is_related(me, t, s, TY_RELATION_STRICT_SUBTYPE) ? TERNARY_TRUE : TERNARY_FALSE;
+    if (partial) return t == s || ty_is_related(me, t, s, TY_RELATION_SUBTYPE) ? TERNARY_TRUE : TERNARY_FALSE;
     if (st) return is_related_to(me, st, t, s, false);
     return types_identical(me, t, s) ? TERNARY_TRUE : TERNARY_FALSE;
 }

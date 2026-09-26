@@ -2228,6 +2228,32 @@ static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx)
     return context ? context->next_type : any_type(me);
 }
 
+// `{ a: 1, b: "" }[k]` that doesn't find k (tsc's getPropertyTypeForIndexType on an object literal type): a missing
+// literal key is undefined (TS2339 under noImplicitAny), a string or number key any of the properties or undefined
+static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* key) {
+    key = ty_regular(me, key);
+    TyList keys = key->kind == TY_UNION && !(key->flags & TYF_BOOLEAN) ? key->composite.types : (TyList){ .data = &key, .len = 1 };
+    TyBuf parts = {0};
+    for (u32 i = 0; i < keys.len; i++) {
+        Ty const* part = ty_access(me, object, keys.data[i]);
+        if (!part && (keys.data[i]->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) {
+            part = ty_intrinsic(me, TY_UNDEFINED);
+        } else if (!part && (keys.data[i]->flags & (TYF_STRING | TYF_NUMBER))) {
+            Members const* members = ty_members(me, object);
+            for (u32 j = 0; j < members->prop_count; j++) ty_buf_push(&parts, prop_type(me, members->props[j]));
+            part = ty_intrinsic(me, TY_UNDEFINED);
+        }
+        if (!part) {
+            ty_buf_drop(&parts);
+            return nullptr;
+        }
+        ty_buf_push(&parts, part);
+    }
+    Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret;
+}
+
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     // tsc's checkExpression: the instantiation limit is per expression, not per program
     my instantiation_count = 0;
@@ -2255,7 +2281,9 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
             // `never` has no properties (TS2339), `never[k]` is never
             if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
-            Ty const* ret = ty_access(me, object, ty_access_key_type(me, expr->property));
+            Ty const* key = ty_access_key_type(me, expr->property);
+            Ty const* ret = ty_access(me, object, key);
+            if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target) ret = object_literal_access(me, object, key);
             if (!ret || ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
             ret = access_flow_type(me, expr, ret);
             return optional ? optional_type(me, ret) : ret;
@@ -2391,10 +2419,26 @@ Ty const* ty_element_index_type(Checker* me, Expr const* index) {
     return ty_expr_type(me, index);
 }
 
+// tsc's isForInVariableForNumericPropertyNames: `k` of `for (const k in xs)` where xs has only a number index
+// signature (an array) indexes as a number. TODO: only inside the loop's body
+static bool is_for_in_numeric_variable(Checker* me, Expr const* index) {
+    if (index->tag != EXPR_IDENTIFIER || !index->identifier.target) return false;
+    Symbol const* symbol = index->identifier.target;
+    Binding const* binding = symbol->decl_count == 1 && symbol->decls[0].kind == SYMBOL_DECL_VARIABLE ? symbol->decls[0].node : nullptr;
+    if (!binding || binding->parent || !binding->source || binding->source->tag != LAZY_TYPE_FOR_EACH_LOOP_VAR) return false;
+    ForEachLoopStatement const* loop = c_container_of(binding->source, ForEachLoopStatement, var_type);
+    if (loop->keyword != FOR_EACH_LOOP_IN) return false;
+    Ty const* object = ty_apparent_type(me, ty_non_nullable(me, ty_expr_type(me, &loop->iterable)));
+    if (!(object->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, object);
+    return members->index_count == 1 && (members->index[0].key->flags & TYF_NUMBER);
+}
+
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
     if (access->private_class && access->private_class->symbol) {
         return ty_prop_name_literal(me, ty_private_name(me, access->private_class->symbol, access->prop.inner_span.sv));
     }
+    if (access->form == PROPERTY_EXPR_BRACKET && is_for_in_numeric_variable(me, &access->prop)) return ty_intrinsic(me, TY_NUMBER);
     return ty_element_index_type(me, &access->prop);
 }
 

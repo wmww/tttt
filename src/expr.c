@@ -2485,6 +2485,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 error_if_not_found,
                 errs
             );
+            ty_check_element_implicit_any(current_checker, my property, expr_type, my inner_span, errs);
             ty_check_member_modifiers(current_checker, my property, expr_type, my inner_span, errs);
         }   break;
 
