@@ -46,9 +46,7 @@ You're in charge of draining triage.md and otherwise maintaining the repo. Valid
 - Feel free to delegate easy/mechanical/repetitive work to a smaller model sub-agent.
 - Be conservative with Fable sub-agents, don't fan out to many of them.
 - If you're using Anthropic models, Opus is the smallest model you should use for anything. If only Opus is available, ignore stuff about chosing a model.
-
-# AGENTS MAY EDIT THIS FILE BELOW THIS LINE
-(keep it brief and focused on info that's actually critical for every agent to know)
+- You may edit this file (AGENTS.md/CLAUDE.md), but keep it compact and meaningful. Favor other files which can be read as-needed for all but the most important content.
 
 ## Development Scripts
 You will use scripts to help you run tests, but some scripts and options are more useful to AI agents than others. All scripts automatically compile the code in src before running tttt, and abort if there are any compile errors. The main scripts you will use are:
