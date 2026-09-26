@@ -410,13 +410,29 @@ Scope* scope_new_generic_merged(Scope* parent, Generic* generic, Symbol const* o
     Generic const* first = owner ? earlier_generic(owner, node, &index) : nullptr;
     for_each (i, vec_generic_item, &generic->items) {
         Symbol* shared = nullptr;
+        Symbol const* shared_lib = nullptr;
         for_each (j, vec_generic_item, first ? &first->items : &(VecGenericItem){0}) {
+            if (!j->owned_symbol || !csview_equals_sv(j->name.sv, i->name.sv)) continue;
             // (Not one of the shared lib program: nothing is written to its symbols)
-            if (j->owned_symbol && j->owned_symbol->binder == ret->binder && csview_equals_sv(j->name.sv, i->name.sv)) {
-                shared = j->owned_symbol;
-            }
+            if (j->owned_symbol->binder == ret->binder) shared = j->owned_symbol;
+            else shared_lib = j->owned_symbol;
         }
         if (!shared || symbol_table_get(&ret->locals, i->name.sv)) {
+            if (shared_lib && !symbol_table_get(&ret->locals, i->name.sv)) {
+                // Merged with a lib declaration (`interface Array<T>`): a symbol of our own that is declared by the
+                // lib's type parameter first, like tsc's merged symbol
+                Symbol* symbol = binder_new_symbol(ret->binder, i->name.sv, SYMBOL_TYPE_PARAMETER);
+                symbol->name_span = shared_lib->name_span;
+                for (u32 k = 0; k < shared_lib->decl_count; k++) symbol_add_decl(symbol, shared_lib->decls[k]);
+                symbol_table_insert(&ret->locals, &ret->binder->arena, i->name.sv, symbol_name_hash(i->name.sv), symbol);
+                symbol_add_decl(symbol, (SymbolDecl){
+                    .kind = SYMBOL_DECL_TYPE_PARAMETER, .flags = SYMBOL_TYPE_PARAMETER, .node = i, .name = i->name, .full = i->full_span,
+                });
+                symbol->is_local = true;
+                i->owned_symbol = symbol;
+                i->symbol_ref = symbol;
+                continue;
+            }
             scope_init_declaration(ret, &i->owned_symbol, (DeclProps){
                 .name = i->name, .full = i->full_span, .kind = SYMBOL_DECL_TYPE_PARAMETER, .node = i,
             });

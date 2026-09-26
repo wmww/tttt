@@ -1157,7 +1157,7 @@ const baselines = {
     },
     'arrayAugment': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arrayBestCommonTypes': {
@@ -1977,7 +1977,7 @@ const baselines = {
     },
     'augmentArray': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'augmentExportEquals1': {
@@ -13367,12 +13367,12 @@ const baselines = {
     },
     'extendGenericArray': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'extendGenericArray2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'extendGlobalThis': {
@@ -13827,7 +13827,7 @@ const baselines = {
     },
     'forwardDeclaredCommonTypes01': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'forwardRefInClassProperties': {
@@ -14967,7 +14967,7 @@ const baselines = {
     },
     'genericFunctionCallSignatureReturnTypeMismatch': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericFunctionHasFreshTypeArgs': {
@@ -17552,7 +17552,7 @@ const baselines = {
     },
     'infinitelyExpandingTypes5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'infinitelyExpandingTypesNonGenericBase': {
@@ -17867,7 +17867,7 @@ const baselines = {
     },
     'innerBoundLambdaEmit': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'innerExtern': {
@@ -21632,17 +21632,17 @@ const baselines = {
     },
     'moduleAugmentationGlobal1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAugmentationGlobal2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAugmentationGlobal3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAugmentationGlobal4': {
@@ -21737,7 +21737,7 @@ const baselines = {
     },
     'moduleAugmentationInAmbientModule5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAugmentationInDependency': {
@@ -24632,7 +24632,7 @@ const baselines = {
     },
     'optionalFunctionArgAssignability': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'optionalParamArgsTest': {
@@ -26107,7 +26107,7 @@ const baselines = {
     },
     'promiseDefinitionTest': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'promiseEmptyTupleNoException': {
@@ -26142,17 +26142,17 @@ const baselines = {
     },
     'promisePermutations': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'promisePermutations2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'promisePermutations3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'promiseTest': {
@@ -26197,12 +26197,12 @@ const baselines = {
     },
     'promises': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'promisesWithConstraints': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'propTypeValidatorInference': {
@@ -28782,7 +28782,7 @@ const baselines = {
     },
     'specializationError': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'specializationOfExportedClass': {
@@ -28987,7 +28987,7 @@ const baselines = {
     },
     'staticAnonymousTypeNotReferencingTypeParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'staticAsIdentifier': {
@@ -32167,7 +32167,7 @@ const baselines = {
     },
     'uniqueSymbolAssignmentOnGlobalAugmentationSuceeds': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'uniqueSymbolJs': {
@@ -64267,7 +64267,7 @@ const baselines = {
     },
     'duplicateNumericIndexers': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'duplicatePropertyNames': {
