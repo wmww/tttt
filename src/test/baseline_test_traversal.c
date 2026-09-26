@@ -290,6 +290,21 @@ static Ty const* optional_member_type(Ty const* type, bool optional) {
     return ty_union(checker, parts, 2, nullptr, (TyList){0});
 }
 
+// A member's symbol line; a computed name that is a literal (`["a"]`, `[0]`) names the member too
+static void add_member_symbol(BaselineTestCase* ctx, BaselineSym sym, Expr const* computed_key) {
+    bool literal = computed_key && (
+        (computed_key->tag == EXPR_LITERAL && (computed_key->literal.tag == VALUE_STRING || computed_key->literal.tag == VALUE_NUMBER)) ||
+        (computed_key->tag == EXPR_TEMPLATE && !computed_key->template_->tag && vec_expr_is_empty(&computed_key->template_->substitutions))
+    );
+    BaselineSym key = literal ? (BaselineSym){
+        .declarations = vec_span_clone(sym.declarations),
+        .span = computed_key->inner_span,
+        .text = cstr_clone(sym.text),
+    } : (BaselineSym){0};
+    baseline_test_case_add_symbol(ctx, sym);
+    if (literal) baseline_test_case_add_symbol(ctx, key);
+}
+
 // The type parameters of the class or interface aren't in scope in a computed member name (tsc's resolveName)
 static void computed_member_name_compile_test_info(Expr* key, BaselineTestCase* ctx) {
     u32 inside = ctx->scope_params_len;
@@ -338,11 +353,11 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             break;
 
         case INTERFACE_KEY_EXPR:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            add_member_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(my key.span),
                 .span = my key.span,
                 .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
-            });
+            }, my key.expr.ref);
             baseline_test_case_add_type(ctx, my key.span, optional_member_type(ty_of_node(&my type), my optional));
             computed_member_name_compile_test_info(my key.expr.ref, ctx);
             break;
@@ -752,11 +767,11 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 vec_span_push(&declarations, my span);
             }
             // (named as its first declaration writes it)
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my method.name_span,
                 .text = member_text(ctx, ctx->class_symbol, class_name, written_name.sv, false),
-            });
+            }, my method.computed_key);
             // An overloaded method is all of its overloads (the member's type)
             u32 overload_count = 0;
             Ty const* type = class_item_get_type(me);
@@ -777,11 +792,11 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
         }   break;
 
         case CLASS_ITEM_FIELD: {
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            add_member_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(my span),
                 .span = my field.name_span,
                 .text = member_text(ctx, ctx->class_symbol, class_name, my field.name_span.sv, false),
-            });
+            }, my field.computed_key);
             baseline_test_case_add_type(ctx, my field.name_span, optional_member_type(class_item_get_type(me), my field.is_optional));
             if (my field.computed_key) computed_member_name_compile_test_info(my field.computed_key, ctx);
 
@@ -1193,8 +1208,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             Ty const* object = ty_expr_type(checker, &my property->expr);
             Ty const* key = ty_access_key_type(checker, my property);
             PropSymbolInfo info = {0};
-            if ((key->flags & TYF_STRING_LITERAL) && !(key->flags & TYF_ENUM_LITERAL)) {
-                collect_prop_symbol(checker, object, key->literal.string, &info, 0);
+            if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL)) {
+                collect_prop_symbol(checker, object, ty_literal_name(checker, key), &info, 0);
             }
             if (info.found) {
                 if (my property->form == PROPERTY_EXPR_DOT) {
