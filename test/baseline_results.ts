@@ -30128,7 +30128,7 @@ const baselines = {
     'tailRecursiveConditionalTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'targetEs6DecoratorMetadataImportNotElided': {
         errors: true,

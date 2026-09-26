@@ -2279,7 +2279,7 @@ static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* 
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     // tsc's checkExpression: the instantiation limit is per expression, not per program
-    my instantiation_count = 0;
+    ty_reset_instantiation_count(me);
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return any_type(me);
         case EXPR_LITERAL: return ty_fresh_literal(me, ty_literal(me, &expr->literal));

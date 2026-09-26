@@ -1608,7 +1608,7 @@ Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
     if (branch->state == LAZY_STATE_IN_FLIGHT) return ty_intrinsic(me, TY_ERROR);
     branch->state = LAZY_STATE_IN_FLIGHT;
     Ty const* source = branch->node ? ty_from_node(me, branch->node, branch->ctx) : branch->source;
-    branch->type = ty_instantiate(me, source, branch->mapper);
+    branch->type = ty_instantiate_tail(me, source, branch->mapper);
     branch->state = LAZY_STATE_DONE;
     return branch->type;
 }

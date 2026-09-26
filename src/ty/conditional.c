@@ -257,7 +257,7 @@ Ty const* ty_conditional_resolve(
     }
     bool related = (inferred_extends->flags & (TYF_ANY | TYF_UNKNOWN)) ||
         ty_is_related(me, check_type, inferred_extends, TY_RELATION_ASSIGNABLE);
-    if (related) return ty_instantiate(me, branch_type(me, if_true), mapper);
+    if (related) return ty_instantiate_tail(me, branch_type(me, if_true), mapper);
     // HACK: tsc picks the false branch only if the check fails even with every type variable replaced by `any`
     // (permissive instantiation), and defers otherwise. There's no such instantiation here yet: with a type variable
     // nested in either side, a failed check defers

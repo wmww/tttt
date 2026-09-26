@@ -633,6 +633,12 @@ struct Checker {
     Ty const* global_types[12]; // GlobalType in relate.c: String, Number... looked up on first use
     bool global_types_resolved[12];
     u32 instantiation_depth;
+    // Conditional types picked as the branch of a conditional type being instantiated now, which don't count towards
+    // instantiation_depth (tsc resolves those in a loop, getConditionalType's tailCount), and the next ty_instantiate()
+    // being one (ty_instantiate_tail())
+    u32 instantiation_tail_count;
+    u32 instantiation_epoch; // Bumped whenever instantiation_count starts over
+    bool instantiating_tail;
     u32 flow_inline_level; // Aliased conditions being narrowed by (ty/flow.c), across nested flow queries like tsc's inlineLevel
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
@@ -897,6 +903,8 @@ Ty const* ty_param_default(Checker* me, Ty const* param); // null if none
 // instantiate.c
 TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets);
 Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper);
+Ty const* ty_instantiate_tail(Checker* me, Ty const* ty, TyMapper const* mapper); // A conditional type's branch
+void ty_reset_instantiation_count(Checker* me); // Per expression / statement, like tsc
 
 // lower.c
 Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
