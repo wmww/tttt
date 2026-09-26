@@ -10,7 +10,10 @@ types components) are the oracle, not the goal.
   from plan 15 session 1, +545 from plan 21's first execution session, +357 from plan 15 session 2, +132 from plan
   15 session 3, which retired the plan: no missing code is worth 20 tests on its own any more; +305 from plan 21
   stage 3, annotations reprinted from the TypeNode; +102 from stages 4-5, class expression names and `T_1`; **7152 / 13540** after `.tsx` joined the suite and
-  plan 21 stage 2, symbol accessibility as a port of tsc's getSymbolChain: +234). **Corpora**: tsc's
+  plan 21 stage 2, symbol accessibility as a port of tsc's getSymbolChain: +234; **8065 / 13540** when plan 21 closed
+  2026-09-26 after stages 6-7: symbol lines, then the clusters sampling `other` found, most of them checker bugs the
+  types baseline showed first: computed-name index signatures, binding patterns as contextual types, destructuring
+  assignment tuples, overload-failure return types). **Corpora**: tsc's
   `src/compiler` 0 diagnostics, type-fest 144, valibot 165 (all three are clean under tsc; 450 / 1871 before plan 19
   R5/R3/R2/R4/R1; some of the recent drop is ts-expect-error directives that new checks now satisfy).
   **Perf** (`measurements.md`, perf session after plan 15): tsc corpus 0.67 s vs tsgo 0.72 (single-threaded 1.23),
@@ -180,8 +183,8 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 4b. ~~Real corpus to zero diagnostics (plan 08), then bench + profile it~~ done (with plans 09-12): 0 diagnostics,
    0.88 s vs tsgo 1.02 s.
 4c. ~~Second real corpus (plan 17)~~ done (type-fest + valibot), plans 18/20 done. Now plan 19's core rules (R1-R5),
-   then the corpora to zero. ~~Suite plans 13, 14, 16~~ done; 15 (missing checks), 21 (display fidelity), 22 (JSX)
-   next.
+   then the corpora to zero. ~~Suite plans 13, 14, 15 (missing checks), 16, 21 (display fidelity), 22 (JSX)~~ done;
+   their leftovers are in triage.md. Union origins were measured and deferred (~25 tests, a type-core feature).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.

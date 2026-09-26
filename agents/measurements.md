@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, plan 21 stage 7 (sampling `other`; plan 21 closed)
+Suite 7877 -> **8065 / 13540** full (errors 9857 -> 9884, symbols 11781 -> 11787, types 9652 -> 9882), nothing lost.
+tsc corpus still 0 diagnostics. `./bench.sh`: tsc corpus 0.78 s (typecheck 282 ms in the phase run), valibot 0.69 s /
+511 MB, type-fest 0.31 s, synthetic 4.97 s / 4294 MB vs tsgo 8.11 (exit 1, TS1540): unchanged. `./displaydiff.py`, TS
+tests fixed by one kind: other 556 -> 378, we-any 147, tsc-any 87, line-extra 97, underlines/order 96, line-missing
+81, union-order 48, our-typeof 35, tsc-typeof 21, names-only 17, undefined 11, structure-lost 11, tsc-import() 10.
+
 ## 2026-09-26, plan 21 stage 6 (symbol lines and declarations)
 Suite 7655 -> **7877 / 13540** full (errors 9857, symbols 11218 -> 11781, types 9629 -> 9652), nothing lost. tsc
 corpus still 0 diagnostics. `./bench.sh`: valibot 0.69 s / 511 MB, unchanged (the checker-side changes are

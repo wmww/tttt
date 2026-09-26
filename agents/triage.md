@@ -27,17 +27,16 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   top-level `for await`. Older: TS1161 for an unterminated regex (`parse_regex` just fails), TS1263/1264 misplaced `let
   x!`, `const c;` in ambient files, `override`/TS4112+, overloads of `*()`-style nameless members, TS2303 "Circular
   definition of import alias".
-- **Binding patterns as types** (re-probed; tsc's getTypeFromBindingPattern, checkArrayLiteral inDestructuringPattern,
-  checkObjectLiteral's contextualTypeHasPattern): a binding pattern isn't the contextual type of its initializer (`var
-  [, , [, b]] = [3, 5, [0, 1]]` is a spurious TS2461 at ES5, declarationEmitDestructuringArrayPattern5; `let [a = 1, b]
-  = [undefined, "s"]` gives `a: string | number`, tsc `number`); an object literal initializer of a pattern should get
-  the pattern's defaulted properties as optional ones (`function f({ x, y = 0 } = { x: 0 })` takes `{ x: number; y?:
-  number }`, so `f({ x: 1, y: 1 })` is a spurious TS2353: destructuringWithLiteralInitializers; `literalTypes2` f6), and
-  pattern properties the literal lacks are TS2525; an array literal that is a destructuring assignment target types as
-  an array instead of a tuple of the targets; unannotated destructured parameters don't get the pattern's type
-  (`({ a = 1 }) => a` is `{ a?: number }` in tsc, `any` here); object rest (`{ a, ...rest }`) is the whole object
-  instead of getRestType(); computed keys in patterns miss their symbol lines (probe `binding_pattern_display.ts`).
-  Worth a plan.
+- **Binding patterns as types** (re-probed 2026-09-26; tsc's getTypeFromBindingPattern, checkObjectLiteral's
+  contextualTypeHasPattern). Done in plan 21 stage 7: a non-empty pattern is the contextual type of its initializer
+  (`TYF_BINDING_PATTERN`, array patterns make tuples), destructuring assignment targets are tuples. Left: an object
+  literal initializer of a pattern should get the pattern's defaulted properties as optional ones (`function f({ x, y
+  = 0 } = { x: 0 })` takes `{ x: number; y?: number }`, so `f({ x: 1, y: 1 })` is a spurious TS2353:
+  destructuringWithLiteralInitializers; `literalTypes2` f6), and pattern properties the literal lacks are TS2525; `let
+  [a = 1, c] = [undefined, "s"]` gives `a: any`, tsc `number` (a default replaces an `undefined` element); unannotated
+  destructured parameters don't get the pattern's type (`({ a = 1 }) => a` is `{ a?: number }` in tsc, `any` here);
+  object rest (`{ a, ...rest }`) is the whole object instead of getRestType(); computed keys in patterns miss their
+  symbol lines (probe `binding_pattern_display.ts`). A session's worth.
 - **Substitution types** don't exist: in the true branch of `T[K] extends unknown[] ? (...args: T[K]) => void : never`
   tsc knows `T[K]` is an array (getSubstitutionType / getImpliedConstraint). Instances: @types/node events.d.ts (x4,
   hidden by skipLibCheck), stringMappingReduction (`EMap[C]` in `C extends Keys ? EMap[C] : ...` needs `C & Keys`:
@@ -54,6 +53,31 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - **Evolving arrays** (tsc's autoArrayType: `let x = []` / `x = []` on an auto-typed `let x;`, then `x.push(v)`,
   `x[i] = v` grow the element type; needs FLOW_ARRAY_MUTATION nodes in the builder). Auto types (`let x;`) exist, the
   array half is `any[]` (hacks.md "Narrowing"). controlFlowArrays and friends.
+
+- **Display leftovers after plan 21 (closed 2026-09-26)**. `./displaydiff.py` ranks them; `other` (378 TS tests
+  alone) is mostly type-core bugs the types baseline shows first. Sampled clusters, each a few percent of `other`:
+  - *Union/keyof origins* (~5% of `other`, 20-30 tests): tsc keeps the union a type was written as (`origin`) through
+    narrowing and filtering, and `keyof X` resolved to literals prints `keyof X`. stringLiteralTypesInUnionTypes01
+    (`b : T`), partiallyDiscriminantedUnions (`Shape`), flowControlTypeGuardThenSwitch (`Both`),
+    intlNumberFormatES2023, reactTagNameComponentWithPropsNoOOM(2) and partialOfLargeAPIIsAbleToBeWorkedWith (`keyof
+    ...`), privateNameStaticMethodAsync (`IteratorResult<number, void>`), doNotInferUnrelatedTypes, trackedSymbolsNoCrash,
+    spreadBooleanRespectsFreshness, literalFreshnessPropagationOnNarrowing. **Decided (plan 21 stage 7): not now.**
+    It's a type-core feature (unions carry an origin, every filter/narrowing path keeps it, keyof keeps its operand)
+    for ~25 tests; revisit when `other` is otherwise drained or a real project's messages need it.
+  - *Module specifiers of `import("...")`* (~5%): tsc's getModuleSpecifier prefers a package's entry/`index` that
+    re-exports the symbol and non-relative paths: declarationEmitForGlobalishSpecifierSymlink2,
+    symbolLinkDeclarationEmitModuleNames(RootDir), bundledDtsLateExportRenaming, declarationEmitTopLevelNodeFromCrossFile2
+    (`import("./box")` for `import("box")`), declarationsForInferredTypeFromOtherFile.
+  - *`this` of the contextual signature in a function expression's type* (`data : (this: Readonly<...> & Instance) =>
+    ...`): vueLikeDataAndPropsInference(2), json.stringify.
+  - A type parameter shadowing its declaration's name prints `globalThis.T<T>` in tsc (unusedTypeParameters*):
+    symbol_chain.c's tables have no type parameters.
+  - A computed negative number name prints `[-1]` (computedPropertyNamesDeclarationEmit6): `Prop.name_is_value`
+    doesn't tell a number-literal name from a string one.
+  - `A & ({} | undefined)` for a truthiness-narrowed generic (typePredicatesOptionalChaining1,
+    assertionFunctionWildcardImport2); lone surrogates `"\u{D800}"` print `""` (unicodeExtendedEscapes*10).
+  - The plan's own buckets that are left: tsc-typeof 21 (expando functions, JS), our-typeof 35 (not re-sampled since
+    stage 1), union-order 48 (case by case), line-extra 97 / line-missing 81 (unsampled since stage 0).
 
 ## Checker gaps
 - `in`/`out` variance annotations on type parameters are parsed and dropped (`GenericItem` has no field): tsc takes the
@@ -221,7 +245,7 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   it does to TS2300 and to the generic's type parameter list.
 - `export default class {}` prints `typeof default` from other files where tsc names the alias that imports it
   (`import { default as b }` -> `typeof b`, importHelpersWithImportOrExportDefault): tsc's getNameOfSymbolAsWritten
-  special-cases `default` by binding context. Plan 21 stage 2 material.
+  special-cases `default` by binding context. symbol_chain.c material.
 - tttt instantiates member signatures of generic classes/interfaces that can't reference the mapped type parameters;
   tsc keeps them (getObjectTypeInstantiation filters outer type parameters with isTypeParameterPossiblyReferenced).
   Display compensates (`mentions_mapped()`, hacks.md); doing it in `instantiate.c` would be correct *and* cheaper
