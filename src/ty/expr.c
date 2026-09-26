@@ -990,7 +990,42 @@ static Ty const* binary_result(Checker* me, Ty const* left, BinaryOp op, Ty cons
     }
 }
 
+// Whether the left operand of `binary` is checked with a contextual type (see check_binary())
+static bool left_takes_context(BinaryOpExpr const* binary) {
+    return binary->op == BINARY_OP_OR_OR || binary->op == BINARY_OP_EH_EH;
+}
+
+// A long `a + b + c + ...` would recurse once per operand (compute -> the left operand's LazyType -> compute): tsc
+// checks binary chains iteratively (checkBinaryExpression's state machine). Here the left spine is evaluated bottom
+// up first, so each level finds its left operand memoised. Only the part of the spine checked without a contextual
+// type, since that's what its memo is; each level's own walk stops at the first finished memo, so a chain is O(n)
+static void check_left_spine(Checker* me, BinaryOpExpr const* binary, ExprCtx ctx) {
+    if (my flow_uncached) return; // Nothing is memoised
+    bool contextual = ctx.contextual && left_takes_context(binary);
+    Expr const* first = nullptr;
+    u32 depth = 0;
+    for (Expr const* e = &binary->left; e->tag == EXPR_BINARY_OP; e = &e->binary_op->left) {
+        LazyType* lazy = (LazyType*)&e->lazy_type;
+        if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) break;
+        LazyMemo* memo = lazy_type_state_peek(lazy);
+        if (memo && (memo->done || memo->evaluation_started)) break;
+        if (!contextual) {
+            if (!first) first = e;
+            depth++;
+        }
+        contextual = contextual && left_takes_context(e->binary_op);
+    }
+    if (depth < 32) return; // Shallow enough to recurse
+    Expr const** spine = malloc(sizeof(Expr const*) * depth);
+    panic_if(!spine, "out of memory");
+    u32 len = 0;
+    for (Expr const* e = first; len < depth; e = &e->binary_op->left) spine[len++] = e;
+    for (u32 i = len; i-- > 0;) ty_expr_type(me, spine[i]);
+    free(spine);
+}
+
 static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx ctx) {
+    check_left_spine(me, binary, ctx);
     Ty const* left;
     Ty const* right;
     switch (binary->op) {

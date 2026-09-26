@@ -1165,7 +1165,8 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
         if (hop_char(&p, '&') && *p.pos != '&' && *p.pos != '=') {
             hop_whitespace(&p);
 
-            expect_type(&p, TYPE_PRECEDENCE_INTERSECTION, &type);
+            // One level tighter: the caller's loop takes the next `&`, so a long chain doesn't recurse per member
+            expect_type(&p, TYPE_PRECEDENCE_OPERATOR, &type);
             *left_and_ret = type_composite_without_simplify(TYPE_INTERSECTION, *left_and_ret, type);
             return parse_success(&p);
         }
@@ -1175,7 +1176,8 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
         if (hop_char(&p, '|') && *p.pos != '|' && *p.pos != '=') {
             hop_whitespace(&p);
 
-            expect_type(&p, TYPE_PRECEDENCE_UNION, &type);
+            // Same: generated unions of thousands of members exist (icon names)
+            expect_type(&p, TYPE_PRECEDENCE_INTERSECTION, &type);
             *left_and_ret = type_composite_without_simplify(TYPE_UNION, *left_and_ret, type);
             return parse_success(&p);
         }

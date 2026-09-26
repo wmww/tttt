@@ -990,6 +990,44 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
     }
 }
 
+static bool is_plain_binary(Expr const* me) {
+    if (my tag != EXPR_BINARY_OP) return false;
+    BinaryOp op = my binary_op->op;
+    return !binary_op_is_logical(op) && !binary_op_is_logical_assignment(op) && !binary_op_is_assignment(op);
+}
+
+// expr_lookup_names() of a binary expression that isn't logical or an assignment, once its left operand is walked
+static void plain_binary_lookup_names_rest(Expr* me, Scope* names, ErrorCtx* errs) {
+    FlowBuilder* flow = names->flow;
+    if (my binary_op->op == BINARY_OP_COMMA) flow_maybe_call(flow, &my binary_op->left);
+    expr_lookup_names(&my binary_op->right, names, errs);
+    if (my binary_op->op == BINARY_OP_COMMA) flow_maybe_call(flow, &my binary_op->right);
+}
+
+// A chain of them (`a + b + c + ...`, `a, b, c, ...`) is walked down its left spine with a loop, not a recursion per
+// operand: generated code has chains long enough to overflow the stack. The operands of these start from a clean flow
+// state (nothing for expr_lookup_names() to take), so each level only needs its lazy type bound on the way down
+static void plain_binary_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
+    u32 depth = 0;
+    for (Expr* e = me; is_plain_binary(&e->binary_op->left); e = &e->binary_op->left) depth++;
+    Expr* local[16];
+    Expr** spine = depth <= c_arraylen(local) ? local : malloc(sizeof(Expr*) * depth);
+    panic_if(!spine, "out of memory");
+    Expr* e = me;
+    for (u32 i = 0; i < depth; i++, e = &e->binary_op->left) {
+        spine[i] = e;
+        if (i) lazy_type_bind(&e->lazy_type, LAZY_TYPE_EXPR);
+    }
+    if (depth) {
+        expr_lookup_names(e, names, errs); // The bottom one, whose left operand isn't one
+    } else {
+        expr_lookup_names(&my binary_op->left, names, errs);
+        spine[depth++] = me;
+    }
+    for (u32 i = depth; i-- > 0;) plain_binary_lookup_names_rest(spine[i], names, errs);
+    if (spine != local) free(spine);
+}
+
 void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
 
@@ -1079,10 +1117,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     flow_assignment_target(flow, left, (FlowAssign){ .kind = FLOW_ASSIGN_EXPR, .assignment = me });
                 }
             } else {
-                expr_lookup_names(left, names, errs);
-                if (op == BINARY_OP_COMMA) flow_maybe_call(flow, left);
-                expr_lookup_names(right, names, errs);
-                if (op == BINARY_OP_COMMA) flow_maybe_call(flow, right);
+                plain_binary_lookup_names(me, names, errs);
             }
         }   break;
 
@@ -2255,6 +2290,63 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
     }
 }
 
+// The binary case of expr_typecheck() once the left operand is checked
+static void binary_expr_typecheck_rest(Expr const* me, ErrorCtx* errs) {
+    if (my binary_op->op == BINARY_OP_AND_AND || my binary_op->op == BINARY_OP_OR_OR) {
+        expr_check_truthiness(&my binary_op->left, errs);
+    } else if (my binary_op->op == BINARY_OP_EH_EH) {
+        nullish_coalesce_typecheck(me, errs);
+    } else if (my binary_op->op == BINARY_OP_COMMA && !compiler_options()->allow_unreachable_code &&
+        !my binary_op->indirect_call && !my binary_op->jsx_siblings && is_side_effect_free(&my binary_op->left)
+    ) {
+        error_ctx_error_d(errs, expr_error_span(&my binary_op->left), 2695,
+            "Left side of comma operator is unused and has no side effects.");
+    }
+    expr_typecheck(&my binary_op->right, errs);
+    binary_op_typecheck(
+        expr_get_type(&my binary_op->left),
+        my binary_op->op,
+        expr_get_type(&my binary_op->right),
+        me,
+        errs
+    );
+}
+
+// The binary case of expr_typecheck(). A chain (`a + b + c + ...`) is walked down its left spine with a loop, not a
+// recursion per operand: generated code has chains long enough to overflow the stack (tsc checks them iteratively too)
+static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
+    if (my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
+        !expr_is_perenthisized(&my binary_op->left)
+    ) {
+        // The one place `#x` is an expression
+        if (private_names_lowered()) {
+            ty_check_emit_helpers(current_checker, my binary_op->left.outer_span, EMIT_HELPER_CLASS_PRIVATE_FIELD_IN, errs);
+        }
+        expr_typecheck(&my binary_op->right, errs);
+        ty_check_in_expression(current_checker, &my binary_op->left, &my binary_op->right, errs);
+        return;
+    }
+    u32 depth = 0;
+    for (Expr const* e = me; e->binary_op->left.tag == EXPR_BINARY_OP; e = &e->binary_op->left) depth++;
+    if (!depth) {
+        expr_typecheck(&my binary_op->left, errs);
+        binary_expr_typecheck_rest(me, errs);
+        return;
+    }
+    // In the order the recursion would: each level's own type on the way down, the rest on the way up
+    Expr const* local[16];
+    Expr const** spine = depth <= c_arraylen(local) ? local : malloc(sizeof(Expr const*) * depth);
+    panic_if(!spine, "out of memory");
+    Expr const* e = me;
+    for (u32 i = 0; i < depth; i++, e = &e->binary_op->left) {
+        spine[i] = e;
+        if (i) expr_get_type((Expr*)e);
+    }
+    expr_typecheck(e, errs); // The bottom binary expression, whose left operand isn't one
+    for (u32 i = depth; i-- > 0;) binary_expr_typecheck_rest(spine[i], errs);
+    if (spine != local) free(spine);
+}
+
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     // The expression's own type first: evaluating it is what gives the expressions inside it their contextual types
     // (whoever knows this expression's contextual type has done the same before getting here)
@@ -2265,38 +2357,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_IDENTIFIER: identifier_expr_typecheck(&my identifier, errs); break;
 
-        case EXPR_BINARY_OP:
-            if (my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
-                !expr_is_perenthisized(&my binary_op->left)
-            ) {
-                // The one place `#x` is an expression
-                if (private_names_lowered()) {
-                    ty_check_emit_helpers(current_checker, my binary_op->left.outer_span, EMIT_HELPER_CLASS_PRIVATE_FIELD_IN, errs);
-                }
-                expr_typecheck(&my binary_op->right, errs);
-                ty_check_in_expression(current_checker, &my binary_op->left, &my binary_op->right, errs);
-                break;
-            }
-            expr_typecheck(&my binary_op->left, errs);
-            if (my binary_op->op == BINARY_OP_AND_AND || my binary_op->op == BINARY_OP_OR_OR) {
-                expr_check_truthiness(&my binary_op->left, errs);
-            } else if (my binary_op->op == BINARY_OP_EH_EH) {
-                nullish_coalesce_typecheck(me, errs);
-            } else if (my binary_op->op == BINARY_OP_COMMA && !compiler_options()->allow_unreachable_code &&
-                !my binary_op->indirect_call && !my binary_op->jsx_siblings && is_side_effect_free(&my binary_op->left)
-            ) {
-                error_ctx_error_d(errs, expr_error_span(&my binary_op->left), 2695,
-                    "Left side of comma operator is unused and has no side effects.");
-            }
-            expr_typecheck(&my binary_op->right, errs);
-            binary_op_typecheck(
-                expr_get_type(&my binary_op->left),
-                my binary_op->op,
-                expr_get_type(&my binary_op->right),
-                me,
-                errs
-            );
-            break;
+        case EXPR_BINARY_OP: binary_expr_typecheck(me, errs); break;
 
         case EXPR_UNARY_OP:
             expr_typecheck(&my unary_op->expr, errs);
