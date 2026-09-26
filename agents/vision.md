@@ -10,11 +10,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   JS tests (`@allowJs`/`.js` units) 157 / 1049. Since the insights after plan 13 (5125 / 13163): plans 15 (missing
   checks), 21 (display fidelity), 22 (JSX: 313 of 457 JSX tests pass), 24 (binding patterns), 23 (symbol merging).
   History per plan is in `measurements.md` and git.
-- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **168**, valibot **147**, react
-  **80** (bulletproof-react's Vite app, added by plan 25: React 18 + react-query/router, radix, react-hook-form + zod,
-  Storybook, vitest; 362 at first run, 7 parser/binder/resolution/relation bugs fixed the same session). ~70 of the
-  react 80 are one inference rule (plan 19 R10: the first pass skips object literals / JSX attributes that have a
-  context-sensitive member), so real React code is closer than the count looks.
+- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **116**, valibot **98**, react
+  **3** (bulletproof-react's Vite app, added by plan 25: React 18 + react-query/router, radix, react-hook-form + zod,
+  Storybook, vitest; 362 at first run, 80 after plan 25, 3 after plan 19's R10-R14 session: tsc's skip-context-
+  sensitive first pass and intra-expression inference, `this` of intersection members, and a few evaluation rules).
 - **Perf** (`measurements.md`, 2026-09-26; tsgo = typescript 7.0.2 on 4 cores): tsc corpus 0.89 s vs tsgo 1.27
   (single-threaded 1.73), type-fest 0.37 vs 1.96, valibot 0.82 s / 530 MB vs 1.62 s / 822 MB, react 0.31 s / 232 MB
   vs 1.06 s / 545 MB (tsgo single-threaded 0.94). Ahead everywhere, single-threaded; react is parse-dominated
@@ -94,7 +93,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order by
   type id, origins, truncation). The interned design can mimic creation order; keep it that way when adding types.
 - Perf: deep generic code is where tsc's caches and shortcuts matter; React is measured now (plan 25:
-  ahead of tsgo, but checked incompletely until plan 19's R10 lands).
+  ahead of tsgo; now that it's checked nearly completely, the perf check-up should re-measure it).
   Checks accumulate cost silently between perf sessions.
 - JS/JSDoc is a second front end on top of the checker: the risk is a parallel type world for JSDoc. It must lower
   into the same `Ty` machinery.

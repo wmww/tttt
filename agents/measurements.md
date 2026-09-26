@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, plan 19 session (R10-R14 and a re-sample)
+Suite 8219 -> **8234 / 13540** full (errors 9992 -> 10011, symbols 11842 -> 11849, types 10006 -> 10025), no
+component lost. Corpora: tsc 0, **react 80 -> 3**, **type-fest 168 -> 116**, **valibot 147 -> 98**. `./bench.sh` not
+rerun; `./realworld.py` walls in the usual noise (tsc corpus 0.93-1.05 s, valibot 0.79-0.9 s / 484-529 MB, react
+0.32 s, type-fest 0.37 s). The perf check-up (todo) should rerun bench.
+
 ## 2026-09-26, plan 25 (React corpus)
 Suite 8202 -> **8219 / 13540** full (errors 9980 -> 9992, symbols 11832 -> 11842, types 9990 -> 10006); one errors
 component lost (inferredRestTypeFixedOnce, triage.md). Corpora: tsc 0, type-fest 168, valibot 164 -> **147**, and

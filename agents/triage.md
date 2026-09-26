@@ -95,8 +95,8 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   TS18046): tsc's first round types an argument like `() => ({ a: 1, b: x => {} })` (no sensitive parameters,
   sensitive through its returned expression) as a return-only signature whose return type is checked with
   `SkipContextSensitive` (nested sensitive functions are the non-inferrable `anyFunctionType`, nothing memoised:
-  `links.contextFreeType`), and infers from that. tttt skips the whole argument in pass 1, so `a`'s candidate arrives
-  only in pass 2, after `b`'s `x` is typed `unknown`. Needs a "skip context sensitive" check mode: plan 19 R10.
+  `links.contextFreeType`), and infers from that. The skip mode exists since plan 19 R10 (`ExprCtx.skip_sensitive`),
+  but a function argument is still skipped whole: the missing piece is the return-only signature (hacks.md).
 - `unknown` where tsc infers a type (~20 TS18046 in the corpus; suite: intraExpressionInferences,
   mappedTypeRecursiveInference, reverseMappedUnionInference).
 - Exposed by plan 12's excess property checks, a spurious TS2353 over a wrong inferred type (re-probed):
@@ -422,13 +422,6 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   `T` isn't the merged interface's. `ty_check_type_reference_constraints` avoids lowering arguments of unconstrained
   parameters because of it. Probably the merged declarations' type parameters should be one type (tsc: the first
   declaration's), whoever lowers first.
-- Inference from an object literal's other properties before its context-sensitive ones (tsc's SkipContextSensitive
-  first pass + intraExpressionInferenceSites) fails when the parameter is a union alias: `type Props<T> =
-  PropsBase<string> | PropsWithConvert<T>; declare function F<T>(p: Props<T>): void; F({ data: "1", convert: n => ""
-  + n })` types `n` as unknown (tsc: string); with `p: PropsWithConvert<T>` it works. The context-sensitive argument
-  is skipped whole in call.c's first pass and checked against `Props<unknown>` in the second. Costs
-  tsxInferenceShouldNotYieldAnyOnUnions (types) and likely more. The non-union case fails too (plan 19 R10, ~70
-  of the react corpus' 80).
 - TS2344 on type references (new, 2026-09-26) fires spuriously in the corpora where tttt evaluates type-level
   equality/path helpers wrongly: type-fest `test-d/get.ts` (`MismatchInfo<Get<...>>`, `StrictEqualUsingTSInternal...`
   conditionals), `test-d/pick-deep.ts` (`Paths<T>` not containing `"nested.deep.deeper.value"`), valibot
