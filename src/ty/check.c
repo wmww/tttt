@@ -605,6 +605,47 @@ void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span 
     check_assignable(me, HEAD_THIS, source, target, span, nullptr, errs);
 }
 
+// tsc's isValidSpreadType
+static bool is_valid_spread_type(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 8) return true;
+    if (ty->kind == TY_UNION) {
+        // (tsc maps the base constraint over it before removing what's definitely falsy)
+        TyBuf parts = {0};
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* part = ty->composite.types.data[i];
+            Ty const* constraint = part->flags & (TYF_TYPE_PARAM | TYF_DEFERRED) ? ty_base_constraint(me, part) : nullptr;
+            ty_buf_push(&parts, constraint ? constraint : part);
+        }
+        Ty const* mapped = ty_remove_definitely_falsy(me, ty_union(me, parts.data, parts.len, nullptr, (TyList){0}));
+        ty_buf_drop(&parts);
+        if (mapped->kind != TY_UNION) return is_valid_spread_type(me, mapped, depth + 1);
+        for (u32 i = 0; i < mapped->composite.types.len; i++) {
+            if (!is_valid_spread_type(me, mapped->composite.types.data[i], depth + 1)) return false;
+        }
+        return true;
+    }
+    Ty const* constraint = ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED) ? ty_base_constraint(me, ty) : nullptr;
+    if (constraint && constraint != ty) return is_valid_spread_type(me, constraint, depth + 1);
+    ty = ty_remove_definitely_falsy(me, ty);
+    if (ty->flags & (TYF_ANY | TYF_NON_PRIMITIVE | TYF_OBJECT | TYF_TYPE_PARAM | TYF_DEFERRED)) {
+        return !(ty->flags & (TYF_STRING_LIKE)) || (ty->flags & TYF_ANY); // (a deferred string mapping isn't an object)
+    }
+    if (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!is_valid_spread_type(me, ty->composite.types.data[i], depth + 1)) return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+// `...x` in an object literal or JSX attributes: x must be an object (TS2698)
+void ty_check_spread_type(Checker* me, Ty const* type, Span span, ErrorCtx* errs) {
+    if (!is_valid_spread_type(me, type, 0)) {
+        error_ctx_error_d(errs, span, 2698, "Spread types may only be created from object types.");
+    }
+}
+
 Ty const* ty_of_node(TypeNode const* node) {
     return ty_from_node(current_checker, node, (LowerCtx){ .generic = true });
 }
@@ -1330,7 +1371,12 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
 // first declaration of its name (tsc's checkVariableLikeDeclaration for a property's secondary declarations)
 static void check_subsequent_property(Checker* me, Span name, Ty const* first_type, Ty const* type, Span first_name, ErrorCtx* errs) {
     Ty const* error = ty_intrinsic(me, TY_ERROR);
-    if (first_type == error || type == error || ty_is_related(me, first_type, type, TY_RELATION_IDENTITY)) return;
+    Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
+    if (first_type == error || type == error || first_type == circular || type == circular ||
+        ty_is_related(me, first_type, type, TY_RELATION_IDENTITY)
+    ) {
+        return;
+    }
     // HACK: a `unique symbol` is one per declaration in tttt, one per (merged) property symbol in tsc
     if ((first_type->flags & TYF_UNIQUE_ES_SYMBOL) && (type->flags & TYF_UNIQUE_ES_SYMBOL)) return;
     cstr first_str = ty_to_cstr(me, first_type);

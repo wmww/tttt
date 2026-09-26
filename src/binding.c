@@ -179,7 +179,12 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
     Ty const* type = ty_type_of_symbol(checker, symbol);
     Ty const* declared = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
     Ty const* error = ty_intrinsic(checker, TY_ERROR);
-    if (type == error || declared == error || ty_is_related(checker, type, declared, TY_RELATION_IDENTITY)) return;
+    Ty const* circular = ty_intrinsic(checker, TY_CIRCULAR);
+    if (type == error || declared == error || type == circular || declared == circular ||
+        ty_is_related(checker, type, declared, TY_RELATION_IDENTITY)
+    ) {
+        return;
+    }
     cstr type_str = ty_to_cstr(checker, type);
     cstr declared_str = ty_to_cstr(checker, declared);
     Error* e = error_ctx_error_d(errs, my content_span, 2403,
@@ -207,7 +212,7 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
             if (my symbol) {
                 check_subsequent_declaration(me, errs);
                 Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
-                if ((type->flags & TYF_ERROR) && type == ty_intrinsic(current_checker, TY_ERROR) &&
+                if (type == ty_intrinsic(current_checker, TY_CIRCULAR) &&
                     compiler_options()->no_implicit_any && !my has_explicit_type
                 ) {
                     error_ctx_error_d(errs, my content_span, 7022,

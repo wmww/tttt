@@ -133,7 +133,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
             // means we have hit every other LazyType at least twice, which means we've marked them all self-referential
             // and so we can now safely bail.
             state->done = true;
-            state->evaluated = ty_intrinsic(current_checker, TY_ERROR);
+            state->evaluated = ty_intrinsic(current_checker, TY_CIRCULAR);
             return state->evaluated;
         }
     }

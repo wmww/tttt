@@ -565,6 +565,9 @@ typedef enum TyIntrinsic {
     TY_ANY,
     TY_AUTO, // The declared type of `let x;` under noImplicitAny: any, but typed by control flow (tsc's autoType)
     TY_ERROR,
+    // What a declaration whose type depends on itself is (tsc's reportCircularityError gives plain any): kept apart
+    // from `any` for TS7022 & co.
+    TY_CIRCULAR,
     TY_UNKNOWN_,
     TY_UNDEFINED,
     TY_NULL,
@@ -1136,6 +1139,7 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
 void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_type, ErrorCtx* errs);
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS2345
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
+void ty_check_spread_type(Checker* me, Ty const* type, Span span, ErrorCtx* errs); // `...x` in a literal: TS2698
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
 Ty const* ty_of_node(TypeNode const* node); // A written type, by the current checker
 // tsc's createUnionOrIntersectionProperty: a union has no property that is private or protected in some member unless
@@ -1150,6 +1154,8 @@ static inline u32 ty_key_flags(Ty const* index) {
     return flags;
 }
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index); // Of an apparent type
+// A number, symbol or pattern index signature applies to the key (tsc's isApplicableIndexType, not for `string` keys)
+bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* index);
 // Member modifiers at a property access (tsc's checkPropertyAccessibility and the readonly checks of
 // checkPropertyAccessExpressionOrQualifiedName): TS2341, TS2445, TS2446, TS2340, TS2855, TS2540, TS2542
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);

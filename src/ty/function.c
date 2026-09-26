@@ -176,7 +176,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
         case LAZY_STATE_DONE: return memo->type;
         case LAZY_STATE_IN_FLIGHT:
             memo->circular = true;
-            return ty_intrinsic(me, TY_ERROR); // TODO: TS7023 implicitly any, references itself
+            return ty_intrinsic(me, TY_CIRCULAR); // TODO: TS7023 implicitly any, references itself
         case LAZY_STATE_NOT_STARTED: break;
     }
     memo->state = LAZY_STATE_IN_FLIGHT;

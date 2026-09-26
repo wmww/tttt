@@ -272,7 +272,7 @@ zsview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
 Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
     Checker* checker = current_checker;
     Ty const* iterable = ty_expr_type(checker, &my iterable);
-    if (iterable == ty_intrinsic(checker, TY_ERROR)) return iterable; // Self-referential
+    if (iterable == ty_intrinsic(checker, TY_CIRCULAR)) return iterable; // Self-referential
     switch (my keyword) {
         case FOR_EACH_LOOP_IN:
             // TODO: `Extract<keyof T, string>` for a type parameter

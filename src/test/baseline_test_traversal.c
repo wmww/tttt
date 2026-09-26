@@ -994,13 +994,24 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
         vec_span_drop(&info.declarations);
     } else if (intrinsic.index) {
         Symbol const* container = intrinsic.elements->kind == TY_DECLARED ? intrinsic.elements->declared.symbol : nullptr;
+        // (tsc's getApplicableIndexSymbol: the index signatures that apply, several patterns can)
+        VecSpan declarations = {0};
+        Members const* members = ty_members(checker, ty_apparent_type(checker, intrinsic.elements));
+        Ty const* key = ty_string_literal(checker, name->identifier.name.sv);
+        for (u32 i = 0; i < members->index_count; i++) {
+            IndexInfo const* info = &members->index[i];
+            if (info->key->flags & TYF_STRING || !ty_specific_index_applies(checker, info, key)) continue;
+            if (span_valid(info->decl_span)) vec_span_push(&declarations, info->decl_span);
+        }
+        if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, intrinsic.index->decl_span);
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = vec_span_single(intrinsic.index->decl_span),
+            .declarations = declarations,
             .allow_declaration_empty = true,
             .span = name->inner_span,
             .text = member_text(ctx, container, span_null, c_sv("__index"), false),
         });
     }
+    ctx->any_keeps_underline = true; // (tsc's harness keeps it for JSX tag names)
     baseline_test_case_add_type(ctx, name->inner_span, ty_intrinsic(checker, TY_ANY));
 }
 

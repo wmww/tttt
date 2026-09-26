@@ -20036,7 +20036,7 @@ const baselines = {
         types: true,
     },
     'jsxFragmentAndFactoryUsedOnFragmentUse': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20116,9 +20116,9 @@ const baselines = {
         types: false,
     },
     'jsxIntrinsicDeclaredUsingTemplateLiteralTypeSignatures': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsxIntrinsicElementsCompatability': {
         errors: true,
@@ -20208,12 +20208,12 @@ const baselines = {
     'jsxNamespaceNoElementChildrenAttributeReactJsx(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespaceNoElementChildrenAttributeReactJsx(jsx=react-jsxdev)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespacePrefixInName': {
         errors: false,
@@ -20226,7 +20226,7 @@ const baselines = {
         types: false,
     },
     'jsxNamespacePrefixIntrinsics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20258,7 +20258,7 @@ const baselines = {
     'jsxPropsAsIdentifierNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxRuntimePragma(jsx=preserve)': {
         errors: true,
@@ -28906,7 +28906,7 @@ const baselines = {
         types: false,
     },
     'spreadInvalidArgumentType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52773,17 +52773,17 @@ const baselines = {
     'checkJsxChildrenProperty1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsxChildrenProperty10': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsxChildrenProperty11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsxChildrenProperty12': {
         errors: true,
@@ -52848,7 +52848,7 @@ const baselines = {
     'checkJsxChildrenProperty9': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsxGenericTagHasCorrectInferences': {
         errors: false,
@@ -52878,7 +52878,7 @@ const baselines = {
     'commentEmittingInPreserveJsx1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'correctlyMarkAliasAsReferences1': {
         errors: true,
@@ -52901,7 +52901,7 @@ const baselines = {
         types: false,
     },
     'inlineJsxAndJsxFragPragma': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53166,9 +53166,9 @@ const baselines = {
         types: true,
     },
     'tsxAttributeResolution4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxAttributeResolution5': {
         errors: true,
@@ -53188,7 +53188,7 @@ const baselines = {
     'tsxAttributeResolution8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxAttributeResolution9': {
         errors: false,
@@ -53323,7 +53323,7 @@ const baselines = {
     'tsxElementResolution2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxElementResolution3': {
         errors: true,
@@ -53338,7 +53338,7 @@ const baselines = {
     'tsxElementResolution5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxElementResolution6': {
         errors: true,
@@ -53363,12 +53363,12 @@ const baselines = {
     'tsxEmit1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxEmit2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxEmit3': {
         errors: true,
@@ -53423,12 +53423,12 @@ const baselines = {
     'tsxFragmentPreserveEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxFragmentReactEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxGenericArrowFunctionParsing': {
         errors: true,
@@ -53483,7 +53483,7 @@ const baselines = {
     'tsxInArrowFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxIntrinsicAttributeErrors': {
         errors: false,
@@ -53528,12 +53528,12 @@ const baselines = {
     'tsxParseTests1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxParseTests2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxPreserveEmit1': {
         errors: true,
@@ -53568,12 +53568,12 @@ const baselines = {
     'tsxReactEmit1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactEmit2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactEmit3': {
         errors: true,
@@ -53588,12 +53588,12 @@ const baselines = {
     'tsxReactEmit5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactEmit6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactEmit7': {
         errors: true,
@@ -53613,7 +53613,7 @@ const baselines = {
     'tsxReactEmitEntities': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactEmitNesting': {
         errors: true,
@@ -53638,12 +53638,12 @@ const baselines = {
     'tsxReactEmitWhitespace': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactEmitWhitespace2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxSfcReturnNull': {
         errors: true,
@@ -53683,7 +53683,7 @@ const baselines = {
     'tsxSpreadAttributesResolution13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxSpreadAttributesResolution14': {
         errors: false,
@@ -53693,7 +53693,7 @@ const baselines = {
     'tsxSpreadAttributesResolution15': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxSpreadAttributesResolution16': {
         errors: false,
@@ -53748,15 +53748,15 @@ const baselines = {
     'tsxSpreadChildren': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxSpreadChildrenInvalidType(jsx=react,target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxSpreadChildrenInvalidType(jsx=react,target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53771,7 +53771,7 @@ const baselines = {
         types: false,
     },
     'tsxSpreadInvalidType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53808,7 +53808,7 @@ const baselines = {
     'tsxStatelessFunctionComponentWithDefaultTypeParameter1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxStatelessFunctionComponentWithDefaultTypeParameter2': {
         errors: false,
@@ -53828,7 +53828,7 @@ const baselines = {
     'tsxStatelessFunctionComponents3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxStatelessFunctionComponentsWithTypeArguments1': {
         errors: true,
@@ -53893,7 +53893,7 @@ const baselines = {
     'tsxUnionElementType5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxUnionElementType6': {
         errors: false,
@@ -65326,7 +65326,7 @@ const baselines = {
         types: false,
     },
     'spreadNonObject1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -65336,7 +65336,7 @@ const baselines = {
         types: false,
     },
     'spreadObjectOrFalsy': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -65351,7 +65351,7 @@ const baselines = {
         types: false,
     },
     'spreadTypeVariable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

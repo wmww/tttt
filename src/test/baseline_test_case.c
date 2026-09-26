@@ -21,10 +21,22 @@ typedef struct LineNumberedStr {
     // A types line of `any`: where its underline starts. tsc's harness leaves it out when the test has no errors (a
     // TypeWriterWalker without hadErrorBaseline prints the intrinsic name instead of a type node). 0: always kept
     isize_t any_underline_at;
+    // ... and it's the error type: then it prints its intrinsic name, `error`
+    bool error_type;
 } LineNumberedStr;
 
 static void line_numbered_str_drop(LineNumberedStr* me) {
     cstr_drop(&my str);
+}
+
+// A types line of `any` as tsc's harness prints it without errors: the intrinsic name, no underline
+static void append_without_any_underline(cstr* target, LineNumberedStr const* line) {
+    if (line->error_type) {
+        cstr_append_sv(target, csview_from_n(cstr_str(&line->str), line->any_underline_at - 3));
+        cstr_append_lit(target, "error");
+    } else {
+        cstr_append_sv(target, csview_from_n(cstr_str(&line->str), line->any_underline_at));
+    }
 }
 
 #define g_class_key LineNumberedStr, line_numbered_str
@@ -933,7 +945,7 @@ static void render_types_or_symbols_file(
         }
         last = line;
         if (drop_any_underlines && i->any_underline_at) {
-            cstr_append_sv(target, csview_from_n(cstr_str(&i->str), i->any_underline_at));
+            append_without_any_underline(target, i);
         } else {
             cstr_append_s(target, i->str);
         }
@@ -1008,7 +1020,7 @@ static void render_lines_woven_with_file(
             }
             LineNumberedStr const* added = vec_line_numbered_str_at(lines, index);
             if (drop_any_underlines && added->any_underline_at) {
-                cstr_append_sv(target, csview_from_n(cstr_str(&added->str), added->any_underline_at));
+                append_without_any_underline(target, added);
             } else {
                 cstr_append_s(target, added->str);
             }
@@ -1304,6 +1316,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
         cstr_resize(&underline, cstr_size(&underline) + rendered.size, '^');
     }
     isize_t any_underline_at = my any_keeps_underline || !csview_equals(rendered, "any") ? 0 : cstr_size(&target);
+    bool error_type = my error_type && any_underline_at;
     my any_keeps_underline = false; // Only the node itself, not what's parenthesized in it
     cstr_append_lit(&target, "\r\n");
     cstr_append_s(&target, underline);
@@ -1313,6 +1326,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
         .line = line,
         .str = target,
         .any_underline_at = any_underline_at,
+        .error_type = error_type,
     });
     if (!base_case) {
         outer_span.sv.buf++;
@@ -1330,7 +1344,9 @@ void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span
         .param_names = &param_names,
     }, type);
     free(param_names.given);
+    my error_type = (type->flags & TYF_ERROR) != 0;
     add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered), &underline);
+    my error_type = false;
     c_drop(cstr, &rendered, &underline);
 }
 

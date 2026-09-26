@@ -82,12 +82,47 @@ static void report_intrinsic_lookup(Checker* me, JsxElement const* element, JsxI
     (void)me;
 }
 
+// What createJsxAttributesTypeFromAttributesProperty and checkJsxExpression report, whatever the tag resolves to
+static void check_children(Checker* me, JsxElement const* element, ErrorCtx* errs) {
+    bool has_children = false;
+    for_each (i, vec_jsx_child, &element->children) {
+        has_children |= ty_jsx_child_is_semantic(i);
+        // `{...x}` as a child: x has to be an array (TS2609)
+        if (i->tag == JSX_CHILD_EXPR && i->spread) {
+            Ty const* type = ty_expr_type(me, &i->expr);
+            if (!(type->flags & TYF_ANY) && !ty_is_array(me, type)) {
+                error_ctx_error_d(errs, i->span, 2609, "JSX spread child must be an array type.");
+            }
+        }
+    }
+    VecJsxAttribute const* attributes = &element->attributes.jsx_attributes;
+    if (!has_children || vec_jsx_attribute_is_empty(attributes)) return;
+    // Children and an attribute of the same name: the attribute is overwritten (TS2710)
+    Atom const* atom = ty_jsx_children_prop_name(me, element);
+    csview name = atom ? atom_sv(atom) : c_sv("");
+    if (!name.size) return;
+    bool explicit = false;
+    for_each (i, vec_jsx_attribute, attributes) {
+        if (i->tag == JSX_ATTRIBUTE_SPREAD) {
+            if (ty_expr_type(me, &i->value)->flags & TYF_ANY) return;
+        } else {
+            explicit |= csview_eq(&i->name.sv, &name);
+        }
+    }
+    if (!explicit) return;
+    // (at all of the attributes)
+    Span span = vec_jsx_attribute_at(attributes, 0)->span;
+    span.sv.size = span_end_ptr(vec_jsx_attribute_back(attributes)->span) - span.sv.buf;
+    error_ctx_error_d(errs, span, 2710, "'", name, "' are specified twice. The attribute named '", name, "' will be overwritten.");
+}
+
 // tsc's checkJsxOpeningLikeElementOrOpeningFragment, and resolveJsxOpeningLikeElement's intrinsic tags: the attributes
 // are checked against JSX.IntrinsicElements[tag], with IntrinsicAttributes as part of their contextual type
 void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
     JsxElement const* element = expr->jsx;
     // (tsc's checkJsxPreconditions has a TS2602 for a missing JSX.Element that can't happen: getJsxType() gives the
     // error type, not undefined)
+    check_children(me, element, errs);
     if (expr->tag == EXPR_JSX_FRAGMENT || !element->tag_name.inner_span.sv.size || !jsx_element_is_intrinsic(element)) {
         return; // TODO(plan 22 stage 3): fragments and components resolve like calls
     }

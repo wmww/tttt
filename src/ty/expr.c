@@ -1458,7 +1458,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
         has_attribute |= i->tag != JSX_ATTRIBUTE_SPREAD;
         if (i->tag == JSX_ATTRIBUTE_SPREAD) {
             has_spread = true;
-            Ty const* spread_type = ty_expr_type(me, &i->value);
+            Ty const* spread_type = check_with(me, &i->value, (ExprCtx){ .contextual = ctx.contextual });
             if (spread_type->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
                 ty_buf_push(&generic_spreads, spread_type);
                 continue;

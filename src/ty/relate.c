@@ -2973,6 +2973,60 @@ static Ty const* filter_excess_check_targets(Checker* me, Ty const* ty) {
     return ret;
 }
 
+// The property names of a type as tsc's getPropertiesOfType lists them: an intersection's are all of its members', a
+// union's the ones every member has
+static void collect_prop_names(Checker* me, Ty const* ty, csview** names, u32* count, u32* cap, u32 depth) {
+    if (depth > 8) return;
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) collect_prop_names(me, ty->composite.types.data[i], names, count, cap, depth + 1);
+        return;
+    }
+    if (ty->kind == TY_UNION) {
+        if (!ty->composite.types.len) return;
+        u32 start = *count;
+        collect_prop_names(me, ty->composite.types.data[0], names, count, cap, depth + 1);
+        for (u32 i = start; i < *count; i++) {
+            Atom const* name = checker_atom(me, (*names)[i]);
+            for (u32 j = 1; j < ty->composite.types.len; j++) {
+                Ty const* member = ty_apparent_type(me, ty->composite.types.data[j]);
+                if (!ty_get_object_prop(me, member, name)) (*names)[i] = (csview){0};
+            }
+        }
+        return;
+    }
+    ty = ty_apparent_type(me, ty);
+    if (!(ty->flags & TYF_OBJECT)) return;
+    Members const* members = ty_members(me, ty);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (*count == *cap) {
+            *cap = *cap ? *cap * 2 : 16;
+            *names = realloc(*names, sizeof(csview) * *cap);
+            panic_if(!*names, "out of memory");
+        }
+        (*names)[(*count)++] = atom_sv(members->props[i]->name);
+    }
+}
+
+// tsc's getSuggestedSymbolForNonexistentJSXAttribute: `for` is `htmlFor`, `class` is `className`, else a spelling
+// suggestion. Empty if none
+static csview jsx_attribute_suggestion(Checker* me, Ty const* target, Atom const* name) {
+    csview* names = nullptr;
+    u32 count = 0, cap = 0;
+    collect_prop_names(me, target, &names, &count, &cap, 0);
+    csview wanted = atom_sv(name);
+    csview special = csview_equals(wanted, "for") ? c_sv("htmlFor") : csview_equals(wanted, "class") ? c_sv("className") : c_sv("");
+    csview ret = {0};
+    for (u32 i = 0; i < count && special.size && !ret.size; i++) {
+        if (csview_eq(&names[i], &special)) ret = names[i];
+    }
+    if (!ret.size && !special.size) {
+        isize best = spelling_suggestion(wanted, names, count);
+        if (best >= 0) ret = names[best];
+    }
+    free(names);
+    return ret;
+}
+
 static bool has_excess_properties(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     if (!is_excess_property_check_target(target)) return false;
     bool is_jsx = source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes;
@@ -2997,12 +3051,20 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
         if (is_jsx && csview_contains(atom_sv(prop->name), "-")) continue;
         if (!is_known_property(me, reduced, prop->name)) {
             if (report && is_jsx) {
-                // Not an object literal to the user: the error moves to the attribute, under the usual head
-                cstr name = ty_prop_name_cstr(me, prop->name);
-                cstr target_str = display_for_report(me, filter_excess_check_targets(me, reduced), false);
+                // Not an object literal to the user: the error moves to the attribute, under the usual head (an
+                // attribute's name is shown as written)
+                cstr name = cstr_from_sv(atom_sv(prop->name));
+                Ty const* error_target = filter_excess_check_targets(me, reduced);
+                cstr target_str = display_for_report(me, error_target, false);
+                csview suggestion = jsx_attribute_suggestion(me, error_target, prop->name);
+                cstr suggestion_str = suggestion.size ? ty_prop_name_cstr(me, checker_atom(me, suggestion)) : cstr_null;
+                cstr message = suggestion.size ?
+                    cstr_d("Property '", name, "' does not exist on type '", target_str, "'. Did you mean '", suggestion_str, "'?") :
+                    cstr_d("Property '", name, "' does not exist on type '", target_str, "'.");
+                cstr_drop(&suggestion_str);
                 vec_ty_report_line_push(&st->lines, (TyReportLine){
-                    .ts_code = 2339,
-                    .message = cstr_d("Property '", name, "' does not exist on type '", target_str, "'."),
+                    .ts_code = suggestion.size ? 2551 : 2339,
+                    .message = message,
                     .span = prop->name_span,
                     .relocates = span_valid(prop->name_span), // (not the children, which aren't an attribute)
                 });

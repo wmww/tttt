@@ -209,6 +209,7 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_ANY] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_AUTO] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_ERROR] = make_intrinsic(me, "any", TYF_ANY | TYF_ERROR);
+    my intrinsics[TY_CIRCULAR] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_UNKNOWN_] = make_intrinsic(me, "unknown", TYF_UNKNOWN);
     my intrinsics[TY_UNDEFINED] = make_intrinsic(me, "undefined", TYF_UNDEFINED);
     my intrinsics[TY_NULL] = make_intrinsic(me, "null", TYF_NULL);

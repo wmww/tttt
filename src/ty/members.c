@@ -1340,7 +1340,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
     switch (prop->type_state) {
         case LAZY_STATE_DONE: return prop->type;
-        case LAZY_STATE_IN_FLIGHT: return ty_intrinsic(me, TY_ERROR); // TODO: TS2502 and friends
+        case LAZY_STATE_IN_FLIGHT: return ty_intrinsic(me, TY_CIRCULAR); // TODO: TS2502 and friends
         case LAZY_STATE_NOT_STARTED: break;
     }
     prop->type_state = LAZY_STATE_IN_FLIGHT;
@@ -1495,7 +1495,7 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         case LAZY_STATE_IN_FLIGHT:
             // An inferred return type in progress: asking it says so, it becomes any (see ty_function_return_type())
             if (!sig->target && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
-            return ty_intrinsic(me, TY_ERROR);
+            return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
     }
     sig->ret_state = LAZY_STATE_IN_FLIGHT;

@@ -80,6 +80,7 @@ typedef struct BaselineTestCase {
     // harness exempts children of property accesses and qualified names, binding elements, labels and import/export
     // names). The next types line consumes it
     bool any_keeps_underline;
+    bool error_type; // The types line being added is the error type (see LineNumberedStr.error_type)
     cstr lib_list;
     cstr lib_files; // `@libFiles: react.d.ts,lib.d.ts`: files of tsc's tests/lib (at /.lib) that are roots too
     cstr last_unit; // The name of the test's last unit (the only one whose content ends where the test file does)

@@ -22,6 +22,19 @@ Atom const* ty_literal_name(Checker* me, Ty const* index) {
 }
 
 // The index signature of `object` that applies to `index`, null if none
+// Whether a specific (not `string`) index signature applies to a key (tsc's isApplicableIndexType): a numeric one to
+// numbers and numeric strings, a symbol one to symbols, a pattern (`[k: `data-${string}`]`) to what it matches
+bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* index) {
+    u32 key_flags = ty_key_flags(index);
+    bool stringish = (key_flags & TYF_STRING_LIKE) != 0;
+    bool numeric = (key_flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
+        ((index->flags & TYF_STRING_LITERAL) && index->literal.string && ty_is_numeric_name(index->literal.string));
+    return ((info->key->flags & TYF_NUMBER) && numeric) || ((info->key->flags & TYF_ES_SYMBOL) && (key_flags & TYF_ES_SYMBOL_LIKE)) ||
+        ((info->key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING) || info->key->kind == TY_INTERSECTION) &&
+            (stringish || numeric || info->key->kind == TY_INTERSECTION) &&
+            ty_is_related(me, index, info->key, TY_RELATION_ASSIGNABLE));
+}
+
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index) {
     if (object->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < object->composite.types.len; i++) {
@@ -31,23 +44,33 @@ IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty cons
         return nullptr;
     }
     Members const* members = ty_members(me, object);
+    // The specific ones first. Several of them apply as one, whose value is the intersection of theirs (tsc's
+    // findApplicableIndexInfo)
+    IndexInfo const* found = nullptr;
+    TyBuf values = {0};
+    bool readonly = true;
+    for (u32 i = 0; i < members->index_count; i++) {
+        IndexInfo const* info = &members->index[i];
+        if ((info->key->flags & TYF_STRING) || !ty_specific_index_applies(me, info, index)) continue;
+        if (!found) found = info;
+        ty_buf_push(&values, info->value);
+        readonly &= info->readonly;
+    }
+    if (values.len > 1) {
+        IndexInfo* combined = arena_new(&my arena, IndexInfo);
+        *combined = *found;
+        combined->key = ty_intrinsic(me, TY_UNKNOWN_);
+        combined->value = ty_intersection(me, values.data, values.len, nullptr, (TyList){0});
+        combined->readonly = readonly;
+        found = combined;
+    }
+    ty_buf_drop(&values);
+    if (found) return found;
     u32 key_flags = ty_key_flags(index);
-    bool stringish = (key_flags & TYF_STRING_LIKE) != 0;
-    // A string literal that reads as a number applies to a numeric index signature (tsc's isApplicableIndexType)
-    bool numeric = (key_flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
-        ((index->flags & TYF_STRING_LITERAL) && index->literal.string && ty_is_numeric_name(index->literal.string));
-    // A numeric index signature is more specific than a string one, and a pattern (`[k: `data-${string}`]`) than both
-    for (u32 pass = 0; pass < 2; pass++) {
-        for (u32 i = 0; i < members->index_count; i++) {
-            IndexInfo const* info = &members->index[i];
-            bool applies = pass == 0 ?
-                ((info->key->flags & TYF_NUMBER) && numeric) || ((info->key->flags & TYF_ES_SYMBOL) && (key_flags & TYF_ES_SYMBOL_LIKE)) ||
-                    ((info->key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING) || info->key->kind == TY_INTERSECTION) &&
-                        (stringish || numeric || info->key->kind == TY_INTERSECTION) &&
-                        ty_is_related(me, index, info->key, TY_RELATION_ASSIGNABLE)) :
-                (info->key->flags & TYF_STRING) && (stringish || numeric);
-            if (applies) return info;
-        }
+    bool stringish_or_numeric = (key_flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
+    for (u32 i = 0; i < members->index_count; i++) {
+        IndexInfo const* info = &members->index[i];
+        if ((info->key->flags & TYF_STRING) && stringish_or_numeric) return info;
     }
     return nullptr;
 }

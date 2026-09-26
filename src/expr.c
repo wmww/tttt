@@ -843,6 +843,19 @@ static bool jsx_runtime_import(SourceFile const* file) {
         (file && file->jsx_pragmas.import_source.size) || csview_equals(runtime, "automatic");
 }
 
+static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview name, Scope* names, ErrorCtx* errs) {
+    JsxKind jsx = compiler_options()->jsx;
+    u32 meaning = jsx == JSX_PRESERVE || jsx == JSX_REACT_NATIVE ? SYMBOL_VALUE & ~(u32)SYMBOL_ENUM : SYMBOL_VALUE;
+    Symbol* found = scope_resolve(names, name, meaning);
+    if (found) {
+        unused_mark_referenced(names, found, SYMBOL_VALUE);
+    } else if (jsx == JSX_REACT) {
+        Span at = fragment || !el->tag_name.inner_span.sv.size ? el->opening_span : el->tag_name.inner_span;
+        error_ctx_error_d(errs, at, 2874, "This JSX tag requires '", name, "' to be in scope, but it could not be found.");
+    }
+    return found;
+}
+
 // tsc's markJsxAliasReferenced (and the namespace half of getJsxNamespaceAt): every element refers to its factory
 static void jsx_lookup_factory(JsxElement* el, bool fragment, Scope* names, ErrorCtx* errs) {
     csview name = jsx_factory_name(names->file, fragment);
@@ -850,18 +863,10 @@ static void jsx_lookup_factory(JsxElement* el, bool fragment, Scope* names, Erro
     // TODO(plan 22 stage 4): the factory is referenced when the runtime module can't be found. For now it always is
     el->runtime_import = jsx_runtime_import(names->file);
     if (el->runtime_import) return;
-    JsxKind jsx = compiler_options()->jsx;
     // `null` as the fragment factory (tsc allows it)
-    if (fragment && csview_equals(name, "null")) return;
-    u32 meaning = jsx == JSX_PRESERVE || jsx == JSX_REACT_NATIVE ? SYMBOL_VALUE & ~(u32)SYMBOL_ENUM : SYMBOL_VALUE;
-    Symbol* found = scope_resolve(names, name, meaning);
-    el->factory_value = found;
-    if (found) {
-        unused_mark_referenced(names, found, SYMBOL_VALUE);
-    } else if (jsx == JSX_REACT) {
-        Span at = fragment || !el->tag_name.inner_span.sv.size ? el->opening_span : el->tag_name.inner_span;
-        error_ctx_error_d(errs, at, 2874, "This JSX tag requires '", name, "' to be in scope, but it could not be found.");
-    }
+    if (!(fragment && csview_equals(name, "null"))) el->factory_value = jsx_reference_factory(el, fragment, name, names, errs);
+    // A fragment refers to the element factory too
+    if (fragment) jsx_reference_factory(el, fragment, jsx_factory_name(names->file, false), names, errs);
 }
 
 // Not inlined, like jsx_typecheck()
@@ -2136,6 +2141,7 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
                 if (i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR) {
                     expr_typecheck(&i->value, errs);
                 }
+                if (i->tag == JSX_ATTRIBUTE_SPREAD) ty_check_spread_type(current_checker, expr_get_type(&i->value), i->value.outer_span, errs);
             }
             break;
 
@@ -2332,8 +2338,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     ScriptTarget target = compiler_options()->target;
                     if (expr_is_destructuring_target(&i->value)) {
                         if (target < SCRIPT_TARGET_ES2018) ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_REST, errs);
-                    } else if (target < SCRIPT_TARGET_ES2015) {
-                        ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_ASSIGN, errs);
+                    } else {
+                        ty_check_spread_type(current_checker, expr_get_type(&i->value), i->span, errs);
+                        if (target < SCRIPT_TARGET_ES2015) ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_ASSIGN, errs);
                     }
                 }
             }
