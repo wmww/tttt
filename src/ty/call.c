@@ -473,8 +473,25 @@ static TyMapper const* infer_type_arguments(
     OuterInference self = { .sig = sig, .inf = &inf };
     my inferential_depth++;
 
+    // A contextual type that is what a binding pattern implies (tsc's isFromBindingPattern) isn't one at all when every
+    // type parameter has a default, else it only goes into the return mapper: `const [a, b] = f()` infers nothing
+    bool from_pattern = contextual && (contextual->flags & TYF_BINDING_PATTERN);
+    if (from_pattern) {
+        bool all_defaults = true;
+        for (u32 i = 0; i < sig->type_params.len && all_defaults; i++) all_defaults = ty_param_default(me, sig->type_params.data[i]) != nullptr;
+        if (all_defaults) contextual = nullptr;
+    }
     TyMapper const* return_mapper = nullptr;
-    if (contextual && !(contextual->flags & TYF_ANY)) {
+    if (contextual && !(contextual->flags & TYF_ANY) && from_pattern) {
+        Ty const* return_type = signature_return_type(me, sig);
+        if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+            Inference pattern_inf;
+            inference_init(&pattern_inf, sig->type_params);
+            infer_types(me, &pattern_inf, contextual, return_type, INFER_PRIORITY_NORMAL);
+            return_mapper = return_inference_mapper(me, sig, &pattern_inf, nullptr);
+            inference_drop(&pattern_inf);
+        }
+    } else if (contextual && !(contextual->flags & TYF_ANY)) {
         Ty const* return_type = signature_return_type(me, sig);
         if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             // A generic function type is instantiated with its own type parameters, which can then be inferred as

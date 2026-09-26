@@ -706,10 +706,24 @@ static bool is_generic_type(Ty const* ty) {
     return false;
 }
 
+// A binding pattern's implied type (TYF_BINDING_PATTERN) of a pattern with a rest element: an object one has an
+// index signature, an array one a rest element
+static bool pattern_type_has_rest(Checker* me, Ty const* pattern) {
+    if (ty_is_tuple(pattern)) {
+        TupleShape const* shape = pattern->reference.target->declared.tuple;
+        return shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
+    }
+    return (pattern->flags & TYF_OBJECT) && ty_members(me, pattern)->index_count;
+}
+
 // tsc's getNarrowableTypeForReference: in a constraint position, or where the contextual type isn't generic, a generic
 // type with a union constraint is narrowed as its constraint (`c && c.flags` with `c: T extends Ctx | undefined` reads
 // `flags` of Ctx; `isA(x) ? takesA(x) : takesB(x)` with `x: T extends A | B`)
 static Ty const* narrowable_type(Checker* me, IdentifierExpr const* identifier, Ty const* type, Ty const* contextual) {
+    // HACK: tsc types the initializer of a pattern with a rest element again for the rest (CheckMode.RestBindingElement),
+    // without the pattern as contextual type, so that the rest of a `T` stays generic. tttt has one type per
+    // expression: a pattern with a rest element isn't a contextual type here
+    if (contextual && (contextual->flags & TYF_BINDING_PATTERN) && pattern_type_has_rest(me, contextual)) contextual = nullptr;
     bool substitute = identifier->constraint_position ||
         (contextual && !my inferential_depth && !is_generic_type(contextual));
     if (!substitute || !has_generic_with_union_constraint(me, type)) return type;
@@ -731,6 +745,17 @@ static Ty const* narrowable_type(Checker* me, IdentifierExpr const* identifier, 
 // The tail of tsc's checkIdentifier(): a variable or parameter has the type control flow gives it where it is read
 static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* contextual, IdentifierFlowIssue* issue) {
     IdentifierExpr const* identifier = &expr->identifier;
+    if (my contextual_pattern_count && identifier->target && (identifier->target->flags & SYMBOL_VARIABLE)) {
+        Binding const* binding = symbol_find_node(identifier->target, SYMBOL_DECL_VARIABLE);
+        Binding const* pattern = binding ? binding->parent : nullptr;
+        for (u32 i = 0; pattern && i < my contextual_pattern_count; i++) {
+            if (my contextual_patterns[i] == pattern && span_start_ptr(pattern->content_span) <= span_start_ptr(expr->outer_span) &&
+                span_end_ptr(expr->outer_span) <= span_end_ptr(pattern->content_span)
+            ) {
+                return ty_intrinsic(me, TY_ANY);
+            }
+        }
+    }
     Ty const* type = narrowable_type(me, identifier, ty_identifier_reference_type(me, identifier), contextual);
     Symbol const* symbol = identifier->target;
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
@@ -1960,8 +1985,10 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
     Ty const* ret = nullptr;
     for_each (i, vec_expr, &expr->array) {
         if (i->tag == EXPR_SPREAD) {
-            // As check_array() makes a spread element of a tuple
-            Ty const* operand = ty_expr_type(me, i->spread);
+            // As check_array() makes a spread element of a tuple. An array literal is a tuple too (tsc passes
+            // forceTuple on to the spread expression)
+            Ty const* operand = i->spread->tag == EXPR_ARRAY ? ty_array_literal_as_tuple(me, i->spread, nullptr) :
+                ty_expr_type(me, i->spread);
             flags[i_index] = TUPLE_ELEMENT_REST;
             elements[i_index] = ty_is_array(me, operand) || ty_is_tuple(operand) ?
                 operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);

@@ -839,3 +839,11 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
 - `export =`/`export default` of a namespace- or type-only name (`identifier_expr_lookup_names` branch on
   `flow->type_only_alias_ok`): the identifier gets `symbol` but no `target`, so the checker sees an untyped name there
   (tsc types it from the alias). Fine for the baselines that exercise it so far.
+- `narrowable_type` (`ty/expr.c`): tsc types the initializer of a pattern with a rest element a second time for the
+  rest (CheckMode.RestBindingElement: no binding-pattern contextual type, so a generic `T` isn't narrowed to its
+  constraint and the rest stays `Omit<T, ...>`). tttt has one type per expression, so a pattern with a rest element
+  (`pattern_type_has_rest`) is never a contextual type there, for the other elements either.
+- `binding_element_implied_type` (`ty/lower.c`): a default evaluated for a pattern's contextual type runs under
+  `flow_uncached` so that its sibling references (`any` then, `contextual_patterns`) aren't memoised; tsc's
+  checkIdentifier isn't cached per node so it doesn't need that. Anything else the default mentions is evaluated
+  uncached too (not remembered), which costs time on big defaults.

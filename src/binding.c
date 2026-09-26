@@ -315,6 +315,11 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
     if (my binding.has_explicit_type) {
         contextual = ty_from_node(checker, &my binding.explicit_type, (LowerCtx){ .generic = true });
         if (contextual->flags & TYF_ANY) contextual = nullptr;
+    } else if ((my binding.tag == BINDING_OBJECT && vec_object_binding_item_size(&my binding.object)) ||
+        (my binding.tag == BINDING_ARRAY && vec_binding_size(&my binding.array))
+    ) {
+        // Else what a pattern implies (tsc's getContextualTypeForInitializerExpression): `[1, "a"]` is a tuple there
+        contextual = ty_binding_pattern_type(checker, &my binding, true);
     }
     return ty_check_expr(checker, &my value, contextual);
 }
@@ -347,7 +352,7 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
         if (my is_rest_parameter && my value.tag == EXPR_IMPLICIT_ANY) return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
         // An unannotated pattern without a default takes what the pattern implies (tsc's getWidenedTypeForVariableLikeDeclaration)
         if (my value.tag == EXPR_IMPLICIT_ANY && !my is_rest_parameter && (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY)) {
-            return ty_binding_pattern_type(checker, &my binding);
+            return ty_binding_pattern_type(checker, &my binding, false);
         }
     }
     if (is_auto_typed(me)) return ty_intrinsic(checker, TY_AUTO);

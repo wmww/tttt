@@ -216,4 +216,3 @@ TyList ty_alias_type_params(Checker* me, Symbol const* decl);
 bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional);
 bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c
 bool ty_is_tuple(Ty const* ty); // Not the empty tuple, which is its own target (TY_DECLARED)
-bool ty_is_array(Checker* me, Ty const* ty);

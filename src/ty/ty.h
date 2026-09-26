@@ -148,6 +148,10 @@ typedef enum TyFlags {
     // Nothing is inferred from it (tsc's ObjectFlags.NonInferrableType): the silent never that stands for what an outer
     // inference hasn't found yet, and every union, intersection, reference or alias instantiation with one in it
     TYF_NON_INFERRABLE               = 1u << 30,
+    // What a binding pattern implies, as the contextual type of its initializer (tsc's `pattern` on the clone
+    // getTypeFromBindingPattern makes with includePatternInType): the return type of a generic call isn't inferred from
+    // it alone. A type of its own, never interned
+    TYF_BINDING_PATTERN              = 1u << 31,
 
     TYF_NULLABLE = TYF_UNDEFINED | TYF_NULL,
     TYF_ES_SYMBOL_LIKE = TYF_ES_SYMBOL | TYF_UNIQUE_ES_SYMBOL,
@@ -639,6 +643,10 @@ struct Checker {
     // Control flow (flow.c). While flow_uncached is set expressions are evaluated without reading unfinished memos or
     // writing any: what they evaluate to may depend on the incomplete types of a loop, see ty_flow_expr_type()
     u32 flow_uncached;
+    // The binding patterns whose implied types are being computed as contextual types (tsc's
+    // contextualBindingPatterns): a reference inside one to its own elements is `any` (`const [a, b = a] = [1]`)
+    struct Binding const* contextual_patterns[16];
+    u32 contextual_pattern_count;
     u32 flow_incomplete_seen; // Counts incomplete loop types handed out
     u32 flow_key_count; // Reference keys made
     u32 flow_expr_generation; // Which cache ty_flow_expr_type() uses while a loop is in progress: one per back edge walk
@@ -883,7 +891,9 @@ Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
 // The type of a binding (a variable, a parameter, an element of a destructuring pattern): what is written (lowered
 // with `ctx`), else what is assigned to it
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx);
-Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern); // tsc's getTypeFromBindingPattern
+// tsc's getTypeFromBindingPattern. include_pattern: as the contextual type of an initializer (TYF_BINDING_PATTERN)
+Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
+bool ty_is_array(Checker* me, Ty const* ty); // A reference to Array<T> (not ReadonlyArray, not a tuple)
 // A class as written inside itself: `C<T, U>` with its own type parameters as the arguments
 Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol);
 Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding);

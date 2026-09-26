@@ -1269,20 +1269,43 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
 }
 
 // tsc's getTypeFromBindingElement: a default's type widened (and optional), a nested pattern's own type, else any
-static Ty const* binding_element_implied_type(Checker* me, Binding const* element) {
+static Ty const* binding_element_implied_type(Checker* me, Binding const* element, bool include_pattern) {
     if (element->default_value) {
+        // (Not remembered while the pattern is a contextual type: its sibling references are `any` then)
+        if (include_pattern) my flow_uncached++;
         Ty const* type = ty_widened_for_declaration(me, ty_expr_type(me, element->default_value), true);
+        if (include_pattern) my flow_uncached--;
         if (!compiler_options()->strict_null_checks) return type;
         Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
         return ty_union(me, parts, 2, nullptr, (TyList){0});
     }
-    if (element->tag == BINDING_OBJECT || element->tag == BINDING_ARRAY) return ty_binding_pattern_type(me, element);
+    if (element->tag == BINDING_OBJECT || element->tag == BINDING_ARRAY) return ty_binding_pattern_type(me, element, include_pattern);
     return ty_intrinsic(me, TY_ANY);
 }
 
 // tsc's getTypeFromBindingPattern: what an unannotated `{ a, b = 1 }` or `[a, b = 1]` parameter takes, `{ a: any; b?:
 // number }` or `[any, number?]`
-Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern) {
+// A clone of the type marked as a pattern's (tsc's cloneTypeReference, `pattern`)
+static Ty const* pattern_clone(Checker* me, Ty const* ty) {
+    Ty* ret = ty_alloc(me, (TyKind)ty->kind, ty->flags);
+    u32 id = ret->id;
+    *ret = *ty;
+    ret->id = id;
+    ret->flags |= TYF_BINDING_PATTERN;
+    return ret;
+}
+
+static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
+
+Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern) {
+    bool pushed = include_pattern && my contextual_pattern_count < c_arraylen(my contextual_patterns);
+    if (pushed) my contextual_patterns[my contextual_pattern_count++] = pattern;
+    Ty const* ret = binding_pattern_type(me, pattern, include_pattern);
+    if (pushed) my contextual_pattern_count--;
+    return ret;
+}
+
+static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern) {
     if (pattern->tag == BINDING_OBJECT) {
         ObjectLiteralProp* props = nullptr;
         u32 count = 0;
@@ -1304,12 +1327,12 @@ Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern) {
             props[count++] = (ObjectLiteralProp){
                 .name = name,
                 .flags = item->target.default_value ? PROP_OPTIONAL : 0,
-                .type = binding_element_implied_type(me, &item->target), // (tsc's symbol has no declaration)
+                .type = binding_element_implied_type(me, &item->target, include_pattern), // (tsc's symbol has no declaration)
             };
         }
         Ty const* ret = ty_object_literal(me, props, count, index_count ? &index : nullptr, index_count, OBJECT_SYNTHETIC);
         free(props);
-        return ret;
+        return include_pattern ? pattern_clone(me, ret) : ret;
     }
     if (pattern->tag != BINDING_ARRAY) return ty_intrinsic(me, TY_ANY);
     u32 len = (u32)vec_binding_size(&pattern->array);
@@ -1340,7 +1363,7 @@ Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern) {
     panic_if(!flags, "out of memory");
     for (u32 i = 0; i < len; i++) {
         Binding const* element = vec_binding_at(&pattern->array, i);
-        elements[i] = element->tag == BINDING_NOOP ? ty_intrinsic(me, TY_ANY) : binding_element_implied_type(me, element);
+        elements[i] = element->tag == BINDING_NOOP ? ty_intrinsic(me, TY_ANY) : binding_element_implied_type(me, element, include_pattern);
         if (element->rest) {
             flags[i] = TUPLE_ELEMENT_REST;
             elements[i] = ty_array(me, elements[i], false);
@@ -1351,7 +1374,7 @@ Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern) {
     TupleShape shape = { .arity = len, .flags = flags };
     Ty const* ret = ty_reference(me, ty_tuple_target(me, &shape), (TyList){ .data = elements, .len = len });
     free(flags);
-    return ret;
+    return include_pattern ? pattern_clone(me, ret) : ret;
 }
 
 // What is assigned to a binding: the initializer for the root of a pattern, for an element the property or element

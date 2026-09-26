@@ -1491,9 +1491,10 @@ static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
 }
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
-    // Without strictNullChecks `[]` and `[undefined]` are undefined[] before widening (tsc's undefinedWideningType)
+    // Without strictNullChecks `[]` and `[undefined]` are undefined[] before widening (tsc's undefinedWideningType),
+    // unless they're tuples (a tuple context, a destructuring pattern)
     if (my tag == EXPR_ARRAY && !compiler_options()->strict_null_checks &&
-        !vec_expr_contains_elements_other_than_undefined(&my array)
+        !vec_expr_contains_elements_other_than_undefined(&my array) && ty_is_array(current_checker, expr_get_type(me))
     ) {
         Checker* checker = current_checker;
         Ty const* undefined_array = ty_array(checker, ty_intrinsic(checker, TY_UNDEFINED), false);

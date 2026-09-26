@@ -1165,6 +1165,10 @@ static void tuple_builder_add(Checker* me, TupleBuilder* b, Ty const* type, unsi
 // nothing to do
 static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
     TupleShape const* shape = target->declared.tuple;
+    // A lone rest element of an array is that array (tsc's getTupleTargetType): `[...xs]` in a tuple context
+    if (shape->arity == 1 && (shape->flags[0] & TUPLE_ELEMENT_REST) && ty_is_array(me, args.data[0])) {
+        return shape->readonly ? ty_array(me, ty_reference_args(me, args.data[0]).data[0], true) : args.data[0];
+    }
     bool needed = false;
     for (u32 i = 0; i < shape->arity && !needed; i++) {
         if (!(shape->flags[i] & TUPLE_ELEMENT_REST)) continue;
