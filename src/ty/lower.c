@@ -1006,11 +1006,17 @@ static bool node_reaches_alias_in_flight_deep(Checker* me, TypeNode const* node)
     }
 }
 
+// A tuple whose one element is a rest element of an array is that array (tsc's getTupleTargetType): the element
+static TypeNode const* lone_rest_array_element(TypeNode const* node) {
+    return node->tag == TYPE_TUPLE ? array_element_type_node(node) : nullptr;
+}
+
 static Ty const* deferred_reference_target(Checker* me, TypeNode const* node) {
-    if (node->tag == TYPE_TUPLE) return tuple_target_of_node(me, node);
+    if (node->tag == TYPE_TUPLE && !lone_rest_array_element(node)) return tuple_target_of_node(me, node);
     ty_array(me, ty_intrinsic(me, TY_ANY), false); // Makes sure the targets are looked up
     ty_array(me, ty_intrinsic(me, TY_ANY), true);
-    return node->array.readonly ? my readonly_array_target : my array_target;
+    bool readonly = node->tag == TYPE_TUPLE ? node->tuple.readonly : node->array.readonly;
+    return readonly ? my readonly_array_target : my array_target;
 }
 
 Ty const* ty_deferred_reference(
@@ -1064,7 +1070,9 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     deferred->state = LAZY_STATE_IN_FLIGHT;
     TypeNode const* node = deferred->node;
     for (u32 i = 0; i < len; i++) {
+        TypeNode const* lone = lone_rest_array_element(node);
         Ty const* element = node->tag == TYPE_ARRAY ? ty_from_node(me, node->array.element, deferred->ctx) :
+            lone ? ty_from_node(me, lone, deferred->ctx) :
             tuple_element_type(me, vec_tuple_element_at(&node->tuple.elements, i), deferred->ctx);
         args[i] = ty_instantiate(me, element, deferred->mapper);
     }

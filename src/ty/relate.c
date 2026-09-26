@@ -575,7 +575,11 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         bool all_optional = true;
         u32 flags = 0;
         for (u32 i = 0; i < ty->composite.types.len && len < c_arraylen(stack_buf); i++) {
-            FoundProp part = find_prop(me, apparent_type(me, ty->composite.types.data[i]), name, depth + 1);
+            // Its members see the whole intersection as their `this` (tsc's getApparentTypeOfIntersectionType):
+            // `(R & { T: X })['component']` with `component: (props: this['T']) => void` in R takes X
+            Ty const* member = ty->composite.types.data[i];
+            if (member->kind != TY_TYPE_PARAM) member = ty_with_this_arg(me, member, ty);
+            FoundProp part = find_prop(me, apparent_type(me, member), name, depth + 1);
             if (!part.found) continue;
             if (!ret.prop) ret.prop = part.prop;
             stack_buf[len++] = part.type;

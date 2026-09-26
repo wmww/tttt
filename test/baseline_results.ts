@@ -17088,7 +17088,7 @@ const baselines = {
     'indexedAccessToThisTypeOnIntersection01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexedAccessTypeConstraints': {
         errors: true,
@@ -19853,7 +19853,7 @@ const baselines = {
     'jsxChildrenGenericContextualTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxChildrenIndividualErrorElaborations': {
         errors: true,
@@ -63771,8 +63771,8 @@ const baselines = {
         types: false,
     },
     'intersectionThisTypes': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'intersectionTypeAssignment': {
