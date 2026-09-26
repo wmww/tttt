@@ -21307,7 +21307,7 @@ const baselines = {
     },
     'missingPropertiesOfClassExpression': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'missingRequiredDeclare.d': {

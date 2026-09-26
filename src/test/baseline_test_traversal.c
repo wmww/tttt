@@ -1042,11 +1042,18 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
             ty_class_base_instance(current_checker, class_decl);
         if (base && base->kind == TY_REFERENCE) base = base->reference.target;
         Symbol const* symbol = base && base->kind == TY_DECLARED ? base->declared.symbol : nullptr;
-        if (symbol && span_valid(symbol->name_span)) {
+        // (A mixin, a class expression that extends a type parameter's value, is an intersection to tsc: no symbol)
+        ClassDecl const* base_decl = symbol ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
+        if (base_decl && base_decl->is_expression && base_decl->extends.tag != EXPR_IMPLICIT_ANY &&
+            ty_expr_type(current_checker, &base_decl->extends)->flags & TYF_TYPE_PARAM
+        ) {
+            symbol = nullptr;
+        }
+        if (symbol && symbol->decl_count) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = declaration_get_spans(symbol),
                 .span = my name,
-                .name = symbol->name_span,
+                .text = symbol_text(ctx, symbol),
             });
         }
         return;
