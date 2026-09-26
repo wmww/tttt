@@ -789,13 +789,25 @@ IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* 
     return ret;
 }
 
+bool ty_is_import_meta(Expr const* expr) {
+    if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return false;
+    Expr const* object = &expr->property->expr;
+    return object->tag == EXPR_IDENTIFIER && object->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT;
+}
+
+// `import.meta`: the global ImportMeta interface (tsc's getGlobalImportMetaType, `{}` without one)
+Ty const* ty_import_meta_type(Checker* me) {
+    Symbol const* symbol = program_get_global(my program, c_sv("ImportMeta"), SYMBOL_TYPE);
+    return symbol ? ty_declared_type_of(me, symbol) : ty_empty_object_type(me);
+}
+
 // A reference that could have a key (flow.c): names and literal keys down to an identifier or `this`. Unlike the
 // builder's expr_is_narrowable_reference() also through `?.`: `typeof a?.b === "string" ? a?.b : ""`
 static bool is_narrowable_access(Expr const* expr) {
     while (true) {
         switch (expr->tag) {
             case EXPR_IDENTIFIER:
-                return expr->identifier.keyword != KEYWORD_IDENTIFIER_IMPORT;
+                return true; // (`import` too: the object of `import.meta`)
             case EXPR_PROPERTY: {
                 Expr const* key = &expr->property->prop;
                 if (key->tag != EXPR_LITERAL && key->tag != EXPR_IDENTIFIER) return false;
@@ -2075,6 +2087,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
             return check_unary(me, expr->unary_op);
 
         case EXPR_PROPERTY: {
+            if (ty_is_import_meta(expr)) return ty_import_meta_type(me);
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
             // `never` has no properties (TS2339), `never[k]` is never

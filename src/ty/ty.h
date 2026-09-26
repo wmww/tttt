@@ -946,6 +946,9 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
 // The type an unannotated parameter got from the contextual signature of its function expression, null if none
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter);
 Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function); // null if none
+// `import.meta` (the property access on the `import` keyword) and its type
+bool ty_is_import_meta(struct Expr const* expr);
+Ty const* ty_import_meta_type(Checker* me);
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function); // null if nothing says what `this` is
 // The contextual signature a function expression's parameters were typed by, if any (after it was checked)
 Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function);

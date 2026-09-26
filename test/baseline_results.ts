@@ -16312,52 +16312,52 @@ const baselines = {
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=amd)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=es2020)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=system)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=amd)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=commonjs)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=es2020)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=system)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=false,module=amd)': {
@@ -20297,7 +20297,7 @@ const baselines = {
     },
     'jsxViaImport.2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsxViaImport': {
@@ -23212,7 +23212,7 @@ const baselines = {
     },
     'newAbstractInstance2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'newArrays': {
@@ -39277,18 +39277,18 @@ const baselines = {
     },
     'importMetaNarrowing(module=es2020)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importMetaNarrowing(module=esnext)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importMetaNarrowing(module=system)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'bigintMissingES2019': {
         errors: true,
@@ -54547,18 +54547,18 @@ const baselines = {
     },
     'nodeModulesAllowJsImportMeta(module=node16)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJsImportMeta(module=node18)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJsImportMeta(module=nodenext)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJsPackageExports(module=node16)': {
         errors: false,
@@ -55097,18 +55097,18 @@ const baselines = {
     },
     'nodeModulesImportMeta(module=node16)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesImportMeta(module=node18)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesImportMeta(module=nodenext)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesImportModeDeclarationEmit1(module=node16)': {
         errors: true,

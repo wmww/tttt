@@ -480,8 +480,8 @@ static bool is_matching_reference(Checker* me, Expr const* source, Expr const* t
     switch (source->tag) {
         case EXPR_IDENTIFIER:
             if (source->identifier.keyword || target->identifier.keyword) {
-                return source->identifier.keyword == target->identifier.keyword &&
-                    source->identifier.keyword != KEYWORD_IDENTIFIER_IMPORT;
+                // (`import` is only ever a reference as the object of `import.meta`)
+                return source->identifier.keyword == target->identifier.keyword;
             }
             return source->identifier.target && source->identifier.target == target->identifier.target;
         case EXPR_PROPERTY: {
@@ -543,6 +543,7 @@ static u32 reference_key_words(Checker* me, Expr const* expr, u64* words, u32 ca
             if (cap < 1) return 0;
             if (expr->identifier.keyword == KEYWORD_IDENTIFIER_THIS) words[0] = 1;
             else if (expr->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) words[0] = 2;
+            else if (expr->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) words[0] = 3; // `import.meta`
             else if (!expr->identifier.keyword && expr->identifier.target) words[0] = (u64)(uintptr_t)expr->identifier.target;
             else return 0;
             return 1;
@@ -858,6 +859,7 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
         return ty_identifier_reference_type(me, &expr->identifier);
     }
     if (expr->tag != EXPR_PROPERTY) return nullptr;
+    if (ty_is_import_meta(expr)) return ty_import_meta_type(me);
     Ty const* object = type_of_dotted_name(me, &expr->property->expr);
     Atom const* name = object ? access_name(me, expr->property) : nullptr;
     if (!name) return nullptr;
@@ -1629,6 +1631,7 @@ static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32
         return ty_identifier_reference_type(me, &reference->identifier);
     }
     if (reference->tag != EXPR_PROPERTY) return nullptr;
+    if (ty_is_import_meta(reference)) return ty_import_meta_type(me);
     Ty const* object = constant_reference_type(me, &reference->property->expr, depth + 1);
     Atom const* name = object ? access_name(me, reference->property) : nullptr;
     if (!name) return nullptr;

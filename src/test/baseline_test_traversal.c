@@ -1051,8 +1051,9 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         }
         return;
     }
-    if (my target && span_valid(my target->name_span)) {
-        Symbol const* shown = shown_declaration(my symbol, my target);
+    Symbol const* shown = my target ? shown_declaration(my symbol, my target) : nullptr;
+    // (an alias of an anonymous declaration, `export default class {}`, has a name)
+    if (shown && (span_valid(my target->name_span) || span_valid(shown->name_span))) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(shown),
             .span = my name,
@@ -1201,6 +1202,26 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_PROPERTY: {
+            if (ty_is_import_meta(me)) {
+                // The symbol of ImportMeta's type, and `meta` as the property of tsc's synthetic ImportMetaExpression
+                Ty const* type = ty_import_meta_type(current_checker);
+                Symbol const* symbol = type->kind == TY_DECLARED ? type->declared.symbol : nullptr;
+                if (symbol) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = declaration_get_spans(symbol),
+                        .span = my inner_span,
+                        .text = symbol_text(ctx, symbol),
+                    });
+                }
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .span = my property->prop.outer_span,
+                    .allow_declaration_empty = true,
+                    .text = cstr_lit("ImportMetaExpression.meta"),
+                });
+                ctx->any_keeps_underline = true;
+                baseline_test_case_add_type(ctx, my property->prop.outer_span, type);
+                break;
+            }
             bool has_compiled_expr_info = false;
             // The symbol of the property: the declarations of the property of every member of the (apparent) object
             // type that has one, like tsc's synthetic union/intersection property symbols. The parent is the first
