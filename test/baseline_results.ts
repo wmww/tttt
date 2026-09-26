@@ -28866,7 +28866,7 @@ const baselines = {
         types: true,
     },
     'spliceTuples': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47226,7 +47226,7 @@ const baselines = {
         types: true,
     },
     'argumentExpressionContextualTyping': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65743,7 +65743,7 @@ const baselines = {
     'partiallyNamedTuples2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'partiallyNamedTuples3': {
         errors: false,

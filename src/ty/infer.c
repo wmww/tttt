@@ -519,33 +519,109 @@ static bool inferable_index(Checker* me, Ty const* ty, u32 depth) {
     return !members->call_count && !members->construct_count;
 }
 
-static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
-    if ((ty_is_tuple(source) || is_empty_tuple(source)) && ty_is_tuple(target)) {
-        TupleShape const* source_shape = ty_is_tuple(source) ? source->reference.target->declared.tuple : source->declared.tuple;
-        TupleShape const* target_shape = target->reference.target->declared.tuple;
-        TyList source_args = ty_is_tuple(source) ? ty_reference_args(me, source) : (TyList){0};
-        TyList target_args = ty_reference_args(me, target);
-        for (u32 i = 0; i < target_shape->arity; i++) {
-            if (target_shape->flags[i] & TUPLE_ELEMENT_REST) {
-                // `[infer H, ...infer R]`: a trailing rest element gets what's left of the source, as a mutable tuple
-                // (tsc's sliceTupleType)
-                if (i + 1 != target_shape->arity || i > source_shape->arity) break;
-                u32 arity = source_shape->arity - i;
-                TupleShape shape = {
-                    .arity = arity,
-                    .flags = source_shape->flags + i,
-                    .names = source_shape->names ? source_shape->names + i : nullptr,
-                };
-                Ty const* rest_target = ty_tuple_target(me, &shape);
-                Ty const* rest = arity ?
-                    ty_reference(me, rest_target, (TyList){ .data = source_args.data + i, .len = arity }) :
-                    rest_target;
-                infer_from(me, inf, rest, target_args.data[i]);
-                break;
-            }
-            if (i >= source_shape->arity) break;
+// Elements `from` to `arity - end_skip` of a tuple as a mutable tuple (tsc's sliceTupleType)
+Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip) {
+    u32 arity = shape->arity - from - end_skip;
+    TupleShape slice = {
+        .arity = arity,
+        .flags = shape->flags + from,
+        .names = shape->names ? shape->names + from : nullptr,
+    };
+    Ty const* target = ty_tuple_target(me, &slice);
+    return arity ? ty_reference(me, target, (TyList){ .data = args.data + from, .len = arity }) : target;
+}
+
+// The union of the element types of a slice of a tuple (tsc's getElementTypeOfSliceOfTupleType), null if it's empty
+static Ty const* slice_element_type(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip) {
+    TyBuf parts = {0};
+    for (u32 i = from; i + end_skip < shape->arity; i++) {
+        ty_buf_push(&parts, shape->flags[i] & TUPLE_ELEMENT_REST ? ty_rest_element_type(me, args.data[i]) : args.data[i]);
+    }
+    Ty const* ret = parts.len ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : nullptr;
+    ty_buf_drop(&parts);
+    return ret;
+}
+
+// Leading elements before the first rest one, trailing ones after the last
+static u32 tuple_fixed_length(TupleShape const* shape) {
+    u32 n = 0;
+    while (n < shape->arity && !(shape->flags[n] & TUPLE_ELEMENT_REST)) n++;
+    return n;
+}
+
+static u32 tuple_end_fixed_count(TupleShape const* shape) {
+    u32 n = 0;
+    while (n < shape->arity && !(shape->flags[shape->arity - 1 - n] & TUPLE_ELEMENT_REST)) n++;
+    return n;
+}
+
+// A rest element of a type variable (`...T`, tsc's ElementFlags.Variadic) rather than of an array type
+static bool is_variadic_element(Checker* me, TupleShape const* shape, TyList args, u32 i) {
+    return (shape->flags[i] & TUPLE_ELEMENT_REST) && !ty_is_array(me, args.data[i]) && !ty_is_tuple(args.data[i]);
+}
+
+// An array or tuple against a tuple (tsc's inferFromObjectTypes): the fixed elements at the start and at the end pair
+// up, what's between goes to the variadic or rest element in the middle of the target
+static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
+    TupleShape const* target_shape = target->reference.target->declared.tuple;
+    TyList target_args = ty_reference_args(me, target);
+    u32 target_arity = target_shape->arity;
+    bool source_is_tuple = ty_is_tuple(source) || is_empty_tuple(source);
+    TupleShape const* source_shape = !source_is_tuple ? nullptr :
+        ty_is_tuple(source) ? source->reference.target->declared.tuple : source->declared.tuple;
+    TyList source_args = ty_is_tuple(source) ? ty_reference_args(me, source) : (TyList){0};
+    u32 source_arity = source_shape ? source_shape->arity : 0;
+    // The same structure: element by element (tsc's isTupleTypeStructureMatching)
+    if (source_shape && source_arity == target_arity) {
+        bool matching = true;
+        for (u32 i = 0; i < target_arity && matching; i++) {
+            matching = (source_shape->flags[i] & TUPLE_ELEMENT_REST) == (target_shape->flags[i] & TUPLE_ELEMENT_REST);
+        }
+        if (matching) {
+            for (u32 i = 0; i < target_arity; i++) infer_from(me, inf, source_args.data[i], target_args.data[i]);
+            return;
+        }
+    }
+    bool target_variable = tuple_fixed_length(target_shape) < target_arity;
+    u32 start = source_shape ? tuple_fixed_length(source_shape) : 0;
+    if (tuple_fixed_length(target_shape) < start) start = tuple_fixed_length(target_shape);
+    u32 end = 0;
+    if (source_shape && target_variable) {
+        end = tuple_end_fixed_count(source_shape);
+        if (tuple_end_fixed_count(target_shape) < end) end = tuple_end_fixed_count(target_shape);
+    }
+    // (A source shorter than the target's fixed parts: what there is pairs up)
+    if (start + end > source_arity) end = source_arity - start;
+    if (start + end > target_arity) end = target_arity - start;
+    for (u32 i = 0; i < start; i++) infer_from(me, inf, source_args.data[i], target_args.data[i]);
+    if (!source_shape || (source_arity - start - end == 1 && (source_shape->flags[start] & TUPLE_ELEMENT_REST))) {
+        // A single rest element left in the source goes to every element in the middle of the target
+        Ty const* rest = source_shape ? ty_rest_element_type(me, source_args.data[start]) : ty_rest_element_type(me, source);
+        for (u32 i = start; i + end < target_arity; i++) {
+            infer_from(me, inf, target_shape->flags[i] & TUPLE_ELEMENT_REST ? ty_array(me, rest, false) : rest, target_args.data[i]);
+        }
+    } else if (target_arity - start - end == 1 && is_variadic_element(me, target_shape, target_args, start)) {
+        // `[...infer U, infer V]`: the slice of the source between the fixed parts
+        infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start, end), target_args.data[start]);
+    } else if (target_arity - start - end == 1 && (target_shape->flags[start] & TUPLE_ELEMENT_REST)) {
+        Ty const* rest = slice_element_type(me, source_shape, source_args, start, end);
+        if (rest) infer_from(me, inf, ty_array(me, rest, false), target_args.data[start]);
+    } else if (target_arity - start - end == 0) {
+        // Only fixed elements: pair up what the source has in the middle too (arity mismatches, optional elements)
+        for (u32 i = start; i + end < target_arity && i + end < source_arity; i++) {
+            if (source_shape->flags[i] & TUPLE_ELEMENT_REST) break;
             infer_from(me, inf, source_args.data[i], target_args.data[i]);
         }
+    }
+    // TODO: two variadic/rest elements in the middle of the target (tsc's impliedArity cases)
+    for (u32 i = 0; i < end; i++) {
+        infer_from(me, inf, source_args.data[source_arity - 1 - i], target_args.data[target_arity - 1 - i]);
+    }
+}
+
+static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
+    if ((ty_is_tuple(source) || is_empty_tuple(source)) && ty_is_tuple(target)) {
+        infer_to_tuple(me, inf, source, target);
         return;
     }
     if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE && source->reference.target == target->reference.target) {

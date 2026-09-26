@@ -1243,6 +1243,14 @@ static Ternary index_signatures_related(Checker* me, RelationState* st, Ty const
 
 // Tuples
 
+// A rest element (`...X[]`, tsc's ElementFlags.Rest) rather than a variadic one (`...T`). HACK: anything but a type
+// parameter counts: tsc normalizes `[...X]` for an X that isn't a type variable when it makes the tuple (a mapped type
+// over an array, `{ [S in K]: [a: number] }[K]` simplified), tttt keeps X, whose elements are X[number]
+static bool is_rest_array(Checker* me, Ty const* rest) {
+    (void)me;
+    return rest->kind != TY_TYPE_PARAM;
+}
+
 static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     TupleShape const* source_shape = is_empty_tuple(source) ? source->declared.tuple : source->reference.target->declared.tuple;
     TupleShape const* target_shape = is_empty_tuple(target) ? target->declared.tuple : target->reference.target->declared.tuple;
@@ -1260,47 +1268,76 @@ static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, 
     }
     TyList source_args = is_empty_tuple(source) ? (TyList){0} : ty_reference_args(me, source);
     TyList target_args = is_empty_tuple(target) ? (TyList){0} : ty_reference_args(me, target);
+    u32 source_arity = source_shape->arity, target_arity = target_shape->arity;
+    // (A rest element of an array type is tsc's Rest, of anything else (a type variable) its Variadic)
     u32 source_min = 0, target_min = 0;
-    bool source_rest = false, target_rest = false;
-    for (u32 i = 0; i < source_shape->arity; i++) {
-        if (!(source_shape->flags[i] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) source_min = i + 1;
-        source_rest |= (source_shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+    bool source_rest = false, target_variable = false;
+    for (u32 i = 0; i < source_arity; i++) {
+        if (!(source_shape->flags[i] & TUPLE_ELEMENT_OPTIONAL)) source_min += !(source_shape->flags[i] & TUPLE_ELEMENT_REST) || !is_rest_array(me, source_args.data[i]);
+        source_rest |= (source_shape->flags[i] & TUPLE_ELEMENT_REST) && is_rest_array(me, source_args.data[i]);
     }
-    for (u32 i = 0; i < target_shape->arity; i++) {
-        if (!(target_shape->flags[i] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) target_min = i + 1;
-        target_rest |= (target_shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+    for (u32 i = 0; i < target_arity; i++) {
+        if (!(target_shape->flags[i] & TUPLE_ELEMENT_OPTIONAL)) target_min += !(target_shape->flags[i] & TUPLE_ELEMENT_REST) || !is_rest_array(me, target_args.data[i]);
+        target_variable |= (target_shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
     }
-    if (source_min < target_min) {
-        if (report) {
-            report_line(st, 2618, cstr_d("Source has ", source_min, " element(s) but target requires ", target_min, "."));
+    if (!source_rest && source_arity < target_min) {
+        if (report) report_line(st, 2618, cstr_d("Source has ", source_arity, " element(s) but target requires ", target_min, "."));
+        return TERNARY_FALSE;
+    }
+    if (!target_variable && target_arity < source_min) {
+        if (report) report_line(st, 2619, cstr_d("Source has ", source_min, " element(s) but target allows only ", target_arity, "."));
+        return TERNARY_FALSE;
+    }
+    if (!target_variable && (source_rest || target_arity < source_arity)) {
+        if (report && source_min < target_min) {
+            report_line(st, 2620, cstr_d("Target requires ", target_min, " element(s) but source may have fewer."));
+        } else if (report) {
+            report_line(st, 2621, cstr_d("Target allows only ", target_arity, " element(s) but source may have more."));
         }
         return TERNARY_FALSE;
     }
-    if (!target_rest && (source_rest || source_shape->arity > target_shape->arity)) {
-        if (report) {
-            if (source_rest) {
-                report_line(st, 2619, cstr_d("Source has ", source_min, " element(s) but target allows only ", target_shape->arity, "."));
-            } else {
-                report_line(st, 2618 + 1, cstr_d(
-                    "Source has ", source_shape->arity, " element(s) but target allows only ", target_shape->arity, "."
-                ));
-            }
-        }
-        return TERNARY_FALSE;
-    }
+    // The target's elements before its first rest one and after its last (tsc's getStartElementCount/getEndElementCount)
+    u32 target_start = 0, target_end = 0;
+    while (target_start < target_arity && !(target_shape->flags[target_start] & TUPLE_ELEMENT_REST)) target_start++;
+    while (target_end < target_arity && !(target_shape->flags[target_arity - 1 - target_end] & TUPLE_ELEMENT_REST)) target_end++;
     Ternary result = TERNARY_TRUE;
-    for (u32 i = 0; i < source_shape->arity; i++) {
+    for (u32 i = 0; i < source_arity; i++) {
+        u32 from_end = source_arity - 1 - i;
+        u32 target_index = target_variable && i >= target_start ? target_arity - 1 - (from_end < target_end ? from_end : target_end) : i;
+        unsigned char source_flags = source_shape->flags[i], target_flags = target_shape->flags[target_index];
+        bool source_variadic = (source_flags & TUPLE_ELEMENT_REST) && !is_rest_array(me, source_args.data[i]);
+        bool target_variadic = (target_flags & TUPLE_ELEMENT_REST) && !is_rest_array(me, target_args.data[target_index]);
+        bool source_required = !(source_flags & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST));
+        bool target_required = !(target_flags & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST));
+        if (target_variadic && !source_variadic) {
+            if (report) report_line(st, 2624, cstr_d("Source provides no match for variadic element at position ", target_index, " in target."));
+            return TERNARY_FALSE;
+        }
+        if (source_variadic && !(target_flags & TUPLE_ELEMENT_REST)) {
+            if (report) {
+                report_line(st, 2625, cstr_d("Variadic element at position ", i, " in source does not match element at position ",
+                    target_index, " in target."));
+            }
+            return TERNARY_FALSE;
+        }
+        if (target_required && !source_required) {
+            if (report) report_line(st, 2623, cstr_d("Source provides no match for required element at position ", target_index, " in target."));
+            return TERNARY_FALSE;
+        }
+        // A variadic source element against a rest one relates as a whole to the rest's array type
         Ty const* source_type = source_args.data[i];
-        if (source_shape->flags[i] & TUPLE_ELEMENT_REST) source_type = rest_element_type(me, source_type);
-        // Past the target's fixed elements everything lands in its rest element (only a trailing one is handled)
-        u32 target_index = i < target_shape->arity ? i : target_shape->arity - 1;
-        if (!target_shape->arity) break;
+        if ((source_flags & TUPLE_ELEMENT_REST) && !source_variadic) source_type = rest_element_type(me, source_type);
         Ty const* target_type = target_args.data[target_index];
-        if (target_shape->flags[target_index] & TUPLE_ELEMENT_REST) target_type = rest_element_type(me, target_type);
+        if ((target_flags & TUPLE_ELEMENT_REST) && !target_variadic && !source_variadic) target_type = rest_element_type(me, target_type);
         Ternary related = is_related_to(me, st, source_type, target_type, report);
         if (!related) {
-            if (report) {
-                report_line(st, 2626, cstr_d("Type at position ", i, " in source is not compatible with type at position ", target_index, " in target."));
+            if (report && (target_arity > 1 || source_arity > 1)) {
+                if (target_variable && i >= target_start && from_end >= target_end && target_start != source_arity - target_end - 1) {
+                    report_line(st, 2627, cstr_d("Type at positions ", target_start, " through ", source_arity - target_end - 1,
+                        " in source is not compatible with type at position ", target_index, " in target."));
+                } else {
+                    report_line(st, 2626, cstr_d("Type at position ", i, " in source is not compatible with type at position ", target_index, " in target."));
+                }
             }
             return TERNARY_FALSE;
         }

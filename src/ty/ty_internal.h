@@ -162,6 +162,8 @@ typedef struct Inference {
 } Inference;
 
 void inference_init(Inference* inf, TyList params);
+// Elements `from` to `arity - end_skip` of a tuple as a mutable tuple (tsc's sliceTupleType)
+Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip);
 
 // A generic function nested in a literal argument whose contextual type wants a single non-generic signature (tsc's
 // instantiateTypeWithSingleGenericCallSignature, which applies at any depth of an argument): the first inference pass
