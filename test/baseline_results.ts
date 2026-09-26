@@ -9771,9 +9771,9 @@ const baselines = {
         types: false,
     },
     'discriminantPropertyInference': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'discriminantUsingEvaluatableTemplateExpression': {
         errors: true,
@@ -30726,9 +30726,9 @@ const baselines = {
         types: true,
     },
     'tsxDiscriminantPropertyInference': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'tsxFragmentChildrenCheck': {
         errors: true,
@@ -52806,7 +52806,7 @@ const baselines = {
         types: true,
     },
     'checkJsxChildrenProperty16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52871,7 +52871,7 @@ const baselines = {
         types: false,
     },
     'checkJsxUnionSFXContextualTypeInferredCorrectly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

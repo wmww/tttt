@@ -1374,9 +1374,15 @@ static bool is_possibly_discriminant_value(Expr const* expr) {
     }
 }
 
-// tsc's discriminateContextualTypeByObjectMembers: the members of a union contextual type that the literal's
-// discriminant properties fit
-static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextual, ObjectExpr const* object) {
+// A property that may pick members of a union contextual type, with the type it has
+typedef struct Discriminator {
+    Atom const* name;
+    Ty const* type;
+} Discriminator;
+
+// tsc's discriminateTypeByDiscriminableItems: the members of a union contextual type whose properties the
+// discriminators fit (a discriminator that fits none excludes nothing)
+static Ty const* discriminate_by_items(Checker* me, Ty const* contextual, Discriminator const* items, u32 count) {
     TyList types = contextual->composite.types;
     if (types.len > 64) return contextual;
     // 0: excluded, 1: maybe, 3: included
@@ -1384,14 +1390,9 @@ static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextua
     u32 const primitive = TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_BOOLEAN | TYF_LITERAL | TYF_ENUM |
         TYF_NULLABLE | TYF_VOID;
     for (u32 i = 0; i < types.len; i++) include[i] = types.data[i]->flags & primitive ? 0 : 3;
-    for_each (item, vec_object_expr_item, object) {
-        bool candidate = item->tag == OBJECT_ITEM_SHORTHAND ||
-            (item->tag == OBJECT_ITEM_PROPERTY && is_possibly_discriminant_value(&item->value));
-        if (!candidate || item->computed_key) continue;
-        Atom const* name = checker_atom(me, cstr_sv(&item->name_string));
-        if (!ty_is_discriminant_property(me, contextual, name)) continue;
-        Ty const* value = ty_expr_type(me, &item->value);
-        Ty const* key = ty_prop_name_literal(me, name);
+    for (u32 d = 0; d < count; d++) {
+        Ty const* value = items[d].type;
+        Ty const* key = ty_prop_name_literal(me, items[d].name);
         bool matched = false;
         for (u32 i = 0; i < types.len; i++) {
             if (!include[i]) continue;
@@ -1399,12 +1400,12 @@ static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextua
             bool related = false;
             if (target) {
                 Ty const* const* parts = &value;
-                u32 count = 1;
+                u32 part_count = 1;
                 if (value->kind == TY_UNION) {
                     parts = value->composite.types.data;
-                    count = value->composite.types.len;
+                    part_count = value->composite.types.len;
                 }
-                for (u32 j = 0; j < count && !related; j++) related = ty_is_related(me, parts[j], target, TY_RELATION_ASSIGNABLE);
+                for (u32 j = 0; j < part_count && !related; j++) related = ty_is_related(me, parts[j], target, TY_RELATION_ASSIGNABLE);
             }
             if (related) matched = true;
             else include[i] = 1;
@@ -1420,6 +1421,99 @@ static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextua
     }
     if (len == types.len || !len) return contextual;
     return ty_union(me, kept, len, nullptr, (TyList){0});
+}
+
+// The optional discriminant properties of a union contextual type that a literal doesn't have are undefined in it (the
+// second half of tsc's discriminateContextualTypeBy*). `has(name)`: whether the literal has one of that name. `skip`:
+// a name not to count (JSX children given as children)
+static void push_missing_discriminators(
+    Checker* me, Ty const* contextual, bool (*has)(void const*, Checker*, Atom const*), void const* literal,
+    Atom const* skip, Discriminator** items, u32* count
+) {
+    // (The names come from the first member, whose parts an intersection's are)
+    Ty const* first = ty_apparent_type(me, contextual->composite.types.data[0]);
+    TyList parts = first->kind == TY_INTERSECTION ? first->composite.types : (TyList){ .data = &first, .len = 1 };
+    for (u32 p = 0; p < parts.len; p++) {
+        Ty const* part = ty_apparent_type(me, parts.data[p]);
+        if (!(part->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, part);
+        for (u32 i = 0; i < members->prop_count; i++) {
+            Atom const* name = members->props[i]->name;
+            if (name == skip || has(literal, me, name)) continue;
+            // A property of the union (every member has it), optional if it is in some member
+            bool in_all = true, optional = false;
+            for (u32 j = 0; j < contextual->composite.types.len && in_all; j++) {
+                FoundProp found = ty_find_prop(me, ty_apparent_type(me, contextual->composite.types.data[j]), name);
+                in_all = found.found;
+                optional |= found.found && (found.flags & PROP_OPTIONAL);
+            }
+            if (!in_all || !optional || !ty_is_discriminant_property(me, contextual, name)) continue;
+            *items = realloc(*items, sizeof(Discriminator) * (*count + 1));
+            panic_if(!*items, "out of memory");
+            (*items)[(*count)++] = (Discriminator){ .name = name, .type = ty_intrinsic(me, TY_UNDEFINED) };
+        }
+    }
+}
+
+static bool object_has_member(void const* literal, Checker* me, Atom const* name) {
+    for_each (item, vec_object_expr_item, (ObjectExpr const*)literal) {
+        if (item->tag == OBJECT_ITEM_SPREAD) continue;
+        Atom const* own = item->computed_key ? nullptr : checker_atom(me, cstr_sv(&item->name_string));
+        if (own == name) return true;
+    }
+    return false;
+}
+
+// tsc's discriminateContextualTypeByObjectMembers
+static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextual, ObjectExpr const* object) {
+    Discriminator* items = nullptr;
+    u32 count = 0;
+    for_each (item, vec_object_expr_item, object) {
+        bool candidate = item->tag == OBJECT_ITEM_SHORTHAND ||
+            (item->tag == OBJECT_ITEM_PROPERTY && is_possibly_discriminant_value(&item->value));
+        if (!candidate || item->computed_key) continue;
+        Atom const* name = checker_atom(me, cstr_sv(&item->name_string));
+        if (!ty_is_discriminant_property(me, contextual, name)) continue;
+        items = realloc(items, sizeof(Discriminator) * (count + 1));
+        panic_if(!items, "out of memory");
+        items[count++] = (Discriminator){ .name = name, .type = ty_expr_type(me, &item->value) };
+    }
+    push_missing_discriminators(me, contextual, object_has_member, object, nullptr, &items, &count);
+    Ty const* ret = discriminate_by_items(me, contextual, items, count);
+    free(items);
+    return ret;
+}
+
+static bool attributes_have(void const* literal, Checker* me, Atom const* name) {
+    Expr const* attributes = literal;
+    for_each (i, vec_jsx_attribute, &attributes->jsx_attributes) {
+        if (i->tag != JSX_ATTRIBUTE_SPREAD && checker_atom(me, i->name.sv) == name) return true;
+    }
+    return false;
+}
+
+// tsc's discriminateContextualTypeByJSXAttributes: an attribute without a value is `true`
+static Ty const* discriminate_by_jsx_attributes(Checker* me, Ty const* contextual, Expr const* attributes) {
+    Discriminator* items = nullptr;
+    u32 count = 0;
+    for_each (i, vec_jsx_attribute, &attributes->jsx_attributes) {
+        if (i->tag == JSX_ATTRIBUTE_SPREAD) continue;
+        bool has_value = i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR;
+        if (has_value && !is_possibly_discriminant_value(&i->value)) continue;
+        Atom const* name = checker_atom(me, i->name.sv);
+        if (!ty_is_discriminant_property(me, contextual, name)) continue;
+        items = realloc(items, sizeof(Discriminator) * (count + 1));
+        panic_if(!items, "out of memory");
+        items[count++] = (Discriminator){ .name = name, .type = has_value ? ty_expr_type(me, &i->value) : ty_intrinsic(me, TY_TRUE) };
+    }
+    JsxElement const* element = jsx_attributes_element(attributes);
+    Atom const* children = ty_jsx_children_prop_name(me, element);
+    u32 child_count = 0;
+    for_each (i, vec_jsx_child, &element->children) child_count += ty_jsx_child_is_semantic(i);
+    push_missing_discriminators(me, contextual, attributes_have, attributes, child_count ? children : nullptr, &items, &count);
+    Ty const* ret = discriminate_by_items(me, contextual, items, count);
+    free(items);
+    return ret;
 }
 
 static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
@@ -1683,6 +1777,9 @@ static Ty const* check_jsx_child(Checker* me, JsxChild const* child, Ty const* c
 // children as one more property, named by JSX.ElementChildrenAttribute
 static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx) {
     JsxElement const* element = jsx_attributes_element(expr);
+    if (ctx.contextual && ctx.contextual->kind == TY_UNION) {
+        ctx.contextual = discriminate_by_jsx_attributes(me, ctx.contextual, expr);
+    }
     LiteralBuilder builder = {0}; // The attributes since the last spread
     SpreadAcc spread = {0};
     bool has_attribute = false, has_spread = false, has_children = false;
