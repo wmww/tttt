@@ -1175,12 +1175,26 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             expr_compile_test_info(&my ternary->no, ctx);
             break;
 
-        case EXPR_CALL:
+        case EXPR_CALL: {
             expr_compile_test_info(&my call->callable, ctx);
+            // The specifier of `import("./a")` names the module (tsc's getSymbolAtLocation of a module name)
+            ModuleRef const* ref = my call->callable.tag == EXPR_IDENTIFIER ? my call->callable.identifier.module_ref : nullptr;
+            Symbol const* module = ref ? ref->module : nullptr;
+            if (module && vec_expr_size(&my call->args) && vec_expr_at(&my call->args, 0)->tag == EXPR_LITERAL) {
+                // (a file's module is declared by the file, and named by its path without the extension)
+                SourceFile const* file = module->module ? module->module->file : nullptr;
+                Span file_start = file ? (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) } : span_null;
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = file ? vec_span_single(file_start) : declaration_get_spans(module),
+                    .allow_declaration_empty = true,
+                    .span = vec_expr_at(&my call->args, 0)->inner_span,
+                    .text = file ? module_name_for_error(module, nullptr, false) : symbol_text(ctx, module),
+                });
+            }
             for_each (i, vec_expr, &my call->args) {
                 expr_compile_test_info(i, ctx);
             }
-            break;
+        }   break;
 
         case EXPR_FUNCTION:
             function_impl_compile_test_info(my function, ctx);
