@@ -10482,18 +10482,18 @@ const baselines = {
     },
     'duplicateTypeParameters1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'duplicateTypeParameters2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateTypeParameters3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'duplicateVarAndImport': {
         errors: true,
@@ -13407,7 +13407,7 @@ const baselines = {
     },
     'extendedInterfacesWithDuplicateTypeParameters': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'extendedUnicodeEscapeSequenceIdentifiers': {
@@ -15507,7 +15507,7 @@ const baselines = {
     },
     'genericsWithDuplicateTypeParameters1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericsWithoutTypeParameters1': {
@@ -66152,7 +66152,7 @@ const baselines = {
     },
     'typesWithDuplicateTypeParameters': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'varianceAnnotations': {

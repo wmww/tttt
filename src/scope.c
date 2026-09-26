@@ -667,10 +667,8 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     u32 flags_before = merged ? symbol->decl_flags_before : 0;
     if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER && props.kind != SYMBOL_DECL_INFER) {
         // Type parameters of the same name merge as far as tsc's binder is concerned, which is what `infer U` twice
-        // in one conditional type wants. <T, T>: the checker reports the second
+        // in one conditional type wants. <T, T>: one symbol declared twice (and one type), the second is TS2300
         report_conflict(scope->errs, props.name, 2300);
-        symbol = binder_new_symbol(scope->binder, props.name.sv, includes);
-        merged = false;
     }
     if (merged && includes & (SYMBOL_CLASS | SYMBOL_FUNCTION) && flags_before & SYMBOL_VALUE_MODULE &&
         !(flags_before & (SYMBOL_CLASS | SYMBOL_FUNCTION)) && !scope->ambient &&
