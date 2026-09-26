@@ -1159,6 +1159,55 @@ static Ty const* non_undefined_type(Checker* me, Ty const* ty) {
     return ty_without_undefined(me, ty);
 }
 
+static bool pattern_names(Checker* me, Binding const* pattern, Atom const* name) {
+    for_each (item, vec_object_binding_item, &pattern->object) {
+        if (item->target.rest || item->computed_key) continue;
+        bool is_number = false;
+        if (ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number) == name) return true;
+    }
+    return false;
+}
+
+// The rest of an intersection: the properties of all of its members, each of the intersection's type for it
+static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding const* pattern) {
+    TyList parts = source->composite.types;
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* part = ty_apparent_type(me, parts.data[i]);
+        // (A generic member keeps the whole thing, like a generic object: TODO Omit)
+        if (!(part->flags & TYF_OBJECT) || ty_members(me, part)->mapped) return source;
+    }
+    ObjectLiteralProp* props = nullptr;
+    u32 count = 0;
+    for (u32 i = 0; i < parts.len; i++) {
+        Members const* members = ty_members(me, ty_apparent_type(me, parts.data[i]));
+        for (u32 j = 0; j < members->prop_count; j++) {
+            Atom const* name = members->props[j]->name;
+            bool seen = false;
+            for (u32 k = 0; k < count && !seen; k++) seen = props[k].name == name;
+            if (seen || pattern_names(me, pattern, name)) continue;
+            FoundProp found = ty_find_prop(me, source, name);
+            if (!found.found || (found.flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
+            Prop const* origin = found.prop;
+            while (origin && origin->target) origin = origin->target;
+            if ((found.flags & (PROP_METHOD | PROP_GETTER | PROP_SETTER)) && origin && origin->parent && (origin->parent->flags & SYMBOL_CLASS)) continue;
+            props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
+            panic_if(!props, "out of memory");
+            props[count++] = (ObjectLiteralProp){
+                .name = name,
+                .flags = found.flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR),
+                .type = found.type,
+                .name_span = origin ? origin->name_span : (Span){0},
+                .decl_spans = origin ? origin->decl_spans : nullptr,
+                .decl_span_count = origin ? origin->decl_span_count : 0,
+                .name_is_value = origin && origin->name_is_value,
+            };
+        }
+    }
+    Ty const* ret = ty_object_literal(me, props, count, nullptr, 0, OBJECT_SYNTHETIC);
+    free(props);
+    return ret;
+}
+
 // tsc's getRestType: `...rest` of an object pattern, without the properties the pattern names, private and protected
 // members and class methods, and with nothing readonly. TODO: a generic object is Omit<T, names> in tsc; it stays T
 static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* pattern) {
@@ -1176,6 +1225,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
     }
     if (source->flags & TYF_NEVER) return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC);
     Ty const* apparent = ty_apparent_type(me, source);
+    if (apparent->kind == TY_INTERSECTION && !ty_is_generic_index(source)) return intersection_rest_type(me, apparent, pattern);
     if (!(apparent->flags & TYF_OBJECT) || ty_is_generic_index(source)) return source;
     Members const* members = ty_members(me, apparent);
     if (members->mapped) return source;
@@ -1259,7 +1309,14 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
             return ret;
         }
         // Not ty_check_expr() with types[0] as the contextual type: only the uncontextual path detects `[x = x]`
-        types[1] = ty_widened_for_declaration(me, ty_expr_type(me, binding->default_value), true);
+        Ty const* default_type = ty_expr_type(me, binding->default_value);
+        // tsc unions first and then widens what's left fresh: a default that fits (`name = "a"` for a `"a" | "b"`
+        // property) is absorbed, literal and all
+        if (!(ret->flags & TYF_ANY) && !(types[0]->flags & TYF_NEVER) &&
+            ty_is_related(me, ty_regular(me, default_type), types[0], TY_RELATION_STRICT_SUBTYPE)) {
+            return types[0];
+        }
+        types[1] = ty_widened_for_declaration(me, default_type, true);
         ret = ret->flags & TYF_ANY ? ret : ty_union_subtype_reduced(me, types, 2);
     }
     return ret;

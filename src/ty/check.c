@@ -806,6 +806,34 @@ void ty_check_spread_type(Checker* me, Ty const* type, Span span, ErrorCtx* errs
     }
 }
 
+// tsc's checkSpreadPropOverrides (strictNullChecks only): a property written before a spread that certainly has one of
+// that name (in every member of a union, and required) is overwritten: TS2783 at the property, the last one written
+// of that name
+void ty_check_spread_overrides(Checker* me, Ty const* type, TyWrittenProp const* written, u32 count, Span spread_span, ErrorCtx* errs) {
+    if (!count || !compiler_options()->strict_null_checks || !is_valid_spread_type(me, type, 0) || (type->flags & TYF_ANY)) return;
+    TyList members = type->kind == TY_UNION && !(type->flags & TYF_BOOLEAN) ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+    // (Something that spreads into nothing next to an object makes the object's properties optional: tsc's
+    // tryMergeUnionOfObjectTypeAndEmptyObject)
+    for (u32 i = 0; i < members.len; i++) {
+        if (!(ty_apparent_type(me, members.data[i])->flags & (TYF_OBJECT | TYF_INTERSECTION))) return;
+    }
+    for (u32 w = count; w-- > 0;) {
+        // The last one written of each name
+        bool later = false;
+        for (u32 v = w + 1; v < count && !later; v++) later = written[v].name == written[w].name;
+        if (later) continue;
+        bool always = true;
+        for (u32 i = 0; i < members.len && always; i++) {
+            FoundProp found = ty_find_prop(me, ty_apparent_type(me, members.data[i]), written[w].name);
+            always = found.found && !(found.flags & PROP_OPTIONAL);
+        }
+        if (!always) continue;
+        Error* error = error_ctx_error_d(errs, written[w].span, 2783, "'", atom_sv(written[w].name),
+            "' is specified more than once, so this usage will be overwritten.");
+        error_add_related_d(error, spread_span, 2785, "This spread always overwrites this property.");
+    }
+}
+
 Ty const* ty_of_node(TypeNode const* node) {
     return ty_from_node(current_checker, node, (LowerCtx){ .generic = true });
 }

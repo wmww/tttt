@@ -2147,14 +2147,25 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
             }
         }   break;
 
-        case EXPR_JSX_ATTRIBUTES:
+        case EXPR_JSX_ATTRIBUTES: {
+            TyWrittenProp* written = nullptr;
+            u32 written_count = 0;
             for_each (i, vec_jsx_attribute, &my jsx_attributes) {
                 if (i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR) {
                     expr_typecheck(&i->value, errs);
                 }
-                if (i->tag == JSX_ATTRIBUTE_SPREAD) ty_check_spread_type(current_checker, expr_get_type(&i->value), i->value.outer_span, errs);
+                if (i->tag == JSX_ATTRIBUTE_SPREAD) {
+                    Ty const* type = expr_get_type(&i->value);
+                    ty_check_spread_type(current_checker, type, i->value.outer_span, errs);
+                    ty_check_spread_overrides(current_checker, type, written, written_count, i->span, errs);
+                } else {
+                    written = realloc(written, sizeof(TyWrittenProp) * (written_count + 1));
+                    panic_if(!written, "out of memory");
+                    written[written_count++] = (TyWrittenProp){ checker_atom(current_checker, i->name.sv), i->span };
+                }
             }
-            break;
+            free(written);
+        }   break;
 
         default: impossible;
     }
@@ -2336,9 +2347,16 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             function_impl_typecheck(my function, errs);
             break;
 
-        case EXPR_OBJECT:
+        case EXPR_OBJECT: {
             object_check_duplicate_names(me, errs);
+            TyWrittenProp* written = nullptr;
+            u32 written_count = 0;
             for_each (i, vec_object_expr_item, &my object) {
+                if (i->tag != OBJECT_ITEM_SPREAD && !i->computed_key) {
+                    written = realloc(written, sizeof(TyWrittenProp) * (written_count + 1));
+                    panic_if(!written, "out of memory");
+                    written[written_count++] = (TyWrittenProp){ checker_atom(current_checker, cstr_sv(&i->name_string)), i->span };
+                }
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
                     ty_check_computed_name(current_checker, i->computed_key, i->name_span, false, errs);
@@ -2350,12 +2368,15 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     if (expr_is_destructuring_target(&i->value)) {
                         if (target < SCRIPT_TARGET_ES2018) ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_REST, errs);
                     } else {
-                        ty_check_spread_type(current_checker, expr_get_type(&i->value), i->span, errs);
+                        Ty const* type = expr_get_type(&i->value);
+                        ty_check_spread_type(current_checker, type, i->span, errs);
+                        ty_check_spread_overrides(current_checker, type, written, written_count, i->span, errs);
                         if (target < SCRIPT_TARGET_ES2015) ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_ASSIGN, errs);
                     }
                 }
             }
-            break;
+            free(written);
+        }   break;
 
         case EXPR_ARRAY:
             for_each (i, vec_expr, &my array) {

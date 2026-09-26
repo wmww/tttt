@@ -9653,7 +9653,7 @@ const baselines = {
     'destructuringInitializerContextualTypeFromContext': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringPropertyAssignmentNameIsNotAssignmentTarget': {
         errors: true,
@@ -24538,7 +24538,7 @@ const baselines = {
     'objectRestBindingContextualInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectRestSpread': {
         errors: true,
@@ -27621,7 +27621,7 @@ const baselines = {
         types: false,
     },
     'restIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65306,12 +65306,12 @@ const baselines = {
         types: true,
     },
     'spreadDuplicate': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'spreadDuplicateExact': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -65346,7 +65346,7 @@ const baselines = {
         types: false,
     },
     'spreadOverwritesPropertyStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

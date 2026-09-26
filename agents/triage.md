@@ -409,3 +409,9 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   `T` isn't the merged interface's. `ty_check_type_reference_constraints` avoids lowering arguments of unconstrained
   parameters because of it. Probably the merged declarations' type parameters should be one type (tsc: the first
   declaration's), whoever lowers first.
+- Inference from an object literal's other properties before its context-sensitive ones (tsc's SkipContextSensitive
+  first pass + intraExpressionInferenceSites) fails when the parameter is a union alias: `type Props<T> =
+  PropsBase<string> | PropsWithConvert<T>; declare function F<T>(p: Props<T>): void; F({ data: "1", convert: n => ""
+  + n })` types `n` as unknown (tsc: string); with `p: PropsWithConvert<T>` it works. The context-sensitive argument
+  is skipped whole in call.c's first pass and checked against `Props<unknown>` in the second. Costs
+  tsxInferenceShouldNotYieldAnyOnUnions (types) and likely more.
