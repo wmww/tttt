@@ -1801,7 +1801,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_REGEX: return ty_global_regexp_type(me);
         case EXPR_PRIVATE_NAME: return any_type(me);
-        case EXPR_JSX_ELEMENT: case EXPR_JSX_FRAGMENT: return ty_jsx_element_type(me, expr->jsx);
+        case EXPR_JSX_ELEMENT: case EXPR_JSX_FRAGMENT: return ty_jsx_element_type(me, expr);
         case EXPR_JSX_ATTRIBUTES: return check_jsx_attributes(me, expr, ctx);
 
         case EXPR_TEMPLATE: {

@@ -879,7 +879,18 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
             // (a missing name, after a parse error, is nothing)
             bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
                 !my jsx->tag_name.inner_span.sv.size;
-            if (!intrinsic) expr_lookup_names(&my jsx->tag_name, names, errs);
+            if (!intrinsic) {
+                expr_lookup_names(&my jsx->tag_name, names, errs);
+            } else if (my tag == EXPR_JSX_ELEMENT && !my jsx->namespaced) {
+                // Only for the types baseline, which shows an intrinsic tag name as a value of that name (tsc's
+                // getTypeAtLocation checks it as an expression): no reference
+                IdentifierExpr* name = &my jsx->tag_name.identifier;
+                if (!name->keyword) name->target = scope_get_value(names, name->name.sv, &name->symbol);
+                IdentifierExpr* closing = &my jsx->closing_name.identifier;
+                if (my jsx->closing_name.tag == EXPR_IDENTIFIER && !closing->keyword) {
+                    closing->target = scope_get_value(names, closing->name.sv, &closing->symbol);
+                }
+            }
             for_each (i, vec_spanned_type, &my jsx->type_args) type_lookup_names(&i->type, names, errs);
             expr_lookup_names(&my jsx->attributes, names, errs);
             for_each (i, vec_jsx_child, &my jsx->children) {

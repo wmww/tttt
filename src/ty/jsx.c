@@ -31,10 +31,11 @@ Ty const* ty_jsx_type(Checker* me, JsxElement const* element, csview name) {
     return symbol ? ty_declared_type_of(me, symbol) : nullptr;
 }
 
-// What an element or fragment evaluates to (tsc's getJsxElementTypeAt): JSX.Element, else any
-Ty const* ty_jsx_element_type(Checker* me, JsxElement const* element) {
-    Ty const* type = ty_jsx_type(me, element, c_sv("Element"));
-    return type ? type : ty_intrinsic(me, TY_ANY);
+// What an element or fragment evaluates to (tsc's getJsxElementTypeAt): JSX.Element, else the error type for an
+// element and any for a fragment
+Ty const* ty_jsx_element_type(Checker* me, Expr const* expr) {
+    Ty const* type = ty_jsx_type(me, expr->jsx, c_sv("Element"));
+    return type ? type : ty_intrinsic(me, expr->tag == EXPR_JSX_FRAGMENT ? TY_ANY : TY_ERROR);
 }
 
 // tsc's getJsxElementChildrenPropertyName: the name of the one property of JSX.ElementChildrenAttribute, an empty name

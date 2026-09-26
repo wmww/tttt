@@ -4943,32 +4943,32 @@ const baselines = {
     'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=commonjs,moduledetection=auto)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=commonjs,moduledetection=force)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=commonjs,moduledetection=legacy)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=system,moduledetection=auto)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=system,moduledetection=force)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsOnJSXExpressionsArePreserved(jsx=preserve,module=system,moduledetection=legacy)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsOnJSXExpressionsArePreserved(jsx=react,module=commonjs,moduledetection=auto)': {
         errors: true,
@@ -10103,7 +10103,7 @@ const baselines = {
     'doubleUnderscoreReactNamespace': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'downlevelLetConst1': {
         errors: true,
@@ -16218,7 +16218,7 @@ const baselines = {
     'importHelpersInTsx': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersNoEmitHelpersExportDefault': {
         errors: true,
@@ -19888,7 +19888,7 @@ const baselines = {
     'jsxContainsOnlyTriviaWhiteSpacesNotCountedAsChild': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxDeclarationsWithEsModuleInteropNoCrash': {
         errors: true,
@@ -19918,17 +19918,17 @@ const baselines = {
     'jsxElementsAsIdentifierNames': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxEmitAttributeWithPreserve': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxEmitWithAttributes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxEmptyExpressionNotCountedAsChild(jsx=react)': {
         errors: true,
@@ -19958,7 +19958,7 @@ const baselines = {
     'jsxFactoryAndJsxFragmentFactory': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxFactoryAndJsxFragmentFactoryErrorNotIdentifier': {
         errors: false,
@@ -19968,7 +19968,7 @@ const baselines = {
     'jsxFactoryAndJsxFragmentFactoryNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxFactoryAndReactNamespace': {
         errors: false,
@@ -19983,12 +19983,12 @@ const baselines = {
     'jsxFactoryIdentifier': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxFactoryIdentifierAsParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxFactoryIdentifierWithAbsentParameter': {
         errors: false,
@@ -20013,7 +20013,7 @@ const baselines = {
     'jsxFactoryQualifiedName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxFactoryQualifiedNameResolutionError': {
         errors: false,
@@ -20023,7 +20023,7 @@ const baselines = {
     'jsxFactoryQualifiedNameWithEs5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxFragReactReferenceErrors(jsx=preserve)': {
         errors: true,
@@ -20088,7 +20088,7 @@ const baselines = {
     'jsxHash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxImportForSideEffectsNonExtantNoError': {
         errors: true,
@@ -20098,7 +20098,7 @@ const baselines = {
     'jsxImportInAttribute': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxImportSourceNonPragmaComment': {
         errors: false,
@@ -20127,8 +20127,8 @@ const baselines = {
     },
     'jsxIntrinsicElementsExtendsRecord': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsxIntrinsicElementsTypeArgumentErrors': {
         errors: false,
@@ -20152,18 +20152,18 @@ const baselines = {
     },
     'jsxLocalNamespaceIndexSignatureNoCrash': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsxMultilineAttributeStringValues': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxMultilineAttributeValuesReact': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespaceElementChildrenAttributeIgnoredWhenReactJsx(jsx=react-jsx)': {
         errors: false,
@@ -20227,13 +20227,13 @@ const baselines = {
     },
     'jsxNamespacePrefixIntrinsics': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsxNamespaceReexports': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespacedNameNotComparedToNonMatchingIndexSignature': {
         errors: true,
@@ -20243,7 +20243,7 @@ const baselines = {
     'jsxNestedWithinTernaryParsesCorrectly': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxPartialSpread': {
         errors: true,
@@ -20253,7 +20253,7 @@ const baselines = {
     'jsxPreserveWithJsInput': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxPropsAsIdentifierNames': {
         errors: true,
@@ -20368,7 +20368,7 @@ const baselines = {
     'keywordInJsxIdentifier': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'knockout': {
         errors: false,
@@ -25393,7 +25393,7 @@ const baselines = {
     'parseJsxExtends1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseJsxExtends2': {
         errors: true,
@@ -26598,12 +26598,12 @@ const baselines = {
     'reactJsxReactResolvedNodeNext': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactJsxReactResolvedNodeNextEsm': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactNamespaceImportPresevation': {
         errors: true,
@@ -26618,7 +26618,7 @@ const baselines = {
     'reactNamespaceJSXEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactNamespaceMissingDeclaration': {
         errors: true,
@@ -28903,7 +28903,7 @@ const baselines = {
     'spreadIntersectionJsx': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadInvalidArgumentType': {
         errors: true,
@@ -30788,7 +30788,7 @@ const baselines = {
     'tsxUnionSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tupleTypeInference': {
         errors: true,
@@ -52862,7 +52862,7 @@ const baselines = {
     },
     'checkJsxNamespaceNamesQuestionableForms': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'checkJsxSubtleSkipContextSensitiveBug': {
@@ -52908,12 +52908,12 @@ const baselines = {
     'inlineJsxAndJsxFragPragmaOverridesCompilerOptions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inlineJsxFactoryDeclarations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inlineJsxFactoryDeclarationsLocalTypes': {
         errors: false,
@@ -52928,7 +52928,7 @@ const baselines = {
     'inlineJsxFactoryOverridesCompilerOption': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inlineJsxFactoryWithFragmentIsError': {
         errors: false,
@@ -52983,12 +52983,12 @@ const baselines = {
     'jsxParsingError4(strict=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxParsingError4(strict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxParsingErrorImmediateSpreadInAttributeValue': {
         errors: true,
@@ -52998,7 +52998,7 @@ const baselines = {
     'jsxReactTestSuite': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxSpreadOverwritesAttributeStrict': {
         errors: false,
@@ -53138,7 +53138,7 @@ const baselines = {
     'tsxAttributeResolution13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxAttributeResolution14': {
         errors: false,
@@ -53218,12 +53218,12 @@ const baselines = {
     'tsxDynamicTagName1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxDynamicTagName2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxDynamicTagName3': {
         errors: false,
@@ -53263,7 +53263,7 @@ const baselines = {
     'tsxElementResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxElementResolution1': {
         errors: true,
@@ -53288,12 +53288,12 @@ const baselines = {
     'tsxElementResolution13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxElementResolution14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxElementResolution15': {
         errors: false,
@@ -53303,7 +53303,7 @@ const baselines = {
     'tsxElementResolution16': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxElementResolution17': {
         errors: true,
@@ -53318,7 +53318,7 @@ const baselines = {
     'tsxElementResolution19': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxElementResolution2': {
         errors: true,
@@ -53413,7 +53413,7 @@ const baselines = {
     'tsxExternalModuleEmit2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxFragmentErrors': {
         errors: false,
@@ -53498,27 +53498,27 @@ const baselines = {
     'tsxNamespacedAttributeName1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxNamespacedAttributeName2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxNamespacedTagName1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxNamespacedTagName2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxNoJsx': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxOpeningClosingNames': {
         errors: true,
@@ -53538,12 +53538,12 @@ const baselines = {
     'tsxPreserveEmit1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'tsxPreserveEmit2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxPreserveEmit3': {
         errors: true,
@@ -53618,7 +53618,7 @@ const baselines = {
     'tsxReactEmitNesting': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxReactEmitSpreadAttribute(target=es2015)': {
         errors: true,
@@ -53868,7 +53868,7 @@ const baselines = {
     'tsxTypeErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxUnionElementType1': {
         errors: false,

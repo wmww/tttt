@@ -960,7 +960,7 @@ typedef struct JsxIntrinsic {
 } JsxIntrinsic;
 Symbol const* ty_jsx_namespace(Checker* me, struct JsxElement const* element); // null if none
 Ty const* ty_jsx_type(Checker* me, struct JsxElement const* element, csview name); // `JSX.<name>`, null if none
-Ty const* ty_jsx_element_type(Checker* me, struct JsxElement const* element);
+Ty const* ty_jsx_element_type(Checker* me, Expr const* expr); // Of an EXPR_JSX_ELEMENT or EXPR_JSX_FRAGMENT
 Atom const* ty_jsx_children_prop_name(Checker* me, struct JsxElement const* element);
 JsxIntrinsic ty_jsx_intrinsic(Checker* me, struct JsxElement const* element);
 void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs);

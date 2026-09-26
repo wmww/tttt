@@ -970,12 +970,30 @@ static void private_name_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     vec_span_drop(&info.declarations);
 }
 
+// A namespaced JSX name `a:b` (tsc's JsxNamespacedName): its two identifiers, which are the error type
+static void jsx_namespaced_name_compile_test_info(Span name, BaselineTestCase* ctx) {
+    isize colon = csview_find(name.sv, ":");
+    if (colon == c_NPOS) return;
+    Span parts[2] = { name, name };
+    parts[0].sv = csview_slice(name.sv, 0, colon);
+    parts[1].sv = csview_slice(name.sv, colon + 1, name.sv.size);
+    for (u32 i = 0; i < 2; i++) {
+        while (parts[i].sv.size && isspace((unsigned char)parts[i].sv.buf[0])) parts[i].sv = csview_slice(parts[i].sv, 1, parts[i].sv.size);
+        while (parts[i].sv.size && isspace((unsigned char)parts[i].sv.buf[parts[i].sv.size - 1])) parts[i].sv.size--;
+        if (parts[i].sv.size) baseline_test_case_add_type(ctx, parts[i], ty_intrinsic(current_checker, TY_ERROR));
+    }
+}
+
 // The opening or closing tag name of an element: a value tag is a reference, an intrinsic one is `any` and names a
 // member of JSX.IntrinsicElements (its property, or its index signature: `__index`)
 static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, BaselineTestCase* ctx) {
     if (name->tag == EXPR_IMPLICIT_ANY || !span_valid(name->inner_span) || !name->inner_span.sv.size) return;
     if (!jsx_element_is_intrinsic(element)) {
         expr_compile_test_info(name, ctx);
+        return;
+    }
+    if (element->namespaced) {
+        jsx_namespaced_name_compile_test_info(name->inner_span, ctx);
         return;
     }
     Checker* checker = current_checker;
@@ -993,8 +1011,10 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
         }
         vec_span_drop(&info.declarations);
     } else if (intrinsic.index) {
-        Symbol const* container = intrinsic.elements->kind == TY_DECLARED ? intrinsic.elements->declared.symbol : nullptr;
-        // (tsc's getApplicableIndexSymbol: the index signatures that apply, several patterns can)
+        Symbol const* container = intrinsic.elements->kind == TY_DECLARED ? intrinsic.elements->declared.symbol :
+            intrinsic.elements->alias;
+        // (tsc's getApplicableIndexSymbol: the index signatures that apply, several patterns can. An index signature
+        // without a declaration, of a mapped type, is IntrinsicElements itself)
         VecSpan declarations = {0};
         Members const* members = ty_members(checker, ty_apparent_type(checker, intrinsic.elements));
         Ty const* key = ty_string_literal(checker, name->identifier.name.sv);
@@ -1003,16 +1023,27 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
             if (info->key->flags & TYF_STRING || !ty_specific_index_applies(checker, info, key)) continue;
             if (span_valid(info->decl_span)) vec_span_push(&declarations, info->decl_span);
         }
-        if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, intrinsic.index->decl_span);
+        if (vec_span_is_empty(&declarations) && span_valid(intrinsic.index->decl_span)) {
+            vec_span_push(&declarations, intrinsic.index->decl_span);
+        }
+        cstr text = container ? symbol_text(ctx, container) : cstr_init();
+        if (!vec_span_is_empty(&declarations)) {
+            if (cstr_size(&text)) cstr_append_lit(&text, ".");
+            cstr_append_lit(&text, "__index");
+        } else if (container) {
+            declarations = symbol_declaration_spans(container);
+        }
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declarations,
             .allow_declaration_empty = true,
             .span = name->inner_span,
-            .text = member_text(ctx, container, span_null, c_sv("__index"), false),
+            .text = text,
         });
     }
+    // tsc checks the name as an expression: what it is as a value here (see jsx_lookup_names()), else any
+    Symbol const* value = name->tag == EXPR_IDENTIFIER ? name->identifier.target : nullptr;
     ctx->any_keeps_underline = true; // (tsc's harness keeps it for JSX tag names)
-    baseline_test_case_add_type(ctx, name->inner_span, ty_intrinsic(checker, TY_ANY));
+    baseline_test_case_add_type(ctx, name->inner_span, value ? ty_type_of_symbol(checker, value) : ty_intrinsic(checker, TY_ANY));
 }
 
 void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
@@ -1253,6 +1284,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     // An attribute declares a property of the attributes object
                     baseline_test_case_add_symbol(ctx, (BaselineSym){ .declarations = vec_span_single(i->span), .span = i->name });
                     baseline_test_case_add_type(ctx, i->name, ty_jsx_attribute_type(current_checker, me, i));
+                    jsx_namespaced_name_compile_test_info(i->name, ctx);
                 }
                 // (tsc has no line for a string attribute's value)
                 if (i->tag != JSX_ATTRIBUTE_NO_VALUE && i->tag != JSX_ATTRIBUTE_EMPTY_EXPR && i->tag != JSX_ATTRIBUTE_STRING) {
