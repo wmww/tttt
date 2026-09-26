@@ -75,6 +75,11 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
     stage 1), union-order 48 (case by case), line-extra 97 / line-missing 81 (unsampled since stage 0).
 
 ## Checker gaps
+- A context-sensitive arrow against a generic rest (`wrap<Args extends unknown[]>(_: (...args: Args) => void)`,
+  `wrap(({ cancelable } = {}) => {})`): tttt types the parameter `unknown` (the constraint's element), tsc uses the
+  binding pattern's own type `{ cancelable: any; }` (inferFromAnnotatedParameters with a generic rest type).
+  inferredRestTypeFixedOnce lost its errors component to this when destructuring unknown started reporting TS2339
+  (plan 25). Also missing: TS2492 (`catch (x) { let x }`, catchClauseWithTypeAnnotation).
 - `in`/`out` variance annotations on type parameters are parsed and dropped (`GenericItem` has no field): tsc takes the
   variance from them instead of measuring (`getVariancesWorker`), and checks them (TS2636/TS2637). Small now that
   `measure_variances` is shared by declared types and aliases.
