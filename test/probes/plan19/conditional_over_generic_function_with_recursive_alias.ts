@@ -1,0 +1,14 @@
+const F1 = <T,>(p: Partial<{ x: T }>) => 1;
+type A1 = typeof F1 extends { d: infer D } ? 1 : 0;
+const a1: A1 = 0;
+type Par<F> = F extends (...a: infer P) => any ? P : never;
+const F2 = <T,>(p: { x: Par<(t: T) => void>[0] }) => 1;
+type A2 = typeof F2 extends { d: infer D } ? 1 : 0;
+const a2: A2 = 0;
+type DP<T> = T extends object ? { [K in keyof T]?: DP<T[K]> } : T;
+const F3 = <T,>(p: { x: DP<T> }) => 1;
+type A3 = typeof F3 extends { d: infer D } ? 1 : 0;
+const a3: A3 = 0;
+declare function F4<T>(p: { x: T extends string ? 1 : 2 }): 1;
+type A4 = typeof F4 extends { d: infer D } ? 1 : 0;
+const a4: A4 = 0;

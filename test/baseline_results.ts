@@ -4146,9 +4146,9 @@ const baselines = {
         types: true,
     },
     'coAndContraVariantInferences7': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'coAndContraVariantInferences8': {
         errors: true,
@@ -5281,9 +5281,9 @@ const baselines = {
         types: false,
     },
     'complicatedIndexesOfIntersectionsAreInferencable': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'complicatedPrivacy': {
         errors: false,
@@ -6076,9 +6076,9 @@ const baselines = {
         types: true,
     },
     'contextualComputedNonBindablePropertyType': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'contextualExpressionTypecheckingDoesntBlowStack': {
         errors: true,
@@ -6247,7 +6247,7 @@ const baselines = {
     },
     'contextualTypeFunctionObjectPropertyIntersection': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTypeIterableUnions': {
@@ -6656,7 +6656,7 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedJsxAttribute2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8786,12 +8786,12 @@ const baselines = {
         types: false,
     },
     'declarationEmitUsingAlternativeContainingModules1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'declarationEmitUsingAlternativeContainingModules2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15101,7 +15101,7 @@ const baselines = {
         types: true,
     },
     'genericInferenceDefaultTypeParameterJsxReact': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -17236,9 +17236,9 @@ const baselines = {
         types: true,
     },
     'inferPropertyWithContextSensitiveReturnStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferRestArgumentsMappedTuple': {
         errors: false,
@@ -17966,7 +17966,7 @@ const baselines = {
         types: true,
     },
     'instantiateContextualTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -19851,7 +19851,7 @@ const baselines = {
         types: true,
     },
     'jsxChildrenGenericContextualTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -25056,9 +25056,9 @@ const baselines = {
         types: true,
     },
     'overloadedConstructorFixesInferencesAppropriately': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'overloadedStaticMethodSpecialization': {
         errors: true,
@@ -27786,7 +27786,7 @@ const baselines = {
         types: false,
     },
     'reverseMappedIntersectionInference1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27851,8 +27851,8 @@ const baselines = {
         types: false,
     },
     'reverseMappedUnionInference': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'reversedRecusiveTypeInstantiation': {
@@ -28241,7 +28241,7 @@ const baselines = {
         types: false,
     },
     'silentNeverPropagation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30738,7 +30738,7 @@ const baselines = {
     'tsxInferenceShouldNotYieldAnyOnUnions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxInvokeComponentType': {
         errors: true,
@@ -47441,7 +47441,7 @@ const baselines = {
         types: false,
     },
     'typeArgumentInferenceWithObjectLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52851,9 +52851,9 @@ const baselines = {
         types: true,
     },
     'checkJsxGenericTagHasCorrectInferences': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'checkJsxIntersectionElementPropsType': {
         errors: true,
@@ -53833,7 +53833,7 @@ const baselines = {
     'tsxStatelessFunctionComponentsWithTypeArguments1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxStatelessFunctionComponentsWithTypeArguments2': {
         errors: false,

@@ -40,6 +40,7 @@ typedef enum GlobalType {
     GLOBAL_CALLABLE_FUNCTION,
     GLOBAL_NEWABLE_FUNCTION,
     GLOBAL_EMPTY_OBJECT, // Not a global: the `{}` type
+    GLOBAL_ANY_FUNCTION, // Not a global: tsc's anyFunctionType
 } GlobalType;
 
 typedef struct RelationState {
@@ -121,8 +122,8 @@ static Ty const* global_type(Checker* me, GlobalType which) {
     static char const* const names[] = { "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Object", "RegExp", "CallableFunction", "NewableFunction" };
     if (!my global_types_resolved[which]) {
         my global_types_resolved[which] = true;
-        if (which == GLOBAL_EMPTY_OBJECT) {
-            Ty* empty = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT);
+        if (which == GLOBAL_EMPTY_OBJECT || which == GLOBAL_ANY_FUNCTION) {
+            Ty* empty = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | (which == GLOBAL_ANY_FUNCTION ? TYF_NON_INFERRABLE : 0));
             empty->anonymous.state = arena_new(&my arena, TyObjectState);
             empty->anonymous.state->members = arena_new(&my arena, Members);
             empty->anonymous.state->members_state = LAZY_STATE_DONE;
@@ -143,6 +144,7 @@ static Ty const* global_type(Checker* me, GlobalType which) {
 Ty const* ty_global_function_type(Checker* me) { return global_type(me, GLOBAL_FUNCTION); }
 Ty const* ty_global_object_type(Checker* me) { return global_type(me, GLOBAL_OBJECT); }
 Ty const* ty_empty_object_type(Checker* me) { return global_type(me, GLOBAL_EMPTY_OBJECT); }
+Ty const* ty_any_function_type(Checker* me) { return global_type(me, GLOBAL_ANY_FUNCTION); }
 
 // The type of a regular expression literal
 Ty const* ty_global_regexp_type(Checker* me) {
@@ -864,6 +866,7 @@ static bool same_signature_origin(Ty const* source, Ty const* target) {
 static Ternary signatures_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool construct, bool report
 ) {
+    if (source == my global_types[GLOBAL_ANY_FUNCTION] || target == my global_types[GLOBAL_ANY_FUNCTION]) return TERNARY_TRUE;
     Members const* source_members = ty_members(me, source);
     Members const* target_members = ty_members(me, target);
     Signature* const* source_sigs = construct ? source_members->construct : source_members->call;

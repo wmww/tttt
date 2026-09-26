@@ -28,6 +28,9 @@ typedef struct ExprCtx {
     Ty const* contextual; // may be null
     bool is_const; // inside `as const`
     bool template_context; // The index of an element access (a template literal there is a template type)
+    // Context-sensitive functions are ty_any_function_type(), whatever contains one isn't remembered (tsc's
+    // CheckMode.SkipContextSensitive: the first inference pass sees the rest of an object literal argument)
+    bool skip_sensitive;
 } ExprCtx;
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx);
@@ -110,6 +113,13 @@ static bool in_const_context(Checker* me, Expr const* expr, ExprCtx ctx) {
 
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     ctx.is_const = in_const_context(me, expr, ctx);
+    if (ctx.skip_sensitive) {
+        if (ty_expr_is_context_sensitive(expr)) {
+            if (expr->tag == EXPR_FUNCTION) return ty_any_function_type(me);
+            return compute(me, expr, ctx);
+        }
+        ctx.skip_sensitive = false;
+    }
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
     LazyMemo* memo = lazy_type_state_peek(lazy);
@@ -134,6 +144,13 @@ Ty const* ty_check_expr(Checker* me, Expr const* expr, Ty const* contextual) {
 // `is_const`: in a const context whatever the contextual type (it was instantiated from a const type parameter)
 Ty const* ty_check_expr_in_const(Checker* me, Expr const* expr, Ty const* contextual, bool is_const) {
     return check_with(me, expr, (ExprCtx){ .contextual = contextual, .is_const = is_const && is_const_context_kind(expr) });
+}
+
+// Checked with the context-sensitive functions in it left out: see ExprCtx.skip_sensitive
+Ty const* ty_check_expr_skipping_sensitive(Checker* me, Expr const* expr, Ty const* contextual, bool is_const) {
+    return check_with(me, expr, (ExprCtx){
+        .contextual = contextual, .is_const = is_const && is_const_context_kind(expr), .skip_sensitive = true,
+    });
 }
 
 // Unions and widening
@@ -1709,7 +1726,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* key = name ? ty_prop_name_literal(me, name) : key_type;
             if (key) member_context = contextual_prop_type(me, ctx.contextual, key);
         }
-        ExprCtx member_ctx = { .contextual = member_context, .is_const = ctx.is_const };
+        ExprCtx member_ctx = { .contextual = member_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive };
         Ty const* type = nullptr;
         bool is_accessor = i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER;
         switch (i->tag) {
@@ -1848,7 +1865,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
     u32 count = 0;
     for_each (i, vec_expr, &expr->array) {
         Ty const* element_context = contextual_element_type(me, ctx.contextual, (u32)i_index);
-        ExprCtx element_ctx = { .contextual = element_context, .is_const = ctx.is_const };
+        ExprCtx element_ctx = { .contextual = element_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive };
         if (i->tag == EXPR_SPREAD) {
             Ty const* operand = ty_expr_type(me, i->spread);
             if (as_tuple) {
@@ -1918,9 +1935,9 @@ bool ty_jsx_child_is_semantic(JsxChild const* child) {
 }
 
 // The type of a child (tsc's checkJsxChildren)
-static Ty const* check_jsx_child(Checker* me, JsxChild const* child, Ty const* contextual) {
+static Ty const* check_jsx_child(Checker* me, JsxChild const* child, Ty const* contextual, bool skip_sensitive) {
     if (child->tag == JSX_CHILD_TEXT) return ty_intrinsic(me, TY_STRING);
-    return check_for_mutable_location(me, &child->expr, (ExprCtx){ .contextual = contextual });
+    return check_for_mutable_location(me, &child->expr, (ExprCtx){ .contextual = contextual, .skip_sensitive = skip_sensitive });
 }
 
 // The attributes of an element as an object literal (tsc's createJsxAttributesTypeFromAttributesProperty), with the
@@ -1948,7 +1965,10 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
         switch (i->tag) {
             case JSX_ATTRIBUTE_NO_VALUE: type = ty_intrinsic(me, TY_TRUE); break; // `<a x />` is `<a x={true} />`
             case JSX_ATTRIBUTE_EMPTY_EXPR: type = any_type(me); break; // (the error type)
-            default: type = check_for_mutable_location(me, &i->value, (ExprCtx){ .contextual = member_context }); break;
+            default:
+                type = check_for_mutable_location(me, &i->value,
+                    (ExprCtx){ .contextual = member_context, .skip_sensitive = ctx.skip_sensitive });
+                break;
         }
         Span* decl_span = arena_new(&my arena, Span);
         *decl_span = i->span;
@@ -1973,7 +1993,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
         u32 index = 0;
         for_each (i, vec_jsx_child, &element->children) {
             if (!ty_jsx_child_is_semantic(i)) continue;
-            ty_buf_push(&types, check_jsx_child(me, i, jsx_child_context(me, children_context, index++, child_count)));
+            ty_buf_push(&types, check_jsx_child(me, i, jsx_child_context(me, children_context, index++, child_count), ctx.skip_sensitive));
         }
         if (!spread.any && children_name && atom_sv(children_name).size) {
             Ty const* type = types.data[0];

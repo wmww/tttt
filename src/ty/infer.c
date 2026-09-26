@@ -482,7 +482,9 @@ static bool infer_to_mapped(Checker* me, Inference* inf, Ty const* source, Mappe
         if (param && !param->fixed) {
             Ty const* reversed = reverse_mapped_type(me, source, mapped, constraint->keyof.operand);
             if (reversed) {
-                infer_with_priority(me, inf, reversed, constraint->keyof.operand, INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE);
+                // (What a partly non-inferrable source says is only a partial answer)
+                infer_with_priority(me, inf, reversed, constraint->keyof.operand, source->flags & TYF_NON_INFERRABLE ?
+                    INFER_PRIORITY_PARTIAL_HOMOMORPHIC_MAPPED_TYPE : INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE);
             }
         }
         return true;

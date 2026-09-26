@@ -116,6 +116,7 @@ typedef enum InferPriority {
     INFER_PRIORITY_NORMAL = 0,
     INFER_PRIORITY_NAKED_TYPE_VARIABLE = 1 << 0, // to a naked type parameter in a union with other things
     INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE = 1 << 3, // T from a reverse mapped type (`{ [K in keyof T]: X<T[K]> }`)
+    INFER_PRIORITY_PARTIAL_HOMOMORPHIC_MAPPED_TYPE = 1 << 4, // the same, from a source with a skipped function in it
     INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT = 1 << 5, // K from the keys of the source (`{ [P in K]: X }`)
     INFER_PRIORITY_RETURN_TYPE = 1 << 7,
 } InferPriority;

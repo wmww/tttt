@@ -380,14 +380,40 @@ static bool fixed_by_type(Checker* me, Ty const* type, TyMapper const* probe, bo
     return depth < 8 && fixed_by_type(me, signature_return_type(me, contextual), probe, false, depth + 1);
 }
 
+// Of an object or array literal, only the context-sensitive functions in it fix anything: the rest was inferred from in
+// the first pass already (`{ s: 1, cb: () => 0 }` against `Mapped<T>` doesn't fix T, `cb`'s contextual type
+// `() => T["cb"]` has no parameters to type)
+static bool fixed_by_expr(Checker* me, Expr const* expr, Ty const* context, TyMapper const* probe, u32 depth) {
+    if (!context) return false;
+    if (depth < 8 && expr->tag == EXPR_OBJECT) {
+        for_each (i, vec_object_expr_item, &expr->object) {
+            if (!ty_expr_is_context_sensitive(&i->value)) continue;
+            if (i->tag == OBJECT_ITEM_SPREAD || i->computed_key) return fixed_by_type(me, context, probe, true, 8);
+            Ty const* key = ty_prop_name_literal(me, checker_atom(me, cstr_sv(&i->name_string)));
+            if (fixed_by_expr(me, &i->value, ty_contextual_prop_type(me, context, key), probe, depth + 1)) return true;
+        }
+        return false;
+    }
+    if (depth < 8 && expr->tag == EXPR_ARRAY) {
+        for_each (i, vec_expr, &expr->array) {
+            if (!ty_expr_is_context_sensitive(i)) continue;
+            if (i->tag == EXPR_SPREAD) return fixed_by_type(me, context, probe, true, 8);
+            if (fixed_by_expr(me, i, ty_contextual_element_type(me, context, (u32)i_index), probe, depth + 1)) return true;
+        }
+        return false;
+    }
+    // (Only a function returns what the contextual return type says)
+    return fixed_by_type(me, context, probe, true, expr->tag == EXPR_FUNCTION ? 0 : 8);
+}
+
 static bool fixed_by_argument(Checker* me, Arg const* arg, Ty const* param_type, Ty const* param) {
     if (!param_type) return false;
     Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
     TyMapper const* probe = ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &unknown, .len = 1 });
-    // (Only a function argument returns what the contextual return type says; a generic function argument is
-    // instantiated in the context of the parameters alone)
-    bool follow_returns = arg->expr->tag == EXPR_FUNCTION && !arg->generic_function;
-    return fixed_by_type(me, param_type, probe, true, follow_returns ? 0 : 8);
+    // (A generic function argument is instantiated in the context of the parameters alone)
+    if (arg->generic_function) return fixed_by_type(me, param_type, probe, true, 8);
+    if (arg->spread || arg->part_of_spread) return fixed_by_type(me, param_type, probe, true, 8);
+    return fixed_by_expr(me, arg->expr, param_type, probe, 0);
 }
 
 Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members) {
@@ -536,6 +562,17 @@ static TyMapper const* infer_type_arguments(
         if (i >= shape.count && shape.rest_variadic) break;
         if (arg->context_sensitive || arg->generic_call) {
             any_sensitive = true;
+            // The rest of an object or array literal with a context-sensitive function in it is inferred from already
+            // (tsc's CheckMode.SkipContextSensitive): `{ schema, onSubmit: (values) => {} }`
+            Ty const* param_type = shape_type_at(&shape, i);
+            if (arg->context_sensitive && arg->expr->tag != EXPR_FUNCTION && !arg->spread && !arg->part_of_spread && param_type) {
+                my outer_inference = &self;
+                Ty const* context = return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
+                Ty const* type = ty_check_expr_skipping_sensitive(me, arg->expr, context,
+                    ty_is_const_type_variable(me, param_type, 0));
+                my outer_inference = nullptr;
+                infer_types(me, &inf, type, param_type, INFER_PRIORITY_NORMAL);
+            }
             continue;
         }
         my outer_inference = &self;

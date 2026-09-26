@@ -74,7 +74,19 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
         }
         case TY_ANONYMOUS: {
             Members const* members = ty_members(me, ty);
-            if (members->mapped) return true;
+            if (members->mapped) {
+                // Its own type parameter is bound in it
+                MappedInfo const* mapped = members->mapped;
+                if (walk->bound_len >= c_arraylen(walk->bound)) return true;
+                u32 saved = walk->bound_len;
+                walk->bound[walk->bound_len++] = mapped->type_param;
+                bool found = mentions_type_variables(me, mapped->constraint, walk, depth + 1) ||
+                    (mapped->name_type && mentions_type_variables(me, mapped->name_type, walk, depth + 1)) ||
+                    mentions_type_variables(me, mapped->template, walk, depth + 1) ||
+                    (mapped->modifiers_type && mentions_type_variables(me, mapped->modifiers_type, walk, depth + 1));
+                walk->bound_len = saved;
+                return found;
+            }
             for (u32 i = 0; i < members->prop_count; i++) {
                 if (mentions_type_variables(me, prop_type(me, members->props[i]), walk, depth + 1)) return true;
             }
@@ -121,6 +133,20 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
         case TY_STRING_MAPPING:
             return mentions_type_variables(me, ty->string_mapping.type, walk, depth + 1);
         case TY_CONDITIONAL: {
+            TyMapper const* mapper = ty->conditional.mapper;
+            if (ty->conditional.root && mapper) {
+                // An instantiation mentions what the root mentions besides what the mapper replaces, and what that
+                // is replaced with (walking its branches instead expands `DP<T[K]>` recursions level by level)
+                for (u32 i = 0; i < mapper->len; i++) {
+                    if (mentions_type_variables(me, mapper->targets[i], walk, depth + 1)) return true;
+                }
+                u32 saved = walk->bound_len;
+                if (walk->bound_len + mapper->len > c_arraylen(walk->bound)) return true;
+                for (u32 i = 0; i < mapper->len; i++) walk->bound[walk->bound_len++] = mapper->sources[i];
+                bool found = mentions_type_variables(me, ty->conditional.root, walk, depth + 1);
+                walk->bound_len = saved;
+                return found;
+            }
             // Its own `infer` type parameters are bound in it
             Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
             TyList infers = ty_conditional_own_infers(me, root);

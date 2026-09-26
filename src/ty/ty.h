@@ -626,8 +626,8 @@ struct Checker {
     InternTable links;  // Symbol -> SymbolLinks, AST node -> Ty, Generic -> type parameter list...
     Ty const* array_target;
     Ty const* readonly_array_target;
-    Ty const* global_types[11]; // GlobalType in relate.c: String, Number... looked up on first use
-    bool global_types_resolved[11];
+    Ty const* global_types[12]; // GlobalType in relate.c: String, Number... looked up on first use
+    bool global_types_resolved[12];
     u32 instantiation_depth;
     u32 flow_inline_level; // Aliased conditions being narrowed by (ty/flow.c), across nested flow queries like tsc's inlineLevel
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
@@ -898,6 +898,9 @@ Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
 // with `ctx`), else what is assigned to it
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx);
 Ty const* ty_empty_object_type(Checker* me); // `{}`
+// What a context-sensitive function is while context-sensitive arguments are skipped (tsc's anyFunctionType): no
+// members, non-inferrable, related to every function type
+Ty const* ty_any_function_type(Checker* me);
 // tsc's getTypeFromBindingPattern. include_pattern: as the contextual type of an initializer (TYF_BINDING_PATTERN)
 Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
 bool ty_is_array(Checker* me, Ty const* ty); // A reference to Array<T> (not ReadonlyArray, not a tuple)
@@ -996,6 +999,7 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
 typedef struct AsTypeExpr AsTypeExpr;
 bool as_type_is_const(AsTypeExpr const* as_type);
 Ty const* ty_check_expr_in_const(Checker* me, Expr const* expr, Ty const* contextual, bool is_const);
+Ty const* ty_check_expr_skipping_sensitive(Checker* me, Expr const* expr, Ty const* contextual, bool is_const);
 // JSX (jsx.c; the attributes are an object literal, see expr.c)
 struct JsxElement;
 struct JsxChild;

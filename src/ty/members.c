@@ -1675,7 +1675,8 @@ Ty const* ty_object_literal(
             prop->asserted = props[i].asserted;
             prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
-            flags |= props[i].type ? props[i].type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES : TYF_COULD_CONTAIN_TYPE_VARIABLES;
+            flags |= props[i].type ? props[i].type->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_NON_INFERRABLE) :
+                TYF_COULD_CONTAIN_TYPE_VARIABLES;
             builder_push(&builder, props, prop);
         }
         for (u32 i = 0; i < index_count; i++) {
