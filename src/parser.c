@@ -3948,7 +3948,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (ternary_precedence >= ctx.min_precedence && parse_ternary_expr(&p, ctx, &parsed.expr_a, &parsed.expr_b)) {
+    if (!ctx.reject_operators && ternary_precedence >= ctx.min_precedence && parse_ternary_expr(&p, ctx, &parsed.expr_a, &parsed.expr_b)) {
         *left_and_ret = expr_ternary(
             span_from(a),
             c_new(TernaryExpr, {
@@ -4904,9 +4904,33 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
         };
         Anchor a = anchor(&p);
 
-        if (hop_start_if_ends_on_word_break(&p, "type")) {
-            hop_whitespace(&p);
-            item.type_only = true;
+        // `type` is a modifier unless it is the name: `{ type }`, `{ type, a }`, `{ type as x }` and `{ type as as }`
+        // rename or take something called type, `{ type as }` and `{ type as as x }` are type-only (tsc's
+        // parseImportOrExportSpecifier)
+        Parser type_p = parser(&p);
+        if (hop_start_if_ends_on_word_break(&type_p, "type")) {
+            hop_whitespace(&type_p);
+            Parser as_p = parser(&type_p);
+            bool type_is_name = *type_p.pos == ',' || *type_p.pos == '}';
+            if (hop_start_if_ends_on_word_break(&as_p, "as")) {
+                hop_whitespace(&as_p);
+                bool ends = *as_p.pos == ',' || *as_p.pos == '}';
+                if (hop_start_if_ends_on_word_break(&as_p, "as")) {
+                    hop_whitespace(&as_p);
+                    type_is_name = *as_p.pos == ',' || *as_p.pos == '}';
+                } else {
+                    type_is_name = !ends;
+                }
+            }
+            parse_fail(&as_p);
+            if (type_is_name) {
+                parse_fail(&type_p);
+            } else {
+                parse_success(&type_p);
+                item.type_only = true;
+            }
+        } else {
+            parse_fail(&type_p);
         }
 
         // Any identifier name will do: `default as a`, `a as default`

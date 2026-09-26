@@ -8801,8 +8801,8 @@ const baselines = {
         types: true,
     },
     'declarationEmitUsingTypeAlias2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationEmitVarInElidedBlock': {
@@ -49677,7 +49677,7 @@ const baselines = {
     },
     'exportSpecifiers': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportSpecifiers_js': {
@@ -49762,7 +49762,7 @@ const baselines = {
     },
     'importSpecifiers1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importSpecifiers_js': {
@@ -54606,19 +54606,19 @@ const baselines = {
         types: false,
     },
     'nodeModulesAllowJsPackagePatternExportsExclude(module=node16)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJsPackagePatternExportsExclude(module=node18)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJsPackagePatternExportsExclude(module=nodenext)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJsPackagePatternExportsTrailers(module=node16)': {
         errors: false,
