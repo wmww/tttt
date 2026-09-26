@@ -4,9 +4,9 @@ Written by the insights after plan 23 (2026-09-26); `vision.md` "Course correcti
 sessions out of this budget: when 10 sessions have run (count the commits since this file was written), the next
 session is insights, whatever is left here. New work goes into plans or triage.md, not ahead of the insights entry.
 
-3. **Execution: plan 19**, second session: its "After the R10-R14 session" section, TS7053/TS7052 first (a missing
-   check: valibot's biggest bucket and 71 suite diagnostics), then R16. (Entries 1 and 2 are done, 2026-09-26: react
-   80 -> 3, type-fest 168 -> 116, valibot 147 -> 98, suite 8219 -> 8234. That session made 9 commits; count it as one.)
+(Entry 3, plan 19's second session, is done, 2026-09-26: suite 8234 -> 8258, react 3 -> 1, type-fest 116 -> 53,
+valibot 98 -> 61. Its 9 commits count as one session. Plan 19's newest section ranks what's left; R18/R19 want a plan
+of their own, deferred alias/type-reference resolution: see triage.md.)
 4. **Planning: JS/JSDoc** (write plan 26). ~1050 tests (157 pass; 17% of all failing tests), most of the spurious
    TS2304/TS2580. The design question is the binder: CommonJS `module.exports`/`require`, expando assignments
    (`f.x = 1`, `this.x = 1` in constructors, prototype assignments) are declarations in tsc's binder, and JSDoc

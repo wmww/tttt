@@ -10,10 +10,13 @@ types components) are the oracle, not the goal; real projects that are clean und
   JS tests (`@allowJs`/`.js` units) 157 / 1049. Since the insights after plan 13 (5125 / 13163): plans 15 (missing
   checks), 21 (display fidelity), 22 (JSX: 313 of 457 JSX tests pass), 24 (binding patterns), 23 (symbol merging).
   History per plan is in `measurements.md` and git.
-- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **116**, valibot **98**, react
-  **3** (bulletproof-react's Vite app, added by plan 25: React 18 + react-query/router, radix, react-hook-form + zod,
+- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **53**, valibot **61**, react
+  **1** (bulletproof-react's Vite app, added by plan 25: React 18 + react-query/router, radix, react-hook-form + zod,
   Storybook, vitest; 362 at first run, 80 after plan 25, 3 after plan 19's R10-R14 session: tsc's skip-context-
-  sensitive first pass and intra-expression inference, `this` of intersection members, and a few evaluation rules).
+  sensitive first pass and intra-expression inference, `this` of intersection members, and a few evaluation rules;
+  1 after the second plan 19 session). Suite 8258 after that session (TS7053 & co., tuple inference/relation ported
+  from tsc, tail-recursive conditionals). What blocks the rest of type-fest is structural: tttt lowers aliases and
+  type references eagerly where tsc defers them (plan 19 R18/R19), and has no substitution types (R17).
 - **Perf** (`measurements.md`, 2026-09-26; tsgo = typescript 7.0.2 on 4 cores): tsc corpus 0.89 s vs tsgo 1.27
   (single-threaded 1.73), type-fest 0.37 vs 1.96, valibot 0.82 s / 530 MB vs 1.62 s / 822 MB, react 0.31 s / 232 MB
   vs 1.06 s / 545 MB (tsgo single-threaded 0.94). Ahead everywhere, single-threaded; react is parse-dominated

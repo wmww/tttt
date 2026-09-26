@@ -1,8 +1,8 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-26 (after the R10-R14 session)**: tsc 0, **react 3**, **type-fest 116** (TS2345 79, TS2589 13, TS2322
-13, TS2578 6), **valibot 98** (TS2578 40, TS2344 15, TS2322 12, TS2345 7, TS2339 7, TS2589 6). The newest ranking is
-"After the R10-R14 session" at the end; the older sections are history (their counts are stale).
+**Status 2026-09-26 (after the TS7053/R16/type-fest session)**: tsc 0, **react 1** (R15), **type-fest 53** (TS2345 31,
+TS2578 7, TS2322 7, TS2589 5), **valibot 61** (TS2322 12, TS2578 10, TS2344 10, TS2345 7, TS2339 7, TS2589 6). The
+newest ranking is "After the TS7053/R16 session" at the end; the older sections are history (their counts are stale).
 
 `./realworld.py --corpus valibot`, `--corpus type-fest` and `--corpus react` (tsc 5.8 reports 0 on all; tsgo only 2
 TS2554 in valibot under its different moduleResolution). Work them down root cause by root cause, suite and the tsc corpus
@@ -289,3 +289,55 @@ pipeAsync TS2339 3. react's last: table.tsx (R15).
 ### Suggested order
 TS7053 (a missing check, valibot's biggest bucket and suite-visible), R16, then sample type-fest's TS2345 files
 (one root cause per file is typical), R15 (the permissive instantiation R9 also wanted).
+
+## After the TS7053/R16 session (2026-09-26)
+Done: TS7053/TS7052/TS7015 (`ty_check_element_implicit_any`, with a real `TY_RELATION_SUBTYPE`, for-in key types,
+tuple unions), R16 (`GenericFunctionMode`), and from subagent reductions of type-fest (probes in
+`test/probes/plan19/typefest/`, one file per cause): tuple inference/relation ported from tsc (leading variadics),
+intersection-source signatures in inference, mapped types with `as` over primitives and over rest tuples, numeric
+property names in `keyof`, tail-recursive conditional types (`ty_instantiate_tail`), `ty_indexed_instantiated`'s
+R13 overreach, callables without implicit index signatures, primitives against `{ [k: string]: any }`,
+`Record<any, X>`, homomorphic mapped types over index signatures and intersections. What is left, by cause:
+
+### R17. Implied constraints make `{ [K in keyof U]: ... }` non-homomorphic (type-fest shared-union-fields-deep 8)
+`type SO2<U> = keyof U extends infer Keys ? { [K in keyof U]: U[K] } : 0` with `U = A | (A & {foo: any})`: tsc
+`{ a: string }`, tttt distributes (`{ a } | { a; foo }`). In the true branch tsc's getConditionalFlowTypeOfType makes
+`keyof U` a substitution type (constrained by `Keys`), and getHomomorphicTypeVariable needs an Index-flagged
+constraint, so the mapped type isn't homomorphic. tttt decides homomorphism from the syntax (`in_type.tag ==
+TYPE_KEYOF`, `instantiate_mapped_over_list`) and has no substitution types. Probe `typefest/suf_dist.ts`. Size:
+medium (the narrow version: a mapped type whose `keyof X` constraint is the check type of an enclosing conditional
+with an `infer` extends isn't homomorphic).
+
+### R18. Re-lowering a type node that is in flight gives the error type (type-fest conditional-pick-deep 6)
+`type Pk<K extends string> = {[P in K]: 1}; type P<T> = Pk<keyof M<T> & string>; type M<T> = { [K in keyof T]:
+P<T[K]> }`: `P<{o: 1}>` stays `P<T>`. Checking `Pk<...>` against Pk's constraint (only done for constrained
+parameters, `ty_check_type_reference_constraints`) lowers the argument node before P's declared type exists; that
+reaches P's declared type through M, which lowers the same node again while it's in flight and gets TY_ERROR, so P's
+type isn't generic. Forcing the alias's declared type first in `type_decl_typecheck` fixes the probe but breaks the
+DelimiterCase family (type-fest 53 -> 73, `Uppercase<any>`: another in-flight cycle), so it was reverted. The real
+fix is tsc's: alias instantiation and type references that are resolved lazily (isDeferredTypeReferenceNode /
+mayResolveTypeAlias defer array, tuple and generic references in aliases), rather than a memo that returns an error
+when re-entered. Probes `typefest/alias_constraint_cycle.ts`, `pick_rec.ts`, `cpd_opt.ts`. Size: large; a plan of
+its own, also for R19.
+
+### R19. Eager instantiation of recursive aliases: TS2589 where tsc has none (type-fest readonly-deep, writable-deep, ts41)
+`type RD<T> = T extends ReadonlyArray<infer I> ? ReadonlyArray<RD<I>> : T; type J = string | J[]; RD<J>`: tsc defers
+`ReadonlyArray<RD<I>>` (a generic interface reference in an alias whose argument may resolve an alias), tttt expands
+it until the limits. Also: `report_instantiation_limit` reports at the *next* assignability check, which may be
+unrelated code (the probe's TS2589 lands on `const x: number = 1`). Probe `typefest/rd_2589_min.ts`. Same plan as R18.
+
+### Also seen
+- Suite: spurious TS7053 where tttt lacks the rule, not the check: index signatures keyed by tagged strings
+  (`[k: TaggedString1]` indexed by `string & Tag1`, indexSignatures1 8), `in` narrowing (inKeywordTypeguard 8,
+  narrowingMutualSubtypes 4). JS expando TS7053s (lateBoundAssignmentDeclarationSupport*) wait for plan 26.
+- `keyof 1` stays a deferred keyof (for-in over a primitive needed a genericity check in `ty_for_in_key_type`).
+- Display: `X<string | number>` for a distributive alias over a union keeps the alias (tsc only aliases a distributed
+  union for a new alias symbol, `distributed_union_alias.ts`); `P<U>` where tsc prints the indexed access it resolves
+  to (`indexed_prop_is_indexed.ts`).
+- Unsampled: type-fest package-json 5+2, find-global-type 5, exact 3+2, merge 2, get TS2349 2; valibot TS2322 12,
+  TS2578 10, TS2344 10.
+
+### Suggested order
+R17 (medium, 8), then sample valibot (unsampled since the R10 session) and the rest of type-fest; R15 (react's last,
+the permissive instantiation). R18/R19 need a plan (deferred alias/type-reference resolution): write it rather than
+patching the memo.

@@ -6,6 +6,13 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 "Missing checks after plan 15" below has the tail worth knowing about.
 
 ## Category-sized (worth a plan or a whole session)
+- **Deferred alias instantiation and type references** (plan 19 R18/R19, 2026-09-26). tttt lowers a type node once
+  into a memo and gets the error type when the same node is lowered again while in flight; tsc resolves aliases and
+  type references lazily (isDeferredTypeReferenceNode/mayResolveTypeAlias: arrays, tuples and generic references in
+  aliases). Symptoms: an alias whose body reaches itself through a constrained alias argument isn't generic (type-fest
+  ConditionalPickDeep, `Pick`), `ReadonlyDeep<JsonValue>` runs into TS2589 (and the TS2589 lands on the next unrelated
+  assignability check), forcing declared types in statement order produced `Uppercase<any>` in the DelimiterCase
+  family. Worth a plan (insights to schedule): the probes are in `test/probes/plan19/typefest/`.
 - **JS files: JSDoc types, CommonJS**. `.js` files load only with `allowJs`, semantic diagnostics in them only with
   `checkJs`/`@ts-check` (`SourceFile.unchecked`, `error_ctx_remove_unchecked`), so ~900 `@allowJs` tests mostly fail
   *quietly*: they need JSDoc types (`@param`, `@type`, `@typedef`), `module.exports` / `require` as declarations,

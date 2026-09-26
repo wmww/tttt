@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, plan 19 session 2 (TS7053, R16, type-fest reductions)
+Suite 8234 -> **8258 / 13540** full (errors 10011 -> 10029, symbols 11849 -> 11851, types 10025 -> 10035), no
+component lost. Corpora: tsc 0, **react 3 -> 1**, **type-fest 116 -> 53**, **valibot 98 -> 61**. `./bench.sh` not
+rerun; `./realworld.py` walls: tsc corpus 0.95-1.4 s (noisy, same range before and after each change), valibot
+0.84-1.2 s / 521 MB, react 0.32 s / 232 MB, type-fest 0.5 s / **415 MB** (was 96 MB: `IntRange<0, 999>` now
+evaluates, tail-recursive tuples up to 999 elements, 276 MB of it; it used to be cut short silently).
+
 ## 2026-09-26, plan 19 session (R10-R14 and a re-sample)
 Suite 8219 -> **8234 / 13540** full (errors 9992 -> 10011, symbols 11842 -> 11849, types 10006 -> 10025), no
 component lost. Corpora: tsc 0, **react 80 -> 3**, **type-fest 168 -> 116**, **valibot 147 -> 98**. `./bench.sh` not
