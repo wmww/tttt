@@ -86,6 +86,7 @@ typedef struct SourceFile {
     struct {
         csview factory, fragment_factory, runtime, import_source;
     } jsx_pragmas;
+    bool jsx_fragment_factory_looked_up; // By the resolve walk, for TS2879: once per file, like tsc's getJSXFragmentType
     // Semantic diagnostics (names, types) inside this file aren't reported: JavaScript without `checkJs` or a leading
     // `// @ts-check`, any file with `// @ts-nocheck`
     bool unchecked;

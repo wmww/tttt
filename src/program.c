@@ -747,6 +747,47 @@ static void program_validate_options(Program* me) {
             "Option 'emitDecoratorMetadata' cannot be specified without specifying option 'experimentalDecorators'."
         );
     }
+    // The JSX factories (tsc's verifyCompilerOptions)
+    bool automatic = o->jsx == JSX_REACT_JSX || o->jsx == JSX_REACT_JSXDEV;
+    const char* jsx_name = o->jsx == JSX_REACT_JSX ? "react-jsx" : o->jsx == JSX_REACT_JSXDEV ? "react-jsxdev" : "react";
+    if (cstr_size(&o->jsx_factory)) {
+        if (cstr_size(&o->react_namespace)) {
+            error_ctx_global_error_d(my errs, 5053, "Option 'reactNamespace' cannot be specified with option 'jsxFactory'.");
+        }
+        if (automatic) {
+            error_ctx_global_error_d(my errs, 5089, "Option 'jsxFactory' cannot be specified when option 'jsx' is '",
+                jsx_name, "'.");
+        }
+        if (!compiler_option_is_entity_name(cstr_sv(&o->jsx_factory))) {
+            error_ctx_global_error_d(my errs, 5067, "Invalid value for 'jsxFactory'. '", o->jsx_factory,
+                "' is not a valid identifier or qualified-name.");
+        }
+    } else if (cstr_size(&o->react_namespace) && !compiler_option_is_identifier(cstr_sv(&o->react_namespace))) {
+        error_ctx_global_error_d(my errs, 5059, "Invalid value for '--reactNamespace'. '", o->react_namespace,
+            "' is not a valid identifier.");
+    }
+    if (cstr_size(&o->jsx_fragment_factory)) {
+        if (!cstr_size(&o->jsx_factory)) {
+            error_ctx_global_error_d(my errs, 5052,
+                "Option 'jsxFragmentFactory' cannot be specified without specifying option 'jsxFactory'.");
+        }
+        if (automatic) {
+            error_ctx_global_error_d(my errs, 5089, "Option 'jsxFragmentFactory' cannot be specified when option 'jsx' is '",
+                jsx_name, "'.");
+        }
+        if (!compiler_option_is_entity_name(cstr_sv(&o->jsx_fragment_factory))) {
+            error_ctx_global_error_d(my errs, 18035, "Invalid value for 'jsxFragmentFactory'. '", o->jsx_fragment_factory,
+                "' is not a valid identifier or qualified-name.");
+        }
+    }
+    if (cstr_size(&o->react_namespace) && automatic) {
+        error_ctx_global_error_d(my errs, 5089, "Option 'reactNamespace' cannot be specified when option 'jsx' is '",
+            jsx_name, "'.");
+    }
+    if (cstr_size(&o->jsx_import_source) && o->jsx == JSX_REACT) {
+        error_ctx_global_error_d(my errs, 5089, "Option 'jsxImportSource' cannot be specified when option 'jsx' is '",
+            jsx_name, "'.");
+    }
 }
 
 // tsc's getDiagnosticsWithPrecedingDirectives: a semantic diagnostic (of `phase`, resolving names or typechecking) that

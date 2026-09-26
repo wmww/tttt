@@ -366,3 +366,23 @@ void clear_compiler_options() {
     panic_if(!compiler_options_private, "Global compiler options cleared when unset");
     compiler_options_private = nullptr;
 }
+
+bool compiler_option_is_identifier(csview text) {
+    if (!text.size) return false;
+    for (isize i = 0; i < text.size; i++) {
+        unsigned char c = (unsigned char)text.buf[i];
+        bool valid = c >= 0x80 || c == '_' || c == '$' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+            (i > 0 && c >= '0' && c <= '9');
+        if (!valid) return false;
+    }
+    return true;
+}
+
+bool compiler_option_is_entity_name(csview text) {
+    while (true) {
+        isize dot = csview_find(text, ".");
+        if (dot == c_NPOS) return compiler_option_is_identifier(text);
+        if (!compiler_option_is_identifier(csview_slice(text, 0, dot))) return false;
+        text = csview_slice(text, dot + 1, text.size);
+    }
+}

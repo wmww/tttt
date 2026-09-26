@@ -825,16 +825,23 @@ static csview first_identifier(csview sv) {
     return dot == c_NPOS ? sv : csview_slice(sv, 0, dot);
 }
 
-// tsc's getJsxNamespace: the name the factory of an element (or fragment) starts with
+// tsc's getJsxNamespace: the name the factory of an element (or fragment) starts with. A fragment goes by its own
+// factory (pragma, then option) else the program's, not by an `@jsx` pragma. Invalid names count as not given
 static csview jsx_factory_name(SourceFile const* file, bool fragment) {
     CompilerOptions const* options = compiler_options();
     if (fragment) {
-        if (file && file->jsx_pragmas.fragment_factory.size) return first_identifier(file->jsx_pragmas.fragment_factory);
-        if (cstr_size(&options->jsx_fragment_factory)) return first_identifier(cstr_sv(&options->jsx_fragment_factory));
-    } else if (file && file->jsx_pragmas.factory.size) {
+        csview pragma = file ? file->jsx_pragmas.fragment_factory : c_sv("");
+        if (compiler_option_is_entity_name(pragma)) return first_identifier(pragma);
+        if (compiler_option_is_entity_name(cstr_sv(&options->jsx_fragment_factory))) {
+            return first_identifier(cstr_sv(&options->jsx_fragment_factory));
+        }
+    } else if (file && compiler_option_is_entity_name(file->jsx_pragmas.factory)) {
         return first_identifier(file->jsx_pragmas.factory);
     }
-    if (cstr_size(&options->jsx_factory)) return first_identifier(cstr_sv(&options->jsx_factory));
+    if (cstr_size(&options->jsx_factory)) {
+        csview factory = cstr_sv(&options->jsx_factory);
+        return compiler_option_is_entity_name(factory) ? first_identifier(factory) : c_sv("React");
+    }
     if (cstr_size(&options->react_namespace)) return cstr_sv(&options->react_namespace);
     return c_sv("React");
 }
@@ -866,7 +873,10 @@ static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview
         unused_mark_referenced(names, found, SYMBOL_VALUE);
     } else if (jsx == JSX_REACT) {
         Span at = fragment || !el->tag_name.inner_span.sv.size ? el->opening_span : el->tag_name.inner_span;
-        error_ctx_error_d(errs, at, 2874, "This JSX tag requires '", name, "' to be in scope, but it could not be found.");
+        // (tsc's resolveName: a misspelling is said to be one instead)
+        if (!scope_report_misspelled(names, at, name, meaning, errs)) {
+            error_ctx_error_d(errs, at, 2874, "This JSX tag requires '", name, "' to be in scope, but it could not be found.");
+        }
     }
     return found;
 }
@@ -880,11 +890,36 @@ static void jsx_lookup_factory(Expr* expr, Scope* names, ErrorCtx* errs) {
     // With a runtime module the factory isn't referenced at all (tsc's markJsxAliasReferenced)
     // (Blamed on the element, only the opening `<>` of a fragment: whichever tsc asks at first)
     el->runtime_module = jsx_runtime_module(fragment ? el->opening_span : expr->inner_span, names, errs);
+    CompilerOptions const* options = compiler_options();
+    SourceFile const* file = names->file;
+    if (fragment && options->jsx != JSX_PRESERVE && options->jsx != JSX_REACT_NATIVE && options->jsx != JSX_NONE &&
+        !cstr_size(&options->jsx_fragment_factory) && !(file && file->jsx_pragmas.fragment_factory.size)
+    ) {
+        // A factory of its own needs a fragment factory of its own (tsc's checkJsxFragment)
+        if (cstr_size(&options->jsx_factory)) {
+            error_ctx_error_d(errs, expr->inner_span, 17016, "The 'jsxFragmentFactory' compiler option must be provided "
+                "to use JSX fragments with the 'jsxFactory' compiler option.");
+        } else if (file && file->jsx_pragmas.factory.size) {
+            error_ctx_error_d(errs, expr->inner_span, 17017,
+                "An @jsxFrag pragma is required when using an @jsx pragma with JSX fragments.");
+        }
+    }
     if (el->runtime_module) return;
     // `null` as the fragment factory (tsc allows it)
-    if (!(fragment && csview_equals(name, "null"))) el->factory_value = jsx_reference_factory(el, fragment, name, names, errs);
+    bool null_fragment = fragment && csview_equals(name, "null");
+    if (!null_fragment) el->factory_value = jsx_reference_factory(el, fragment, name, names, errs);
     // A fragment refers to the element factory too
-    if (fragment) jsx_reference_factory(el, fragment, jsx_factory_name(names->file, false), names, errs);
+    if (fragment) jsx_reference_factory(el, fragment, jsx_factory_name(file, false), names, errs);
+    // What a fragment evaluates to is looked up once per file (tsc's getJSXFragmentType), and said to be missing then
+    if (fragment && !null_fragment && file && !file->jsx_fragment_factory_looked_up &&
+        (options->jsx == JSX_REACT || cstr_size(&options->jsx_fragment_factory))
+    ) {
+        ((SourceFile*)file)->jsx_fragment_factory_looked_up = true; // (the resolve walk's only per-file state)
+        if (!el->factory_value) {
+            error_ctx_error_d(errs, el->opening_span, 2879, "Using JSX fragments requires fragment factory '", name,
+                "' to be in scope, but it could not be found.");
+        }
+    }
 }
 
 // Not inlined, like jsx_typecheck()

@@ -19961,7 +19961,7 @@ const baselines = {
         types: true,
     },
     'jsxFactoryAndJsxFragmentFactoryErrorNotIdentifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19971,12 +19971,12 @@ const baselines = {
         types: true,
     },
     'jsxFactoryAndReactNamespace': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsxFactoryButNoJsxFragmentFactory': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19991,7 +19991,7 @@ const baselines = {
         types: true,
     },
     'jsxFactoryIdentifierWithAbsentParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20001,12 +20001,12 @@ const baselines = {
         types: true,
     },
     'jsxFactoryNotIdentifierOrQualifiedName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsxFactoryNotIdentifierOrQualifiedName2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20016,7 +20016,7 @@ const baselines = {
         types: true,
     },
     'jsxFactoryQualifiedNameResolutionError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20051,7 +20051,7 @@ const baselines = {
         types: true,
     },
     'jsxFragmentFactoryReference(jsx=react)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26611,7 +26611,7 @@ const baselines = {
         types: false,
     },
     'reactNamespaceInvalidInput': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52931,7 +52931,7 @@ const baselines = {
         types: true,
     },
     'inlineJsxFactoryWithFragmentIsError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

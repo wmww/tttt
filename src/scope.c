@@ -1713,7 +1713,6 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, b
 
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
     Binder* binder = my binder;
-    Suggestion suggestion = {0};
     // A global of a later lib is said to be so rather than misspelled
     char const* lib = lib_feature_of_global(name.sv);
     if (lib) {
@@ -1721,17 +1720,21 @@ void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorth
         error_cannot_find_name(errs, name, lib, shorthand);
         return;
     }
-    if (binder->suggestion_count++ < 10 && scope_suggest(me, name.sv, meaning, &suggestion)) {
-        Error* error = error_ctx_error_d(errs, name, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
-        Symbol const* symbol = suggestion.symbol;
-        for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
-            if (!(symbol->decls[i].flags & SYMBOL_VALUE)) continue;
-            error_add_related_d(error, symbol->decls[i].name, 2728, "'", suggestion.name, "' is declared here.");
-            break;
-        }
-        return;
-    }
+    if (scope_report_misspelled(me, name, name.sv, meaning, errs)) return;
     error_cannot_find_name(errs, name, nullptr, shorthand);
+}
+
+bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning, ErrorCtx* errs) {
+    Suggestion suggestion = {0};
+    if (my binder->suggestion_count++ >= 10 || !scope_suggest(me, name, meaning, &suggestion)) return false;
+    Error* error = error_ctx_error_d(errs, at, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
+    Symbol const* symbol = suggestion.symbol;
+    for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
+        if (!(symbol->decls[i].flags & SYMBOL_VALUE)) continue;
+        error_add_related_d(error, symbol->decls[i].name, 2728, "'", suggestion.name, "' is declared here.");
+        break;
+    }
+    return true;
 }
 
 typedef struct PendingNotFound {

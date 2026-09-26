@@ -203,6 +203,11 @@ cstr compiler_options_lib_files(CompilerOptions const* me);
 
 bool compiler_option_is_boolean(csview name);
 
+// tsc's isIdentifierText / parseIsolatedEntityName, for jsxFactory, jsxFragmentFactory, reactNamespace and the JSX
+// pragmas: `h`, `React.createElement` (any non-ASCII character counts as an identifier character)
+bool compiler_option_is_identifier(csview text);
+bool compiler_option_is_entity_name(csview text);
+
 // For the harness: if name is an option that tsc's test runner varies ("@target: es5,es2015" is two test
 // configurations, "@lib: es5,dom" is one). True for the boolean and enum options, including ones we ignore otherwise
 bool compiler_option_varies(csview name);
