@@ -677,6 +677,8 @@ TyList ty_list_copy(Checker* me, Ty const* const* data, u32 len);
 
 Ty const* ty_unresolved(Checker* me, csview name);
 Ty const* ty_literal(Checker* me, Value const* value);
+// The property name a string, number or unique symbol literal type is as a key (null for other types)
+Atom const* ty_literal_name(Checker* me, Ty const* literal);
 Ty const* ty_enum_literal(Checker* me, Value const* value, Symbol const* enum_decl, Symbol const* member);
 Ty const* ty_enum_computed_member(Checker* me, Symbol const* enum_decl, Symbol const* member);
 Ty const* ty_string_literal(Checker* me, csview sv);

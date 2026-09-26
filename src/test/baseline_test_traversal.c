@@ -40,6 +40,7 @@ typedef struct PropSymbolInfo {
     bool found;
     u32 member_count; // Members of the object type that have the property
     bool missing_in_member; // Some member of a union has no such property: no symbol at all, like tsc
+    bool strict_union; // A member that isn't an object (`undefined`) has no such property either
     Symbol const* parent;
     Symbol const* member_symbol; // A namespace's or module's export: named by its symbol
     Symbol const* namespace; // The object is a namespace's or module's value: the property is its export
@@ -59,7 +60,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         if (constraint) object = constraint;
     }
     if (object->kind == TY_UNION || object->kind == TY_INTERSECTION) {
-        PropSymbolInfo inner = { .declarations = vec_span_init() };
+        PropSymbolInfo inner = { .declarations = vec_span_init(), .strict_union = info->strict_union };
         for (u32 i = 0; i < object->composite.types.len; i++) {
             collect_prop_symbol(checker, object->composite.types.data[i], name, &inner, depth + 1);
         }
@@ -90,7 +91,12 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         return;
     }
     object = ty_apparent_type(checker, object);
-    if (!(object->flags & TYF_OBJECT)) return;
+    if (!(object->flags & TYF_OBJECT)) {
+        // (`undefined` in a union has no properties either: the union's property is partial. Only said for binding
+        // patterns: the object of a property access is sometimes not narrowed as far as tsc's, hacks.md)
+        if (info->strict_union && !(object->flags & (TYF_NEVER | TYF_ANY))) info->missing_in_member = true;
+        return;
+    }
     Prop const* prop = ty_get_object_prop(checker, object, name);
     if (!prop) {
         info->missing_in_member = true;
@@ -218,6 +224,25 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             for_each (i, vec_object_binding_item, &my object) {
                 if (i->computed_key) {
                     expr_compile_test_info(i->computed_key, ctx);
+                } else if (!i->target.rest && !span_eq(i->source_span, i->target.content_span) &&
+                    i->source_span.sv.size && i->source_span.sv.buf[0] != '"' && i->source_span.sv.buf[0] != '\'' && !isdigit((unsigned char)i->source_span.sv.buf[0])
+                ) {
+                    // `{ a: x }`: the property name is the property of the pattern's type (tsc's getSymbolAtLocation
+                    // of a binding element's propertyName). A string or numeric name isn't an expression to tsc's walker
+                    Checker* checker = current_checker;
+                    Ty const* object = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
+                    Atom const* name = ty_literal_name(checker, ty_literal(checker, &i->source));
+                    PropSymbolInfo info = { .strict_union = true };
+                    if (name) collect_prop_symbol(checker, object, name, &info, 0);
+                    if (info.found) {
+                        baseline_test_case_add_symbol(ctx, (BaselineSym){
+                            .declarations = vec_span_clone(info.declarations),
+                            .allow_declaration_empty = true,
+                            .span = i->source_span,
+                            .text = prop_text(&info, ctx, i->source_span),
+                        });
+                    }
+                    vec_span_drop(&info.declarations);
                 }
                 binding_content_compile_test_info(&i->target, ctx);
             }
