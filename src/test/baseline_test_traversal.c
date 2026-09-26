@@ -1095,6 +1095,54 @@ static void jsx_namespaced_name_compile_test_info(Span name, BaselineTestCase* c
     }
 }
 
+// A name that finds an index signature of `object` (tsc's getApplicableIndexSymbol): `__index`, declared by the index
+// signatures that apply to the key (several patterns can), named after the object type's symbol. An index signature
+// without a declaration (of a mapped type) is the type's symbol itself for a JSX tag (`undeclared_is_type`), else
+// nothing. False if no line was added
+static bool index_symbol_compile_test_info(BaselineTestCase* ctx, Ty const* object, Ty const* key, Span span, bool undeclared_is_type) {
+    Checker* checker = current_checker;
+    Ty const* apparent = ty_apparent_type(checker, object);
+    if (!(apparent->flags & TYF_OBJECT)) return false;
+    Symbol const* container = object->alias ? object->alias :
+        apparent->kind == TY_DECLARED ? apparent->declared.symbol :
+        apparent->kind == TY_REFERENCE ? apparent->reference.target->declared.symbol : nullptr;
+    Members const* members = ty_members(checker, apparent);
+    VecSpan declarations = {0};
+    bool any = false;
+    // (a specific one first: tsc lists the applicable ones in the order of the members, but the string index
+    // signature only applies when nothing else does)
+    for (u32 pass = 0; pass < 2 && !any; pass++) {
+        for (u32 i = 0; i < members->index_count; i++) {
+            IndexInfo const* info = &members->index[i];
+            bool is_string = info->key->flags & TYF_STRING;
+            if (is_string != (pass == 1)) continue;
+            if (!is_string && !ty_specific_index_applies(checker, info, key)) continue;
+            if (is_string && !(ty_key_flags(key) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL))) continue;
+            any = true;
+            // (Never one of a lib: no baseline of tsc's has such an `__index`, useRegexpGroups has none where a
+            // local copy of the same declarations does. Unexplained, hacks.md)
+            if (span_valid(info->decl_span) && !(info->decl_span.source && info->decl_span.source->is_stdlib && !undeclared_is_type)) {
+                vec_span_push(&declarations, info->decl_span);
+            }
+        }
+    }
+    if (!any || (vec_span_is_empty(&declarations) && !undeclared_is_type)) return false;
+    cstr text = container ? symbol_text(ctx, container) : cstr_init();
+    if (!vec_span_is_empty(&declarations)) {
+        if (cstr_size(&text)) cstr_append_lit(&text, ".");
+        cstr_append_lit(&text, "__index");
+    } else if (container) {
+        declarations = symbol_declaration_spans(container);
+    }
+    baseline_test_case_add_symbol(ctx, (BaselineSym){
+        .declarations = declarations,
+        .allow_declaration_empty = true,
+        .span = span,
+        .text = text,
+    });
+    return true;
+}
+
 // The opening or closing tag name of an element: a value tag is a reference, an intrinsic one is `any` and names a
 // member of JSX.IntrinsicElements (its property, or its index signature: `__index`)
 static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, BaselineTestCase* ctx) {
@@ -1122,34 +1170,7 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
         }
         vec_span_drop(&info.declarations);
     } else if (intrinsic.index) {
-        Symbol const* container = intrinsic.elements->kind == TY_DECLARED ? intrinsic.elements->declared.symbol :
-            intrinsic.elements->alias;
-        // (tsc's getApplicableIndexSymbol: the index signatures that apply, several patterns can. An index signature
-        // without a declaration, of a mapped type, is IntrinsicElements itself)
-        VecSpan declarations = {0};
-        Members const* members = ty_members(checker, ty_apparent_type(checker, intrinsic.elements));
-        Ty const* key = ty_string_literal(checker, name->identifier.name.sv);
-        for (u32 i = 0; i < members->index_count; i++) {
-            IndexInfo const* info = &members->index[i];
-            if (info->key->flags & TYF_STRING || !ty_specific_index_applies(checker, info, key)) continue;
-            if (span_valid(info->decl_span)) vec_span_push(&declarations, info->decl_span);
-        }
-        if (vec_span_is_empty(&declarations) && span_valid(intrinsic.index->decl_span)) {
-            vec_span_push(&declarations, intrinsic.index->decl_span);
-        }
-        cstr text = container ? symbol_text(ctx, container) : cstr_init();
-        if (!vec_span_is_empty(&declarations)) {
-            if (cstr_size(&text)) cstr_append_lit(&text, ".");
-            cstr_append_lit(&text, "__index");
-        } else if (container) {
-            declarations = symbol_declaration_spans(container);
-        }
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declarations,
-            .allow_declaration_empty = true,
-            .span = name->inner_span,
-            .text = text,
-        });
+        index_symbol_compile_test_info(ctx, intrinsic.elements, ty_string_literal(checker, name->identifier.name.sv), name->inner_span, true);
     }
     // tsc checks the name as an expression: what it is as a value here (see jsx_lookup_names()), else any
     Symbol const* value = name->tag == EXPR_IDENTIFIER ? name->identifier.target : nullptr;
@@ -1255,6 +1276,26 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 }
             }
             vec_span_drop(&info.declarations);
+            if (!info.found && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
+                !(key->flags & TYF_ENUM_LITERAL) && my property->prop.tag == EXPR_LITERAL &&
+                !csview_starts_with(my property->prop.outer_span.sv, "#")
+            ) {
+                // Through a declared index signature: `__index`, on the access and on the name (not of a type
+                // parameter's constraint, not in element accesses: tsc has no symbol there)
+                // Only types whose members have an `__index` symbol: declared ones and written type literals, not
+                // what spreads and the like synthesize (tsc's getIndexSymbolFromSymbolTable)
+                Ty const* root = object->kind == TY_ANONYMOUS ? object : nullptr;
+                while (root && root->anonymous.target) root = root->anonymous.target;
+                bool declared = object->kind == TY_DECLARED || object->kind == TY_REFERENCE ||
+                    (root && root->anonymous.node && !root->anonymous.object_literal);
+                if (my property->form == PROPERTY_EXPR_DOT && declared &&
+                    index_symbol_compile_test_info(ctx, object, key, my inner_span, false)
+                ) {
+                    expr_compile_test_info(&my property->expr, ctx);
+                    has_compiled_expr_info = true;
+                    index_symbol_compile_test_info(ctx, object, key, my property->prop.outer_span, false);
+                }
+            }
 
             bool dot = my property->form != PROPERTY_EXPR_BRACKET;
             if (!has_compiled_expr_info) {

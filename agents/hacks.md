@@ -201,6 +201,18 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   load_test_source() ends each unit's lines (tsc joins them). A last unit followed by `// @link` lines still comes out
   one line off (symbolLinkDeclarationEmitModuleNamesImportRef).
 - `arguments` resolution per target (`scope_has_arguments`) has no TS2815 (`arguments` in a class field initializer).
+- Symbols of property accesses (`collect_prop_symbol()` in the traversal): a union member that isn't an object type
+  (`X | undefined`) is skipped for property accesses and only makes the property partial (no symbol, like tsc) for
+  binding patterns (`strict_union`). Turning it on for accesses lost 40 tests whose object tttt narrows less than tsc
+  (implicitConstParameters: a const parameter narrowed inside a closure): the leniency hides narrowing gaps.
+- `__index` symbols (`index_symbol_compile_test_info()`): only for declared types and written type literals (tsc's
+  getIndexSymbolFromSymbolTable finds none in what spreads synthesize), and never for an index signature declared in a
+  lib: no tsc baseline has one, and useRegexpGroups has none where a local copy of the same interface does.
+  Unexplained; revisit if a lib `__index` ever shows up.
+- Declaration order (`symbol_declaration_spans()`): each block's function declarations first (tsc's
+  bindEachFunctionsFirst), by the scope recorded in `SymbolDecl.block`; declarations without one (aliases, lib-merged
+  type parameters) group by file. Lib file order (`SymbolConstructor` in lib.es2015.iterable before lib.es2015.symbol)
+  isn't tsc's.
 
 ## Missing checks (plan 15, retired: `unused.c`, `ty/check.c`, `ty/helpers.c`, `statement.c`, `class_decl.c`)
 - `Symbol.referenced` (unused locals) is written by the resolve walk of the file that uses a name, also for globals

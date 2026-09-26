@@ -9407,22 +9407,22 @@ const baselines = {
     },
     'deleteExpressionMustBeOptional(strict=false)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'deleteExpressionMustBeOptional(strict=true)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'deleteExpressionMustBeOptional_exactOptionalPropertyTypes(exactoptionalpropertytypes=false)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'deleteExpressionMustBeOptional_exactOptionalPropertyTypes(exactoptionalpropertytypes=true)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'deleteOperator1': {
@@ -10622,12 +10622,12 @@ const baselines = {
     },
     'emitAccessExpressionOfCastedObjectLiteralExpressionInArrowFunctionES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emitAccessExpressionOfCastedObjectLiteralExpressionInArrowFunctionES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emitBOM': {
@@ -23792,7 +23792,7 @@ const baselines = {
     },
     'noUncheckedIndexedAccessCompoundAssignments': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noUnusedLocals_destructuringAssignment': {
@@ -26282,7 +26282,7 @@ const baselines = {
     },
     'propertyAccessOfReadonlyIndexSignature': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'propertyAccessOnObjectLiteral': {
@@ -33552,7 +33552,7 @@ const baselines = {
     },
     'noPropertyAccessFromIndexSignature1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ambientDeclarations': {
@@ -37657,12 +37657,12 @@ const baselines = {
     },
     'staticIndexSignature1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'staticIndexSignature2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'staticIndexSignature3': {
@@ -37672,7 +37672,7 @@ const baselines = {
     },
     'staticIndexSignature4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'staticIndexSignature5': {
@@ -37682,7 +37682,7 @@ const baselines = {
     },
     'staticIndexSignature6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'staticIndexSignature7': {
@@ -37832,7 +37832,7 @@ const baselines = {
     },
     'controlFlowElementAccess2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'controlFlowElementAccessNoCrash1': {
@@ -37937,7 +37937,7 @@ const baselines = {
     },
     'controlFlowStringIndex': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'controlFlowSuperPropertyAccess': {
@@ -47912,12 +47912,12 @@ const baselines = {
     },
     'propertyAccessStringIndexSignature': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'propertyAccessStringIndexSignatureNoImplicitAny': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'propertyAccessWidening': {
@@ -48197,7 +48197,7 @@ const baselines = {
     },
     'typeGuardOfFromPropNameInUnionType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeGuardRedundancy': {
@@ -59952,7 +59952,7 @@ const baselines = {
     },
     'noUncheckedIndexedAccess': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noUncheckedIndexedAccessDestructuring': {
@@ -63857,7 +63857,7 @@ const baselines = {
     },
     'keyofAndIndexedAccess2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'keyofAndIndexedAccessErrors': {
@@ -64282,7 +64282,7 @@ const baselines = {
     },
     'indexSignatures1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectTypeHidingMembersOfExtendedObject': {
@@ -65622,7 +65622,7 @@ const baselines = {
     },
     'thisTypeInFunctions2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'thisTypeInFunctions3': {
