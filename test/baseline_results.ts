@@ -21286,12 +21286,12 @@ const baselines = {
         types: true,
     },
     'missingFunctionImplementation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'missingFunctionImplementation2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22701,8 +22701,8 @@ const baselines = {
         types: true,
     },
     'namespacesWithTypeAliasOnlyExportsMerge': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'nanEquality': {
@@ -23776,7 +23776,7 @@ const baselines = {
         types: true,
     },
     'noSymbolForMergeCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31811,7 +31811,7 @@ const baselines = {
         types: false,
     },
     'umdGlobalConflict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51083,7 +51083,7 @@ const baselines = {
     'reExportAliasMakesInstantiated': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'assertionsAndNonReturningFunctions': {
         errors: false,

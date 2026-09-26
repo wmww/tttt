@@ -303,6 +303,8 @@ typedef struct Scope {
     Symbol const* self;
     // Strict mode code (tsc's inStrictMode): a module, alwaysStrict, a "use strict" prologue, a class body
     bool strict;
+    // The statements declared in this scope (block_add_names()), null if none were
+    struct Block const* block;
 } Scope;
 
 // Symbol pointer -> symbol pointer, open addressing

@@ -161,9 +161,82 @@ void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
 }
 
+static bool block_is_instantiated(Block const* me, bool const_enums, Scope const* outer, u32 depth);
+
+typedef enum InstanceState { NON_INSTANTIATED, CONST_ENUM_ONLY, INSTANTIATED } InstanceState;
+
+// The instance state of a statement that declares `name`, NON_INSTANTIATED if it declares nothing of that name (tsc's
+// nodeHasName and getModuleInstanceStateCached). found: whether it declares it
+static InstanceState statement_instance_state_of(Statement const* me, csview name, Scope const* outer, u32 depth, bool* found) {
+    *found = false;
+    switch (my tag) {
+        case STATEMENT_DECL_TYPE:
+            *found = csview_equals_sv(my decl.type.name.sv, name);
+            return NON_INSTANTIATED;
+        case STATEMENT_DECL_INTERFACE:
+            *found = csview_equals_sv(my decl.interface->name.sv, name);
+            return NON_INSTANTIATED;
+        case STATEMENT_DECL_ENUM:
+            *found = csview_equals_sv(my decl.enum_->name.sv, name);
+            return my decl.enum_->is_const ? CONST_ENUM_ONLY : INSTANTIATED;
+        case STATEMENT_DECL_FUNCTION:
+            *found = csview_equals_sv(my decl.function.impl->name.sv, name);
+            return INSTANTIATED;
+        case STATEMENT_DECL_CLASS:
+            *found = csview_equals_sv(my decl.class->name.sv, name);
+            return INSTANTIATED;
+        case STATEMENT_DECL_VARIABLE:
+            for_each (i, vec_initialized_binding, &my decl.variable.initializers) {
+                if (i->binding.tag == BINDING_IDENTIFIER && csview_equals_sv(i->binding.content_span.sv, name)) *found = true;
+            }
+            return INSTANTIATED;
+        case STATEMENT_DECL_NAMESPACE:
+            *found = !my decl.namespace.is_ambient_module && csview_equals_sv(my decl.namespace.name.sv, name);
+            if (!*found) return NON_INSTANTIATED;
+            return my decl.namespace.is_global ||
+                block_is_instantiated(&my decl.namespace.contents, true, outer, depth + 1) ? INSTANTIATED : NON_INSTANTIATED;
+        case STATEMENT_IMPORT_EXPORT: {
+            // A re-export of `import x = N.x` is instantiated, it's ambiguous. Other imports aren't
+            PortStatement const* port = my import_export;
+            bool is_export = span_equals(port->keyword_span, "export");
+            if (!is_export && csview_equals_sv(port_item_name(port->main.decl_name), name)) *found = true;
+            for_each (i, vec_port_item, &port->items) {
+                if (!is_export && csview_equals_sv(port_item_name(i->decl_name), name)) *found = true;
+            }
+            return *found && port->main.tag == PORT_IMPORT_ALIAS ? INSTANTIATED : NON_INSTANTIATED;
+        }
+        default:
+            return NON_INSTANTIATED;
+    }
+}
+
+// tsc's getModuleInstanceStateForAliasTarget: `export { a }` is as instantiated as the declarations of `a` in the
+// nearest block that has any (`me`, then the blocks of the scopes around it). Instantiated if there are none
+static InstanceState alias_target_state(Block const* me, csview name, Scope const* outer, u32 depth) {
+    if (depth > 16) return NON_INSTANTIATED; // (A cycle: tsc's visited map says non-instantiated)
+    Block const* block = me;
+    Scope const* scope = outer;
+    while (block) {
+        bool any = false;
+        InstanceState state = NON_INSTANTIATED;
+        for_each (i, vec_statement, &block->statements) {
+            bool found;
+            InstanceState s = statement_instance_state_of(i, name, scope, depth, &found);
+            if (!found) continue;
+            any = true;
+            if (s > state) state = s;
+        }
+        if (any) return state;
+        while (scope && (!scope->block || scope->block == block)) scope = scope->parent;
+        block = scope ? scope->block : nullptr;
+    }
+    return INSTANTIATED;
+}
+
 // tsc's getModuleInstanceState(), syntactically: a namespace is a value if it contains more than types
-// const_enums: whether a `const enum` counts (it does for the symbol, for unreachable code only when it is emitted)
-static bool block_is_instantiated(Block const* me, bool const_enums) {
+// const_enums: whether a `const enum` counts (it does for the symbol, for unreachable code only when it is emitted).
+// outer: the scope the namespace is declared in, where the names it exports without declaring are looked up
+static bool block_is_instantiated(Block const* me, bool const_enums, Scope const* outer, u32 depth) {
     for_each (i, vec_statement, &my statements) {
         switch (i->tag) {
             case STATEMENT_NOOP:
@@ -175,17 +248,28 @@ static bool block_is_instantiated(Block const* me, bool const_enums) {
                 if (const_enums || !i->decl.enum_->is_const) return true;
                 break;
 
-            case STATEMENT_IMPORT_EXPORT:
-                // TODO: an export declaration is as instantiated as what it exports
-                if (port_item_is_export(&i->import_export->main) || i->import_export->main.export_import ||
-                    span_equals(i->import_export->keyword_span, "export")
+            case STATEMENT_IMPORT_EXPORT: {
+                PortStatement const* port = i->import_export;
+                bool is_export = span_equals(port->keyword_span, "export");
+                if (is_export && !port->module_ref && port->main.tag == PORT_NOOP && !port->main.export_import) {
+                    // `export { a, b }`
+                    for_each (item, vec_port_item, &port->items) {
+                        Span source = span_valid(item->source_name) ? item->source_name : item->decl_name;
+                        InstanceState state = alias_target_state(me, port_item_name(source), outer, depth);
+                        if (state == INSTANTIATED || (state == CONST_ENUM_ONLY && const_enums)) return true;
+                    }
+                    break;
+                }
+                if (port_item_is_export(&port->main) || port->main.export_import || is_export) return true;
+                break;
+            }
+
+            case STATEMENT_DECL_NAMESPACE:
+                if (i->decl.namespace.is_global ||
+                    block_is_instantiated(&i->decl.namespace.contents, const_enums, outer, depth + 1)
                 ) {
                     return true;
                 }
-                break;
-
-            case STATEMENT_DECL_NAMESPACE:
-                if (i->decl.namespace.is_global || block_is_instantiated(&i->decl.namespace.contents, const_enums)) return true;
                 break;
 
             default:
@@ -227,7 +311,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             my inner_scope->container = module;
             my is_augmentation = augmentation;
         } else {
-            bool has_value = block_is_instantiated(&my contents, true);
+            bool has_value = block_is_instantiated(&my contents, true, scope, 0);
             scope_init_declaration(scope, &my symbol, (DeclProps){
                 .name = my name,
                 .full = my full_span,
@@ -613,7 +697,8 @@ void statement_add_names(Statement* me, Scope* scope) {
 }
 
 bool namespace_decl_is_instantiated(NamespaceDecl const* me) {
-    return block_is_instantiated(&my contents, compiler_options()->preserve_const_enums);
+    return block_is_instantiated(&my contents, compiler_options()->preserve_const_enums,
+        my inner_scope ? my inner_scope->parent : nullptr, 0);
 }
 
 // Control flow (flow.h). These follow the functions of the same names in tsc's binder
@@ -626,7 +711,7 @@ static bool statement_is_executable(Statement const* me) {
         case STATEMENT_DECL_INTERFACE:
             return false;
         case STATEMENT_DECL_NAMESPACE:
-            return block_is_instantiated(&my decl.namespace.contents, compiler_options()->preserve_const_enums);
+            return namespace_decl_is_instantiated(&my decl.namespace);
         case STATEMENT_DECL_ENUM:
             return !my decl.enum_->is_const || compiler_options()->preserve_const_enums;
         case STATEMENT_DECL_VARIABLE:
@@ -1313,7 +1398,9 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
             FunctionImpl const* other = function_declaration(vec_statement_at(statements, j));
             later_here = other && csview_equals_sv(other->name.sv, overload->name.sv);
         }
-        Symbol const* symbol = overload->symbol;
+        // (Only a global merges across blocks: tsc checks a namespace's exported functions by the local symbol of
+        // each block)
+        Symbol const* symbol = overload->symbol && !overload->symbol->parent ? overload->symbol : nullptr;
         bool later_elsewhere = false;
         for (u32 d = 0; symbol && d < symbol->decl_count; d++) {
             if (symbol->decls[d].node != overload) continue;

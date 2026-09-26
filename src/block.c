@@ -12,6 +12,7 @@ void block_drop(Block* me) {
 }
 
 void block_add_names(Block const* me, Scope* scope) {
+    if (!scope->block) scope->block = me;
     bool hoist = scope_is_var_container(scope);
     // Function declarations first, like tsc's bindEachFunctionsFirst: that decides which of two conflicting
     // declarations is the first one

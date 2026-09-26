@@ -534,6 +534,14 @@ static void report_multiple_defaults(ErrorCtx* errs, Symbol const* existing, Spa
 
 static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, u32 includes, bool related) {
     bool same_file = existing->decl_count && existing->decls[0].name.source == name.source;
+    if (!same_file && existing->flags & SYMBOL_NAMESPACE_MODULE && !existing->is_global_this) {
+        // Across files symbols are merged by the checker in tsc, whose mergeSymbol says this into a namespace
+        if (span_valid(name) && name.source && !name.source->is_stdlib) {
+            error_ctx_error_d(errs, name, 2649, "Cannot augment module '", existing->name,
+                "' with value exports because it resolves to a non-module entity.");
+        }
+        return;
+    }
     unsigned code = 2300;
     if ((existing->flags | includes) & SYMBOL_ENUM) {
         code = 2567;
@@ -971,10 +979,21 @@ void scope_add_port(Scope* me, PortItem* item) {
             // A global alias of the module (UMD). TODO: TS2686 when a module uses it
             if (my kind != SCOPE_MODULE || !my container) return;
             if (my file && my file->is_js) return; // TypeScript only (TS8xxx): tsc's symbols baseline has no alias there
-            bool merged;
-            Symbol* symbol = declare_symbol(
-                me, &my binder->globals, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, false, &merged
-            );
+            // Of two UMD globals of the same name the first one wins, silently (tsc's initializeTypeChecker): the
+            // other is a symbol of its own that isn't global
+            Symbol const* existing = symbol_table_get(&my binder->globals, port_item_name(item->decl_name));
+            bool merged = false;
+            Symbol* symbol;
+            if (existing && existing->flags & SYMBOL_ALIAS && existing->alias && existing->alias->item &&
+                existing->alias->item->tag == PORT_EXPORT_AS_NAMESPACE
+            ) {
+                symbol = binder_new_symbol(my binder, port_item_name(item->decl_name), SYMBOL_ALIAS);
+            } else {
+                symbol = declare_symbol(
+                    me, &my binder->globals, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES,
+                    false, &merged
+                );
+            }
             if (merged) {
                 // Merged into a global that isn't an alias yet (`declare global { namespace N {} }`): the alias
                 // still needs a target, or resolving the symbol dereferences a null scope
