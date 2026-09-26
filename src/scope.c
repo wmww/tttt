@@ -504,6 +504,27 @@ static void add_duplicate_related(Error* error, Span at, Span other) {
     }
 }
 
+// tsc's declareSymbol for a second default export: TS2528 on every declaration, related to the new one ("Another export
+// default is here" on the first, "and here" on the others) and from the new one to each ("The first export default is
+// here")
+static void report_multiple_defaults(ErrorCtx* errs, Symbol const* existing, Span name) {
+    for (u32 i = 0; i < existing->decl_count; i++) {
+        Span at = existing->decls[i].name;
+        if (!span_valid(at) || !at.source || at.source->is_stdlib) continue;
+        Error* error = error_ctx_error_d(errs, at, 2528, "A module cannot have multiple default exports.");
+        if (!span_valid(name)) continue;
+        if (i == 0) error_add_related_d(error, name, 2753, "Another export default is here.");
+        else error_add_related_d(error, name, 6204, "and here.");
+    }
+    if (!span_valid(name) || !name.source || name.source->is_stdlib) return;
+    Error* error = error_ctx_error_d(errs, name, 2528, "A module cannot have multiple default exports.");
+    for (u32 i = 0; i < existing->decl_count; i++) {
+        if (span_valid(existing->decls[i].name)) {
+            error_add_related_d(error, existing->decls[i].name, 2752, "The first export default is here.");
+        }
+    }
+}
+
 static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, u32 includes, bool related) {
     bool same_file = existing->decl_count && existing->decls[0].name.source == name.source;
     unsigned code = 2300;
@@ -546,9 +567,13 @@ static Symbol* clone_parent_symbol(Binder* binder, Symbol const* original) {
     return ret;
 }
 
-// tsc's declareSymbol(). *merged is whether the symbol existed already
+static void scope_declare_default_local(Scope* me, Symbol* symbol, Span name, u32 excludes);
+
+// tsc's declareSymbol(). *merged is whether the symbol existed already. default_export: a declaration of the `default`
+// export of a module, which conflicts with the others as TS2528
 static Symbol* declare_symbol(
-    Scope* scope, SymbolTable* table, csview name, Span name_span, u32 includes, u32 excludes, bool* merged
+    Scope* scope, SymbolTable* table, csview name, Span name_span, u32 includes, u32 excludes, bool default_export,
+    bool* merged
 ) {
     Binder* binder = scope->binder;
     u64 hash = symbol_name_hash(name);
@@ -567,7 +592,8 @@ static Symbol* declare_symbol(
     }
     if (existing) {
         if (existing->flags & excludes) {
-            report_conflicts(scope->errs, existing, name_span, includes, false);
+            if (default_export && existing->decl_count) report_multiple_defaults(scope->errs, existing, name_span);
+            else report_conflicts(scope->errs, existing, name_span, includes, false);
             return binder_new_symbol(binder, name, includes);
         }
         existing->decl_flags_before = existing->flags;
@@ -689,9 +715,20 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
 
     u32 includes, excludes;
     symbol_flags_of_props(&props, &includes, &excludes);
-    SymbolTable* table = scope_declaration_table(scope, props.exported);
+    if (props.default_export && !(scope->container && scope->container->is_module)) {
+        props.default_export = false; // TODO: TS1319 and friends
+    }
+    SymbolTable* table;
+    csview name = props.name.sv;
+    if (props.default_export) {
+        symbol_ensure_exports(scope->container);
+        table = scope->container->exports;
+        name = c_sv("default");
+    } else {
+        table = scope_declaration_table(scope, props.exported);
+    }
     bool merged;
-    Symbol* symbol = declare_symbol(scope, table, props.name.sv, props.name, includes, excludes, &merged);
+    Symbol* symbol = declare_symbol(scope, table, name, props.name, includes, excludes, props.default_export, &merged);
     u32 flags_before = merged ? symbol->decl_flags_before : 0;
     if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER && props.kind != SYMBOL_DECL_INFER) {
         // Type parameters of the same name merge as far as tsc's binder is concerned, which is what `infer U` twice
@@ -714,7 +751,14 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     if (props.kind == SYMBOL_DECL_VARIABLE || props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM) {
         symbol->is_ambient |= scope->ambient || props.is_ambient;
     }
-    if (!merged) {
+    if (!merged && props.default_export) {
+        // Named like its (first) declaration (tsc's getNameOfSymbolAsWritten), and exported like the declarations
+        // `export default x` refers to
+        symbol->name = span_valid(props.name) ? props.name.sv : c_sv("default");
+        symbol->name_span = props.name;
+        symbol->is_default_export = true;
+        symbol->referenced = SYMBOL_ANY_MEANING;
+    } else if (!merged) {
         // Like in tsc only exports have a parent: a local of a namespace is just `x`, not `N.x`
         if (scope->container && table == scope->container->exports) symbol->parent = scope->container;
         symbol->name_span = props.name;
@@ -724,11 +768,26 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
             symbol->function = scope->function;
         }
     }
+    if (props.default_export && span_valid(props.name)) scope_declare_default_local(scope, symbol, props.name, excludes);
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = props.kind, .flags = includes, .node = props.node, .name = props.name, .full = props.full, .block = scope,
     });
     if (includes & (SYMBOL_NAMESPACE_MODULE | SYMBOL_VALUE_MODULE | SYMBOL_ENUM)) symbol_ensure_exports(symbol);
     *ret = symbol;
+}
+
+// `export default class A`: `A` names the module's `default` symbol locally (tsc declares a local symbol whose
+// exportSymbol is the default, and resolves `A` to the default when it has the meaning looked for)
+static void scope_declare_default_local(Scope* me, Symbol* symbol, Span name, u32 excludes) {
+    u64 hash = symbol_name_hash(name.sv);
+    Symbol* existing = symbol_table_get_own(&my locals, name.sv, hash);
+    if (!existing) {
+        symbol_table_insert(&my locals, &my binder->arena, name.sv, hash, symbol);
+    } else if (existing != symbol && existing->flags & excludes) {
+        report_conflicts(my errs, existing, name, symbol->flags, false);
+    }
+    // TODO: a compatible local declared first (`namespace A {}` then `export default function A() {}`) keeps the name,
+    // tsc resolves `A` to the default export for the meanings it has
 }
 
 // tsc's getDeclarationSpaces (without aliases, which would need resolving)
@@ -784,6 +843,18 @@ void scope_check_export_merges(Scope* me, Span block) {
     }
 }
 
+Span symbol_decl_error_span(SymbolDecl const* decl) {
+    // `export default x` (tsc: the ExportAssignment)
+    if (decl->kind == SYMBOL_DECL_EXPR || (decl->kind == SYMBOL_DECL_ALIAS && !decl->node)) return decl->full;
+    if (span_valid(decl->name) || !span_valid(decl->full)) return decl->name;
+    // `export default function () {}`: its first token (tsc's getErrorSpanForNode without a name)
+    Span ret = decl->full;
+    isize len = 0;
+    while (len < ret.sv.size && (isalnum((unsigned char)ret.sv.buf[len]) || ret.sv.buf[len] == '_')) len++;
+    ret.sv.size = len ? len : 1;
+    return ret;
+}
+
 void scope_check_duplicate_exports(Scope* me) {
     if (!my container || !my container->exports) return;
     SymbolTable const* exports = my container->exports;
@@ -802,8 +873,7 @@ void scope_check_duplicate_exports(Scope* me) {
         for (u32 d = 0; d < symbol->decl_count; d++) {
             SymbolDecl const* decl = &symbol->decls[d];
             if (decl->kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)decl->node)->has_body) continue;
-            if (!span_valid(decl->name)) continue; // TODO: `export default function () {}` (tsc: the `default` keyword)
-            error_ctx_error_d(my errs, decl->name, 2323, "Cannot redeclare exported variable '", exports->entries[i].name,
+            error_ctx_error_d(my errs, symbol_decl_error_span(decl), 2323, "Cannot redeclare exported variable '", exports->entries[i].name,
                 "'.");
         }
     }
@@ -826,7 +896,7 @@ void scope_add_port(Scope* me, PortItem* item) {
             if (my file && my file->is_js) return; // TypeScript only (TS8xxx): tsc's symbols baseline has no alias there
             bool merged;
             Symbol* symbol = declare_symbol(
-                me, &my binder->globals, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
+                me, &my binder->globals, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, false, &merged
             );
             if (merged) {
                 // Merged into a global that isn't an alias yet (`declare global { namespace N {} }`): the alias
@@ -883,8 +953,10 @@ void scope_add_port(Scope* me, PortItem* item) {
     SymbolTable* table = !exported && (my kind == SCOPE_MODULE || my kind == SCOPE_NAMESPACE) ? &my locals :
         scope_declaration_table(me, exported);
     bool merged;
+    csview name = port_item_name(item->decl_name);
+    bool default_export = exported && my container && my container->is_module && csview_equals(name, "default");
     Symbol* symbol = declare_symbol(
-        me, table, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
+        me, table, name, item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, default_export, &merged
     );
     if (!merged) {
         symbol->parent = my container;
@@ -907,60 +979,38 @@ void scope_add_port(Scope* me, PortItem* item) {
     }
 }
 
-static bool scope_default_export_table(
-    Scope* me, csview name, Span at, Symbol const* symbol, u32 flags, SymbolTable** table
-) {
-    if (!my container || !my container->is_module) return false; // TODO: TS1319 and friends
+void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool export_equals) {
+    if (!my container || !my container->is_module) return; // TODO: TS1319 and friends
     symbol_ensure_exports(my container);
-    *table = my container->exports;
-    Symbol* existing = symbol_table_get(*table, name);
-    if (existing && !csview_equals(name, "default")) return false; // TODO: TS2300 for a second `export =`
-    if (existing && (existing == symbol || !(existing->flags & flags & SYMBOL_ANY_MEANING))) {
-        return false; // Overloads, or an interface and a value. TODO: the second one is lost
-    }
-    if (existing) {
-        for (u32 i = 0; i < existing->decl_count; i++) {
-            if (span_valid(existing->decls[i].name)) {
-                error_ctx_error_d(my errs, existing->decls[i].name, 2528, "A module cannot have multiple default exports.");
-            }
-        }
-        if (span_valid(at)) error_ctx_error_d(my errs, at, 2528, "A module cannot have multiple default exports.");
-        return false;
-    }
-    return true;
-}
-
-void scope_export_default(Scope* me, Symbol* symbol) {
-    symbol->referenced = SYMBOL_ANY_MEANING; // An export, like tsc's exportSymbol
-    SymbolTable* table;
-    if (!scope_default_export_table(me, c_sv("default"), symbol->name_span, symbol, symbol->flags, &table)) return;
-    symbol_table_insert(table, &my binder->arena, c_sv("default"), symbol_name_hash(c_sv("default")), symbol);
-}
-
-void scope_export_default_expr(Scope* me, Expr* expr, bool export_equals) {
-    SymbolTable* table;
     csview export_name = export_equals ? c_sv("export=") : c_sv("default");
-    if (!scope_default_export_table(me, export_name, expr->outer_span, nullptr, SYMBOL_VALUE, &table)) return;
-    Symbol* symbol;
-    if (expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword) {
-        // Everything the name means is exported, types included
-        symbol = binder_new_symbol(my binder, export_name, SYMBOL_ALIAS);
+    // Everything the name means is exported, types included; other expressions are a value. Nothing else can be
+    // exported under the name (tsc's bindExportAssignment: SymbolFlags.All)
+    bool alias = expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword;
+    u32 includes = alias ? SYMBOL_ALIAS : SYMBOL_BLOCK_SCOPED_VARIABLE;
+    bool merged;
+    Symbol* symbol = declare_symbol(
+        me, my container->exports, export_name, expr->outer_span, includes, SYMBOL_ANY_MEANING | SYMBOL_ALIAS,
+        !export_equals, &merged
+    );
+    if (!merged) {
+        symbol->name = alias ? expr->identifier.name.sv : export_name;
+        symbol->name_span = alias ? expr->identifier.name : expr->outer_span;
+        symbol->parent = my container;
+        symbol->is_default_export = !export_equals;
+    }
+    if (alias) {
+        if (!symbol->alias) symbol->alias = arena_new(&my binder->arena, SymbolAlias);
         symbol->alias->scope = me;
         symbol->alias->name = expr->identifier.name;
-        symbol->name_span = expr->identifier.name;
         symbol_add_decl(symbol, (SymbolDecl){
-            .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr->outer_span, .full = expr->outer_span,
+            .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr->outer_span, .full = statement,
         });
     } else {
-        symbol = binder_new_symbol(my binder, export_name, SYMBOL_BLOCK_SCOPED_VARIABLE);
-        symbol->name_span = expr->outer_span;
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_EXPR, .flags = SYMBOL_BLOCK_SCOPED_VARIABLE, .node = expr,
-            .name = expr->outer_span, .full = expr->outer_span,
+            .name = expr->outer_span, .full = statement,
         });
     }
-    symbol->parent = my container;
-    symbol_table_insert(table, &my binder->arena, export_name, symbol_name_hash(export_name), symbol);
 }
 
 // Modules

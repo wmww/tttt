@@ -18,11 +18,7 @@ typedef struct SwitchStatement SwitchStatement;
 typedef struct PortStatement PortStatement;
 
 typedef struct DeclStatementProps {
-    enum {
-        DECL_EXPORTED_NO = 0,
-        DECL_EXPORTED_YES,
-        DECL_EXPORTED_YES_DEFAULT,
-    } exported;
+    DeclExported exported;
     bool declared;
 } DeclStatementProps;
 
@@ -190,7 +186,7 @@ static inline bool statement_declares_name(typeof((Statement){}.tag) tag) {
     return statement_tag_is_decl(tag) || tag == STATEMENT_DECL_INTERFACE || tag == STATEMENT_DECL_NAMESPACE;
 }
 
-static inline typeof(((DeclStatementProps){}).exported) statement_get_exported(Statement const* me) {
+static inline DeclExported statement_get_exported(Statement const* me) {
     if (statement_tag_is_decl(my tag)) {
         return my decl.props.exported;
     } else if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR) {

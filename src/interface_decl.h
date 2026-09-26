@@ -16,6 +16,6 @@ typedef struct InterfaceDecl {
 } InterfaceDecl;
 
 void interface_decl_drop(InterfaceDecl* me);
-void interface_decl_add_names(InterfaceDecl* me, Scope* scope, bool exported);
+void interface_decl_add_names(InterfaceDecl* me, Scope* scope, DeclExported exported);
 void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs);
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs);

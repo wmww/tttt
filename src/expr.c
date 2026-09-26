@@ -1308,7 +1308,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             Scope* name_scope = names;
             if (span_valid(my function->name)) {
                 name_scope = scope_new(names, SCOPE_BLOCK);
-                function_impl_add_names(my function, name_scope, false);
+                function_impl_add_names(my function, name_scope, DECL_EXPORTED_NO);
             }
             my function->syntactically_contextual = flow->contextual_depth > 0;
             function_impl_lookup_names_as(my function, FUNCTION_IS_EXPRESSION, !span_valid(my function->arrow_span), name_scope, errs);
@@ -1357,7 +1357,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_CLASS_DECL: {
             Scope* class_name_scope = scope_new(names, SCOPE_BLOCK);
-            class_decl_add_names(my class_decl, class_name_scope, false, false);
+            class_decl_add_names(my class_decl, class_name_scope, DECL_EXPORTED_NO, false);
             class_decl_lookup_names(my class_decl, class_name_scope, errs);
         }   break;
 

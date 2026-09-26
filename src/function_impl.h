@@ -89,7 +89,7 @@ typedef struct FunctionImpl {
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);
-void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported);
+void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported);
 typedef enum FunctionFlowKind {
     FUNCTION_IS_DECLARATION, // Function declarations, class members, signatures: a control flow graph of their own
     // Function expressions, arrow functions, object literal methods: narrowings of the flow they're made in can

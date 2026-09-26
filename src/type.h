@@ -15,6 +15,14 @@ typedef struct TupleElement TupleElement;
 typedef struct TemplateType TemplateType;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct Scope Scope;
+
+// How a declaration statement is exported
+typedef enum DeclExported : uint8_t {
+    DECL_EXPORTED_NO = 0,
+    DECL_EXPORTED_YES,
+    DECL_EXPORTED_YES_DEFAULT,
+} DeclExported;
+
 typedef struct Generic Generic;
 typedef struct CallExpr CallExpr;
 typedef struct Expr Expr;

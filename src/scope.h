@@ -165,6 +165,8 @@ typedef struct Symbol {
     bool is_global_this;
     bool is_shorthand_module; // `declare module "m";`: every import from it is any
     bool is_placeholder; // Stands for something that couldn't be resolved: everything looked up in it is any
+    // The `default` export of a module (named like its first declaration, `export default class A` is `A`)
+    bool is_default_export;
 
     // Local variables and parameters (symbols one file owns), written by that file's resolve walk: what narrowing
     // inside closures depends on. `function` is the function the variable belongs to (null: top level of a file,
@@ -202,6 +204,8 @@ static inline void const* symbol_find_node(Symbol const* me, SymbolDeclKind kind
 }
 // The type parameters of the (first) class, interface or type alias declaration, null if it has none
 Generic const* symbol_type_generic(Symbol const* me);
+// Where an error about the declaration goes: its name, the first token of a nameless one
+Span symbol_decl_error_span(SymbolDecl const* decl);
 // The full span of every declaration
 VecSpan symbol_declaration_spans(Symbol const* me);
 // The flags of the symbol with aliases seen through
@@ -221,6 +225,9 @@ typedef struct DeclProps {
     Span name;
     Span full;
     bool exported;
+    // `export default class A`: declared in the module's exports as `default` (merging with the other default exports
+    // like tsc's), and locally as `A` if it has a name
+    bool default_export;
     SymbolDeclKind kind;
     void const* node;
     bool function_scoped; // `var`
@@ -388,10 +395,8 @@ static inline Symbol const* binder_redirect(Binder const* me, Symbol const* symb
 // existing symbol when tsc's rules allow it. Checks that ret was previously null
 void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props);
 void scope_add_port(Scope* me, PortItem* item);
-// `export default` of a declaration (which is declared locally under its own name) and of an expression
-void scope_export_default(Scope* me, Symbol* symbol);
-// export_equals: `export = x`, under the name `export=` like in tsc
-void scope_export_default_expr(Scope* me, Expr* expr, bool export_equals);
+// `export default <expr>`, export_equals: `export = x`, under the name `export=` like in tsc
+void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool export_equals);
 
 // Whether the scope's own tables (its locals, its container's exports) have the symbol
 bool scope_declares_symbol(Scope const* me, Symbol const* symbol);

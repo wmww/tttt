@@ -523,30 +523,10 @@ void statement_hoist_names(Statement* me, Scope* scope) {
     }
 }
 
-// `export default function f() {}`: f locally, `default` in the exports
-static void statement_export_default(Statement const* me, Scope* scope) {
-    Symbol* symbol = nullptr;
-    switch (my tag) {
-        case STATEMENT_DECL_FUNCTION: symbol = my decl.function.impl->symbol; break;
-        case STATEMENT_DECL_ENUM: symbol = my decl.enum_->symbol; break;
-        case STATEMENT_DECL_CLASS: symbol = my decl.class->symbol; break;
-        case STATEMENT_DECL_INTERFACE: symbol = my decl.interface->symbol; break;
-        default: break;
-    }
-    if (symbol) scope_export_default(scope, symbol);
-}
-
 void statement_add_names(Statement* me, Scope* scope) {
-    if (statement_declares_name(my tag) && my decl.props.exported == DECL_EXPORTED_YES_DEFAULT) {
-        my decl.props.exported = DECL_EXPORTED_NO;
-        statement_add_names(me, scope);
-        my decl.props.exported = DECL_EXPORTED_YES_DEFAULT;
-        statement_export_default(me, scope);
-        return;
-    }
     switch (my tag) {
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-            scope_export_default_expr(scope, &my expr, my export_equals);
+            scope_export_default_expr(scope, &my expr, my span, my export_equals);
             break;
 
         case STATEMENT_IMPORT_EXPORT:
@@ -1355,7 +1335,7 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
         Error* error;
         if (decl->kind == SYMBOL_DECL_CLASS) {
             error = error_ctx_error_d(errs, decl->name, 2813, "Class declaration cannot implement overload list for '",
-                symbol->name, "'.");
+                symbol->is_default_export ? c_sv("default") : symbol->name, "'.");
         } else if (decl->kind == SYMBOL_DECL_FUNCTION) {
             error = error_ctx_error_d(errs, decl->name, 2814,
                 "Function with bodies can only merge with classes that are ambient.");
@@ -1374,7 +1354,7 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
     if (bodies < 2) return;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;
-        error_ctx_error_d(errs, symbol->decls[i].name, 2393, "Duplicate function implementation.");
+        error_ctx_error_d(errs, symbol_decl_error_span(&symbol->decls[i]), 2393, "Duplicate function implementation.");
     }
 }
 

@@ -115,6 +115,6 @@ void class_decl_drop(ClassDecl* me);
 Span class_decl_display_name(ClassDecl const* me);
 /// The first member of the class named `#name` (tsc's lookupSymbolForPrivateIdentifierDeclaration for one class)
 ClassItem const* class_decl_find_private_name(ClassDecl const* me, csview name);
-void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported, bool declared);
+void class_decl_add_names(ClassDecl* me, Scope* scope, DeclExported exported, bool declared);
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

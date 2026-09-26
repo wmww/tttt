@@ -682,7 +682,7 @@ const baselines = {
     },
     'ambientExportDefaultErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ambientExternalModuleInAnotherExternalModule': {
@@ -8047,7 +8047,7 @@ const baselines = {
     },
     'declarationEmitExportAliasVisibiilityMarking': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitExportAssignedNamespaceNoTripleSlashTypesReference': {
@@ -8822,7 +8822,7 @@ const baselines = {
     },
     'declarationEmitWithDefaultAsComputedName2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitWithInvalidPackageJsonTypings': {
@@ -8952,7 +8952,7 @@ const baselines = {
     },
     'declarationsIndirectGeneratedAliasReference': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationsWithRecursiveInternalTypesProduceUniqueTypeParams': {
@@ -12736,7 +12736,7 @@ const baselines = {
         types: true,
     },
     'exportDefaultAlias_excludesEverything': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12751,9 +12751,9 @@ const baselines = {
         types: false,
     },
     'exportDefaultClassAndValue': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportDefaultClassInNamespace': {
         errors: false,
@@ -12787,28 +12787,28 @@ const baselines = {
     },
     'exportDefaultInterfaceAndFunctionOverloads': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportDefaultInterfaceAndTwoFunctions': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'exportDefaultInterfaceAndValue': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportDefaultInterfaceClassAndFunctionOverloads': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'exportDefaultInterfaceClassAndValue': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportDefaultMarksIdentifierAsUsed': {
         errors: true,
@@ -12851,19 +12851,19 @@ const baselines = {
         types: true,
     },
     'exportDefaultTypeAndClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exportDefaultTypeAndFunctionOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exportDefaultTypeClassAndValue': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportDefaultVariable': {
         errors: true,
@@ -38872,62 +38872,62 @@ const baselines = {
     },
     'importCallExpressionNestedAMD': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedAMD2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedCJS': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedCJS2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedES2015': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedES20152': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedES2020': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedES20202': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedSystem': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedSystem2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedUMD': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNestedUMD2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionNoModuleKindSpecified': {
@@ -42917,17 +42917,17 @@ const baselines = {
     },
     'exportsAndImports4-amd': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportsAndImports4-es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportsAndImports4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportsAndImports5': {
@@ -42976,8 +42976,8 @@ const baselines = {
         types: false,
     },
     'multipleDefaultExports02': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'multipleDefaultExports03': {
@@ -42991,7 +42991,7 @@ const baselines = {
         types: true,
     },
     'multipleDefaultExports05': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49221,9 +49221,9 @@ const baselines = {
         types: true,
     },
     'multipleExportDefault5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'multipleExportDefault6': {
         errors: false,
@@ -55602,7 +55602,7 @@ const baselines = {
     },
     'declarationFileForHtmlFileWithinDeclarationFile': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationFileForHtmlImport(allowarbitraryextensions=false)': {
@@ -55612,7 +55612,7 @@ const baselines = {
     },
     'declarationFileForHtmlImport(allowarbitraryextensions=true)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationFileForJsonImport(resolvejsonmodule=false)': {
@@ -60522,7 +60522,7 @@ const baselines = {
     },
     'plainJSGrammarErrors2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'plainJSGrammarErrors3': {

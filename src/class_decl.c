@@ -195,12 +195,13 @@ Span class_decl_display_name(ClassDecl const* me) {
     return sv_make_span(my is_expression ? c_sv("(Anonymous class)") : c_sv("default")); // `export default class {}`
 }
 
-void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported, bool declared) {
+void class_decl_add_names(ClassDecl* me, Scope* scope, DeclExported exported, bool declared) {
     my is_ambient = declared || scope->ambient;
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
-        .exported = exported,
+        .exported = exported == DECL_EXPORTED_YES,
+        .default_export = exported == DECL_EXPORTED_YES_DEFAULT,
         .is_ambient = declared,
         .kind = SYMBOL_DECL_CLASS,
         .node = me,

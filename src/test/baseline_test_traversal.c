@@ -26,6 +26,12 @@ static inline VecSpan declaration_get_spans(Symbol const* me) {
     return symbol_declaration_spans(me);
 }
 
+// The declarations of a module's `default` export are all named like its first one (`export default function f` and
+// `export default class C` are both `f`)
+static Span default_export_name(Symbol const* symbol) {
+    return symbol && symbol->is_default_export ? symbol->name_span : span_null;
+}
+
 // tsc's symbolToString(symbol, node.parent): the name of a symbol as the symbols baseline prints it from here
 static cstr symbol_text(BaselineTestCase* ctx, Symbol const* symbol) {
     SymbolChain chain = symbol_chain_at(ctx->enclosing, symbol, 0, false);
@@ -836,6 +842,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(my symbol),
             .span = my name,
+            .name = default_export_name(my symbol),
         });
         if (is_expr) {
             baseline_test_case_add_symbol_value(ctx, my name, my symbol);
@@ -920,6 +927,7 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(my symbol),
             .span = my name,
+            .name = default_export_name(my symbol),
         });
     }
     generic_compile_test_info(&my generic, ctx);

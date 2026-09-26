@@ -15,11 +15,12 @@ void interface_decl_drop(InterfaceDecl* me) {
     type_drop(&my type);
 }
 
-void interface_decl_add_names(InterfaceDecl* me, Scope* scope, bool exported) {
+void interface_decl_add_names(InterfaceDecl* me, Scope* scope, DeclExported exported) {
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
-        .exported = exported,
+        .exported = exported == DECL_EXPORTED_YES,
+        .default_export = exported == DECL_EXPORTED_YES_DEFAULT,
         .kind = SYMBOL_DECL_INTERFACE,
         .node = me,
     });
