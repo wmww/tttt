@@ -245,7 +245,15 @@ void initialized_binding_compile_test_info(
 ) {
     binding_compile_test_info(&my binding, ctx);
     if (my value.tag != EXPR_IMPLICIT_ANY) {
+        Expr const* literal = ctx->variable_literal;
+        Span literal_name = ctx->variable_literal_name;
+        if (my value.tag == EXPR_OBJECT && my binding.tag == BINDING_IDENTIFIER) {
+            ctx->variable_literal = &my value;
+            ctx->variable_literal_name = my binding.content_span;
+        }
         expr_compile_test_info(&my value, ctx);
+        ctx->variable_literal = literal;
+        ctx->variable_literal_name = literal_name;
     }
 }
 
@@ -936,7 +944,55 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
     ctx->enclosing = outer;
 }
 
+// tsc's getSymbolAtLocation of `this`: the `this` parameter of the function (declared, or of the contextual signature
+// it was typed by), else the symbol of the type of `this` (globalThis at the top of a script, the class)
+static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
+    Checker* checker = current_checker;
+    if (my this_kind == THIS_GLOBAL) {
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my name, .allow_declaration_empty = true, .text = cstr_lit("globalThis") });
+        return;
+    }
+    Symbol const* symbol = my target;
+    if (!symbol && my this_kind == THIS_ANY && my this_function) {
+        Signature const* sig = ty_function_assigned_contextual_signature(checker, my this_function);
+        while (sig && sig->target) sig = sig->target;
+        FunctionImpl const* function = sig ? sig->function : nullptr;
+        FunctionArg const* first = function && vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
+        if (first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
+            span_equals(first->initializer.binding.content_span, "this")
+        ) {
+            symbol = first->initializer.binding.symbol;
+        }
+        Ty const* type = symbol ? nullptr : ty_contextual_this_type(checker, my this_function);
+        Expr const* literal = my this_function->this_literal;
+        if (type && type->kind == TY_ANONYMOUS && type->anonymous.object_literal && literal) {
+            // The object literal's own type (noImplicitThis): its symbol, `__object` or the variable's name
+            bool named = literal == ctx->variable_literal;
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = vec_span_single(literal->inner_span),
+                .span = my name,
+                .text = named ? cstr_from_sv(ctx->variable_literal_name.sv) : cstr_lit("__object"),
+            });
+            return;
+        }
+        if (!symbol) {
+            if (type && type->kind == TY_REFERENCE) type = type->reference.target;
+            if (type && type->kind == TY_DECLARED) symbol = type->declared.symbol;
+        }
+    }
+    if (!symbol || !symbol->decl_count) return;
+    baseline_test_case_add_symbol(ctx, (BaselineSym){
+        .declarations = declaration_get_spans(symbol),
+        .span = my name,
+        .text = symbol_text(ctx, symbol),
+    });
+}
+
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
+    if (my keyword == KEYWORD_IDENTIFIER_THIS) {
+        this_compile_test_info(me, ctx);
+        return;
+    }
     if (my keyword == KEYWORD_IDENTIFIER_SUPER) {
         // The base class (target is the class `super` is in), in a static member the base constructor's type
         ClassDecl const* class_decl = my target ? symbol_find_node(my target, SYMBOL_DECL_CLASS) : nullptr;

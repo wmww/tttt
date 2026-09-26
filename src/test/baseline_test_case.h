@@ -67,6 +67,10 @@ typedef struct BaselineTestCase {
     struct Symbol const* class_symbol; // The class whose members are being walked
     struct Ty const* member_owner; // The interface or type literal whose members are being walked
     struct Symbol const* member_container; // The class, interface or enum whose members are being walked (null: literal)
+    // The object literal a variable is initialized with, while walking it: its symbol is named by the variable (tsc's
+    // getNameOfSymbolAsWritten), not `__object`
+    struct Expr const* variable_literal;
+    Span variable_literal_name;
     // The type parameters of the declarations around the traversal (TyParamNames.in_scope), innermost last
     struct Ty const** scope_params;
     u32 scope_params_len;

@@ -499,6 +499,11 @@ Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl cons
     return contextual_signature(me, contextual, function, 0);
 }
 
+Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function) {
+    u64 key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
+    return intern_get(&my links, key, 2);
+}
+
 static void assign_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual) {
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2)) return;

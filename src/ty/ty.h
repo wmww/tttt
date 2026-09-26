@@ -945,6 +945,8 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter);
 Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function); // null if none
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function); // null if nothing says what `this` is
+// The contextual signature a function expression's parameters were typed by, if any (after it was checked)
+Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function);
 // The type of an object literal accessor property: the getter's widened return type, else the setter's parameter
 Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* accessor, bool getter);
 bool ty_expr_is_context_sensitive(Expr const* expr);
