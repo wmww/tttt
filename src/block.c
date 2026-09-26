@@ -13,8 +13,13 @@ void block_drop(Block* me) {
 
 void block_add_names(Block const* me, Scope* scope) {
     bool hoist = scope_is_var_container(scope);
+    // Function declarations first, like tsc's bindEachFunctionsFirst: that decides which of two conflicting
+    // declarations is the first one
     for_each (i, vec_statement, &my statements) {
-        statement_add_names(i, scope);
+        if (i->tag == STATEMENT_DECL_FUNCTION) statement_add_names(i, scope);
+    }
+    for_each (i, vec_statement, &my statements) {
+        if (i->tag != STATEMENT_DECL_FUNCTION) statement_add_names(i, scope);
         // The `var`s nested in it. A variable statement of this block (labeled or not) was just declared
         Statement const* inner = i;
         while (inner->tag == STATEMENT_LABELED) inner = inner->labeled.body;

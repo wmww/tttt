@@ -616,7 +616,7 @@ const baselines = {
         types: true,
     },
     'ambientClassDeclarationWithExtends': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2106,7 +2106,7 @@ const baselines = {
         types: true,
     },
     'augmentedTypesModules': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -2121,7 +2121,7 @@ const baselines = {
         types: false,
     },
     'augmentedTypesModules3b': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5616,8 +5616,8 @@ const baselines = {
         types: true,
     },
     'conflictingTypeAnnotatedVar': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'conflictingTypeParameterSymbolTransfer': {
@@ -10241,7 +10241,7 @@ const baselines = {
         types: true,
     },
     'duplicateDefaultExport': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -12761,7 +12761,7 @@ const baselines = {
         types: true,
     },
     'exportDefaultDuplicateCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21396,7 +21396,7 @@ const baselines = {
         types: false,
     },
     'mixingFunctionAndAmbientModule1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25496,12 +25496,12 @@ const baselines = {
         types: true,
     },
     'partiallyAmbientClodule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'partiallyAmbientFundule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42971,9 +42971,9 @@ const baselines = {
         types: true,
     },
     'multipleDefaultExports01': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'multipleDefaultExports02': {
         errors: true,
@@ -49201,22 +49201,22 @@ const baselines = {
         types: true,
     },
     'multipleExportDefault1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'multipleExportDefault2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'multipleExportDefault3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'multipleExportDefault4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49226,7 +49226,7 @@ const baselines = {
         types: true,
     },
     'multipleExportDefault6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

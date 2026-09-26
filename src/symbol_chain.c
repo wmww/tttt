@@ -521,7 +521,7 @@ static csview written_name(Scope const* enclosing, Symbol const* symbol, bool fi
     csview name = span_valid(display) ? display.sv : symbol->name;
     // An `export default` declaration is `default` except where it was declared
     if (csview_equals(export_name(symbol), "default") &&
-        (!first || !symbol->decl_count || symbol->decls[0].name.source != file_of_scope(enclosing))
+        (!first || !span_valid(symbol->name_span) || symbol->name_span.source != file_of_scope(enclosing))
     ) {
         return c_sv("default");
     }

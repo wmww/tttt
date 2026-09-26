@@ -255,7 +255,30 @@ void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* err
     my inner_scope->flow = nullptr;
 }
 
+// tsc's getFirstNonAmbientClassOrFunctionDeclaration
+static SymbolDecl const* first_non_ambient_class_or_function(Symbol const* symbol) {
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind == SYMBOL_DECL_CLASS && !((ClassDecl const*)decl->node)->is_ambient) return decl;
+        if (decl->kind == SYMBOL_DECL_FUNCTION) {
+            FunctionImpl const* function = decl->node;
+            if (function->has_body && !function->ambient) return decl;
+        }
+    }
+    return nullptr;
+}
+
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) {
+    // tsc's checkModuleDeclaration: an instantiated namespace merged with a class or function comes after it
+    if (!declared && !my is_global && !my is_ambient_module && my symbol && my symbol->decl_count > 1 &&
+        namespace_decl_is_instantiated(me)
+    ) {
+        SymbolDecl const* first = first_non_ambient_class_or_function(my symbol);
+        if (first && first->full.source == my full_span.source && span_start_ptr(my full_span) < span_start_ptr(first->full)) {
+            error_ctx_error_d(errs, my name, 2434,
+                "A namespace declaration cannot be located prior to a class or function with which it is merged.");
+        }
+    }
     block_typecheck(&my contents, (BlockTypecheckCtx){ .ambient = declared }, errs);
 }
 

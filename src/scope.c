@@ -504,12 +504,20 @@ static void add_duplicate_related(Error* error, Span at, Span other) {
     }
 }
 
+static Span first_token(Span full);
+
+// tsc's getNameOfDeclaration(): `export default x` is x, `export default <expr>` the statement, a nameless declaration
+// its first token
+static Span default_error_span(SymbolDecl const* decl) {
+    return span_valid(decl->name) ? decl->name : first_token(decl->full);
+}
+
 // tsc's declareSymbol for a second default export: TS2528 on every declaration, related to the new one ("Another export
 // default is here" on the first, "and here" on the others) and from the new one to each ("The first export default is
 // here")
 static void report_multiple_defaults(ErrorCtx* errs, Symbol const* existing, Span name) {
     for (u32 i = 0; i < existing->decl_count; i++) {
-        Span at = existing->decls[i].name;
+        Span at = default_error_span(&existing->decls[i]);
         if (!span_valid(at) || !at.source || at.source->is_stdlib) continue;
         Error* error = error_ctx_error_d(errs, at, 2528, "A module cannot have multiple default exports.");
         if (!span_valid(name)) continue;
@@ -519,9 +527,8 @@ static void report_multiple_defaults(ErrorCtx* errs, Symbol const* existing, Spa
     if (!span_valid(name) || !name.source || name.source->is_stdlib) return;
     Error* error = error_ctx_error_d(errs, name, 2528, "A module cannot have multiple default exports.");
     for (u32 i = 0; i < existing->decl_count; i++) {
-        if (span_valid(existing->decls[i].name)) {
-            error_add_related_d(error, existing->decls[i].name, 2752, "The first export default is here.");
-        }
+        Span at = default_error_span(&existing->decls[i]);
+        if (span_valid(at)) error_add_related_d(error, at, 2752, "The first export default is here.");
     }
 }
 
@@ -728,20 +735,13 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         table = scope_declaration_table(scope, props.exported);
     }
     bool merged;
-    Symbol* symbol = declare_symbol(scope, table, name, props.name, includes, excludes, props.default_export, &merged);
+    Span error_at = props.default_export && !span_valid(props.name) ? first_token(props.full) : props.name;
+    Symbol* symbol = declare_symbol(scope, table, name, error_at, includes, excludes, props.default_export, &merged);
     u32 flags_before = merged ? symbol->decl_flags_before : 0;
     if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER && props.kind != SYMBOL_DECL_INFER) {
         // Type parameters of the same name merge as far as tsc's binder is concerned, which is what `infer U` twice
         // in one conditional type wants. <T, T>: one symbol declared twice (and one type), the second is TS2300
         report_conflict(scope->errs, props.name, 2300);
-    }
-    if (merged && includes & (SYMBOL_CLASS | SYMBOL_FUNCTION) && flags_before & SYMBOL_VALUE_MODULE &&
-        !(flags_before & (SYMBOL_CLASS | SYMBOL_FUNCTION)) && !scope->ambient &&
-        symbol->decl_count && symbol->decls[0].name.source == props.name.source &&
-        !(props.kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)props.node)->has_body)
-    ) {
-        error_ctx_error_d(scope->errs, symbol->decls[0].name, 2434,
-            "A namespace declaration cannot be located prior to a class or function with which it is merged.");
     }
     if (props.kind == SYMBOL_DECL_VARIABLE) {
         // (Also when it merges into something that isn't a variable: a `declare const never` and the type `never`)
@@ -759,6 +759,10 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         symbol->is_default_export = true;
         symbol->referenced = SYMBOL_ANY_MEANING;
         symbol->parent = scope->container;
+    } else if (props.default_export && !span_valid(symbol->name_span) && span_valid(props.name)) {
+        // Named by its first named declaration
+        symbol->name = props.name.sv;
+        symbol->name_span = props.name;
     } else if (!merged) {
         // Like in tsc only exports have a parent: a local of a namespace is just `x`, not `N.x`
         if (scope->container && table == scope->container->exports) symbol->parent = scope->container;
@@ -860,16 +864,19 @@ void scope_check_export_merges(Scope* me, Span block) {
     }
 }
 
+// `export default function () {}`: its first token (tsc's getErrorSpanForNode without a name)
+static Span first_token(Span full) {
+    if (!span_valid(full)) return full;
+    isize len = 0;
+    while (len < full.sv.size && (isalnum((unsigned char)full.sv.buf[len]) || full.sv.buf[len] == '_')) len++;
+    full.sv.size = len ? len : 1;
+    return full;
+}
+
 Span symbol_decl_error_span(SymbolDecl const* decl) {
     // `export default x` (tsc: the ExportAssignment)
     if (decl->kind == SYMBOL_DECL_EXPR || (decl->kind == SYMBOL_DECL_ALIAS && !decl->node)) return decl->full;
-    if (span_valid(decl->name) || !span_valid(decl->full)) return decl->name;
-    // `export default function () {}`: its first token (tsc's getErrorSpanForNode without a name)
-    Span ret = decl->full;
-    isize len = 0;
-    while (len < ret.sv.size && (isalnum((unsigned char)ret.sv.buf[len]) || ret.sv.buf[len] == '_')) len++;
-    ret.sv.size = len ? len : 1;
-    return ret;
+    return span_valid(decl->name) ? decl->name : first_token(decl->full);
 }
 
 void scope_check_duplicate_exports(Scope* me) {
@@ -1005,13 +1012,18 @@ void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool expor
     bool alias = expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword;
     u32 includes = alias ? SYMBOL_ALIAS : SYMBOL_BLOCK_SCOPED_VARIABLE;
     bool merged;
+    // (With its `;`, which tsc's ExportAssignment has: the parser's statement spans end before it)
+    char const* end = span_end_ptr(statement);
+    char const* file_end = statement.source ? cstr_str(&statement.source->contents) + cstr_size(&statement.source->contents) : end;
+    while (end < file_end && (*end == ' ' || *end == '\t')) end++;
+    if (end < file_end && *end == ';') statement.sv.size = end + 1 - statement.sv.buf;
+    Span name = alias ? expr->outer_span : statement;
     Symbol* symbol = declare_symbol(
-        me, my container->exports, export_name, expr->outer_span, includes, SYMBOL_ANY_MEANING | SYMBOL_ALIAS,
-        !export_equals, &merged
+        me, my container->exports, export_name, name, includes, SYMBOL_ANY_MEANING | SYMBOL_ALIAS, !export_equals, &merged
     );
     if (!merged) {
         symbol->name = alias ? expr->identifier.name.sv : export_name;
-        symbol->name_span = alias ? expr->identifier.name : expr->outer_span;
+        symbol->name_span = alias ? expr->identifier.name : statement;
         symbol->parent = my container;
         symbol->is_default_export = !export_equals;
     }
@@ -1025,7 +1037,7 @@ void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool expor
     } else {
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_EXPR, .flags = SYMBOL_BLOCK_SCOPED_VARIABLE, .node = expr,
-            .name = expr->outer_span, .full = statement,
+            .name = statement, .full = statement,
         });
     }
 }
