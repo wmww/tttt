@@ -35,6 +35,8 @@ type PartialOnUndefinedDeepValue<T, Options extends PartialOnUndefinedDeepOption
 			: T
 		: T extends Record<any, any> | undefined
 			? PartialOnUndefinedDeep<T, Options>
+			: unknown;
+declare function expectType<T>(v: T): void;
 declare const indexType: {[k: string]: string | undefined; propertyA: string; propertyB: string | undefined};
 declare const x: PartialOnUndefinedDeep<typeof indexType>;
 expectType<{[k: string]: string | undefined; propertyA: string; propertyB?: string | undefined}>(x);

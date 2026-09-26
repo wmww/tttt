@@ -620,7 +620,7 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
 }
 
 static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
-    if ((ty_is_tuple(source) || is_empty_tuple(source)) && ty_is_tuple(target)) {
+    if ((ty_is_tuple(source) || is_empty_tuple(source) || ty_is_array(me, source)) && ty_is_tuple(target)) {
         infer_to_tuple(me, inf, source, target);
         return;
     }
@@ -690,13 +690,36 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         if (source_prop.found) infer_from(me, inf, source_prop.type, prop_type(me, target_prop));
     }
     Members const* source_members = ty_members(me, source);
-    infer_from_signature_lists(
-        me, inf, source_members->call, source_members->call_count, target_members->call, target_members->call_count
-    );
-    infer_from_signature_lists(
-        me, inf, source_members->construct, source_members->construct_count,
-        target_members->construct, target_members->construct_count
-    );
+    if (source->kind == TY_INTERSECTION && (target_members->call_count || target_members->construct_count)) {
+        // The signatures of an intersection are its members', in order (tsc's resolveIntersectionTypeMembers)
+        for (u32 construct = 0; construct < 2; construct++) {
+            u32 target_count = construct ? target_members->construct_count : target_members->call_count;
+            if (!target_count) continue;
+            Signature** sigs = nullptr;
+            u32 len = 0;
+            for (u32 p = 0; p < source->composite.types.len; p++) {
+                Ty const* part = ty_apparent_type(me, source->composite.types.data[p]);
+                if (!(part->flags & TYF_OBJECT)) continue;
+                Members const* part_members = ty_members(me, part);
+                u32 count = construct ? part_members->construct_count : part_members->call_count;
+                if (!count) continue;
+                sigs = realloc(sigs, sizeof(Signature*) * (len + count));
+                panic_if(!sigs, "out of memory");
+                memcpy(sigs + len, construct ? part_members->construct : part_members->call, sizeof(Signature*) * count);
+                len += count;
+            }
+            infer_from_signature_lists(me, inf, sigs, len, construct ? target_members->construct : target_members->call, target_count);
+            free(sigs);
+        }
+    } else {
+        infer_from_signature_lists(
+            me, inf, source_members->call, source_members->call_count, target_members->call, target_members->call_count
+        );
+        infer_from_signature_lists(
+            me, inf, source_members->construct, source_members->construct_count,
+            target_members->construct, target_members->construct_count
+        );
+    }
     for (u32 i = 0; i < target_members->index_count; i++) {
         IndexInfo const* target_info = &target_members->index[i];
         bool found = false;
