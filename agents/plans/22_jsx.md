@@ -86,9 +86,12 @@ pragmas or options 16, `LibraryManagedAttributes` 8.
   (a signature's own `IE[T]` doesn't keep a conditional deferred), widened JSX attributes stay JSX attributes.
   Suite 7310 -> 7342. **Accepted losses** (errors, need features outside JSX): `tsxStatelessComponentDefaultProps`
   (function expandos: `BackButton.defaultProps = ...`, triage "expando"), `reactHOCSpreadprops` (permissive
-  instantiation in `ty_conditional_resolve`: hacks.md). Left in stage 3: children elaboration (TS2745/TS2746/TS2747,
-  tsc's elaborateJsxComponents: checkJsxChildrenProperty2 & co. report a TS2322 chain instead), TS2558 on tag type
-  arguments, TS2783, TS2769 overload reporting for tags, types/symbols of components.
+  instantiation in `ty_conditional_resolve`: hacks.md). Then (same day): error messages
+  print bare names like tsc (+48 suite-wide), children elaboration (`elaborate_jsx_children` in check.c: TS2745,
+  TS2746, TS2747, elementwise), `readonly T[]` is `T[]` in a lib without ReadonlyArray (`/.lib/lib.d.ts`). JSX
+  subset: pass 195, errors 325, symbols 400, types 253 of 457. Left in stage 3: TS2558 on tag type arguments, TS2783,
+  TS2769 overload reporting for tags, types/symbols of components; the rest of the children tests' diffs are display
+  (union order, `ReactChild` alias vs expanded union: plan 21).
 
 ## Stages
 Each stage ends with `./fasttest.sh --summary` clean of losses, `./fasttest.sh -s`, and a commit. Measure the JSX

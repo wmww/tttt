@@ -1300,6 +1300,8 @@ Ty const* ty_array(Checker* me, Ty const* element, bool readonly) {
     if (!*target) {
         *target = global_generic_target(me, readonly ? "ReadonlyArray" : "Array");
     }
+    // A lib without ReadonlyArray reads it as Array (tsc's getGlobalReadonlyArrayType)
+    if (readonly && (*target)->declared.kind == TY_DECLARED_SYNTHETIC) return ty_array(me, element, false);
     return ty_reference(me, *target, (TyList){ .data = &element, .len = 1 });
 }
 

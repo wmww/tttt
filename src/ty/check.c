@@ -182,6 +182,11 @@ static Ty const* best_match_indexed_access(Checker* me, Ty const* source, Ty con
     return best && !ty_is_generic_object(me, best) ? ty_access(me, best, name_type) : nullptr;
 }
 
+static Ty const* access_or_unknown(Checker* me, Ty const* ty, Ty const* name_type) {
+    Ty const* ret = ty_access(me, ty, name_type);
+    return ret ? ret : ty_intrinsic(me, TY_UNKNOWN_);
+}
+
 // A property or element of a literal to elaborate on (tsc's ElaborationIterator item)
 typedef struct ElaborationItem {
     Span error_span; // the property name, the element
@@ -189,6 +194,8 @@ typedef struct ElaborationItem {
     Ty const* name_type;
     Atom const* name;
     bool computed_non_literal; // `[k]: v`: TS2418's message
+    unsigned message_code; // With `message`: the head of the error instead of "Type 'S' is not assignable..."
+    csview message;
 } ElaborationItem;
 
 // tsc's elaborateElementwise for one item. Returns whether it reported
@@ -209,7 +216,10 @@ static bool elaborate_element(
         specific = source_prop;
     }
     AssignHead head = item->computed_non_literal ? HEAD_COMPUTED : HEAD_TYPE;
-    Error* error = report_unassignable(me, head, specific, target_prop, item->error_span, errs);
+    Error* error = item->message_code ?
+        report_unassignable_with_head(me, specific, target_prop, item->message_code, cstr_from_sv(item->message), false,
+            item->error_span, errs) :
+        report_unassignable(me, head, specific, target_prop, item->error_span, errs);
     if (!error) return true;
     // Where the expected type comes from
     Prop const* declared = item->name ? target_prop_of(me, target, item->name) : nullptr;
@@ -294,8 +304,123 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
     return reported;
 }
 
+static Ty const* filter_members(Checker* me, Ty const* ty, bool (*keep)(Checker*, Ty const*), bool want) {
+    TyList members = ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
+    TyBuf kept = {0};
+    for (u32 i = 0; i < members.len; i++) {
+        if (keep(me, members.data[i]) == want) ty_buf_push(&kept, members.data[i]);
+    }
+    Ty const* ret = kept.len ? ty_union(me, kept.data, kept.len, nullptr, (TyList){0}) : ty_intrinsic(me, TY_NEVER);
+    ty_buf_drop(&kept);
+    return ret;
+}
+
+// tsc's isArrayOrTupleLikeType
+static bool is_array_or_tuple_like(Checker* me, Ty const* ty) {
+    if (ty->flags & TYF_NULLABLE) return false;
+    Ty const* any_array = ty_array(me, ty_intrinsic(me, TY_ANY), true);
+    return ty_is_related(me, ty, any_array, TY_RELATION_ASSIGNABLE) || is_tuple_like(me, ty);
+}
+
+// Assignable to Iterable<any> (tsc's elaborateJsxComponents), array or tuple like without an Iterable
+static bool is_iterable_like(Checker* me, Ty const* ty) {
+    Symbol const* symbol = program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE);
+    Ty const* iterable = symbol ? ty_declared_type_of(me, symbol) : nullptr;
+    if (!iterable || iterable->kind != TY_DECLARED || !iterable->declared.type_params.len) return is_array_or_tuple_like(me, ty);
+    TyList params = iterable->declared.type_params;
+    Ty const** args = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 i = 0; i < params.len; i++) args[i] = ty_intrinsic(me, TY_ANY);
+    Ty const* any_iterable = ty_reference(me, iterable, (TyList){ .data = args, .len = params.len });
+    return ty_is_related(me, ty, any_iterable, TY_RELATION_ASSIGNABLE);
+}
+
+// The children of `element` against what the children property of `target` wants (tsc's elaborateJsxComponents): one
+// by one, or TS2745/TS2746 when there's one child for a list or several for one thing. Text is TS2747
+static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty const* source, Ty const* target, ErrorCtx* errs) {
+    if (element->self_closing) return false;
+    u32 child_count = 0;
+    for_each (i, vec_jsx_child, &element->children) child_count += ty_jsx_child_is_semantic(i);
+    if (!child_count) return false;
+    Atom const* children_name = ty_jsx_children_prop_name(me, element);
+    if (!children_name) children_name = checker_atom(me, c_sv("children"));
+    Ty const* name_type = ty_prop_name_literal(me, children_name);
+    Ty const* children_target = ty_access(me, target, name_type);
+    if (!children_target) children_target = ty_intrinsic(me, TY_UNKNOWN_);
+    Ty const* array_like = filter_members(me, children_target, is_iterable_like, true);
+    Ty const* non_array_like = filter_members(me, children_target, is_iterable_like, false);
+    bool array_like_never = (array_like->flags & TYF_NEVER) != 0;
+    bool non_array_like_never = (non_array_like->flags & TYF_NEVER) != 0;
+    cstr target_str = ty_to_cstr(me, children_target);
+    csview tag = element->tag_name.inner_span.sv;
+    cstr text_message = cstr_d("'", tag, "' components don't accept text as child elements. Text in JSX has the type 'string', "
+        "but the expected type of '", atom_sv(children_name), "' is '", target_str, "'.");
+    bool reported = false;
+    if (child_count > 1 && !array_like_never) {
+        // Each child against the list's elements (tsc's elaborateIterableOrArrayLikeTargetElementwise)
+        Ty const* tuple_like = filter_members(me, array_like, is_array_or_tuple_like, true);
+        Ty const* other = filter_members(me, array_like, is_array_or_tuple_like, false);
+        Ty const* iterated = nullptr;
+        if (!(other->flags & TYF_NEVER)) {
+            TyIterationTypes const* types = ty_iteration_types_of_iterable(me, other, ITERATION_FOR_OF);
+            iterated = types ? types->yield_type : nullptr;
+        }
+        u32 index = 0;
+        for_each (child, vec_jsx_child, &element->children) {
+            if (!ty_jsx_child_is_semantic(child)) continue;
+            Value index_value = value_number((double)index++);
+            Ty const* child_name = ty_literal(me, &index_value);
+            Ty const* element_target = iterated;
+            Ty const* indexed = !(tuple_like->flags & TYF_NEVER) ? ty_access(me, tuple_like, child_name) : nullptr;
+            if (indexed && indexed->kind != TY_INDEXED) {
+                Ty const* both[2] = { iterated, indexed };
+                element_target = iterated ? ty_union(me, both, 2, nullptr, (TyList){0}) : indexed;
+            }
+            if (!element_target) continue;
+            bool text = child->tag == JSX_CHILD_TEXT;
+            Ty const* child_type = text ? ty_intrinsic(me, TY_STRING) : ty_expr_type(me, &child->expr);
+            if (ty_is_related(me, child_type, element_target, TY_RELATION_ASSIGNABLE)) continue;
+            reported = true;
+            Expr const* inner = text ? nullptr : &child->expr;
+            if (inner && elaborate_error(me, HEAD_TYPE, inner, child_type, element_target, errs)) continue;
+            Ty const* specific = inner ? ty_mutable_location_type(me, inner, child_type) : child_type;
+            if (specific != child_type && ((specific->flags & TYF_ANY) ||
+                ty_is_related(me, specific, element_target, TY_RELATION_ASSIGNABLE))) {
+                specific = child_type;
+            }
+            if (text) {
+                report_unassignable_with_head(me, specific, element_target, 2747, cstr_clone(text_message), false, child->span, errs);
+            } else {
+                report_unassignable(me, HEAD_TYPE, specific, element_target, child->span, errs);
+            }
+        }
+    } else if (child_count > 1) {
+        if (!ty_is_related(me, access_or_unknown(me, source, name_type), children_target, TY_RELATION_ASSIGNABLE)) {
+            reported = true;
+            error_ctx_error_d(errs, element->tag_name.inner_span, 2746, "This JSX tag's '", atom_sv(children_name),
+                "' prop expects a single child of type '", target_str, "', but multiple children were provided.");
+        }
+    } else if (!non_array_like_never) {
+        JsxChild const* child = nullptr;
+        for_each (i, vec_jsx_child, &element->children) {
+            if (!child && ty_jsx_child_is_semantic(i)) child = i;
+        }
+        bool text = child->tag == JSX_CHILD_TEXT;
+        ElaborationItem item = {
+            .error_span = child->span, .inner = text ? nullptr : &child->expr, .name_type = name_type, .name = children_name,
+            .message_code = text ? 2747 : 0, .message = cstr_sv(&text_message),
+        };
+        reported = elaborate_element(me, &item, source, target, errs);
+    } else if (!ty_is_related(me, access_or_unknown(me, source, name_type), children_target, TY_RELATION_ASSIGNABLE)) {
+        reported = true;
+        error_ctx_error_d(errs, element->tag_name.inner_span, 2745, "This JSX tag's '", atom_sv(children_name),
+            "' prop expects type '", target_str, "' which requires multiple children, but only a single child was provided.");
+    }
+    c_drop(cstr, &target_str, &text_message);
+    return reported;
+}
+
 // tsc's elaborateJsxComponents: the attributes, like the properties of an object literal (hyphenated ones aren't checked
-// against anything). TODO(plan 22 stage 3): the children
+// against anything), then the children
 static bool elaborate_jsx_attributes(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
     bool reported = false;
     for_each (i, vec_jsx_attribute, &expr->jsx_attributes) {
@@ -306,6 +431,7 @@ static bool elaborate_jsx_attributes(Checker* me, Expr const* expr, Ty const* so
         item.name_type = ty_prop_name_literal(me, item.name);
         reported |= elaborate_element(me, &item, source, target, errs);
     }
+    reported |= elaborate_jsx_children(me, jsx_attributes_element(expr), source, target, errs);
     return reported;
 }
 

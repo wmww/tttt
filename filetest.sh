@@ -13,6 +13,8 @@ rm -rf "$TEST_DIR"
 mkdir "$TEST_DIR"
 mkdir -p "$TEST_DIR/tests/cases/conformance"
 mkdir -p "$TEST_DIR/tests/cases/compiler"
+# (/.lib/react16.d.ts and friends: @libFiles and /// references to /.lib)
+cp -r thirdparty/tsc/tests/lib "$TEST_DIR/tests/lib"
 echo "const tsCommit = '';" >"$TEST_DIR/baseline_results.ts"
 
 # Put the test file in place

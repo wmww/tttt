@@ -19856,7 +19856,7 @@ const baselines = {
         types: false,
     },
     'jsxChildrenIndividualErrorElaborations': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52796,7 +52796,7 @@ const baselines = {
         types: false,
     },
     'checkJsxChildrenProperty14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52811,7 +52811,7 @@ const baselines = {
         types: false,
     },
     'checkJsxChildrenProperty2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52822,7 +52822,7 @@ const baselines = {
     },
     'checkJsxChildrenProperty4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'checkJsxChildrenProperty5': {
@@ -52836,7 +52836,7 @@ const baselines = {
         types: false,
     },
     'checkJsxChildrenProperty7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
