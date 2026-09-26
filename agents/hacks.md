@@ -821,3 +821,9 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
   (conditionalTypeClassMembers, homomorphicMappedTypeNesting), or a merged declaration's constraint
   (interfaceMergedUnconstrainedNoErrorIrrespectiveOfOrder). Remove the gate as those get fixed (each is a relation bug
   of its own).
+- `jsx_lookup_factory` (expr.c) writes `SourceFile.jsx_fragment_factory_looked_up` through a const cast: the resolve
+  walk has no per-file state of its own, and TS2879 is once per file in tsc (getJSXFragmentType's cache).
+  `ModuleRef.jsx_runtime_reported` does the same job for TS2875 on the ref.
+- `export =`/`export default` of a namespace- or type-only name (`identifier_expr_lookup_names` branch on
+  `flow->type_only_alias_ok`): the identifier gets `symbol` but no `target`, so the checker sees an untyped name there
+  (tsc types it from the alias). Fine for the baselines that exercise it so far.

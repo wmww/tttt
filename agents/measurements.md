@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, plan 22 stage 4 (JSX runtime import, factories, moduleDetection)
+Suite 7567 -> **7655 / 13540** full (errors 9857, symbols 11218, types 9629), nothing lost. Biggest single piece: the
+harness's unit contents now end like tsc's (+~40, mostly node16 multi-file tests). `./failstats.py --jsx`: **pass 313**,
+errors 386, symbols 407, types 357 of 457. The stage 3 numbers below undercount types: failstats.py compared tsc's
+Performance Stats block, which the runner drops (fixed now; with the fix, stage 3's end would have read ~280 / 350).
+tsc corpus still 0 diagnostics; bench not rerun (nothing on the plain path changed).
+
 ## 2026-09-26, plan 22 stage 3 (JSX components) and what it turned up
 Suite 7310 -> **7567 / 13540** full (errors 9718, symbols 11182, types 9601); 2 accepted losses (plan 22 Progress).
 General fixes found through JSX carried most of it: bare names in messages (+48), `extends Base<T>` in the types

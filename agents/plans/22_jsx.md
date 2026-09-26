@@ -98,6 +98,15 @@ pragmas or options 16, `LibraryManagedAttributes` 8.
   what's left in the subset is mostly general (inference through union parameters and other triage items, display)
   or stage 4 (TS2875/TS2792: the react-jsx runtime import). TS2769 for overloaded components wasn't looked at.
 
+- **Stage 4 done (2026-09-26).** The react-jsx runtime import (synthetic `jsx_runtime_ref`, TS2875/TS2792, its `JSX`
+  as the namespace), moduleDetection (was never applied), fragment factory errors (TS17016/17017/2879), factory option
+  validation (TS5053/5067/18035/5059/5089/5052), TS2552 for misspelled factories, TS6229, TS17000/TS17001. Two
+  general fixes: harness units end like tsc's makeUnitsFromTest (the "extra line break" triage item: +~40),
+  `export =` of a namespace-only name. failstats.py now drops tsc's Performance Stats block like the runner (it had
+  been reporting ~45 JSX tests as failing types that the harness passes). JSX subset: **313 of 457 pass** (errors
+  386, symbols 407, types 357). What's left is in triage.md ("JSX leftovers after plan 22"); the plan is complete but
+  for the insights question below.
+
 ## Stages
 Each stage ends with `./fasttest.sh --summary` clean of losses, `./fasttest.sh -s`, and a commit. Measure the JSX
 subset with `./failstats.py --jsx` (numbers in `measurements.md`).

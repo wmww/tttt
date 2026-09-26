@@ -25,7 +25,7 @@ types components) are the oracle, not the goal.
   mapper instantiation, two-pass inference, contextual typing, conditional/mapped/indexed/template types, flow graph +
   narrowing, module resolution + tsconfig, iteration protocol, generators, `this` types, elaboration. ~42k lines of C.
   `documentation.md` describes it, `hacks.md` lists what is approximated.
-- Partial: JSX (plan 22; parsed since stage 1, typed as `any` until stage 2: 457 JSX tests, errors pass in 243).
+- JSX (plan 22, stages 0-4 done 2026-09-26): 313 of 457 JSX tests pass, errors 386; leftovers in triage.md. Open: whether a React corpus becomes the next oracle (plan 22 "After the plan").
 - Absent: JS/JSDoc semantics, substitution types, lazy
   reverse mapped types, decorator checking, declaration emit (out of scope).
 

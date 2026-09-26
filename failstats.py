@@ -52,6 +52,12 @@ def line_ratio(ours, expected):
     return 2 * sum((a & b).values()) / total if total else 1.0
 
 
+def strip_perf_stats(expected):
+    """The counters tsc's harness puts at the top of big types baselines aren't compared (perf_stats_block() in
+    src/test/baseline_test_result.c)"""
+    return re.sub(r'=== Performance Stats ===\r?\n.*?\r?\n\r?\n', '', expected, count=1, flags=re.S)
+
+
 def analyse(name):
     """Runs in a worker. Returns a dict describing one test that ran"""
     r = {'name': name}
@@ -71,6 +77,8 @@ def analyse(name):
         collections.Counter((e[0], e[1], e[3]) for e in exp.elements())
     for comp in ('symbols', 'types'):
         o, e = read(f'{DUMP}/{name}.{comp}') or '', read(f'{REF}/{name}.{comp}') or ''
+        if comp == 'types':
+            e = strip_perf_stats(e)
         r[comp] = o == e
         r[comp + '_ratio'] = 1.0 if o == e else line_ratio(o, e)
     return r

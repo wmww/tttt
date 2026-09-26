@@ -922,12 +922,35 @@ static void jsx_lookup_factory(Expr* expr, Scope* names, ErrorCtx* errs) {
     }
 }
 
+// tsc's checkGrammarJsxElement for the attributes: the first repeated name (TS17001) or empty `x={}` (TS17000)
+static void jsx_check_attributes_grammar(JsxElement const* el, ErrorCtx* errs) {
+    VecJsxAttribute const* attributes = &el->attributes.jsx_attributes;
+    for (isize i = 0; i < vec_jsx_attribute_size(attributes); i++) {
+        JsxAttribute const* attr = vec_jsx_attribute_at(attributes, i);
+        if (attr->tag == JSX_ATTRIBUTE_SPREAD) continue;
+        for (isize j = 0; j < i; j++) {
+            JsxAttribute const* earlier = vec_jsx_attribute_at(attributes, j);
+            if (earlier->tag != JSX_ATTRIBUTE_SPREAD && csview_equals_sv(earlier->name.sv, attr->name.sv)) {
+                error_ctx_grammar_error_d(errs, attr->name, 17001,
+                    "JSX elements cannot have multiple attributes with the same name.");
+                return;
+            }
+        }
+        if (attr->tag == JSX_ATTRIBUTE_EMPTY_EXPR) {
+            error_ctx_grammar_error_d(errs, attr->value.inner_span, 17000,
+                "JSX attributes must only be assigned a non-empty 'expression'.");
+            return;
+        }
+    }
+}
+
 // Not inlined, like jsx_typecheck()
 __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     switch (my tag) {
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT: {
             jsx_lookup_factory(me, names, errs);
+            if (my tag == EXPR_JSX_ELEMENT) jsx_check_attributes_grammar(my jsx, errs);
             // A value tag (`<Comp />`, `<this.x />`) is a reference, an intrinsic one (`<div />`) is a name
             // (a missing name, after a parse error, is nothing)
             bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||

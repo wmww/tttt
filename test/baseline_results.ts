@@ -19826,7 +19826,7 @@ const baselines = {
         types: true,
     },
     'jsxAttributeWithoutExpressionReact': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

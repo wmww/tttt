@@ -280,6 +280,16 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   includeClassComputedPropertyName.
 - Arrow functions in `?:` recovery: `(a?) => {} ? b : c` and `() => {} || a` are now parse errors like tsc, but
   tsc's exact recovery tokens (TS1005 vs ours) aren't checked.
+- JSX leftovers after plan 22 (`./failstats.py --jsx`: 313 of 457 pass): overloaded components don't get tsc's TS2769
+  report (tsxNotUsingApparentTypeOfSFC, tsxStatelessFunctionComponentsWithTypeArguments4), TS6229 isn't checked for
+  union tag types or inside an overload chain, TS18042 (a type imported in a .jsx/.js file: JS semantics,
+  jsxCheckJsxNoTypeArgumentsAllowed), TS2608 (ElementAttributesProperty with several members), TS2639
+  (tsxNamespacedTagName2), TS2604 on a union of tag types (tsxDynamicTagName3). `.jsx` under allowJs wasn't looked at
+  beyond what the suite exercises. Types-component diffs in the subset are general: inference through union-typed
+  parameters (contextualTypingOfOptionalMembers, tsxInferenceShouldNotYieldAnyOnUnions: `unknown` where tsc infers),
+  alias display (`React.SFC` vs `StatelessComponent`, `keyof React.ReactHTML` expanded), `{ [__proto__]: null }`
+  computed names (tsxEmitSpreadAttribute). The parser's `saw_jsx`/`saw_import_meta` (moduleDetection) are set by
+  attempts that backtrack too; harmless so far, tsc only sets them for real nodes.
 - JSX parse error long tail (plan 22 stage 1 left it; `./failstats.py --jsx --syntax`): jsxInvalidEsprimaTestSuite,
   jsxNamespacePrefixInName(React) (`<:a>`, `<a:>`), tsxAttributeInvalidNames (`32data`: TS1351 and a number token),
   conflictMarkerTrivia3 (merge conflict markers, TS1185, aren't recognised anywhere), jsxEsprimaFbTestSuite (non-ASCII
@@ -331,11 +341,6 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - `filetest.sh` always uses `/tmp/testfile`: two agents running it at once collide. Take the directory from `mktemp
   -d` or an env var.
 - `@baselineFile`, `@fullEmitPaths` are ignored. Bad option values are ignored (tsc's harness throws).
-- A test's units are joined with a line break after *every* line (`load_test_source`), tsc's `makeUnitsFromTest`
-  joins them without one after a unit's last line (unless the test file ends with one). So an error at EOF of a unit
-  that isn't the last is one line lower in tttt (jsxParsingError2's `'</' expected`). Doing it tsc's way was tried
-  (plan 22 stage 1) and changed ~2000 tests: the extra line break is load-bearing for how the errors baseline renders
-  files; both need to change together.
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there.
   `./filetest.sh` on a multi-file probe shows the comment lines before the first `// @filename` as a file of their
   own in the errors baseline, so the errors component fails although the diagnostics match.
