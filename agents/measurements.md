@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, plan 24 (binding pattern types)
+Suite 8066 -> **8139 / 13540** full (errors 9884 -> 9901, symbols 11787 -> 11791, types 9883 -> 9980), nothing lost.
+Corpora unchanged: tsc 0, type-fest 168, valibot 164 (the new destructuring TS2339 found two checker bugs in the tsc
+corpus first, overload order and object literal union widening, both fixed). `./realworld.py` wall times unchanged
+(0.81 s tsc corpus, 0.71 s valibot); `./bench.sh` not rerun.
+
 ## 2026-09-26, plan 21 stage 7 (sampling `other`; plan 21 closed)
 Suite 7877 -> **8065 / 13540** full (errors 9857 -> 9884, symbols 11781 -> 11787, types 9652 -> 9882), nothing lost.
 tsc corpus still 0 diagnostics. `./bench.sh`: tsc corpus 0.78 s (typecheck 282 ms in the phase run), valibot 0.69 s /

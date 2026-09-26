@@ -28,7 +28,12 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   top-level `for await`. Older: TS1161 for an unterminated regex (`parse_regex` just fails), TS1263/1264 misplaced `let
   x!`, `const c;` in ambient files, `override`/TS4112+, overloads of `*()`-style nameless members, TS2303 "Circular
   definition of import alias".
-- **Binding patterns as types**: plan 24 (`agents/plans/24_binding_pattern_types.md`).
+- Plan 24 leftovers: implicit-any errors from *widening* (`function f5([a1] = [undefined], {b1} = { b1: null }, c1 =
+  undefined)`: tsc's reportErrorsFromWidening gives TS7031/TS7006, noImplicitAnyDestructuring*, needs tsc's widening
+  null/undefined, hacks.md `widen_nullable`); spurious TS7031 in coAndContraVariantInferences3 (a callback in
+  `.bind({ 0: ([, a, b]) => ... })` has no contextual parameter type); object literal padding in a union
+  (`{ a: 1 } | { b: "" }` -> `b?: undefined`) only happens in widening, not in tsc's other normalizations
+  (getNormalizedType for relations); `const {a} = null` (TS2339/TS2488, still in the plan 14 list above).
 - **Substitution types** don't exist: in the true branch of `T[K] extends unknown[] ? (...args: T[K]) => void : never`
   tsc knows `T[K]` is an array (getSubstitutionType / getImpliedConstraint). Instances: @types/node events.d.ts (x4,
   hidden by skipLibCheck), numericStringLiteralTypes (spurious TS2370 on `...values: UnwrapContainers<T>`, a
@@ -212,8 +217,8 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   without lib es2015): some circularity through error types. Probe: test/probes/plan08/alias_optional_chain.ts minus
   its `@target`.
 - `check_with()` (ty/expr.c) computes an expression with a contextual type without going through the LazyType, so it
-  has no cycle detection (`let [x = x] = []` used to recurse forever; `lower_binding_access` avoids it, other
-  contextual self-references can still overflow the stack).
+  has no cycle detection (`let [x = x] = []` used to recurse forever; `ty_binding_default_type` guards it with
+  `defaults_in_flight`, other contextual self-references can still overflow the stack).
 - Plan 16 leftovers: TS2561/TS2820 want tsc's spelling suggestion, which exists now (`spelling_suggestion()`, plan
   15): 11 diagnostics in 5 tests. TS2793 ("would have succeeded against the implementation") only for function
   declarations, not overloaded methods/constructors (`add_implementation_success`). Destructuring assignment targets

@@ -1660,15 +1660,174 @@ Ty const* ty_object_literal(
     return ret;
 }
 
-// tsc's getRegularTypeOfObjectLiteral, and getWidenedType's walk through unions, arrays and tuples to get there
-static Ty const* widen_objects(Checker* me, Ty const* ty) {
+// tsc's WideningContext: an object literal in a union is widened knowing its siblings, whose properties it lacks it gets
+// as optional `undefined` ones (`c ? { x: 1 } : { y: "" }` is `{ x: number; y?: undefined; } | { y: string; x?:
+// undefined; }`), and so do the object literals in same-named properties of the siblings
+typedef struct WideningCtx {
+    struct WideningCtx* parent;
+    Atom const* name; // The property of the parent's siblings this is the context of
+    TyBuf siblings;
+    bool siblings_done;
+    Prop const** props; // The properties of the siblings, the last of each name, in order of first appearance
+    u32 prop_count;
+    bool props_done;
+} WideningCtx;
+
+static void push_members(TyBuf* out, Ty const* ty) {
     if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) ty_buf_push(out, ty->composite.types.data[i]);
+    } else {
+        ty_buf_push(out, ty);
+    }
+}
+
+static bool is_object_literal_type(Ty const* ty) {
+    return ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal;
+}
+
+// tsc's getSiblingsOfContext
+static TyBuf const* context_siblings(Checker* me, WideningCtx* ctx) {
+    if (ctx->siblings_done) return &ctx->siblings;
+    ctx->siblings_done = true;
+    TyBuf const* parent = context_siblings(me, ctx->parent);
+    for (u32 i = 0; i < parent->len; i++) {
+        if (!is_object_literal_type(parent->data[i])) continue;
+        Prop const* prop = ty_get_prop(me, parent->data[i], ctx->name);
+        if (prop && !prop->function) push_members(&ctx->siblings, prop_type(me, prop));
+    }
+    return &ctx->siblings;
+}
+
+// HACK: tsc's ObjectFlags.ContainsSpread, as a property that was spread into the literal (`{ ...{} }` doesn't count)
+static bool contains_spread(Checker* me, Ty const* literal) {
+    Members const* members = ty_members(me, literal);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (!members->props[i]->literal_own) return true;
+    }
+    return false;
+}
+
+// tsc's getPropertiesOfContext
+static void context_props(Checker* me, WideningCtx* ctx) {
+    if (ctx->props_done) return;
+    ctx->props_done = true;
+    TyBuf const* siblings = context_siblings(me, ctx);
+    for (u32 i = 0; i < siblings->len; i++) {
+        if (!is_object_literal_type(siblings->data[i]) || contains_spread(me, siblings->data[i])) continue;
+        Members const* members = ty_members(me, siblings->data[i]);
+        for (u32 j = 0; j < members->prop_count; j++) {
+            Prop const* prop = members->props[j];
+            u32 k = 0;
+            while (k < ctx->prop_count && ctx->props[k]->name != prop->name) k++;
+            if (k == ctx->prop_count) {
+                ctx->props = realloc(ctx->props, sizeof(Prop const*) * (ctx->prop_count + 1));
+                panic_if(!ctx->props, "out of memory");
+                ctx->prop_count++;
+            }
+            ctx->props[k] = prop;
+        }
+    }
+}
+
+static void widening_ctx_drop(WideningCtx* ctx) {
+    ty_buf_drop(&ctx->siblings);
+    free(ctx->props);
+}
+
+static Ty const* widen_with_context(Checker* me, Ty const* ty, WideningCtx* ctx);
+
+// tsc's getWidenedTypeOfObjectLiteral (and getRegularTypeOfObjectLiteral: the result isn't fresh)
+static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ctx) {
+    Members const* members = ty_members(me, ty);
+    if (ctx) context_props(me, ctx);
+    u32 capacity = members->prop_count + (ctx ? ctx->prop_count : 0);
+    ObjectLiteralProp* props = calloc(capacity ? capacity : 1, sizeof(ObjectLiteralProp));
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        Ty const* type = nullptr;
+        if (!prop->function && ctx) {
+            WideningCtx child = { .parent = ctx, .name = prop->name };
+            type = widen_with_context(me, prop_type(me, prop), &child);
+            widening_ctx_drop(&child);
+        } else if (!prop->function) {
+            type = ty_widened_objects(me, prop_type(me, prop));
+        }
+        props[i] = (ObjectLiteralProp){
+            .name = prop->name,
+            .flags = prop->flags,
+            .type = type,
+            .accessor = prop->function,
+            .name_span = prop->name_span,
+            .decl_spans = prop->decl_spans,
+            .decl_span_count = prop->decl_span_count,
+            .name_is_value = prop->name_is_value,
+            .asserted = prop->asserted,
+            .own = prop->literal_own,
+        };
+    }
+    u32 count = members->prop_count;
+    for (u32 i = 0; ctx && i < ctx->prop_count; i++) {
+        Prop const* prop = ctx->props[i];
+        bool has = false;
+        for (u32 j = 0; j < members->prop_count && !has; j++) has = members->props[j]->name == prop->name;
+        if (has) continue;
+        // (tsc's getUndefinedProperty)
+        props[count++] = (ObjectLiteralProp){
+            .name = prop->name,
+            .flags = PROP_OPTIONAL,
+            .type = ty_intrinsic(me, TY_UNDEFINED), // TODO: tsc's missingType under exactOptionalPropertyTypes,
+            .name_span = prop->name_span,
+            .decl_spans = prop->decl_spans,
+            .decl_span_count = prop->decl_span_count,
+            .name_is_value = prop->name_is_value,
+        };
+    }
+    IndexInfo index[8] = {0};
+    u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
+    for (u32 i = 0; i < index_count; i++) {
+        index[i] = members->index[i];
+        index[i].value = ty_widened_objects(me, index[i].value);
+    }
+    // (JSX attributes stay what they are: hyphenated names are still never excess nor weak-type failures)
+    Ty const* ret = ty_object_literal(me, props, count, index, index_count,
+        ty->anonymous.jsx_attributes ? OBJECT_JSX_ATTRIBUTES : OBJECT_LITERAL);
+    free(props);
+    return ret;
+}
+
+// tsc's getWidenedTypeWithContext, as far as object literals go
+static Ty const* widen_with_context(Checker* me, Ty const* ty, WideningCtx* ctx) {
+    if (is_object_literal_type(ty)) return widen_object_literal(me, ty, ctx);
+    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
+        TyList types = ty->composite.types;
+        u32 literals = 0;
+        for (u32 i = 0; i < types.len; i++) literals += is_object_literal_type(types.data[i]);
+        WideningCtx own = {0};
+        if (!ctx && literals > 1) {
+            push_members(&own.siblings, ty);
+            own.siblings_done = true;
+            ctx = &own;
+        }
         TyBuf parts = {0};
-        for (u32 i = 0; i < ty->composite.types.len; i++) ty_buf_push(&parts, ty_widened_objects(me, ty->composite.types.data[i]));
-        Ty const* ret = ty_union(me, parts.data, parts.len, ty->alias, ty->alias_args);
+        bool changed = false;
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* member = types.data[i];
+            Ty const* widened = member->flags & TYF_NULLABLE ? member : ctx ? widen_with_context(me, member, ctx) :
+                ty_widened_objects(me, member);
+            changed |= widened != member;
+            ty_buf_push(&parts, widened);
+        }
+        Ty const* ret = changed ? ty_union(me, parts.data, parts.len, ty->alias, ty->alias_args) : ty;
         ty_buf_drop(&parts);
+        widening_ctx_drop(&own);
         return ret;
     }
+    return ty_widened_objects(me, ty);
+}
+
+// tsc's getRegularTypeOfObjectLiteral, and getWidenedType's walk through unions, arrays and tuples to get there
+static Ty const* widen_objects(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_UNION) return widen_with_context(me, ty, nullptr);
     if (ty->kind == TY_REFERENCE) {
         TyList args = ty_reference_args(me, ty);
         TyBuf parts = {0};
@@ -1679,34 +1838,7 @@ static Ty const* widen_objects(Checker* me, Ty const* ty) {
         return ret;
     }
     check(ty_is_fresh_object(ty));
-    Members const* members = ty_members(me, ty);
-    ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
-    for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
-        props[i] = (ObjectLiteralProp){
-            .name = prop->name,
-            .flags = prop->flags,
-            .type = prop->function ? nullptr : ty_widened_objects(me, prop_type(me, prop)),
-            .accessor = prop->function,
-            .name_span = prop->name_span,
-            .decl_spans = prop->decl_spans,
-            .decl_span_count = prop->decl_span_count,
-            .name_is_value = prop->name_is_value,
-            .asserted = prop->asserted,
-            .own = prop->literal_own,
-        };
-    }
-    IndexInfo index[8] = {0};
-    u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
-    for (u32 i = 0; i < index_count; i++) {
-        index[i] = members->index[i];
-        index[i].value = ty_widened_objects(me, index[i].value);
-    }
-    // (JSX attributes stay what they are: hyphenated names are still never excess nor weak-type failures)
-    Ty const* ret = ty_object_literal(me, props, members->prop_count, index, index_count,
-        ty->anonymous.jsx_attributes ? OBJECT_JSX_ATTRIBUTES : OBJECT_LITERAL);
-    free(props);
-    return ret;
+    return widen_object_literal(me, ty, nullptr);
 }
 
 static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {

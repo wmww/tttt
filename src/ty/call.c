@@ -1165,6 +1165,33 @@ static bool is_super_call(CallExpr const* call) {
     return !call->uses_new && call->callable.tag == EXPR_IDENTIFIER && call->callable.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
 }
 
+// A parameter of the declaration is written as a literal type (`method: "stop"`, tsc's SignatureFlags.HasLiteralTypes)
+static bool signature_has_literal_types(Signature const* sig) {
+    while (sig->target) sig = sig->target;
+    if (!sig->function) return false;
+    for_each (arg, vec_function_arg, &sig->function->args) {
+        Binding const* binding = &arg->initializer.binding;
+        if (binding->has_explicit_type && binding->explicit_type.tag == TYPE_VALUE &&
+            binding->explicit_type.value.tag != VALUE_UNDEFINED
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Overloads with a literal parameter are tried first, in their order (tsc's reorderCandidates, "specialized
+// signatures"). TODO: tsc also orders the groups of merged declarations
+static void reorder_candidates(Signature** signatures, u32 count) {
+    u32 specialized = 0;
+    for (u32 i = 0; i < count; i++) {
+        if (!signature_has_literal_types(signatures[i])) continue;
+        Signature* moved = signatures[i];
+        memmove(&signatures[specialized + 1], &signatures[specialized], sizeof(Signature*) * (i - specialized));
+        signatures[specialized++] = moved;
+    }
+}
+
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
     CallExpr const* call = info->call;
     Ty const* any = ty_intrinsic(me, TY_ANY);
@@ -1288,6 +1315,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
         }
         if (any_this) with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);
     }
+    reorder_candidates(signatures, count);
     Args args = collect_args(me, call);
     Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &with_this, call_span, errs);
     ret = resolution.ret;

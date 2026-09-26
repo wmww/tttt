@@ -242,6 +242,14 @@ static Ty const* contextual_element_type(Checker* me, Ty const* contextual, u32 
     return context_map(me, contextual, get_element_context, &index);
 }
 
+Ty const* ty_contextual_prop_type(Checker* me, Ty const* contextual, Ty const* key) {
+    return contextual_prop_type(me, contextual, key);
+}
+
+Ty const* ty_contextual_element_type(Checker* me, Ty const* contextual, u32 index) {
+    return contextual_element_type(me, contextual, index);
+}
+
 static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) {
     if (!contextual || depth > 8) return false;
     if (ty_is_tuple(contextual)) return true;

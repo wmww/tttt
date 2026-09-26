@@ -222,7 +222,8 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
             Binding const* binding = &i->initializer.binding;
             Checker* checker = current_checker;
             Ty const* rest_type = ty_binding_type(checker, binding, (LowerCtx){ .generic = true });
-            if (!ty_extends_array(checker, rest_type)) {
+            // (A pattern's type is what the pattern implies, tsc's checkParameter doesn't check it)
+            if (binding->tag == BINDING_IDENTIFIER && !ty_extends_array(checker, rest_type)) {
                 error_ctx_error_d(errs, i->span, 2370, "A rest parameter must be of an array type.");
             }
             if (has_initializer) {
@@ -341,6 +342,12 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
             expr_typecheck(decorator, errs);
         }
         initialized_binding_typecheck(&i->initializer, errs);
+        if (i->initializer.binding.tag == BINDING_ARRAY && i->initializer.value.tag != EXPR_IMPLICIT_ANY &&
+            !i->initializer.binding.has_explicit_type
+        ) {
+            binding_add_padded_implicit_any_errors(&i->initializer.binding,
+                ty_expr_type(current_checker, &i->initializer.value), errs);
+        }
     }
 
     function_impl_typecheck_signature(me, false, errs);

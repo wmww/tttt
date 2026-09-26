@@ -141,7 +141,10 @@ void binding_flow_assign(Binding const* me, Scope* names) {
     }
 }
 
+// tsc's getTypeFromBindingElement with reportErrors: an element with a default takes the default's type, so only the
+// elements without one (and the patterns without one, element by element) are implicitly any
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs) {
+    if (!toplevel && my default_value) return;
     switch (my tag) {
         case BINDING_NOOP: break;
 
@@ -163,6 +166,41 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
                 binding_add_implicit_any_type_errors(&i->target, false, errs);
             }
             break;
+    }
+}
+
+// Whether a pattern belongs to a parameter (tsc's walkUpBindingElementsAndPatterns + isParameter): its first variable
+// says so, and a pattern without any has nothing to pad
+bool binding_is_parameter(Binding const* pattern) {
+    switch (pattern->tag) {
+        case BINDING_NOOP: return false;
+        case BINDING_IDENTIFIER: return pattern->symbol && pattern->symbol->is_parameter;
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &pattern->array) {
+                if (i->tag != BINDING_NOOP) return binding_is_parameter(i);
+            }
+            return false;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &pattern->object) return binding_is_parameter(&i->target);
+            return false;
+    }
+    return false;
+}
+
+void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initializer, ErrorCtx* errs) {
+    if (my tag != BINDING_ARRAY || !compiler_options()->no_implicit_any) return;
+    TupleShape const* shape = ty_tuple_shape(initializer);
+    if (!shape) return;
+    for (u32 i = 0; i < shape->arity; i++) {
+        if (shape->flags[i] & TUPLE_ELEMENT_REST) return;
+    }
+    u32 len = (u32)vec_binding_size(&my array);
+    for (u32 i = shape->arity; i < len; i++) {
+        Binding const* element = vec_binding_at(&my array, i);
+        if (element->tag == BINDING_NOOP || element->default_value || (i == len - 1 && element->rest)) continue;
+        // (tsc's reportImplicitAny of a binding element: the name for an identifier, else the whole pattern)
+        error_ctx_error_d(errs, element->content_span, 7031, "Binding element '", element->content_span,
+            "' implicitly has an 'any' type.");
     }
 }
 
@@ -194,6 +232,18 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
     c_drop(cstr, &type_str, &declared_str);
 }
 
+// The type a pattern's elements are taken from, as far as reporting what it lacks goes (tsc's
+// getBindingElementTypeFromParentType): null when nothing is reported (any, or nothing an element could be missing from)
+static Ty const* element_parent_type(Binding const* me) {
+    Checker* checker = current_checker;
+    Ty const* type = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
+    if (type->flags & (TYF_ANY | TYF_UNKNOWN)) return nullptr;
+    // (What can be null or undefined is reported about the whole pattern)
+    type = ty_non_nullable(checker, type);
+    if (type->flags & TYF_NEVER) return nullptr;
+    return type;
+}
+
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
     if (my has_explicit_type) {
         type_typecheck(&my explicit_type, errs);
@@ -202,7 +252,9 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
     }
 
     if (my default_value) {
+        Ty const* default_type = ty_binding_default_type(current_checker, me);
         expr_typecheck(my default_value, errs);
+        if (my tag == BINDING_ARRAY && binding_is_parameter(me)) binding_add_padded_implicit_any_errors(me, default_type, errs);
     }
 
     switch (my tag) {
@@ -228,13 +280,27 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
             }
             Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
             ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, my content_span, errs);
+            Ty const* parent = element_parent_type(me);
             for_each (i, vec_binding, &my array) {
+                // Past the end of a tuple (TS2493), unless there's a default
+                if (parent && i->tag != BINDING_NOOP && !i->rest && !i->default_value) {
+                    Value index = value_number((double)i_index);
+                    ty_check_property_access(current_checker, parent, ty_literal(current_checker, &index), span_null,
+                        i->content_span, false, false, errs);
+                }
                 binding_typecheck(i, nullptr, errs);
             }
             break;
 
-        case BINDING_OBJECT:
+        case BINDING_OBJECT: {
+            Ty const* parent = element_parent_type(me);
             for_each (i, vec_object_binding_item, &my object) {
+                if (parent && !i->computed_key && !i->target.rest && !(i->target.default_value &&
+                    parent->kind == TY_ANONYMOUS && parent->anonymous.object_literal)
+                ) {
+                    ty_check_property_access(current_checker, parent, ty_literal(current_checker, &i->source), span_null,
+                        span_valid(i->source_span) ? i->source_span : i->target.content_span, false, true, errs);
+                }
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
                 } else if (!i->target.rest && i->source.tag == VALUE_STRING && unused_enabled()) {
@@ -247,6 +313,7 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
                 binding_typecheck(&i->target, nullptr, errs);
             }
             break;
+        }
     }
 }
 
@@ -349,9 +416,12 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
         // A parameter of a function expression gets its type from the contextual signature, initializer or not
         Ty const* contextual = ty_contextual_parameter_type(checker, me);
         if (contextual) return contextual;
-        if (my is_rest_parameter && my value.tag == EXPR_IMPLICIT_ANY) return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
-        // An unannotated pattern without a default takes what the pattern implies (tsc's getWidenedTypeForVariableLikeDeclaration)
-        if (my value.tag == EXPR_IMPLICIT_ANY && !my is_rest_parameter && (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY)) {
+        if (my is_rest_parameter && my value.tag == EXPR_IMPLICIT_ANY && my binding.tag == BINDING_IDENTIFIER) {
+            return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
+        }
+        // An unannotated pattern without a default takes what the pattern implies (tsc's getWidenedTypeForVariableLikeDeclaration),
+        // a rest parameter's too (`...{ a, b }`, `...[x, y]`)
+        if (my value.tag == EXPR_IMPLICIT_ANY && (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY)) {
             return ty_binding_pattern_type(checker, &my binding, false);
         }
     }
@@ -360,6 +430,7 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     // checkDeclarationInitializer): `const r = f(x)` doesn't depend on x, which may depend on r through a loop
     Ty const* ret = ty_quick_expr_type(checker, &my value, false);
     if (!ret) ret = initialized_binding_check_value(me);
+    if (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY) ret = ty_pad_initializer_type(checker, ret, &my binding);
     // HACK: `let x = []` is an evolving array in tsc (autoArrayType, under noImplicitAny), which grows with what is
     // pushed. Not there yet: it's any[] like before `[]` was never[]
     Symbol const* symbol = my binding.tag == BINDING_IDENTIFIER ? my binding.symbol : nullptr;

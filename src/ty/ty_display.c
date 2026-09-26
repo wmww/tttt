@@ -984,13 +984,34 @@ static Atom const* numbered_name(Checker* me, csview base, char const* suffix_fo
     return checker_atom(me, c_sv(buf, (isize_t)len));
 }
 
+// tsc's getTupleElementLabelFromBindingElement: `binding` is a rest parameter's or an element of its array pattern
+static Atom const* binding_element_label(Checker* me, Binding const* binding, bool rest, u32 index, unsigned char flags) {
+    if (binding->tag == BINDING_IDENTIFIER) {
+        Atom const* name = checker_atom(me, binding->content_span.sv);
+        if (rest) return flags & TUPLE_ELEMENT_REST ? name : numbered_name(me, atom_sv(name), "_%u", index);
+        if (!(flags & TUPLE_ELEMENT_REST)) return name;
+        cstr numbered = cstr_d(atom_sv(name), "_n"); // (tsc's `${name}_n`, literally)
+        Atom const* ret = checker_atom(me, cstr_sv(&numbered));
+        cstr_drop(&numbered);
+        return ret;
+    }
+    if (binding->tag == BINDING_ARRAY && rest) {
+        u32 len = (u32)vec_binding_size(&binding->array);
+        Binding const* last = len ? vec_binding_at(&binding->array, len - 1) : nullptr;
+        u32 count = len - (last && last->rest ? 1 : 0);
+        if (index < count) {
+            Binding const* element = vec_binding_at(&binding->array, index);
+            if (element->tag != BINDING_NOOP) return binding_element_label(me, element, element->rest, index, flags);
+        } else if (last && last->rest) {
+            return binding_element_label(me, last, true, index - count, flags);
+        }
+    }
+    return numbered_name(me, c_sv("arg"), "_%u", index);
+}
+
 // What tsc names an unlabeled element of a rest tuple (getTupleElementLabel): after the rest parameter
 static Atom const* rest_element_label(Checker* me, SigParam const* rest, u32 index, unsigned char flags) {
-    Binding const* binding = rest->decl ? &rest->decl->initializer.binding : nullptr;
-    if (binding && binding->tag == BINDING_IDENTIFIER) {
-        return flags & TUPLE_ELEMENT_REST ? rest->name : numbered_name(me, atom_sv(rest->name), "_%u", index);
-    }
-    if (binding) return numbered_name(me, c_sv("arg"), "_%u", index); // TODO: names out of an array pattern
+    if (rest->decl) return binding_element_label(me, &rest->decl->initializer.binding, true, index, flags);
     return numbered_name(me, atom_sv(rest->name), "_%u", index);
 }
 
@@ -999,12 +1020,13 @@ static Atom const* rest_element_label(Checker* me, SigParam const* rest, u32 ind
 static SigParam const* expanded_params(Checker* me, Signature const* sig, u32* count_out) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
     SigParam const* rest = &sig->params[sig->param_count - 1];
-    if (!ty_is_tuple(rest->type)) return nullptr;
-    TupleShape const* shape = rest->type->reference.target->declared.tuple;
+    TupleShape const* shape = ty_tuple_shape(rest->type);
+    if (!shape) return nullptr;
+    bool empty = !ty_is_tuple(rest->type);
     for (u32 i = 0; i + 1 < shape->arity; i++) {
         if (shape->flags[i] & TUPLE_ELEMENT_REST) return nullptr;
     }
-    TyList elements = ty_reference_args(me, rest->type);
+    TyList elements = empty ? (TyList){0} : ty_reference_args(me, rest->type);
     u32 count = sig->param_count - 1 + shape->arity;
     SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
     memcpy(params, sig->params, sizeof(SigParam) * (sig->param_count - 1));

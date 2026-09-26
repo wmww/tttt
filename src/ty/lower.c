@@ -1273,7 +1273,12 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
     if (element->default_value) {
         // (Not remembered while the pattern is a contextual type: its sibling references are `any` then)
         if (include_pattern) my flow_uncached++;
-        Ty const* type = ty_widened_for_declaration(me, ty_expr_type(me, element->default_value), true);
+        bool nested = (element->tag == BINDING_OBJECT && vec_object_binding_item_size(&element->object)) ||
+            (element->tag == BINDING_ARRAY && vec_binding_size(&element->array));
+        Ty const* type = nested ?
+            ty_check_expr(me, element->default_value, ty_binding_pattern_type(me, element, true)) :
+            ty_expr_type(me, element->default_value);
+        type = ty_widened_for_declaration(me, type, true);
         if (include_pattern) my flow_uncached--;
         if (!compiler_options()->strict_null_checks) return type;
         Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
@@ -1377,6 +1382,125 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
     return include_pattern ? pattern_clone(me, ret) : ret;
 }
 
+Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pattern) {
+    if (!binding_is_parameter(pattern)) return type;
+    if (pattern->tag == BINDING_OBJECT && type->kind == TY_ANONYMOUS && type->anonymous.object_literal) {
+        // The elements with a default the literal lacks are optional properties (tsc's padObjectLiteralType)
+        Members const* members = ty_members(me, type);
+        ObjectLiteralProp* props = nullptr;
+        u32 count = 0;
+        for_each (item, vec_object_binding_item, &pattern->object) {
+            if (!item->target.default_value || item->target.rest || item->computed_key) continue;
+            bool is_number = false;
+            Atom const* name = ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number);
+            if (!name || ty_get_prop(me, type, name)) continue;
+            if (!props) {
+                props = malloc(sizeof(ObjectLiteralProp) * (members->prop_count + vec_object_binding_item_size(&pattern->object)));
+                panic_if(!props, "out of memory");
+                for (u32 i = 0; i < members->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = members->props[i] };
+            }
+            props[count++] = (ObjectLiteralProp){
+                .name = name,
+                .flags = PROP_OPTIONAL,
+                .type = binding_element_implied_type(me, &item->target, false),
+            };
+        }
+        if (!props) return type;
+        Ty const* ret = ty_object_literal(me, props, count, members->index, members->index_count,
+            type->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL);
+        free(props);
+        return ret;
+    }
+    if (pattern->tag != BINDING_ARRAY) return type;
+    // A tuple shorter than the pattern gets optional elements: the defaults' types, else any (tsc's padTupleType)
+    TupleShape const* shape = ty_tuple_shape(type);
+    u32 len = (u32)vec_binding_size(&pattern->array);
+    if (!shape || shape->arity >= len) return type;
+    for (u32 i = 0; i < shape->arity; i++) {
+        if (shape->flags[i] & TUPLE_ELEMENT_REST) return type;
+    }
+    TyList args = shape->arity ? ty_reference_args(me, type) : (TyList){0};
+    Ty const** elements = arena_new_n(&my arena, Ty const*, len);
+    unsigned char* flags = calloc(len, 1);
+    panic_if(!flags, "out of memory");
+    for (u32 i = 0; i < shape->arity; i++) {
+        elements[i] = args.data[i];
+        flags[i] = shape->flags[i];
+    }
+    u32 arity = shape->arity;
+    for (u32 i = shape->arity; i < len; i++) {
+        Binding const* element = vec_binding_at(&pattern->array, i);
+        if (i == len - 1 && element->rest) break;
+        elements[arity] = element->tag != BINDING_NOOP && element->default_value ?
+            binding_element_implied_type(me, element, false) : ty_intrinsic(me, TY_ANY);
+        flags[arity++] = TUPLE_ELEMENT_OPTIONAL;
+    }
+    TupleShape padded = { .arity = arity, .flags = flags, .readonly = shape->readonly };
+    Ty const* ret = ty_reference(me, ty_tuple_target(me, &padded), (TyList){ .data = elements, .len = arity });
+    free(flags);
+    return ret;
+}
+
+// The declaration the root of a pattern belongs to, if it has an initializer or can be a parameter
+static InitializedBinding const* root_initialized(Binding const* root) {
+    if (!root->source || root->source->tag != LAZY_TYPE_INITIALIZED_BINDING) return nullptr;
+    return c_container_of(root->source, InitializedBinding, lazy_type);
+}
+
+static Ty const* binding_element_context(Checker* me, Binding const* element);
+static Ty const* binding_default_type(Checker* me, Binding const* element);
+
+// tsc's getContextualTypeForVariableLikeDeclaration: what a pattern (or one of its elements) is expected to be
+static Ty const* binding_declared_context(Checker* me, Binding const* binding) {
+    if (binding->parent) return binding_element_context(me, binding);
+    if (binding->has_explicit_type) return ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
+    InitializedBinding const* initialized = root_initialized(binding);
+    return initialized && binding_is_parameter(binding) ? ty_contextual_parameter_type(me, initialized) : nullptr;
+}
+
+// tsc's getContextualTypeForBindingElement: the element's property (or element) of what its pattern is expected to be,
+// or of the pattern's initializer
+static Ty const* binding_element_context(Checker* me, Binding const* element) {
+    Binding const* pattern = element->parent;
+    Ty const* parent_type = binding_declared_context(me, pattern);
+    InitializedBinding const* initialized = pattern->parent ? nullptr : root_initialized(pattern);
+    if (!parent_type && initialized && initialized->value.tag != EXPR_IMPLICIT_ANY) {
+        parent_type = ty_pad_initializer_type(me, ty_expr_type(me, &initialized->value), pattern);
+    }
+    if (!parent_type) return nullptr;
+    if (pattern->tag == BINDING_ARRAY) {
+        // (An element's name is itself when there is no property name: a pattern has no context from here)
+        if (element->tag == BINDING_OBJECT || element->tag == BINDING_ARRAY) return nullptr;
+        return ty_contextual_element_type(me, parent_type, element->parent_index);
+    }
+    ObjectBindingItem const* item = element->parent_item;
+    Ty const* key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+    if (!(key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return nullptr;
+    return ty_contextual_prop_type(me, parent_type, key);
+}
+
+Ty const* ty_binding_default_type(Checker* me, Binding const* element) {
+    for (u32 i = 0; i < my defaults_in_flight_count; i++) {
+        if (my defaults_in_flight[i] == element) return ty_expr_type(me, element->default_value);
+    }
+    if (my defaults_in_flight_count >= c_arraylen(my defaults_in_flight)) return ty_expr_type(me, element->default_value);
+    my defaults_in_flight[my defaults_in_flight_count++] = element;
+    Ty const* ret = binding_default_type(me, element);
+    my defaults_in_flight_count--;
+    return ret;
+}
+
+static Ty const* binding_default_type(Checker* me, Binding const* element) {
+    Ty const* contextual = binding_element_context(me, element);
+    // (tsc's getContextualTypeForInitializerExpression: else what a non-empty pattern implies)
+    if (!contextual && ((element->tag == BINDING_OBJECT && vec_object_binding_item_size(&element->object)) ||
+        (element->tag == BINDING_ARRAY && vec_binding_size(&element->array)))
+    ) {
+        contextual = ty_binding_pattern_type(me, element, true);
+    }
+    return ty_check_expr(me, element->default_value, contextual);
+}
+
 // What is assigned to a binding: the initializer for the root of a pattern, for an element the property or element
 // of what its pattern is assigned
 Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
@@ -1385,7 +1509,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
     bool in_array = parent->tag == BINDING_ARRAY;
     // An array pattern takes elements of an array (or tuple) by index, of anything else what iterating it gives
-    // (tsc's getTypeForBindingElement). TODO: no TS2339-style errors from here
+    // (tsc's getTypeForBindingElement). What an element lacks is reported by binding_typecheck()
     bool array_like = in_array && (object->flags & TYF_ANY || ty_extends_array(me, object));
     Ty const* ret;
     if (in_array && !array_like) {
@@ -1398,6 +1522,11 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     } else if (in_array) {
         Value index = value_number(binding->parent_index);
         ret = ty_access(me, object, ty_literal(me, &index));
+        // Past the end of a tuple (TS2493, binding_typecheck()) is undefined (tsc's getIndexedAccessTypeOrUndefined)
+        TupleShape const* shape = ty_tuple_shape(object);
+        bool has_rest = false;
+        for (u32 i = 0; shape && i < shape->arity; i++) has_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+        if (shape && !has_rest && binding->parent_index >= shape->arity) ret = ty_intrinsic(me, TY_UNDEFINED);
     } else {
         ObjectBindingItem const* item = binding->parent_item;
         ret = ty_access(me, object, item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));
@@ -1411,7 +1540,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         while (root->parent) root = root->parent;
         Ty const* types[2] = { non_undefined_type(me, ret), nullptr };
         if (root->has_explicit_type) {
-            Ty const* default_type = ty_expr_type(me, binding->default_value);
+            Ty const* default_type = ty_pad_initializer_type(me, ty_binding_default_type(me, binding), binding);
             if (compiler_options()->strict_null_checks && !(default_type->flags & (TYF_ANY | TYF_UNKNOWN)) &&
                 ty_without_undefined(me, default_type) == default_type) {
                 ret = types[0];
@@ -1419,7 +1548,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
             return ret;
         }
         // Not ty_check_expr() with types[0] as the contextual type: only the uncontextual path detects `[x = x]`
-        Ty const* default_type = ty_expr_type(me, binding->default_value);
+        Ty const* default_type = ty_pad_initializer_type(me, ty_binding_default_type(me, binding), binding);
         // tsc unions first and then widens what's left fresh: a default that fits (`name = "a"` for a `"a" | "b"`
         // property) is absorbed, literal and all
         if (!(ret->flags & TYF_ANY) && !(types[0]->flags & TYF_NEVER) &&

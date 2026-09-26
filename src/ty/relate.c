@@ -605,6 +605,10 @@ FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name) { return fin
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple) { return tuple_as_array(me, tuple); }
 Ty const* ty_apparent_type(Checker* me, Ty const* ty) { return apparent_type(me, ty); }
 bool ty_is_tuple(Ty const* ty) { return is_tuple(ty); }
+TupleShape const* ty_tuple_shape(Ty const* ty) {
+    if (is_tuple(ty)) return ty->reference.target->declared.tuple;
+    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET ? ty->declared.tuple : nullptr;
+}
 bool ty_is_array(Checker* me, Ty const* ty) { return ty->kind == TY_REFERENCE && is_array_target(me, ty->reference.target); }
 
 // Signatures

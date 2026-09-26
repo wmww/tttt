@@ -243,6 +243,9 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                         });
                     }
                     vec_span_drop(&info.declarations);
+                    // (Its type is any: tsc's getTypeOfNode of a property name that isn't an expression)
+                    ctx->any_keeps_underline = true;
+                    baseline_test_case_add_type_node(ctx, i->source_span, &type_any);
                 }
                 binding_content_compile_test_info(&i->target, ctx);
             }

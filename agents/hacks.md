@@ -394,7 +394,18 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   `LAZY_TYPE_FUNCTION` memoises `ty_function_type()`, which is interned already (the LazyType could go, its users
   are `value_entry_type`, `class_item_get_type` and the test traversal).
 - `ty_binding_assigned_type`: not memoised per binding (the root's LazyType is, the accesses down a nested pattern
-  are redone per query); arrays only, no iterables; an object rest is the whole object.
+  are redone per query). What detects `[x = x]` is the default's LazyType; `ty_binding_default_type` checks a default
+  with its contextual type (which bypasses the LazyType), so it keeps its own in-flight list (`defaults_in_flight`).
+- `binding_element_context` (lower.c, tsc's getContextualTypeForBindingElement) takes the property through
+  `ty_contextual_prop_type` (index signatures included); tsc's getTypeOfPropertyOfType doesn't look at them.
+- `binding_add_padded_implicit_any_errors` (TS7031 for the elements a parameter's tuple initializer lacks, tsc's
+  padTupleType) runs for unannotated parameters and defaults of nested patterns; tsc reports wherever
+  checkDeclarationInitializer runs (also contextual-type lookups of annotated parameters).
+- `contains_spread` (members.c, widening context): tsc's ObjectFlags.ContainsSpread approximated as "a property of the
+  literal came from a spread" (`{ ...{} }` doesn't count). The padded `x?: undefined` properties are `undefined`, not
+  tsc's missingType under exactOptionalPropertyTypes, and the widened literal stays an object literal type (tsc's isn't).
+- `reorder_candidates` (call.c): overloads with a literal-typed parameter go first; tsc's reorderCandidates also orders
+  the groups of merged declarations (later declarations first), which isn't done here.
 - `FunctionImpl.constructed_class`: a class constructor's return type is `ty_class_instance_type()` of its class,
   set in `class_decl_lookup_names` (which also reports TS1093 and drops a written return type).
 - `ty/check.c: check_access` (TS2339 and friends) is honest about unions, intersections, `null`/`undefined` and
@@ -533,9 +544,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   without the key-property map. Contextual types of union members are reduced (`string | "a"` is `string`, tsc keeps
   both with noReductions), so a discriminant can widen and pick the wrong member (`contextualTypeShouldBeLiteral`).
   The for-of destructuring assignment check (statement.c) relates the regular element type (HACK: tsc checks a
-  pattern property by property). A binding pattern with an initializer takes the initializer's type without the
-  pattern's implied members (tsc's getTypeFromBindingPattern), so `function f({ x, y = 0 } = { x: 0 })` has
-  `{ x: number }` and `f({ x: 1, y: 1 })` is a spurious TS2353 (`destructuringWithLiteralInitializers`).
+  pattern property by property).
 - `widen_nullable` (null/undefined -> any without strictNullChecks) is shallow: top level and array elements only.
 - Expression memo (`check_with`, `LazyMemo.context`, `lazy_type_set`): the memo of an `Expr` is whatever the last check
   with a contextual type produced (overload candidates and inference passes overwrite each other; the chosen candidate

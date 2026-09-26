@@ -647,6 +647,10 @@ struct Checker {
     // contextualBindingPatterns): a reference inside one to its own elements is `any` (`const [a, b = a] = [1]`)
     struct Binding const* contextual_patterns[16];
     u32 contextual_pattern_count;
+    // The pattern elements whose defaults ty_binding_default_type() is checking: a binding element's type has no memo of
+    // its own, the default's LazyType is what detects `[x = x]` (a contextual check doesn't go through it)
+    struct Binding const* defaults_in_flight[16];
+    u32 defaults_in_flight_count;
     u32 flow_incomplete_seen; // Counts incomplete loop types handed out
     u32 flow_key_count; // Reference keys made
     u32 flow_expr_generation; // Which cache ty_flow_expr_type() uses while a loop is in progress: one per back edge walk
@@ -744,6 +748,8 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
 Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg);
 Ty const* ty_array(Checker* me, Ty const* element, bool readonly);
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
+// The shape of a tuple type, the empty tuple (its own target) included. Null if it isn't one
+TupleShape const* ty_tuple_shape(Ty const* ty);
 Ty const* ty_keyof(Checker* me, Ty const* operand);
 // template.c: template literal types and string mappings (tsc's getTemplateLiteralType, getStringMappingType)
 Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* const* types, u32 len);
@@ -897,6 +903,11 @@ bool ty_is_array(Checker* me, Ty const* ty); // A reference to Array<T> (not Rea
 // A class as written inside itself: `C<T, U>` with its own type parameters as the arguments
 Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol);
 Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding);
+// The type of the initializer of a parameter's pattern (or of an element of one) with what the pattern adds: the
+// properties with defaults an object literal lacks, the elements a tuple lacks (tsc's checkDeclarationInitializer)
+Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pattern);
+// The type of the default of an element of a pattern (`x = 1` in `{ x = 1 }`), checked with its contextual type
+Ty const* ty_binding_default_type(Checker* me, Binding const* element);
 Ty const* ty_declared_type_of(Checker* me, Symbol const* decl);
 Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);
 Ty const* ty_static_type_of(Checker* me, Symbol const* symbol);
@@ -964,6 +975,9 @@ Ty const* ty_widened_return_type(Checker* me, Ty const* ty, Ty const* contextual
 Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len);
 // The type an unannotated parameter got from the contextual signature of its function expression, null if none
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter);
+// The contextual type of a property or an element of something whose contextual type is `contextual` (null: none)
+Ty const* ty_contextual_prop_type(Checker* me, Ty const* contextual, Ty const* key);
+Ty const* ty_contextual_element_type(Checker* me, Ty const* contextual, u32 index);
 Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function); // null if none
 // `import.meta` (the property access on the `import` keyword) and its type
 bool ty_is_import_meta(struct Expr const* expr);

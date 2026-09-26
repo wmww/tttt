@@ -13,7 +13,8 @@ types components) are the oracle, not the goal.
   plan 21 stage 2, symbol accessibility as a port of tsc's getSymbolChain: +234; **8065 / 13540** when plan 21 closed
   2026-09-26 after stages 6-7: symbol lines, then the clusters sampling `other` found, most of them checker bugs the
   types baseline showed first: computed-name index signatures, binding patterns as contextual types, destructuring
-  assignment tuples, overload-failure return types). **Corpora**: tsc's
+  assignment tuples, overload-failure return types); **8139** after plan 24 (binding pattern types, contextual types
+  of pattern defaults, destructuring TS2339/TS2493). **Corpora**: tsc's
   `src/compiler` 0 diagnostics, type-fest 168, valibot 164 (2026-09-26; the rise since plan 19 is TS2344 on type
   references exposing evaluation bugs) (all three are clean under tsc; 450 / 1871 before plan 19
   R5/R3/R2/R4/R1; some of the recent drop is ts-expect-error directives that new checks now satisfy).
