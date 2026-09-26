@@ -97,6 +97,9 @@ typedef struct Expr {
         EXPR_JSX_FRAGMENT, // `<>...</>` (a JsxElement without a tag name or attributes)
         EXPR_JSX_ATTRIBUTES, // The attributes of a JsxElement, as one expression (tsc's JsxAttributes, an object literal)
     } tag;
+    // An array or object literal that is assigned to, a destructuring pattern (tsc's isAssignmentTarget). Set by
+    // expr_lookup_names()
+    bool assignment_pattern;
     union {
         Value literal;
         IdentifierExpr identifier;
@@ -229,6 +232,8 @@ typedef struct ForEachLoopStatement ForEachLoopStatement;
 void expr_flow_assign_for_each(Expr const* me, Scope* names, ForEachLoopStatement const* for_each);
 Ty const* expr_evaluate_type(Expr const* me); // Should only be used by LazyType
 void expr_typecheck(Expr const* me, ErrorCtx* errs);
+// `[a, b]` or `{ a }` as the target of an assignment of `source` (for..of): each target gets what it destructures to
+void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx* errs);
 
 #define g_class_key Expr, expr
 #define g_no_clone

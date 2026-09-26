@@ -1486,6 +1486,12 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
                 case FOR_EACH_LOOP_EXPR:
                     expr_typecheck(&my for_each_loop->variable.expr, errs);
+                    if (my for_each_loop->variable.expr.assignment_pattern) {
+                        // Destructured element by element (tsc's checkDestructuringAssignment)
+                        expr_destructuring_typecheck(&my for_each_loop->variable.expr,
+                            ty_widened_objects(checker, lazy_type_get(&my for_each_loop->var_type)), errs);
+                        break;
+                    }
                     ty_check_assignable_expr(
                         checker,
                         // HACK: tsc checks a pattern target property by property (checkDestructuringAssignment),

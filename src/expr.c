@@ -1280,6 +1280,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         }   break;
 
         case EXPR_OBJECT:
+            my assignment_pattern = assignment_target != FLOW_TARGET_NONE;
             for_each (i, vec_object_expr_item, &my object) {
                 if (i->computed_key) {
                     // (A scope of its own only for resolve_super())
@@ -1312,6 +1313,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case EXPR_ARRAY:
+            my assignment_pattern = assignment_target != FLOW_TARGET_NONE;
             for_each (i, vec_expr, &my array) {
                 flow->assignment_target = assignment_target;
                 expr_lookup_names(i, names, errs);
@@ -1399,6 +1401,12 @@ Expr const* expr_effective_check_node(Expr const* me) {
 // told (TODO: rest elements, iterables that aren't arrays), which checks the shape of the target only
 // `source_expr`: the right-hand side of a plain assignment, which a failure is elaborated into
 static bool is_written_undefined(Expr const* me);
+static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs);
+
+void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx* errs) {
+    assignment_target_typecheck(target, source, nullptr, errs);
+}
+
 static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs) {
     Checker* checker = current_checker;
     if (source && (source->flags & TYF_ANY)) source = nullptr;

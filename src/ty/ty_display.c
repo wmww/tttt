@@ -1380,8 +1380,11 @@ static bool needs_parens_in_array(Checker* me, Ty const* ty) {
     bool type_query = ty->kind == TY_DECLARED &&
         (ty->declared.kind == TY_DECLARED_CLASS_STATIC || ty->declared.kind == TY_DECLARED_ENUM_OBJECT ||
             ty->declared.kind == TY_DECLARED_NAMESPACE) && ty->declared.name && ty->declared.name->len;
+    // `(readonly T[])[]`, `(readonly [K, V])[]`: a type operator
+    bool readonly = ty->kind == TY_REFERENCE && (ty->reference.target == my readonly_array_target ||
+        (ty_is_tuple(ty) && ty->reference.target->declared.tuple->readonly));
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || ty->kind == TY_CONDITIONAL || ty->kind == TY_KEYOF ||
-        type_query || is_function_like(me, ty);
+        type_query || readonly || is_function_like(me, ty);
 }
 
 static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyList args) {

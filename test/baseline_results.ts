@@ -2903,7 +2903,7 @@ const baselines = {
     'capturedLetConstInLoop12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'capturedLetConstInLoop13': {
         errors: true,
@@ -9588,7 +9588,7 @@ const baselines = {
     'destructuringAssignmentWithExportedName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringAssignmentWithStrictNullChecks': {
         errors: true,
@@ -9598,7 +9598,7 @@ const baselines = {
     'destructuringAssignment_private': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringControlFlowNoCrash': {
         errors: false,
@@ -10663,12 +10663,12 @@ const baselines = {
     'emitCapturingThisInTupleDestructuring1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitCapturingThisInTupleDestructuring2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitClassExpressionInDeclarationFile': {
         errors: true,
@@ -10873,7 +10873,7 @@ const baselines = {
     'emptyArrayDestructuringExpressionVisitedByTransformer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyDeclarationEmitIsModule': {
         errors: true,
@@ -23153,7 +23153,7 @@ const baselines = {
     'nestedObjectRest': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedRecursiveArraysOrObjectsError01': {
         errors: false,
@@ -27173,7 +27173,7 @@ const baselines = {
     'referenceSatisfiesExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'referenceTypesPreferedToPathIfPossible': {
         errors: true,
@@ -28416,9 +28416,9 @@ const baselines = {
         types: true,
     },
     'sourceMapValidationDestructuringForArrayBindingPattern2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForArrayBindingPatternDefaultValues': {
         errors: true,
@@ -28426,7 +28426,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationDestructuringForArrayBindingPatternDefaultValues2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28456,9 +28456,9 @@ const baselines = {
         types: true,
     },
     'sourceMapValidationDestructuringForOfArrayBindingPattern2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForOfArrayBindingPatternDefaultValues': {
         errors: true,
@@ -28466,9 +28466,9 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationDestructuringForOfArrayBindingPatternDefaultValues2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForOfObjectBindingPattern': {
         errors: true,
@@ -28551,9 +28551,9 @@ const baselines = {
         types: true,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern4': {
         errors: true,
@@ -28586,7 +28586,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPatternDefaultValues3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -36446,17 +36446,17 @@ const baselines = {
         types: true,
     },
     'privateNameFieldDestructuredBinding(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'privateNameFieldDestructuredBinding(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'privateNameFieldDestructuredBinding(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -36731,17 +36731,17 @@ const baselines = {
         types: true,
     },
     'privateNameStaticFieldDestructuredBinding(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'privateNameStaticFieldDestructuredBinding(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'privateNameStaticFieldDestructuredBinding(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -36993,7 +36993,7 @@ const baselines = {
     'privateWriteOnlyAccessorRead': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPrivatePropertyAssignment': {
         errors: true,
@@ -37518,7 +37518,7 @@ const baselines = {
     'overrideInterfaceProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyAndAccessorWithSameName': {
         errors: true,
@@ -41513,7 +41513,7 @@ const baselines = {
     'arrayAssignmentPatternWithAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationInAmbientContext': {
         errors: true,
@@ -41893,62 +41893,62 @@ const baselines = {
     'emptyAssignmentPatterns01_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns01_ES5iterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns01_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns02_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns02_ES5iterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns02_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns03_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns03_ES5iterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns03_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns04_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns04_ES5iterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns04_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyObjectBindingPatternParameter01': {
         errors: true,
@@ -42078,12 +42078,12 @@ const baselines = {
     'iterableArrayPattern23': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern24': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern25': {
         errors: false,
@@ -42113,7 +42113,7 @@ const baselines = {
     'iterableArrayPattern3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern30': {
         errors: true,
@@ -42123,27 +42123,27 @@ const baselines = {
     'iterableArrayPattern4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern8': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern9': {
         errors: true,
@@ -42233,7 +42233,7 @@ const baselines = {
     'restElementWithAssignmentPattern1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restElementWithAssignmentPattern2': {
         errors: false,
@@ -42243,7 +42243,7 @@ const baselines = {
     'restElementWithAssignmentPattern3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restElementWithAssignmentPattern4': {
         errors: false,
@@ -42253,7 +42253,7 @@ const baselines = {
     'restElementWithAssignmentPattern5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restElementWithBindingPattern': {
         errors: true,
@@ -42488,15 +42488,15 @@ const baselines = {
     'for-of45': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of46': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of47': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42508,7 +42508,7 @@ const baselines = {
     'for-of49': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of5': {
         errors: true,
@@ -50168,7 +50168,7 @@ const baselines = {
     'generatorAssignability': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorExplicitReturnType': {
         errors: false,
@@ -57088,7 +57088,7 @@ const baselines = {
     'parserUnaryExpression3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserUnaryExpression4': {
         errors: true,
@@ -63028,10 +63028,10 @@ const baselines = {
     'for-inStatementsDestructuring3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-inStatementsDestructuring4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63076,9 +63076,9 @@ const baselines = {
         types: true,
     },
     'ES5For-of12': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of13': {
         errors: true,
@@ -63176,9 +63176,9 @@ const baselines = {
         types: true,
     },
     'ES5For-of30': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of31': {
         errors: false,
@@ -65093,7 +65093,7 @@ const baselines = {
     'restElementMustBeLast': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restTuplesFromContextualTypes': {
         errors: false,
