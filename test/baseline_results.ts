@@ -683,7 +683,7 @@ const baselines = {
     'ambientExportDefaultErrors': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ambientExternalModuleInAnotherExternalModule': {
         errors: false,
@@ -12557,8 +12557,8 @@ const baselines = {
     },
     'exportAsNamespace.d': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'exportAsNamespaceConflict': {
         errors: false,
@@ -16677,8 +16677,8 @@ const baselines = {
     },
     'importShouldNotBeElidedInDeclarationEmit': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importTypeGenericArrowTypeParenthesized': {
         errors: true,
@@ -19847,7 +19847,7 @@ const baselines = {
     },
     'jsxChildrenArrayWrongType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsxChildrenGenericContextualTypes': {
@@ -19867,7 +19867,7 @@ const baselines = {
     },
     'jsxChildrenWrongType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsxClassAttributeResolution': {
@@ -20072,7 +20072,7 @@ const baselines = {
     },
     'jsxFragmentWrongType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsxGenericComponentWithSpreadingResultOfGenericFunction': {
@@ -22657,7 +22657,7 @@ const baselines = {
     },
     'namedImportNonExistentName': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'namespaceDisambiguationInUnion': {
@@ -26582,7 +26582,7 @@ const baselines = {
     },
     'reactImportDropped': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reactImportUnusedInNewJSXEmit(jsx=react-jsx)': {
@@ -28973,7 +28973,7 @@ const baselines = {
     'stackDepthLimitCastingType': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'standaloneBreak': {
         errors: true,
@@ -31812,8 +31812,8 @@ const baselines = {
     },
     'umdGlobalConflict': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'umdNamedAmdMode': {
         errors: true,
@@ -32437,23 +32437,23 @@ const baselines = {
     },
     'unusedImports13': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedImports14': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedImports15': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedImports16': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedImports2': {
         errors: true,
@@ -49932,8 +49932,8 @@ const baselines = {
     },
     'umd1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'umd2': {
         errors: true,
@@ -49942,38 +49942,38 @@ const baselines = {
     },
     'umd3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'umd4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'umd5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'umd6': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'umd7': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'umd8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'umd9': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'valuesMergingAcrossModules': {
         errors: true,

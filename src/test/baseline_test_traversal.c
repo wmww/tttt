@@ -608,6 +608,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         case PORT_IMPORT_DEFAULT:
         case PORT_IMPORT_GATHER:
         case PORT_REEXPORT_GATHER:
+        case PORT_EXPORT_AS_NAMESPACE: // (the global alias of the module)
             // Null when the scope refused the import, eg `import a = require("b")` inside an ambient module
             if (my main.symbol) port_item_add_alias(&my main, ctx);
             break;

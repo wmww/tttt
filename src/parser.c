@@ -5074,6 +5074,7 @@ static ImportAttributes* parse_import_attributes(Parser* parent) {
 static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
+    Anchor statement_start = a;
     PortStatement statement = {0};
 
     bool is_export = false;
@@ -5178,6 +5179,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         hop_whitespace(&p);
         expect_identifier(&p, &statement.main.decl_name);
         statement.main.tag = PORT_EXPORT_AS_NAMESPACE;
+        a = statement_start; // (the statement declares the alias, `export` included)
     } else if (!is_export && parse_identifier(&p, &statement.main.decl_name)) {
         hop_whitespace(&p);
         statement.main.tag = PORT_IMPORT_DEFAULT;

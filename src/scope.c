@@ -797,6 +797,7 @@ void scope_add_port(Scope* me, PortItem* item) {
         case PORT_EXPORT_AS_NAMESPACE: {
             // A global alias of the module (UMD). TODO: TS2686 when a module uses it
             if (my kind != SCOPE_MODULE || !my container) return;
+            if (my file && my file->is_js) return; // TypeScript only (TS8xxx): tsc's symbols baseline has no alias there
             bool merged;
             Symbol* symbol = declare_symbol(
                 me, &my binder->globals, port_item_name(item->decl_name), item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
