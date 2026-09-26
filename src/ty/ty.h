@@ -461,12 +461,21 @@ struct Signature {
     bool predicate_done;
 };
 
+// A member with a computed name that an object literal's index signature was made of (`[a]: 1`)
+typedef struct IndexComponent {
+    Expr const* name; // What's in the brackets
+    Ty const* type;
+} IndexComponent;
+
 typedef struct IndexInfo {
     Ty const* key;
     Ty const* value;
     Atom const* param_name;
     bool readonly;
     Span decl_span; // The index signature as declared, invalid for synthesized ones
+    // tsc's IndexInfo.components: the printer writes them instead of the signature when their names are accessible
+    IndexComponent const* components;
+    u32 component_count;
 } IndexInfo;
 
 typedef struct MappedInfo {

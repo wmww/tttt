@@ -1225,6 +1225,21 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
     out_lit(d, "; }");
 }
 
+// An index signature an object literal's computed names made prints as those members when each is an entity name
+// accessible from where it's printed (tsc's indexInfoToObjectComputedNamesOrSignatureDeclaration)
+static bool index_components_printed(Checker* me, TyDisplay d, IndexInfo const* info) {
+    if (!info->component_count || !d.enclosing) return false;
+    for (u32 i = 0; i < info->component_count; i++) {
+        Expr const* name = info->components[i].name;
+        if (!expr_is_entity_name(name)) return false;
+        Expr const* leftmost = entity_leftmost(name);
+        if (leftmost->tag != EXPR_IDENTIFIER || leftmost->identifier.keyword || !leftmost->identifier.symbol) return false;
+        Symbol const* found = scope_resolve(d.enclosing, leftmost->identifier.name.sv, SYMBOL_VALUE);
+        if (!found || !same_symbol(me, found, leftmost->identifier.symbol)) return false;
+    }
+    return true;
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     Members const* members = ty_members(me, ty);
     if (members->mapped) {
@@ -1259,6 +1274,20 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     }
     for (u32 i = 0; i < members->index_count; i++) {
         IndexInfo const* info = &members->index[i];
+        if (index_components_printed(me, d, info)) {
+            for (u32 j = 0; j < info->component_count; j++) {
+                IndexComponent const* component = &info->components[j];
+                // (Those with a literal or unique symbol name are properties too)
+                if (ty_expr_type(me, component->name)->kind == TY_LITERAL) continue;
+                if (info->readonly) out_lit(d, "readonly ");
+                out_lit(d, "[");
+                out(d, component->name->outer_span.sv);
+                out_lit(d, "]: ");
+                ty_display(me, d, component->type);
+                out_lit(d, "; ");
+            }
+            continue;
+        }
         if (info->readonly) out_lit(d, "readonly ");
         out_lit(d, "[");
         out(d, info->param_name ? atom_sv(info->param_name) : c_sv("x"));

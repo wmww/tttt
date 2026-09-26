@@ -3333,7 +3333,7 @@ const baselines = {
     'checkingObjectWithThisInNamePositionNoCrash': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularAccessorAnnotations': {
         errors: false,
@@ -3998,7 +3998,7 @@ const baselines = {
     'classUsedBeforeInitializedVariables': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classVarianceCircularity': {
         errors: true,
@@ -11638,7 +11638,7 @@ const baselines = {
     'es5-yieldFunctionObjectLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5ExportDefaultClassDeclaration': {
         errors: true,
@@ -21453,7 +21453,7 @@ const baselines = {
     'modularizeLibrary_ErrorFromUsingES6FeaturesWithOnlyES5Lib': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'modularizeLibrary_ErrorFromUsingWellknownSymbolWithOutES6WellknownSymbolLib': {
         errors: false,
@@ -33723,7 +33723,7 @@ const baselines = {
     'asyncArrowFunction8_es2017': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncArrowFunction9_es2017': {
         errors: false,
@@ -33938,12 +33938,12 @@ const baselines = {
     'asyncFunctionDeclaration8_es2017': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration9_es2017': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncAliasReturnType_es5': {
         errors: false,
@@ -34003,7 +34003,7 @@ const baselines = {
     'asyncArrowFunction8_es5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncArrowFunction9_es5': {
         errors: false,
@@ -34253,12 +34253,12 @@ const baselines = {
     'asyncFunctionDeclaration8_es5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration9_es5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclarationCapturesArguments_es5': {
         errors: false,
@@ -34318,7 +34318,7 @@ const baselines = {
     'asyncArrowFunction8_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncArrowFunction9_es6': {
         errors: false,
@@ -34583,12 +34583,12 @@ const baselines = {
     'asyncFunctionDeclaration8_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration9_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncOrYieldAsBindingIdentifier1': {
         errors: true,
@@ -40778,22 +40778,22 @@ const baselines = {
     'computedPropertyNames18_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames18_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames19_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames19_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames1_ES5': {
         errors: true,
@@ -40808,12 +40808,12 @@ const baselines = {
     'computedPropertyNames20_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames20_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames21_ES5': {
         errors: false,
@@ -40868,12 +40868,12 @@ const baselines = {
     'computedPropertyNames26_ES5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames26_ES6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames27_ES5': {
         errors: true,
@@ -41128,12 +41128,12 @@ const baselines = {
     'computedPropertyNames4_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames4_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames50_ES5': {
         errors: false,
@@ -41148,12 +41148,12 @@ const baselines = {
     'computedPropertyNames51_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames51_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames52(target=es2015)': {
         errors: true,
@@ -41168,12 +41168,12 @@ const baselines = {
     'computedPropertyNames5_ES5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames5_ES6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames6_ES5': {
         errors: true,
@@ -41198,12 +41198,12 @@ const baselines = {
     'computedPropertyNames8_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames8_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames9_ES5': {
         errors: true,
@@ -41288,12 +41288,12 @@ const baselines = {
     'computedPropertyNamesContextualType7_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNamesContextualType7_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNamesContextualType8_ES5': {
         errors: true,
@@ -42638,12 +42638,12 @@ const baselines = {
     'FunctionDeclaration8_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionDeclaration9_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionExpression1_es6': {
         errors: true,
@@ -42678,7 +42678,7 @@ const baselines = {
     'FunctionPropertyAssignments5_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionPropertyAssignments6_es6': {
         errors: false,
@@ -43003,12 +43003,12 @@ const baselines = {
     'invalidNewTarget.es5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidNewTarget.es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newTarget.es5': {
         errors: true,
@@ -45223,22 +45223,22 @@ const baselines = {
     'generatorTypeCheck41': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck42': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck43': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck44': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck45': {
         errors: true,
@@ -56348,17 +56348,17 @@ const baselines = {
     'parserES5ComputedPropertyName2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserES5ComputedPropertyName3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserES5ComputedPropertyName4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserES5ComputedPropertyName5': {
         errors: true,
@@ -59568,7 +59568,7 @@ const baselines = {
     'parserComputedPropertyName17': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName18': {
         errors: true,
@@ -59583,7 +59583,7 @@ const baselines = {
     'parserComputedPropertyName2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName20': {
         errors: true,
@@ -59638,7 +59638,7 @@ const baselines = {
     'parserComputedPropertyName3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName30': {
         errors: false,
@@ -59678,7 +59678,7 @@ const baselines = {
     'parserComputedPropertyName37': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName38': {
         errors: true,
@@ -59693,7 +59693,7 @@ const baselines = {
     'parserComputedPropertyName4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName40': {
         errors: true,
@@ -59713,7 +59713,7 @@ const baselines = {
     'parserComputedPropertyName6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName7': {
         errors: true,

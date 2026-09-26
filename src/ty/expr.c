@@ -1533,6 +1533,64 @@ static Ty const* discriminate_by_jsx_attributes(Checker* me, Ty const* contextua
     return ret;
 }
 
+
+// tsc's propertiesArray since the last spread, for the index signatures computed names make
+// (getObjectLiteralIndexInfo): every member's type and what its name is
+typedef struct LiteralMember {
+    Ty const* type; // Null for an accessor: typed from it when needed
+    FunctionImpl const* accessor;
+    bool getter;
+    bool numeric_name, symbol_name; // (A computed name of type `any` is both)
+    Expr const* computed_key;
+} LiteralMember;
+typedef struct LiteralMembers {
+    LiteralMember* items;
+    u32 count, cap;
+    bool computed[3]; // A computed name made an index signature of this key: string, number, symbol
+} LiteralMembers;
+
+static IndexInfo literal_members_index(Checker* me, LiteralMembers const* members, TyIntrinsic key, bool readonly) {
+    Ty const** types = malloc(sizeof(Ty const*) * (members->count ? members->count : 1));
+    IndexComponent* components = arena_new_n(&my arena, IndexComponent, members->count ? members->count : 1);
+    u32 n = 0, component_count = 0;
+    for (u32 i = 0; i < members->count; i++) {
+        LiteralMember const* m = &members->items[i];
+        bool included = key == TY_STRING ? !m->symbol_name : key == TY_NUMBER ? m->numeric_name : m->symbol_name;
+        if (!included) continue;
+        types[n] = m->type ? m->type : ty_object_literal_accessor_type(me, m->accessor, m->getter);
+        if (m->computed_key) components[component_count++] = (IndexComponent){ .name = m->computed_key, .type = types[n] };
+        n++;
+    }
+    IndexInfo ret = {
+        .key = ty_intrinsic(me, key),
+        .value = n ? ty_union_subtype_reduced(me, types, n) : ty_intrinsic(me, TY_UNDEFINED),
+        .param_name = checker_atom(me, c_sv("x")),
+        .readonly = readonly,
+        .components = components,
+        .component_count = component_count,
+    };
+    free(types);
+    return ret;
+}
+
+// The index signatures of the members since the last spread, into the builder; then starts over
+static void literal_members_flush(Checker* me, LiteralMembers* members, IndexInfo* index, u32* index_count, bool readonly) {
+    static TyIntrinsic const keys[3] = { TY_STRING, TY_NUMBER, TY_ES_SYMBOL };
+    for (u32 key = 0; key < 3; key++) {
+        if (members->computed[key]) index[(*index_count)++] = literal_members_index(me, members, keys[key], readonly);
+    }
+    members->count = 0;
+    members->computed[0] = members->computed[1] = members->computed[2] = false;
+}
+
+static void literal_members_push(LiteralMembers* members, LiteralMember member) {
+    if (members->count == members->cap) {
+        members->cap = members->cap ? members->cap * 2 : 8;
+        members->items = realloc(members->items, sizeof(LiteralMember) * members->cap);
+    }
+    members->items[members->count++] = member;
+}
+
 static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     ObjectExpr const* object = &expr->object;
     if (ctx.contextual && ctx.contextual->kind == TY_UNION) {
@@ -1554,8 +1612,10 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     // Accessor pairs share a property: the declarations of both halves
     Span* accessor_spans = nullptr;
 
+    LiteralMembers members = {0};
     for_each (i, vec_object_expr_item, object) {
         if (i->tag == OBJECT_ITEM_SPREAD) {
+            literal_members_flush(me, &members, builder.index, &builder.index_count, ctx.is_const);
             if (builder.count || builder.index_count) spread_acc_props(me, &spread, &builder);
             literal_builder_drop(&builder);
             spread_acc_type(me, &spread, ty_expr_type(me, &i->value));
@@ -1598,22 +1658,24 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 break;
         }
 
+        // What the member adds to index signatures (tsc's isSymbolWithNumericName, isSymbolWithSymbolName: the
+        // computed name's type is assignable to number or symbol)
+        bool numeric_name = name ? ty_is_numeric_name(name) : (key_type->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL)) ||
+            ty_is_related(me, key_type, ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE);
+        bool symbol_name = key_type && ((key_type->flags & TYF_ES_SYMBOL_LIKE) ||
+            (!name && ty_is_related(me, key_type, ty_intrinsic(me, TY_ES_SYMBOL), TY_RELATION_ASSIGNABLE)));
+        literal_members_push(&members, (LiteralMember){
+            .type = type, .accessor = is_accessor ? i->value.function : nullptr, .getter = i->tag == OBJECT_ITEM_GETTER,
+            .numeric_name = numeric_name, .symbol_name = symbol_name, .computed_key = i->computed_key,
+        });
+
         if (!name) {
-            // A key that's only known to be some string, number or symbol becomes an index signature. TODO: unions of
-            // literals, for now the member is left out of the type
-            if (!(key_type->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL | TYF_ANY))) continue;
-            Ty const* index_key = ty_intrinsic(me,
-                key_type->flags & TYF_NUMBER ? TY_NUMBER : key_type->flags & TYF_ES_SYMBOL ? TY_ES_SYMBOL : TY_STRING);
-            IndexInfo* existing = nullptr;
-            for (u32 j = 0; j < builder.index_count; j++) {
-                if (builder.index[j].key == index_key) existing = &builder.index[j];
-            }
-            if (existing) {
-                existing->value = union_of_two(me, existing->value, type);
-            } else {
-                builder.index[builder.index_count++] = (IndexInfo){
-                    .key = index_key, .value = type, .param_name = checker_atom(me, c_sv("x")),
-                };
+            // A key that's only known to be some string, number or symbol makes an index signature (the one it's
+            // assignable to: `any` is a number), of all the members since the last spread. Others make nothing
+            Ty const* string_number_symbol = union_of_two(me, union_of_two(me, ty_intrinsic(me, TY_STRING),
+                ty_intrinsic(me, TY_NUMBER)), ty_intrinsic(me, TY_ES_SYMBOL));
+            if (ty_is_related(me, key_type, string_number_symbol, TY_RELATION_ASSIGNABLE)) {
+                members.computed[numeric_name ? 1 : symbol_name ? 2 : 0] = true;
             }
             continue;
         }
@@ -1661,6 +1723,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         });
     }
     free(accessor_spans);
+    literal_members_flush(me, &members, builder.index, &builder.index_count, ctx.is_const);
+    free(members.items);
     Ty const* ret = spread_acc_finish(me, &spread, &builder, OBJECT_LITERAL_FRESH);
     free(builder.props);
     return ret;

@@ -1770,10 +1770,14 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
                 .own = prop->literal_own,
             };
         }
+        IndexInfo index[8] = {0};
+        u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
+        for (u32 i = 0; i < index_count; i++) {
+            index[i] = members->index[i];
+            index[i].value = widen_nullable(me, index[i].value, depth + 1);
+            changed |= index[i].value != members->index[i].value;
+        }
         if (changed) {
-            IndexInfo index[8] = {0};
-            u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
-            for (u32 i = 0; i < index_count; i++) index[i] = members->index[i];
             ret = ty_object_literal(me, props, members->prop_count, index, index_count,
                 ty->anonymous.jsx_attributes ? (ty->flags & TYF_FRESH_OBJECT ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES) :
                 ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL);
