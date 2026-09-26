@@ -1000,6 +1000,8 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
 typedef struct AsTypeExpr AsTypeExpr;
 bool as_type_is_const(AsTypeExpr const* as_type);
 Ty const* ty_check_expr_in_const(Checker* me, Expr const* expr, Ty const* contextual, bool is_const);
+// tsc's getContextualSignature of a function expression
+Signature const* ty_contextual_signature(Checker* me, Ty const* contextual, struct FunctionImpl const* function);
 Ty const* ty_check_expr_skipping_sensitive(Checker* me, Expr const* expr, Ty const* contextual, bool is_const);
 // JSX (jsx.c; the attributes are an object literal, see expr.c)
 struct JsxElement;

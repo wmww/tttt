@@ -6261,9 +6261,9 @@ const baselines = {
         types: true,
     },
     'contextualTypeObjectSpreadExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeOfIndexedAccessParameter': {
         errors: true,

@@ -434,6 +434,10 @@ static Signature const* contextual_signature(Checker* me, Ty const* contextual, 
     return contextual_call_signature(me, contextual, function);
 }
 
+Signature const* ty_contextual_signature(Checker* me, Ty const* contextual, FunctionImpl const* function) {
+    return contextual_signature(me, contextual, function, 0);
+}
+
 static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index, bool as_rest) {
     for (u32 i = 0; i < sig->param_count; i++) {
         SigParam const* param = &sig->params[i];
@@ -1681,8 +1685,9 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     if (ctx.contextual && ctx.contextual->kind == TY_UNION) {
         ctx.contextual = discriminate_by_object_members(me, ctx.contextual, object);
     }
-    if (ctx.contextual) {
-        // What `this` in its methods goes by (ty_contextual_this_type())
+    if (ctx.contextual && !ctx.skip_sensitive) {
+        // What `this` in its methods goes by (ty_contextual_this_type()). Not while skipping context-sensitive
+        // functions: none that would ask is checked
         u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)expr };
         *intern_slot(me, &my links, context_key, 2) = ctx.contextual;
     }
@@ -1703,7 +1708,10 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             literal_members_flush(me, &members, builder.index, &builder.index_count, ctx.is_const);
             if (builder.count || builder.index_count) spread_acc_props(me, &spread, &builder);
             literal_builder_drop(&builder);
-            spread_acc_type(me, &spread, ty_expr_type(me, &i->value));
+            // (Its contextual type is the literal's: tsc's getContextualType of a SpreadAssignment)
+            spread_acc_type(me, &spread, check_with(me, &i->value, (ExprCtx){
+                .contextual = ctx.contextual, .skip_sensitive = ctx.skip_sensitive,
+            }));
             continue;
         }
 

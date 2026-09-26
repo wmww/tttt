@@ -402,8 +402,110 @@ static bool fixed_by_expr(Checker* me, Expr const* expr, Ty const* context, TyMa
         }
         return false;
     }
+    if (expr->tag == EXPR_FUNCTION && context->kind == TY_UNION) {
+        // Of a union, what the function is typed by is the signature its members have in common (a method against
+        // `(() => T[K]) | Computed<T[K]>` gets `() => T[K]`, whose no parameters fix nothing)
+        Signature const* sig = ty_contextual_signature(me, context, expr->function);
+        if (!sig) return false;
+        Ty const* type = ty_signature_type(me, sig);
+        return fixed_by_type(me, type, probe, false, 0) || (sig->this_type && ty_instantiate(me, sig->this_type, probe) != sig->this_type);
+    }
     // (Only a function returns what the contextual return type says)
     return fixed_by_type(me, context, probe, true, expr->tag == EXPR_FUNCTION ? 0 : 8);
+}
+
+// The type parameters a context-sensitive expression checked against `context` fixes get what they have inferred so
+// far; the mapper its contextual type is instantiated with (tsc's instantiateContextualType: the nonFixingMapper if
+// any inference has candidates, else the returnMapper)
+static TyMapper const* fix_for_expr(
+    Checker* me, Signature const* sig, Inference* inf, Expr const* expr, Ty const* context, TyMapper const* return_mapper
+) {
+    TyMapper const* so_far = inference_mapper(me, sig, inf, true);
+    bool any_candidates = false;
+    Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
+    for (u32 j = 0; j < inf->len; j++) {
+        if (!inf->params[j].co_len && !inf->params[j].contra_len) continue;
+        any_candidates = true;
+        Ty const* param = sig->type_params.data[j];
+        TyMapper const* probe = ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &unknown, .len = 1 });
+        if (fixed_by_expr(me, expr, context, probe, 0)) inf->params[j].fixed = so_far->targets[j];
+    }
+    return !any_candidates && return_mapper ? return_mapper : so_far;
+}
+
+// Whether an intra-expression pass checks `expr` on its own. HACK: only arrow functions (and nested literals). tsc takes
+// methods and function expressions too, but their `this` goes by the literal's contextual type, which isn't finished
+// while the pass runs, and tttt remembers the `this` it evaluated once (tsc recomputes it): thisTypeInObjectLiterals2
+static bool intra_expression_site(Expr const* expr) {
+    if (expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY) return true;
+    return expr->tag == EXPR_FUNCTION && span_valid(expr->function->arrow_span);
+}
+
+// The arrow functions an intra-expression pass would check one by one, nested literals included
+static u32 intra_expression_sites(Expr const* literal, u32 depth) {
+    u32 count = 0;
+    if (depth > 8) return 0;
+    if (literal->tag == EXPR_OBJECT) {
+        for_each (i, vec_object_expr_item, &literal->object) {
+            Expr const* value = &i->value;
+            if (i->tag != OBJECT_ITEM_PROPERTY || !ty_expr_is_context_sensitive(value)) continue;
+            bool nested = value->tag == EXPR_OBJECT || value->tag == EXPR_ARRAY;
+            count += nested ? intra_expression_sites(value, depth + 1) : intra_expression_site(value);
+        }
+    } else if (literal->tag == EXPR_ARRAY) {
+        for_each (i, vec_expr, &literal->array) {
+            if (!ty_expr_is_context_sensitive(i)) continue;
+            count += i->tag == EXPR_OBJECT || i->tag == EXPR_ARRAY ? intra_expression_sites(i, depth + 1) : intra_expression_site(i);
+        }
+    }
+    return count;
+}
+
+// tsc's intra-expression inference sites: the context-sensitive members of an object or array literal argument are
+// checked in order, each inferred from before the next one's parameters are fixed (react-query's
+// `{ queryFn: () => fetch(), getNextPageParam: (lastPage) => ... }` infers TData from queryFn first). Each function's
+// contextual signature sticks (assign_contextual_signature()), so checking the whole literal afterwards agrees.
+// `param_type` is the literal's uninstantiated contextual type
+static void infer_intra_expression(
+    Checker* me, Signature const* sig, Inference* inf, Expr const* literal, Ty const* param_type, TyMapper const* return_mapper,
+    u32 depth
+) {
+    if (depth == 0 && intra_expression_sites(literal, 0) < 2) return;
+    if (depth > 8) return;
+    u32 len = literal->tag == EXPR_OBJECT ? (u32)vec_object_expr_item_size(&literal->object) : (u32)vec_expr_size(&literal->array);
+    for (u32 n = 0; n < len; n++) {
+        Expr const* value;
+        Ty const* member_param;
+        if (literal->tag == EXPR_OBJECT) {
+            ObjectExprItem const* item = vec_object_expr_item_at(&literal->object, n);
+            if (item->tag == OBJECT_ITEM_SPREAD) {
+                // A spread literal has the literal's contextual type
+                if (item->value.tag == EXPR_OBJECT && ty_expr_is_context_sensitive(&item->value)) {
+                    infer_intra_expression(me, sig, inf, &item->value, param_type, return_mapper, depth + 1);
+                }
+                continue;
+            }
+            value = &item->value;
+            if (!ty_expr_is_context_sensitive(value) || item->computed_key || item->tag != OBJECT_ITEM_PROPERTY ||
+                !intra_expression_site(value)) {
+                continue;
+            }
+            member_param = ty_contextual_prop_type(me, param_type, ty_prop_name_literal(me, checker_atom(me, cstr_sv(&item->name_string))));
+        } else {
+            value = vec_expr_at(&literal->array, n);
+            if (value->tag == EXPR_SPREAD) break;
+            if (!ty_expr_is_context_sensitive(value) || !intra_expression_site(value)) continue;
+            member_param = ty_contextual_element_type(me, param_type, n);
+        }
+        if (!member_param) continue;
+        // (A nested literal's own sites come first, then it is one too)
+        if (value->tag == EXPR_OBJECT || value->tag == EXPR_ARRAY) {
+            infer_intra_expression(me, sig, inf, value, member_param, return_mapper, depth + 1);
+        }
+        TyMapper const* mapper = fix_for_expr(me, sig, inf, value, member_param, return_mapper);
+        Ty const* type = ty_check_expr(me, value, ty_instantiate(me, member_param, mapper));
+        infer_types(me, inf, type, member_param, INFER_PRIORITY_NORMAL);
+    }
 }
 
 static bool fixed_by_argument(Checker* me, Arg const* arg, Ty const* param_type, Ty const* param) {
@@ -648,6 +750,9 @@ static TyMapper const* infer_type_arguments(
         Ty const* param_type = shape_type_at(&shape, i);
         if (param_type && arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread) {
             infer_from_annotated_params(me, &inf, arg->expr->function, param_type);
+        }
+        if (param_type && !arg->spread && !arg->part_of_spread) {
+            infer_intra_expression(me, sig, &inf, arg->expr, param_type, return_mapper, 0);
         }
         TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
         bool any_candidates = false;

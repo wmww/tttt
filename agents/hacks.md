@@ -509,10 +509,19 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   instantiates each nested contextual type as it is asked for); other arguments only get the top level
   (`instantiate_instantiable`), since full instantiation broke arrayLiteralInference. The second pass uses the return
   mapper while no type parameter has candidates (tsc's instantiateContextualType).
-- `TYF_NON_INFERRABLE` (tsc's ObjectFlags.NonInferrableType): set on the silent never and propagated through unions,
-  intersections, references and aliased anonymous instantiations. tsc also sets it on object literals with context
-  sensitive functions in them and on `anyFunctionType` (partially inferable object literals, isPartiallyInferableType);
-  tttt doesn't.
+- `TYF_NON_INFERRABLE` (tsc's ObjectFlags.NonInferrableType): set on the silent never and `ty_any_function_type()`,
+  propagated through unions, intersections, references, object literals and aliased anonymous instantiations.
+- Skip-sensitive first pass (plan 19 R10, `ExprCtx.skip_sensitive`): an object/array/JSX-attributes argument with a
+  context-sensitive function in it is checked with those functions as `ty_any_function_type()` and inferred from.
+  Missing from tsc's version: the returnOnlyType (a function whose parameters are annotated but whose return
+  expression is context sensitive still becomes the any-function), and the first overload round's applicability
+  check still skips such arguments entirely (`first_unfit_argument`). isPartiallyInferableType only exists as the
+  PartialHomomorphicMappedType priority of a reverse mapped inference from a non-inferrable source.
+- Intra-expression inference (`infer_intra_expression`, call.c): HACK, only arrow functions are sites (plus nested
+  literals, spread literals). tsc takes methods and function expressions too, but their `this` goes by the literal's
+  contextual type while inference isn't finished, and tttt memoizes the `this` it evaluated (tsc recomputes
+  checkThisExpression every time): checking them early broke thisTypeInObjectLiterals2. intraExpressionInferences
+  still fails on its method cases.
 - `ty_generator_context` (iterate.c): a union return annotation / contextual type is filtered to the members a
   generator could be assignable to (tsc's checkGeneratorInstantiationAssignabilityToReturnType); tsc filters a
   non-union contextual type too (to never if it doesn't fit).
@@ -582,7 +591,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `infer_type_arguments` second pass: a type parameter is fixed before a context-sensitive argument if the contextual
   signature's parameter types mention it, or those of a function its return type returns, for a function argument
   (`fixed_by_argument`: probed by instantiating with `unknown`; anything that isn't a single-signature object type
-  fixes everything it mentions). tsc fixes lazily, when a contextual parameter type is actually asked for. Inference from the contextual return type only
+  fixes everything it mentions, except that an object/array literal only fixes through its context-sensitive
+  functions (`fixed_by_expr`), and a function against a union goes by the contextual signature). tsc fixes lazily, when a contextual parameter type is actually asked for. Inference from the contextual return type only
   happens when that type has no type variables (no outer inference context, no return mapper).
 - `resolve_call` still runs twice per call (type, then errors) and nothing is cached per `CallExpr`; argument memos make
   the second run cheap but not free.
