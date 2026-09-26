@@ -84,6 +84,7 @@ const char* string_to_double(
         }
     }
 
+    const char* start = p;
     double exponent_value = 0;
     double decimal_part_value = 0;
     intptr_t decimal_part_len = 0;
@@ -121,10 +122,14 @@ const char* string_to_double(
             if (exp_neg) exponent_value *= -1;
         }
     }
-    *ret = (value_neg ? -1 : 1) * (
-        whole_part_value * pow(10, exponent_value) +
-        decimal_part_value * pow(10, exponent_value - decimal_part_len)
-    );
+    // The parts only delimit the literal: strtod rounds correctly (and 1e999 is Infinity)
+    cstr digits = cstr_init();
+    for (const char* c = start; c < p; c++) {
+        if (*c != '_') cstr_push(&digits, (char[]){ *c, 0 });
+    }
+    double value = strtod(cstr_str(&digits), nullptr);
+    cstr_drop(&digits);
+    *ret = value_neg ? -value : value;
     return p;
 }
 

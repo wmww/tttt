@@ -30,6 +30,7 @@ typedef struct ChainCtx {
     bool in_external_module;
     bool only_external_aliasing;
     bool yield_module;
+    bool in_global_this; // Looking through globalThis's exports: they don't fall back to globalThis again
     // tsc's visitedSymbolTablesMap: the tables being searched for each symbol, so that aliases of each other end
     VisitedTable visited[64];
     u32 visited_count;
@@ -296,6 +297,22 @@ static bool try_table(
     for (u32 i = 0; i < table->count; i++) {
         SymbolEntry const* entry = &table->entries[i];
         if (try_entry(me, symbol, meaning, entry->name, entry->symbol, ignore_qualification, local_lookup, out)) {
+            return true;
+        }
+    }
+    // Nothing in the globals: `globalThis` is an alias of them (a global shadowed here is `globalThis.X`). Its exports
+    // are another table to tsc (getExportsOfSymbol), not one being visited
+    Symbol const* global_this = my binder->global_this;
+    if (table == &my binder->globals && global_this && !my in_global_this) {
+        my in_global_this = true;
+        SymbolChain sub;
+        bool found = try_table(me, symbol, meaning, table, true, false, &sub) &&
+            can_qualify(me, global_this, left_meaning(meaning));
+        my in_global_this = false;
+        if (found) {
+            out->len = 0;
+            chain_push(out, global_this);
+            for (u32 i = 0; i < sub.len; i++) chain_push(out, sub.items[i]);
             return true;
         }
     }

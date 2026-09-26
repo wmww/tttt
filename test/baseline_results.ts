@@ -3028,7 +3028,7 @@ const baselines = {
     'castExpressionParentheses': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'castFunctionExpressionShouldBeParenthesized': {
         errors: true,
@@ -3128,7 +3128,7 @@ const baselines = {
     'checkForObjectTooStrict': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'checkIndexConstraintOfJavascriptClassExpression': {
         errors: true,
@@ -3423,7 +3423,7 @@ const baselines = {
     'circularReferenceInImport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'circularReferenceInReturnType': {
         errors: false,
@@ -3658,7 +3658,7 @@ const baselines = {
     'classExtendsInterfaceInExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendsInterfaceInModule': {
         errors: false,
@@ -3703,7 +3703,7 @@ const baselines = {
     'classFieldSuperAccessible': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classFieldSuperAccessibleJs1': {
         errors: false,
@@ -3833,7 +3833,7 @@ const baselines = {
     'classInheritence': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classMemberInitializerScoping': {
         errors: false,
@@ -4083,7 +4083,7 @@ const baselines = {
     'cloduleTest2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cloduleWithDuplicateMember1': {
         errors: false,
@@ -4108,7 +4108,7 @@ const baselines = {
     'cloduleWithRecursiveReference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'clodulesDerivedClasses': {
         errors: false,
@@ -4223,7 +4223,7 @@ const baselines = {
     'collisionCodeGenModuleWithMemberClassConflict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionCodeGenModuleWithMemberInterfaceConflict': {
         errors: true,
@@ -4233,7 +4233,7 @@ const baselines = {
     'collisionCodeGenModuleWithMemberVariable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionCodeGenModuleWithMethodChildren': {
         errors: true,
@@ -4248,12 +4248,12 @@ const baselines = {
     'collisionCodeGenModuleWithModuleReopening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionCodeGenModuleWithPrivateMember': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionCodeGenModuleWithUnicodeNames': {
         errors: false,
@@ -7348,7 +7348,7 @@ const baselines = {
     'declFileImportChainInExportAssignment': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declFileImportModuleWithExportAssignment': {
         errors: true,
@@ -8088,7 +8088,7 @@ const baselines = {
     'declarationEmitExpressionInExtends5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExpressionInExtends6': {
         errors: true,
@@ -8118,7 +8118,7 @@ const baselines = {
     'declarationEmitForDefaultExportClassExtendingExpression01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitForGlobalishSpecifierSymlink': {
         errors: true,
@@ -8168,7 +8168,7 @@ const baselines = {
     'declarationEmitImportInExportAssignmentModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitIndexTypeArray': {
         errors: true,
@@ -8933,12 +8933,12 @@ const baselines = {
     'declarationTypecheckNoUseBeforeReferenceCheck': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationsForFileShadowingGlobalNoError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationsForIndirectTypeAliasReference': {
         errors: true,
@@ -13541,9 +13541,9 @@ const baselines = {
         types: false,
     },
     'fakeInfinity1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fakeInfinity2': {
         errors: true,
@@ -15608,7 +15608,7 @@ const baselines = {
     'giant': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'global': {
         errors: true,
@@ -16048,22 +16048,22 @@ const baselines = {
     'importAndVariableDeclarationConflict1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAndVariableDeclarationConflict2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAndVariableDeclarationConflict3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAndVariableDeclarationConflict4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAsBaseClass': {
         errors: false,
@@ -16763,7 +16763,7 @@ const baselines = {
     'importedModuleAddToGlobal': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importedModuleClassNameClash': {
         errors: true,
@@ -16948,12 +16948,12 @@ const baselines = {
     'indexSignatureInOtherFile': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexSignatureInOtherFile1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexSignatureMustHaveTypeAnnotation': {
         errors: false,
@@ -17178,7 +17178,7 @@ const baselines = {
     'indirectSelfReference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indirectSelfReferenceGeneric': {
         errors: true,
@@ -18548,7 +18548,7 @@ const baselines = {
     'intersectionType_useDefineForClassFields': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionWithConflictingPrivates': {
         errors: false,
@@ -19633,7 +19633,7 @@ const baselines = {
     'jsNoImplicitAnyNoCascadingReferenceErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsPropertyAssignedAfterMethodDeclaration': {
         errors: true,
@@ -20108,7 +20108,7 @@ const baselines = {
     'jsxInExtendsClause': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxInferenceProducesLiteralAsExpected': {
         errors: true,
@@ -21143,7 +21143,7 @@ const baselines = {
     'mergedModuleDeclarationCodeGen2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mergedModuleDeclarationCodeGen3': {
         errors: true,
@@ -21158,7 +21158,7 @@ const baselines = {
     'mergedModuleDeclarationCodeGen5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mergedModuleDeclarationWithSharedExportedVar': {
         errors: true,
@@ -22388,22 +22388,22 @@ const baselines = {
     'moduleSharesNameWithImportDeclarationInsideIt': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleSharesNameWithImportDeclarationInsideIt2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleSharesNameWithImportDeclarationInsideIt3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleSharesNameWithImportDeclarationInsideIt4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleSharesNameWithImportDeclarationInsideIt5': {
         errors: true,
@@ -22413,7 +22413,7 @@ const baselines = {
     'moduleSharesNameWithImportDeclarationInsideIt6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleSymbolMerging': {
         errors: true,
@@ -22773,7 +22773,7 @@ const baselines = {
     'narrowByInstanceof': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowByParenthesizedSwitchExpression': {
         errors: true,
@@ -26723,12 +26723,12 @@ const baselines = {
     'recursiveBaseCheck': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveBaseCheck2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveBaseCheck3': {
         errors: true,
@@ -26768,7 +26768,7 @@ const baselines = {
     'recursiveClassBaseType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveClassInstantiationsWithDefaultConstructors': {
         errors: true,
@@ -26783,7 +26783,7 @@ const baselines = {
     'recursiveCloduleReference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveComplicatedClasses': {
         errors: true,
@@ -29108,7 +29108,7 @@ const baselines = {
     'staticMismatchBecauseOfPrototype': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticModifierAlreadySeen': {
         errors: true,
@@ -29423,7 +29423,7 @@ const baselines = {
     'subclassUint8Array': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subclassWithPolymorphicThisIsAssignable': {
         errors: true,
@@ -30373,7 +30373,7 @@ const baselines = {
     'thisInModuleFunction1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisInObjectJs': {
         errors: true,
@@ -32318,7 +32318,7 @@ const baselines = {
     'untypedFunctionCallsWithTypeParameters1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'untypedModuleImport_withAugmentation2': {
         errors: false,
@@ -34868,22 +34868,22 @@ const baselines = {
     'classExtendsItself': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendsItselfIndirectly': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendsItselfIndirectly2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendsItselfIndirectly3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendsShadowedConstructorFunction': {
         errors: true,
@@ -35623,7 +35623,7 @@ const baselines = {
     'derivedClassSuperStatementPosition': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'emitStatementsBeforeSuperCall': {
         errors: true,
@@ -37123,7 +37123,7 @@ const baselines = {
     'accessorsOverrideProperty8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'accessorsOverrideProperty9': {
         errors: false,
@@ -47198,7 +47198,7 @@ const baselines = {
     'conditionalOperatorConditionIsNumberType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalOperatorConditionIsObjectType': {
         errors: true,
@@ -48773,7 +48773,7 @@ const baselines = {
     'duplicateExportAssignments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6modulekind': {
         errors: true,
@@ -49563,7 +49563,7 @@ const baselines = {
     'cjsImportInES2015': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyName': {
         errors: true,
@@ -50548,7 +50548,7 @@ const baselines = {
     'interfaceExtendsObjectIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceExtendsObjectIntersectionErrors': {
         errors: false,
@@ -50873,7 +50873,7 @@ const baselines = {
     'nameCollision': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ExportClassWhichExtendsInterfaceWithInaccessibleType': {
         errors: true,
@@ -50958,7 +50958,7 @@ const baselines = {
     'ModuleWithExportedAndNonExportedClasses': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ModuleWithExportedAndNonExportedEnums': {
         errors: true,
@@ -50988,7 +50988,7 @@ const baselines = {
     'circularImportAlias': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportImportAlias': {
         errors: true,
@@ -51023,7 +51023,7 @@ const baselines = {
     'moduleWithStatementsOfEveryKind': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'InvalidNonInstantiatedModule': {
         errors: false,
@@ -53373,7 +53373,7 @@ const baselines = {
     'tsxEmit3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxEmitSpreadAttribute(target=es2015)': {
         errors: true,
@@ -53493,7 +53493,7 @@ const baselines = {
     'tsxLibraryManagedAttributes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxNamespacedAttributeName1': {
         errors: true,
@@ -55603,17 +55603,17 @@ const baselines = {
     'declarationFileForHtmlFileWithinDeclarationFile': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationFileForHtmlImport(allowarbitraryextensions=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationFileForHtmlImport(allowarbitraryextensions=true)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationFileForJsonImport(resolvejsonmodule=false)': {
         errors: true,
@@ -55883,17 +55883,17 @@ const baselines = {
     'parser.numericSeparators.decimal(target=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.decimal(target=es2021)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.decimal(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.decmialNegative': {
         errors: false,
@@ -56613,7 +56613,7 @@ const baselines = {
     'parserErrorRecoveryArrayLiteralExpression2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecoveryArrayLiteralExpression3': {
         errors: true,
