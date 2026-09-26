@@ -1552,10 +1552,14 @@ static Ternary object_related(
     return result;
 }
 
+static Ty const* intersection_constraint(Checker* me, Ty const* ty);
+
 static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed) {
     Ty const* object = indexed->indexed.object;
     Ty const* index = indexed->indexed.index;
-    Ty const* object_constraint = object->kind == TY_TYPE_PARAM ? ty_param_constraint(me, object) : nullptr;
+    // (Of an intersection, with its type variables' constraints in their place: valibot's `NonNullable<T['a']>['b']`)
+    Ty const* object_constraint = object->kind == TY_TYPE_PARAM ? ty_param_constraint(me, object) :
+        object->kind == TY_INTERSECTION ? intersection_constraint(me, object) : nullptr;
     Ty const* index_constraint = index->kind == TY_TYPE_PARAM ? ty_param_constraint(me, index) : nullptr;
     if (!object_constraint && !index_constraint) return nullptr;
     Ty const* ret = ty_indexed(me, object_constraint ? object_constraint : object, index_constraint ? index_constraint : index);
