@@ -632,7 +632,7 @@ const baselines = {
     },
     'ambientClassOverloadForFunction': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ambientConstLiterals': {
@@ -717,7 +717,7 @@ const baselines = {
     },
     'ambientFundule': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ambientGetters': {
@@ -2062,7 +2062,7 @@ const baselines = {
     },
     'augmentedTypesClass2a': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'augmentedTypesClass3': {
@@ -2107,12 +2107,12 @@ const baselines = {
     },
     'augmentedTypesModules': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'augmentedTypesModules2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'augmentedTypesModules3': {
@@ -2237,7 +2237,7 @@ const baselines = {
     },
     'awaitedTypeStrictNull': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'badArrayIndex': {
@@ -2797,12 +2797,12 @@ const baselines = {
     },
     'callOverloads1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'callOverloads2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'callOverloads3': {
@@ -3932,7 +3932,7 @@ const baselines = {
     },
     'classOverloadForFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classOverloadForFunction2': {
@@ -5977,7 +5977,7 @@ const baselines = {
     },
     'constructorOverloads4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'constructorOverloads5': {
@@ -5992,7 +5992,7 @@ const baselines = {
     },
     'constructorOverloads7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'constructorOverloads8': {
@@ -8782,7 +8782,7 @@ const baselines = {
     },
     'declarationEmitUnnessesaryTypeReferenceNotAdded': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitUsingAlternativeContainingModules1': {
@@ -11797,7 +11797,7 @@ const baselines = {
     },
     'es6ClassTest9': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es6DeclOrdering': {
@@ -12687,7 +12687,7 @@ const baselines = {
     },
     'exportClassExtendingIntersection': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportClassWithoutName': {
@@ -13152,7 +13152,7 @@ const baselines = {
     },
     'exportRedeclarationTypeAliases': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportSameNameFuncVar': {
@@ -13872,7 +13872,7 @@ const baselines = {
     },
     'funClodule': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'funcdecl': {
@@ -14027,7 +14027,7 @@ const baselines = {
     },
     'functionDeclarationWithResolutionOfTypeOfSameName01': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionExpressionAndLambdaMatchesFunction': {
@@ -16747,7 +16747,7 @@ const baselines = {
     },
     'importedAliasedConditionalTypeInstantiation': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importedAliasesInTypePositions': {
@@ -18077,7 +18077,7 @@ const baselines = {
     },
     'interfaceDeclaration2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interfaceDeclaration3': {
@@ -18697,7 +18697,7 @@ const baselines = {
     },
     'invariantGenericErrorElaboration': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'invocationExpressionInFunctionParameter': {
@@ -21397,7 +21397,7 @@ const baselines = {
     },
     'mixingFunctionAndAmbientModule1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mixingStaticAndInstanceOverloads': {
@@ -22627,7 +22627,7 @@ const baselines = {
     },
     'nameCollisions': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nameCollisionsInPropertyAssignments': {
@@ -22667,7 +22667,7 @@ const baselines = {
     },
     'namespaceMergedWithFunctionWithOverloadsUsage': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'namespaceMergedWithImportAliasNoCrash': {
@@ -25502,7 +25502,7 @@ const baselines = {
     },
     'partiallyAmbientFundule': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'partiallyDiscriminantedUnions': {
@@ -25837,7 +25837,7 @@ const baselines = {
     },
     'privacyCheckExportAssignmentOnExportedGenericInterface2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'privacyCheckExternalModuleExportAssignmentOfGenericClass': {
@@ -37017,7 +37017,7 @@ const baselines = {
     },
     'mixinAbstractClasses.2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mixinAbstractClasses': {
@@ -50547,12 +50547,12 @@ const baselines = {
     },
     'interfaceExtendsObjectIntersection': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'interfaceExtendsObjectIntersectionErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'interfaceThatHidesBaseProperty': {
@@ -50807,7 +50807,7 @@ const baselines = {
     },
     'ModuleAndFunctionWithSameNameAndCommonRoot': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'TwoInternalModulesThatMergeEachWithExportedAndNonExportedClassesOfTheSameName': {
@@ -52922,7 +52922,7 @@ const baselines = {
     },
     'inlineJsxFactoryLocalTypeGlobalFallback': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inlineJsxFactoryOverridesCompilerOption': {

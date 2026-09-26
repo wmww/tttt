@@ -267,9 +267,21 @@ SymbolDecl const* symbol_find_decl(Symbol const* me, SymbolDeclKind kind) {
 VecSpan symbol_declaration_spans(Symbol const* me) {
     VecSpan ret = vec_span_init();
     if (!me) return ret;
+    // In tsc's order: its binder binds the function declarations of a block before its other statements
+    // (bindEachFunctionsFirst). Declarations of the same block are grouped (the file, without a block)
+    #define same_block(a, b) ((a).block && (b).block ? (a).block == (b).block : (a).full.source == (b).full.source)
     for (u32 i = 0; i < my decl_count; i++) {
-        if (span_valid(my decls[i].full)) vec_span_push(&ret, my decls[i].full);
+        bool seen = false;
+        for (u32 j = 0; j < i; j++) seen |= same_block(my decls[j], my decls[i]);
+        if (seen) continue;
+        for (u32 pass = 0; pass < 2; pass++) {
+            for (u32 j = i; j < my decl_count; j++) {
+                if (!same_block(my decls[j], my decls[i]) || !span_valid(my decls[j].full)) continue;
+                if ((my decls[j].kind == SYMBOL_DECL_FUNCTION) == (pass == 0)) vec_span_push(&ret, my decls[j].full);
+            }
+        }
     }
+    #undef same_block
     return ret;
 }
 
@@ -713,7 +725,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         }
     }
     symbol_add_decl(symbol, (SymbolDecl){
-        .kind = props.kind, .flags = includes, .node = props.node, .name = props.name, .full = props.full,
+        .kind = props.kind, .flags = includes, .node = props.node, .name = props.name, .full = props.full, .block = scope,
     });
     if (includes & (SYMBOL_NAMESPACE_MODULE | SYMBOL_VALUE_MODULE | SYMBOL_ENUM)) symbol_ensure_exports(symbol);
     *ret = symbol;

@@ -113,6 +113,9 @@ typedef struct SymbolDecl {
     void const* node;
     Span name;
     Span full;
+    // The scope (block) it was declared in, when scope_init_declaration() declared it: the symbols baseline lists a
+    // block's function declarations first, see symbol_declaration_spans()
+    struct Scope const* block;
 } SymbolDecl;
 
 typedef enum AliasState {
