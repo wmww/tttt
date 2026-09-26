@@ -130,7 +130,11 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   instantiation, see plan 22 Progress.
 - TS function expandos (`function f() {}; f.defaultProps = ...`) now cost `tsxStatelessComponentDefaultProps` (React's
   Defaultize never sees `defaultProps`). tsc: binder bindSpecialPropertyAssignment for function symbols, members in
-  resolveAnonymousTypeMembers. Deserves a small plan (TS subset of JS expandos).
+  resolveAnonymousTypeMembers. Deserves a small plan (TS subset of JS expandos). Also the biggest part of plan 21's
+  symbols `decls-missing` bucket (~50 tests alone after stage 6): each `f.x = ...` is a declaration of `f` and of
+  `f.x` in tsc's symbols baseline.
+- `import.meta` is typed now (ty_import_meta_type) but its module-kind checks aren't: TS1343 (module option doesn't
+  allow import.meta), TS1470 (in a CommonJS output file).
 - Circular aliases: `type N<T, K extends string> = T | { [P in K]: N<T, K> }[K]` is TS2589 + TS2615 in tsc
   (recursivelyExpandingUnionNoStackoverflow, re-probed), here it prints `N<number, "M">`. TS2456 is only a TODO in
   `ty_declared_type_of`.
@@ -179,9 +183,11 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   class reached through `import x = require()` vs another import reports a missing property.
 - Plan 04 stage 1 leftovers: ~35 tests lost their symbols component then: `declare global` in odd places, `export {
   x }` next to an exported `x`, moduleAssignmentCompat1-4 (`Symbol(A)` without a Decl for a non-instantiated
-  namespace used as a value). Declaration order in the symbols baseline when an import merges with a function
-  (`test/probes/plan04/aliasMergesWithLocalValue.ts`: tsc binds function declarations first).
-- Module resolution leftovers (`hacks.md` "Module resolution"): json modules as types (~35 tests), resolution-mode
+  namespace used as a value).
+- Module resolution leftovers (`hacks.md` "Module resolution"): json modules as types (~35 tests: a resolved `.json`
+  is MODULE_REF_IS_JSON and never loaded, so `import x from "./a.json"` is any and the symbols baseline lacks the whole
+  `=== a.json ===` section, ~60 missing lines after plan 21 stage 6; tsc parses the file as one object literal and
+  its module's `export =` is that object), resolution-mode
   attributes (~20), `tryLoadInputFileForPath` (8), TS2846 (import of a `.d.ts` by name, 7), TS2877/TS2876
   (`rewriteRelativeImportExtensions`), Windows paths. `selfReferentialDefaultNoStackOverflow` wants TS7022 on `export
   default { mixins: [DefaultSpinner] }` importing itself. TS2688 for a type reference directive / `types` entry that

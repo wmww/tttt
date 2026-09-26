@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, plan 21 stage 6 (symbol lines and declarations)
+Suite 7655 -> **7877 / 13540** full (errors 9857, symbols 11218 -> 11781, types 9629 -> 9652), nothing lost. tsc
+corpus still 0 diagnostics. `./bench.sh`: valibot 0.69 s / 511 MB, unchanged (the checker-side changes are
+`import.meta` typing and 8 bytes per SymbolDecl). `./displaydiff.py --symbols`, TS tests fixed by one kind:
+line-missing 110 (+90 JS), decls-differ 52, decls-missing 50, name 39, line-extra 24, other 21, underlines/order 20,
+decls-extra 13, decl-order 7, decls-missing-lib 3.
+
 ## 2026-09-26, plan 22 stage 4 (JSX runtime import, factories, moduleDetection)
 Suite 7567 -> **7655 / 13540** full (errors 9857, symbols 11218, types 9629), nothing lost. Biggest single piece: the
 harness's unit contents now end like tsc's (+~40, mostly node16 multi-file tests). `./failstats.py --jsx`: **pass 313**,

@@ -77,10 +77,23 @@ Symbols (1827 tests):
   found on the way: ambient export contexts exported their imports (corpora unchanged). Left in `name` (19): module
   augmentation of an `export =` module (`augmentExportEquals*`: tsc names the augmented module by its importing
   alias), self-imports (`import * as me from "./this"`), `export import X = Y` inside the namespace it names.
-- **Next: stage 6** (symbol lines/declarations: `line-missing` 334 alone in the symbols baseline, decls-missing 51,
-  decls-differ 44), then 7 (union origins, decide by sampling `other`). `our-typeof` (97 alone in types) is stage 1's
-  leftover: sample it before stage 6, it may be one mechanism (`>A : A<T>` for a class name in `implements`/`extends`
-  position, mixins).
+- **Execution session 5 (2026-09-26), suite 7655 -> 7877: stage 6 done.** Symbols 11218 -> 11781, types 9629 ->
+  9652, nothing lost. `our-typeof` had shrunk to 35 alone by then (not sampled further). Symbol lines added: the
+  specifier of `import("m")` (the module, `"0"` for 0.ts), `this` (globalThis, class expressions, contextual `this`
+  parameters, ThisType/assigned objects, `__object`/the variable for an object literal under noImplicitThis),
+  identifier property names of binding elements, literal computed member names of classes/interfaces, numeric
+  element access, `export as namespace X`, `import.meta` (which was `any`: now the global ImportMeta and narrowable),
+  `__index` for dot accesses through an index signature, `super` by its chain. Declaration lists: tsc lists at most
+  five (`... and N more`: +100 alone), a block's function declarations first (`SymbolDecl.block`), `<T, T>` is one
+  symbol, a type parameter merged with a lib's lists the lib's first, shebangs are trivia, any `lib*.d.ts` hides
+  positions. Symbols buckets after (TS tests alone): line-missing 359 -> 110, decls-differ 53 -> 52, decls-missing
+  53 -> 50, decls-missing-lib 21 -> 3, decl-order 18 -> 7, name 21 -> 39 (lines that used to be missing and now
+  exist with another name count here). What's left isn't display: expandos (`f.x = 1` declares `f`: decls-missing,
+  name), JSON modules (never loaded: the `=== x.json ===` sections), duplicate members (`{ a: 1, a: 2 }` is one
+  symbol in tsc), narrowing gaps that leave an object `any` (no property symbol), self-imports and alias-renamed
+  enums (`name`). All in triage.md or owned by the JS plan.
+- **Next: stage 7** (union origins): sample the types `other` bucket (556 alone) first and decide whether origins are
+  worth it, then close the plan (Validation: stages 2-5 buckets are below ~20 alone).
 
 ## Stages (in order; each is a commit with numbers, `./fasttest.sh -s` before committing)
 
