@@ -1358,6 +1358,31 @@ static Ty const* intern_deferred(Checker* me, u64 const* key, u32 count, TyKind 
     return *slot;
 }
 
+// tsc's getLiteralTypeFromProperty: a property declared with a numeric literal name (`{ 1: x }`) is keyed by the number
+// literal, others by the name's string literal (or unique symbol)
+Ty const* ty_prop_key_literal(Checker* me, Prop const* prop) {
+    Prop const* declared = prop;
+    while (declared->target && !declared->decl_span_count) declared = declared->target;
+    csview text = declared->name_span.sv;
+    if (declared->name_is_value && span_valid(declared->name_span) && text.size &&
+        ((text.buf[0] >= '0' && text.buf[0] <= '9') || text.buf[0] == '.')
+    ) {
+        csview name = atom_sv(prop->name);
+        char buf[64];
+        if (name.size > 0 && name.size < (isize_t)sizeof(buf)) {
+            memcpy(buf, name.buf, (size_t)name.size);
+            buf[name.size] = 0;
+            char* end = nullptr;
+            double n = strtod(buf, &end);
+            if (end == buf + name.size) {
+                Value value = value_number(n);
+                return ty_literal(me, &value);
+            }
+        }
+    }
+    return ty_prop_name_literal(me, prop->name);
+}
+
 Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
     if (unique) return unique;
@@ -1465,7 +1490,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
             TyBuf parts = {0};
             for (u32 i = 0; i < members->prop_count; i++) {
                 if (ty_private_name_class(me, members->props[i]->name)) continue; // Not a key (tsc's getLiteralTypeFromProperty)
-                ty_buf_push(&parts, ty_prop_name_literal(me, members->props[i]->name));
+                ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
             }
             for (u32 i = 0; i < members->index_count; i++) {
                 ty_buf_push(&parts, members->index[i].key);

@@ -1041,7 +1041,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     MembersBuilder builder = { .mapped = mapped };
     for (u32 i = 0; i < source->prop_count; i++) {
         Prop const* from = source->props[i];
-        Ty const* key = ty_prop_name_literal(me, from->name);
+        Ty const* key = ty_prop_key_literal(me, from);
         TyMapper const* mapper = ty_mapper_new(
             me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
         );
@@ -1127,7 +1127,7 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
         Members const* source = ty_members(me, mapped->modifiers_type);
         member_keys = arena_new_n(&my arena, Ty const*, source->prop_count + source->index_count);
         key_count = 0;
-        for (u32 i = 0; i < source->prop_count; i++) member_keys[key_count++] = ty_prop_name_literal(me, source->props[i]->name);
+        for (u32 i = 0; i < source->prop_count; i++) member_keys[key_count++] = ty_prop_key_literal(me, source->props[i]);
         for (u32 i = 0; i < source->index_count; i++) member_keys[key_count++] = source->index[i].key;
         keys = member_keys;
     }

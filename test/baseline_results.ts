@@ -4126,7 +4126,7 @@ const baselines = {
         types: true,
     },
     'coAndContraVariantInferences3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
