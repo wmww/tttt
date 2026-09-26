@@ -2,6 +2,8 @@
 #define _XOPEN_SOURCE 700
 #include <limits.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <libgen.h>
 
 #include "ty/ty.h"
 #include "type.h"
@@ -24,7 +26,8 @@ static const char* const default_libs =
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
 
 typedef struct Options {
-    bool quiet;   // Only print diagnostics and the final summary (no AST dump)
+    bool quiet;   // Only print diagnostics and the final summary
+    bool print_ast; // Dump the parsed AST of the (last) file before typechecking
     bool time;    // Print how long each phase took to stderr
     bool keep_going; // Typecheck even if there were parse or name errors
     bool no_lib;  // Don't load the standard library, for checking the library files themselves
@@ -50,6 +53,19 @@ static void phase_done(Options const* opts, const char* name, double* last) {
     const double now = now_ms();
     if (opts->time) eprintln("time: ", name, " ", now - *last, " ms");
     *last = now;
+}
+
+// The standard library is the repo's thirdparty/lib: relative to the working directory when that's the repo root, else
+// found from the executable (release/tttt: its directory's parent is the repo root)
+static void set_lib_dir(Program* program) {
+    if (access("thirdparty/lib/es5.d.ts", R_OK) == 0) return;
+    char exe[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+    if (len <= 0) return;
+    exe[len] = 0;
+    cstr dir = cstr_d(dirname(exe), "/../thirdparty/lib");
+    program_set_lib_dir(program, cstr_sv(&dir));
+    cstr_drop(&dir);
 }
 
 static_failable load_stdlib(Program* program) {
@@ -139,6 +155,7 @@ static_failable check_files(Options const* opts, returns int) {
     ErrorCtx errs = error_ctx_init();
     Program* program = program_new(&errs, fs);
     program_set_realpath(program, real_path_of, nullptr);
+    set_lib_dir(program);
     StrList root_files = {0};
     try (apply_compiler_options(opts, program_options(program), &root_files)) cleanup {
         str_list_drop(&root_files);
@@ -189,7 +206,7 @@ static_failable check_files(Options const* opts, returns int) {
     if (name_errors) ret = 1;
     phase_done(opts, "resolve names", &last);
 
-    if (!opts->quiet && source) {
+    if (opts->print_ast && source) {
         println(color_good, "Parsed:", color_normal);
         println(debug_d(&source->ast), "\n");
     }
@@ -236,6 +253,7 @@ int main(int argc, const char** argv) {
                 "The Tess TypeScript Typechecker\n\nUSAGE: tttt [OPTIONS] [TSPATH...]\n\n"
                 "  -q, --quiet   only print diagnostics and the summary\n"
                 "  --time        print how long each phase took to stderr\n"
+                "  --print-ast   print the parsed AST of the last file (debugging)\n"
                 "  -p, --project PATH  a tsconfig.json or its directory: options and, without TSPATHs, the files.\n"
                 "                Without TSPATHs and -p, the nearest tsconfig.json from here upwards\n"
                 "  --no-lib      don't load the standard library\n"
@@ -247,6 +265,8 @@ int main(int argc, const char** argv) {
             return 0;
         } else if (streq(argv[i], "--quiet") || streq(argv[i], "-q")) {
             opts.quiet = true;
+        } else if (streq(argv[i], "--print-ast")) {
+            opts.print_ast = true;
         } else if (streq(argv[i], "--time")) {
             opts.time = true;
         } else if (streq(argv[i], "--keep-going")) {

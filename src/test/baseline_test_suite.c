@@ -16,7 +16,12 @@ typedef BaselineTestResult const* BaselineTestResultCPtr;
 #include <cleat/generic/vec.h>
 
 static bool test_passes_filter(BaselineTestSuite* me, csview name) {
-    if (my has_filter) {
+    if (my has_filter && cstr_size(&my filter_names)) {
+        cstr line = cstr_d("\n", name, "\n");
+        bool found = cstr_find(&my filter_names, cstr_str(&line)) != c_NPOS;
+        cstr_drop(&line);
+        return found;
+    } else if (my has_filter) {
         // A null matches array is fine, we only care if the whole name matches and not about capture groups
         return cregex_match_sv(&my filter, name, nullptr, CREG_FULLMATCH) == CREG_OK;
     } else {
@@ -72,6 +77,7 @@ static_failable load_subdir(BaselineTestSuite* me, csview subdir) {
 void baseline_test_suite_drop(BaselineTestSuite* me) {
     arc_js_object_drop(&my prev_results);
     cregex_drop(&my filter);
+    cstr_drop(&my filter_names);
     cstr_drop(&my prev_typescript_commit);
     cstr_drop(&my typescript_commit);
     vec_baseline_test_result_drop(&my results);
@@ -402,10 +408,24 @@ failable load_baseline_test_suite(
     bool summary_only,
     returns BoxBaselineTestSuite
 ) {
+    // `-f @file`: a list of names instead of a regex (cregex silently matches nothing once a pattern is a few kB long)
+    cstr names = cstr_null;
+    if (filter_re && filter_re[0] == '@') {
+        FILE* file = fopen(filter_re + 1, "r");
+        if (!file) return err_d("Can't read the filter list '", filter_re + 1, "'");
+        names = cstr_lit("\n");
+        char line[4096];
+        while (fgets(line, sizeof(line), file)) {
+            csview trimmed = csview_trim(csview_from(line));
+            if (trimmed.size) cstr_append_sv(&names, trimmed), cstr_append(&names, "\n");
+        }
+        fclose(file);
+    }
     BoxBaselineTestSuite ret = box_baseline_test_suite_make((BaselineTestSuite){
         .tests_dir = tests_dir,
         .has_filter = filter_re != nullptr,
-        .filter = filter_re ? cregex_make(filter_re, CREG_ICASE) : (cregex){0},
+        .filter = filter_re && !cstr_size(&names) ? cregex_make(filter_re, CREG_ICASE) : (cregex){0},
+        .filter_names = names,
         .cache = baseline_test_cache_init(),
         .show_progress = !summary_only,
     });

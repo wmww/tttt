@@ -1,6 +1,7 @@
 # Triage
-Uninvestigated items. Triage sessions drain this. Last drained 2026-09-23 (triage after plan 13): the older checker
-items were re-probed then; fixed ones are gone, "(re-probed)" marks ones confirmed open with the current symptom.
+Uninvestigated items. Triage sessions drain this. Last drained 2026-09-26 (triage after plans 21/22): items citing
+tests that pass now were dropped, binding patterns became plan 24 and the merge/duplicate items plan 23.
+"(re-probed)" marks items confirmed open with the current symptom at some point.
 Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the codes `src/` never mentions, and
 "Missing checks after plan 15" below has the tail worth knowing about.
 
@@ -27,24 +28,13 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   top-level `for await`. Older: TS1161 for an unterminated regex (`parse_regex` just fails), TS1263/1264 misplaced `let
   x!`, `const c;` in ambient files, `override`/TS4112+, overloads of `*()`-style nameless members, TS2303 "Circular
   definition of import alias".
-- **Binding patterns as types** (re-probed 2026-09-26; tsc's getTypeFromBindingPattern, checkObjectLiteral's
-  contextualTypeHasPattern). Done in plan 21 stage 7: a non-empty pattern is the contextual type of its initializer
-  (`TYF_BINDING_PATTERN`, array patterns make tuples), destructuring assignment targets are tuples. Left: an object
-  literal initializer of a pattern should get the pattern's defaulted properties as optional ones (`function f({ x, y
-  = 0 } = { x: 0 })` takes `{ x: number; y?: number }`, so `f({ x: 1, y: 1 })` is a spurious TS2353:
-  destructuringWithLiteralInitializers; `literalTypes2` f6), and pattern properties the literal lacks are TS2525; `let
-  [a = 1, c] = [undefined, "s"]` gives `a: any`, tsc `number` (a default replaces an `undefined` element); unannotated
-  destructured parameters don't get the pattern's type (`({ a = 1 }) => a` is `{ a?: number }` in tsc, `any` here);
-  object rest (`{ a, ...rest }`) is the whole object instead of getRestType(); computed keys in patterns miss their
-  symbol lines (probe `binding_pattern_display.ts`). A session's worth.
+- **Binding patterns as types**: plan 24 (`agents/plans/24_binding_pattern_types.md`).
 - **Substitution types** don't exist: in the true branch of `T[K] extends unknown[] ? (...args: T[K]) => void : never`
   tsc knows `T[K]` is an array (getSubstitutionType / getImpliedConstraint). Instances: @types/node events.d.ts (x4,
-  hidden by skipLibCheck), stringMappingReduction (`EMap[C]` in `C extends Keys ? EMap[C] : ...` needs `C & Keys`:
-  spurious TS2345, re-probed), numericStringLiteralTypes (spurious TS2370 on `...values: UnwrapContainers<T>`, a
+  hidden by skipLibCheck), numericStringLiteralTypes (spurious TS2370 on `...values: UnwrapContainers<T>`, a
   homomorphic mapped type over a generic tuple as a rest parameter type: maybe the same). Needs a Ty kind or a flag on
   indexed/type-param references made in a conditional's true branch.
-- `this` leftovers: TS2526 for `this` in static property initializers (`static y = <this>undefined`) and a few other
-  contexts (thisTypeErrors, 7 missing); TS7041 (`this` captured by a top-level arrow); TS7017 (`typeof globalThis` has
+- `this` leftovers: TS7041 (`this` captured by a top-level arrow); TS7017 (`typeof globalThis` has
   no index signature); `ThisType<T>` arguments aren't instantiated with the inference in
   progress (Vue-style `defineComponent` options).
 - **Target-gated diagnostics** (`compiler_options()->target` exists): TS2705/TS2468 (async needs `Promise`),
@@ -98,11 +88,9 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   `links.contextFreeType`), and infers from that. tttt skips the whole argument in pass 1, so `a`'s candidate arrives
   only in pass 2, after `b`'s `x` is typed `unknown`. Needs a "skip context sensitive" check mode.
 - `unknown` where tsc infers a type (~20 TS18046 in the corpus; suite: intraExpressionInferences,
-  inferFromGenericFunctionReturnTypes2, mappedTypeRecursiveInference, reverseMappedUnionInference, promiseChaining).
-- Exposed by plan 12's excess property checks, each a spurious TS2353 over a wrong inferred type (re-probed):
-  mappedTypeMultiInference (`K` of `...cssSets: { [P in K]?: Style }[]` inferred from the first rest argument only),
-  typeParameterConstModifiersWithIntersection (`const TConfig extends Config<T1>` inferred as its constraint through
-  an intersection parameter `{ produceThing: T1 } & TConfig`).
+  mappedTypeRecursiveInference, reverseMappedUnionInference).
+- Exposed by plan 12's excess property checks, a spurious TS2353 over a wrong inferred type (re-probed):
+  mappedTypeMultiInference (`K` of `...cssSets: { [P in K]?: Style }[]` inferred from the first rest argument only).
 - Reverse mapped types (plan 08) are eager objects, no arrays/tuples, cut at depth 4 (`reverse_mapped_type`); tsc's are
   lazy. Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key.
 - Contextual signature of a type with several call signatures (tsc `getIntersectedSignatures`;
@@ -115,8 +103,6 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   missing checks (valibot: TS2352 on `dataset as SuccessDataset<TOutput>`, writes to readonly `schema['~run']`;
   type-fest: `EmptyObject` assignments, abstract members missing in `class X extends withBar(Bar) {}`): `grep -A3 TS2578
   /tmp/realworld.txt` after `./realworld.py --corpus X`.
-- Exposed by TS2339 on `never` (2026-09-23): contextualOverloadListFromArrayUnion (`(never[] | string[]).map(item =>
-  item.length)`: `item` is never, tsc takes the union signature's parameter `string`).
 - Older tsc-corpus findings, from before the corpus went clean (worth a probe each): `visitNode(node, visitor,
   isExpression)` resolving to the overload without the predicate (`test/probes/plan05/visitNodeInference.ts`);
   `CompilerOptions` -> `Pick<CompilerOptions, "target" | "module">`; literal widening in an object literal that has a
@@ -145,9 +131,6 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   TS2353 and TS2538).
 - genericClassExpressionInFunction (re-probed): `s.genericVar = 12` on an instance of a class extending a generic class
   expression is "not assignable to type 'V'" (the base class's type parameter isn't instantiated).
-- `unionRelationshipCheckPasses` (re-probed: only the types baseline fails now): `{ foo?: number | undefined }` ->
-  `{ foo?: undefined } | { foo: number }` needs tsc's discriminated-union decomposition of the source
-  (`typeRelatedToDiscriminatedType`).
 - Permissive instantiation for conditional types is missing (`ty_conditional_resolve` defers where tsc picks the
   false branch); a flat `TyMapper` can't say "every type parameter -> any". Now costs `reactHOCSpreadprops` (React's LibraryManagedAttributes
   over `ComponentClass<P>`: tsc resolves it to the false branch). Plan-worthy: a wildcard type + cached permissive
@@ -180,17 +163,14 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   (reportUnmatchedProperty's private-name case), TS2806 (set-only private accessor), TS2804/TS18010/TS2300 duplicates
   (privateNameDuplicateField). TS2401/TS2376 (where `super()` must be with initialized properties or parameter
   properties).
-- propertyAndAccessorWithSameName (re-probed: 7 missing TS2300): tsc's symbol merging when a property and accessor
-  clash isn't mirrored. noSymbolForMergeCrash: `type A = {}` clashing with `interface A` gives 3 spurious TS2300 and
-  misses TS2649.
+- Duplicate identifiers, merges, default exports: plan 23 (`agents/plans/23_symbol_merging.md`).
 - genericRecursiveImplicitConstructorErrors3 (re-probed): all TS2314 are missing there, a spurious TS2355 because the
   erroneous return annotation isn't `any` (tsc's errorType is any-like everywhere), and 4 spurious TS2339. A failed
   type-argument-arity call returns `any` where tsc still resolves a signature. `lower_identifier_internal` doesn't
   treat a bare `C` inside generic class `C<T>` as `C<T>` any more, but nothing reports tsc's TS2314 for it either.
 - overrideLateBindableIndexSignature1 (re-probed): late bound index signatures work now; only TS4127 ("cannot have an
   'override' modifier because its name is dynamic") is missing.
-- `for (x in o)` with a non-declaration target: tsc's TS2405 is TS2322 here (re-probed). TS2403 ("Subsequent variable
-  declarations must have the same type", 156 in 68 tests) doesn't exist: `var z: number; var z: string;` passes.
+- `for (x in o)` with a non-declaration target: tsc's TS2405 is TS2322 here (re-probed).
 - Type predicates: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion callee
   without explicit types), TS1225 (no such parameter), `x is T` where the function returns a non-boolean (TS2322 on
   return): none exist.
@@ -223,6 +203,9 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   the json; we skip them.
 
 ### Narrowing, flow, misc
+- Found by the hacks.md audit (2026-09-26, unprobed beyond the one line): `export function g() {}` followed by
+  `function g() {}` is TS2395 here, TS2393 (duplicate implementation) in tsc; `undefined! + 1` is `string` here,
+  `number` in tsc.
 - taggedPrimitiveNarrowing (exposed by TS2339 on `never`): `typeof hash !== "string"` then `throw` narrows `string & {
   __hash: true }` to never instead of keeping it.
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
@@ -239,10 +222,6 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - `error.c` "Error added with invalid span" is ~64 lines per suite run (TS2511 on a lib class in 15 tests, names found
   in a `_` of some lib). `grep build/failstats/stderr.txt`. Also one "Declaration B acquired multiple times".
 
-- Duplicate type parameters `<A, A>` are one merged symbol in tsc's binder (the checker reports TS2300 on the second)
-  but two in tttt's (`scope_init_declaration`), so the types baseline renames the second `A_1` where tsc prints `<A,
-  A>` (duplicateTypeParameters3, lost types in plan 21 stage 5). Merging them in the binder is the tsc shape; check what
-  it does to TS2300 and to the generic's type parameter list.
 - `export default class {}` prints `typeof default` from other files where tsc names the alias that imports it
   (`import { default as b }` -> `typeof b`, importHelpersWithImportOrExportDefault): tsc's getNameOfSymbolAsWritten
   special-cases `default` by binding context. symbol_chain.c material.
@@ -265,8 +244,7 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 
 ### Found by plan 15 session 1 (2026-09-24)
 - **TS2403 false positives = type-core bugs** (each test's errors fail on a spurious TS2403 because tttt computes two
-  spellings of one type differently): rest/spread of unions and intersections (restUnion, restUnion2,
-  restIntersection, spreadIntersection, spreadUnion: tsc's getRestType/getSpreadType), `Required<>`/`-?` and mapped
+  spellings of one type differently): `Required<>`/`-?` and mapped
   type identity (inferenceOptionalProperties(+Strict), mappedTypeModifiers, mappedTypes4), optional tuple elements
   carry `| undefined` in tsc's element types (optionalTupleElementsAndUndefined), error recovery gives `any` where tsc
   keeps the declared type of a private/unresolved member (constructorParameterProperties, objectLiteralGettersAndSetters,
@@ -300,8 +278,6 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   optional property keeps `undefined` (tsc's missing type is stripped), so the new operand check says TS18048.
 - mergeSymbolReexportedTypeAliasInstantiation: a `type Row2<T>` added by `declare module '.'` to a module that
   re-exports an interface Row2 — tttt resolves the reference to the interface (spurious TS2315).
-- Default exports are separate symbols per declaration (`scope_default_export_table` reports TS2528 itself), so
-  TS2323/TS2813/TS2814 for two `export default`s are missing; tsc merges them into one `default` symbol.
 - Empty statements (`;`) aren't in the AST, so TS1036 for `;` in ambient blocks is missing (3 tests).
 - TS1117 is implemented but blocked by parser gaps in its tests: `\u0061` identifiers, `{ x = 1 }` outside
   patterns (tsc: TS1312 recovery), `#z` in object literals; computed literal names aren't resolved for it either.
@@ -310,7 +286,7 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   includeClassComputedPropertyName.
 - Arrow functions in `?:` recovery: `(a?) => {} ? b : c` and `() => {} || a` are now parse errors like tsc, but
   tsc's exact recovery tokens (TS1005 vs ours) aren't checked.
-- JSX leftovers after plan 22 (`./failstats.py --jsx`: 313 of 457 pass): overloaded components don't get tsc's TS2769
+- JSX leftovers after plan 22 (`./failstats.py --jsx`: 326 of 457 pass): overloaded components don't get tsc's TS2769
   report (tsxNotUsingApparentTypeOfSFC, tsxStatelessFunctionComponentsWithTypeArguments4), TS6229 isn't checked for
   union tag types or inside an overload chain, TS18042 (a type imported in a .jsx/.js file: JS semantics,
   jsxCheckJsxNoTypeArgumentsAllowed), TS2608 (ElementAttributesProperty with several members), TS2639
@@ -329,15 +305,11 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   expected`) where tsc's one-error-per-position rule should have dropped one: not understood.
 
 ### Missing checks after plan 15 (retired 2026-09-24; counts: missing diagnostics / tests)
-- **Stack depth: binderBinaryExpressionStress passes at the default 8 MB stack and crashes at 7 MB.** Inlining one
-  small helper into `expr_typecheck()` was enough to overflow it (session 3; fixed with `noinline`). Checking (and the
-  resolve walk?) recurse once per operand of a long `a + b + c + ...` chain; tsc checks binary chains iteratively
-  (checkBinaryExpression's state machine). Real code has such chains (generated files): worth a fix before it bites.
-  It bit again in plan 22 stage 1: the JSX cases of `expr_typecheck()` and `expr_lookup_names()` had to move into
-  `noinline` helpers (`jsx_typecheck`, `jsx_lookup_names`, `parse_jsx_element`). Every new case in those switches is
-  a potential overflow until the recursion is fixed.
-- Default exports: `default` should be one merged symbol like tsc's (TS2528 22/12, TS2813 19/16, TS2814 22/16,
-  TS2323 for defaults): `scope_default_export_table` keeps one symbol per declaration. A session.
+- Stack depth (fixed 2026-09-26 for `+`-style chains and union/intersection types, 100k operands fine): logical
+  chains (`a && b && ...`, `??`, `||`) still recurse once per operand in the resolve walk (`expr_lookup_names_logical`)
+  and the checker, as do the harness's `expr_compile_test_info_inner` and `expr_drop`. tsc itself overflows on 5k-long
+  `&&` chains, so this is parity, not a bug; but new cases in `expr_typecheck()`/`expr_lookup_names()` still grow
+  the per-level frame of whatever recursion is left.
 - TS2774 (59/5, "function is always defined" in conditions), TS7053 (71/23, implicit-any element access), TS2537
   (41/10), TS1262 (16/13), TS2496 (11/11, `arguments` in ES5 arrow functions: the check exists, the misses are other
   places), TS1117 (43/8, blocked by parser gaps, see session 2 below), TS2311 (`await` as a callee).
@@ -359,17 +331,6 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - The JS-only codes (TS8002 132/12, TS8006, TS8010) belong to the JS plan; TS5055 (emit paths) is out of scope.
 
 ## Harness and tools
-- `./release/baseline_tests -f complexRecursiveCollections --err` (outside `test.sh`) hangs forever in
-  `anon_pipe_write`: the harness writes to a pipe of its own that nobody drains while the test's output is big. The
-  valgrind build via `./test.sh` does finish. Two harness runs at once also wait on each other (a lock?), which looks
-  like a hang too.
-- `./release/baseline_tests -f enumLiteralsSubtypeReduction -d` hangs (re-probed: >20 s) while the same run without
-  `-d` takes 0.2 s: probably the diff of a huge output through a pipe that nobody drains.
-- The harness's `-f` regex (STC's cregex) silently matches *nothing* once the pattern is a few kB long (a 30-name
-  alternation works, ~100 names don't): no error, just 0 tests. `failstats.py --jsx` runs in 30-name chunks because
-  of it. A `-f @file` list of names would be the real fix.
-- `filetest.sh` always uses `/tmp/testfile`: two agents running it at once collide. Take the directory from `mktemp
-  -d` or an env var.
 - `@baselineFile`, `@fullEmitPaths` are ignored. Bad option values are ignored (tsc's harness throws).
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there.
   `./filetest.sh` on a multi-file probe shows the comment lines before the first `// @filename` as a file of their
@@ -377,24 +338,16 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - Harness runs a test twice when the first run leaves net allocations (lib cache fill), ~170 times per suite run;
   "### TEST" markers can repeat, `failstats.py` dedupes. `failstats.py` counts by test *name*; a handful of names
   exist in both `compiler/` and `conformance/`, so its pass counts can differ from the harness by one or two.
-- `./release/tttt file.ts` without `-q` prints the parsed AST before typechecking; `display_expr` prints `?` for
-  expression types there. Is that dump worth keeping at all? `display.c`'s syntax printer is only needed for debug
-  output and written type *names* now: `DISPLAY_TYPE_MAX_DEPTH`, `BriefType` may be dead; `DisplayUnderlineTarget` /
+- The AST dump is behind `tttt --print-ast` now; `display_expr` prints `?` for expression types there.
+  `display.c`'s syntax printer is only needed for that and written type *names*: `DISPLAY_TYPE_MAX_DEPTH`, `BriefType` may be dead; `DisplayUnderlineTarget` /
   `underline_display()` is (types underlines are `TyDisplay.underline` since plan 07), delete it.
-- `tttt` only works from the repo root: the lib is looked up as `thirdparty/lib/esnext.d.ts` relative to the cwd (`cd
-  corpus && tttt -p .` fails with "File 'thirdparty/lib/esnext.d.ts' not found" and checks nothing, exit 0). Resolve it
-  relative to the executable (or an install prefix) like tsc does with its `lib` directory.
 - Nodes aren't cloned any more: collapse `owned_symbol`/`symbol_ref` (`GenericItem`, `InferredType`, mapped keys)
   and `key.expr.owned`/`ref` into one pointer each; drop `LAZY_TYPE_FUNCTION` (`hacks.md`).
-- The stdlib checks clean now (`./release/tttt -q --no-lib --keep-going thirdparty/lib/esnext.full.d.ts`, 2026-09-23):
-  a cheap regression check for lib-related changes.
+- The stdlib checks clean (2026-09-26): a cheap regression check for lib-related changes. Not `--no-lib
+  esnext.full.d.ts` alone (`--no-lib` ignores `/// <reference lib>`, that checks one file): `./bench.sh`'s
+  `lib_closure` lists the 84 files to pass as roots.
 
 ## Perf (see `measurements.md` for numbers)
-- **tsgo baseline broke with TypeScript 7.0.2** (2026-09-25, new box): `bench.sh` takes whatever `tsc` >= 7 is on
-  PATH, now the 7.0.2 release, which exits 1 on the synthetic corpus (TS1540: `module X {}` namespaces are an error)
-  and on valibot (TS5108: `moduleResolution=node10` removed). Decide: pin tsgo to one version in `bench.sh`/setup
-  (reproducible across boxes), and/or rewrite `module` to `namespace` in `bench/make_corpus.py` and override the
-  valibot option for tsgo, so tsgo checks what tttt checks.
 - Alias variances are in (2026-09-25): two instantiations of one alias infer and relate by their type arguments
   (tsc's getAliasVariances). What's left of valibot's time is inference (`infer_from_signature_lists` ->
   `infer_from_returns` over schema objects' `~run`/`~standard` members) and `ty_conditional_resolve`'s `infer X` walks;
@@ -412,7 +365,6 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - type-fest `GreaterThan<2, 1>` is `false` (`test-d/greater-than-or-equal.ts:8`, and a probe importing
   `source/greater-than.d.ts`): the nested `[...] extends infer R extends [boolean, ...] ? ... : never` chain (two
   `infer R` in one declaration, the inner shadowing the outer) picks a wrong branch.
-- `./bench.sh`'s "stdlib only" section prints ~0 ms for every phase (seen after plan 17): probably checks nothing.
 - tsc corpus profile after the 2026-09-24 perf session (6.0 G Ir): parsing is ~19% of instructions (~6000 per
   source line: backtracking sub-parsers, `hop_start` chains, `parse_fail` 1.5 M times from `parse_expr` alone;
   `hop_start_if_ends_on_word_break` 1.6% self). A first-char dispatch (or a real token) in `parse_expr`,

@@ -35,7 +35,8 @@ def candidates():
                     continue
                 if re.search(r'\b(declare\s+global|module\s+["\'])', src):
                     continue
-                yield name, src
+                # TypeScript 7 (tsgo) rejects the old `module X {}` namespace syntax (TS1540)
+                yield name, re.sub(r'\bmodule(\s+[A-Za-z_$][\w$.]*\s*\{)', r'namespace\1', src)
 
 
 def wrap(src, ns):

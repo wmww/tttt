@@ -8,9 +8,9 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 thirdparty/ensure-tsc.sh
 
 # Set up the directory needed to run the test
-TEST_DIR=/tmp/testfile
-rm -rf "$TEST_DIR"
-mkdir "$TEST_DIR"
+# (A directory of its own: several agents may run this at once)
+TEST_DIR=$(mktemp -d /tmp/testfile.XXXXXX)
+trap 'rm -rf "$TEST_DIR"' EXIT
 mkdir -p "$TEST_DIR/tests/cases/conformance"
 mkdir -p "$TEST_DIR/tests/cases/compiler"
 # (/.lib/react16.d.ts and friends: @libFiles and /// references to /.lib)
@@ -33,6 +33,3 @@ mv "$TEST_DIR/tests/baselines/local" "$TEST_DIR/tests/baselines/reference"
 RUNNER=./test.sh
 if test -n "${FAST:-}"; then RUNNER=./fasttest.sh; fi
 "$RUNNER" --dir "$TEST_DIR/tests" --results-path "$TEST_DIR/baseline_results.ts" "$@"
-
-# Clean up
-rm -rf "$TEST_DIR"

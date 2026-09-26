@@ -144,14 +144,15 @@ def run_harness(filter_re):
         subprocess.run(['./fasttest.sh', '-f', '^$', '--summary'], cwd=ROOT, check=True, stdout=subprocess.DEVNULL)
     shutil.rmtree(DUMP, ignore_errors=True)
     os.makedirs(DUMP)
-    # A list of names is run in chunks: the harness's regex engine silently matches nothing past a few kB of pattern
-    filters = [filter_re] if not isinstance(filter_re, list) else \
-        ['(' + '|'.join(filter_re[i:i + 30]) + ')' for i in range(0, len(filter_re), 30)]
-    code = 0
+    # A list of names goes through a file (`-f @file`): the harness's regex engine silently matches nothing past a few
+    # kB of pattern
+    if isinstance(filter_re, list):
+        with open(f'{OUT}/filter_names.txt', 'w') as names:
+            names.write('\n'.join(filter_re) + '\n')
+        filter_re = f'@{OUT}/filter_names.txt'
     with open(f'{OUT}/stderr.txt', 'wb') as err:
-        for f in filters:
-            cmd = ['./release/baseline_tests', '--summary', '--dump', DUMP] + (['-f', f] if f else [])
-            code = code or subprocess.run(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=err).returncode
+        cmd = ['./release/baseline_tests', '--summary', '--dump', DUMP] + (['-f', filter_re] if filter_re else [])
+        code = subprocess.run(cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=err).returncode
     return code
 
 
@@ -165,7 +166,7 @@ def table(title, counter, n, tests_by_key=None, width=100):
     return lines
 
 
-# The names of the tests that contain JSX, as regexes (for -f): .tsx test files, and .ts ones with a .tsx/.jsx unit or `@jsx`
+# The names of the tests that contain JSX (for -f @file): .tsx test files, and .ts ones with a .tsx/.jsx unit or `@jsx`
 def jsx_filter():
     unit = re.compile(r'@filename:\s*\S+\.(tsx|jsx)\b|@jsx:', re.I)
     names = []
@@ -173,7 +174,7 @@ def jsx_filter():
         if 'fourslash' in root: continue
         for f in files:
             if f.endswith('.tsx') or (f.endswith('.ts') and unit.search(open(os.path.join(root, f), errors='replace').read())):
-                names.append(re.escape(f.rsplit('.', 1)[0]))
+                names.append(f.rsplit('.', 1)[0])
     return sorted(names)
 
 

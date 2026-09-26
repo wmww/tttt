@@ -1901,8 +1901,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     return parse_success(&p);
 }
 
-// `x is T`, `this is T`, `asserts x`, `asserts x is T` as a return type
-// TODO: predicates aren't in the AST yet (narrowing, plan 05), this gives the `boolean` or `void` the function returns
+// `x is T`, `this is T`, `asserts x`, `asserts x is T` as a return type (`FunctionImpl.predicate`)
 static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
 

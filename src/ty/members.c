@@ -273,8 +273,9 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
 // Classes
 
 // The class a class extends: its instance type (with the written type arguments) and its declaration. False if
-// there's none. HACK: only `extends Name` / `extends Name<Args>` / `extends A.B.Name`; tsc takes the return type of
-// the construct signatures of whatever the expression evaluates to (mixins, `extends f()`)
+// there's none. HACK: a class name (`extends Name`, `extends Name<Args>`, `extends A.B.Name`) is found syntactically;
+// any other expression is the return type of its *first* construct signature (tsc resolves the signatures that match
+// the written type arguments, hacks.md)
 static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, Ty const** instance, Symbol const** base_decl) {
     Expr const* extends = &class_decl->extends;
     VecSpannedType const* written_args = nullptr;

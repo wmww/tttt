@@ -13,6 +13,8 @@ Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);
 
 // How the program's module resolution follows symlinks (see module_resolution.h), before loading anything
+// The directory the standard library files (es5.d.ts & co.) are loaded from
+void program_set_lib_dir(Program* me, csview dir);
 void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx);
 
 // Change them before loading anything, and call compiler_options_resolve() when done. Parsing, name resolution and

@@ -15,9 +15,9 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   Dropping an AST while *another* program's checker is current would reset nothing (different slots), so it's safe,
   but the rule is implicit.
 - `CompilerOptions` (`compiler_options.c`): every tsc boolean/enum option parses and resolves its defaults, but the
-  checker only *reads* `strict_null_checks`, `strict_function_types`, `no_implicit_any`,
-  `no_unchecked_indexed_access`, `no_unused_locals`/`no_unused_parameters` and a few more. Much else (target-gated
-  diagnostics, `allowJs`/`checkJs`, `jsx`, module kind, `exactOptionalPropertyTypes`...) is carried but inert. `compiler_options()` is a global like the
+  checker only *reads* a subset (the strict family, `target`, `jsx`, `exactOptionalPropertyTypes`, the unused/implicit
+  checks, decorators, module interop...: `grep -o 'compiler_options()->[a-z_]*' src`); the rest is carried but inert.
+  `compiler_options()` is a global like the
   `ErrorConfig` it replaced, set around load/resolve/check by `program.c`; becomes a `Checker`/`Program` field read
   through a context when signatures get one.
 - `baseline_test_case.c: apply_setting`: harness-only directives that are still ignored: `@baselineFile`,
@@ -26,7 +26,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   (`program_validate_options`) are skipped when there is one, since tsc then puts them on the option's json span.
 - `error_ctx_global_error_s`: diagnostics without a file are `Error`s with a null span, sorted first (by code, then
   message, like tsc), shown by the harness before the first file (`formatted_global_errors`). The CLI's
-  `display_error` prints them as `[unkown file]:2`. `error_ctx_error_s` still drops errors with an invalid span.
+  `display_error` prints them without a location. `error_ctx_error_s` still drops (and logs) errors with an invalid
+  span.
 - `program_apply_comment_directives` (`@ts-expect-error`/`@ts-ignore`): suppression goes by tttt's error *phase*,
   not tsc's diagnostic kind. Only RESOLVE_NAMES/TYPECHECK errors are suppressed, so a tsc checker grammar error
   (`checkGrammar*`, TS1xxx) that tttt reports while parsing is not, and a tsc parse error that tttt reports while
@@ -101,14 +102,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   approximate for multi-file tests.
 - `bench/make_corpus.py`: corpus is passing tests wrapped in namespaces and replicated. Flatters tttt.
 - `main.c: --keep-going`: typechecks after name errors purely so the bench can time the stdlib; not validated.
-- `parse_import_equals`: `import x = require("m")` is treated exactly like `import * as x from "m"`. Wrong for
-  `export =` modules (not supported at all yet).
-- `namespace_decl_add_names`: ambient modules (`declare module "m" {}`) get a scope for their contents but are not
-  registered anywhere, so `import ... from "m"` still reports TS2307. Needs a program-level ambient module table
-  (stale? plan 04 added `Binder.ambient_modules`; verify and delete). Their `"m"` name line is also missing from the symbols/types baselines.
-- `parse_jump_target` / `Statement.jump_label`: labels are parsed and shown in the types baseline, but never checked
-  (TS1116 unknown label, TS1107 crossing function boundary, TS7028 unused label, duplicate labels). `inside_label`
-  in `BlockTypecheckCtx` just permits any labeled `break` inside any labeled statement.
+- `statement_check_jump` / `TypecheckLabel`: labels are checked (TS1107/1115/1116, TS7028 unused), but duplicate
+  labels (TS1114) aren't reported.
 - `run_baseline_test_case: path_is_script`: virtual files that aren't TS/JS by extension are left out of the program
   entirely. Right for package.json/tsconfig.json, wrong for `.json` modules under `resolveJsonModule` (5 tests).
 - `const` type parameters (`ty_is_const_type_variable`, `in_const_context` in expr.c): no mapped/conditional/variadic
@@ -116,36 +111,32 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   walking the argument's syntax (`add_nested_array_literals`, call.c) because tuples are interned and can't carry
   tsc's ObjectFlags.ArrayLiteral. The rest arguments of `...args: T` get `T[i]` as contextual type only when const.
 - `EnumDecl.is_const`: only decides the symbol flag (a const enum doesn't merge with a namespace); no TS2475 etc.
-- `parse_import_type`: import attributes (`{ with: { "resolution-mode": ... } }`) are parsed and dropped, on import
-  declarations too: `ModuleRef.syntax` only knows import / require / dynamic, so an override never reaches
-  `program_load_module_ref()` (resolutionMode* tests, TS1454-1456, TS2836/2841...).
-- `parse_type_predicate`: `x is T` / `asserts x is T` become `boolean` / `void`, the predicate is dropped (plan 05).
-  `parse_generic_decl_item` likewise parses and drops `in`/`out` type parameter modifiers (`const` is kept), and
-  `parse_variable_statement` drops the `!` of `let x!: T`.
-- Destructuring (`binding.c`, `lower_binding_access`): pattern elements are still `TYPE_INDEXED` link nodes with
-  `rest` / `default_value` bolted on (the default is a non-owning `Expr*` into the `Binding`). Object rest returns the
-  whole object type, defaults are checked without a contextual type (see triage: `check_with` has no cycle detection).
+- `parse_generic_decl_item` parses and drops `in`/`out` type parameter modifiers (`const` is kept): they don't print
+  (`<in T>` shows as `<T>`), don't set variances, and misplaced ones get no TS1274.
 - `parse_if_else` looks ahead past a `;` for `else`, because statement terminators belong to
   `parse_append_statement_sequence` rather than to the statement; `ended_on_brace` there is the same kind of guess.
-- `EXPR_REGEX` carries nothing but its span: no flag/pattern validation (tsc reports TS1499+ for bad flags and groups).
-- `parse_object_item`: `{ a = 1 }` (shorthand with default, only legal in destructuring assignment) parses and throws
-  the default away; `?`/`!` after a member name is swallowed without TS1162. `ObjectExprItem` methods are plain
-  `EXPR_FUNCTION` values.
+- `EXPR_REGEX` carries nothing but its span: flags are validated (`regex_check_flags`, TS1499), the pattern isn't
+  (`/a(/` has no error).
+- `parse_object_item`: `{ a = 1 }` (shorthand with default, only legal in destructuring assignment) keeps the default
+  in `ObjectExprItem.shorthand_default` only to look its names up (not checked, not in the baselines); `?`/`!` before
+  a method's `(`/`<` is swallowed without TS1162, and `{ b?: 1 }` doesn't parse at all (tsc: TS1162). `ObjectExprItem`
+  methods are plain `EXPR_FUNCTION` values.
 - Class accessors (`ClassItem.method.accessor`, `class_item_accessor_evaluate_type`): pairing is by name+staticness in
   `class_decl_lookup_names` (raw pointers between items of the same vec). No TS2300 for property-vs-accessor clashes,
-  no check that getter and setter types agree, readonly only means "no setter". Interface/type-literal accessors are
-  converted to properties in `parse_interface`.
+  readonly only means "no setter". Interface/type-literal accessors are converted to properties in `parse_interface`.
 - Private names (`#x`, `ty_private_name`): the lexical lookup (`PropertyExpr.private_class`) scans class items by
   text on every access (no per-class table). An access that no class declares looks up the plain `"#x"` atom, so a
   string-named property `"#x"` would be found (tsc: never). TS18015 (relations: "refers to a different member"), TS2806
-  (set-only private accessor), private names in object literals/interfaces/parameters (TS18016 via the parser: these
-  still fail to parse), for-in's `for (#x in o)` (TS1451 here, tsc TS2406) are missing.
+  (set-only private accessor), private names in object literals (TS18016: `{ #y: 1 }` still fails to parse), for-in's
+  `for (#x in o)` (TS1451 here, tsc TS2406) are missing.
 - `in` (`ty_check_in_expression`): no TS2638 (a right operand that may be a primitive, hasEmptyObjectIntersection).
-- `p!: T` / `let x!: T`: the `!` is hopped and forgotten (class fields only; `let resp!: T` still doesn't parse).
+- Class field `x!: T`: the parser drops the `!` (`let x!: T` keeps it, `Binding.definitely_assigned`); the checks that
+  need it (`class_instance_member` in class_decl.c, `check_used_before_initialization` in ty/check.c) peek at the
+  source character after the field's name.
 - Generators (`infer_generator_type`, `check_yield`): no next type is inferred from what the `yield`s are used as
   (tsc's `nextTypes` from the yield's contextual type): it's the contextual/declared TNext or `unknown`. No TS7055/TS7057
-  (implicit any generators), no check that the annotation can be a generator's return type (TS2322 "A generator
-  cannot have a 'void' type annotation"), returns aren't checked against the annotation's TReturn.
+  (implicit any generators), no TS2505 (a generator annotated `void`), returns aren't checked against the annotation's
+  TReturn.
 - `infer_generator_type`: a `yield*` of something that isn't iterable prints its type, because tsc reports TS2488 from
   inside the return type inference and the message can find the return type in progress (makes `yield* foo` inside
   `foo` any, YieldExpression6_es6). Faithful to what tsc observably does, but it is a side effect of printing.
@@ -158,8 +149,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   next character. Top-level await never reports TS1375/TS1378 (needs module detection + `@module`/`@target`).
   Class field initialisers and parameter defaults count as "top level"/inherit the enclosing function's context.
 - Decorators (`ClassDecl.decorators`, `ClassItem.decorators`, `FunctionArg.decorators`): parsed, name-resolved,
-  typechecked and traversed as ordinary expressions. Nothing checks that they're valid decorators for their target
-  (TS1238/TS1240/TS1241...), and `@experimentalDecorators` ordering rules (`export @dec class`, TS1206) aren't applied.
+  typechecked and traversed as ordinary expressions. Placement is checked (TS1206/TS1249 in `class_decl_typecheck`),
+  but nothing checks that they're valid decorators for their target (TS1238/TS1240/TS1241...).
 - Computed member names (`interface_member_typecheck`, `class_computed_key_typecheck`): TS1166/1168/1169 exempt entity
   names like tsc, but tsc then makes a *late bound index signature* of an entity-name key whose type is string/number/
   symbol (`[k]: T` with `k: string` is `[x: string]: T`, getIndexInfosOfIndexSymbol); here the member is dropped.
@@ -172,8 +163,9 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   No TS1330-1335 (misplaced `unique symbol`: it's plain `symbol` there, silently).
 - `variable_statement_typecheck` TS1254: any property access is accepted as a "literal enum reference".
 - `EnumCase.name`/`full_name`: string-literal member names take their name from the source text between the quotes
-  (escapes not processed); enum member types still print as `E.b c` rather than `(typeof E)["b c"]`.
-- `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined). See triage: is it used?
+  (escapes not processed).
+- `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined); its only user is the harness
+  reading `test/baseline_results.ts` (see the comment catalogue).
 
 
 ## Baselines (plan 21)
@@ -298,9 +290,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `globalThis` is a namespace symbol over `Binder.globals`: its type has *every* global as a property, `let`/`const`
   and types' values included (tsc: only `var`s and functions), and `ty_namespace_type` builds all ~2k props the first
   time a program touches it.
-- `identifier_expr_lookup_names`: `arguments` has no symbol (typed `IArguments` by name in
-  `ty_identifier_reference_type`), and is accepted inside arrow functions at top level too (TS2304/TS2496 missing:
-  emitArrowFunctionWhenUsingArguments02_ES6).
+- `identifier_expr_lookup_names`: `arguments` has no symbol (`IdentifierExpr.is_arguments`, typed `IArguments` by
+  name in `ty_identifier_reference_type`).
 - `scope_export_default`: a second default export that means something else (interface + value) is dropped instead of
   merged. `resolve_alias_target`: TS1192 is only suppressed for declaration files under
   `allowSyntheticDefaultImports`; TS2303 (circular alias) and TS2308 (ambiguous `export *`) are not reported.
@@ -318,28 +309,22 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   `is_assigned`/`is_assigned_in_closure`/`last_assignment_end` on symbols, but only on `is_local` ones (declared in
   the locals of a scope of the same file), and `Scope.flow` of a file's own persistent scopes (file, namespace, enum)
   for the duration of the walk.
-  check phase: the thread-local `current_checker`, see below.
-- Scripts declare straight into `Binder.globals` while they're walked, in file order (`SCOPE_SCRIPT`,
-  `SCOPE_GLOBAL_AUGMENTATION`). The plan's contract wants a per-file "global contributions" table merged in the link
-  phase; until then declare is not parallelisable and cross-file conflicts are told from same-file ones by comparing
-  the source of the first declaration (`report_conflicts`).
+  check phase: the thread-local `current_checker`, see the top of this file.
 - Exported and local declarations of one name live in two tables with no link between them (tsc has a local
-  `exportSymbol` stub). TS2440 against an exported local is special-cased in `binder_link`; `export { b }` of a local
-  that is also declared exported doesn't show the merged declarations (mergedDeclarationExports), TS2395 is missing.
+  `exportSymbol` stub). TS2440 against an exported local is special-cased in `binder_link`, TS2395 (mixed exported
+  and local declarations) is a pass of its own in `scope.c`; `export { b }` of a local that is also declared exported
+  doesn't show the merged declarations (mergedDeclarationExports).
 - `block_is_instantiated`: syntactic; an `export { x }` always instantiates a namespace, a const enum does too
   (for the symbol; the TS7027 rules ask without const enums unless `preserveConstEnums`).
-- `let`/`const` against a hoisted `var` of an inner block (TS2451 by tsc's checker), TS2403 (subsequent `var` of a
-  different type: the first declaration gives the type), function declarations in blocks under sloppy mode: not done.
+- Function declarations in blocks under sloppy mode (tsc's block-scoped-in-strict-mode rules): not done.
 - Class and interface *members* are not symbols (`Prop` has the identity the checker needs); duplicate member
-  diagnostics (TS2300 in ~80 tests) still come from nowhere.
+  diagnostics come from a checker pass over the members (`ty_check_object_type_duplicate_members`, see below).
 - `symbol_table_collect` allocates; `ty_namespace_type` members and `extend_export_stars` go through it.
 - One test logs "Declaration B acquired multiple times" (a node whose names get added twice; not found yet).
 - `check_access` reports TS2339 on modules too now (`import * as ns; ns.missing`): where module resolution picks the
   wrong file (nodeModulesTypesVersionPackageExports) that shows as spurious TS2339 next to the TS2307s (plan 06).
 
 ## Control flow graph (`flow.c`, the builder parts of `expr.c`/`statement.c`/`function_impl.c`; plan 05)
-- The checker half of TS7027 (tsc's `checkSourceElement`: statements whose flow node turns out unreachable) doesn't
-  exist and `Statement` has no flow pointer: see the plan's stage 1 notes.
 - No `FLOW_ARRAY_MUTATION` nodes (`x.push()`, `x[i] = v`): only evolving array types need them (out of scope).
 - Class *expression* methods are FUNCTION_IS_DECLARATION (tsc: narrowing continues outside like for object literal
   methods); `export { x }` doesn't mark the local as assigned anywhere (tsc's `markNodeAssignments` does).
@@ -357,7 +342,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   returned part of the annotation), as is TS7030 on bare `return;` statements (tsc's `checkReturnStatement`).
 - Body-less functions (overloads, signatures, function *types*: the libs) get a `FlowBuilder` on the stack but no
   start node, so parameter default expressions in them have no flow nodes.
-- `Statement.span` (16 bytes per statement) exists only for TS7027 ranges and `last_assignment_end`.
 
 ## Narrowing (`ty/flow.c`, the hooks in `ty/expr.c`; plan 05 stage 2)
 - Aliased conditions (`aliased_condition`, plan 08) only narrow identifier references (tsc also readonly properties).
@@ -366,6 +350,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   narrowed by the cases of a `switch`,
   the key property map tsc uses for big unions (`getKeyPropertyName()`: an optimisation, but it also changes which
   members `getNarrowedType()` starts from), erasure of generic construct signatures in `constructor_instance_type()`.
+  Destructured discriminants and the `in` rule show as spurious TS18048 / TS2339 (dependentDestructuredVariables,
+  inKeywordTypeguard).
 - `narrowed_by_candidate_member()`: tsc tries the strict subtype relation, then the (non-strict) subtype relation.
   There is only `TY_RELATION_STRICT_SUBTYPE` here.
 - `prop_has_explicit_type()`: a property of a mapped type (`Readonly<Services>`) counts as explicitly typed; tsc asks
@@ -383,7 +369,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   `undefined`.
 - `remove_nullable_by_intersection()`: tsc intersects with `{} | null` / `{} | undefined` when the other nullable is
   still possible; here always with `{}`.
-- No `getNarrowableTypeForReference()` (substituting constraints for generic references in narrowable positions), no
+- `getNarrowableTypeForReference()` is partial (`narrowable_type`, see the expressions section), no
   `x!` rule of `getFlowTypeOfReference()` (declared type when the narrowed type has nothing non-nullish left), no
   evolving arrays (`let x = []` and `x = []` on an auto-typed `let x;` are `any[]`), no TS2563 at flow depth 2000 (the query answers the error type silently).
 - `pattern_path_type()`: the assigned type of a target in a destructuring *assignment* is looked up with `ty_access()`
@@ -400,10 +386,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   generation number in `Checker.links`: the entries of finished generations are garbage until the checker dies.
 - `LazyMemo.hits`: expression memos allow 8 re-entrant evaluations before they answer the error type. It's a runaway
   guard, not a design: tsc has no expression-level cycle detection at all.
-- Narrowing by destructured discriminants
-  (`dependentDestructuredVariables`) and `in`
-  adding `Record<"a", unknown>` to `object`/`unknown` (`inKeywordTypeguard`) don't exist. They show as spurious
-  TS18048 / TS2339 now that property access is checked.
 
 ## The AST-side walk and what's left of the old type world
 - `TYPE_LAZY`, `TYPE_REF`, the binding `TYPE_INDEXED`, `CallableArg`, `type_clone` and its whole family are gone:
@@ -421,8 +403,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   signatures** (expando functions, `function f() {} f.x = 1`, also in TS), **generic mapped types** (`Pick<T, K>`,
   `Readonly<T>`: members only through the constraint) and **classes with a base `class_base()` can't fully see**
   (`ty_has_unresolved_base()`: mixins `class extends B` with `B: T`, unresolvable `extends` expressions, the static
-  side of any expression base). Bracket access never reports a missing property. TS2550 ("do you need to change
-  your target library") and TS2551 ("did you mean") are reported as TS2339 / not at all; TS18050 never.
+  side of any expression base). Bracket access never reports a missing property.
 - `expr_typecheck()` `EXPR_PROPERTY`: everything after the `?.` of a chain is checked against the non-nullable type
   of its object, because the `undefined` of the short circuit isn't told apart from one the property has itself
   (tsc: `optionalType` marker): `a?.b.c` with `b?: X` misses its TS18048.
@@ -431,18 +412,16 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   constraint for mixins (hence the gate above).
   A source that is `any` is let through to anything, even `never` (`check_assignable`).
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS`: what the operator checks in `expr.c`/`ty/expr.c` mean by "extends number"
-  (null/undefined don't, whatever strictNullChecks says). tsc checks operands differently (TS18050, never emitted here).
+  (null/undefined don't, whatever strictNullChecks says; HACK comment in ty.h). tsc checks operands differently.
 - `generic_params_expr_typecheck` (`f<A>` outside a call): constraints are checked against the first signature only.
-- `for_each_loop_statement_evaluate_var_type`: `for..in` is `string` (no `Extract<keyof T, string>`); `for await`
-  doesn't parse.
+- `for_each_loop_statement_evaluate_var_type`: `for..in` is `string` (no `Extract<keyof T, string>`).
 - Iteration (`ty/iterate.c`): no TS2763-2765 (the next type of an iterator vs what for-of/spread/destructuring send),
   no TS2489/TS2490 (an iterator without `next()`/`value`: it just isn't iterable), errors are only reported at the top
   (tsc adds related info). Array destructuring *assignments* (`[a, b] = it`) check against the iterated type but the
   array literal target still types as an array, not a tuple (tsc's inDestructuringPattern), and a binding pattern
   isn't the contextual type of its initializer (`var [a, [b]] = [1, [2]]` gives `(number | number[])[]`).
-- `ty_function_return_type`: `void` when there's no `return` (tsc: `never` if the end isn't reachable), async wraps in
-  `Promise<T>` without awaiting `T`. A return type that is asked for while it's being inferred makes it `any` (tsc's
-  failed popTypeResolution), without TS7023.
+- `ty_function_return_type`: a return type that is asked for while it's being inferred makes it `any` (tsc's failed
+  popTypeResolution), without TS7023.
 - `lower` TYPE_TYPEOF: `typeof x` is the type of the expression `x`, narrowed like any reference (tsc narrows type
   queries too, but only identifiers and property paths exist there).
 - The "written type shows as written" hack is gone (plan 04 stage 3: `out_symbol_name()`, names by accessibility from
@@ -455,7 +434,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   which is what `this` in a static member and a derived class's base static side see).
 
 
-## Calls, inference and property access (`ty/call.c`, `ty/infer.c`, `ty/access.c`): `ty/call.c`, `ty/infer.c`, `ty/access.c`
+## Calls, inference and property access (`ty/call.c`, `ty/infer.c`, `ty/access.c`)
 The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - Member modifiers (plan 13): `PropertyExpr` carries four resolve-walk pointers for them (`enclosing_class`,
   `in_constructor_of`, `this_parameter`, `this_function`), 32 bytes per property access that only matter for class
@@ -465,15 +444,13 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   tuples so as not to resolve tuple members the element access never needed: *creating types in a check changes type
   ids and so union/keyof display order* (valibot messages reordered until it didn't). Unions: a member without the
   property but with an index signature is looked up with the index type `string`, not the name.
-- `super(...)` has an `any` callee (`IdentifierExpr.super_member` is false there): arguments aren't checked against the
-  base constructor, and the TS2335-TS2337/TS2466/TS2660 legality errors aren't reported although `Scope.no_super` and
-  the resolve walk already know where `super` is illegal.
-- `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), no
-  `InferencePriority` flags beyond naked-type-variable, homomorphic, mapped-constraint and return-type (they are tsc's
-  bit values and OR together now), type predicates don't exist (parser drops `x is T`).
-- `ty_union_signatures` (relate.c, tsc's getUnionSignatures): union signatures aren't cached per union type (built on every call); `this`
-  parameters aren't intersected (there are none). `resolve_call` still falls back to member-by-member resolution when
-  some member has no signatures of the kind (tsc: TS2349 "Not all constituents of type ... are callable").
+- `infer_from` (infer.c): reverse mapped types are made eagerly (bounded by `Checker.reverse_mapped_depth`, HACK in
+  ty.h; tsc's are lazy), no `InferencePriority` flags beyond naked-type-variable, homomorphic, mapped-constraint and
+  return-type (they are tsc's bit values and OR together now).
+- `ty_union_signatures` (relate.c, tsc's getUnionSignatures): union signatures aren't cached per union type (built on
+  every call). `resolve_call` still falls back to member-by-member resolution when
+  some member has no signatures of the kind (tsc: TS2349 "Not all constituents of type ... are callable", tttt reports
+  the member's TS2348).
 - `super(...)` (`resolve_into` in call.c): the heritage clause's type arguments are passed as explicit type arguments
   of the base constructor's signatures; without written ones they're inferred where tsc instantiates with defaults
   (getInstantiatedConstructorsForTypeArguments).
@@ -484,8 +461,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   below ES2015).
 - `report_arity`: the span for too few arguments is the callee's `inner_span`, not tsc's name-of-the-property-access
   rule.
-- Heritage checks (`ty_check_heritage`, `class_heritage_typecheck`, `interface_heritage_typecheck`): no TS2417
-  (static side), TS2320 for interfaces only (`inherited_props_identical`: a class implementing two bases doesn't get
+- Heritage checks (`ty_check_heritage`, `class_heritage_typecheck`, `interface_heritage_typecheck`): TS2320 for
+  interfaces only (`inherited_props_identical`: a class implementing two bases doesn't get
   it), no tsc-specific elaborations ("The types returned by 'toSeq()' are incompatible between these types", "'X' is
   assignable to the constraint of type 'this', but..."). The interface checks create types earlier than before, which
   moved union member order / type parameter names in 3 types baselines (tsc orders by type id).
@@ -527,8 +504,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - Function expressions take the contextual signature's type parameters (`signature_resolve`, via `KEY_CONTEXT_DONE`)
   only if the signature is resolved after the context was assigned; tsc does it in assignContextualParameterTypes.
 - `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name.
-- `ty_access`: `null`/`undefined`
-  members of a union object are skipped silently (TS18047/18048 aren't reported), optional chaining isn't known here.
+- `ty_access`: `null`/`undefined` members of a union object are skipped silently (TS18047/18048 come from
+  `check_access` instead), optional chaining isn't known here.
 
 ## Expressions (`ty/expr.c`), contextual typing, the call passes
 `ty_check_expr(expr, contextual)` is meant to stay; what's listed is where it stops short of tsc.
@@ -536,9 +513,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   type; tsc uses the write type (`getWriteTypeOfSymbol`), so divergent accessors (`get x(): number; set x(v: number |
   string)`) give a false TS2322 (divergentAccessors*, getterSetterSubtypeAssignment). Needs a write type on `Prop`.
   Array pattern rest elements, object rest and non-array iterables aren't checked (null source), and `{ a = 1 } = o`
-  isn't checked at all because the parser drops shorthand defaults (`ObjectExprItem.shorthand_default`). The array
-  pattern's own type isn't the tuple tsc gives it. Expando assignments to functions (`foo.constructor = 1`, nullPropertyName)
-  are checked against the existing member.
+  isn't checked at all (`ObjectExprItem.shorthand_default` is only name-resolved; the HACK comment in
+  `assignment_target_typecheck` still says the parser drops it). Expando assignments to functions (`foo.constructor =
+  1`, nullPropertyName) are checked against the existing member.
 - **Array literal types aren't marked** (tsc's ObjectFlags.ArrayLiteral clones the array reference): inference
   approximates tsc's unionObjectAndArrayLiteralCandidates with `Inference.array_literals`, the types of array literal
   arguments (not array literals nested in other arguments). Object literal types are marked (`anonymous.object_literal`).
@@ -556,9 +533,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   without the key-property map. Contextual types of union members are reduced (`string | "a"` is `string`, tsc keeps
   both with noReductions), so a discriminant can widen and pick the wrong member (`contextualTypeShouldBeLiteral`).
   The for-of destructuring assignment check (statement.c) relates the regular element type (HACK: tsc checks a
-  pattern property by property). Binding patterns don't make an implied type (tsc's getTypeFromBindingPattern), so
-  `function f({ x, y = 0 } = { x: 0 })` has `{ x: number }` and `f({ x: 1, y: 1 })` is a spurious TS2353
-  (`destructuringWithLiteralInitializers`, also the missing optional `c1?:` in `literalTypes2`).
+  pattern property by property). A binding pattern with an initializer takes the initializer's type without the
+  pattern's implied members (tsc's getTypeFromBindingPattern), so `function f({ x, y = 0 } = { x: 0 })` has
+  `{ x: number }` and `f({ x: 1, y: 1 })` is a spurious TS2353 (`destructuringWithLiteralInitializers`).
 - `widen_nullable` (null/undefined -> any without strictNullChecks) is shallow: top level and array elements only.
 - Expression memo (`check_with`, `LazyMemo.context`, `lazy_type_set`): the memo of an `Expr` is whatever the last check
   with a contextual type produced (overload candidates and inference passes overwrite each other; the chosen candidate
@@ -586,35 +563,21 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   signature's parameter types mention it, or those of a function its return type returns, for a function argument
   (`fixed_by_argument`: probed by instantiating with `unknown`; anything that isn't a single-signature object type
   fixes everything it mentions). tsc fixes lazily, when a contextual parameter type is actually asked for. Inference from the contextual return type only
-  happens when that type has no type variables (no outer inference context, no return mapper). Still no reverse mapped
-  types: `contravariantOnlyInferenceFromAnnotatedFunction`, `reverseMappedTypeInferenceSameSource1` and friends used to
-  pass because object literal arguments only had to be *comparable*; that mitigation is gone.
+  happens when that type has no type variables (no outer inference context, no return mapper).
 - `resolve_call` still runs twice per call (type, then errors) and nothing is cached per `CallExpr`; argument memos make
   the second run cheap but not free.
 - `ty_non_nullable` of a type parameter or deferred type whose constraint allows null/undefined returns the stripped
   *constraint* (tsc: `T & {}`), which loses `T`.
 - `ty_unresolved`: an unresolved type name lowers to an error-`any` that prints as the written name (tsc does the same);
   it's a `TY_INTRINSIC` with `TYF_ANY | TYF_ERROR`, interned by name in the literal table.
-- `check_object`: computed keys that aren't literals, unique symbols or plain string/number/symbol/any are **left out
-  of the type** (unions of literals). A setter-only property takes its parameter type, no `this` typing for
-  methods, duplicate names: last one wins silently. Spread copies the apparent type's properties (no optionality
-  handling, no generic spread).
-- `check_array`: an empty array literal is `any[]` (tsc: `never[]` under strictNullChecks, evolving `any[]` for an
-  unannotated variable). Spread elements of non-arrays are `any`. Tuples only from a tuple-like contextual type or
-  `as const`.
-- `compute`: `typeof x` is `string` (tsc: the union of typeof results), tagged templates take the return type of a lone non-generic signature (no call resolution), `yield` is `any`,
-  binary arithmetic is always `number` (no bigint; unary `-`/`~`/`++`/`--` follow tsc's getUnaryResultType), `+` goes
-  by `TY_RELATION_ASSIGNABLE_STRICT_NULLS`. Bigint values are doubles (`Value.bigint`), so `2n ** 64n` literals lose
-  precision.
-  `satisfies` contextually types its operand but the result isn't narrowed by it.
+- `check_array`: tuples only from a tuple-like contextual type, a destructuring pattern or `as const`.
+- `compute`: tagged templates take the return type of a lone non-generic signature (no call resolution: a generic tag
+  is `any`), binary arithmetic is always `number` (no bigint: `b * 2n` is `number`; unary `-`/`~`/`++`/`--` follow
+  tsc's getUnaryResultType), `+` goes by `TY_RELATION_ASSIGNABLE_STRICT_NULLS`. Bigint values are doubles
+  (`Value.bigint`), so `2n ** 64n` literals lose precision. `satisfies` contextually types its operand but the result
+  isn't narrowed by it.
 - `ty_apply_type_arguments` (instantiation expressions): maps the type parameters of every signature that takes at
   least that many type arguments; signatures that don't fit aren't dropped, and nothing reports TS2635.
-- `baseline_test_traversal.c`: the `extends Base` line shows the return type of the base's first construct signature.
-  Known display gaps: `this: void` parameters don't print (`contextualTyping24`), qualified names in the type of an
-  assignment expression (`recursiveGenericUnionType1`).
-- `is_construct_signature_start` (parser): in a type, `new` followed by `(` or `<` is a construct signature. A method
-  that is really called `new` with a type parameter list (`new<T>(): void` meaning a method) is misparsed now; tsc
-  treats that as a construct signature too.
 
 ## Type core (`src/ty/`): known gaps
 - Template literal types and string mappings (`template.c`, plan 18): `apply_mapping` (Uppercase & co.) maps ASCII,
@@ -628,8 +591,6 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   alias body instantiates, approximated syntactically: never for `keyof` and intrinsic bodies, a conditional body only
   if the result still carries the alias (deferred, or distributed over a union), a homomorphic mapped body only if the
   result is a union. Unions don't have tsc's `origin` (how a union was written: `P & ("a" | "b")` prints distributed).
-- `keyof` of a mapped type with `as` isn't the `as` type over the constraint (without `as` it is the constraint, like
-  tsc's getIndexTypeForMappedType).
 - Relations to a generic mapped type (`generic_mapped_target_related`, relate.c) follow tsc's isGenericMappedType
   rule, but only a source without type variables gets its answer: a generic one that fails it falls through to the
   member-by-member comparison, which a mapped type without members passes. That permissive fallback stands in for
@@ -638,9 +599,10 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   type parameter P gets no constraint when lowered, so `S[P]` is compared as `S[Q]` (with an `as` clause a stand-in
   P' constrained to Q is used, `mapped_key_param_mapper`, cached per MappedInfo). Target `T[K]` uses the write type
   (intersection over a union constraint of T, `write_constraint_of_indexed`).
-- `class_base`: the base class is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`); tsc
-  evaluates the expression and takes the return type of its construct signatures (mixins, `extends f()`). The static
-  side inherits properties from the base's static side and, without a constructor of its own, its construct signatures.
+- `class_base`: a base class *name* is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`),
+  anything else takes the first construct signature (see the AST-side section; the HACK comment on it predates that).
+  The static side inherits properties from the base's static side and, without a constructor of its own, its
+  construct signatures.
 - `this` types (plan 10 stage 1): `Prop.thisless` follows tsc's syntactic isThisless* rules, so every class member
   without annotations is instantiated once per class (and per derived class: inherited members are the base's with
   this-argument = the derived `this`). No `this is T` as a *property* type (`isFSO: this is FileSystemObject`
@@ -649,12 +611,10 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   (tsc: the this-argument is one more covariant type argument).
 - `ty_resolve_enum` / `evaluate` (enums.c, also the constant folding of template expressions): no property accesses of
   `const` objects, `const` variables in another file count as constant without tsc's resolvedOtherFiles flag, members
-  of ambient enums without initializer auto-increment (tsc: computed). Declaration-merged enums don't get this far
-  (`declaration_init` refuses a second namespace). String-named members print as `E.b c`, not `(typeof E)["b c"]`.
-- `relate.c` gaps: no weak type check, no private/protected/nominal class
-  rules, no optionality of parameters (`undefined` isn't added
-  under strictNullChecks), signatures/index signatures of a source intersection aren't combined (properties are).
-  Array<S> -> ReadonlyArray<T> is a shortcut on the element types (`structured_related`).
+  of ambient enums without initializer auto-increment (tsc: computed).
+- `relate.c` gaps: no optionality of parameters (`undefined` isn't added under strictNullChecks), signatures/index
+  signatures of a source intersection aren't combined (properties are; HACK comment in `structured_related`).
+  Array<S> -> ReadonlyArray<T> is a shortcut on the element types (`structured_related`, HACK comment).
 - `has_conflicting_discriminants` (checker.c): tsc reduces an intersection with disjoint discriminants to never lazily
   (getReducedType), tttt when the intersection is made. That can be in the middle of lowering one of the properties
   or an alias its type names (`type B = X & { e: A }; type A = I | B`, the corpus' BindableStatic*Expression), so a
@@ -690,8 +650,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   generic reference to the alias in flight outside of those (`type T = Foo<T>` is an error in tsc, but `type T =
   { a: T } | Foo<T>`-style through other aliases isn't always) still becomes the error type.
 - `expand_mapped`: mapped types expand to properties/index signatures once the key type is a union of literals and
-  primitives. No `as` clauses, `-?` doesn't strip `undefined`, modifiers come from `MappedInfo.modifiers_type` only when
-  the key type was written as `keyof T`.
+  primitives. Modifiers come from `MappedInfo.modifiers_type` only when the key type was written as `keyof T`.
 - `instantiate_mapped_over_list`: a homomorphic mapped type instantiated with an array or tuple becomes an array or
   tuple. Recognised syntactically (one mapped member over `keyof`) so instantiation doesn't force members; bails out
   (object with mapped array methods, as before) for tuples with rest/variadic elements, unions of lists, `any`, and a
@@ -713,23 +672,21 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   checker; they go when `lazy_type_get` takes a const pointer.
 - `ty_keyof` of primitives and `ty_indexed` on anything but plain props / index signatures / tuple and array
   elements stay deferred.
-- `registered_type_param`: `infer X` and mapped-type keys are `DECLARATION_TYPE` declarations, indistinguishable
-  from aliases unless the conditional/mapped type that introduces them was lowered first (true whenever lowering
-  starts from the enclosing declaration or annotation, which is the only way they're in scope).
 - `lower_identifier`: the `object` keyword is recognised by being a builtin declaration named "object".
 - `lower` (composites): skips the `any` placeholder `parse_type` makes for a leading `&`.
-- `lower_tuple`: rest elements keep the written type (`...T[]` holds `T[]`), tsc holds the element type. Tuple
-  targets have no members yet (`length`, numeric props, array methods).
+- `lower_tuple`: rest elements keep the written type (`...T[]` holds `T[]`), tsc holds the element type.
 - `collect_free_params` / `Ty.anonymous.free_params`: which outer type parameters an anonymous type's node mentions,
   found by walking the node when the type is created. Parameters declared inside the node (signatures, mapped keys,
   `infer`) are taken out at the end rather than tracked by scope, and it gives up (`free_params_unknown`, = assume all) on `typeof`, `this`, computed keys,
   parameters with initializers, and for every function and merged value type (a body can mention any type parameter in scope). `TyMapper` is always flat (no composed/merged forms yet,
   inference will want them). `LowerCtx.generic` is only a "don't bother walking" hint.
-- `signature_resolve` (instantiated): keeps the target's type parameters instead of making fresh ones. Return types
-  are lazier than the rest (`signature_return_type`), because they're often inferred from a body that is being checked.
-- `builder_add_interface`: index signature and mapped type operand types are lowered eagerly (property and signature
-  types are lazy); computed keys that aren't string/number literals are dropped (unique symbols).
-- `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without strictNullChecks. TS2456 is only a TODO.
+- `signature_resolve` (instantiated): return types are lazier than the rest (`signature_return_type`), because
+  they're often inferred from a body that is being checked. Fresh type parameters: see `clone_type_params` above.
+- `builder_add_interface_member`: index signature value types are lowered eagerly (property and signature types are
+  lazy); computed keys that don't name a literal or unique symbol are dropped (tsc: late bound index signature, see
+  "Computed member names" above).
+- `ty_union`: no subtype reduction (that's `ty_union_subtype_reduced`, asked for explicitly), doesn't drop
+  `null`/`undefined` without strictNullChecks. TS2456 (circular alias) is only a TODO in `lower.c`.
 
 ## Module resolution (`src/module_resolution.c`, `src/tsconfig.c`, plan 06)
 - A resolved `.json` module is `any` (`MODULE_REF_IS_JSON`): the file isn't parsed into a type, `path_is_script` keeps
@@ -763,27 +720,23 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 
 ## Comment catalogue (2026-09-21, `grep -rnE "\b(PERF|HACK|TODO|FIXME)\b" src`, 155 comments; the ones not above)
 Checker gaps marked in the code, by function:
-- `class_decl_typecheck`: `implements Foo` is lowered as a type but never checked (TS2420).
-  `interface_decl_typecheck`: an `extends` target isn't checked for TS2312.
+- `interface_decl_typecheck`: an `extends` target isn't checked for TS2312.
 - `check_access`: indexing with a type parameter / deferred index type returns silently instead of TS2536.
-- `lower_type_args`: a missing required type argument without default becomes any/error, no TS2314.
-  `lower_identifier`: `import("./a").B.C` with a missing intermediate member gives `any`, no TS2339.
-  `binding_rest_elements`: a rest binding from a readonly array/tuple loses `readonly`.
-  `append_qualified_name`: always fully qualifies (the traversal has the accessibility walk, error messages don't).
+- `lower_type_args` (lower.c): a missing required type argument without default becomes the error type without TS2314
+  (TS2314 is only reported syntactically in several_types.c). `lower_identifier`: `import("./a").B.C` with a missing
+  intermediate member gives `any`, no TS2339. `binding_rest_elements`: a rest binding from a readonly array/tuple
+  loses `readonly`. `append_qualified_name`: always fully qualifies (the traversal has the accessibility walk, error
+  messages don't).
 - `scope_add_port`: `export as namespace N` never reports TS2686 on use; `export` inside a namespace body is dropped
   silently instead of TS1194. `scope_default_export_table`: default export outside a module isn't diagnosed (TS1319).
 - `ty_identifier_reference_type`: a bare `this` where nothing declares one is `undefined` (tsc: `typeof globalThis`
-  or implicit any). `binary_result`: no TS2695 for the unused left side of a comma expression.
-- `binary_op_typecheck` (expr.c): `<`/`>`/`<=`/`>=`/`in`/`instanceof` have no checks; assignment to a property
-  expression isn't checked against the property's type (identifier targets are); `+` redoes the relation checks
-  evaluation already did. `expr_typecheck`: `delete`/`await`/`yield` unchecked (no TS1064); `as`/`satisfies` never
-  report TS2352 for non-overlapping types.
+  or implicit any).
 - `prop_type` (ty/members.c): an in-flight (cyclic) property type is the error type silently, no TS2502.
 - `for_in_accepts` (statement.c): a type parameter should be judged by its constraint (spurious TS2407 possible).
 - `binding_add_names`: literal types on an exported binding aren't widened the way tsc does for
   `defaultNamedExportWithType1`.
 - `instantiate_anonymous` (ty/instantiate.c): instantiation expressions are never instantiated a second time.
-- `ty_union_subtype_reduced`: subtype reduction bails above 64 members (quadratic check).
+- `ty_union_subtype_reduced` (ty/expr.c): subtype reduction bails above 64 members (quadratic check).
 Parser: `is_identifier_char` is ASCII-only (no Unicode ID_Start/ID_Continue); `parse_identifier` excludes keywords
 by a chain of `span_equals`; `parse_binary_op` is an if/else chain; `parse_class_decl` gives a generic trailing-comma
 error for `extends B, C`; `parse_regex` fails instead of TS1161; numeric separators (`string_helpers.c`) never
@@ -795,13 +748,14 @@ on; `error_cmp` orders by span only (a TODO says "by file first"; files are sepa
 `engine.c` (used by the harness to read `test/baseline_results.ts`, nothing else): no let/const/var distinction,
 property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant unless it grows a second user.
 - Grammar errors vs parse errors (`error_ctx_grammar_error_d`, `SourceFile.has_parse_errors`): tsc drops checker grammar
-  errors in a file with parse errors. Only the `using`/import attribute checks go through it; the older checker grammar
-  errors (TS1155, TS1039, TS1254, modifier checks...) still report regardless. Conversely tttt's *parser* reports some
+  errors in a file with parse errors. The newer grammar checks go through it (~40 sites: labels, decorators, regex
+  flags, import attributes, `using`...); older ones reported with `error_ctx_error_d` (TS1254, some of TS1155/TS1039,
+  modifier checks...) still report regardless. Conversely tttt's *parser* reports some
   of tsc's grammar errors (TS1308, TS2852, TS1491/1495), and those count as parse errors for `has_parse_errors`.
 - Error elaboration (plan 16, `elaborate_error` & co in ty/check.c): tsc re-checks the elaborated expressions
   (checkExpressionForMutableLocationWithContextualType, checkArrayLiteral with forceTuple); tttt reads the memos instead
   (`ty_mutable_location_type`, `ty_array_literal_as_tuple`), so an expression whose memo was typed under a different
-  contextual type (generic inference passes) can show a different source type. `is_generic_object` approximates
+  contextual type (generic inference passes) can show a different source type. `ty_is_generic_object` approximates
   isGenericObjectType. `ty_best_matching_type` (relate.c): findMatchingDiscriminantType lacks the key-property map,
   findMatchingTypeReferenceOrTypeAliasReference only matches references by target and anonymous types by alias, and
   findMostOverlappyType counts shared property names instead of intersecting `keyof`s.
@@ -840,3 +794,10 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
   `flow_uncached` so that its sibling references (`any` then, `contextual_patterns`) aren't memoised; tsc's
   checkIdentifier isn't cached per node so it doesn't need that. Anything else the default mentions is evaluated
   uncached too (not remembered), which costs time on big defaults.
+- HACK comments not covered elsewhere: `check_subsequent_property` (ty/check.c) skips TS2717 between two
+  `unique symbol` types (one per declaration in tttt, one per merged property symbol in tsc);
+  `ty_elides_default_type_args` (iterate.c) always prints `Iterable<T>` for the four 3-parameter iteration interfaces,
+  where tsc prints what was written when all arguments were; `interface_decl_lookup_names` turns every `symbol`
+  property of the global `SymbolConstructor` into a `unique symbol` (tsc does the same for pre-3.0 libs);
+  `TyDisplay.widen_literals` prints literal types inside expression-made object types as their primitive (tsc widens
+  them when typing the literal).

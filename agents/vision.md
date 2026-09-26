@@ -14,7 +14,8 @@ types components) are the oracle, not the goal.
   2026-09-26 after stages 6-7: symbol lines, then the clusters sampling `other` found, most of them checker bugs the
   types baseline showed first: computed-name index signatures, binding patterns as contextual types, destructuring
   assignment tuples, overload-failure return types). **Corpora**: tsc's
-  `src/compiler` 0 diagnostics, type-fest 144, valibot 165 (all three are clean under tsc; 450 / 1871 before plan 19
+  `src/compiler` 0 diagnostics, type-fest 168, valibot 164 (2026-09-26; the rise since plan 19 is TS2344 on type
+  references exposing evaluation bugs) (all three are clean under tsc; 450 / 1871 before plan 19
   R5/R3/R2/R4/R1; some of the recent drop is ts-expect-error directives that new checks now satisfy).
   **Perf** (`measurements.md`, perf session after plan 15): tsc corpus 0.67 s vs tsgo 0.72 (single-threaded 1.23),
   type-fest 0.28 vs 1.23, valibot 0.59 s / 511 MB vs tsgo 0.78 s / 834 MB: ahead of multi-threaded tsgo on all three
@@ -61,8 +62,8 @@ Where the failing suite tests are (`./failstats.py` + a one-off diff of the dump
   a relation that is too lenient hides inference bugs, so expect more of these whenever relations get stricter.
 - **JS/JSDoc stays deferred** (~1050 tests, 930 failing, most of the spurious TS2304). Deliberate: it's a second
   language front end on top of the checker; JSX and the TS checks come first. The next insights decides when.
-- `hacks.md` has gone partly stale (still says "no nominal class rules", "no `as` clauses" after plans 13 and 18); the
-  next triage audits it against the code.
+- *(Done 2026-09-26: the triage after plans 21/22 audited `hacks.md` against the code, ~40 lines of fixed entries
+  gone.)*
 - Process health is good: eight plans in eight sessions, no redesigns, no losses. The risk is the other way: the easy
   suite plans are running out, and what's left is bigger (display, JSX, JS). Don't let the pace push those into
   piecemeal fixes; plan them.

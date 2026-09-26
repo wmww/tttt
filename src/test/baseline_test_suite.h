@@ -16,6 +16,8 @@ typedef struct BaselineTestSuite {
     bool has_filter;
     bool show_progress; // The \r-overwritten collection counter is only noise when output isn't a terminal
     cregex filter;
+    // `-f @file`: the file's lines, each an exact test name, as "\nname1\nname2\n" (cstr_null: the filter is a regex)
+    cstr filter_names;
     cstr prev_typescript_commit;
     cstr typescript_commit;
     ArcJsObject prev_results;

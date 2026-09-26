@@ -29,7 +29,8 @@ typedef SourceFile* SourceFilePtr;
 #define g_val SourceFilePtr, source_file_ptr
 #include <cleat/generic/hmap.h>
 
-static const csview lib_path = c_sv_const_init("thirdparty/lib");
+// Where the standard library is unless program_set_lib_dir() says otherwise (the repo root is the working directory)
+static const csview default_lib_dir = c_sv_const_init("thirdparty/lib");
 
 typedef enum {
     PROGRAM_PHASE_LOADING = 0, // Files may be loaded
@@ -62,6 +63,7 @@ static const char* program_phase_get_str(ProgramPhase phase) {
 typedef struct Program {
     ProgramPhase phase;
     bool loading_stdlib; // If we're loading standard library files instead of normal files
+    cstr lib_dir; // cstr_null: default_lib_dir
     ErrorCtx* errs; // unowned
     Fs const* fs;
     Binder* binder;
@@ -128,6 +130,7 @@ static void program_drop(Program* me) {
     hmap_source_file_ptr_drop(&my files_by_package_id);
     vec_source_file_ptr_drop(&my source_files_ordered);
     module_resolver_destroy(my resolver);
+    cstr_drop(&my lib_dir);
     compiler_options_drop(&my options);
     binder_destroy(my binder); // After the AST: type nodes in it may own things symbols point to
 }
@@ -146,6 +149,10 @@ void program_destroy(Program* me) {
 static ModuleResolver* program_resolver(Program* me) {
     if (!my resolver) my resolver = module_resolver_new(my fs, &my options);
     return my resolver;
+}
+
+void program_set_lib_dir(Program* me, csview dir) {
+    cstr_assign_sv(&my lib_dir, dir);
 }
 
 void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx) {
@@ -637,7 +644,7 @@ SourceFile* program_find_source(Program const* me, csview path) {
 
 failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
     my loading_stdlib = true;
-    cstr path = cstr_d(lib_path, "/", name, ".d.ts");
+    cstr path = cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name, ".d.ts");
     try (SourceFile* source, program_load(me, cstr_sv(&path), &source)) cleanup {
         my loading_stdlib = false;
         cstr_drop(&path);

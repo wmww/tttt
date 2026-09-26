@@ -96,6 +96,16 @@ for CORPUS in type-fest valibot/library; do
 done
 
 echo
-echo "stdlib only (parse + resolve + typecheck of thirdparty/lib/esnext.full.d.ts and everything it references;"
-echo "tttt reports name errors there, so --keep-going. $(cat thirdparty/lib/*.d.ts | wc -l) lines):"
-./release/tttt -q --time --keep-going --no-lib thirdparty/lib/esnext.full.d.ts 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
+# The lib files esnext.full.d.ts references, transitively. They're given as root files: --no-lib also ignores
+# `/// <reference lib>`, and lib files loaded as libs aren't typechecked
+declare -A LIB_SEEN
+lib_closure() {
+    local f="thirdparty/lib/$1.d.ts"
+    [[ -n "${LIB_SEEN[$1]:-}" ]] && return; LIB_SEEN[$1]=1
+    for r in $(grep -o '<reference lib="[^"]*"' "$f" | sed 's/.*lib="\(.*\)"/\1/'); do lib_closure "$r"; done
+    echo "$f"
+}
+LIB_FILES=($(lib_closure esnext.full))
+echo "stdlib only (parse + resolve + typecheck of esnext.full.d.ts and the ${#LIB_FILES[@]} lib files it references,"
+echo "$(cat "${LIB_FILES[@]}" | wc -l) lines):"
+./release/tttt -q --time --keep-going --no-lib "${LIB_FILES[@]}" 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'

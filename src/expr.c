@@ -1526,7 +1526,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                 if (i->tag == OBJECT_ITEM_SPREAD) {
                     assignment_target_typecheck(&i->value, nullptr, nullptr, errs); // TODO: the rest of the object
                 } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
-                    // HACK: `{ a = 1 } = o`: the parser drops the default, so neither side is checked
+                    // HACK: `{ a = 1 } = o`: the default (`shorthand_default`) is resolved but not checked
                 } else if (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) {
                     assignment_target_typecheck(&i->value, property, nullptr, errs);
                 }
