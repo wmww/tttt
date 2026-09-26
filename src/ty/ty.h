@@ -1196,6 +1196,7 @@ void ty_check_property_access(
     bool error_if_not_found, ErrorCtx* errs
 );
 bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index);
+void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecSpannedType const* args, ErrorCtx* errs);
 
 // call.c
 // `contextual`: the contextual type of the call expression (return type inference), may be null

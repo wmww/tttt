@@ -5901,7 +5901,7 @@ const baselines = {
         types: true,
     },
     'constraints0': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9378,7 +9378,7 @@ const baselines = {
     'deferredLookupTypeResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deferredLookupTypeResolution2': {
         errors: true,
@@ -15456,7 +15456,7 @@ const baselines = {
         types: true,
     },
     'generics1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15466,7 +15466,7 @@ const baselines = {
         types: true,
     },
     'generics2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15491,7 +15491,7 @@ const baselines = {
         types: true,
     },
     'generics5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20112,7 +20112,7 @@ const baselines = {
     },
     'jsxInferenceProducesLiteralAsExpected': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsxIntrinsicDeclaredUsingTemplateLiteralTypeSignatures': {
@@ -20131,8 +20131,8 @@ const baselines = {
         types: true,
     },
     'jsxIntrinsicElementsTypeArgumentErrors': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsxIntrinsicUnions': {
@@ -25161,7 +25161,7 @@ const baselines = {
         types: true,
     },
     'parameterListAsTupleType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31216,7 +31216,7 @@ const baselines = {
         types: true,
     },
     'typeParamExtendsOtherTypeParam': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53857,12 +53857,12 @@ const baselines = {
     },
     'tsxTypeArgumentResolution': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'tsxTypeArgumentsJsxPreserveOutput': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'tsxTypeErrors': {
@@ -64511,7 +64511,7 @@ const baselines = {
         types: true,
     },
     'nonPrimitiveInGeneric': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66861,7 +66861,7 @@ const baselines = {
         types: false,
     },
     'subtypingWithNumericIndexer2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66946,7 +66946,7 @@ const baselines = {
         types: false,
     },
     'subtypingWithStringIndexer2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

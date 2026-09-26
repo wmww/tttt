@@ -1021,6 +1021,54 @@ void ty_check_property_access(
     check_access(me, object, index, object_span, index_span, object_is_named, error_if_not_found, 0, errs);
 }
 
+// tsc's checkTypeArgumentConstraints for a type reference `T<A, B>` to a generic class, interface or alias: each
+// argument against its parameter's constraint, instantiated with the arguments (defaults for the ones not given).
+// TS2344, the first one only
+void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecSpannedType const* args, ErrorCtx* errs) {
+    symbol = binder_redirect(my binder, symbol);
+    TyList params = {0};
+    if (symbol->flags & SYMBOL_TYPE_ALIAS) {
+        params = ty_alias_type_params(me, symbol);
+    } else {
+        Ty const* declared = ty_declared_type_of(me, symbol);
+        if (declared->kind == TY_DECLARED) params = declared->declared.type_params;
+    }
+    u32 given = (u32)vec_spanned_type_size(args);
+    if (!params.len || given > params.len) return;
+    // (Nothing is lowered unless there's something to check: see triage.md, merged interfaces' type parameters)
+    bool constrained = false;
+    for (u32 i = 0; i < given && !constrained; i++) constrained = ty_param_constraint(me, params.data[i]) != nullptr;
+    if (!constrained) return;
+    Ty const** filled = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 i = 0; i < params.len; i++) {
+        if (i < given) {
+            filled[i] = ty_of_node(&vec_spanned_type_at(args, i)->type);
+            continue;
+        }
+        Ty const* fallback = ty_param_default(me, params.data[i]);
+        TyMapper const* so_far = ty_mapper_new(me, (TyList){ .data = params.data, .len = i }, (TyList){ .data = filled, .len = i });
+        filled[i] = fallback ? ty_instantiate(me, fallback, so_far) : ty_intrinsic(me, TY_UNKNOWN_);
+    }
+    TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = filled, .len = params.len });
+    for (u32 i = 0; i < given; i++) {
+        Ty const* constraint = ty_param_constraint(me, params.data[i]);
+        if (!constraint) continue;
+        constraint = ty_instantiate(me, constraint, mapper);
+        if (filled[i]->flags & TYF_ERROR) continue;
+        // HACK: generic arguments aren't checked: relating them to their constraints isn't reliable enough yet (deferred
+        // conditionals, `Diff<keyof U, K>` against `keyof U`, merged declarations' constraints)
+        if (filled[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) continue;
+        if (ty_is_related(me, filled[i], constraint, TY_RELATION_ASSIGNABLE)) continue;
+        cstr source_str, target_str;
+        ty_report_pair_cstr(me, filled[i], constraint, &source_str, &target_str);
+        report_unassignable_with_head(me, filled[i], constraint, 2344, cstr_d(
+            "Type '", source_str, "' does not satisfy the constraint '", target_str, "'."
+        ), false, vec_spanned_type_at(args, i)->span, errs);
+        c_drop(cstr, &source_str, &target_str);
+        return;
+    }
+}
+
 // Whether type argument `index` satisfies the constraint of its type parameter, given all the arguments
 bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index) {
     Ty const* lowered[32];

@@ -1271,6 +1271,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT:
             if (my tag == EXPR_JSX_ELEMENT) jsx_tag_compile_test_info(my jsx, &my jsx->tag_name, ctx);
+            for_each (i, vec_spanned_type, &my jsx->type_args) type_compile_test_info(&i->type, ctx);
             expr_compile_test_info_inner(&my jsx->attributes, ctx);
             for_each (i, vec_jsx_child, &my jsx->children) {
                 if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_compile_test_info(&i->expr, ctx);

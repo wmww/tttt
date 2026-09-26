@@ -316,6 +316,14 @@ static void check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
         return;
     }
     check_element_type(me, element, ty_string_literal(me, element->tag_name.identifier.name.sv), errs);
+    if (!vec_spanned_type_is_empty(&element->type_args)) {
+        // An intrinsic element takes no type arguments (resolveJsxOpeningLikeElement)
+        // (the list, a trailing comma included)
+        Span last = span_valid(element->type_args_trailing_comma) ? element->type_args_trailing_comma :
+            vec_spanned_type_back(&element->type_args)->span;
+        Span span = span_between(vec_spanned_type_front(&element->type_args)->span, last);
+        error_ctx_error_d(errs, span, 2558, "Expected 0 type arguments, but got ", vec_spanned_type_size(&element->type_args), ".");
+    }
     JsxIntrinsic intrinsic = ty_jsx_intrinsic(me, element);
     report_intrinsic_lookup(me, element, &intrinsic, element->opening_span, errs);
     if (!element->self_closing && span_valid(element->closing_span)) {

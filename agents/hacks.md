@@ -815,3 +815,9 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
 - `Checker.jsx_element`: the element being checked, so `report_relation_error` can apply tsc's JSX head rule
   (`ty_jsx_skips_head`); tsc passes the error node instead. Relations about attributes outside `ty_check_jsx_element`
   don't see it.
+- `ty_check_type_reference_constraints` (check.c, TS2344 on `T<A>` type references): arguments that could contain type
+  variables aren't checked. Checking them gave ~60 false TS2344s: tttt's relation can't yet show `Diff<keyof U, K>`
+  assignable to `keyof U` (indexedAccessRetainsIndexSignature), a deferred conditional to its constraint
+  (conditionalTypeClassMembers, homomorphicMappedTypeNesting), or a merged declaration's constraint
+  (interfaceMergedUnconstrainedNoErrorIrrespectiveOfOrder). Remove the gate as those get fixed (each is a relation bug
+  of its own).

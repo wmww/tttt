@@ -276,7 +276,10 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         return;
     }
     u32 count = (u32)vec_generic_item_size(&params->items);
-    if (arg_count >= min && arg_count <= count) return;
+    if (arg_count >= min && arg_count <= count) {
+        if (arg_count) ty_check_type_reference_constraints(current_checker, symbol, &my generic_params, errs);
+        return;
+    }
     cstr name = cstr_from_sv(symbol->name);
     if (!(symbol->flags & SYMBOL_TYPE_ALIAS)) {
         // (tsc's typeToString of the generic type: its parameters)

@@ -404,3 +404,8 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - Without strictNullChecks, a written `W["_i"] | undefined` constraint displays as `W["_i"]` (tsc keeps the
   `| undefined` in the display). Probe: `declare function eo<const W, const D extends W | undefined>(w: W, d: D): D;`
 - `() => 'foo' as const` returns `"foo"` now, but tsc's underline reuses the `"foo"` (it prints `^^^^^^     `).
+- Lowering the type arguments of `interface Array<T> extends IFoo<T>` (a user augmentation of Array) with
+  `ty_of_node()` before the members are resolved makes `arr.x` stay `T` (extendGenericArray2): the augmentation's own
+  `T` isn't the merged interface's. `ty_check_type_reference_constraints` avoids lowering arguments of unconstrained
+  parameters because of it. Probably the merged declarations' type parameters should be one type (tsc: the first
+  declaration's), whoever lowers first.
