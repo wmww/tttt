@@ -1256,10 +1256,19 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     }
 
     bool found_decl = false;
+    u32 valid = 0;
+    for_each (i, vec_span, &data.declarations) valid += span_valid(*i);
+    u32 shown = 0;
     for_each (i, vec_span, &data.declarations) {
         if (span_valid(*i)) {
+            // (tsc's writer shows five)
+            if (shown == 5) {
+                cstr_append_d(&text, DEFAULT_DISPLAY, " ... and ", valid - shown, " more");
+                break;
+            }
             append_decl(&text, *i);
             found_decl = true;
+            shown++;
         }
     }
 
