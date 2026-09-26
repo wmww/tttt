@@ -1,21 +1,35 @@
 # Todo
-Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction (insights after plan 13)")
-for why.
+Written by the insights after plan 23 (2026-09-26); `vision.md` "Course correction (insights after plan 23)" says why.
+**Ten sessions, then insights.** Delete entries as they complete. A plan that overruns its entry takes its extra
+sessions out of this budget: when 10 sessions have run (count the commits since this file was written), the next
+session is insights, whatever is left here. New work goes into plans or triage.md, not ahead of the insights entry.
 
-1. **Insights.** Decide plan 22's "After the plan" question (a React corpus as the next oracle) and delete the plan
-   file; decide when JS/JSDoc starts; direct `./displaydiff.py`'s `other` bucket (mostly checker bugs, see triage.md
-   "Display leftovers after plan 21"). Plan 19 (corpora to zero) is still open: type-fest 168, valibot 164.
-   Plan 23 (symbol merging) is done (8139 -> 8202); its leftovers are parser gaps and missing grammar checks,
-   listed in triage.md. Members-as-symbols question the plan raised: not needed for the diagnostics. Static
-   members vs merged namespace exports and object literal members are check-time replays of tsc's binder tables
-   (hacks.md, "Class and interface *members*"). Their one semantic gap: a namespace export that conflicts with a static
-   member still ends up in `typeof C`. Revisit only if members need symbols for other reasons.
-   Process notes from a conversation with the user (2026-09-26, not urgent, act on them as you see fit):
-   - **Insights cadence drifted.** The last insights (b5a8d94) planned 10 sessions; ~15 ran. Plan 21's "first stages"
-     ran to completion, plan 22's execution was added after "planning: JSX", and triage queued plans 24/23 ahead of
-     insights. Each step was reasonable; nobody re-approved the total. Consider how todo.md should cap this.
-   - **Sessions ending without committing** (4 so far: plan 17, plan 16 stage 3, plan 22 stage 3, triage after
-     21/22; the next session committed each). The two with transcripts ended their final turn while waiting on a
-     background job (`findcrash.py`, `bench.sh`), so they never woke up again. The candidate fix is a CLAUDE.md
-     workflow rule: ending the turn ends the session, so run long jobs in the foreground with a timeout, and commit
-     before starting anything long.
+1. **Execution: plan 25** (React corpus): pick, pin, wire into `realworld.py`/`bench.sh`, measure, rank its root
+   causes into plan 19.
+2. **Execution: plan 19** (corpora to zero), re-sample all three corpora first: the rankings are two days and ~30
+   sessions old.
+3. **Execution: plan 19**, second session.
+4. **Planning: JS/JSDoc** (write plan 26). ~1050 tests (157 pass; 17% of all failing tests), most of the spurious
+   TS2304/TS2580. The design question is the binder: CommonJS `module.exports`/`require`, expando assignments
+   (`f.x = 1`, `this.x = 1` in constructors, prototype assignments) are declarations in tsc's binder, and JSDoc
+   types (`@param`, `@type`, `@typedef`, `@template`, `@callback`) must lower into the existing `Ty` machinery rather
+   than a parallel one (TS function expandos, triage.md, share the binder side). Stage it so the first stage is the binder side plus `@type`/`@param`, and measure on the
+   `@checkJs` tests. triage.md's "JS files" item is the starting point.
+5. **Planning: parser recovery** (write plan 27, or decide against it). 613 TS tests (4.5% of the suite) have a
+   spurious TS1xxx, so they aren't typechecked at all and fail every component; ~550 of them are error-recovery
+   fidelity (tsc also reports syntax errors there). Cluster them (`./failstats.py --syntax`, then look past the first
+   error), and decide: can tsc's list recovery (parsingContext, isListElement/isListTerminator,
+   abortParsingListOrMoveToNextToken, skipped tokens) be expressed in our backtracking no-tokenizer parser, or does
+   the parser need a tsc-shaped scanner? Weigh in the parser's ~19% of corpus instructions and the unbounded
+   recursion depth (triage.md "Parser"). A "keep patching" verdict is fine if the clusters say so; say how many tests
+   each cluster is worth.
+6. **Execution: plan 26** stage 1.
+7. **Execution: plan 27** stage 1, or plan 26 stage 2 if plan 27 said not to restructure.
+8. **Execution: suite checker bugs**, one session, plan-19 style but on the suite: sample `./displaydiff.py`'s
+   `other` bucket (378 TS tests, mostly checker bugs the types baseline shows first) and failstats' single-code
+   buckets (missing TS2322 74 tests, spurious TS2322 71, missing TS2339 56), reduce, fix the tsc rule. Not display
+   polish: skip clusters that are only printing.
+9. **Perf check-up**: `./bench.sh` with the React corpus; tsc corpus wall has drifted 0.67 -> ~0.8 s since the last
+   perf session. Profile the corpus tsgo is closest on, fix what's cheap, update `measurements.md`.
+10. **Triage.**
+11. **Insights.**

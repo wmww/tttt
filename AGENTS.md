@@ -37,6 +37,8 @@ You're given a plan file (or in some cases just a specified task) and you execut
 You're in charge of draining triage.md and otherwise maintaining the repo. Validate and write up bugs, research and write plans, update todo.md based on new information, delete or consolidate old files, etc.
 
 ## Workflow
+- **Ending your turn ends the session**: nothing wakes you up again. Never end a turn waiting on a background job; run long jobs (`findcrash.py`, `bench.sh`, full suites) in the foreground with a timeout, and commit before starting anything long.
+- `todo.md` has a fixed number of sessions before the next insights session. Don't insert sessions ahead of it; new work goes into plans, triage.md, or after the insights entry, which the next insights session reorders.
 - Commit at the end of every session. Commit messages should be a summary of what you did and what happened, generally a paragraph or two. Include doubts and things that went wrong, these will be helpful later.
 - Don't use feature branches. If you change branch, always change back by end of session.
 - There is no strict chain of command or scoping of agents. An insights agent may write some code, an execution agent may edit vision.md. The structure is just to keep everyone focused on what's usually most useful to them.

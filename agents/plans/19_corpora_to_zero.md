@@ -1,4 +1,10 @@
-# Plan 19: the modern corpora to zero (loop, like plan 08)
+# Plan 19: the corpora to zero (loop, like plan 08)
+
+**Status 2026-09-26 (insights after plan 23)**: type-fest 168 (TS2345 102, TS2344 30, TS2322 13, TS2589 13, TS2578 6),
+valibot 164 (TS2578 46, TS2344 27, TS2322 26, TS2339 24, TS2345 15, TS18046 7, TS2589 6). Nobody has worked these
+since R9 (~30 sessions of suite work): the rankings below are from 2026-09-24 and must be re-sampled first. Plan 25
+adds a React corpus whose root causes join this plan; from then on it covers all corpora. The rise from 142 to 168 in
+type-fest is TS2344 on type references exposing evaluation bugs (triage.md): those are this plan's too.
 
 `./realworld.py --corpus valibot` and `--corpus type-fest` (tsc 5.8 reports 0 on both; tsgo only 2 TS2554 in valibot
 under its different moduleResolution). Work them down root cause by root cause, suite and the tsc corpus

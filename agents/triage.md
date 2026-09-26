@@ -139,7 +139,7 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - Permissive instantiation for conditional types is missing (`ty_conditional_resolve` defers where tsc picks the
   false branch); a flat `TyMapper` can't say "every type parameter -> any". Now costs `reactHOCSpreadprops` (React's LibraryManagedAttributes
   over `ComponentClass<P>`: tsc resolves it to the false branch). Plan-worthy: a wildcard type + cached permissive
-  instantiation, see plan 22 Progress.
+  instantiation, the plan 22 file (deleted, git history) had no more on it. Relevant to plan 25's React corpus.
 - TS function expandos (`function f() {}; f.defaultProps = ...`) now cost `tsxStatelessComponentDefaultProps` (React's
   Defaultize never sees `defaultProps`). tsc: binder bindSpecialPropertyAssignment for function symbols, members in
   resolveAnonymousTypeMembers. Deserves a small plan (TS subset of JS expandos). Also the biggest part of plan 21's
@@ -349,6 +349,9 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - The JS-only codes (TS8002 132/12, TS8006, TS8010) belong to the JS plan; TS5055 (emit paths) is out of scope.
 
 ## Harness and tools
+- `error.c`: "Error added with invalid span: TS2511" (abstract class instantiation) in 15 tests (abstractClassInLocalScope,
+  classAbstract*, newAbstractInstance*), and TS2503/TS2304/TS2552 for `_` in one test (`./failstats.py`'s top
+  messages, 2026-09-26). A span computed from the wrong node or file.
 - `@baselineFile`, `@fullEmitPaths` are ignored. Bad option values are ignored (tsc's harness throws).
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there.
   `./filetest.sh` on a multi-file probe shows the comment lines before the first `// @filename` as a file of their
