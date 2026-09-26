@@ -1533,6 +1533,15 @@ Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
     return ret;
 }
 
+// What an instantiation makes of `O[K]`: like ty_indexed(), but a non-generic access that finds nothing is unknown
+// (tsc's getIndexedAccessType without an access node; the error was the declaration's to report): falso's
+// `O['length'] extends number ? T[] : T` with `O = { withAccents: false }` takes the false branch
+Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index) {
+    Ty const* ret = ty_indexed(me, object, index);
+    if (ret->kind != TY_INDEXED || is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return ret;
+    return my intrinsics[TY_UNKNOWN_];
+}
+
 // `x!`: the type without null and undefined. TODO: tsc intersects a type variable with `{}` under strictNullChecks
 Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
     if (ty->flags & TYF_NULLABLE) return ty_intrinsic(me, TY_NEVER);

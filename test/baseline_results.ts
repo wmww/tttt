@@ -8273,7 +8273,7 @@ const baselines = {
     'declarationEmitIsolatedDeclarationErrorNotEmittedForNonEmittedFile': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitJsReExportDefault': {
         errors: true,
@@ -17008,7 +17008,7 @@ const baselines = {
     'indexSignaturesInferentialTyping': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexTypeCheck': {
         errors: false,
@@ -20703,7 +20703,7 @@ const baselines = {
     'limitDeepInstantiations': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'listFailure': {
         errors: true,

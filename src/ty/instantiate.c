@@ -525,7 +525,7 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             );
 
         case TY_INDEXED: {
-            Ty const* ret = ty_indexed(
+            Ty const* ret = ty_indexed_instantiated(
                 me,
                 ty_instantiate(me, ty->indexed.object, mapper),
                 ty_instantiate(me, ty->indexed.index, mapper)

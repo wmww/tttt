@@ -768,6 +768,7 @@ bool ty_templates_definitely_unrelated(Ty const* source, Ty const* target);
 bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty const** out);
 Ty const* ty_template_literal_for_constraint(Checker* me, Ty const* source, Ty const* constraint);
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index);
+Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index);
 Ty const* ty_conditional(
     Checker* me, Ty const* check, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
     Ty const* root, TyMapper const* mapper, // null for a root
