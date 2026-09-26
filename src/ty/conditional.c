@@ -157,11 +157,28 @@ static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {
     return ty_cond_branch_type(me, &copy);
 }
 
+// `[T] extends [X]`: tuples of the same arity (no optional or rest elements) where some element of the check type is
+// generic are deferred like a generic check type (tsc's isDeferredType with checkTuples)
+static bool is_deferred_tuple_check(Checker* me, Ty const* check_type, Ty const* extends) {
+    TupleShape const* check_shape = ty_tuple_shape(check_type);
+    TupleShape const* extends_shape = ty_tuple_shape(extends);
+    if (!check_shape || !extends_shape || check_shape->arity != extends_shape->arity) return false;
+    if (check_type->kind != TY_REFERENCE) return false; // (the empty tuple is its own target)
+    for (u32 i = 0; i < check_shape->arity; i++) {
+        if (check_shape->flags[i] || extends_shape->flags[i]) return false;
+    }
+    TyList elements = ty_reference_args(me, check_type);
+    for (u32 i = 0; i < check_shape->arity && i < elements.len; i++) {
+        if (ty_is_generic_index(elements.data[i]) || ty_is_generic_object(me, elements.data[i])) return true;
+    }
+    return false;
+}
+
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
     TyCondBranch const* if_false
 ) {
-    if (ty_is_generic_index(check_type)) return nullptr;
+    if (ty_is_generic_index(check_type) || is_deferred_tuple_check(me, check_type, extends)) return nullptr;
     if ((check_type->flags | extends->flags) & TYF_ERROR) return ty_intrinsic(me, TY_ERROR);
 
     TyMapper const* mapper = nullptr;

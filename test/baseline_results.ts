@@ -63548,7 +63548,7 @@ const baselines = {
     'variance': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypeAsyncFunctionAwaitOperand': {
         errors: false,
