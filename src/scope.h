@@ -178,6 +178,9 @@ typedef struct Symbol {
     bool is_global_this;
     bool is_shorthand_module; // `declare module "m";`: every import from it is any
     bool is_placeholder; // Stands for something that couldn't be resolved: everything looked up in it is any
+    // A placeholder for what an alias couldn't resolve to (tsc's unknownSymbol, of the error type), not for an import
+    // of a shorthand ambient module (any)
+    bool is_unresolved;
     // The `default` export of a module (named like its first declaration, `export default class A` is `A`)
     bool is_default_export;
     // The local `A` of `export default class A`, which has no meaning of its own: the default export (tsc's

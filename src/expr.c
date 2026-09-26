@@ -2894,3 +2894,19 @@ bool expr_is_require_call(Expr const* me) {
     return my tag == EXPR_CALL && !my call->uses_new && vec_expr_size(&my call->args) == 1 &&
         expr_is_plain_identifier(&my call->callable, "require");
 }
+
+CommonJsTarget binary_commonjs_declaration(BinaryOpExpr const* assignment, Span* name_ret) {
+    if (assignment->op != BINARY_OP_EQUAL) return COMMONJS_TARGET_NONE;
+    SourceFile const* file = assignment->left.inner_span.source;
+    if (!file || !file->is_commonjs) return COMMONJS_TARGET_NONE;
+    Expr const* value = &assignment->right;
+    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+        value = &value->binary_op->right;
+    }
+    if (value->tag == EXPR_UNARY_OP && value->unary_op->op == UNARY_OP_VOID && value->unary_op->expr.tag == EXPR_LITERAL &&
+        value->unary_op->expr.literal.tag == VALUE_NUMBER && value->unary_op->expr.literal.number == 0
+    ) {
+        return COMMONJS_TARGET_NONE;
+    }
+    return expr_commonjs_target(&assignment->left, name_ret);
+}

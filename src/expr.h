@@ -225,6 +225,9 @@ typedef enum CommonJsTarget {
 } CommonJsTarget;
 // `name_ret` (may be null): the name of the property an EXPORTS_PROPERTY target exports (in the source, no quotes)
 CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret);
+// What an assignment declares, in a CommonJS file (`file` of the assignment): tsc's getAssignmentDeclarationKind, which
+// ignores assignments of `void 0`
+CommonJsTarget binary_commonjs_declaration(struct BinaryOpExpr const* assignment, Span* name_ret);
 // `module.exports` (tsc's isModuleExportsAccessExpression)
 bool expr_is_module_exports(Expr const* me);
 // `require("m")` with a single argument (tsc's isRequireCall without the string literal requirement)

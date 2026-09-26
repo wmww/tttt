@@ -918,7 +918,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, inf, &source, &target)) return;
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
-        if (!param || param->fixed || (source->flags & TYF_ERROR) || (source->flags & TYF_NON_INFERRABLE)) return;
+        if (!param || param->fixed || (source->flags & TYF_NON_INFERRABLE)) return;
         if (inf->priority < inf->hit_priority) inf->hit_priority = inf->priority;
         if (!param->has_priority || inf->priority < param->priority) {
             param->co_len = 0;

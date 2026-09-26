@@ -1,3 +1,4 @@
+#include "source_file.h"
 #include "ty/ty_internal.h"
 #include "statement.h"
 #include "flow.h"
@@ -1070,12 +1071,25 @@ static void check_left_spine(Checker* me, BinaryOpExpr const* binary, ExprCtx ct
     free(spine);
 }
 
+// `exports.x = v`, `module.exports = v` in a CommonJS file: an assignment that declares
+static bool is_commonjs_declaration(BinaryOpExpr const* binary) {
+    return binary_commonjs_declaration(binary, nullptr) != COMMONJS_TARGET_NONE;
+}
+
 static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx ctx) {
     check_left_spine(me, binary, ctx);
     Ty const* left;
     Ty const* right;
     switch (binary->op) {
         case BINARY_OP_EQUAL:
+            if (is_commonjs_declaration(binary)) {
+                // `exports.x = v` declares x: it is what v is (no context but a JSDoc type, tsc's
+                // getContextualTypeForAssignmentDeclaration), and so is the assignment (checkBinaryLikeExpression
+                // gives an assignment declaration the type of its target)
+                right = ty_check_expr(me, &binary->right, nullptr);
+                return ty_expr_type(me, &binary->left);
+            }
+            // fallthrough
         case BINARY_OP_OR_OR_EQUAL:
         case BINARY_OP_AND_AND_EQUAL:
         case BINARY_OP_EH_EH_EQUAL:

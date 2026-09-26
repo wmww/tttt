@@ -1168,7 +1168,7 @@ void scope_add_commonjs_export(Scope* me, Expr* assignment, Span statement) {
 
 static void add_commonjs_export(Scope* me, BinaryOpExpr* op, Span statement) {
     Span name = span_null;
-    switch (expr_commonjs_target(&op->left, &name)) {
+    switch (binary_commonjs_declaration(op, &name)) {
         case COMMONJS_TARGET_NONE:
             break;
         case COMMONJS_TARGET_EXPORTS_PROPERTY:
@@ -1555,6 +1555,9 @@ Symbol* symbol_resolve_alias(Symbol* me) {
         target = my alias->item ?
             binder_new_placeholder(my binder, my alias->item->decl_name, my alias->item->full_span) :
             binder_new_placeholder(my binder, my alias->name, my alias->name);
+        ModuleRef* ref = my alias->item ? my alias->item->module_ref : nullptr;
+        Symbol const* module = ref ? binder_module_of_ref(my binder, ref) : nullptr;
+        target->is_unresolved = !(module && module->is_shorthand_module);
     }
     my alias->target = target;
     my alias->state = ALIAS_DONE;

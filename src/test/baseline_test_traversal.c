@@ -1363,7 +1363,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_BINARY_OP: {
             u32 overrides = ctx->symbol_override_count;
-            if (my binary_op->op == BINARY_OP_EQUAL) commonjs_symbol_overrides(&my binary_op->left, ctx);
+            if (binary_commonjs_declaration(my binary_op, nullptr)) commonjs_symbol_overrides(&my binary_op->left, ctx);
             expr_compile_test_info(&my binary_op->left, ctx);
             while (ctx->symbol_override_count > overrides) {
                 ctx->symbol_override_count--;

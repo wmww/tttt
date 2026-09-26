@@ -5153,7 +5153,7 @@ const baselines = {
     'commonJsIsolatedModules': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commonJsUnusedLocals': {
         errors: true,
@@ -19113,7 +19113,7 @@ const baselines = {
     'jsDeclarationEmitExportAssignedArray': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationEmitExportAssignedFunctionWithExtraTypedefsMembers': {
         errors: true,
@@ -51428,7 +51428,7 @@ const baselines = {
     'jsDeclarationsDocCommentsOnConsts': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsEnumTag': {
         errors: false,
@@ -51513,7 +51513,7 @@ const baselines = {
     'jsDeclarationsExportForms': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsExportFormsErr': {
         errors: false,
@@ -51533,7 +51533,7 @@ const baselines = {
     'jsDeclarationsExportedClassAliases': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsFunctionClassesCjsExportAssignment': {
         errors: true,
@@ -51738,7 +51738,7 @@ const baselines = {
     'jsDeclarationsTypeAliases': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsTypeReassignmentFromDeclaration': {
         errors: true,
@@ -51753,7 +51753,7 @@ const baselines = {
     'jsDeclarationsTypeReferences': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsTypeReferences2': {
         errors: true,
@@ -51823,7 +51823,7 @@ const baselines = {
     'enumTagOnExports2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumTagUseBeforeDefCrash': {
         errors: true,
@@ -60042,7 +60042,7 @@ const baselines = {
     },
     'assignmentToVoidZero1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'assignmentToVoidZero2': {
@@ -60368,7 +60368,7 @@ const baselines = {
     'moduleExportAlias3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportAlias4': {
         errors: true,
@@ -65163,7 +65163,7 @@ const baselines = {
     'circularTypeofWithVarOrFunc': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidTypeOfTarget': {
         errors: false,

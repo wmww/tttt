@@ -826,7 +826,7 @@ static u32 value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
 // of an identifier), aliases are seen through. Everything about a placeholder is any
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     symbol = canonical(me, symbol_for_meaning(symbol, SYMBOL_VALUE));
-    if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, TY_ANY);
+    if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, symbol && symbol->is_unresolved ? TY_ERROR : TY_ANY);
     // `typeof import("./a")`, `import("./a")`, `globalThis`
     if (symbol->is_module || symbol->is_global_this) return ty_namespace_type(me, symbol);
     if (symbol->decl_count > 1 && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) {
