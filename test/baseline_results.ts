@@ -7662,7 +7662,7 @@ const baselines = {
     },
     'declarationEmitBundleWithAmbientReferences': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitBundlerConditions': {
@@ -8567,7 +8567,7 @@ const baselines = {
     },
     'declarationEmitQualifiedAliasTypeArgument': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitReadonlyComputedProperty': {
@@ -9347,7 +9347,7 @@ const baselines = {
     },
     'defaultPropsEmptyCurlyBecomesAnyForJs': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultValueInConstructorOverload1': {
@@ -10642,12 +10642,12 @@ const baselines = {
     },
     'emitBundleWithShebang1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'emitBundleWithShebang2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'emitBundleWithShebangAndPrologueDirectives1': {
@@ -19632,7 +19632,7 @@ const baselines = {
     },
     'jsNoImplicitAnyNoCascadingReferenceErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsPropertyAssignedAfterMethodDeclaration': {
@@ -28032,7 +28032,7 @@ const baselines = {
     },
     'shebangBeforeReferences': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'shebangError': {

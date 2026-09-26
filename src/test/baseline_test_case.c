@@ -1,5 +1,6 @@
 #include "baseline_test_case.h"
 #include "baseline_test_traversal.h"
+#include <strings.h>
 #include "mock_fs.h"
 #include "../tsconfig.h"
 #include "program.h"
@@ -1126,6 +1127,23 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, b
     }
 }
 
+// tsc's harness hides the positions in files whose name matches /lib.*\.d\.ts/i (the libs, tslib.d.ts, a test's
+// own lib.d.ts)
+static bool is_lib_file_name(csview name) {
+    for (isize i = 0; i + 3 <= name.size; i++) {
+        if (tolower((unsigned char)name.buf[i]) != 'l' || tolower((unsigned char)name.buf[i + 1]) != 'i' ||
+            tolower((unsigned char)name.buf[i + 2]) != 'b'
+        ) {
+            continue;
+        }
+        for (isize j = i + 3; j + 5 <= name.size; j++) {
+            if (strncasecmp(name.buf + j, ".d.ts", 5) == 0) return true;
+        }
+        return false;
+    }
+    return false;
+}
+
 static void append_decl(cstr* target, Span span) {
     if (!span_valid(span) || !span.source) {
         return;
@@ -1135,7 +1153,7 @@ static void append_decl(cstr* target, Span span) {
         cstr_append_s(target, span.source->decl_override);
         cstr_append_lit(target, ")");
         return;
-    } else if (cstr_ends_with_sv(&span.source->canonical_path, c_sv("tslib.d.ts"))) {
+    } else if (is_lib_file_name(basename_of(cstr_sv(&span.source->canonical_path)))) {
         cstr_append_d(
             target, DEFAULT_DISPLAY,
             ", Decl(", basename_of(cstr_sv(&span.source->canonical_path)), ", --, --)"
@@ -1180,6 +1198,10 @@ static void append_decl(cstr* target, Span span) {
                 // Skip line comments, going backwards: the comment starts at the first `//` of the line (`///x`)
                 const char* line_start = start - 1;
                 while (line_start > file_start && line_start[-1] != '\n') line_start--;
+                if (line_start == file_start && line_start[0] == '#' && line_start[1] == '!') {
+                    start = file_start; // A shebang is trivia too
+                    break;
+                }
                 for (const char* c = line_start; c + 1 < start; c++) {
                     if (c[0] == '/' && c[1] == '/') {
                         keep_going = true;
