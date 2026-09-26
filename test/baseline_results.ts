@@ -1546,7 +1546,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompat1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13901,12 +13901,12 @@ const baselines = {
         types: true,
     },
     'functionAssignabilityWithArrayLike01(strict=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'functionAssignabilityWithArrayLike01(strict=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25416,7 +25416,7 @@ const baselines = {
         types: true,
     },
     'parseTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64162,7 +64162,7 @@ const baselines = {
     },
     'mappedTypeModifiers': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeOverlappingStringEnumKeys': {
@@ -64188,7 +64188,7 @@ const baselines = {
     'mappedTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypes2': {
         errors: true,
@@ -64241,7 +64241,7 @@ const baselines = {
         types: false,
     },
     'augmentedTypeAssignmentCompatIndexSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

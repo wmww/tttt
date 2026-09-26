@@ -1157,13 +1157,20 @@ static bool index_key_applies(IndexInfo const* source, IndexInfo const* target) 
     return (source->key->flags & TYF_STRING) && (target->key->flags & TYF_NUMBER);
 }
 
-static bool has_inferable_index(Ty const* ty) {
-    if (ty->kind == TY_ANONYMOUS) return true;
+// tsc's isObjectTypeWithInferableIndex: object literal and type literal types, namespaces and enums, but nothing callable
+static bool has_inferable_index(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_ANONYMOUS) {
+        Members const* members = ty_members(me, ty);
+        return !members->call_count && !members->construct_count;
+    }
     return ty->kind == TY_DECLARED &&
         (ty->declared.kind == TY_DECLARED_NAMESPACE || ty->declared.kind == TY_DECLARED_ENUM_OBJECT);
 }
 
-static Ternary index_signatures_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+// `source_is_primitive`: `source` is a primitive's apparent type, which a string `any` index signature doesn't take as is
+static Ternary index_signatures_related(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool source_is_primitive, bool report
+) {
     Members const* target_members = ty_members(me, target);
     if (!target_members->index_count) return TERNARY_TRUE;
     Members const* source_members = ty_members(me, source);
@@ -1174,7 +1181,11 @@ static Ternary index_signatures_related(Checker* me, RelationState* st, Ty const
     Ternary result = TERNARY_TRUE;
     for (u32 i = 0; i < target_members->index_count; i++) {
         IndexInfo const* target_info = &target_members->index[i];
-        if (target_has_string_index && (target_info->value->flags & TYF_ANY)) continue;
+        if (target_has_string_index && (target_info->value->flags & TYF_ANY) && !source_is_primitive &&
+            st->relation != TY_RELATION_STRICT_SUBTYPE
+        ) {
+            continue;
+        }
         // The source's signature for the same key, else one that applies (a string index covers numbers)
         IndexInfo const* source_info = nullptr;
         for (u32 j = 0; j < source_members->index_count && !source_info; j++) {
@@ -1194,7 +1205,7 @@ static Ternary index_signatures_related(Checker* me, RelationState* st, Ty const
                 return TERNARY_FALSE;
             }
             result &= related;
-        } else if (has_inferable_index(source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || (source->flags & TYF_FRESH_OBJECT))) {
+        } else if (has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || (source->flags & TYF_FRESH_OBJECT))) {
             // An object literal type is related if each of its properties the signature applies to is. Not in the strict
             // subtype relation unless it's fresh: `{ [k: string]: X }` is a strict subtype of `{}`, not vice versa
             for (u32 j = 0; j < source_members->prop_count; j++) {
@@ -1584,13 +1595,15 @@ static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source,
 }
 
 static Ternary object_related(
-    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent
+    Checker* me, RelationState* st, Ty const* original, Ty const* source, Ty const* target, bool report, bool source_is_apparent
 ) {
     Ternary result = props_related(me, st, source, target, report, source_is_apparent);
     if (source_is_apparent) report = false;
     if (result) result &= signatures_related(me, st, source, target, false, report);
     if (result) result &= signatures_related(me, st, source, target, true, report);
-    if (result) result &= index_signatures_related(me, st, source, target, report);
+    bool primitive = source_is_apparent && !(original->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION | TYF_TYPE_PARAM |
+        TYF_DEFERRED | TYF_NON_PRIMITIVE | TYF_ANY | TYF_UNKNOWN | TYF_NEVER));
+    if (result) result &= index_signatures_related(me, st, source, target, primitive, report);
     return result;
 }
 
@@ -2004,7 +2017,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
             if (result) {
                 result &= signatures_related(me, st, apparent, part, false, false);
                 if (result) result &= signatures_related(me, st, apparent, part, true, false);
-                if (result && !(is_tuple(apparent) && is_tuple(part))) result &= index_signatures_related(me, st, apparent, part, false);
+                if (result && !(is_tuple(apparent) && is_tuple(part))) result &= index_signatures_related(me, st, apparent, part, false, false);
             }
         }
         ty_buf_drop(&seen);
@@ -2660,14 +2673,14 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
             for (u32 i = 0; i < parts.len && !some; i++) {
                 Ty const* part = apparent_type(me, parts.data[i]);
                 if (!(part->flags & TYF_OBJECT)) continue;
-                some = kind == 2 ? index_signatures_related(me, st, part, target, false) :
+                some = kind == 2 ? index_signatures_related(me, st, part, target, false, false) :
                     signatures_related(me, st, part, target, kind == 1, false);
             }
             result &= some;
         }
         return result;
     }
-    return object_related(me, st, apparent, target, report, apparent != source);
+    return object_related(me, st, source, apparent, target, report, apparent != source);
 }
 
 // Deep nesting (tsc's isDeeplyNestedType)

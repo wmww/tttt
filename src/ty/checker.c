@@ -1564,6 +1564,9 @@ Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
 Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index) {
     Ty const* ret = ty_indexed(me, object, index);
     if (ret->kind != TY_INDEXED || is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return ret;
+    // (Only if it is this access that stayed deferred: a property whose type is an indexed access, `{ a: U["x"] }["a"]`,
+    // resolved fine)
+    if (is_generic_operand(me, ret->indexed.object, 0) || is_generic_operand(me, ret->indexed.index, 0)) return ret;
     return my intrinsics[TY_UNKNOWN_];
 }
 

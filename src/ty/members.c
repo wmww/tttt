@@ -1116,19 +1116,39 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
     MappedInfo const* mapped = members->mapped;
     if (!mapped) return members;
     Ty const* constraint = mapped->constraint;
-    if ((constraint->flags & TYF_ANY) || ty_is_generic_index(constraint)) return expand_generic_homomorphic(me, members);
+    if (ty_is_generic_index(constraint)) return expand_generic_homomorphic(me, members);
     Ty const* const* keys;
     u32 key_count;
     union_members(&constraint, &keys, &key_count);
     Ty const** member_keys = nullptr;
-    if (mapped->name_type && mapped->keyof_constraint && mapped->modifiers_type && (mapped->modifiers_type->flags & TYF_OBJECT)) {
-        // `[K in keyof T as N<K>]` goes by the members of T (tsc's forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType):
-        // a string index is the key `string` alone, and the property names aren't absorbed by it like in `keyof T`
-        Members const* source = ty_members(me, mapped->modifiers_type);
-        member_keys = arena_new_n(&my arena, Ty const*, source->prop_count + source->index_count);
+    Ty const* keyed = mapped->modifiers_type;
+    bool keyed_intersection = keyed && keyed->kind == TY_INTERSECTION && !(keyed->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+    if (mapped->keyof_constraint && keyed && ((keyed->flags & TYF_OBJECT) || keyed_intersection)) {
+        // `[K in keyof T]` goes by the members of T (tsc's forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType):
+        // a string index is the key `string` alone, and the property names aren't absorbed by it like in `keyof T`.
+        // Of an intersection, each member's (tsc's are the intersection's properties and index infos)
+        TyList parts = keyed_intersection ? keyed->composite.types : (TyList){ .data = &keyed, .len = 1 };
+        u32 cap = 0;
+        for (u32 p = 0; p < parts.len; p++) {
+            Ty const* part = ty_apparent_type(me, parts.data[p]);
+            if (!(part->flags & TYF_OBJECT)) continue;
+            Members const* source = ty_members(me, part);
+            cap += source->prop_count + source->index_count;
+        }
+        member_keys = arena_new_n(&my arena, Ty const*, cap ? cap : 1);
         key_count = 0;
-        for (u32 i = 0; i < source->prop_count; i++) member_keys[key_count++] = ty_prop_key_literal(me, source->props[i]);
-        for (u32 i = 0; i < source->index_count; i++) member_keys[key_count++] = source->index[i].key;
+        for (u32 p = 0; p < parts.len; p++) {
+            Ty const* part = ty_apparent_type(me, parts.data[p]);
+            if (!(part->flags & TYF_OBJECT)) continue;
+            Members const* source = ty_members(me, part);
+            for (u32 i = 0; i < source->prop_count + source->index_count; i++) {
+                Ty const* key = i < source->prop_count ? ty_prop_key_literal(me, source->props[i]) :
+                    source->index[i - source->prop_count].key;
+                bool seen = false;
+                for (u32 j = 0; j < key_count && !seen; j++) seen = member_keys[j] == key;
+                if (!seen) member_keys[key_count++] = key;
+            }
+        }
         keys = member_keys;
     }
     if (mapped->name_type) {
