@@ -38,7 +38,7 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **A React corpus is the next oracle (plan 25, done: `--corpus react`).** It answers plan 22's open question: the suite's JSX tests
   are hand-written namespaces, real React is `@types/react` overloads, `LibraryManagedAttributes`, HOCs and hooks'
   inference, and it's the benchmark where tsgo is weakest. Its root causes join plan 19.
-- **JS/JSDoc starts now: planning in this window, first stage right after.** 892 of the 5338 failing tests (17%)
+- **JS/JSDoc starts now: planned (plan 26, `./jsstats.py`), first stage right after.** 892 of the 5338 failing tests (17%)
   are JS, and they are the source of most spurious TS2304/TS2580. It's a real part of what tsc checks
   (`checkJs` projects, mixed code bases), and its binder side (CommonJS exports, expando assignments as
   declarations) is foundational, so it must be designed rather than trickled in.

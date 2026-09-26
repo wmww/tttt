@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, JS baseline for plan 26 (`./jsstats.py`, at d8ab92a)
+1049 JS tests, **160 pass**, 889 fail. Failing tests by category (only / involved): CommonJS 87 / 211, expandos & JS
+classes 72 / 255, basic JSDoc 113 / 421, other JSDoc tags 13 / 145, JS leniency 5 / 87, JS syntax diagnostics 42 / 162,
+emit 16 / 39, `.ts`-only 27 / 38, unclassified 90. Cumulative upper bounds: CommonJS + expandos 181, + basic JSDoc
+408, + leniency 464, + syntax 577, + other tags 722.
+
 ## 2026-09-26, plan 19 session 2 (TS7053, R16, type-fest reductions)
 Suite 8234 -> **8258 / 13540** full (errors 10011 -> 10029, symbols 11849 -> 11851, types 10025 -> 10035), no
 component lost. Corpora: tsc 0, **react 3 -> 1**, **type-fest 116 -> 53**, **valibot 98 -> 61**. `./bench.sh` not

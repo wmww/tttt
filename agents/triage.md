@@ -13,14 +13,10 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   ConditionalPickDeep, `Pick`), `ReadonlyDeep<JsonValue>` runs into TS2589 (and the TS2589 lands on the next unrelated
   assignability check), forcing declared types in statement order produced `Uppercase<any>` in the DelimiterCase
   family. Worth a plan (insights to schedule): the probes are in `test/probes/plan19/typefest/`.
-- **JS files: JSDoc types, CommonJS**. `.js` files load only with `allowJs`, semantic diagnostics in them only with
-  `checkJs`/`@ts-check` (`SourceFile.unchecked`, `error_ctx_remove_unchecked`), so ~900 `@allowJs` tests mostly fail
-  *quietly*: they need JSDoc types (`@param`, `@type`, `@typedef`), `module.exports` / `require` as declarations,
-  expando assignments (`f.x = 1`, `this.x = 1`, prototype assignments), TS2306 on CommonJS files that aren't modules.
-  Needs its own plan; JSDoc is big. `check_access()` still lets JS files through. It's also most of the spurious
-  TS2304, the biggest spurious code (2666 in 628 tests, 135 tests fail their errors on it alone; 2026-09-23): the
-  names tttt can't find are `module` (116 tests, 94 of them in .js files), `require` (70), `exports` (28); then JSX
-  names (`div`, `className`) and keywords after bad recovery (`with`, `await`, `yield`, `public`).
+- **JS files**: planned, `agents/plans/26_js_jsdoc.md`. What's left here is the part of spurious TS2304 that isn't
+  JS (JSX names like `div`/`className`, keywords after bad recovery: `with`, `await`, `yield`, `public`), and JSON
+  modules (`requireOfJsonFile*`, ~14 tests: `import x = require("./b.json")` with `resolveJsonModule`), which
+  `./jsstats.py` counts as JS but plan 26 doesn't cover.
 - **Syntax gaps** (after plan 14: ~700 tests still have a spurious syntax error, `./failstats.py --syntax`): JSX
   (plan 22; `./failstats.py --jsx`); recovery fidelity shapes (`''`, `'};'`,
   `'{'`, `'];'`), among them parameter-list recovery after `a = yield =>` (tsc: "',' expected" and the function
