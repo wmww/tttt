@@ -180,8 +180,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   - `getContainersOfSymbol` without the alternative containing modules (`getAlternativeContainingModules`: other
     modules that re-export the symbol) and without the `firstVariableMatch` (a variable whose type is the container's,
     only with meaning Value), and without the export='d-member-of-an-ambient-module case.
-  - `export default class C` is one symbol named `C` in tttt, in the exports as `default`; `export_name()` gives it tsc's
-    name (`default`) for lookups and printing. `import("m")` specifiers are `module_name_for_error()`'s path, not
+  - A module's `default` export symbol is named like its first named declaration (`C` for `export default class C`,
+    tsc: `default`); `export_name()` gives it tsc's name for lookups and printing. `import("m")` specifiers are `module_name_for_error()`'s path, not
     tsc's getSpecifierForModuleSymbol (relative from the enclosing file, `node_modules` rules).
   - No accessibility cache (tsc's `accessibleChainCache`): each lookup walks the tables. Test-only (error messages
     have no enclosing scope), and the suite time didn't move.
@@ -203,7 +203,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   Unexplained; revisit if a lib `__index` ever shows up.
 - Declaration order (`symbol_declaration_spans()`): each block's function declarations first (tsc's
   bindEachFunctionsFirst), by the scope recorded in `SymbolDecl.block`; declarations without one (aliases, lib-merged
-  type parameters) group by file. Lib file order (`SymbolConstructor` in lib.es2015.iterable before lib.es2015.symbol)
+  type parameters) group by file. `block_add_names()` binds them first too now (plan 23), so this reordering may be
+  mostly redundant; not re-checked. Lib file order (`SymbolConstructor` in lib.es2015.iterable before lib.es2015.symbol)
   isn't tsc's.
 
 ## Missing checks (plan 15, retired: `unused.c`, `ty/check.c`, `ty/helpers.c`, `statement.c`, `class_decl.c`)
@@ -292,8 +293,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   time a program touches it.
 - `identifier_expr_lookup_names`: `arguments` has no symbol (`IdentifierExpr.is_arguments`, typed `IArguments` by
   name in `ty_identifier_reference_type`).
-- `scope_export_default`: a second default export that means something else (interface + value) is dropped instead of
-  merged. `resolve_alias_target`: TS1192 is only suppressed for declaration files under
+- `scope_declare_default_local()`: a compatible local declared *before* `export default function A` (`namespace A {}`)
+  keeps the name `A` for itself; tsc resolves `A` to the default export for the meanings it has. `resolve_alias_target`: TS1192 is only suppressed for declaration files under
   `allowSyntheticDefaultImports`; TS2303 (circular alias) and TS2308 (ambiguous `export *`) are not reported.
 - **Parallelism contract audit** (the contract is in `documentation.md`, "Resolve names"), what still writes to shared
   state:
@@ -314,11 +315,21 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   `exportSymbol` stub). TS2440 against an exported local is special-cased in `binder_link`, TS2395 (mixed exported
   and local declarations) is a pass of its own in `scope.c`; `export { b }` of a local that is also declared exported
   doesn't show the merged declarations (mergedDeclarationExports).
-- `block_is_instantiated`: syntactic; an `export { x }` always instantiates a namespace, a const enum does too
-  (for the symbol; the TS7027 rules ask without const enums unless `preserveConstEnums`).
-- Function declarations in blocks under sloppy mode (tsc's block-scoped-in-strict-mode rules): not done.
+- `block_is_instantiated`: syntactic. `export { x }` looks `x` up through `Scope.block` of the enclosing scopes
+  (`alias_target_state`), but a namespace found there is judged with the outer chain of the namespace being checked,
+  not its own; cycles are cut by depth (16) rather than tsc's visited map.
 - Class and interface *members* are not symbols (`Prop` has the identity the checker needs); duplicate member
   diagnostics come from a checker pass over the members (`ty_check_object_type_duplicate_members`, see below).
+  `ty_check_class_duplicate_members` replays tsc's binder for the static side, sharing a table with the exports of
+  namespaces merged with the class (per class declaration, in the merged symbol's declaration order), and
+  `object_bind_members` (expr.c) does the same for object literals. Both are check-time imitations of binder
+  conflicts: a namespace export that conflicts with a static member still sits in the exports and shows up in
+  `typeof C` (tsc keeps only the first).
+- `scope_export_default_expr`: the parser's statement spans end before the `;`, tsc's include it; patched there by
+  looking for a `;` after the span (TS2528/TS2323 on `export default {...};`). Other statement-span errors (TS7027)
+  may have the same off-by-one.
+- `declare_symbol`: a declaration named like one of tttt's builtin type symbols (`class number`) gets a detached
+  symbol when it conflicts (tsc has no symbol for the keyword), so a value `new number()` doesn't resolve.
 - `symbol_table_collect` allocates; `ty_namespace_type` members and `extend_export_stars` go through it.
 - One test logs "Declaration B acquired multiple times" (a node whose names get added twice; not found yet).
 - `check_access` reports TS2339 on modules too now (`import * as ns; ns.missing`): where module resolution picks the
@@ -737,7 +748,7 @@ Checker gaps marked in the code, by function:
   loses `readonly`. `append_qualified_name`: always fully qualifies (the traversal has the accessibility walk, error
   messages don't).
 - `scope_add_port`: `export as namespace N` never reports TS2686 on use; `export` inside a namespace body is dropped
-  silently instead of TS1194. `scope_default_export_table`: default export outside a module isn't diagnosed (TS1319).
+  silently instead of TS1194. `scope_export_default_expr`/`scope_init_declaration`: a default export outside a module isn't diagnosed (TS1319).
 - `ty_identifier_reference_type`: a bare `this` where nothing declares one is `undefined` (tsc: `typeof globalThis`
   or implicit any).
 - `prop_type` (ty/members.c): an in-flight (cyclic) property type is the error type silently, no TS2502.

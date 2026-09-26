@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-26, plan 23 (symbol merging)
+Suite 8139 -> **8202 / 13540** full (errors 9901 -> 9980, symbols 11791 -> 11832, types 9980 -> 9990), nothing lost.
+Tests failing on TS2300: 60 -> 51 (the rest: `@pretty` output, parser gaps), TS2528 13 -> 2, TS2323 10 -> 2, TS2813/TS2814
+16 -> 0 (the remaining ones are JS). Corpora unchanged: tsc 0, type-fest 168, valibot 164; `./bench.sh` not rerun
+(binder-level changes only, realworld wall times unchanged).
+
 ## 2026-09-26, plan 24 (binding pattern types)
 Suite 8066 -> **8139 / 13540** full (errors 9884 -> 9901, symbols 11787 -> 11791, types 9883 -> 9980), nothing lost.
 Corpora unchanged: tsc 0, type-fest 168, valibot 164 (the new destructuring TS2339 found two checker bugs in the tsc

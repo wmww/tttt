@@ -168,7 +168,20 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   (reportUnmatchedProperty's private-name case), TS2806 (set-only private accessor), TS2804/TS18010/TS2300 duplicates
   (privateNameDuplicateField). TS2401/TS2376 (where `super()` must be with initialized properties or parameter
   properties).
-- Duplicate identifiers, merges, default exports: plan 23 (`agents/plans/23_symbol_merging.md`).
+- Leftovers of plan 23 (duplicate identifiers, merges), none of them merge logic:
+  - `@pretty: true` output isn't produced by the harness (14 tests, among them duplicateIdentifierRelatedSpans1-7).
+    Those also want tsc's amalgamated cross-file duplicates: 8 or more conflicting names between two files are one
+    TS6200 per file ("Definitions of the following identifiers conflict...", related TS6201) instead of TS2300s
+    (checker.ts initializeTypeChecker, `amalgamatedDuplicates`).
+  - Parser gaps that show up as spurious TS2300: `class void {}`/`type void = I` (reserved words, tsc TS1005/TS2457
+    recovery), enum members named `1`/`[2]`/`"3"` (TS2452/TS1164: enumErrors, literalsInComputedProperties1, parserEnum5/7),
+    `\u0061` escapes in identifiers (duplicateObjectLiteralProperty), `#z: 3` in an object literal (TS18016,
+    objectLiteralErrors), index signatures with two parameters (TS1096, giant), `import { as as as }`
+    (importSpecifiers1), `this is T` predicates in some positions (typeGuardOfFormThisMember).
+  - TS1049/TS1054 (setter/getter parameter counts) don't exist: computedPropertyNames49/50 fail only on that now.
+  - TS2699 (static `name`/`length`/`prototype`/`caller`/`arguments` vs Function's, staticPropertyNameConflicts,
+    staticPrototypeProperty) doesn't exist.
+  - JS-only buckets (TS2323/TS2528/TS2451 in `module.exports`/`@typedef` tests) wait for JS support.
 - genericRecursiveImplicitConstructorErrors3 (re-probed): all TS2314 are missing there, a spurious TS2355 because the
   erroneous return annotation isn't `any` (tsc's errorType is any-like everywhere), and 4 spurious TS2339. A failed
   type-argument-arity call returns `any` where tsc still resolves a signature. `lower_identifier_internal` doesn't
