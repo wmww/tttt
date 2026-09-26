@@ -10783,7 +10783,7 @@ const baselines = {
     'emitMethodCalledNew': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitOneLineVariableDeclarationRemoveCommentsFalse': {
         errors: true,
@@ -33218,7 +33218,7 @@ const baselines = {
     'vardecl': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'variableDeclarationDeclarationEmitUniqueSymbolPartialStatement': {
         errors: true,
@@ -58283,7 +58283,7 @@ const baselines = {
     'parser645484': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserNotHexLiteral1': {
         errors: true,
@@ -67023,12 +67023,12 @@ const baselines = {
     'objectTypesIdentityWithConstructSignatures2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithConstructSignaturesDifferingParamCounts': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericCallSignatures': {
         errors: true,
@@ -67108,42 +67108,42 @@ const baselines = {
     'objectTypesIdentityWithGenericConstructSignaturesDifferingByConstraints3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericConstructSignaturesDifferingByReturnType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericConstructSignaturesDifferingByReturnType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericConstructSignaturesDifferingTypeParameterCounts': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericConstructSignaturesDifferingTypeParameterNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericConstructSignaturesOptionalParams': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericConstructSignaturesOptionalParams2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericConstructSignaturesOptionalParams3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithNumericIndexers1': {
         errors: true,

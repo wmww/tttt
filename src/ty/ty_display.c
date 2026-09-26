@@ -1304,7 +1304,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         if (type_members && type_members->call_count && !type_members->prop_count) {
             // Methods print once per signature
             for (u32 j = 0; j < type_members->call_count; j++) {
-                display_prop_name(me, d, prop->name);
+                // (A method named `new` is quoted: it would read as a construct signature)
+                if (csview_equals(atom_sv(prop->name), "new")) out_lit(d, "\"new\"");
+                else display_prop_name(me, d, prop->name);
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
                 display_signature(me, d, type_members->call[j], ": ", false);
                 out_lit(d, "; ");
