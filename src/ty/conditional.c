@@ -200,11 +200,27 @@ static bool is_deferred_tuple_check(Checker* me, Ty const* check_type, Ty const*
     return false;
 }
 
+// A mapped type whose keys aren't known yet, or an intersection with one (the rest of tsc's isGenericObjectType; type
+// variables are ty_is_generic_index()'s)
+static bool is_generic_mapped(Checker* me, Ty const* ty, u32 depth) {
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || depth > 8) return false;
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (is_generic_mapped(me, ty->composite.types.data[i], depth + 1)) return true;
+        }
+        return false;
+    }
+    return ty->kind == TY_ANONYMOUS && ty_members(me, ty)->mapped != nullptr;
+}
+
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
     TyCondBranch const* if_false
 ) {
-    if (ty_is_generic_index(check_type) || is_deferred_tuple_check(me, check_type, extends)) return nullptr;
+    // (tsc's isDeferredType of the check type: `Required<T> extends {}` waits for T)
+    if (ty_is_generic_index(check_type) || is_generic_mapped(me, check_type, 0) || is_deferred_tuple_check(me, check_type, extends)) {
+        return nullptr;
+    }
     if ((check_type->flags | extends->flags) & TYF_ERROR) return ty_intrinsic(me, TY_ERROR);
 
     TyMapper const* mapper = nullptr;

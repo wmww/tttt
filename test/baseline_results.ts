@@ -20918,7 +20918,7 @@ const baselines = {
     'mappedTypeNoTypeNoCrash': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'mappedTypeNotMistakenlyHomomorphic': {
         errors: false,
