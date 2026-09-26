@@ -491,7 +491,7 @@ const baselines = {
         types: true,
     },
     'allowImportClausesToMergeWithTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42821,24 +42821,24 @@ const baselines = {
         types: true,
     },
     'defaultExportsCannotMerge01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'defaultExportsCannotMerge02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'defaultExportsCannotMerge03': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'defaultExportsCannotMerge04': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportAndImport-es5-amd': {
         errors: true,
@@ -42981,7 +42981,7 @@ const baselines = {
         types: true,
     },
     'multipleDefaultExports03': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

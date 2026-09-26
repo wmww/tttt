@@ -758,6 +758,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         symbol->name_span = props.name;
         symbol->is_default_export = true;
         symbol->referenced = SYMBOL_ANY_MEANING;
+        symbol->parent = scope->container;
     } else if (!merged) {
         // Like in tsc only exports have a parent: a local of a namespace is just `x`, not `N.x`
         if (scope->container && table == scope->container->exports) symbol->parent = scope->container;
@@ -768,26 +769,29 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
             symbol->function = scope->function;
         }
     }
-    if (props.default_export && span_valid(props.name)) scope_declare_default_local(scope, symbol, props.name, excludes);
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = props.kind, .flags = includes, .node = props.node, .name = props.name, .full = props.full, .block = scope,
     });
+    if (props.default_export && span_valid(props.name)) scope_declare_default_local(scope, symbol, props.name, excludes);
     if (includes & (SYMBOL_NAMESPACE_MODULE | SYMBOL_VALUE_MODULE | SYMBOL_ENUM)) symbol_ensure_exports(symbol);
     *ret = symbol;
 }
 
-// `export default class A`: `A` names the module's `default` symbol locally (tsc declares a local symbol whose
-// exportSymbol is the default, and resolves `A` to the default when it has the meaning looked for)
+// `export default class A`: a local `A` without meanings of its own, which conflicts with other local declarations of
+// `A` like tsc's (the local symbol of declareModuleMember, only a value's has ExportValue). Looking `A` up finds the
+// default export, see symbol_default_export_local_name()
 static void scope_declare_default_local(Scope* me, Symbol* symbol, Span name, u32 excludes) {
-    u64 hash = symbol_name_hash(name.sv);
-    Symbol* existing = symbol_table_get_own(&my locals, name.sv, hash);
-    if (!existing) {
-        symbol_table_insert(&my locals, &my binder->arena, name.sv, hash, symbol);
-    } else if (existing != symbol && existing->flags & excludes) {
-        report_conflicts(my errs, existing, name, symbol->flags, false);
+    bool merged;
+    Symbol* local = declare_symbol(me, &my locals, name.sv, name, SYMBOL_NONE, excludes, false, &merged);
+    if (!merged) {
+        local->name_span = name;
+        local->is_local = true;
+        local->referenced = SYMBOL_ANY_MEANING;
     }
-    // TODO: a compatible local declared first (`namespace A {}` then `export default function A() {}`) keeps the name,
-    // tsc resolves `A` to the default export for the meanings it has
+    if (!local->export_symbol) local->export_symbol = symbol;
+    SymbolDecl decl = symbol->decls[symbol->decl_count - 1];
+    decl.flags = SYMBOL_NONE;
+    symbol_add_decl(local, decl);
 }
 
 // tsc's getDeclarationSpaces (without aliases, which would need resolving)
@@ -821,23 +825,36 @@ void scope_check_export_merges(Scope* me, Span block) {
     for (u32 i = 0; i < my locals.count; i++) {
         Symbol const* local = my locals.entries[i].symbol;
         Symbol const* exported = symbol_table_get(my container->exports, local->name);
-        if (!exported || exported == local) continue;
-        // The exported declarations of this block merge with its local ones (tsc: one local symbol)
-        u32 exported_spaces = 0, local_spaces = 0;
-        for (u32 d = 0; d < exported->decl_count; d++) {
+        if (exported == local) exported = nullptr;
+        if (!exported && !local->export_symbol) continue;
+        // The exported declarations of this block merge with its local ones (tsc: one local symbol), and so do those
+        // of `export default class A` (the local's declarations without flags of their own)
+        u32 exported_spaces = 0, local_spaces = 0, default_spaces = 0;
+        for (u32 d = 0; exported && d < exported->decl_count; d++) {
             if (span_within(exported->decls[d].full, block)) exported_spaces |= declaration_spaces(&exported->decls[d]);
         }
-        for (u32 d = 0; d < local->decl_count; d++) local_spaces |= declaration_spaces(&local->decls[d]);
+        for (u32 d = 0; d < local->decl_count; d++) {
+            if (local->decls[d].flags) local_spaces |= declaration_spaces(&local->decls[d]);
+            else default_spaces |= declaration_spaces(&local->decls[d]);
+        }
         u32 common = exported_spaces & local_spaces;
-        if (!common) continue;
+        u32 common_default = default_spaces & (exported_spaces | local_spaces);
+        if (!common && !common_default) continue;
         Symbol const* symbols[] = { local, exported };
         for (u32 s = 0; s < 2; s++) {
-            for (u32 d = 0; d < symbols[s]->decl_count; d++) {
+            for (u32 d = 0; symbols[s] && d < symbols[s]->decl_count; d++) {
                 SymbolDecl const* decl = &symbols[s]->decls[d];
                 if (s == 1 && !span_within(decl->full, block)) continue;
-                if (!(declaration_spaces(decl) & common) || !span_valid(decl->name)) continue;
-                error_ctx_error_d(my errs, decl->name, 2395, "Individual declarations in merged declaration '", decl->name,
-                    "' must be all exported or all local.");
+                if (!span_valid(decl->name)) continue;
+                u32 spaces = declaration_spaces(decl);
+                if (spaces & common_default) {
+                    error_ctx_error_d(my errs, decl->name, 2652, "Merged declaration '", decl->name,
+                        "' cannot include a default export declaration. Consider adding a separate 'export default ",
+                        decl->name, "' declaration instead.");
+                } else if (spaces & common && (s == 1 || decl->flags)) {
+                    error_ctx_error_d(my errs, decl->name, 2395, "Individual declarations in merged declaration '",
+                        decl->name, "' must be all exported or all local.");
+                }
             }
         }
     }
@@ -1876,6 +1893,16 @@ void scope_report_missing_prefixes(Binder* me) {
     my pending_not_found_count = my pending_not_found_cap = 0;
 }
 
+csview symbol_default_export_local_name(Symbol const* me) {
+    for (u32 i = 0; i < my decl_count; i++) {
+        SymbolDecl const* decl = &my decls[i];
+        bool declaration = decl->kind == SYMBOL_DECL_CLASS || decl->kind == SYMBOL_DECL_FUNCTION ||
+            decl->kind == SYMBOL_DECL_INTERFACE || decl->kind == SYMBOL_DECL_ENUM;
+        if (declaration && span_valid(decl->name)) return decl->name.sv;
+    }
+    return (csview){0};
+}
+
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     u64 hash = symbol_name_hash(name);
     bool from_parameters = false;
@@ -1888,6 +1915,15 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
             if (found && !body_variable && symbol_has_meaning(found, meaning)) return found;
         }
         from_parameters = scope->parameters;
+        if (scope->container && scope->container->is_module && scope->container->exports) {
+            // `A` of `export default class A` (tsc's resolveName)
+            Symbol* found = symbol_table_lookup(scope->container->exports, c_sv("default"), symbol_name_hash(c_sv("default")));
+            if (found && found->is_default_export && symbol_has_meaning(found, meaning) &&
+                csview_equals_sv(symbol_default_export_local_name(found), name)
+            ) {
+                return found;
+            }
+        }
         if (scope->container && scope->container->exports) {
             Symbol* found = symbol_table_lookup(scope->container->exports, name, hash);
             // `export { a }` must not find itself

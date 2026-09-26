@@ -167,6 +167,9 @@ typedef struct Symbol {
     bool is_placeholder; // Stands for something that couldn't be resolved: everything looked up in it is any
     // The `default` export of a module (named like its first declaration, `export default class A` is `A`)
     bool is_default_export;
+    // The local `A` of `export default class A`, which has no meaning of its own: the default export (tsc's
+    // exportSymbol of a local symbol)
+    Symbol* export_symbol;
 
     // Local variables and parameters (symbols one file owns), written by that file's resolve walk: what narrowing
     // inside closures depends on. `function` is the function the variable belongs to (null: top level of a file,
@@ -204,6 +207,9 @@ static inline void const* symbol_find_node(Symbol const* me, SymbolDeclKind kind
 }
 // The type parameters of the (first) class, interface or type alias declaration, null if it has none
 Generic const* symbol_type_generic(Symbol const* me);
+// tsc's getLocalSymbolForExportDefault: the local name of a module's `default` export (that of its first named
+// declaration), empty if it has none
+csview symbol_default_export_local_name(Symbol const* me);
 // Where an error about the declaration goes: its name, the first token of a nameless one
 Span symbol_decl_error_span(SymbolDecl const* decl);
 // The full span of every declaration

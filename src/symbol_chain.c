@@ -231,7 +231,7 @@ static bool try_locals_with_exports(
 ) {
     SymbolTable const* locals = scope_table->table;
     SymbolTable const* exports = scope_table->exports;
-    if (is_accessible(me, symbol, meaning, symbol_table_get(locals, symbol->name), nullptr, false)) {
+    if (is_accessible(me, symbol, meaning, symbol_table_get(locals, export_name(symbol)), nullptr, false)) {
         out->len = 0;
         chain_push(out, symbol);
         return true;
@@ -353,7 +353,7 @@ static bool accessible_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, Sy
 static bool needs_qualification(ChainCtx* me, Symbol const* symbol, u32 meaning) {
     if (!meaning) return false;
     for (u32 i = 0; i < my table_count; i++) {
-        Symbol const* found = symbol_table_get(my tables[i].table, symbol->name);
+        Symbol const* found = symbol_table_get(my tables[i].table, export_name(symbol));
         if (!found) continue;
         found = merged(me, found);
         if (found == merged(me, symbol)) return false;
@@ -374,17 +374,10 @@ static Symbol const* declaring_module(Symbol const* symbol) {
     return module;
 }
 
-// The name tsc's symbol has: `default` for an `export default` declaration (tttt declares it locally under its own
-// name and puts the same symbol in the module's exports as `default`)
+// The name tsc's symbol has: `default` for an `export default` declaration (whose symbol tttt names like the
+// declaration)
 static csview export_name(Symbol const* symbol) {
-    if (!symbol->decl_count) return symbol->name;
-    SourceFile const* file = symbol->decls[0].name.source;
-    if (!file || !file->is_module || !file->scope || !file->scope->container) return symbol->name;
-    SymbolTable const* exports = file->scope->container->exports;
-    if (exports && symbol_table_get(exports, c_sv("default")) == symbol && !csview_equals(symbol->name, "default")) {
-        return c_sv("default");
-    }
-    return symbol->name;
+    return symbol->is_default_export ? c_sv("default") : symbol->name;
 }
 
 // tsc's getAliasForSymbolInContainer
