@@ -19831,7 +19831,7 @@ const baselines = {
         types: true,
     },
     'jsxCallElaborationCheckNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53676,7 +53676,7 @@ const baselines = {
         types: false,
     },
     'tsxSpreadAttributesResolution12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53686,7 +53686,7 @@ const baselines = {
         types: true,
     },
     'tsxSpreadAttributesResolution14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53706,7 +53706,7 @@ const baselines = {
         types: true,
     },
     'tsxSpreadAttributesResolution2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53721,7 +53721,7 @@ const baselines = {
         types: true,
     },
     'tsxSpreadAttributesResolution5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53791,12 +53791,12 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponentOverload4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxStatelessFunctionComponentOverload5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53821,7 +53821,7 @@ const baselines = {
         types: false,
     },
     'tsxStatelessFunctionComponents2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53896,7 +53896,7 @@ const baselines = {
         types: true,
     },
     'tsxUnionElementType6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63586,7 +63586,7 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedStringLiteralsInJsxAttributes02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

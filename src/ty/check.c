@@ -94,8 +94,9 @@ static Error* report_unassignable(
         error = error_ctx_error_s(errs, span_valid(natural_head->span) ? natural_head->span : span, natural_head->ts_code,
             cstr_clone(natural_head->message));
         first_nested = 1;
-    } else if (default_head && natural_head && natural_head->ts_code != 2322) {
-        // Something more specific than "not assignable" (a missing property, say) takes the place of the head
+    } else if (default_head && natural_head && (natural_head->ts_code != 2322 || ty_jsx_skips_head(me, source, target))) {
+        // Something more specific than "not assignable" (a missing property, say) takes the place of the head. (JSX
+        // attributes against `IntrinsicAttributes & P` have no head of their own: what failed inside is it)
         error = error_ctx_error_s(errs, span, natural_head->ts_code, cstr_clone(natural_head->message));
         first_nested = 1;
     } else {

@@ -442,7 +442,6 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         report_missing_constraint(me, st, source, target);
         return;
     }
-    if (ty_jsx_skips_head(me, source, target)) return;
     bool widen = report_widens(me, target);
     Ty const* generalized = widen ? ty_base_type_of_literal(me, source) : source;
     cstr source_str, target_str;
@@ -3202,7 +3201,9 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         st->head_reported = false;
         return result;
     }
-    if (!result && report) report_relation_error(me, st, source, target);
+    // (tsc's reportErrorResults: JSX attributes against `IntrinsicAttributes & P` get no head, unlike an excess
+    // property above)
+    if (!result && report && !ty_jsx_skips_head(me, source, target)) report_relation_error(me, st, source, target);
     return result;
 }
 
