@@ -899,7 +899,7 @@ void ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRel
 Ty const* ty_best_matching_type(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_widened_literal(Checker* me, Ty const* ty);
 // How the source of a failed relation shows in the error: widened unless the target has room for literal types
-cstr ty_report_source_cstr(Checker* me, Ty const* source, Ty const* target);
+void ty_report_pair_cstr(Checker* me, Ty const* source, Ty const* target, cstr* source_out, cstr* target_out); // Both, as a message shows them
 void relation_cache_drop(RelationCache* me);
 // conditional.c
 // Null while the conditional type has to stay deferred
@@ -1236,8 +1236,10 @@ typedef struct TyDisplay {
     bool widen_literals;
     // Where the type is printed from (tsc's enclosingDeclaration): names are qualified as far as needed to be reachable
     // from there (`T` inside namespace N, `N.T` outside, an import's name, `import("a").T` when nothing names it).
-    // Null: always fully qualified, which is what error messages show
+    // Null: the bare name (tsc's lookupSymbolChainWorker without an enclosing declaration: what error messages show),
+    // or fully qualified with `fully_qualified` (tsc's UseFullyQualifiedType, when a source and target print the same)
     struct Scope const* enclosing;
+    bool fully_qualified;
     // The types baseline's `^^^` line: every character printed gets a `^`, or a space where tsc's declaration
     // emitter would have reused a node from the source (`reused`, see display_signature()). Null: not wanted
     cstr* underline;

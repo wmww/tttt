@@ -68,8 +68,8 @@ static Error* report_unassignable(
 ) {
     // The head line is rendered like the elaboration under it: a literal source shows widened unless the target has
     // room for literals
-    cstr source_str = ty_report_source_cstr(me, source, target);
-    cstr target_str = ty_to_cstr(me, target);
+    cstr source_str, target_str;
+    ty_report_pair_cstr(me, source, target, &source_str, &target_str);
     if (head.ts_code == HEAD_SATISFIES.ts_code) {
         Error* error = report_unassignable_with_head(me, source, target, 1360, cstr_d(
             "Type '", source_str, "' does not satisfy the expected type '", target_str, "'."

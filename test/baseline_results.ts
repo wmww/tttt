@@ -1606,17 +1606,17 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1626,7 +1626,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1636,7 +1636,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1651,7 +1651,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1661,7 +1661,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability22': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1671,7 +1671,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability24': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1681,22 +1681,22 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability26': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability27': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability28': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability29': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1706,32 +1706,32 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability30': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability31': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability32': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability33': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability34': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability35': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1741,17 +1741,17 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability37': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability38': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability39': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1761,22 +1761,22 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability40': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability41': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability42': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatability43': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5976,7 +5976,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloads4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -10996,7 +10996,7 @@ const baselines = {
         types: false,
     },
     'enumAssignmentCompat7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11011,7 +11011,7 @@ const baselines = {
         types: true,
     },
     'enumBasics3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11066,7 +11066,7 @@ const baselines = {
         types: false,
     },
     'enumLiteralAssignableToEnumInsideUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12451,7 +12451,7 @@ const baselines = {
         types: true,
     },
     'excessiveStackDepthFlatArray': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13996,7 +13996,7 @@ const baselines = {
         types: true,
     },
     'functionCall7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14581,7 +14581,7 @@ const baselines = {
         types: true,
     },
     'fuzzy': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14651,7 +14651,7 @@ const baselines = {
         types: true,
     },
     'genericArgumentCallSigAssignmentCompat': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15326,7 +15326,7 @@ const baselines = {
         types: false,
     },
     'genericTypeArgumentInference1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18051,7 +18051,7 @@ const baselines = {
         types: true,
     },
     'interfaceAssignmentCompat': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18081,7 +18081,7 @@ const baselines = {
         types: true,
     },
     'interfaceDeclaration3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18206,7 +18206,7 @@ const baselines = {
         types: true,
     },
     'interfacePropertiesWithSameName2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18266,7 +18266,7 @@ const baselines = {
         types: true,
     },
     'internalAliasClassInsideLocalModuleWithoutExportAccessError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26076,7 +26076,7 @@ const baselines = {
         types: true,
     },
     'privateVisibility': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26421,7 +26421,7 @@ const baselines = {
         types: true,
     },
     'qualify': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29156,7 +29156,7 @@ const baselines = {
         types: true,
     },
     'statics': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30281,7 +30281,7 @@ const baselines = {
         types: true,
     },
     'thisBinding': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31881,7 +31881,7 @@ const baselines = {
         types: true,
     },
     'undeclaredMethod': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33211,7 +33211,7 @@ const baselines = {
         types: true,
     },
     'vararg': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48721,7 +48721,7 @@ const baselines = {
         types: true,
     },
     'assignmentToParenthesizedIdentifiers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -50486,12 +50486,12 @@ const baselines = {
         types: true,
     },
     'twoInterfacesDifferentRootModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'twoInterfacesDifferentRootModule2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52801,7 +52801,7 @@ const baselines = {
         types: false,
     },
     'checkJsxChildrenProperty15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53126,12 +53126,12 @@ const baselines = {
         types: true,
     },
     'tsxAttributeResolution11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxAttributeResolution12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53211,7 +53211,7 @@ const baselines = {
         types: false,
     },
     'tsxDefaultAttributesResolution3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53271,7 +53271,7 @@ const baselines = {
         types: true,
     },
     'tsxElementResolution10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53486,7 +53486,7 @@ const baselines = {
         types: true,
     },
     'tsxIntrinsicAttributeErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53561,7 +53561,7 @@ const baselines = {
         types: false,
     },
     'tsxReactComponentWithDefaultTypeParameter3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53666,7 +53666,7 @@ const baselines = {
         types: false,
     },
     'tsxSpreadAttributesResolution10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53811,7 +53811,7 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponentWithDefaultTypeParameter2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61181,7 +61181,7 @@ const baselines = {
         types: true,
     },
     'invalidMultipleVariableDeclarations': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -63321,7 +63321,7 @@ const baselines = {
         types: true,
     },
     'forStatementsMultipleInvalidDecl': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

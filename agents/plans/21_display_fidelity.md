@@ -106,7 +106,7 @@ scopes only (the traversal tracks those), and the symbols baseline prints full c
    "Symbols, tables, scopes"). Decide: keep them (a `Scope*` on each function/block, or on each identifier the resolve
    walk visits), or record them only in the test build (a side table in `baseline_test_traversal`, filled by a second
    resolve-like walk). Resolution from a location must follow tsc's rules (locals before exports, meaning, aliases).
-   Whatever is chosen must not cost the CLI: it doesn't print relative names (error messages are fully qualified).
+   Whatever is chosen must not cost the CLI: it doesn't print relative names (error messages print bare names).
 2. Port getAccessibleSymbolChain + the qualification rules of symbolToString/typeToString (`SymbolFormatFlags`,
    `UseOnlyExternalAliasing`, `import("m")` only when nothing accessible names the module, `globalThis.` for a
    shadowed global, `typeof` chains). Use it for the symbols baseline and in `ty_display.c`.

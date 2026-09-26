@@ -390,15 +390,32 @@ static cstr display_for_report(Checker* me, Ty const* ty, bool widen) {
     return ret;
 }
 
+static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen) {
+    cstr ret = cstr_null;
+    ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen, .fully_qualified = true }, ty);
+    return ret;
+}
+
+// A source and target as messages show them side by side: told apart by their full names if they'd print the same
+// (tsc's getTypeNamesForErrorDisplay)
+static void display_pair(Checker* me, Ty const* source, bool widen, Ty const* target, cstr* source_out, cstr* target_out) {
+    *source_out = display_for_report(me, source, widen);
+    *target_out = display_for_report(me, target, false);
+    if (!cstr_eq(source_out, target_out)) return;
+    c_drop(cstr, source_out, target_out);
+    *source_out = display_fully_qualified(me, source, widen);
+    *target_out = display_fully_qualified(me, target, false);
+}
+
 // Whether a literal source is shown widened: not against `never` (tsc wants `assertNever(x)` errors to show x as is)
 static bool report_widens(Checker* me, Ty const* target) {
     return !(target->flags & TYF_NEVER) && !could_have_singletons(me, target);
 }
 
-cstr ty_report_source_cstr(Checker* me, Ty const* source, Ty const* target) {
+void ty_report_pair_cstr(Checker* me, Ty const* source, Ty const* target, cstr* source_out, cstr* target_out) {
     source = ty_regular(me, source); // Messages see normalised types, like the relation
     bool widen = report_widens(me, target);
-    return display_for_report(me, widen ? ty_base_type_of_literal(me, source) : source, widen);
+    display_pair(me, widen ? ty_base_type_of_literal(me, source) : source, widen, target, source_out, target_out);
 }
 
 // An unconstrained type parameter source could have been constrained to the target (tsc's reportRelationError: unless
@@ -428,8 +445,8 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
     if (ty_jsx_skips_head(me, source, target)) return;
     bool widen = report_widens(me, target);
     Ty const* generalized = widen ? ty_base_type_of_literal(me, source) : source;
-    cstr source_str = display_for_report(me, generalized, widen);
-    cstr target_str = display_for_report(me, target, false);
+    cstr source_str, target_str;
+    display_pair(me, generalized, widen, target, &source_str, &target_str);
     if (target->kind == TY_TYPE_PARAM && !target->param.state->is_this) {
         // What a type parameter target could be (tsc's reportRelationError), below the head reported next
         Ty const* constraint = target;
@@ -1028,8 +1045,8 @@ static Ternary props_related(
             missing_count++;
         }
         if (missing_count) {
-            cstr source_str = display_for_report(me, source, true);
-            cstr target_str = display_for_report(me, target, false);
+            cstr source_str, target_str;
+            display_pair(me, source, true, target, &source_str, &target_str);
             if (missing_count == 1) {
                 cstr name = ty_prop_name_cstr(me, missing[0]);
                 report_line(st, 2741, cstr_d(

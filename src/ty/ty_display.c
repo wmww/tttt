@@ -65,10 +65,11 @@ static bool same_symbol(Checker* me, Symbol const* a, Symbol const* b) {
     return binder_redirect(binder, a) == binder_redirect(binder, b);
 }
 
-// With TyDisplay.enclosing, qualified as far as needed from there (symbol_chain.h), else fully (error messages)
+// With TyDisplay.enclosing, qualified as far as needed from there (symbol_chain.h), else bare or fully qualified (error
+// messages)
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     Symbol const* parent = symbol->parent;
-    if ((!parent && !d.enclosing) || symbol->is_global_this) {
+    if ((!parent && !d.enclosing) || symbol->is_global_this || (!d.enclosing && !d.fully_qualified)) {
         out(d, ty_symbol_display_name(symbol).sv);
         return;
     }
