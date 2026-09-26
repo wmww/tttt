@@ -67278,7 +67278,7 @@ const baselines = {
     'genericCallWithFunctionTypedArguments5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithGenericSignatureArguments': {
         errors: true,

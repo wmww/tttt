@@ -162,6 +162,21 @@ typedef struct Inference {
 } Inference;
 
 void inference_init(Inference* inf, TyList params);
+
+// A generic function nested in a literal argument whose contextual type wants a single non-generic signature (tsc's
+// instantiateTypeWithSingleGenericCallSignature, which applies at any depth of an argument): the first inference pass
+// skips it (SkipGenericFunctions: it is the non-inferrable any-function), the second instantiates it in the context of
+// that signature, which fixes the type parameters the signature's parameters mention (tsc's fixing mapper)
+typedef struct GenericFunctionMode {
+    Signature const* sig; // Null: skip them. Else the call inferring, and its inferences
+    Inference* inf;
+    bool skipped; // Out: one was skipped
+} GenericFunctionMode;
+// An argument checked like that: only object and array literals pass the mode on to their members
+Ty const* ty_check_literal_argument(
+    Checker* me, Expr const* expr, Ty const* contextual, bool is_const, bool skip_sensitive, GenericFunctionMode* mode
+);
+Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* contextual, GenericFunctionMode* mode);
 // tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
 bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth);
 void inference_drop(Inference* inf);

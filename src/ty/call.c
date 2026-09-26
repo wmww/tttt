@@ -29,6 +29,8 @@ typedef struct Arg {
     // A call of a generic function that returns a function (`pipe(box)`): checked in the second pass, when the outer
     // call knows more (tsc's isGenericFunctionReturningFunction under SkipGenericFunctions)
     bool generic_call;
+    // An object or array literal with a generic function in it that the first pass skipped (GenericFunctionMode)
+    bool nested_generic;
 } Arg;
 
 typedef struct Args {
@@ -545,6 +547,35 @@ static Signature const* generic_function_argument(Checker* me, Ty const* arg_typ
     return nullptr;
 }
 
+// Whether the contextual signature of a generic function argument leaves the type parameters its parameters mention
+// unfixed: a rest parameter of type parameter type (tsc's nonFixingMapper)
+static bool contextual_rest_is_variadic(Signature const* contextual) {
+    return contextual->param_count && contextual->params[contextual->param_count - 1].rest &&
+        contextual->params[contextual->param_count - 1].type->kind == TY_TYPE_PARAM;
+}
+
+Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* contextual, GenericFunctionMode* mode) {
+    Signature const* wanted = nullptr;
+    Signature const* generic = generic_function_argument(me, type, contextual, &wanted);
+    if (!generic) return type;
+    if (!mode->sig) {
+        mode->skipped = true;
+        return ty_any_function_type(me);
+    }
+    // HACK: not tsc's higher-order branch (a call returning a function would get the member's type parameters)
+    Inference* inf = mode->inf;
+    TyMapper const* so_far = inference_mapper(me, mode->sig, inf, true);
+    Ty const* wanted_type = ty_signature_type(me, wanted);
+    Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
+    for (u32 j = 0; j < inf->len && !contextual_rest_is_variadic(wanted); j++) {
+        if (!inf->params[j].co_len && !inf->params[j].contra_len) continue;
+        Ty const* param = mode->sig->type_params.data[j];
+        TyMapper const* probe = ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &unknown, .len = 1 });
+        if (fixed_by_type(me, wanted_type, probe, true, 8)) inf->params[j].fixed = so_far->targets[j];
+    }
+    return ty_signature_type(me, ty_instantiate_signature_in_context_of(me, generic, wanted, so_far));
+}
+
 // `contextual`: the contextual type of the call, which the return type is inferred from at a low priority
 // tsc's getSingleCallOrConstructSignature, without other members
 static Signature const* single_call_or_construct(Checker* me, Ty const* ty) {
@@ -577,6 +608,16 @@ static void infer_from_annotated_params(Checker* me, Inference* inf, FunctionImp
         if (i->explicit_optional) source = ty_optional_param_type(me, source);
         infer_types(me, inf, source, target, INFER_PRIORITY_NORMAL);
     }
+}
+
+static bool is_literal_arg(Arg const* arg) {
+    return !arg->spread && !arg->part_of_spread && (arg->expr->tag == EXPR_OBJECT || arg->expr->tag == EXPR_ARRAY);
+}
+
+// The contextual type of a literal argument in the first pass: what the return type says about the type parameters
+// helps type it (a tuple, a literal)
+static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper const* return_mapper) {
+    return param_type && return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
 }
 
 // `*inferred_out`: the type parameters of generic function arguments that the return type is now generic in
@@ -670,15 +711,24 @@ static TyMapper const* infer_type_arguments(
             if (arg->context_sensitive && arg->expr->tag != EXPR_FUNCTION && !arg->spread && !arg->part_of_spread && param_type) {
                 my outer_inference = &self;
                 Ty const* context = return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
-                Ty const* type = ty_check_expr_skipping_sensitive(me, arg->expr, context,
-                    ty_is_const_type_variable(me, param_type, 0));
+                GenericFunctionMode mode = {0};
+                Ty const* type = ty_check_literal_argument(me, arg->expr, context, ty_is_const_type_variable(me, param_type, 0),
+                    true, &mode);
+                arg->nested_generic = mode.skipped;
                 my outer_inference = nullptr;
                 infer_types(me, &inf, type, param_type, INFER_PRIORITY_NORMAL);
             }
             continue;
         }
         my outer_inference = &self;
-        if (return_mapper && !arg->spread && !arg->part_of_spread) {
+        if (is_literal_arg(arg)) {
+            GenericFunctionMode mode = {0};
+            Ty const* param_type = shape_type_at(&shape, i);
+            arg->type = ty_check_literal_argument(me, arg->expr, literal_arg_context(me, param_type, return_mapper),
+                param_type && ty_is_const_type_variable(me, param_type, 0), false, &mode);
+            arg->nested_generic = mode.skipped;
+            any_sensitive |= mode.skipped;
+        } else if (return_mapper && !arg->spread && !arg->part_of_spread) {
             // What the return type says about the type parameters helps type the argument (a tuple, a literal). tsc
             // instantiates the contextual type of each expression as it is asked for, so a function argument (whose
             // parameters are annotated if it gets here) returns into the instantiated return type
@@ -725,8 +775,7 @@ static TyMapper const* infer_type_arguments(
                 }
             }
             // (A rest parameter of type parameter type isn't fixed: tsc's nonFixingMapper)
-            bool variadic = contextual->param_count && contextual->params[contextual->param_count - 1].rest &&
-                contextual->params[contextual->param_count - 1].type->kind == TY_TYPE_PARAM;
+            bool variadic = contextual_rest_is_variadic(contextual);
             TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
             for (u32 j = 0; j < inf.len && !variadic; j++) {
                 if ((inf.params[j].co_len || inf.params[j].contra_len) && fixed_by_argument(me, arg, param_type, sig->type_params.data[j])) {
@@ -735,6 +784,18 @@ static TyMapper const* infer_type_arguments(
             }
             Signature const* instantiated = ty_instantiate_signature_in_context_of(me, generic, contextual, so_far);
             infer_types(me, &inf, ty_signature_type(me, instantiated), param_type, INFER_PRIORITY_NORMAL);
+            continue;
+        }
+        if (arg->nested_generic && !arg->context_sensitive) {
+            if (skip_generic) continue;
+            // Again, now with the generic functions in it instantiated in context
+            GenericFunctionMode mode = { .sig = sig, .inf = &inf };
+            Ty const* param_type = shape_type_at(&shape, i);
+            my outer_inference = &self;
+            arg->type = ty_check_literal_argument(me, arg->expr, literal_arg_context(me, param_type, return_mapper),
+                param_type && ty_is_const_type_variable(me, param_type, 0), false, &mode);
+            my outer_inference = nullptr;
+            infer_from_arg(me, &inf, &shape, args, i);
             continue;
         }
         if (arg->generic_call) {
@@ -764,7 +825,13 @@ static TyMapper const* infer_type_arguments(
         // Until something is inferred, what the contextual type of the call said stands in (tsc's
         // instantiateContextualType: the nonFixingMapper if any inference has candidates, else the returnMapper)
         TyMapper const* context_mapper = !any_candidates && return_mapper ? return_mapper : so_far;
-        arg->type = ty_check_expr(me, arg->expr, param_type ? ty_instantiate(me, param_type, context_mapper) : nullptr);
+        Ty const* context = param_type ? ty_instantiate(me, param_type, context_mapper) : nullptr;
+        if (arg->nested_generic && !skip_generic) {
+            GenericFunctionMode mode = { .sig = sig, .inf = &inf };
+            arg->type = ty_check_literal_argument(me, arg->expr, context, false, false, &mode);
+        } else {
+            arg->type = ty_check_expr(me, arg->expr, context);
+        }
         infer_from_arg(me, &inf, &shape, args, i);
     }
     // A variadic rest parameter takes the remaining arguments as a tuple

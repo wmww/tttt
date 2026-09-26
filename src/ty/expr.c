@@ -31,6 +31,7 @@ typedef struct ExprCtx {
     // Context-sensitive functions are ty_any_function_type(), whatever contains one isn't remembered (tsc's
     // CheckMode.SkipContextSensitive: the first inference pass sees the rest of an object literal argument)
     bool skip_sensitive;
+    GenericFunctionMode* generic_mode; // See GenericFunctionMode: the members of literal arguments
 } ExprCtx;
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx);
@@ -120,6 +121,13 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
         ctx.skip_sensitive = false;
     }
+    if (ctx.generic_mode) {
+        // Literals pass it on, and aren't remembered like this; anything else is a member it may apply to
+        if (expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY) return compute(me, expr, ctx);
+        GenericFunctionMode* mode = ctx.generic_mode;
+        ctx.generic_mode = nullptr;
+        return ty_generic_function_in_context(me, check_with(me, expr, ctx), ctx.contextual, mode);
+    }
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
     LazyMemo* memo = lazy_type_state_peek(lazy);
@@ -144,6 +152,15 @@ Ty const* ty_check_expr(Checker* me, Expr const* expr, Ty const* contextual) {
 // `is_const`: in a const context whatever the contextual type (it was instantiated from a const type parameter)
 Ty const* ty_check_expr_in_const(Checker* me, Expr const* expr, Ty const* contextual, bool is_const) {
     return check_with(me, expr, (ExprCtx){ .contextual = contextual, .is_const = is_const && is_const_context_kind(expr) });
+}
+
+Ty const* ty_check_literal_argument(
+    Checker* me, Expr const* expr, Ty const* contextual, bool is_const, bool skip_sensitive, GenericFunctionMode* mode
+) {
+    return check_with(me, expr, (ExprCtx){
+        .contextual = contextual, .is_const = is_const && is_const_context_kind(expr), .skip_sensitive = skip_sensitive,
+        .generic_mode = expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY ? mode : nullptr,
+    });
 }
 
 // Checked with the context-sensitive functions in it left out: see ExprCtx.skip_sensitive
@@ -1734,7 +1751,10 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* key = name ? ty_prop_name_literal(me, name) : key_type;
             if (key) member_context = contextual_prop_type(me, ctx.contextual, key);
         }
-        ExprCtx member_ctx = { .contextual = member_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive };
+        ExprCtx member_ctx = {
+            .contextual = member_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
+            .generic_mode = ctx.generic_mode,
+        };
         Ty const* type = nullptr;
         bool is_accessor = i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER;
         switch (i->tag) {
@@ -1873,7 +1893,10 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
     u32 count = 0;
     for_each (i, vec_expr, &expr->array) {
         Ty const* element_context = contextual_element_type(me, ctx.contextual, (u32)i_index);
-        ExprCtx element_ctx = { .contextual = element_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive };
+        ExprCtx element_ctx = {
+            .contextual = element_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
+            .generic_mode = ctx.generic_mode,
+        };
         if (i->tag == EXPR_SPREAD) {
             Ty const* operand = ty_expr_type(me, i->spread);
             if (as_tuple) {
