@@ -729,7 +729,8 @@ static cstr replace_all_stars(csview text, csview star) {
 
 static Search resolve_non_relative(State* me, csview name, csview from_dir, int extensions, Found* out);
 
-// tsc's loadModuleFromTargetExportOrImport(): what one target of an exports/imports map leads to
+// tsc's loadModuleFromTargetExportOrImport(): what one target of an exports/imports map leads to. Anything that
+// doesn't resolve lets the next condition or array entry try (the callers make an overall miss final)
 static Search load_target(
     State* me, JsonValue const* target, csview subpath, bool pattern, bool is_imports, csview package_dir,
     int extensions, Found* out
@@ -737,24 +738,24 @@ static Search load_target(
     switch (target->tag) {
         case JSON_STRING: {
             csview text = cstr_sv(&target->string);
-            if (!pattern && subpath.size && !ends_with(text, "/")) return SEARCH_STOP;
+            if (!pattern && subpath.size && !ends_with(text, "/")) return SEARCH_CONTINUE;
             if (!csview_starts_with(text, "./")) {
                 if (is_imports && !csview_starts_with(text, "../") && !csview_starts_with(text, "/")) {
                     // `"#dep": "some-package"`
                     cstr name = pattern ? replace_all_stars(text, subpath) : cstr_d(text, subpath);
                     Search result = resolve_non_relative(me, cstr_sv(&name), package_dir, extensions, out);
                     cstr_drop(&name);
-                    return result == SEARCH_FOUND ? SEARCH_FOUND : SEARCH_STOP;
+                    return result == SEARCH_FOUND ? SEARCH_FOUND : SEARCH_CONTINUE;
                 }
-                return SEARCH_STOP;
+                return SEARCH_CONTINUE;
             }
-            if (has_bad_segment(text, true) || has_bad_segment(subpath, false)) return SEARCH_STOP;
+            if (has_bad_segment(text, true) || has_bad_segment(subpath, false)) return SEARCH_CONTINUE;
             cstr relative = pattern ? replace_all_stars(text, subpath) : cstr_d(text, subpath);
             cstr path = join(package_dir, cstr_sv(&relative));
             bool found = load_package_json_field(me, cstr_sv(&path), extensions, out);
             cstr_drop(&relative);
             cstr_drop(&path);
-            return found ? SEARCH_FOUND : SEARCH_STOP;
+            return found ? SEARCH_FOUND : SEARCH_CONTINUE;
         }
         case JSON_OBJECT:
             for (isize i = 0; i < target->count; i++) {
@@ -765,16 +766,15 @@ static Search load_target(
             }
             return SEARCH_CONTINUE;
         case JSON_ARRAY:
-            if (!target->count) return SEARCH_STOP;
+            if (!target->count) return SEARCH_CONTINUE;
             for (isize i = 0; i < target->count; i++) {
                 Search result = load_target(
                     me, &target->items[i], subpath, pattern, is_imports, package_dir, extensions, out);
-                // An entry that leads nowhere lets the next one try
                 if (result == SEARCH_FOUND) return result;
             }
-            return SEARCH_STOP;
+            return SEARCH_CONTINUE;
         default:
-            return SEARCH_STOP;
+            return SEARCH_CONTINUE;
     }
 }
 
