@@ -798,7 +798,7 @@ BaselineTestCase run_baseline_test_case(
     }
     program_load_automatic_types(program);
     for_each (i, vec_baseline_test_file, &ret.files) {
-        if (!i->source && path_is_script(cstr_sv(&i->path))) {
+        if (!i->source && (path_is_script(cstr_sv(&i->path)) || csview_ends_with(cstr_sv(&i->path), ".json"))) {
             i->source = program_find_source(program, cstr_sv(&i->path));
         }
         if (i->source) {

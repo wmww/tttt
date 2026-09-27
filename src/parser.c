@@ -8245,10 +8245,21 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         // A shebang line is trivia (tsc's scanShebangTrivia)
         while (*p.pos && *p.pos != '\n') p.pos++;
     }
-    parse_source_directives(&p, &source->ast.statements);
-    hop_whitespace(&p);
-
-    parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, &source->ast.statements);
+    if (source->is_json) {
+        // A JSON file is the value of one expression (tsc's parseJsonText), which is what the module is
+        hop_whitespace(&p);
+        Anchor a = anchor(&p);
+        Expr value;
+        if (parse_expr(&p, expr_ctx_null, &value)) {
+            Statement statement = { .tag = STATEMENT_EXPORT_DEFAULT_EXPR, .expr = value, .export_equals = true };
+            statement.span = span_from(a);
+            vec_statement_push(&source->ast.statements, statement);
+        }
+    } else {
+        parse_source_directives(&p, &source->ast.statements);
+        hop_whitespace(&p);
+        parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, &source->ast.statements);
+    }
 
     // Grammar errors tsc's checker reports (checkGrammarModifiers, checkGrammarIndexSignatureParameters,
     // checkGrammarForInvalidQuestionMark...) that the parser is in a better place to report. They don't count as

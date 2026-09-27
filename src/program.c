@@ -239,7 +239,8 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
             }
             break;
         case RESOLVED_JSON:
-            ref->failure = MODULE_REF_IS_JSON;
+            ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+            if (!ref->file) ref->failure = MODULE_REF_IS_JSON;
             break;
         case RESOLVED_NONE:
             if (resolved.json_without_option) {
@@ -499,6 +500,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     }
 
     source_file->is_js = path_is_js(path);
+    source_file->is_json = csview_ends_with(path, ".json");
     source_file->is_jsx = source_file->is_js || csview_ends_with(path, ".tsx");
     source_jsx_pragmas(source_file);
     int check_directive = source_check_directive(cstr_sv(&source_file->contents));
@@ -515,7 +517,8 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     bool node_formats = (my options.module >= MODULE_KIND_NODE16 && my options.module <= MODULE_KIND_NODENEXT) ||
         my options.module_resolution == MODULE_RESOLUTION_NODE16 ||
         my options.module_resolution == MODULE_RESOLUTION_NODENEXT;
-    if (node_formats && !my loading_stdlib) {
+    // (A JSON file has no module format of its own: tsc's getImpliedNodeFormatForFile)
+    if (node_formats && !my loading_stdlib && !source_file->is_json) {
         FileFormat format = module_resolver_file_format(program_resolver(me), cstr_sv(&source_file->canonical_path));
         source_file->is_esm = format.mode == RESOLUTION_MODE_ESM;
         source_file->package_has_type = format.package_has_type;
@@ -526,6 +529,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     }
 
     parse_file(source_file, my errs);
+    if (source_file->is_json) source_file->is_module = true;
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
 

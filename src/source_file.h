@@ -19,7 +19,7 @@ typedef enum ModuleRefSyntax {
 typedef enum ModuleRefFailure {
     MODULE_REF_NOT_FOUND,
     MODULE_REF_IS_JS, // Resolved to JavaScript, without allowJs: `any`, TS7016 under noImplicitAny
-    MODULE_REF_IS_JSON, // Resolved to a .json file: `any` for now
+    MODULE_REF_IS_JSON, // Resolved to a .json file that isn't loaded
     MODULE_REF_JSON_WITHOUT_OPTION, // TS2732
     MODULE_REF_ARBITRARY_EXTENSION, // Resolved to a .d.*.ts file without allowArbitraryExtensions: TS6263
     MODULE_REF_JSX_NOT_SET, // Resolved to a .tsx/.jsx file without `jsx`: TS6142
@@ -73,6 +73,8 @@ typedef struct SourceFile {
     bool has_parse_errors;
     // A .js/.jsx/.mjs/.cjs file: only part of a program with `allowJs`
     bool is_js;
+    // A .json file an import resolved to (resolveJsonModule): one expression, which is what the module is (`export =`)
+    bool is_json;
     // tsc's LanguageVariant.JSX (.tsx and JavaScript files): `<` at the start of an expression is a JSX element, never
     // a type assertion
     bool is_jsx;
