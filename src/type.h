@@ -71,10 +71,12 @@ typedef struct UniqueSymbolDecl {
 } UniqueSymbolDecl;
 
 // The true branches of conditional types a type node is in, innermost first, as tsc's getConditionalFlowTypeOfType
-// walks up to them from the node (up to the enclosing statement). Set by the resolve walk (type_lookup_names()), so a
-// node lowers to the same type whoever lowers it: see conditional_flow_type() (lower.c)
+// walks up to them from the node (up to the enclosing statement), and the templates of mapped types without `as`.
+// Set by the resolve walk (type_lookup_names()), so a node lowers to the same type whoever lowers it: see
+// conditional_flow_type() (lower.c)
 typedef struct TypeFlow {
-    struct TernaryType const* ternary;
+    struct TernaryType const* ternary; // Null for a mapped type's template
+    struct InterfaceMember const* mapped;
     bool covariant; // An even number of parameter positions lie between the true branch and the node
     struct TypeFlow const* outer;
 } TypeFlow;
@@ -266,6 +268,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs);
 TypeFlow const* type_flow_enter_parameter(void);
 // Statements (a function body) end the walk up: none of the true branches around apply inside
 TypeFlow const* type_flow_enter_statements(void);
+TypeFlow const* type_flow_enter_mapped_template(struct InterfaceMember* mapped);
 void type_flow_restore(TypeFlow const* saved);
 // A type literal with index signatures whose members type_typecheck() checks against them (TS2411/TS2413)
 bool type_literal_has_index_constraints(TypeNode const* me);

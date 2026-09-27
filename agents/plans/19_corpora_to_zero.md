@@ -362,7 +362,7 @@ visible (they were behind the error type):
   TS2578 10, TS2344 10.
 
 ### Suggested order
-R18/R19 are plan 29 and R17 is plan 30 stage 3 (both written 2026-09-27): run those as their own sessions. For plan
+R18/R19 are plan 29 and R17 was plan 30 stage 3 (done 2026-09-27): run those as their own sessions. For plan
 19 sessions: R20, R21, sample valibot (unsampled since the R10 session) and the rest of type-fest; R15 (react's last,
 the permissive instantiation; plan 30 stage Q adds the restrictive half of the same machinery).
 
@@ -427,7 +427,6 @@ ai-main (the commits say which). Probes in `test/probes/plan19/{valibot,typefest
   unknownEmptyObjectType).
 
 ### What is left
-- **R17** (shared-union-fields-deep 8): plan 30 stage 3.
 - **R20** (conditional-pick-deep 6): `test/probes/plan29/cpd_steps.ts` was truncated and is restored; standalone it
   agrees with tsc (bar alias display), so the corpus failure depends on what was evaluated first. Reduce with the
   corpus' order kept (tsc runs directly on multi-file probes: `node thirdparty/tsc/lib/tsc.js --noEmit ...`).

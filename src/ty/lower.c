@@ -496,7 +496,10 @@ typedef struct FreeParams {
     // Inside the extends type of a conditional being walked, which is what declares its `infer` type parameters.
     // Walking a node inside an extends type on its own (`(...args: any) => infer R`), R is free
     u32 in_extends;
-    TypeFlow const* flow_done; // The true branches (TypeNode.flow) whose check and extends types were walked last
+    // The true branches (TypeNode.flow) whose extends types were walked already (the extends types' own nodes are in
+    // the outer true branches, so a single "last chain" memo would thrash between them)
+    struct TernaryType const* flow_done[16];
+    u32 flow_done_len;
 } FreeParams;
 
 static void free_params_bind(FreeParams* out, Ty const* param) {
@@ -531,13 +534,18 @@ static void collect_free_params_of_generic(Checker* me, Generic const* generic, 
 
 static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* out) {
     if (out->unknown) return;
-    if (node->flow && node->flow != out->flow_done) {
+    if (node->flow) {
         // What the node is in the true branches around it can mention their extends types (a substitution type, see
-        // conditional_flow_type()), which are outside the node (tsc's isTypeParameterPossiblyReferenced)
-        out->flow_done = node->flow;
+        // conditional_flow_type()), which are outside the node (tsc's isTypeParameterPossiblyReferenced). Mapped type
+        // templates add nothing: their key's implied constraint mentions no type parameter
         u32 saved_extends = out->in_extends;
         out->in_extends = 0;
         for (TypeFlow const* flow = node->flow; flow; flow = flow->outer) {
+            if (!flow->ternary) continue;
+            bool done = false;
+            for (u32 i = 0; i < out->flow_done_len && !done; i++) done = out->flow_done[i] == flow->ternary;
+            if (done) continue;
+            if (out->flow_done_len < c_arraylen(out->flow_done)) out->flow_done[out->flow_done_len++] = flow->ternary;
             collect_free_params(me, &flow->ternary->maybe_super, out);
         }
         out->in_extends = saved_extends;
@@ -2103,6 +2111,32 @@ static ImpliedConstraint* implied_constraint(Checker* me, TernaryType const* ter
     return ret;
 }
 
+// In the template of a homomorphic mapped type `{ [K in keyof T]: ... }` over a T constrained to arrays and tuples, K
+// is also `number | `${number}`` (the other half of tsc's getConditionalFlowTypeOfType). Null if `ty` isn't that K
+static Ty const* mapped_key_flow_constraint(Checker* me, InterfaceMember const* mapped, Ty const* ty, Ty const** actual) {
+    if (ty->kind != TY_TYPE_PARAM || !mapped->key.mapped.symbol_ref || mapped->key.mapped.in_type.tag != TYPE_KEYOF) {
+        return nullptr;
+    }
+    if (!*actual) *actual = ty_actual_type_variable(me, ty);
+    if (*actual != ty_type_param(me, mapped->key.mapped.symbol_ref)) return nullptr;
+    // (getHomomorphicTypeVariable: the constraint is `keyof T` for a type parameter T)
+    Ty const* keys = ty_from_node(me, &mapped->key.mapped.in_type, (LowerCtx){ .generic = true });
+    if (keys->kind != TY_KEYOF) return nullptr;
+    Ty const* variable = ty_actual_type_variable(me, keys->keyof.operand);
+    if (variable->kind != TY_TYPE_PARAM) return nullptr;
+    Ty const* constraint = ty_param_constraint(me, variable);
+    if (!constraint) return nullptr;
+    TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        if (!ty_is_tuple(parts.data[i]) && !ty_is_array(me, parts.data[i])) return nullptr;
+    }
+    Atom const* empty = checker_atom(me, csview_from(""));
+    Atom const* texts[2] = { empty, empty };
+    Ty const* number = ty_intrinsic(me, TY_NUMBER);
+    Ty const* both[2] = { number, ty_template_literal(me, texts, &number, 1) };
+    return ty_union(me, both, 2, nullptr, (TyList){0});
+}
+
 // tsc's getConditionalFlowTypeOfType: what the true branches around `node` imply about its type `ty`, as a
 // substitution type. Only type variables are substituted in parameter positions (where the constraint could be wrong)
 static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty const* ty) {
@@ -2110,6 +2144,11 @@ static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty con
     TyBuf constraints = {0};
     bool type_variable = ty->kind == TY_TYPE_PARAM || ty->kind == TY_INDEXED;
     for (TypeFlow const* flow = node->flow; flow; flow = flow->outer) {
+        if (flow->mapped) {
+            Ty const* implied = mapped_key_flow_constraint(me, flow->mapped, ty, &actual);
+            if (implied) ty_buf_push(&constraints, implied);
+            continue;
+        }
         if (!flow->covariant && !type_variable) continue;
         ImpliedConstraint* implied = implied_constraint(me, flow->ternary);
         if (implied->check_state == LAZY_STATE_IN_FLIGHT) continue;

@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 30 stage 3
+Suite 8953 -> **8958** (errors 10754, symbols 12184, types 10498), no losses. Corpora: tsc 0, valibot/react/nest 0,
+type-fest 19 -> **11**, webpack 3981 -> **3977**. Callgrind (instructions) vs the session start: tsc corpus 5.794 G ->
+5.830 G (+0.6%), valibot 5.291 G -> 5.376 G (+1.6%, diffuse: `infer X extends C` constraints resolve now, before C
+was unresolved and ignored), type-fest 3.405 G -> 3.353 G (-1.5%: free-param collection memoises per true branch
+instead of per chain, which that same fix had made thrash, +5%).
+
 ## 2026-09-27, plan 33 (fifth corpus: webpack, checkJs)
 Suite 8952 -> **8953** (errors 10749, symbols 12176, types 10498). Corpora: tsc 0, type-fest 19, valibot/react/nest
 0, **webpack 6146 -> 3981** (nearly all JSDoc: plan 26 stage 3). `./bench.sh` (best wall; the machine was loaded

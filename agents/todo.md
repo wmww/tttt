@@ -8,8 +8,8 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 
 1. ~~Plan 33~~ done: webpack pinned (checkJs, 1238 files), 6146 -> 3981; the rest is JSDoc (typedefs, `@type` on
    assignments/properties, `@template`), ranked into plan 26 stage 3. No sixth corpus pinned (entry 9 has it).
-2. **Plan 30 stage 3** (the dependent fixes after substitution types). One session; what doesn't fit goes to
-   `bugs/type_core.md`.
+2. ~~Plan 30 stage 3~~ done, plan 30 complete and deleted: generic TS2536, R17 (type-fest 19 -> 11), `infer X
+   extends C` names resolved at last, the mapped-key half of conditional flow types; suite 8953 -> 8958.
 3. **Plan 34: error text fidelity**, stage 1 (the tool) and as much of stage 2 as fits: the 431 tests with the right
    codes at the right places and the wrong text.
 4. **Plan 32 planning** (mixin classes, a draft): research tsc's mixin rules against tttt's `class_base()`, prototype,

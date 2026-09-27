@@ -64,7 +64,14 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
         case INTERFACE_KEY_CALLABLE: break;
     }
 
-    type_lookup_names(&my type, names, errs);
+    if (my key.tag == INTERFACE_KEY_MAPPED && !my key.mapped.has_as_type) {
+        // (The key has an implied constraint in there: conditional_flow_type(), lower.c)
+        TypeFlow const* saved_flow = type_flow_enter_mapped_template(me);
+        type_lookup_names(&my type, names, errs);
+        type_flow_restore(saved_flow);
+    } else {
+        type_lookup_names(&my type, names, errs);
+    }
     if (my has_write_type) type_lookup_names(&my write_type, names, errs);
 }
 

@@ -1861,7 +1861,7 @@ const baselines = {
         types: true,
     },
     'assignmentToAnyArrayRestParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -18522,7 +18522,7 @@ const baselines = {
     },
     'intersectionReductionGenericStringLikeType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'intersectionSatisfiesConstraint': {
@@ -18591,7 +18591,7 @@ const baselines = {
         types: true,
     },
     'intersectionsOfLargeUnions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29292,7 +29292,7 @@ const baselines = {
     },
     'strictSubtypeAndNarrowing': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'strictTypeofUnionNarrowing': {
@@ -63526,23 +63526,23 @@ const baselines = {
         types: false,
     },
     'inferTypesInvalidExtendsDeclaration': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'inferTypesWithExtends1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferTypesWithExtends2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'inferTypesWithExtendsDependingOnTypeVariables': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'variance': {
@@ -63946,7 +63946,7 @@ const baselines = {
         types: false,
     },
     'numericStringLiteralTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -64057,7 +64057,7 @@ const baselines = {
     },
     'templateLiteralTypes4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateLiteralTypes5': {
@@ -66107,7 +66107,7 @@ const baselines = {
     },
     'typeParameterConstModifiers': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterConstModifiersReverseMappedTypes': {

@@ -518,6 +518,7 @@ static Ty const* apparent_type_of_mapped(Checker* me, Ty const* ty) {
     bool generic = false;
     MappedInfo const* mapped = mapped_info_of(me, ty, &generic);
     if (!mapped || !generic || !mapped->keyof_constraint || mapped->name_type || !mapped->modifiers_type) return ty;
+    if (mapped->constraint->kind != TY_KEYOF) return ty; // (Substituted: not homomorphic, see homomorphic_variable())
     Ty const* variable = mapped->modifiers_type;
     if (variable->kind != TY_TYPE_PARAM) return ty;
     Ty const* constraint = base_constraint(me, variable, 0);
@@ -1934,6 +1935,7 @@ static Ty const* simplified_or_constraint(Checker* me, Ty const* ty) {
         case TY_KEYOF:
         case TY_TEMPLATE_LITERAL:
         case TY_STRING_MAPPING:
+        case TY_SUBSTITUTION:
         case TY_REFERENCE: // (a generic tuple)
             return base_constraint(me, ty, 0);
         default:
@@ -2875,8 +2877,23 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
                 Ternary related = is_related_to(me, st, target->keyof.operand, source->keyof.operand, false);
                 if (related) return related;
             }
-            // Through the simplified operand, or its constraint (tsc's getSimplifiedTypeOrConstraint)
             Ty const* operand = target->keyof.operand;
+            // A tuple with variadic elements: its known keys (tsc's getKnownKeysOfTupleType)
+            if (is_tuple(operand)) {
+                TupleShape const* shape = operand->reference.target->declared.tuple;
+                TyBuf keys = {0};
+                for (u32 i = 0; i < shape->arity && !(shape->flags[i] & TUPLE_ELEMENT_REST); i++) {
+                    char digits[16];
+                    snprintf(digits, sizeof digits, "%u", i);
+                    ty_buf_push(&keys, ty_string_literal(me, csview_from(digits)));
+                }
+                ty_buf_push(&keys, ty_keyof(me, tuple_as_array(me, operand)));
+                Ty const* known = ty_union(me, keys.data, keys.len, nullptr, (TyList){0});
+                ty_buf_drop(&keys);
+                Ternary related = is_related_to(me, st, source, known, false);
+                if (related) return related;
+            }
+            // Through the simplified operand, or its constraint (tsc's getSimplifiedTypeOrConstraint)
             Ty const* constraint = simplified_or_constraint(me, operand);
             if (constraint && constraint != operand) {
                 Ty const* keys = ty_keyof(me, constraint);
@@ -2884,6 +2901,15 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
                     Ternary related = is_related_to(me, st, source, keys, false);
                     if (related == TERNARY_TRUE) return related;
                 }
+            } else if (!constraint && operand->kind == TY_ANONYMOUS && ty_members(me, operand)->mapped &&
+                ty_is_generic_index(ty_members(me, operand)->mapped->constraint)
+            ) {
+                // A generic mapped type's keys are at least its `as` type, or else its constraint. HACK: tsc adds the
+                // `as` type of the apparent keys of a `keyof T` constraint (getApparentMappedTypeKeys)
+                MappedInfo const* mapped = ty_members(me, operand)->mapped;
+                Ty const* keys = mapped->name_type ? mapped->name_type : mapped->constraint;
+                Ternary related = is_related_to(me, st, source, keys, false);
+                if (related == TERNARY_TRUE) return related;
             }
         }   break;
 

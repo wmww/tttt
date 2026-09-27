@@ -42,6 +42,7 @@ typedef struct InterfaceMember {
                 signed char optional; // -1 for remove, +1 for add
                 Symbol* owned_symbol;
                 Symbol const* symbol_ref;
+                TypeFlow template_flow[2]; // What the template's nodes have as TypeNode.flow, as TernaryType.true_flow
             } mapped;
         };
     } key;

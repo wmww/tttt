@@ -368,6 +368,11 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   through to member-by-member comparison, which a memberless mapped type passes (stands in for `Readonly<T>` to `T`).
   The mapped type parameter P is lowered without constraint (`mapped_key_param_mapper` stand-in for `as` clauses).
   `write_constraint_of_indexed` (HACK) lacks AccessFlags.NoIndexSignatures.
+- `structured_related`'s TY_KEYOF target over a generic mapped type (HACK) compares with the `as` type (or the
+  constraint) only; tsc also adds the `as` type applied to the modifiers type's apparent keys (getApparentMappedTypeKeys).
+- Homomorphism (`homomorphic_variable`, instantiate.c) still needs a syntactic `[K in keyof X]`: tsc's
+  getHomomorphicTypeVariable also takes `[K in Keys<T>]` whose alias lowers to `keyof T`. The lowered constraint is now
+  checked too (a `keyof T` substituted in a true branch isn't homomorphic: type-fest shared-union-fields-deep).
 - `ty_simplified` only does indexed accesses (no getSimplifiedConditionalType, no generic-tuple-by-number case).
 - `apparent_type` (relate.c) keeps a TY_INDEXED/TY_CONDITIONAL without base constraint as itself (tsc: `{}`).
 - `class_base()` (members.c HACK): a base class *name* is found syntactically; any other `extends` expression is the
@@ -458,8 +463,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`, `ty/helpers.c`)
 - `check_access` (TS2339, HACKs): lets through JS files (see JavaScript), generic mapped types (`Pick<T, K>`: members
   only via the constraint) and classes with bases `class_base()` can't see (`ty_has_unresolved_base()`). Bracket access
-  never reports a missing property. Generic indices (`ty_check_indexed_access_type`, `check_access`) skip TS2536
-  (plan 30 stage 3).
+  never reports a missing property. Generic TS2536 (`ty_indexed_access_index_ok`) lacks tsc's TS4105 case (a
+  private/protected property named through a type parameter).
 - `ty_check_type_reference_constraints` (HACK): arguments that could contain type variables aren't checked for TS2344
   (~60 false positives otherwise, each a relation bug: indexedAccessRetainsIndexSignature,
   conditionalTypeClassMembers, homomorphicMappedTypeNesting, interfaceMergedUnconstrainedNoErrorIrrespectiveOfOrder).

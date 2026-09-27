@@ -186,8 +186,9 @@ static Ty const* homomorphic_variable(Checker* me, Ty const* ty, MappedInfo cons
     InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
     if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return nullptr;
     MappedInfo const* mapped = ty_members(me, root)->mapped;
-    if (!mapped || !mapped->modifiers_type) return nullptr;
-    // (A type parameter substituted in a true branch is still the one)
+    // (tsc's getHomomorphicTypeVariable looks at the lowered constraint: a `keyof T` substituted in a true branch of
+    // `keyof T extends ...` isn't homomorphic, but a type parameter substituted in a true branch is still the one)
+    if (!mapped || !mapped->modifiers_type || mapped->constraint->kind != TY_KEYOF) return nullptr;
     Ty const* variable = ty_actual_type_variable(me, mapped->modifiers_type);
     if (variable->kind != TY_TYPE_PARAM) return nullptr;
     if (mapped_out) *mapped_out = mapped;

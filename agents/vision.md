@@ -13,8 +13,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   Of the 4588 failing tests: 1177 fail errors only by missing diagnostics, 420 only by spurious ones, 736 both,
   **431 have the right codes at the right places and the wrong text** (plan 34), 476 have a spurious TS1xxx (plan 27).
 - **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, valibot **0** (from 60), react **0**, nest **0**
-  (NestJS app, 134 at first run, 0 the same day), type-fest **19** (known causes: plan 30 stage 3, plan 32 mixins,
-  R20, exactOptional). expect-type's `toEqualTypeOf` mismatches are visible now, so valibot's test-d files check
+  (NestJS app, 134 at first run, 0 the same day), type-fest **11** (known causes: plan 32 mixins 4,
+  R20 6, exactOptional 1). expect-type's `toEqualTypeOf` mismatches are visible now, so valibot's test-d files check
   tttt's identity relation too.
 - **Perf** (`measurements.md`; tsgo 7.0.2 on 4 cores): tsc corpus 0.90 s vs tsgo 1.54 s (1 thread 1.90), type-fest
   0.43 vs 2.35, valibot 0.81 / 467 MB vs 2.27 / 833 MB, react 0.34 vs 1.32, nest 0.31 vs 0.58. Ahead everywhere,

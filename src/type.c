@@ -254,7 +254,16 @@ bool type_literal_has_index_constraints(TypeNode const* me) {
 static thread_local TypeFlow const* current_flow;
 
 static TypeFlow const* flow_flipped(TypeFlow const* flow) {
-    return flow ? &flow->ternary->true_flow[flow->covariant] : nullptr;
+    if (!flow) return nullptr;
+    return flow->ternary ? &flow->ternary->true_flow[flow->covariant] : &flow->mapped->key.mapped.template_flow[flow->covariant];
+}
+
+TypeFlow const* type_flow_enter_mapped_template(InterfaceMember* mapped) {
+    TypeFlow const* saved = current_flow;
+    mapped->key.mapped.template_flow[0] = (TypeFlow){ .mapped = mapped, .covariant = true, .outer = current_flow };
+    mapped->key.mapped.template_flow[1] = (TypeFlow){ .mapped = mapped, .covariant = false, .outer = flow_flipped(current_flow) };
+    current_flow = &mapped->key.mapped.template_flow[0];
+    return saved;
 }
 
 TypeFlow const* type_flow_enter_parameter(void) {
@@ -287,9 +296,10 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
         case TYPE_UNIQUE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_VALUE:
-        case TYPE_INFERRED:
             break;
 
+        // (`infer X extends C`: C is resolved where the extends type is)
+        case TYPE_INFERRED: type_lookup_names(&my inferred->extends, names, errs); break;
         case TYPE_IDENTIFIER: identifier_type_lookup_names(my identifier, names, errs); break;
         case TYPE_CALLABLE: callable_type_resolve_names(my callable, names, errs); break;
 
@@ -365,9 +375,12 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
         case TYPE_UNIQUE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_VALUE:
-        case TYPE_INFERRED:
             break;
 
+        case TYPE_INFERRED:
+            type_typecheck(&my inferred->extends, errs);
+            ty_check_infer_constraints(current_checker, my inferred, errs);
+            break;
         case TYPE_IDENTIFIER: identifier_type_typecheck(my identifier, errs); break;
         case TYPE_CALLABLE: callable_type_typecheck(my callable, errs); break;
         case TYPE_INTERFACE:

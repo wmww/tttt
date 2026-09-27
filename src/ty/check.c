@@ -8,6 +8,7 @@
 #include "port_statement.h"
 #include "unused.h"
 #include "interface_member.h"
+#include "several_types.h"
 #include "statement.h"
 #include "lib_features.h"
 
@@ -1114,6 +1115,25 @@ Ty const* ty_instance_type_of_class(Checker* me, Symbol const* class_symbol) {
     return declared;
 }
 
+// tsc's checkInferType: an `infer X` declared more than once in an extends type has the same constraint everywhere
+// it has one (TS2838 at every declaration)
+void ty_check_infer_constraints(Checker* me, InferredType const* inferred, ErrorCtx* errs) {
+    Symbol const* symbol = inferred->symbol_ref;
+    if (!symbol || symbol->decl_count < 2) return;
+    Ty const* constraint = ty_param_constraint(me, ty_type_param(me, symbol));
+    if (!constraint) return;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_INFER) continue;
+        InferredType const* other = symbol->decls[i].node;
+        if (other->extends.tag == TYPE_ANY) continue;
+        Ty const* other_constraint = ty_from_node(me, &other->extends, (LowerCtx){ .generic = true });
+        if (ty_is_related(me, other_constraint, constraint, TY_RELATION_IDENTITY)) continue;
+        error_ctx_error_d(errs, inferred->name, 2838, "All declarations of '", inferred->name.sv,
+            "' must have identical constraints.");
+        return;
+    }
+}
+
 // tsc's checkIndexedAccessIndexType: every member of the index of a deferred `O[K]` is a key of O (`keyof O`), or a
 // number when O has a number index signature
 bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed) {
@@ -1134,7 +1154,13 @@ bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed) {
     }
     for (u32 i = 0; i < count; i++) {
         if (ty_is_related(me, parts[i], keys, TY_RELATION_ASSIGNABLE)) continue;
-        if (number_index && ty_is_related(me, parts[i], ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE)) continue;
+        // (tsc's isApplicableIndexType: numbers, `${number}` and numeric string literals)
+        if (number_index && (ty_is_related(me, parts[i], ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE) ||
+            ty_is_numeric_string_type(me, parts[i]) || ((parts[i]->flags & TYF_STRING_LITERAL) &&
+            parts[i]->literal.string && ty_is_numeric_name(parts[i]->literal.string)))
+        ) {
+            continue;
+        }
         return false;
     }
     return true;
@@ -1150,10 +1176,17 @@ void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty
 }
 
 void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs) {
-    (void)span;
     index = ty_regular(me, index);
     if ((object->flags | index->flags) & TYF_ERROR) return;
-    if (ty_is_generic_index(index) || ty_is_generic_object(me, object)) return; // TODO: TS2536 against keyof O
+    if (ty_is_generic_index(index) || ty_is_generic_object(me, object)) {
+        // tsc's checkIndexedAccessIndexType on the deferred type, reported on the whole `O[K]`
+        Ty const* indexed = ty_indexed(me, object, index);
+        if (indexed->kind != TY_INDEXED || ty_indexed_access_index_ok(me, indexed)) return;
+        cstr index_str = ty_to_cstr(me, index), object_str = ty_to_cstr(me, object);
+        error_ctx_error_d(errs, span, 2536, "Type '", index_str, "' cannot be used to index type '", object_str, "'.");
+        c_drop(cstr, &index_str, &object_str);
+        return;
+    }
     if (object->flags & (TYF_ANY | TYF_NEVER)) return;
     Ty const* apparent = ty_apparent_type(me, object);
     if (apparent->flags & (TYF_ANY | TYF_NEVER)) return;

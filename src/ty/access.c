@@ -49,7 +49,15 @@ Atom const* ty_literal_name(Checker* me, Ty const* index) {
     return name;
 }
 
-// The index signature of `object` that applies to `index`, null if none
+// `${number}` (tsc's numericStringType)
+bool ty_is_numeric_string_type(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_TEMPLATE_LITERAL) return false;
+    Atom const* empty = checker_atom(me, csview_from(""));
+    Atom const* texts[2] = { empty, empty };
+    Ty const* number = ty_intrinsic(me, TY_NUMBER);
+    return ty == ty_template_literal(me, texts, &number, 1);
+}
+
 // Whether a specific (not `string`) index signature applies to a key (tsc's isApplicableIndexType): a numeric one to
 // numbers and numeric strings, a symbol one to symbols, a pattern (`[k: `data-${string}`]`) to what it matches
 bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* index) {
@@ -57,7 +65,8 @@ bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* ind
     u32 key_flags = ty_key_flags(index);
     bool stringish = (key_flags & TYF_STRING_LIKE) != 0;
     bool numeric = (key_flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
-        ((index->flags & TYF_STRING_LITERAL) && index->literal.string && ty_is_numeric_name(index->literal.string));
+        ((index->flags & TYF_STRING_LITERAL) && index->literal.string && ty_is_numeric_name(index->literal.string)) ||
+        ty_is_numeric_string_type(me, index);
     return ((info->key->flags & TYF_NUMBER) && numeric) || ((info->key->flags & TYF_ES_SYMBOL) && (key_flags & TYF_ES_SYMBOL_LIKE)) ||
         ((info->key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING) || info->key->kind == TY_INTERSECTION) &&
             (stringish || numeric || info->key->kind == TY_INTERSECTION) &&

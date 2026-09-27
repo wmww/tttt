@@ -570,6 +570,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 .allow_declaration_empty = true,
                 .span = my inferred->name,
             });
+            type_compile_test_info(&my inferred->extends, ctx);
             break;
 
         case TYPE_CALLABLE: {

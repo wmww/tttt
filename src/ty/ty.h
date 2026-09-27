@@ -1412,6 +1412,8 @@ void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index
 void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
 Ty const* ty_invalid_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object);
 bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed);
+bool ty_is_numeric_string_type(Checker* me, Ty const* ty); // `${number}` (tsc's numericStringType)
+void ty_check_infer_constraints(Checker* me, struct InferredType const* inferred, ErrorCtx* errs);
 bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index);
 void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecSpannedType const* args, ErrorCtx* errs);
 
