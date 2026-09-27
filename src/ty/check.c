@@ -1791,8 +1791,8 @@ void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* con
         for (u32 j = 0; j < entry_count; j++) {
             if (entries[j].key != entries[i].key) continue;
             Span at = vec_span_size(&entries[j].member->declarations) ? *vec_span_front(&entries[j].member->declarations) : entries[j].member->key.span;
-            // (A lib's declarations aren't checked; after a parse error the signature may not be what it was meant to be)
-            if (!at.source || at.source->is_stdlib || at.source->has_parse_errors) continue;
+            // (A lib's declarations aren't checked)
+            if (!at.source || at.source->is_stdlib) continue;
             error_ctx_error_d(errs, with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");
         }
         cstr_drop(&key_str);

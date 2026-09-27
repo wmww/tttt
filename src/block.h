@@ -27,6 +27,7 @@ typedef struct BlockTypecheckCtx {
     bool inside_label; // Labeled breaks are allowed
     bool ambient; // Inside a `declare namespace`/`declare module`, where every statement is implicitly declared
     bool ambient_reported; // The block's statements can't be in an ambient context, and that's been said for them
+    void const* ambient_error_statement; // The statement TS1036 was reported on, which gets no other grammar error
     bool body; // The statement is the body of an `if` or a loop (through labels): no `let`, `const` or `using`
     bool in_function; // In a function body or class static block: a jump that finds no target crosses its boundary
     TypecheckLabel const* labels;

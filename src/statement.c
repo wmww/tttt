@@ -1557,6 +1557,7 @@ bool statements_any_return(VecStatement const* statements, bool (*pred)(Expr con
 
 // tsc's checkGrammarBreakOrContinueStatement()
 static void statement_check_jump(Statement const* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
+    if (ctx.ambient_error_statement == me) return; // (tsc's checkGrammarStatementInAmbientContext comes first)
     bool is_break = my tag == STATEMENT_BREAK;
     bool labeled = span_valid(my jump_label);
     if (labeled) {
@@ -2014,7 +2015,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             }
             if (body && my decl.variable.keyword != VAR_INIT_VAR) {
                 // tsc's checkGrammarForDisallowedBlockScopedVariableStatement()
-                error_ctx_grammar_error_d(errs, my span, 1156,
+                error_ctx_grammar_error_d(errs, span_with_semicolon(my span), 1156,
                     "'", variable_statement_keyword_str(&my decl.variable), "' declarations can only be declared inside a block.");
             }
             variable_statement_typecheck(&my decl.variable, my decl.props.declared || ctx.ambient, my decl.props.exported, errs);

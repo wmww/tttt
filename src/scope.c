@@ -2322,12 +2322,17 @@ typedef struct Suggestion {
 static bool suggest_in_table(SymbolTable const* table, bool globals, csview name, u32 meaning, Suggestion* out) {
     u32 count = 0;
     SymbolEntry* entries = symbol_table_collect(table, &count);
-    static char const* const primitives[] = { "string", "number", "boolean", "object", "bigint", "symbol" };
+    // (tsc's globals start with its undefinedSymbol, a value)
+    static char const* const primitives[] = { "undefined", "string", "number", "boolean", "object", "bigint", "symbol" };
     u32 extra = globals ? c_arraylen(primitives) : 0;
     csview* names = malloc(sizeof(csview) * (count + extra + 1));
     panic_if(!names, "out of memory");
     for (u32 i = 0; i < extra; i++) {
         names[i] = (csview){0};
+        if (i == 0) {
+            if (meaning & SYMBOL_PROPERTY) names[i] = csview_from(primitives[i]); // (Its flags)
+            continue;
+        }
         if (!(meaning & SYMBOL_TYPE_ALIAS)) continue;
         char capitalized[16];
         size_t len = strlen(primitives[i]);
@@ -2808,6 +2813,9 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
         add_prototype_property(me, prototype, name, left, &op->right, op->jsdoc_type);
         return;
     }
+    // `F.prototype = { ... }` declares prototype members in JavaScript and nothing elsewhere (tsc's
+    // getAssignmentDeclarationKind: only the Property kind outside JavaScript)
+    if (span_equals(name, "prototype") && op->right.tag == EXPR_OBJECT && !(my file && my file->is_js)) return;
     Expr* init;
     Symbol* host = expando_host(me, object, &init);
     if (!host) return;

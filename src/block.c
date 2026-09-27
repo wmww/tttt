@@ -174,6 +174,7 @@ void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             // (A grammar error: not in a file with parse errors, like tsc's grammarErrorOnFirstToken)
             if (!is_ambient_disallowed(i) || !i->span.source || i->span.source->has_parse_errors) continue;
             error_ctx_error_d(errs, block_first_token(i->span), 1036, "Statements are not allowed in ambient contexts.");
+            ctx.ambient_error_statement = i;
             break;
         }
     }

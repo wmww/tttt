@@ -771,7 +771,7 @@ const baselines = {
         types: true,
     },
     'ambientWithStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5691,7 +5691,7 @@ const baselines = {
         types: true,
     },
     'constDeclarations-invalidContexts': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20486,7 +20486,7 @@ const baselines = {
         types: true,
     },
     'letDeclarations-invalidContexts': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34846,7 +34846,7 @@ const baselines = {
         types: true,
     },
     'classExtendingPrimitive': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36287,8 +36287,8 @@ const baselines = {
     },
     'privateNameBadDeclaration': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameBadSuper': {
         errors: false,
@@ -58646,12 +58646,12 @@ const baselines = {
         types: true,
     },
     'parserBreakStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserContinueStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61216,7 +61216,7 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarations.10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61496,7 +61496,7 @@ const baselines = {
         types: true,
     },
     'usingDeclarations.10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
