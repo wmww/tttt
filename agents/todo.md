@@ -25,7 +25,8 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    tsc) tried and reverted, notes in missing_checks.md.
 7. ~~Perf: the parser~~ done: first-char dispatch, keyword probes in place, whitespace fast path, tsconfig pruning,
    resolution cache; callgrind tsc corpus 5.84 -> 5.05 G, nest -28%, webpack -19%. Next levers in `perf_leads.md`.
-8. **Plan 27 stage 2** (permissive grammar; ~190 tests, 476 with a spurious TS1xxx).
+8. ~~Plan 27 stage 2~~ done: modifiers (a checkGrammarModifiers port), heritage clauses, index signatures, `with`,
+   yield/await, private names; parser-diff tests 544 -> 402, suite 9210 -> 9363. Leftovers in plan 27.
 9. **Corpus session** (plan 19): the fifth corpus' remaining causes, type-fest's 11 (R20,
    exactOptional; mixins are plan 32 stage C), and if plan 33 pinned no second new corpus, pin an inference-heavy one
    (tRPC / zod v4 / drizzle).

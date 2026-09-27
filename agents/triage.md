@@ -29,3 +29,15 @@ interfaceThatIndirectlyInheritsFromItself, reverseMappedUnionInference, the `W["
 - tsc's non-widening `undefined` (`{}["hi"]` under noImplicitAny is `undefined`, and `var x = {}["hi"]` stays
   `undefined`; tttt widens it to any): noImplicitAnyIndexing(Suppressed) fail types on it only. Related to hacks.md
   `widen_nullable`.
+
+## From plan 27 stage 2 (2026-09-27)
+- Variance annotations are parsed and dropped (`parse_generic_decl_item()`): no TS2636/TS2637 (the check that a
+  declared `in`/`out` agrees with the measured variance), no TS1273/TS1274/TS1030/TS1029 on type parameter
+  modifiers, and the relation doesn't use declared variances. A feature, not a parser fix: varianceAnnotations and
+  friends. Worth a plan (check `./failstats.py --code TS2636`).
+- The sub-agents reported for their clusters (details in plan 27 stage 2): classExtendingPrimitive wants `Did you mean
+  'undefined'?` from scope_suggest(); ambientWithStatements gets a spurious TS1105 for `break` in a `declare module`;
+  constDeclarations-invalidContexts has a TS1156 underline one character short; classStaticBlock6/7 fail on
+  `arguments`/`return` checks; castOfYield misses TS2318 (IterableIterator); privateNameBadDeclaration treats
+  `A.prototype = {}` as an expando in a .ts file; TS1312 (`{ x = 1 }` outside a pattern) is missing;
+  optionalPropertiesSyntax: `ty_check_duplicate_index_signatures` skips files with parse errors, tsc doesn't.

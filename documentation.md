@@ -250,6 +250,10 @@ Recovery follows tsc's parser rules without its tokens (plan 27):
   left operand). A missing name is an empty span, which the symbols baseline prints as `(Missing)`.
 - Grammar errors the parser reports for tsc's checker (`is_grammar_code()`: modifiers, TS1162...) don't count as parse
   errors and are dropped in a file that has parse errors, like tsc's grammarErrorOnNode.
+- Modifiers are parsed wherever tsc's parseModifiers takes them (declarations, members, parameters, object literal
+  members, in front of import/export statements) and checked once the node's kind is known by
+  `modifier_list_check_grammar()` (modifier_list.c, tsc's checkGrammarModifiers): the caller says what the node is
+  (`ModifiedKind`) and where (`ModifiedParent`, ambient or not; `ParserShared.in_ambient`/`statement_parent` track it).
 
 ### Whitespace
 `hop_whitespace(&p)` needs to be called anywhere whitespace may appear.

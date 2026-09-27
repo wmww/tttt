@@ -6,6 +6,13 @@ date and commit. History is in git.
 Suite 9210 -> **9243 / 13542** full (+33 tests, no component lost; errors/symbols/types all move). `./syntaxstats.py`
 cluster permissive:heritage 22 -> 0. Corpora unchanged (tsc 0, type-fest 11, valibot 0, react 0; zero syntax errors).
 
+## 2026-09-27, plan 27 stage 2 (permissive grammar, todo entry 8)
+Suite 9210 -> **9363** (errors 11133, symbols 12339, types 10699), no lost components. `./syntaxstats.py`: **544 ->
+402** tests whose parser diagnostics differ (44 JS); permissive clusters 172 -> 44. Corpora unchanged (tsc 0,
+type-fest 11, valibot/react/nest 0, webpack 515). Callgrind vs the session start (2782ce3): nest 0.987 -> 1.001 G
+(the merged stage peaked at 1.089 G: tsc's isStartOfStatement on every statement, heritage `tok_peek`s; gated and
+fixed, see the last perf commit), tsc corpus 5.052 -> 5.049 G, webpack 3.398 -> 3.376 G.
+
 ## 2026-09-27, parser perf (todo entry 7, at 67f6c83)
 Suite **9210** unchanged; corpus diagnostics and file counts unchanged. Callgrind (instructions, session start 7cf7633
 -> end): tsc corpus 5.844 -> **5.052 G**, nest 1.364 -> **0.988**, webpack 4.213 -> **3.398**, react 2.212 -> 1.918,

@@ -89,12 +89,17 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   InternalSymbolName.Missing and puts it in no table; tttt still declares it as a member of E).
 - `mark_named_evaluation()`: anonymous class expressions that get a name are marked by the parser at each construction
   site (`ClassDecl.named_evaluation`); a new place that assigns an expression to a name needs a call.
-- `report_misplaced_async()` (TS1042) is a parse error (tsc: checker grammar error), so it suppresses later grammar
-  errors in the file.
 - Grammar vs parse errors (`error_ctx_grammar_error_d`, `SourceFile.has_parse_errors`, `is_grammar_code()`): tsc drops
   checker grammar errors in a file with parse errors. Newer checks use `error_ctx_grammar_error_d`; older ones
   (TS1254, some TS1155/TS1039, modifier checks) use `error_ctx_error_d` and always report. Parser-reported grammar
-  codes in `is_grammar_code()` don't count as parse errors; others (TS1308, TS2852) still do.
+  codes in `is_grammar_code()` don't count as parse errors; others (TS1308, TS2852) still do. `is_grammar_code()`
+  classifies by *code* (about 50 now, grown by every stage 2 cluster): a code tsc reports both from its parser and
+  from its checker can't be both, and a new parser-side grammar check silently counts as a parse error until its code
+  is listed. The fix is a `parse_grammar_error()` that marks the error itself (the Error would carry the flag).
+- `parse_decl_statement()`'s import/export fallback (`export public import a = b`) drops decorators in front of an
+  import (TS1206 unreported: nothing keeps them for the baselines' walk). `ModifiedNode.name` stands in for tsc's
+  getErrorSpanForNode (TS1248). `statement_start_needs_check()` gates tsc's isStartOfStatement by the first words
+  that need it, a perf shortcut that a new rejecting case has to be added to.
 - `parse_index_signature()`: the parameter list isn't a real `FunctionArg` list: names are identifiers only (no
   patterns, no `this`), initializers are parsed and dropped (tsc still checks them: TS2304 in `[a = b]` is lost), and
   parameters after the first keep only name/type for the baselines. Parameter grammar errors are reported from the

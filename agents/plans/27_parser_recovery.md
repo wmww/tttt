@@ -3,6 +3,11 @@
 Written 2026-09-26 (planning session, todo entry 5).
 
 ## Status
+**Stage 2 mostly done (2026-09-27, todo entry 8, one session with four sub-agents)**: 544 -> 402 tests whose parser
+diagnostics differ (TS: A 175 -> 83, B 36 -> 25, C 58 -> 40, M 87 -> 78); permissive clusters 172 -> 44 (modifiers
+60 -> 21, yield/await 22 -> 7, heritage 22 -> 0, index signatures 24 -> 4, `with` 17 -> 0, private names 17 -> 3,
+decorators 10 -> 9); suite 9210 -> 9363. What's left of each is in the stage 2 section. Stages 3 (lexical, 92 tests)
+and 4 (positions) are unscheduled; `other:M` (70) has small parser checks worth a sweep (list below).
 **Stage 1 mostly done (2026-09-27, one session, 11 commits)**: 687 -> 583 tests whose parser diagnostics differ
 (`recovery:*` 89 -> 31: list-context 56 -> 25, object literal 18 -> 6, TS1011 15 -> 0; `other:B` 23 -> 8), suite 8345 ->
 8408, parse time within noise, corpora unchanged. The framework is described in documentation.md "Error recovery".
@@ -136,10 +141,15 @@ doesn't abort. For each cluster, parse what tsc parses into the AST (a flag or l
 report tsc's code at tsc's position. Most of these reports are grammar checks in checker.ts; do them in the checker
 walk if the parser has no position to do them from (and remember that tsc suppresses most grammar errors in a file that
 has parse errors: `hasParseDiagnostics`, see how `SourceFile.has_parse_errors` is used today).
-- Modifiers: tsc parses a modifier list in front of every declaration and statement, object literal member and
-  parameter, and `checkGrammarModifiers` sorts it out (TS1044, TS1042, TS1029...). `parse_modifier_list()` exists;
-  the work is accepting it everywhere tsc does, including `export export`, `declare import`, `public` in object
-  literals, `public ...rest`.
+- Modifiers: done. `modifier_list_check_grammar()` is tsc's checkGrammarModifiers (with findFirstIllegalModifier
+  and checkGrammarAsyncModifier) keyed by `ModifiedKind` and parent; the parser tracks the ambient context and the
+  module block kind; modifiers are parsed in front of object literal members (TS1042/TS1184), parameters (`public
+  ...rest`, `public {x}`), import/export statements (TS1120/1191/1193/1044), `abstract`/`default` anywhere tsc takes
+  them. Left (the cluster's 21 are mostly misclassified import types and tagged templates): `public {}` in a class
+  (TS1146), `export @dec default class`, decorators on import statements (TS1206; the statement has nowhere to keep the
+  decorators for the baselines' walk), `declare module \`M\`` (TS1443), variance annotations (`in`/`out` on type
+  parameters are parsed and dropped: TS1273/TS1274/TS2636/TS2637 and the variance check itself, varianceAnnotations),
+  TS1314 for `export as namespace` in a script file (scope_add_port() isn't reached there).
 - `yield`/`await`: mostly done (`yield x` outside generators is TS1163, `await` in static blocks TS18037, `yield`/`await`
   as missing expressions/labels where they're keywords, assignments need a left-hand side). Left:
   asyncArrowFunction9_* (`async (a = await => await)`: tsc's async arrow reparse), topLevelAwaitErrors.1 (reparsed
@@ -155,8 +165,13 @@ has parse errors: `hasParseDiagnostics`, see how `SourceFile.has_parse_errors` i
 - Private names: done for object literals, type members, enums, variables/parameters/catch, a lone `#` (TS1127). Left:
   privateNamesAndIndexedAccess (`C[#bar]` recovery in a variable declaration list), `[#x]` nested binding elements
   (TS18016), manyCompilerErrorsInTheTwoFiles/`#!` mid-file (TS18026, lexical).
-- Decorators before any expression/declaration tsc accepts them at (TS1206 from the checker).
-- The `other:M` checks that are real parser checks (TS1359 reserved word as a name, TS2754, TS1433, TS1146...).
+- Decorators: TS1436 (`public @dec m()`) done. Left: decorators before expressions (`var F = @dec () => {}`: tsc's
+  TS1109 position), enum members, import statements (above).
+- `other:M` parser checks: TS2754/TS1034 (super) done; superWithTypeArgument{,2,3} still get a spurious TS2348 (tsc's
+  `super<T>()` callee is an ExpressionWithTypeArguments and reports nothing else). Left: postfix `++`/`--` results
+  aren't left-hand side expressions (`x++ = 4`, `a++ ++`, `a--.toString()`: TS1005 `';' expected`, 5 tests), TS1136
+  for template literal property names (6), TS1359 reserved words as binding/enum names (`{while}`, `enum void`), TS1433,
+  TS1146, `class void {}`, accessors without bodies (TS1005 `'{' expected`, giant, accessorWithoutBody*).
 
 ## Stage 3: lexical diagnostics
 Scanner errors, done in the helpers that read each literal (`parse_string`, `parse_template`, `parse_number`,
