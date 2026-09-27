@@ -386,7 +386,10 @@ void initialized_binding_add_names(InitializedBinding* me, Scope* scope, Binding
         binding_add_names(&my binding, &my lazy_type, scope, props);
         return;
     }
-    // The names are aliases (see require_ports), exported like `export import x = require()`
+    // The names are aliases (see require_ports), exported like `export import x = require()`. Declared in the function
+    // or file around a block, like a `var` (tsc's declareSymbolAndAddToSymbolTable puts aliases in the container's
+    // locals: two `const X = require()` in different blocks are TS2300, microsoft/TypeScript#41697)
+    while (scope->parent && !scope_is_var_container(scope)) scope = scope->parent;
     my binding.source = &my lazy_type;
     for (u32 i = 0; i < my require_port_count; i++) my require_ports[i].export_import = props.exported;
     if (my binding.tag == BINDING_IDENTIFIER) {
