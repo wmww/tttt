@@ -941,7 +941,7 @@ static Span callee_span(CallInfo const* info) {
     if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
         return callee->property->prop.inner_span;
     }
-    return info->call->callable.inner_span;
+    return callee->inner_span;
 }
 
 static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) {
@@ -959,8 +959,10 @@ static Span span_of_args(Args const* args, u32 from, u32 to) {
     return span_between(args->data[from].expr->outer_span, args->data[to].expr->outer_span);
 }
 
+// `mapper`: the signatures instantiated with it (the one candidate whose instantiated rest type didn't fit)
 static void report_arity(
-    Checker* me, Signature* const* signatures, u32 count, Args const* args, CallInfo const* info, ErrorCtx* errs
+    Checker* me, Signature* const* signatures, u32 count, Args const* args, CallInfo const* info, TyMapper const* mapper,
+    ErrorCtx* errs
 ) {
     u32 min = UINT32_MAX;
     u32 max = 0;
@@ -970,7 +972,7 @@ static void report_arity(
     bool any_below = false;
     Signature const* closest = nullptr;
     for (u32 i = 0; i < count; i++) {
-        ParamShape shape = call_param_shape(me, info, signatures[i], nullptr);
+        ParamShape shape = call_param_shape(me, info, signatures[i], mapper);
         if (shape.min < min) {
             min = shape.min;
             closest = signatures[i];
@@ -1282,6 +1284,7 @@ static Resolution resolve_with_signatures(
     Candidate* unfit = calloc(count ? count : 1, sizeof(Candidate));
     u32 unfit_count = 0;
     bool type_argument_arity_ok = false;
+    Candidate arity_candidate = {0}; // tsc's candidateForArgumentArityError
     TyRelation rounds[2] = { TY_RELATION_SUBTYPE, TY_RELATION_ASSIGNABLE };
     // With a choice to make, candidates are first tried without their context-sensitive arguments, which are only
     // checked (and typed for good) against the first candidate the rest fit (tsc's argCheckMode)
@@ -1298,9 +1301,21 @@ static Resolution resolve_with_signatures(
             type_argument_arity_ok = true;
             ParamShape uninstantiated = call_param_shape(me, info, sig, nullptr);
             bool arity_ok = has_correct_arity(&uninstantiated, args);
+            bool generic_rest = uninstantiated.rest_variadic != nullptr;
             free(uninstantiated.types);
             if (!arity_ok) continue;
             Candidate candidate = make_candidate(me, sig, args, info, skip_sensitive, false);
+            if (generic_rest && candidate.mapper) {
+                // A rest parameter of a generic type may have a different arity once instantiated (tsc's second
+                // hasCorrectArity for getNonArrayRestType): `...m: T extends true ? [] : [X]`
+                ParamShape instantiated = call_param_shape(me, info, sig, candidate.mapper);
+                arity_ok = has_correct_arity(&instantiated, args);
+                free(instantiated.types);
+                if (!arity_ok) {
+                    arity_candidate = candidate;
+                    continue;
+                }
+            }
             ParamShape shape = call_param_shape(me, info, sig, candidate.mapper);
             check_args(me, &shape, args, skip_sensitive);
             Ty const* arg_type;
@@ -1334,8 +1349,11 @@ static Resolution resolve_with_signatures(
                 report_type_argument_arity(me, signatures, count, info, errs);
             } else if (unfit_count) {
                 report_no_match(me, unfit, unfit_count, count, args, info, call_span, errs);
+            } else if (arity_candidate.sig) {
+                Signature* sig = (Signature*)arity_candidate.sig;
+                report_arity(me, &sig, 1, args, info, arity_candidate.mapper, errs);
             } else {
-                report_arity(me, signatures, count, args, info, errs);
+                report_arity(me, signatures, count, args, info, nullptr, errs);
             }
         }
         // What the call is taken to return anyway (tsc's getCandidateForOverloadFailure): of several non-generic
