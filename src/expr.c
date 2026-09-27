@@ -2203,6 +2203,16 @@ static bool check_symbol_operands(Ty const* left, Ty const* right, Expr const* e
         "' operator cannot be applied to type 'symbol'.");
     return false;
 }
+// An object made where it is compared (tsc's isLiteralExpressionOfObject): not parenthesized, arrow functions aren't
+static bool is_literal_expression_of_object(Expr const* me) {
+    if (!span_eq(my inner_span, my outer_span)) return false;
+    switch (my tag) {
+        case EXPR_OBJECT: case EXPR_ARRAY: case EXPR_REGEX: case EXPR_CLASS_DECL: return true;
+        case EXPR_FUNCTION: return !span_valid(my function->arrow_span);
+        default: return false;
+    }
+}
+
 
 // Returns whether a compound assignment is checked too: not after its operands were rejected (tsc's
 // checkBinaryLikeExpression, whose checkAssignmentOperator is skipped then)
@@ -2331,7 +2341,18 @@ static bool binary_op_typecheck(
         case BINARY_OP_DOUBLE_EQUAL:
         case BINARY_OP_TRIPLE_EQUAL:
         case BINARY_OP_NOT_EQUAL:
-        case BINARY_OP_TRIPLE_NOT_EQUAL:
+        case BINARY_OP_TRIPLE_NOT_EQUAL: {
+            // A fresh object is equal to nothing else (only `===` and `!==` in JS)
+            bool strict_op = op == BINARY_OP_TRIPLE_EQUAL || op == BINARY_OP_TRIPLE_NOT_EQUAL;
+            Expr const* l = &expr->binary_op->left;
+            if ((is_literal_expression_of_object(l) || is_literal_expression_of_object(&expr->binary_op->right)) &&
+                (!l->inner_span.source || !l->inner_span.source->is_js || strict_op)
+            ) {
+                bool eq = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL;
+                error_ctx_error_d(errs, expr->outer_span, 2839, "This condition will always return '", eq ? "false" : "true",
+                    "' since JavaScript compares objects by reference, not value.");
+            }
+        }
             // (Anything may be compared with null and undefined: tsc's isTypeEqualityComparableTo())
             if (!((left->flags | right->flags) & TYF_NULLABLE) && !ty_is_comparable_either_way(current_checker, left, right)) {
                 // Shown as their base types if those don't overlap either (`n == b` for a b narrowed to `false`)

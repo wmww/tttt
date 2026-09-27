@@ -402,7 +402,34 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
     return false;
 }
 
+// `type F = ({ a: string }) => void` renames `a` to `string` (tsc's checkPotentialUncheckedRenamedBindingElementsInTypes):
+// a renaming nothing uses in a signature without a body is an error, even without noUnusedLocals
+static void binding_check_unused_renamings(Binding const* me, FunctionArg const* arg, ErrorCtx* errs) {
+    if (my tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &my array) binding_check_unused_renamings(i, arg, errs);
+    } else if (my tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &my object) {
+            Binding const* target = &i->target;
+            if (target->tag != BINDING_IDENTIFIER || target->rest || span_eq(i->source_span, target->content_span)) {
+                binding_check_unused_renamings(target, arg, errs);
+                continue;
+            }
+            if (target->symbol && target->symbol->referenced) continue;
+            Error* e = error_ctx_error_d(errs, target->content_span, 2842, "'", target->content_span,
+                "' is an unused renaming of '", i->source_span, "'. Did you intend to use it as a type annotation?");
+            if (e && !arg->initializer.binding.has_explicit_type) {
+                Span end = { .source = arg->span.source, .sv = csview_from_n(arg->span.sv.buf + arg->span.sv.size, 0) };
+                error_add_related_d(e, end, 2843, "We can only write a type for '", i->source_span,
+                    "' by adding a type for the entire parameter here.");
+            }
+        }
+    }
+}
+
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
+    if (!my has_body && my full_span.source && !my full_span.source->is_declaration) {
+        for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(&i->initializer.binding, i, errs);
+    }
     generic_typecheck(&my generic, errs);
     bool grammar_error = function_impl_check_grammar_parameters(me, errs);
     if (!grammar_error && my accessor && span_valid(my member_name)) {

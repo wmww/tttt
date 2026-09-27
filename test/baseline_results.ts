@@ -5416,7 +5416,7 @@ const baselines = {
         types: true,
     },
     'conditionalEqualityOnLiteralObjects': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12421,7 +12421,7 @@ const baselines = {
         types: true,
     },
     'excessPropertyCheckWithSpread': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22766,7 +22766,7 @@ const baselines = {
         types: true,
     },
     'narrowByEquality': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27301,7 +27301,7 @@ const baselines = {
         types: true,
     },
     'renamingDestructuredPropertyInFunctionType3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41591,7 +41591,7 @@ const baselines = {
         types: true,
     },
     'destructuringInFunctionType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50056,7 +50056,7 @@ const baselines = {
         types: false,
     },
     'functionImplementationErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53776,7 +53776,7 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponentOverload1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59426,7 +59426,7 @@ const baselines = {
         types: false,
     },
     'parserRealSource7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
