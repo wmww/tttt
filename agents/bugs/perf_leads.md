@@ -4,6 +4,16 @@ Numbers are in `measurements.md`; this is what to try next. Profile with callgri
 has no debug info: for line-level annotation (`callgrind_annotate --auto=yes`) build a copy with
 `meson setup /tmp/relg --buildtype release -Dc_args=-g` (same code, same instruction counts). Compare
 instruction counts across sessions, not wall times.
+- **zod** (pinned 2026-09-27) is the heaviest corpus: ~11.7 G instructions (perf stat, user+kernel) for 522 files,
+  twice the tsc corpus; tsgo takes 3.0 s on 4 threads, tttt ~1.4 s. Callgrind (10.85 G): instantiation is ~45% self
+  (`instantiate_inner` 21%, `intern_get`/`intern_slot` 16%, `ty_instantiate`, `instantiate_list`,
+  `ty_reference_with_this` 4%), and `infer_from_returns` is 92% inclusive: inference from signature return types walks
+  zod's big classes (ZodType's ~50 fluent methods returning `this`-typed schemas) member by member, instantiating each.
+  tsc infers between two references to the same class/interface by type arguments (inferFromTypeArguments with
+  variances) and caches `this`-instantiations; find which relation or inference pairs tttt walks structurally there
+  (`TTTT_DEBUG_RELATE_NESTED`, a counter in `infer_from_objects`). Other suspects: deep-partial.test.ts's `DeepPartial`
+  over a getter-recursive schema (TS2589 where tsc stops after one unfold), the eager reverse mapped types. The zod session's inference
+  changes cost valibot +2.3% and type-fest +1.8% instructions (union-target inference no longer skips used-up sources).
 - **Parser** (after the first-char dispatch session, 2026-09-27: parse is 13% of the tsc corpus, 43% of nest, 20% of
   webpack): no single parser function is above ~2.5% self any more. What's left is structural: every attempt makes a
   `Parser` (the `parser()` copy is the top line), identifiers are scanned again by each alternative that fails, and

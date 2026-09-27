@@ -511,6 +511,11 @@ fallback (tsc's getInferredType).
 - deep-partial.test.ts 111/113 (2 TS2589): `DeepPartial` over a getter-recursive schema; tsc stops after one unfold.
   Hidden behind `any` until the getter fix; also the likely reason the corpus costs 11.6 G instructions.
 - detached-methods.test.ts (3): vitest's `MockReturnType` of a method picked by key from an overloaded interface.
-- in-out.test.ts:59, v3 generics.test.ts:20, v3 types.ts 2778/2795 (TS7053 on `{ [k in keyof T]?: true } &
+- v3 generics.test.ts:20: inside a generic function, `z.object({ nested: schema })`'s output is
+  `{ [k in keyof addQuestionMarks<baseObjectOutputType<{ nested: TData }>, any>]: ...[k] }`; tsc keeps that `keyof`
+  deferred, tttt expands it into `"nested" | (undefined extends TData["_output"] ? never : "nested") | ...`, and
+  `data.nested` on the result is `any` (so the function returns `Promise<any>`). Keyof of a generic intersection of
+  mapped types: when it may be resolved (tsc's getIndexType / shouldDeferIndexType).
+- in-out.test.ts:59, v3 types.ts 2778/2795 (TS7053 on `{ [k in keyof T]?: true } &
   Record<Exclude<keyof Mask, keyof T>, never>` indexed by string): unsampled.
 - tsc 5.8's TS2677 for `(arg: string) => arg is infer R` is missing (a missing check, suite-side).

@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, corpus session (todo entry 9): zod pinned, type-fest 11 -> 4, webpack
+Suite 9363 -> **WEBPACK_SUITE**. Sixth corpus **zod** (v4.6.5, 522 files, tsc/tsgo 0): 87 at first run (after a
+plan 27 parser regression, ~300 syntax errors, was fixed) -> **15**. type-fest 11 -> **4** (abstract-class only),
+webpack 515 -> **WEBPACK_COUNT**, tsc/valibot/react/nest 0. Instructions (perf stat, user+kernel, session start ->
+end before the webpack merge): tsc corpus 5.414 -> 5.425 G, type-fest 3.802 -> 3.870, valibot 5.612 -> 5.743 (+2.3%:
+union-target inference), react 2.250, nest 1.460, webpack 3.903 -> 3.872, zod 11.74 G (callgrind 10.85 G, profile
+in `perf_leads.md`). Wall (contended machine): zod ~1.4 s vs tsc 11.3 s and tsgo 3.0 s (4 threads).
+
 ## 2026-09-27, plan 27 stage 2: heritage clauses
 Suite 9210 -> **9243 / 13542** full (+33 tests, no component lost; errors/symbols/types all move). `./syntaxstats.py`
 cluster permissive:heritage 22 -> 0. Corpora unchanged (tsc 0, type-fest 11, valibot 0, react 0; zero syntax errors).
