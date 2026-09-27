@@ -1,4 +1,5 @@
 #include "enum_decl.h"
+#include "error.h"
 #include "ty/ty.h"
 #include "scope.h"
 #include "several_types.h"
@@ -51,8 +52,39 @@ void enum_decl_lookup_names(EnumDecl* me, Scope* names, ErrorCtx* errs) {
 }
 
 
+// The rules for the declarations of a merged enum, checked once, by its first declaration (tsc's
+// checkEnumDeclarationWorker)
+static void enum_decl_check_declarations(EnumDecl const* me, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    if (!symbol || symbol_find_node(symbol, SYMBOL_DECL_ENUM) != me) return;
+    if (symbol->decl_count > 1) {
+        for (u32 i = 0; i < symbol->decl_count; i++) {
+            if (symbol->decls[i].kind != SYMBOL_DECL_ENUM) continue;
+            EnumDecl const* decl = symbol->decls[i].node;
+            if (decl->is_const != my is_const) {
+                error_ctx_error_d(errs, decl->name, 2473, "Enum declarations must all be const or non-const.");
+            }
+        }
+    }
+    // Only one declaration can continue from 0, the others can't continue the numbering of another
+    bool seen_missing_initializer = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_ENUM) continue;
+        EnumDecl const* decl = symbol->decls[i].node;
+        if (vec_enum_case_is_empty(&decl->cases)) continue;
+        EnumCase const* first = decl->cases.data;
+        if (first->value.tag != EXPR_IMPLICIT_ANY) continue;
+        if (seen_missing_initializer) {
+            error_ctx_error_d(errs, first->full_name, 2432, "In an enum with multiple declarations, only one "
+                "declaration can omit an initializer for its first enum element.");
+        }
+        seen_missing_initializer = true;
+    }
+}
+
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
     for_each (i, vec_enum_case, &my cases) {
         expr_typecheck(&i->value, errs);
     }
+    enum_decl_check_declarations(me, errs);
 }
