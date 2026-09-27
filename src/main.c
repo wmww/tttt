@@ -156,6 +156,7 @@ static_failable check_files(Options const* opts, returns int) {
     Program* program = program_new(&errs, fs);
     program_set_realpath(program, real_path_of, nullptr);
     set_lib_dir(program);
+    program_follow_lib_references(program);
     StrList root_files = {0};
     try (apply_compiler_options(opts, program_options(program), &root_files)) cleanup {
         str_list_drop(&root_files);

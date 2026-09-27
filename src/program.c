@@ -63,6 +63,7 @@ static const char* program_phase_get_str(ProgramPhase phase) {
 typedef struct Program {
     ProgramPhase phase;
     bool loading_stdlib; // If we're loading standard library files instead of normal files
+    bool follow_lib_references; // program_follow_lib_references()
     cstr lib_dir; // cstr_null: default_lib_dir
     ErrorCtx* errs; // unowned
     Fs const* fs;
@@ -153,6 +154,10 @@ static ModuleResolver* program_resolver(Program* me) {
 
 void program_set_lib_dir(Program* me, csview dir) {
     cstr_assign_sv(&my lib_dir, dir);
+}
+
+void program_follow_lib_references(Program* me) {
+    my follow_lib_references = true;
 }
 
 void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx) {
@@ -310,16 +315,26 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                         cstr_assign_sv(&statement->source_directive->not_found, cstr_sv(&statement->source_directive->path));
                     }
                     break;
-                case SOURCE_DIRECTIVE_REFERENCE_LIB:
-                    // Between lib files: they are all in one directory. TODO: a lib only a directive in the program
-                    // names (the harness keeps libs in a shared program, which a test's file can't add to)
+                case SOURCE_DIRECTIVE_REFERENCE_LIB: {
+                    // Between lib files: they are all in one directory. From another file (tsc's
+                    // processLibReferenceDirectives, `@types/node` has some): a lib like the ones the options name. An
+                    // unknown name is ignored (TODO: TS2726). The harness keeps libs in a shared program, which a
+                    // test's file can't add to (TODO)
+                    cstr name = cstr_d(statement->source_directive->path, ".d.ts");
+                    cstr_lowercase(&name);
                     if (my loading_stdlib) {
-                        cstr name = cstr_d(statement->source_directive->path, ".d.ts");
-                        cstr_lowercase(&name);
                         program_load_reference_path(me, statement->source_directive->path_span, cstr_sv(&name));
-                        cstr_drop(&name);
+                    } else if (my follow_lib_references && !my options.no_lib) {
+                        cstr path = cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name);
+                        if (fs_is_reg_file(my fs, cstr_sv(&path))) {
+                            my loading_stdlib = true;
+                            program_add_source_idempotent(me, cstr_sv(&path));
+                            my loading_stdlib = false;
+                        }
+                        cstr_drop(&path);
                     }
-                    break;
+                    cstr_drop(&name);
+                }   break;
             }
             break;
 

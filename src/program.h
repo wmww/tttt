@@ -12,10 +12,13 @@ typedef union arc_js_object ArcObject;
 Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);
 
-// How the program's module resolution follows symlinks (see module_resolution.h), before loading anything
 // The directory the standard library files (es5.d.ts & co.) are loaded from
 void program_set_lib_dir(Program* me, csview dir);
+// How the program's module resolution follows symlinks (see module_resolution.h), before loading anything
 void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx);
+// A `/// <reference lib="x">` in a file that isn't a lib loads that lib into this program, like tsc does. Not for a
+// program whose libs are copied from another (program_copy_globals_from())
+void program_follow_lib_references(Program* me);
 
 // Change them before loading anything, and call compiler_options_resolve() when done. Parsing, name resolution and
 // checking of this program read them through compiler_options()
