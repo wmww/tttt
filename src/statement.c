@@ -11,6 +11,7 @@
 #include "program.h"
 #include "flow.h"
 #include "unused.h"
+#include "module_resolution.h"
 
 // Variable initialization
 
@@ -234,8 +235,7 @@ static InstanceState statement_instance_state_of(Statement const* me, csview nam
         case STATEMENT_DECL_NAMESPACE:
             *found = !my decl.namespace.is_ambient_module && csview_equals_sv(my decl.namespace.name.sv, name);
             if (!*found) return NON_INSTANTIATED;
-            return my decl.namespace.is_global ||
-                block_is_instantiated(&my decl.namespace.contents, true, outer, depth + 1) ? INSTANTIATED : NON_INSTANTIATED;
+            return block_is_instantiated(&my decl.namespace.contents, true, outer, depth + 1) ? INSTANTIATED : NON_INSTANTIATED;
         case STATEMENT_IMPORT_EXPORT: {
             // A re-export of `import x = N.x` is instantiated, it's ambiguous. Other imports aren't
             PortStatement const* port = my import_export;
@@ -306,9 +306,8 @@ static bool block_is_instantiated(Block const* me, bool const_enums, Scope const
             }
 
             case STATEMENT_DECL_NAMESPACE:
-                if (i->decl.namespace.is_global ||
-                    block_is_instantiated(&i->decl.namespace.contents, const_enums, outer, depth + 1)
-                ) {
+                // (A `declare global` too, by its contents: tsc's getModuleInstanceState)
+                if (block_is_instantiated(&i->decl.namespace.contents, const_enums, outer, depth + 1)) {
                     return true;
                 }
                 break;
@@ -324,6 +323,28 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     if (my is_global && !props.declared && !scope->ambient) {
         error_ctx_error_d(scope->errs, my name, 2670,
             "Augmentations for the global scope should have 'declare' modifier unless they appear in already ambient context.");
+    }
+
+    // tsc's checkModuleDeclaration: where `declare global` and `declare module "m"` can be. Augmentations
+    // (isModuleAugmentationExternal) are at the top level of a module or directly in an ambient module of a script,
+    // an ambient module can also be at the top level of a script, not a global augmentation
+    bool invalid_global = false;
+    if (my is_global || my is_ambient_module) {
+        bool in_script_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container &&
+            scope->container->is_module && scope->parent && scope->parent->kind == SCOPE_SCRIPT;
+        if (my is_global && (scope->kind == SCOPE_SCRIPT || (scope->kind != SCOPE_MODULE && !in_script_ambient_module))) {
+            error_ctx_error_d(scope->errs, my name, 2669, "Augmentations for the global scope can only be directly nested "
+                "in external modules or ambient module declarations.");
+            // It augments nothing then: a namespace named `global` (tsc's binder declares a ValueModule for it)
+            my is_global = false;
+            invalid_global = true;
+        } else if (!my is_global && scope->kind == SCOPE_SCRIPT && my module_ref &&
+            module_name_is_relative(cstr_sv(&my module_ref->path))
+        ) {
+            error_ctx_error_d(scope->errs, my name, 2436, "Ambient module declaration cannot specify relative module name.");
+        } else if (!my is_global && scope->kind != SCOPE_SCRIPT && scope->kind != SCOPE_MODULE && !in_script_ambient_module) {
+            error_ctx_error_d(scope->errs, my name, 2435, "Ambient modules cannot be nested in other modules or namespaces.");
+        }
     }
 
     if (my is_global) {
@@ -352,7 +373,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             my inner_scope->container = module;
             my is_augmentation = augmentation;
         } else {
-            bool has_value = block_is_instantiated(&my contents, true, scope, 0);
+            bool has_value = invalid_global || block_is_instantiated(&my contents, true, scope, 0);
             scope_init_declaration(scope, &my symbol, (DeclProps){
                 .name = my name,
                 .full = my full_span,
