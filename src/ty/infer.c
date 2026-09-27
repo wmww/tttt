@@ -1303,12 +1303,13 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
     for (u32 i = 0; i < params.len; i++) {
         if (inferred[i]) continue;
         Ty const* fallback = ty_param_default(me, params.data[i]);
-        results[i] = fallback ? ty_instantiate(me, fallback, mapper) : ty_intrinsic(me, TY_UNKNOWN_);
+        Ty const* nothing = ty_intrinsic(me, inf->any_default ? TY_ANY : TY_UNKNOWN_); // (tsc's getDefaultTypeArgumentType)
+        results[i] = fallback ? ty_instantiate(me, fallback, mapper) : nothing;
         if (results[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             // A default that mentions a type parameter that has none itself
             bool self = false;
             for (u32 j = 0; j < params.len; j++) self |= !inferred[j] && results[i] == params.data[j];
-            if (self) results[i] = ty_intrinsic(me, TY_UNKNOWN_);
+            if (self) results[i] = nothing;
         }
         mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
     }

@@ -141,6 +141,7 @@ typedef struct Inference {
     u32 len;
     u32 cap;
     bool within_relation; // Constraints are checked by the relation in progress (tsc's InferenceContext.compareTypes)
+    bool any_default; // A call in a JavaScript file: what nothing is inferred for is any, not unknown (InferenceFlags.AnyDefault)
     // Type parameters of generic function arguments that the call's return type is generic in (tsc's
     // InferenceContext.inferredTypeParameters, see inference_propagate_generic()). Malloc'd
     Ty const** inferred_type_params;

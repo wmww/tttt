@@ -2957,26 +2957,15 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
 
 // A declaration's `@template` tags as its type parameters, when it has none written (tsc's
 // getJSDocTypeParameterDeclarations: not the templates of a comment with a `@typedef`/`@callback`, those are its)
+static Generic jsdoc_template_generic(VecJsDocTag* tags);
+
 static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
     if (!generic_empty(generic)) return;
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind == JSDOC_TAG_TYPEDEF || i->kind == JSDOC_TAG_CALLBACK) return;
     }
-    for_each (i, vec_jsdoc_tag, tags) {
-        if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
-        GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true };
-        if (i->has_type) {
-            item.extends = jsdoc_take_type(i, nullptr);
-            item.extends.from_jsdoc = false;
-            item.extends_explicit = true;
-        }
-        if (i->has_default) {
-            item.fallback = i->default_type;
-            item.fallback_explicit = true;
-            i->has_default = false;
-        }
-        vec_generic_item_push(&generic->items, item);
-    }
+    generic_drop(generic);
+    *generic = jsdoc_template_generic(tags);
 }
 
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`

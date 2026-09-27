@@ -652,6 +652,8 @@ static TyMapper const* infer_type_arguments(
     Ty const* this_arg = info->this_arg;
     Inference inf;
     inference_init(&inf, sig->type_params);
+    SourceFile const* file = info->call ? info->call->callable.inner_span.source : info->call_span.source;
+    inf.any_default = file && file->is_js;
     ParamShape shape = call_param_shape(me, info, sig, nullptr);
 
     // Nested in an argument of another generic call, the contextual type mentions its type parameters: what it has

@@ -327,9 +327,7 @@ bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, E
     u32 min = 0;
     Generic const* params = generic_kind ? declared_type_params(symbol, &min) : nullptr;
     if (!params) {
-        // HACK: a class or function of a JavaScript file may be generic through `@template` (plan 26 stage 3)
-        bool maybe_template = symbol->decl_count && symbol->decls[0].name.source && symbol->decls[0].name.source->is_js;
-        if (arg_count && (symbol->flags & SYMBOL_TYPE) && !maybe_template) {
+        if (arg_count && (symbol->flags & SYMBOL_TYPE)) {
             error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
             return true;
         }

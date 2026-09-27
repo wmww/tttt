@@ -6826,7 +6826,7 @@ const baselines = {
         types: false,
     },
     'contravariantOnlyInferenceFromAnnotatedFunctionJs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14953,7 +14953,7 @@ const baselines = {
     'genericDefaultsJs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericDerivedTypeWithSpecializedBase': {
         errors: true,
@@ -60213,7 +60213,7 @@ const baselines = {
     'inferingFromAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferringClassMembersFromAssignments': {
         errors: false,
@@ -60528,7 +60528,7 @@ const baselines = {
     'plainJSGrammarErrors3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'plainJSGrammarErrors4': {
         errors: false,
