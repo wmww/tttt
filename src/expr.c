@@ -486,9 +486,22 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
     Checker* checker = current_checker;
     Ty const* callee = ty_expr_type(checker, &my expr);
     if (callee->flags & TYF_ANY) return;
-    // TODO: every signature that takes this many type arguments, like ty_apply_type_arguments()
+    // The first signature that takes this many type arguments (TODO: all of them, like ty_apply_type_arguments())
     Members const* members = ty_members(checker, callee);
     Signature const* sig = members->call_count ? members->call[0] : members->construct_count ? members->construct[0] : nullptr;
+    u32 written = (u32)vec_spanned_type_size(&my params);
+    for (u32 i = 0; i < members->call_count + members->construct_count; i++) {
+        Signature const* each = i < members->call_count ? members->call[i] : members->construct[i - members->call_count];
+        signature_resolve(checker, each);
+        u32 min = 0;
+        for (u32 j = 0; j < each->type_params.len; j++) {
+            if (!ty_param_default(checker, each->type_params.data[j])) min = j + 1;
+        }
+        if (written >= min && written <= each->type_params.len) {
+            sig = each;
+            break;
+        }
+    }
     if (sig) signature_resolve(checker, sig);
     if (!sig || !sig->type_params.len) {
         error_ctx_error_d(

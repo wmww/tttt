@@ -367,10 +367,29 @@ static bool base_signature_without_type_args(Checker* me, Signature const* base_
     return true;
 }
 
+// A construct signature of a base constructor that takes the written type arguments (tsc's
+// getInstantiatedConstructorsForTypeArguments: as many as it has type parameters, or fewer if the rest have defaults):
+// what it constructs with them. Null if it doesn't take them
+static Ty const* base_signature_with_type_args(
+    Checker* me, Signature const* base_sig, VecSpannedType const* written, LowerCtx ctx
+) {
+    signature_resolve(me, base_sig);
+    TyList params = base_sig->type_params;
+    u32 count = (u32)vec_spanned_type_size(written);
+    if (count > params.len) return nullptr;
+    Ty const** args = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    for (u32 j = 0; j < params.len; j++) {
+        args[j] = j < count ? ty_from_node(me, &vec_spanned_type_at(written, j)->type, ctx) : ty_param_default(me, params.data[j]);
+        if (!args[j]) return nullptr;
+    }
+    Ty const* ret = signature_return_type(me, base_sig);
+    return params.len ? ty_instantiate(me, ret, ty_mapper_new(me, params, (TyList){ .data = args, .len = params.len })) : ret;
+}
+
 // The class a class extends: its instance type (with the written type arguments) and its declaration. False if
 // there's none. HACK: a class name (`extends Name`, `extends Name<Args>`, `extends A.B.Name`) is found syntactically;
-// any other expression is the return type of its first construct signature that takes no type arguments (tsc
-// resolves the signatures that match the written type arguments; written ones aren't handled, hacks.md)
+// any other expression is the return type of its first construct signature that takes the written type arguments
+// (tsc also checks that they all construct the same type, TS2510)
 static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, Ty const** instance, Symbol const** base_decl) {
     Expr const* extends = &class_decl->extends;
     VecSpannedType const* written_args = nullptr;
@@ -397,13 +416,17 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     decl = symbol_for_meaning(decl, SYMBOL_CLASS);
     if (!decl || decl->is_placeholder) {
         // Any other expression (a mixin call, a class expression, a variable of a constructor type): what its first
-        // construct signature returns. TODO: written type arguments, the static side, several signatures
-        if (extends->tag == EXPR_IMPLICIT_ANY || written_args) return false;
+        // construct signature that takes the written type arguments returns. TODO: the static side, several signatures
+        if (extends->tag == EXPR_IMPLICIT_ANY) return false;
         Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
         if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
         Members const* members = ty_members(me, constructor);
         Ty const* constructed = nullptr;
         for (u32 i = 0; i < members->construct_count && !constructed; i++) {
+            if (written_args) {
+                constructed = base_signature_with_type_args(me, members->construct[i], written_args, ctx);
+                continue;
+            }
             TyMapper const* mapper;
             if (!base_signature_without_type_args(me, members->construct[i], &mapper)) continue;
             constructed = signature_return_type(me, members->construct[i]);

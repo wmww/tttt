@@ -3142,6 +3142,20 @@ static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
     *generic = jsdoc_template_generic(tags);
 }
 
+// A class's JSDoc: `@template`s, and the type arguments of `@extends {Base<T>}` (tsc's getEffectiveBaseTypeNode: the
+// tag's ExpressionWithTypeArguments stands for the heritage clause's)
+static void jsdoc_apply_class(VecJsDocTag* tags, ClassDecl* class_decl) {
+    jsdoc_apply_template(tags, &class_decl->generic);
+    if (class_decl->extends.tag == EXPR_IMPLICIT_ANY || class_decl->extends.tag == EXPR_GENERIC_PARAMS) return;
+    JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
+    if (!tag || tag->type.tag != TYPE_IDENTIFIER || !vec_spanned_type_size(&tag->type.identifier->generic_params)) return;
+    VecSpannedType params = tag->type.identifier->generic_params;
+    tag->type.identifier->generic_params = (VecSpannedType){0};
+    for_each (i, vec_spanned_type, &params) i->type.from_jsdoc = true;
+    Span span = class_decl->extends.outer_span;
+    class_decl->extends = expr_generic_params(span, c_new(GenericParamsExpr, { .expr = class_decl->extends, .params = params }));
+}
+
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
 static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
     // `@overload` tags (of every comment before the host), each a signature of their own: the function's, whose
@@ -9456,13 +9470,13 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
             FunctionImpl* function = jsdoc_function_of(&initializer->value);
             if (function) jsdoc_apply_function(&tags, function);
-            if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_template(&tags, &initializer->value.class_decl->generic);
+            if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_class(&tags, initializer->value.class_decl);
         }   break;
         case STATEMENT_DECL_FUNCTION:
             jsdoc_apply_function(&tags, statement->decl.function.impl);
             break;
         case STATEMENT_DECL_CLASS:
-            jsdoc_apply_template(&tags, &statement->decl.class->generic);
+            jsdoc_apply_class(&tags, statement->decl.class);
             break;
         case STATEMENT_EXPR:
             if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
@@ -9470,6 +9484,8 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 FunctionImpl* function = jsdoc_function_of(&assignment->right);
                 if (function) {
                     jsdoc_apply_function(&tags, function);
+                } else if (assignment->right.tag == EXPR_CLASS_DECL && !expr_is_perenthisized(&assignment->right)) {
+                    jsdoc_apply_class(&tags, assignment->right.class_decl);
                 } else {
                     // The declared type of what the assignment declares (`this.x`, `exports.x`, `module.exports`)
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);

@@ -432,8 +432,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `ty_simplified` only does indexed accesses (no getSimplifiedConditionalType, no generic-tuple-by-number case).
 - `apparent_type` (relate.c) keeps a TY_INDEXED/TY_CONDITIONAL without base constraint as itself (tsc: `{}`).
 - `class_base()` (members.c HACK): a base class *name* is found syntactically; any other `extends` expression is the
-  return type of its first construct signature taking no type arguments (written type arguments not handled, no static
-  members inherited, no intersection with the base constraint for mixins: plan 32 stage C). `ty_has_unresolved_base()` gates
+  return type of its first construct signature that takes the written type arguments (tsc's
+  getInstantiatedConstructorsForTypeArguments, without its TS2510 check that they all agree; no static members inherited, no intersection with the base constraint for mixins: plan 32 stage C). `ty_has_unresolved_base()` gates
   TS2339/TS7053 for such classes.
 - `this` types: `Prop.thisless` follows tsc's syntactic isThisless rules; `this` in a static member is the static side;
   relations compare a reference with a this-argument structurally with the plain one (tsc: one more covariant argument).
