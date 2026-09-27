@@ -1547,6 +1547,53 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
     }
 }
 
+// Whether a declaration of a function's symbol is ambient (tsc's getEffectiveDeclarationFlags & Ambient)
+static bool function_symbol_decl_is_ambient(SymbolDecl const* decl) {
+    switch (decl->kind) {
+        case SYMBOL_DECL_FUNCTION: return ((FunctionImpl const*)decl->node)->ambient;
+        case SYMBOL_DECL_CLASS: return ((ClassDecl const*)decl->node)->is_ambient;
+        case SYMBOL_DECL_NAMESPACE: {
+            NamespaceDecl const* namespace = decl->node;
+            return namespace->inner_scope && namespace->inner_scope->ambient;
+        }
+        default: return decl->block && decl->block->ambient;
+    }
+}
+
+// The ambient half of tsc's checkFlagAgreementBetweenOverloads (TS2384): when some but not all of the function's
+// declarations are ambient, those that differ from the canonical one of their file (the implementation if it's in the
+// same container as the file's first declaration, else that first declaration). TODO: TS2383 (export), which needs the
+// export context of ambient declarations, and TS2385/TS2512/TS2386 for methods
+static void function_check_ambient_agreement(Symbol const* symbol, FunctionImpl const* implementation, ErrorCtx* errs) {
+    bool some = false, all = true;
+    SymbolDecl const* implementation_decl = nullptr;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->node == implementation) implementation_decl = decl;
+        if (decl->kind != SYMBOL_DECL_FUNCTION) continue;
+        bool ambient = function_symbol_decl_is_ambient(decl);
+        some |= ambient;
+        all &= ambient;
+    }
+    if (some == all) return;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        SourceFile const* file = decl->name.source ? decl->name.source : decl->full.source;
+        // The canonical declaration of its file
+        SymbolDecl const* file_first = nullptr;
+        for (u32 j = 0; j < symbol->decl_count && !file_first; j++) {
+            SymbolDecl const* other = &symbol->decls[j];
+            if ((other->name.source ? other->name.source : other->full.source) == file) file_first = other;
+        }
+        SymbolDecl const* file_canonical = implementation_decl && implementation_decl->block == file_first->block ?
+            implementation_decl : file_first;
+        bool ambient = function_symbol_decl_is_ambient(decl);
+        if (ambient != function_symbol_decl_is_ambient(file_canonical)) {
+            error_ctx_error_d(errs, symbol_decl_error_span(decl), 2384, "Overload signatures must all be ambient or non-ambient.");
+        }
+    }
+}
+
 // tsc's duplicateFunctionDeclaration: more than one declaration of the function has a body, reported on all of them.
 // And that the overloads are compatible with the implementation (TS2394)
 static void function_check_duplicate_implementation(FunctionImpl const* me, ErrorCtx* errs) {
@@ -1566,6 +1613,7 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
             overloads[overload_count++] = function;
         }
     }
+    if (overload_count) function_check_ambient_agreement(symbol, implementation, errs);
     if (implementation && overload_count) {
         ty_check_overloads_compatible(current_checker, implementation, implementation->name, overloads, names, overload_count, errs);
     }
