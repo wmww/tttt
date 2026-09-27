@@ -334,6 +334,12 @@ typedef struct Scope {
     bool strict;
     // The statements declared in this scope (block_add_names()), null if none were
     struct Block const* block;
+    // The type and initializer of an instance field of a class with a constructor, when fields are initialized in the
+    // constructor (not standard class fields): the value names the constructor declares, which the field can't use
+    // (tsc's propertyWithInvalidInitializer), see scope_invalid_initializer_field()
+    struct ClassItem const* instance_field;
+    Span const* constructor_locals;
+    u32 constructor_local_count;
 } Scope;
 
 // Symbol pointer -> symbol pointer, open addressing
@@ -487,6 +493,11 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
 // Reports what scope_report_value_not_found() deferred, with the checker current
 void scope_report_missing_prefixes(Binder* me);
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning);
+// A value `name` used here, which resolved to `found` (maybe null), passes an instance field on the way whose
+// constructor declares a value of that name (TS2301): that field, else null
+struct ClassItem const* scope_invalid_initializer_field(Scope const* me, csview name, Symbol const* found);
+// Reports TS2301 (TS2844 in the field's type) for such a use
+void scope_report_invalid_initializer_reference(struct ClassItem const* field, Span name, ErrorCtx* errs);
 // Same, returning the symbol that has the meaning (aliases resolved), *found is what the name itself refers to
 Symbol const* scope_get_value(Scope const* me, csview name, Symbol const** found);
 Symbol const* scope_get_type(Scope const* me, csview name, Symbol const** found);

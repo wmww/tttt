@@ -2095,6 +2095,11 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
     bool in_class = false;
     for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope->this_ref.class_decl;
     if (!in_class || (my flow && my flow->in_type_query)) {
+        ClassItem const* field = in_class ? scope_invalid_initializer_field(me, name.sv, nullptr) : nullptr;
+        if (field) {
+            scope_report_invalid_initializer_reference(field, name, errs);
+            return;
+        }
         scope_report_not_found(me, name, SYMBOL_VALUE, shorthand, errs);
         return;
     }
@@ -2137,7 +2142,11 @@ static bool report_missing_prefix(Scope const* me, Span name, ErrorCtx* errs) {
 void scope_report_missing_prefixes(Binder* me) {
     for (u32 i = 0; i < my pending_not_found_count; i++) {
         PendingNotFound const* pending = &my pending_not_found[i];
-        if (!report_missing_prefix(pending->scope, pending->name, pending->errs)) {
+        if (report_missing_prefix(pending->scope, pending->name, pending->errs)) continue;
+        ClassItem const* field = scope_invalid_initializer_field(pending->scope, pending->name.sv, nullptr);
+        if (field) {
+            scope_report_invalid_initializer_reference(field, pending->name, pending->errs);
+        } else {
             scope_report_not_found(pending->scope, pending->name, SYMBOL_VALUE, pending->shorthand, pending->errs);
         }
     }
@@ -2193,6 +2202,34 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
         }
     }
     return nullptr;
+}
+
+ClassItem const* scope_invalid_initializer_field(Scope const* me, csview name, Symbol const* found) {
+    ClassItem const* ret = nullptr;
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        if (found && scope_declares_symbol(scope, found)) break;
+        // (tsc keeps the outermost one when fields are nested in class expressions)
+        for (u32 i = 0; i < scope->constructor_local_count; i++) {
+            if (csview_equals_sv(scope->constructor_locals[i].sv, name)) {
+                ret = scope->instance_field;
+                break;
+            }
+        }
+    }
+    return ret;
+}
+
+void scope_report_invalid_initializer_reference(ClassItem const* field, Span name, ErrorCtx* errs) {
+    Span type = field->field.has_explicit_type ? field->field.explicit_type_span : span_null;
+    bool in_type = span_valid(type) && name.source == type.source && span_start_ptr(name) >= span_start_ptr(type) &&
+        span_start_ptr(name) <= span_end_ptr(type);
+    if (in_type) {
+        error_ctx_error_d(errs, name, 2844, "Type of instance member variable '", field->field.name_span,
+            "' cannot reference identifier '", name, "' declared in the constructor.");
+    } else {
+        error_ctx_error_d(errs, name, 2301, "Initializer of instance member variable '", field->field.name_span,
+            "' cannot reference identifier '", name, "' declared in the constructor.");
+    }
 }
 
 static Symbol const* scope_get(Scope const* me, csview name, u32 meaning, Symbol const** found) {

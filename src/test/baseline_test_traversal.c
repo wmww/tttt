@@ -1182,9 +1182,12 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my name, .allow_declaration_empty = true });
         return;
     }
-    Symbol const* shown = my target ? shown_declaration(my symbol, my target) : nullptr;
+    // (A name an instance field can't use still shows what it finds)
+    Symbol const* target = my target ? my target :
+        my invalid_initializer_reference ? symbol_for_meaning(my symbol, SYMBOL_VALUE) : nullptr;
+    Symbol const* shown = target ? shown_declaration(my symbol, target) : nullptr;
     // (an alias of an anonymous declaration, `export default class {}`, has a name)
-    if (shown && (span_valid(my target->name_span) || span_valid(shown->name_span))) {
+    if (shown && (span_valid(target->name_span) || span_valid(shown->name_span))) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(shown),
             .span = my name,

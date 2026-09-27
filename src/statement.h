@@ -200,6 +200,11 @@ static inline DeclExported statement_get_exported(Statement const* me) {
 void statement_drop(Statement* me);
 void statement_add_names(Statement* me, Scope* scope);
 void statement_hoist_names(Statement* me, Scope* scope);
+// The names of the `var`s nested in a statement, hoisted out of it in strict code (see statement_hoist_names())
+void statement_collect_var_names(Statement const* me, VecSpan* out);
+// The names of the values a function declares in its own scope (tsc's locals of the function with a value meaning): its
+// parameters, the declarations directly in its body and every `var` of its body. The function is strict code
+void function_collect_local_value_names(struct FunctionImpl const* function, VecSpan* out);
 // The resolve walk, which also builds the control flow graph (flow.h): statements are walked in flow order
 void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs);
 // The types of `return` expressions. `return;` has none (FunctionImpl.has_bare_return)

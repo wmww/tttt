@@ -225,6 +225,32 @@ void class_decl_add_names(ClassDecl* me, Scope* scope, DeclExported exported, bo
     });
 }
 
+// The value names the constructor (with a body) declares, when instance fields are initialized in it: those names
+// can't be used by the fields (tsc's propertyWithInvalidInitializer). In the binder's arena, *count 0 if none
+static Span const* constructor_locals(ClassDecl const* me, Arena* arena, u32* count) {
+    *count = 0;
+    CompilerOptions const* options = compiler_options();
+    if (options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022) return nullptr;
+    FunctionImpl const* constructor = nullptr;
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) {
+            constructor = &i->constructor.func;
+            break;
+        }
+    }
+    if (!constructor) return nullptr;
+    VecSpan names = {0};
+    function_collect_local_value_names(constructor, &names);
+    Span* ret = nullptr;
+    if (names.size) {
+        ret = arena_new_n(arena, Span, names.size);
+        memcpy(ret, names.data, sizeof(Span) * (size_t)names.size);
+        *count = (u32)names.size;
+    }
+    vec_span_drop(&names);
+    return ret;
+}
+
 static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs, bool static_members) {
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
     this_scope->this_ref = (ThisRef){
@@ -232,9 +258,18 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
     };
     this_scope->strict = true;
 
+    u32 local_count = 0;
+    Span const* locals = static_members ? nullptr : constructor_locals(me, &names->binder->arena, &local_count);
     for_each (i, vec_class_item, &my items) {
         if (class_item_is_static(i) == static_members) {
-            class_item_lookup_names(i, this_scope, errs);
+            Scope* scope = this_scope;
+            if (local_count && i->tag == CLASS_ITEM_FIELD) {
+                scope = scope_new(this_scope, SCOPE_BLOCK);
+                scope->instance_field = i;
+                scope->constructor_locals = locals;
+                scope->constructor_local_count = local_count;
+            }
+            class_item_lookup_names(i, scope, errs);
         }
     }
 }

@@ -678,6 +678,79 @@ void statement_hoist_names(Statement* me, Scope* scope) {
     }
 }
 
+static void block_collect_var_names(Block const* me, VecSpan* out) {
+    for_each (i, vec_statement, &my statements) statement_collect_var_names(i, out);
+}
+
+static void variable_statement_collect_names(VariableStatement const* me, VecSpan* out) {
+    for_each (i, vec_initialized_binding, &my initializers) binding_collect_names(&i->binding, out);
+}
+
+// The names of the `var`s statement_hoist_names() hoists, for strict code (no function declarations)
+void statement_collect_var_names(Statement const* me, VecSpan* out) {
+    switch (my tag) {
+        case STATEMENT_BLOCK:
+            block_collect_var_names(&my block, out);
+            break;
+        case STATEMENT_IF_ELSE:
+            for_each (i, vec_statement, &my if_else.statements) statement_collect_var_names(i, out);
+            break;
+        case STATEMENT_FOR_LOOP:
+            statement_collect_var_names(&my for_loop->initialization, out);
+            statement_collect_var_names(&my for_loop->body, out);
+            break;
+        case STATEMENT_FOR_EACH_LOOP:
+            if (my for_each_loop->variable.tag == FOR_EACH_LOOP_STATEMENT &&
+                my for_each_loop->variable.statement.keyword == VAR_INIT_VAR
+            ) {
+                variable_statement_collect_names(&my for_each_loop->variable.statement, out);
+            }
+            statement_collect_var_names(&my for_each_loop->body, out);
+            break;
+        case STATEMENT_SWITCH:
+            for_each (i, vec_switch_case, &my switch_->cases) {
+                for_each (j, vec_statement, &i->statements) statement_collect_var_names(j, out);
+            }
+            break;
+        case STATEMENT_TRY_CATCH:
+            block_collect_var_names(&my try_catch->try_block, out);
+            block_collect_var_names(&my try_catch->catch_block, out);
+            block_collect_var_names(&my try_catch->finally_block, out);
+            break;
+        case STATEMENT_LABELED:
+            statement_collect_var_names(my labeled.body, out);
+            break;
+        case STATEMENT_DECL_VARIABLE:
+            if (my decl.variable.keyword == VAR_INIT_VAR) variable_statement_collect_names(&my decl.variable, out);
+            break;
+        default:
+            break;
+    }
+}
+
+void function_collect_local_value_names(FunctionImpl const* function, VecSpan* out) {
+    for_each (i, vec_function_arg, &function->args) binding_collect_names(&i->initializer.binding, out);
+    for_each (i, vec_statement, &function->body.statements) {
+        switch (i->tag) {
+            case STATEMENT_DECL_VARIABLE:
+                variable_statement_collect_names(&i->decl.variable, out);
+                break;
+            case STATEMENT_DECL_FUNCTION:
+                if (span_valid(i->decl.function.impl->name)) vec_span_push(out, i->decl.function.impl->name);
+                break;
+            case STATEMENT_DECL_CLASS:
+                if (span_valid(i->decl.class->name)) vec_span_push(out, i->decl.class->name);
+                break;
+            case STATEMENT_DECL_ENUM:
+                vec_span_push(out, i->decl.enum_->name);
+                break;
+            default:
+                statement_collect_var_names(i, out);
+                break;
+        }
+    }
+}
+
 void statement_add_names(Statement* me, Scope* scope) {
     switch (my tag) {
         case STATEMENT_EXPR:

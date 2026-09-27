@@ -52,6 +52,9 @@ typedef struct IdentifierExpr {
     // isOuterVariable), as far as the resolve walk knows (a `var` whose declaration comes later isn't)
     bool outer_reference;
     bool is_arguments; // The implicit `arguments` of the function around it (tsc's argumentsSymbol)
+    // A name an instance field can't use because its constructor declares it (TS2301): no target (any), but `symbol`
+    // is still what it finds
+    bool invalid_initializer_reference;
     // The callee of `require(x)` in a JavaScript file (module_ref is the module if x is a string literal): 1, or 2 when
     // the call is what a declaration's aliases import (InitializedBinding.require_ports, which report the module)
     uint8_t require_call;

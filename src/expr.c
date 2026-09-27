@@ -317,6 +317,15 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         }
     }
     if (my target) {
+        ClassItem const* field = scope_invalid_initializer_field(names, my name.sv, my symbol);
+        if (field) {
+            // Unresolved (any) like in tsc's resolveNameHelper, but the symbols baseline still shows what the name
+            // finds (getSymbolAtLocation doesn't report)
+            scope_report_invalid_initializer_reference(field, my name, errs);
+            my target = nullptr;
+            my invalid_initializer_reference = true;
+            return;
+        }
         check_type_only_value(me, names, errs);
         check_declared_before_use(me, names, errs);
         check_parameter_reference(me, names, errs);

@@ -69,6 +69,19 @@ void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNa
     }
 }
 
+void binding_collect_names(Binding const* me, VecSpan* out) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+        case BINDING_IDENTIFIER: vec_span_push(out, my content_span); break;
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &my array) binding_collect_names(i, out);
+            break;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &my object) binding_collect_names(&i->target, out);
+            break;
+    }
+}
+
 // tsc's checkVarDeclaredNamesNotShadowed(): a `var` hoists out of the blocks it is written in, past any let/const of
 // the same name one of them declares (the let/const of the function or file itself would be a duplicate declaration)
 static void binding_check_var_not_shadowed(Binding const* me, Scope const* names, ErrorCtx* errs) {

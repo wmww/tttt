@@ -67,6 +67,8 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 // any (tsc's padTupleType)
 void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initializer, ErrorCtx* errs);
 bool binding_is_parameter(Binding const* pattern);
+// The names of the variables it declares, in order
+void binding_collect_names(Binding const* me, VecSpan* out);
 /// `initializer`: what the binding is initialized with, if anything (a failed check is elaborated into it)
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs);
 
