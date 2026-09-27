@@ -3407,7 +3407,9 @@ static bool check_related(
     Ternary result = is_related_to(me, st, source, target, st->reporting);
     my relating = st->outer;
     if (st->overflow) {
-        my instantiation_limit_hit = true;
+        // HACK: tsc says TS2321 "Excessive stack depth comparing types" here (at the error node, else the current node);
+        // tttt's relation depth runs out where tsc's instantiations do
+        ty_instantiation_limit_reached(me);
         result = TERNARY_FALSE;
     }
     if (report_into && !result) {

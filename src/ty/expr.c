@@ -2403,9 +2403,17 @@ static void contextually_type_static_fields(Checker* me, ClassDecl const* class_
     }
 }
 
+static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx);
+
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
-    // tsc's checkExpression: the instantiation limit is per expression, not per program
-    ty_reset_instantiation_count(me);
+    // tsc's checkExpression: the current node, and the instantiation limit is per expression, not per program
+    Span saved = ty_enter_node(me, expr_error_span(expr));
+    Ty const* ret = compute_inner(me, expr, ctx);
+    ty_leave_node(me, saved);
+    return ret;
+}
+
+static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return any_type(me);
         case EXPR_LITERAL: return ty_fresh_literal(me, ty_literal(me, &expr->literal));

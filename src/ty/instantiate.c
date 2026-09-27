@@ -1,4 +1,6 @@
 #include "ty/ty_internal.h"
+#include "error.h"
+#include "program.h"
 
 // Instantiation never copies a type's structure. TypeNode parameters map to their targets, interned types get rebuilt
 // through their constructors (and so come out as the existing type if there is one), and object types become a
@@ -10,9 +12,28 @@
 
 // The branch a conditional type resolved to: when it is a conditional type itself, it doesn't count towards the
 // instantiation depth (see Checker.instantiation_tail_count)
-void ty_reset_instantiation_count(Checker* me) {
+Span ty_enter_node(Checker* me, Span span) {
+    Span saved = my current_node;
+    my current_node = span;
     my instantiation_count = 0;
     my instantiation_epoch++;
+    return saved;
+}
+
+void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message) {
+    ErrorCtx* errs = program_errors(my program);
+    if (errs->phase != ERROR_PHASE_TYPECHECK) {
+        cstr_drop(&message);
+    } else if (span_valid(my current_node)) {
+        error_ctx_error_s(errs, my current_node, ts_code, message);
+    } else {
+        error_ctx_global_error_s(errs, ts_code, message);
+    }
+}
+
+void ty_instantiation_limit_reached(Checker* me) {
+    my instantiation_limit_hits++;
+    ty_error_at_current_node_d(me, 2589, "Type instantiation is excessively deep and possibly infinite.");
 }
 
 Ty const* ty_instantiate_tail(Checker* me, Ty const* ty, TyMapper const* mapper) {
@@ -440,7 +461,7 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
     Ty const* const* cached = intern_get(&my types, key, len + 2);
     // (One cut short by the limits is only good until the instantiation count starts over)
     if (cached && (uintptr_t)cached[2] && (uintptr_t)cached[2] != (uintptr_t)my instantiation_epoch + 1) cached = nullptr;
-    if (cached && (uintptr_t)cached[2]) my instantiation_limit_hit = true;
+    if (cached && (uintptr_t)cached[2]) ty_instantiation_limit_reached(me);
     Ty const* ret = nullptr;
     if (cached) {
         ret = cached[0];
@@ -459,13 +480,11 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
             me, (TyList){ .data = sources, .len = kept_len }, (TyList){ .data = kept, .len = kept_len }
         );
         free(sources);
-        bool limit_hit = my instantiation_limit_hit;
-        my instantiation_limit_hit = false;
+        u32 limit_hits = my instantiation_limit_hits;
         ret = resolve_conditional_instance(me, root, restricted, distributed);
         // A result cut short by the instantiation limits (TS2589) isn't what this instantiation is: it is remembered only
         // while the count that ran out lasts, which keeps a runaway recursion from recomputing it exponentially
-        bool cut_short = my instantiation_limit_hit;
-        my instantiation_limit_hit |= limit_hit;
+        bool cut_short = my instantiation_limit_hits != limit_hits;
         Ty const** entry = arena_new_n(&my arena, Ty const*, 3);
         entry[0] = ret;
         entry[1] = (Ty const*)(uintptr_t)*distributed;
@@ -584,7 +603,7 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
     if (!mapper || !mapper->len || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty;
     if (tail && ty->kind == TY_CONDITIONAL) {
         if (my instantiation_tail_count >= MAX_TAIL_COUNT || my instantiation_count >= MAX_INSTANTIATION_COUNT) {
-            my instantiation_limit_hit = true;
+            ty_instantiation_limit_reached(me);
             return ty_intrinsic(me, TY_ERROR);
         }
         my instantiation_tail_count++;
@@ -594,13 +613,17 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
         return ret;
     }
     if (my instantiation_depth >= MAX_INSTANTIATION_DEPTH || my instantiation_count >= MAX_INSTANTIATION_COUNT) {
-        // Whoever reports errors next turns the flag into TS2589 (check_assignable_or_error_internal, for now)
-        my instantiation_limit_hit = true;
+        ty_instantiation_limit_reached(me);
         return ty_intrinsic(me, TY_ERROR);
     }
     my instantiation_depth++;
     my instantiation_count++;
+    // Tail calls are counted per conditional type being resolved (tsc's tailCount is local to getConditionalType): what
+    // one instantiates along the way starts over
+    u32 tail_count = my instantiation_tail_count;
+    my instantiation_tail_count = 0;
     Ty const* ret = instantiate_inner(me, ty, mapper);
+    my instantiation_tail_count = tail_count;
     my instantiation_depth--;
     return ret;
 }

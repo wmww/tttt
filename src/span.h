@@ -31,6 +31,12 @@ static inline bool span_valid(Span me) { return me.sv.buf; }
 // The same stretch of the same file
 static inline bool span_eq(Span a, Span b) { return a.sv.buf == b.sv.buf && a.sv.size == b.sv.size; }
 
+// Whether `inner` lies within `outer` (both valid)
+static inline bool span_contains_span(Span outer, Span inner) {
+    return outer.sv.buf && inner.sv.buf && inner.sv.buf >= outer.sv.buf &&
+        inner.sv.buf + inner.sv.size <= outer.sv.buf + outer.sv.size;
+}
+
 static inline const char* span_start_ptr(Span me) {
     return me.sv.buf;
 }

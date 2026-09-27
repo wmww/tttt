@@ -1042,7 +1042,7 @@ static TypeNode const* array_element_type_node(TypeNode const* node) {
 }
 
 // A rest element whose type isn't written as an array: tsc flags it Variadic (getRestTypeElementFlags)
-static bool tuple_node_has_variadic(TypeNode const* node) {
+bool ty_tuple_node_has_variadic(TypeNode const* node) {
     for_each (i, vec_tuple_element, &node->tuple.elements) {
         if (i->rest && !array_element_type_node(&i->type)) return true;
     }
@@ -1918,7 +1918,14 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
                 Ty const* deferred = deferred_interface_reference(me, node, ctx, alias, alias_args);
                 if (deferred) return deferred;
             }
+            // tsc's walk checks a type reference (checkSourceElement: its errors go there) before anything asks for its
+            // type; tttt's often asks first. A generic reference inside the node being checked stands for it
+            Span saved_node = my current_node;
+            if (vec_spanned_type_size(&node->identifier->generic_params) && span_contains_span(my current_node, node->identifier->name)) {
+                my current_node = identifier_type_span(node->identifier);
+            }
             Ty const* ret = lower_identifier(me, node->identifier, ctx);
+            my current_node = saved_node;
             Symbol const* decl = node->identifier->target;
             // The body of an alias is an instantiation of a generic alias: it goes by the new name
             // Not when a conditional type resolved (`type C = Chars<"ab">` is the union made along the way, tsc's
@@ -1973,7 +1980,7 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
         case TYPE_TUPLE: {
             // A tuple with a variadic element (going by the syntax) isn't deferred in tsc, so it goes by no alias
             // An empty tuple is its target (tsc's isDeferredTypeReferenceNode, getTypeFromArrayOrTupleTypeNode)
-            if (!tuple_node_has_variadic(node) && vec_tuple_element_size(&node->tuple.elements) &&
+            if (!ty_tuple_node_has_variadic(node) && vec_tuple_element_size(&node->tuple.elements) &&
                 (alias || (ctx.in_alias && tuple_elements_may_resolve_type_alias(me, node)))
             ) {
                 return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);

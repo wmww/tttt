@@ -658,7 +658,8 @@ struct Checker {
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
     struct JsxElement const* jsx_element; // The JSX element being checked (relation errors about its attributes)
-    bool instantiation_limit_hit; // Set when ty_instantiate() gave up; whoever reports errors turns it into TS2589
+    Span current_node; // See ty_enter_node()
+    u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
     // The typecheck walk inside the true branches of conditional types: `A` is `A & X` in `A extends X ? A['k'] : ...`
     // where indexed access types are checked (tsc's substitution types, see ty_check_indexed_access_type())
     Ty const* true_branch_check[16];
@@ -936,7 +937,17 @@ Ty const* ty_param_default(Checker* me, Ty const* param); // null if none
 TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets);
 Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper);
 Ty const* ty_instantiate_tail(Checker* me, Ty const* ty, TyMapper const* mapper); // A conditional type's branch
-void ty_reset_instantiation_count(Checker* me); // Per expression / statement, like tsc
+// tsc's currentNode: the statement, type node or expression being checked (checkSourceElement, checkExpression), where
+// diagnostics about what went wrong deep inside the checker go. Entering one starts the instantiation count over.
+// Returns the previous one, to give back to ty_leave_node()
+Span ty_enter_node(Checker* me, Span span);
+static inline void ty_leave_node(Checker* me, Span saved) { me->current_node = saved; }
+// tsc's error(currentNode, ...): only while the program is being typechecked (not while a baseline prints types)
+void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message);
+#define ty_error_at_current_node_d(me, ts_code, ...) ty_error_at_current_node(me, ts_code, cstr_d(__VA_ARGS__))
+// TS2589 at the current node, counted in instantiation_limit_hits: the instantiation limits ran out (the caller gives
+// the error type) or a relation got too deep
+void ty_instantiation_limit_reached(Checker* me);
 
 // lower.c
 Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);

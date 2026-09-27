@@ -934,6 +934,10 @@ Binder const* program_get_binder(Program const* me) {
     return my binder;
 }
 
+ErrorCtx* program_errors(Program const* me) {
+    return my errs;
+}
+
 Checker* program_get_checker(Program const* me) {
     return my checker;
 }

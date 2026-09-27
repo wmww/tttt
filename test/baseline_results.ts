@@ -8578,7 +8578,7 @@ const baselines = {
     'declarationEmitRecursiveConditionalAliasPreserved': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitRedundantTripleSlashModuleAugmentation': {
         errors: true,

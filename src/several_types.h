@@ -51,6 +51,8 @@ typedef enum JsDocIntrinsic {
 void identifier_type_drop(IdentifierType* me);
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs);
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
+// The reference as written: from its first name to its closing `>` (just the name of a keyword or `import()`)
+Span identifier_type_span(IdentifierType const* me);
 
 static inline TypeNode type_identifier(IdentifierType* identifier) {
     return (TypeNode){

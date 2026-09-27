@@ -13,13 +13,6 @@
 
 // Checks the statement/expression walk asks of the new core, and how their errors are worded.
 
-static bool report_instantiation_limit(Checker* me, Span span, ErrorCtx* errs) {
-    if (!my instantiation_limit_hit) return false;
-    my instantiation_limit_hit = false;
-    error_ctx_error_d(errs, span, 2589, "Type instantiation is excessively deep and possibly infinite.");
-    return true;
-}
-
 // The lines of an explanation from `first` on as the message chain under `error`, then its related information
 static void attach_explanation(Error* error, VecTyReportLine const* lines, isize_t first) {
     if (!error) return;
@@ -82,7 +75,6 @@ static Error* report_unassignable(
     // Why not, outermost line first
     VecTyReportLine lines = {0};
     ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
-    my instantiation_limit_hit = false;
     span = relocated_span(&lines, span);
 
     isize_t first_nested = 0;
@@ -141,7 +133,7 @@ bool ty_is_generic_object(Checker* me, Ty const* ty) {
         }
         return false;
     }
-    return (ty->flags & TYF_OBJECT) && ty_members(me, ty)->mapped;
+    return (ty->flags & TYF_OBJECT) && (ty_members(me, ty)->mapped || ty_is_generic_tuple(me, ty));
 }
 
 // Where a type is declared (tsc's target.symbol.declarations[0], as an error span), invalid if nowhere
@@ -543,13 +535,11 @@ static bool check_assignable(
     // HACK: `any` stands for whatever couldn't be typed (no initializer, failed inference...), and is let through even
     // to `never`
     if (source->flags & TYF_ANY) return true;
-    bool related = ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
-    if (report_instantiation_limit(me, span, errs)) return false;
-    if (related) return true;
-    if (errs && elaborate_error(me, head, expr, source, target, errs)) {
-        my instantiation_limit_hit = false;
-        return false;
-    }
+    u32 limit_hits = my instantiation_limit_hits;
+    if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return true;
+    // (What ran into the instantiation limits has been reported as that, TS2589)
+    if (my instantiation_limit_hits != limit_hits) return false;
+    if (errs && elaborate_error(me, head, expr, source, target, errs)) return false;
     report_unassignable(me, head, source, target, span, errs);
     return false;
 }
@@ -563,7 +553,6 @@ static Error* report_unrelated_with_head(
 ) {
     VecTyReportLine lines = {0};
     ty_explain_unrelated(me, source, target, relation, &lines);
-    my instantiation_limit_hit = false;
     span = relocated_span(&lines, span);
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
@@ -620,8 +609,9 @@ bool ty_check_heritage(
     char const* what, char const* relation, Span span, ErrorCtx* errs
 ) {
     if ((derived->flags | base->flags) & TYF_ANY) return true;
+    u32 limit_hits = my instantiation_limit_hits;
     if (ty_is_related(me, derived, base, TY_RELATION_ASSIGNABLE)) return true;
-    if (report_instantiation_limit(me, span, errs)) return false;
+    if (my instantiation_limit_hits != limit_hits) return false;
     cstr derived_str = ty_to_cstr(me, derived);
     cstr base_str = ty_to_cstr(me, base);
     // Each of the type's own members that doesn't fit the base's (tsc's issueMemberSpecificError), else the whole type
@@ -667,8 +657,9 @@ static Ty const* type_without_signatures(Checker* me, Ty const* ty) {
 bool ty_check_static_heritage(Checker* me, Ty const* static_type, Ty const* base_static, Span span, ErrorCtx* errs) {
     if (!(static_type->flags & TYF_OBJECT) || !(base_static->flags & TYF_OBJECT)) return true;
     Ty const* target = type_without_signatures(me, base_static);
+    u32 limit_hits = my instantiation_limit_hits;
     if (ty_is_related(me, static_type, target, TY_RELATION_ASSIGNABLE)) return true;
-    if (report_instantiation_limit(me, span, errs)) return false;
+    if (my instantiation_limit_hits != limit_hits) return false;
     cstr derived_str = ty_to_cstr(me, static_type);
     cstr base_str = ty_to_cstr(me, base_static);
     report_unassignable_with_head(me, static_type, target, 2417, cstr_d("Class static side '", derived_str,
@@ -714,8 +705,9 @@ void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Sp
     }
     Ty const* target = my disposable_targets[is_await];
     if (!target || source->flags & TYF_ANY) return;
+    u32 limit_hits = my instantiation_limit_hits;
     if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return;
-    if (report_instantiation_limit(me, span, errs)) return;
+    if (my instantiation_limit_hits != limit_hits) return;
     report_unassignable_with_head(me, source, target, is_await ? 2851 : 2850, is_await ?
         cstr_lit("The initializer of an 'await using' declaration must be either an object with a "
             "'[Symbol.asyncDispose]()' or '[Symbol.dispose]()' method, or be 'null' or 'undefined'.") :
@@ -740,7 +732,6 @@ bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Spa
     if ((source->flags & TYF_ANY) || ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return true;
     VecTyReportLine lines = {0};
     ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
-    my instantiation_limit_hit = false;
     Error* error = error_ctx_error_d(errs, tag_name, 2786, "'", tag_name, "' cannot be used as a JSX component.");
     cstr source_str = ty_to_cstr(me, source);
     switch (kind) {

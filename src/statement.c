@@ -1479,8 +1479,15 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
     }
 }
 
+static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
+
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
-    ty_reset_instantiation_count(current_checker); // tsc's checkSourceElement
+    Span saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
+    statement_typecheck_inner(me, ctx, errs);
+    ty_leave_node(current_checker, saved);
+}
+
+static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     // What the builder couldn't know: code after a call that never returns or an exhaustive switch (tsc's
     // checkSourceElement(); an error only when allowUnreachableCode is explicitly false)
     if (my flow && compiler_options()->is_set[COMPILER_OPTION_allow_unreachable_code] &&

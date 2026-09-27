@@ -1530,6 +1530,24 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
     return ret;
 }
 
+// tsc's isGenericTupleType: a tuple with a variadic element, a spread of something generic (`[...T]`, not `[...T[]]`).
+// A deferred reference whose arguments aren't resolved yet goes by its syntax, like tsc's tuple target does
+bool ty_is_generic_tuple(Checker* me, Ty const* ty) {
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_is_tuple(ty)) return false;
+    TyDeferredRef const* deferred = ty->reference.deferred;
+    if (deferred && deferred->state != LAZY_STATE_DONE) {
+        return deferred->node->tag == TYPE_TUPLE && ty_tuple_node_has_variadic(deferred->node);
+    }
+    TupleShape const* shape = ty_tuple_shape(ty);
+    TyList args = ty_reference_args(me, ty);
+    for (u32 i = 0; i < shape->arity && i < args.len; i++) {
+        if (!(shape->flags[i] & TUPLE_ELEMENT_REST)) continue;
+        Ty const* arg = args.data[i];
+        if (arg->kind == TY_TYPE_PARAM || (arg->flags & TYF_DEFERRED)) return true;
+    }
+    return false;
+}
+
 // Returns null if the new core can't tell yet
 // Generic as far as deferring an indexed access goes: a type variable at the top level (tsc's isGenericObjectType /
 // isGenericIndexType). `{ a: T }["a"]` isn't, it's `T`
@@ -1544,7 +1562,7 @@ static bool is_generic_operand(Checker* me, Ty const* ty, u32 depth) {
     }
     // A mapped type whose keys aren't known yet
     if (ty->kind == TY_ANONYMOUS) return ty_members(me, ty)->mapped != nullptr;
-    return false;
+    return ty_is_generic_tuple(me, ty);
 }
 
 // The access itself is ty_access() (access.c), the same lookup property access expressions get

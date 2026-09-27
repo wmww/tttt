@@ -300,6 +300,20 @@ static Generic const* declared_type_params(Symbol const* symbol, u32* min) {
     return ret;
 }
 
+Span identifier_type_span(IdentifierType const* me) {
+    if (my keyword || my import_ref || !span_valid(my name) || !my name.source) return my name;
+    char const* start = span_start_ptr(vec_span_is_empty(&my namespaces) ? my name : *vec_span_front(&my namespaces));
+    char const* end = span_end_ptr(my name);
+    u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
+    if (arg_count) {
+        char const* limit = cstr_str(&my name.source->contents) + cstr_size(&my name.source->contents);
+        end = span_end_ptr(vec_spanned_type_at(&my generic_params, arg_count - 1)->span);
+        while (end < limit && *end != '>') end++;
+        if (end < limit) end++;
+    }
+    return span_make(my name.source, start, end);
+}
+
 // tsc's getTypeFromClassOrInterfaceReference/getTypeFromTypeAliasReference/checkNoTypeArguments: the number of type
 // arguments has to fit the type parameters (TS2314, TS2707), and a type without any takes none (TS2315)
 static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs) {
@@ -312,17 +326,8 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
     }
     if (!jsdoc_named && (!symbol || symbol->is_placeholder)) return;
     if (my keyword || my import_ref || !span_valid(my name) || !my name.source) return;
-    // The reference as written: from its first name to its closing `>`
-    char const* start = span_start_ptr(vec_span_is_empty(&my namespaces) ? my name : *vec_span_front(&my namespaces));
-    char const* end = span_end_ptr(my name);
     u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
-    if (arg_count) {
-        char const* limit = cstr_str(&my name.source->contents) + cstr_size(&my name.source->contents);
-        end = span_end_ptr(vec_spanned_type_at(&my generic_params, arg_count - 1)->span);
-        while (end < limit && *end != '>') end++;
-        if (end < limit) end++;
-    }
-    Span span = span_make(my name.source, start, end);
+    Span span = identifier_type_span(me);
     if (jsdoc_named) {
         if (arg_count) error_ctx_error_d(errs, span, 2315, "Type '", my name, "' is not generic.");
         return;
@@ -364,7 +369,16 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
     cstr_drop(&name);
 }
 
+static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* errs);
+
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
+    // tsc's checkSourceElement of a TypeReference: where its instantiation errors go
+    Span saved = ty_enter_node(current_checker, identifier_type_span(me));
+    identifier_type_typecheck_inner(me, errs);
+    ty_leave_node(current_checker, saved);
+}
+
+static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* errs) {
     if (my import_attributes) import_attributes_resolution_mode(my import_attributes, errs); // tsc's checkImportType
     for_each (i, vec_spanned_type, &my generic_params) {
         type_typecheck(&i->type, errs);
@@ -406,9 +420,11 @@ void indexed_type_lookup_names(IndexedType* me, Scope* names, ErrorCtx* errs) {
 }
 
 void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs) {
+    Span saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
     type_typecheck(&my interface, errs);
     type_typecheck(&my index, errs);
     ty_check_indexed_access_type(current_checker, ty_of_node(&my interface), ty_of_node(&my index), my index_span, my span, errs);
+    ty_leave_node(current_checker, saved);
 }
 
 // Keyof

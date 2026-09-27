@@ -21,6 +21,9 @@ void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path),
 // checking of this program read them through compiler_options()
 CompilerOptions* program_options(Program* me);
 
+// Where the program's diagnostics go (the checker reports tsc's `error(currentNode, ...)` diagnostics straight into it)
+ErrorCtx* program_errors(Program const* me);
+
 // Parses the given file, loads all imports, adds them to the program and returns the SourceFile for the given path.
 // Can be called multiple times. Fails if path can't be read; problems inside the file are reported through the
 // program's ErrorCtx instead. A JavaScript file without `allowJs` is such a problem (TS6504) and gives null
