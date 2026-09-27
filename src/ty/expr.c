@@ -633,9 +633,10 @@ Ty const* ty_js_this_type(Checker* me, FunctionImpl const* function) {
 }
 
 // A type variable among a contextual type (or its union members) as its apparent type (tsc's
-// getApparentTypeOfContextualType, which leaves mapped types alone)
+// getApparentTypeOfContextualType, which leaves mapped types alone). The apparent type of an intersection is the
+// intersection of its members' (getApparentTypeOfIntersectionType)
 static Ty const* apparent_contextual_type(Checker* me, Ty const* ty) {
-    if (ty->kind == TY_UNION) {
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
         TyList types = ty->composite.types;
         Ty const** mapped = malloc(sizeof(Ty const*) * types.len);
         panic_if(!mapped, "out of memory");
@@ -644,7 +645,8 @@ static Ty const* apparent_contextual_type(Checker* me, Ty const* ty) {
             mapped[i] = apparent_contextual_type(me, types.data[i]);
             changed |= mapped[i] != types.data[i];
         }
-        Ty const* ret = changed ? ty_union(me, mapped, types.len, nullptr, (TyList){0}) : ty;
+        Ty const* ret = !changed ? ty : ty->kind == TY_UNION ? ty_union(me, mapped, types.len, nullptr, (TyList){0}) :
+            ty_intersection(me, mapped, types.len, nullptr, (TyList){0});
         free(mapped);
         return ret;
     }

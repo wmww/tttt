@@ -100,6 +100,24 @@ static Ty const* promised_context(Checker* me, Ty const* contextual) {
     return ret;
 }
 
+// The contextual type of an async function's return expressions, before the PromiseLike: the members of the contextual
+// return type that are promises (or could be: any, unknown, void, type variables) awaited (tsc's
+// getContextualReturnType filter + getContextualTypeForReturnExpression's getAwaitedTypeNoAlias). Null if none
+Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual) {
+    TyList members = contextual->kind == TY_UNION ? contextual->composite.types : (TyList){ .data = &contextual, .len = 1 };
+    TyBuf kept = {0};
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        bool keep = (member->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID)) || member->kind == TY_TYPE_PARAM ||
+            member->kind == TY_INDEXED || member->kind == TY_CONDITIONAL || member->kind == TY_SUBSTITUTION ||
+            ty_awaited(me, member) != member;
+        if (keep) ty_buf_push(&kept, ty_awaited_no_alias(me, member));
+    }
+    Ty const* ret = kept.len ? ty_union(me, kept.data, kept.len, nullptr, (TyList){0}) : nullptr;
+    ty_buf_drop(&kept);
+    return ret;
+}
+
 static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     Ty const* outer_context = function_impl_enter_return_context(function);
     TyBuf returned = {0};

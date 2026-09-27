@@ -1814,7 +1814,8 @@ static Ty const* simplified_parts(Checker* me, Ty const* object, Ty const* index
     Ty const** parts = malloc(sizeof(Ty const*) * over.len);
     panic_if(!parts, "out of memory");
     for (u32 i = 0; i < over.len; i++) {
-        Ty const* part = over_index ? ty_indexed(me, object, over.data[i]) : ty_indexed(me, over.data[i], index);
+        // (tsc's getIndexedAccessType without an access node: what isn't there is unknown)
+        Ty const* part = over_index ? ty_indexed_instantiated(me, object, over.data[i]) : ty_indexed_instantiated(me, over.data[i], index);
         parts[i] = ty_simplified(me, part, writing);
     }
     Ty const* ret = intersect ? ty_intersection(me, parts, over.len, nullptr, (TyList){0}) : ty_union(me, parts, over.len, nullptr, (TyList){0});

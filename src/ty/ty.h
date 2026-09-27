@@ -1403,6 +1403,7 @@ void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty c
 Ty const* ty_awaited(Checker* me, Ty const* ty);
 Ty const* ty_promise_like_of(Checker* me, Ty const* ty);
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);
+Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual); // function.c
 Ty const* ty_awaited_returned(Checker* me, Ty const* ty);
 
 // ty_display.c
