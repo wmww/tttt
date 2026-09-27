@@ -8777,11 +8777,14 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     Span label = span_null;
     ret->jump_label = span_null;
     ret->flow = nullptr;
-    if (*p.pos == ';') {
+    // Every branch before the expression statement needs a particular first character: test it first
+    char c = *p.pos;
+    bool word = is_identifier_start_char(c);
+    if (c == ';') {
         *ret = statement_noop;
     } else if (hop_start_if_ends_on_word_break(&p, "debugger")) {
         *ret = statement_noop;
-    } else if (parse_label(&p, &label)) {
+    } else if (word && parse_label(&p, &label)) {
         hop_whitespace(&p);
         Statement body;
         expect_statement(&p, false, &body);
@@ -8793,17 +8796,17 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
             },
         };
         label = span_null;
-    } else if (parse_import_export_statement(&p, ret)) {
-    } else if (parse_decl_statement(&p, toplevel, ret)) {
-    } else if (parse_block(&p, false, &ret->block)) {
+    } else if ((c == 'i' || c == 'e') && parse_import_export_statement(&p, ret)) {
+    } else if ((word || c == '@') && parse_decl_statement(&p, toplevel, ret)) {
+    } else if (c == '{' && parse_block(&p, false, &ret->block)) {
         ret->tag = STATEMENT_BLOCK;
-    } else if (parse_if_else(&p, &ret->if_else)) {
+    } else if (c == 'i' && parse_if_else(&p, &ret->if_else)) {
         ret->tag = STATEMENT_IF_ELSE;
-    } else if (parse_for_loop_statement(&p, ret)) {
-    } else if (parse_while_loop_statement(&p, ret)) {
-    } else if (parse_do_while_loop_statement(&p, ret)) {
-    } else if (parse_switch_statement(&p, ret)) {
-    } else if (parse_try_catch_statement(&p, ret)) {
+    } else if (c == 'f' && parse_for_loop_statement(&p, ret)) {
+    } else if (c == 'w' && parse_while_loop_statement(&p, ret)) {
+    } else if (c == 'd' && parse_do_while_loop_statement(&p, ret)) {
+    } else if (c == 's' && parse_switch_statement(&p, ret)) {
+    } else if (c == 't' && parse_try_catch_statement(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
         ret->keyword_span = span_from(a);
@@ -8812,9 +8815,9 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->tag = STATEMENT_CONTINUE;
         ret->keyword_span = span_from(a);
         parse_jump_target(&p, &label);
-    } else if (parse_return(&p, &ret->expr)) {
+    } else if (c == 'r' && parse_return(&p, &ret->expr)) {
         ret->tag = STATEMENT_RETURN_EXPR;
-    } else if (parse_throw(&p, &ret->expr)) {
+    } else if (c == 't' && parse_throw(&p, &ret->expr)) {
         ret->tag = STATEMENT_THROW_EXPR;
     } else if (parse_expr(&p, expr_ctx_null, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;

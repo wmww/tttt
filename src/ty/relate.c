@@ -1945,9 +1945,17 @@ static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source,
     // A unit type is only ever related to a union member by identity (above) or through a non-unit member
     bool source_is_unit = (source->kind == TY_LITERAL && !source->literal.enum_decl) ||
         (source->kind == TY_INTRINSIC && (source->flags & TYF_NULLABLE));
+    // Nor is an enum literal to another member of its enum (members of one value share their type)
+    Symbol const* source_enum = source->kind == TY_LITERAL && (source->flags & TYF_ENUM_LITERAL) ?
+        source->literal.enum_decl : nullptr;
     for (u32 i = 0; i < targets.len; i++) {
         if (source_is_unit && targets.data[i]->kind == TY_LITERAL && !targets.data[i]->literal.enum_decl &&
             st->relation != TY_RELATION_COMPARABLE
+        ) {
+            continue;
+        }
+        if (source_enum && targets.data[i]->kind == TY_LITERAL && (targets.data[i]->flags & TYF_ENUM_LITERAL) &&
+            targets.data[i]->literal.enum_decl == source_enum
         ) {
             continue;
         }
@@ -4086,6 +4094,14 @@ static bool check_related(
     if ((source->flags | target->flags) & TYF_ERROR) return true;
     source = ty_regular(me, source);
     target = ty_regular(me, target);
+    if (source == target) return true;
+    // Two members of one enum: narrowing asks this about every member of big enum unions (SyntaxKind). Members of
+    // the same value share their type, so this is what is_simple_related() would conclude after its walk
+    if (source->kind == TY_LITERAL && target->kind == TY_LITERAL && (source->flags & target->flags & TYF_ENUM_LITERAL) &&
+        source->literal.enum_decl == target->literal.enum_decl && relation != TY_RELATION_IDENTITY && !report_into
+    ) {
+        return same_literal_value(source, target);
+    }
     // The stacks are big and only ever read below `depth`, so the state isn't zeroed wholesale
     RelationState state;
     RelationState* st = &state;
