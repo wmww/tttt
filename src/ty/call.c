@@ -1489,9 +1489,14 @@ static void reorder_candidates(Checker* me, Signature** signatures, u32 count) {
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
     CallExpr const* call = info->call;
     Ty const* any = ty_intrinsic(me, TY_ANY);
-    if (callee->flags & TYF_ANY) return callee->flags & TYF_ERROR ? callee : any;
-    Ty const* apparent = ty_apparent_type(me, callee);
-    if (apparent->flags & TYF_ANY) return any;
+    Ty const* apparent = callee->flags & TYF_ANY ? callee : ty_apparent_type(me, callee);
+    if (apparent->flags & TYF_ANY) {
+        // tsc's resolveCallExpression/resolveNewExpression: an untyped call can't take type arguments
+        if (errs && info->type_arg_nodes && !(callee->flags & TYF_ERROR) && !call->is_extends && !is_super_call(call)) {
+            error_ctx_error_d(errs, call_span, 2347, "Untyped function calls may not accept type arguments.");
+        }
+        return callee->flags & TYF_ERROR ? callee : any;
+    }
 
     bool super_call = is_super_call(call);
     bool construct = call->uses_new || call->is_extends || super_call;

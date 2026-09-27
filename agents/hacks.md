@@ -625,8 +625,11 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `ty_unresolved`: an unresolved type name lowers to an error-`any` that prints as the written name (tsc does the same);
   it's a `TY_INTRINSIC` with `TYF_ANY | TYF_ERROR`, interned by name in the literal table.
 - `check_array`: tuples only from a tuple-like contextual type, a destructuring pattern or `as const`.
+- `missing_property_type` (ty/expr.c): a property access that finds nothing is tsc's errorType only for an object type
+  that isn't `typeof globalThis`, has no unresolved base and isn't in a JS file, approximating when check.c reports it
+  (tsc returns errorType exactly when it reports). Error types matter for TS2347 and other any-callee checks.
 - `compute`: tagged templates take the return type of a lone non-generic signature (no call resolution: a generic tag
-  is `any`), binary arithmetic is always `number` (no bigint: `b * 2n` is `number`; unary `-`/`~`/`++`/`--` follow
+  is `any`, and substitutions aren't contextually typed: taggedTemplateContextualTyping1/2 get TS2347 for it), binary arithmetic is always `number` (no bigint: `b * 2n` is `number`; unary `-`/`~`/`++`/`--` follow
   tsc's getUnaryResultType), `+` goes by `TY_RELATION_ASSIGNABLE_STRICT_NULLS`. Bigint values are doubles
   (`Value.bigint`), so `2n ** 64n` literals lose precision. `satisfies` contextually types its operand but the result
   isn't narrowed by it.

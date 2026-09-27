@@ -40,6 +40,21 @@ static Ty const* check_template(Checker* me, Expr const* expr, ExprCtx ctx);
 
 static Ty const* any_type(Checker* me) { return ty_intrinsic(me, TY_ANY); }
 
+// A property access that found nothing: tsc's errorType where it reports the missing property (an object type that
+// isn't `typeof globalThis`), else any. HACK: approximates the reporting conditions of ty/check.c (JS files, unresolved
+// bases and whatever else tttt doesn't know the members of stay any)
+static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* object) {
+    if (object->kind == TY_TYPE_PARAM && object->param.state->is_this) object = ty_apparent_type(me, object);
+    bool global_this = object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE &&
+        object->declared.namespace_symbol && object->declared.namespace_symbol->is_global_this;
+    if (!(object->flags & TYF_OBJECT) || (object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object) ||
+        (expr->outer_span.source && expr->outer_span.source->is_js)
+    ) {
+        return any_type(me);
+    }
+    return ty_intrinsic(me, TY_ERROR);
+}
+
 // Memo
 
 static bool kind_uses_context(Expr const* expr) {
@@ -862,7 +877,8 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     }
     if (!decl) {
         // TODO: `this` outside of anything that has one is `typeof globalThis` (or implicitly any)
-        return identifier->keyword == KEYWORD_IDENTIFIER_THIS ? ty_intrinsic(me, TY_UNDEFINED) : any_type(me);
+        // (A name that wasn't found is tsc's errorType)
+        return identifier->keyword == KEYWORD_IDENTIFIER_THIS ? ty_intrinsic(me, TY_UNDEFINED) : ty_intrinsic(me, TY_ERROR);
     }
     return ty_type_of_symbol(me, decl);
 }
@@ -2655,7 +2671,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* ret = expr->property->assignment_target ? ty_access(me, object, key) : ty_access_reading(me, object, key);
             if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target) ret = object_literal_access(me, object, key);
             if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET) ret = generic_element_access(me, expr->property, object, key);
-            if (!ret || ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
+            if (!ret) return missing_property_type(me, expr, object);
+            if (ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
             if (expr->property->assignment_target == FLOW_TARGET_DEFINITE) {
                 Ty const* write = ty_access_write_type(me, object, key);
                 if (write) ret = write;
