@@ -72,6 +72,7 @@ typedef struct CallInfo {
     Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
     Ty const* this_arg; // What `this` is in the call (the receiver of a method call, else void), see this_argument()
     Span this_span; // Where a `this` that doesn't fit is reported
+    Span call_span; // The whole call expression
 } CallInfo;
 
 static void args_push(Args* args, Arg arg) {
@@ -914,9 +915,17 @@ static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature 
     return shape;
 }
 
-// What the errors about a call are reported at: the callee, a JSX element's tag name
+// What the errors about a call are reported at (tsc's getDiagnosticForCallNode): the name of a method, else the callee;
+// the whole expression of `new`; a JSX element's tag name
 static Span callee_span(CallInfo const* info) {
-    return info->jsx ? info->jsx->tag_name.inner_span : info->call->callable.inner_span;
+    if (info->jsx) return info->jsx->tag_name.inner_span;
+    if (info->call->uses_new && span_valid(info->call_span)) return info->call_span;
+    Expr const* callee = &info->call->callable;
+    while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
+    if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
+        return callee->property->prop.inner_span;
+    }
+    return info->call->callable.inner_span;
 }
 
 static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) {
@@ -1724,7 +1733,7 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
 static Ty const* resolve_into(
     Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs, Candidate* chosen_out
 ) {
-    CallInfo info = { .call = call, .contextual = contextual, .chosen_out = chosen_out };
+    CallInfo info = { .call = call, .contextual = contextual, .chosen_out = chosen_out, .call_span = call_span };
     Ty const* type_args[32];
     // `super(x)` in `class A extends B<T>`: B's constructors with the type arguments of the heritage clause (tsc's
     // getInstantiatedConstructorsForTypeArguments)

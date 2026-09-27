@@ -4081,7 +4081,7 @@ const baselines = {
         types: true,
     },
     'cloduleTest2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9506,7 +9506,7 @@ const baselines = {
         types: true,
     },
     'derivedTypeCallingBaseImplWithOptionalParams': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11271,7 +11271,7 @@ const baselines = {
         types: false,
     },
     'errorForwardReferenceForwadingConstructor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15031,7 +15031,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionsWithOptionalParameters2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24636,7 +24636,7 @@ const baselines = {
         types: true,
     },
     'optionalParamArgsTest': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24846,7 +24846,7 @@ const baselines = {
         types: true,
     },
     'overload1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30931,7 +30931,7 @@ const baselines = {
         types: true,
     },
     'typeAssertionToGenericFunctionType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35456,17 +35456,17 @@ const baselines = {
         types: true,
     },
     'derivedClassWithoutExplicitConstructor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'derivedClassWithoutExplicitConstructor2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'derivedClassWithoutExplicitConstructor3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35801,12 +35801,12 @@ const baselines = {
         types: true,
     },
     'classWithBaseClassButNoConstructor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classWithConstructors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36576,7 +36576,7 @@ const baselines = {
         types: true,
     },
     'privateNameMethod': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36781,7 +36781,7 @@ const baselines = {
         types: true,
     },
     'privateNameStaticMethod': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39311,7 +39311,7 @@ const baselines = {
         types: true,
     },
     'es2020IntlAPIs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -39781,7 +39781,7 @@ const baselines = {
         types: true,
     },
     'es5DateAPIs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47336,7 +47336,7 @@ const baselines = {
         types: true,
     },
     'callWithMissingVoidUndefinedUnknownAnyInJs(strict=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64396,7 +64396,7 @@ const baselines = {
         types: true,
     },
     'typesWithPublicConstructor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
