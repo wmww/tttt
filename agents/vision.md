@@ -12,10 +12,14 @@ types components) are the oracle, not the goal; real projects that are clean und
   Of the 4961 failing tests, 1488 fail errors only by *missing* diagnostics, spread over hundreds of codes (the top,
   TS2339/TS2322, are in <90 tests each): small missing checks, module/target-gated diagnostics, JS. Spurious errors
   concentrate in the parser (472 tests have a spurious TS1xxx; most of the 924 spurious TS2304 follow bad recovery).
-- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **47**, valibot **49**, react
-  **1** (bulletproof-react's Vite app, plan 25: 362 at first run), nest **0** (brocoders/nestjs-boilerplate: NestJS
-  11, TypeORM, Mongoose, aws-sdk, decorators, CommonJS; plan 31: 134 at first run, 0 the same day through nine tsc
-  rules, none of them about decorators). type-fest/valibot moved again after plans 29/30 (53 -> 47, 60 -> 49).
+- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, valibot **0**, react **0** (bulletproof-react's
+  Vite app, plan 25: 362 at first run), nest **0** (brocoders/nestjs-boilerplate: NestJS 11, TypeORM, Mongoose,
+  aws-sdk, decorators, CommonJS; plan 31: 134 at first run, 0 the same day), type-fest **19** (all with known causes:
+  plan 30 stage 3, plan 32 mixins, R20, the exactOptional missing type). The 2026-09-27 corpus session took valibot
+  49 -> 0 and react 1 -> 0 with ~30 tsc rules; since then expect-type's `toEqualTypeOf` mismatches are visible
+  (they were silently passing), so valibot's test-d files now check tttt's identity relation too.
+  **Four of five corpora are at 0: the next insights session should pick a fifth** (plan 19's lesson: a new corpus
+  finds tens of spurious diagnostics in its first session).
 - **Perf** (`measurements.md`, 2026-09-27 perf check-up; tsgo = typescript 7.0.2 on 4 cores): tsc corpus 0.87 s vs
   tsgo 1.27 (single-threaded 1.77), type-fest 0.48 vs 1.93, valibot 0.81 s / 541 MB vs 1.64 s / 827 MB, react 0.30 s /
   242 MB vs 1.06 s / 553 MB (tsgo single-threaded 0.96). Ahead everywhere, single-threaded. The "drift" to 0.93 s was

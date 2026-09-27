@@ -453,7 +453,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `class_base()` (`ty/members.c`): an `extends` that isn't a class name is the return type of the first construct
   signature of the expression's type that takes no type arguments (all defaulted), and the class inherits those
   signatures (`builder_add_class_static_side`); written type arguments (`extends Mixin<T>`) aren't handled, no
-  static members inherited from it, no intersection with the base constraint for mixins (hence the gate above).
+  static members inherited from it, no intersection with the base constraint for mixins (hence the gate above;
+  plan 32).
   A source that is `any` is let through to anything, even `never` (`check_assignable`).
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS`: what the operator checks in `expr.c`/`ty/expr.c` mean by "extends number"
   (null/undefined don't, whatever strictNullChecks says; HACK comment in ty.h). tsc checks operands differently.
@@ -719,9 +720,11 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   intersection state isn't there. `RelationState.overflow` (100 deep) reports TS2589 at the current node (tsc: TS2321
   "Excessive stack depth comparing types", at the error node else the current node; tttt's relation depth runs out
   where tsc's instantiations do).
-- `ty_conditional_resolve`: without a permissive instantiation, a failed check with a type variable nested in either
-  side stays deferred (tsc would pick the false branch if it fails even with them replaced by `any`). Whether one is
-  nested is a walk over members (`mentions_type_variables`, up to 8192 types / 48 deep, "unsure" beyond), since
+- `ty_conditional_resolve`: the permissive (TY_WILDCARD) and restrictive instantiations only replace the type
+  variables `mentions_type_variables` finds; when it's unsure, a failed check defers. The wildcard collapses unions,
+  intersections, indexed accesses, conditional types and mapped types (by constraint, only when the mapper has the
+  wildcard: `instantiate_anonymous`) like tsc's, but templates, keyof and template literals over it are ordinary any.
+  Whether a type variable is nested is a walk over members (`mentions_type_variables`, up to 8192 types / 48 deep, "unsure" beyond), since
   TYF_COULD_CONTAIN_TYPE_VARIABLES is set on every function and object literal type. A generic mapped type anywhere
   counts as mentioning one. A constraint of an `infer` that mentions type variables (`Foo<infer X, infer Y>` with `U
   extends T`) isn't checked against the inference (tsc instantiates it with the other inferences first).
@@ -966,3 +969,26 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
   property of the global `SymbolConstructor` into a `unique symbol` (tsc does the same for pre-3.0 libs);
   `TyDisplay.widen_literals` prints literal types inside expression-made object types as their primitive (tsc widens
   them when typing the literal).
+
+## From the corpus session of 2026-09-27 (plan 19)
+- `contextual_array_element_type`/`ty_tuple_slice_element_type`: tsc builds the contextual union of the elements
+  between a tuple's fixed ends without reduction (`noReductions`); `ty_union` reduces literals, so `string | "x"` is
+  `string` there.
+- `resolve_call` (call.c): the second arity check for a generic rest type reports the instantiated candidate with
+  `report_arity`, but a spread argument or several such candidates aren't distinguished like tsc's
+  candidateForArgumentArityError.
+- TS2536 (`checkIndexedAccessIndexType`) is only checked for element access expressions, not for written indexed
+  access types: without tsc's substitution types in true branches, `T extends { k: X } ? T["k"] : ...` would get
+  spurious errors (`ty_check_indexed_access_type` TODO).
+- `apparent_contextual_type` (ty/expr.c) maps type variables and intersection members to their apparent types only
+  for `this` in object literals; `ty_apparent_type` leaves intersections as they are (tsc's
+  getApparentTypeOfIntersectionType).
+- `intersection_props_related`: which member the TS2741 under a whole-object failure names was matched to one tsc
+  example (probe `overload_omit_intersection_missing_prop.ts`), not derived from tsc's code.
+- Generic tuple constraints (base_constraint): only variadic type parameters with an array constraint are replaced;
+  tuple constraints aren't spread. `[S, ...T][i]` below the fixed elements counts only the leading ones.
+- `normalized_tuple`: `...readonly T[]` becomes `...T[]`, but the normalized tuple keeps the alias it was written
+  with in displays (tsc prints the new tuple).
+- `ty_keyof` of a primitive only for intrinsics and literals; template literal and string mapping types stay deferred.
+- Intermediate commits f3b836b..f899e4e (merged from a worktree) don't compile (`mapper_with` renamed in between;
+  fixed by 7f2a7fa): skip them when bisecting.

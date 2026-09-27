@@ -1,8 +1,9 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-26 (after the TS7053/R16/type-fest session)**: tsc 0, **react 1** (R15), **type-fest 53** (TS2345 31,
-TS2578 7, TS2322 7, TS2589 5), **valibot 61** (TS2322 12, TS2578 10, TS2344 10, TS2345 7, TS2339 7, TS2589 6). The
-newest ranking is "After the TS7053/R16 session" at the end; the older sections are history (their counts are stale).
+**Status 2026-09-27 (after the corpus session, todo entry 7)**: tsc 0, **valibot 0**, **react 0**, **nest 0**,
+**type-fest 19** (shared-union-fields-deep 8 = R17, conditional-pick-deep 6 = R20, abstract-class 4 = plan 32,
+jsonify:57 1 = the missing type). The newest section is "Corpus session of 2026-09-27" at the end; the older ones are
+history (their counts are stale).
 
 `./realworld.py --corpus valibot`, `--corpus type-fest` and `--corpus react` (tsc 5.8 reports 0 on all; tsgo only 2
 TS2554 in valibot under its different moduleResolution). Work them down root cause by root cause, suite and the tsc corpus
@@ -399,3 +400,44 @@ are missing checks, which only the suite finds. Decorator checking stays a suite
 Note: nestjs-i18n's shipped `.d.ts` imports `Path`/`PathValue`/`IfAnyOrNever` from a module that doesn't export them
 (hidden by skipLibCheck), so those are error types; a regression in how tttt treats them would look like an i18n
 bug.
+
+## Corpus session of 2026-09-27 (todo entry 7): valibot 49 -> 0, react 1 -> 0, type-fest 47 -> 19
+Three sub-agents took valibot's clusters in worktrees while the session did type-fest; everything merged into
+ai-main (the commits say which). Probes in `test/probes/plan19/{valibot,typefest}/`. By tsc rule:
+- Relations: unconstrained type parameters relate as `unknown` (`{}` only without strictNullChecks, the pre-4.8 rule
+  was still here); `{}` isn't a strict subtype of `object`; tuples relate structurally (with their "0"...)
+  to non-reference targets; `{ [P in K]: E }[X]` falls back to `{...}[constraint of X]`; conditional types relate
+  through their inferred true branch (`Awaited<T>` to `T`); an intersection target's whole-object check fails on
+  missing properties; identity: optional properties with undefined added, a rest tuple's required elements count as
+  min arguments.
+- Conditional types: R15 done, tsc's permissive instantiation (TY_WILDCARD) picks the false branch before the
+  restrictive one picks the true one; only aliased conditional types count as tail-recursion steps (IntRange).
+- Mapped types: over `any` with an array-constrained T an array; over `[]` the empty tuple; `?` index signatures hold
+  undefined; index signatures keep the modifiers type's readonly; readonly of intersection properties only if all
+  are; generic mapped types get members from the lower bound of their key type (Omit<T, K>).
+- Indexing: past a rest element the union of the rest (R21 array-slice); intersections merge their members' index
+  infos; `-0` is `0`; `keyof` a primitive; `keyof typeof Enum` without the reverse mapping; indexing with never.
+- Tuples: rest elements keep only the element type of a readonly array they spread (R21 writable-deep); normalization
+  merges array spreads and optional elements after a rest; contextual types of array literal elements against tuples
+  with rest elements (tsc's getContextualTypeForElementExpression); tuple-like contexts by their "0" property.
+- Calls: arity rechecked for candidates instantiated from a generic rest type (expect-type's
+  `toEqualTypeOf<X>()`: before this, **every expect-type mismatch in tttt was silent**; it surfaced 52 hidden identity
+  divergences in valibot, all fixed the same day); TS2536 for generic element access; async functions' contextual
+  return types; expandos of an annotated const; TS2638 (`in` on a `{}` from narrowing unknown, tsc's
+  unknownEmptyObjectType).
+
+### What is left
+- **R17** (shared-union-fields-deep 8): plan 30 stage 3.
+- **R20** (conditional-pick-deep 6): `test/probes/plan29/cpd_steps.ts` was truncated and is restored; standalone it
+  agrees with tsc (bar alias display), so the corpus failure depends on what was evaluated first. Reduce with the
+  corpus' order kept (tsc runs directly on multi-file probes: `node thirdparty/tsc/lib/tsc.js --noEmit ...`).
+- **abstract-class** (4): mixin classes, `agents/plans/32_mixin_classes.md`.
+- **jsonify:57**: exactOptionalPropertyTypes' missing type (index signatures ignore it; tttt has none).
+- Now that expect-type mismatches are visible, a regression in identity shows up in valibot's test-d files: treat a
+  jump there as real.
+
+### Tooling notes
+- Multi-file probes against a corpus: put them in `/tmp/x/` with relative imports into `thirdparty/corpora/...`, run
+  `./release/tttt -q <options>` and `node thirdparty/tsc/lib/tsc.js --noEmit <options>` (filetest.sh copies the file
+  away, so relative imports break).
+- `/tmp/realworld.txt` is shared: parallel agents overwrite each other's; copy it right after a run.

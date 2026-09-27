@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 19 corpus session (todo entry 7)
+Suite 8686 -> **8703 / 13540** (errors 10463, symbols 12168, types 10455), no lost components. Corpora: tsc **0**
+(0.89 s / 413 MB), valibot 49 -> **0** (0.91 s / 464 MB, was 0.95 s / 514 MB), react 1 -> **0** (0.33 s), nest **0**
+(0.30 s), type-fest 47 -> **19** (0.39 s). Wall times from `realworld.py` (best of 2, no callgrind): no slowdown from
+the wildcard/permissive conditional check (user time on the tsc corpus 1.24 -> 1.13 s, noise).
+
 ## 2026-09-27, plan 26 stage 2 (expandos, JS classes, JS optional parameters)
 Suite 8631 -> **8686 / 13540** (errors 10445, symbols 12168, types 10441); lost: argumentsReferenceInMethod3/5_Js
 types, jsEnumCrossFileExport errors (triage.md "From plan 26 stage 2"). JS tests (`./jsstats.py`): **260 -> 299

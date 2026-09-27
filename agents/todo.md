@@ -18,8 +18,9 @@ corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and
    diagnostics (plan 19's NestJS section). Plan file deleted.
 6. Done: plan 26 stage 2 (JS tests 260 -> 299, suite 8686, corpora unchanged). The JS TS2339 gate stays (hacks.md
    "Assignment declarations"; triage.md "From plan 26 stage 2").
-7. **Corpus session (plan 19)**: the top root causes from entry 2 (type-fest/valibot re-sample; nest is at 0 and
-   react at 1), across all four corpora.
+7. Done: plan 19 corpus session (valibot 49 -> **0**, react 1 -> **0**, type-fest 47 -> 19, nest 0, tsc 0; suite
+   8686 -> 8703). Three worktree sub-agents plus the session; expect-type mismatches are visible now (arity of
+   generic rest types). Left: R17 (plan 30 stage 3), R20, mixins (new plan 32, draft), exactOptional missing type.
 8. **Suite checker bugs 2**: failstats' single-code buckets (triage.md "Single-code error buckets") and the
    module/target-gated diagnostics (triage.md "Target-gated diagnostics"; missing TS1202/TS1203/TS2441/TS2725/TS1262
    in tests where tttt reports nothing). Like entry 8 of the last window: many small missing checks, commit each.
@@ -29,4 +30,4 @@ corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and
    find out if that's legitimate distribution work or waste.
 10. **Triage.** Drain triage.md; also prune hacks.md (914 lines: drop what plans 26-30 fixed, consolidate).
 11. **Insights.** Waiting to be scheduled: plan 27 stage 2 (permissive grammar), plan 30 stage 3, plan 26 stages 3-4,
-    decorators (if the fourth corpus asks for them).
+    plan 32 (mixin classes, a draft needing a planning session), decorators (if the fourth corpus asks for them).

@@ -1911,9 +1911,9 @@ const baselines = {
         types: true,
     },
     'asyncFunctionContextuallyTypedReturns': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'asyncFunctionNoReturnType': {
         errors: false,
@@ -6628,7 +6628,7 @@ const baselines = {
     'contextuallyTypeAsyncFunctionReturnTypeFromUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypeGeneratorReturnTypeFromUnion': {
         errors: true,
@@ -9368,7 +9368,7 @@ const baselines = {
     'deferredConditionalTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deferredConditionalTypes2': {
         errors: true,
@@ -9557,7 +9557,7 @@ const baselines = {
     },
     'destructureTupleWithVariableElement': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuredDeclarationEmit': {
@@ -9943,7 +9943,7 @@ const baselines = {
     'doNotElaborateAssignabilityToTypeParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'doNotEmitDetachedComments': {
         errors: true,
@@ -12398,7 +12398,7 @@ const baselines = {
     'excessPropertyCheckIntersectionWithIndexSignature': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'excessPropertyCheckIntersectionWithRecursiveType': {
         errors: false,
@@ -12483,7 +12483,7 @@ const baselines = {
     'expandoFunctionContextualTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionContextualTypesJSDocInTs': {
         errors: true,
@@ -17051,9 +17051,9 @@ const baselines = {
         types: true,
     },
     'indexedAccessConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexedAccessImplicitlyAny': {
         errors: true,
@@ -17161,9 +17161,9 @@ const baselines = {
         types: false,
     },
     'indexingTypesWithNever': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indirectDiscriminantAndExcessProperty': {
         errors: true,
@@ -17303,7 +17303,7 @@ const baselines = {
     'inferenceAndSelfReferentialConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceDoesNotAddUndefinedOrNull': {
         errors: true,
@@ -17471,9 +17471,9 @@ const baselines = {
         types: true,
     },
     'inferringAnyFunctionType1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferringAnyFunctionType2': {
         errors: true,
@@ -26431,7 +26431,7 @@ const baselines = {
         types: true,
     },
     'quickinfoTypeAtReturnPositionsInaccurate': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26576,7 +26576,7 @@ const baselines = {
         types: false,
     },
     'reactHOCSpreadprops': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26626,7 +26626,7 @@ const baselines = {
         types: true,
     },
     'reactReadonlyHOCAssignabilityReal': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27791,9 +27791,9 @@ const baselines = {
         types: false,
     },
     'reverseMappedIntersectionInference2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedPartiallyInferableTypes': {
         errors: true,
@@ -28968,7 +28968,7 @@ const baselines = {
     'spyComparisonChecking': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stackDepthLimitCastingType': {
         errors: true,
@@ -37951,7 +37951,7 @@ const baselines = {
         types: false,
     },
     'controlFlowTypeofObject': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -39058,7 +39058,7 @@ const baselines = {
     'enumConstantMembers': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumErrorOnConstantBindingWithInitializer': {
         errors: false,
@@ -47326,7 +47326,7 @@ const baselines = {
         types: true,
     },
     'callWithMissingVoid': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51686,7 +51686,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsReactComponents': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60591,9 +60591,9 @@ const baselines = {
         types: true,
     },
     'propertyAssignmentUseParentType1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyAssignmentUseParentType2': {
         errors: false,
@@ -64161,7 +64161,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeModifiers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -64181,7 +64181,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeWithAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -64486,7 +64486,7 @@ const baselines = {
         types: true,
     },
     'nonPrimitiveAndTypeVariables': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65016,12 +65016,12 @@ const baselines = {
         types: false,
     },
     'genericRestArity': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'genericRestArityStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67571,9 +67571,9 @@ const baselines = {
         types: true,
     },
     'unionTypeFromArrayLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeIndexSignature': {
         errors: true,

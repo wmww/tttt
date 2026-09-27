@@ -6,6 +6,26 @@ plan 29, substitution types and `T[K]` constraints plan 30.
 Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the codes `src/` never mentions, and
 "Missing checks after plan 15" below has the tail worth knowing about.
 
+## From the corpus session (2026-09-27, plan 19)
+- **Display of resolved aliases**: several probes match tsc's errors but print the alias where tsc prints what it
+  resolved to: `Simplify<A>` / `Prettify<X>` over an intersection (tsc: the structure), `Exclude<union, never>` (tsc:
+  the union), a normalized tuple (`readonly [string, ...(readonly number[])]` keeps its alias), `ConditionalExcept<...>`
+  in cpd_steps.ts, `keyof typeof Enum` (tsc prints the enum). Probably one rule: tsc attaches an alias only to what
+  the alias instantiation itself created (see also "`Awaited<string | undefined>` displays as the alias" below).
+  `./displaydiff.py` for the count.
+- **Symbols of `infer X extends C<...>`**: references inside an `infer` type parameter's constraint are missing from
+  the symbols baseline (probe test/probes/plan19/valibot/partial_check_overload.ts).
+- **Symbols of mapped properties over an intersection**: tsc lists the declarations from every intersection member
+  that has the property, tttt the first (probe mapped_over_intersection_readonly.ts).
+- **Object spread of a generic**: tsc types `{ a, ...t, b }` with generic `t` as `{ a } & T & { b }`; tttt merges the
+  properties after the spread (probe omit_generic_properties.ts, types only).
+- **Deferred tuple access**: `pipe[1]` on a generic tuple `[S, ...T]` should stay `[S, ...T][1]`; tttt says any.
+- **`keyof Omit<any, "a">`** displays as `Exclude<string | number | symbol, "a">` (tsc: `string | number | symbol`).
+- **isTupleLikeType's length half**: an array-like context whose `length` is a number literal isn't tuple-like yet
+  (only the "0" property rule is in `context_is_tuple_like`).
+- **Conditional inferred true branch**: relating a deferred conditional through its true branch with `infer`s as
+  unknown is only done when the check type is generic; with a generic extends type tsc has real inferences.
+
 ## From plan 31 (2026-09-27)
 - **`Awaited<string | undefined>` displays as the alias**: `declare const z: Awaited<string | undefined>` (target
   es2021, strict) prints `Awaited<string | undefined>` where tsc prints `string | undefined`; so do `Promise.all`
@@ -493,24 +513,7 @@ is one code). The triage fixed the three "misplaced" span buckets (TS2554, TS605
   `callgrind_annotate [--inclusive=yes]`). Worth a `./profile.sh` wrapper if more sessions need it.
 
 ## Corpus leftovers (not perf; `./realworld.py --corpus X`)
-- valibot `keyof(objectSchema)` (methods/keyof/keyof.test-d.ts) gives `PicklistSchema<[], ...>`-like types where tsc
-  has `['foo', 'bar', 'baz']`: valibot's union-to-tuple conversion (overloaded function intersection inference?).
-  Unreduced, ~5 TS2344.
+All four corpora but type-fest are at 0 (2026-09-27); type-fest's 19 are in plan 19's newest section.
 - Without strictNullChecks, a written `W["_i"] | undefined` constraint displays as `W["_i"]` (tsc keeps the
   `| undefined` in the display). Probe: `declare function eo<const W, const D extends W | undefined>(w: W, d: D): D;`
 - `() => 'foo' as const` returns `"foo"` now, but tsc's underline reuses the `"foo"` (it prints `^^^^^^     `).
-- TS2344 on type references (new, 2026-09-26) fires spuriously in the corpora where tttt evaluates type-level
-  equality/path helpers wrongly: type-fest `test-d/get.ts` (`MismatchInfo<Get<...>>`, `StrictEqualUsingTSInternal...`
-  conditionals), `test-d/pick-deep.ts` (`Paths<T>` not containing `"nested.deep.deeper.value"`), valibot
-  `getDefaults.test-d.ts` / `keyof.test-d.ts` (a mapped "Expected: ..., Actual: ..." type). Each is a conditional or
-  mapped-type evaluation bug; `./realworld.py --corpus type-fest --code TS2344` lists them.
-- type-fest `GreaterThan<2, 1>` is `false` (`test-d/greater-than-or-equal.ts:8`, and a probe importing
-  `source/greater-than.d.ts`): the nested `[...] extends infer R extends [boolean, ...] ? ... : never` chain (two
-  `infer R` in one declaration, the inner shadowing the outer) picks a wrong branch.
-- valibot `methods/required/required.ts:258` and `requiredAsync.ts:269`: since alias variances, tttt finds the first
-  overload compatible with the implementation (TS2578 unused `@ts-expect-error`; tsc says TS2394). The erased overload
-  return `Omit<any, ...> & { entries: RequiredEntries<ObjectEntries, undefined, undefined>; ... }` now relates to the
-  implementation's `SchemaWithRequired<Schema, ObjectKeys<Schema> | undefined, ...>`; the variance fast path decides
-  some pair tsc doesn't (`RequiredEntries` measures invariant+unreliable for TKeys, `InferObjectInput` covariant+
-  unreliable). `TTTT_DEBUG_RELATE_NESTED=1` shows the pairs; suspects: no `Unmeasurable` (hacks.md, `get_variances`),
-  or a marker reaching a type whose variance tsc reports as unmeasurable.
