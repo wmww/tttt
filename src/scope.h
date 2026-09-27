@@ -474,6 +474,8 @@ Expr* expando_initializer(Expr* init, Span name, bool js);
 // JavaScript `this.x = v` (`op`, whose left side was just resolved): declares x as an instance member of the class
 // `this` is of (a static member in a static method), or of the constructor function it is in (tsc's
 // bindThisPropertyAssignment)
+// TypeScript `this.x = v` in a constructor or static block: marks the field it types (ClassItem.field.ts_assigned)
+void scope_note_ts_this_assignment(Scope const* me, struct BinaryOpExpr const* op);
 void scope_add_this_property(Scope* me, struct BinaryOpExpr* op);
 // `require` in a `require("m")` of a JavaScript file that doesn't declare the name
 Symbol* binder_require_symbol(Binder* me);

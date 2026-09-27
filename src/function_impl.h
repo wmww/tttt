@@ -73,6 +73,7 @@ typedef struct FunctionImpl {
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow;
     bool has_body;
+    bool private_ambient; // A private method of an ambient class: no implicit any errors (tsc's isPrivateWithinAmbient)
     bool ambient; // Declared in an ambient context (`declare`, a declaration file), where it can't have a body
     bool expression_body; // An arrow function whose body is an expression (a synthesized `return`)
     Block body; // Initialized to empty block if has_body is false
@@ -107,6 +108,11 @@ typedef struct FunctionImpl {
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);
+// tsc's checkFunctionOrMethodDeclarationDiagnostics under noImplicitAny: a declaration without a body or return type
+// (an overload, an ambient function, a method signature) returns an implicit any (TS7010 at `name`)
+void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, ErrorCtx* errs);
+// TS7006/TS7019/TS7031: parameters that nothing types (no annotation, default or contextual type)
+void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCtx* errs);
 // hoisted: a function declaration of a nested block in non-strict code, which is declared in the enclosing function (or
 // file) like a `var` (tsc's declareSymbolAndAddToSymbolTable outside of strict mode)
 void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted);

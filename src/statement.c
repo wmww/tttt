@@ -1911,6 +1911,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
 
         case STATEMENT_DECL_FUNCTION:
             function_impl_typecheck(my decl.function.impl, errs);
+            function_impl_check_implicit_any_return(my decl.function.impl, my decl.function.impl->name, errs);
             function_check_duplicate_implementation(my decl.function.impl, errs);
             break;
 

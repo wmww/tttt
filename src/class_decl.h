@@ -67,6 +67,10 @@ typedef struct ClassItem {
             // JavaScript, without a type or initializer: the member the constructor's `this.x = v` declares, whose type
             // it has (tsc's isAutoTypedProperty). Set by the resolve walk
             struct Symbol const* js_assigned;
+            // TypeScript, without a type or initializer: the constructor (a static block, for a static field) assigns
+            // `this.x` directly, which tsc types the field by (getFlowTypeInConstructor, not implemented) instead of
+            // reporting it implicitly any. Set by the resolve walk
+            bool ts_assigned;
         } field;
         InterfaceMember interface_memeber;
         Block static_block;

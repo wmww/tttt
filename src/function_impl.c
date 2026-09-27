@@ -541,23 +541,31 @@ static void function_check_arguments_collision(FunctionImpl const* me, ErrorCtx*
     }
 }
 
+void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, ErrorCtx* errs) {
+    if (my private_ambient || my has_body || my ret_explicit || my accessor || my is_constructor || !span_valid(name)) return;
+    if (!compiler_options()->no_implicit_any || (name.source && name.source->is_js)) return;
+    error_ctx_error_d(errs, name, 7010, "'", name, "', which lacks return-type annotation, implicitly has an 'any' return type.");
+}
+
+// Parameters without a type (and default) that nothing gives a type are implicitly any
+void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCtx* errs) {
+    if (!compiler_options()->no_implicit_any || my private_ambient || my jsdoc_type) return;
+    for_each (i, vec_function_arg, &my args) {
+        if (i->initializer.binding.has_explicit_type || i->initializer.value.tag != EXPR_IMPLICIT_ANY) continue;
+        if (i->initializer.getter || ty_contextual_parameter_type(current_checker, &i->initializer)) continue;
+        if (i->rest && i->initializer.binding.tag == BINDING_IDENTIFIER) {
+            error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", i->initializer.binding.content_span,
+                "' implicitly has an 'any[]' type.");
+        } else {
+            binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
+        }
+    }
+}
+
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_check_emit_helpers(me, errs);
+    function_impl_check_implicit_any_parameters(me, errs);
     for_each (i, vec_function_arg, &my args) {
-        if (!i->initializer.binding.has_explicit_type &&
-            i->initializer.value.tag == EXPR_IMPLICIT_ANY
-        ) {
-            if (compiler_options()->no_implicit_any && !i->initializer.getter &&
-                !ty_contextual_parameter_type(current_checker, &i->initializer)
-            ) {
-                if (i->rest && i->initializer.binding.tag == BINDING_IDENTIFIER) {
-                    error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", i->initializer.binding.content_span,
-                        "' implicitly has an 'any[]' type.");
-                } else {
-                    binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
-                }
-            }
-        }
         for_each (decorator, vec_expr, &i->decorators) {
             expr_typecheck(decorator, errs);
         }

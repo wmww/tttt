@@ -46,6 +46,7 @@ typedef struct InterfaceMember {
         };
     } key;
     TypeNode type;
+    bool implicit_any; // A property signature without a type annotation
     // `get x(): T` with `set x(v: U)`: writes are checked against U (tsc's write type of a divergent accessor)
     TypeNode write_type;
     bool has_write_type;

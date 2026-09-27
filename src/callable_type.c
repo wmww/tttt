@@ -13,6 +13,7 @@ void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs)
 
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     function_impl_typecheck_signature(my function, true, errs);
+    function_impl_check_implicit_any_parameters(my function, errs);
     for_each (i, vec_function_arg, &my function->args) {
         if (i->initializer.binding.has_explicit_type) type_typecheck(&i->initializer.binding.explicit_type, errs);
     }

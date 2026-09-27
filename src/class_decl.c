@@ -810,6 +810,25 @@ static void class_check_emit_helpers(ClassDecl* me, ErrorCtx* errs) {
     }
 }
 
+// tsc's isPrivateWithinAmbient: private members of an ambient class have no implicit any errors
+static bool class_item_private_in_ambient(ClassDecl const* me, ClassItem const* item) {
+    return my is_ambient && (item->access == ACCESS_MODIFIER_PRIVATE || span_valid(class_item_private_name(item)));
+}
+
+// tsc's reportImplicitAny of a property declaration: no type and no initializer, or (without strictNullChecks) an
+// initializer that widens to any (`x = null`)
+static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const* item, ErrorCtx* errs) {
+    Span name = item->field.name_span;
+    if (item->field.has_explicit_type || !compiler_options()->no_implicit_any || !span_valid(name)) return;
+    if ((name.source && name.source->is_js) || class_item_private_in_ambient(me, item) || item->field.ts_assigned) return;
+    if (item->field.value.tag != EXPR_IMPLICIT_ANY) {
+        if (compiler_options()->strict_null_checks) return;
+        Ty const* value = ty_expr_type(current_checker, &item->field.value);
+        if (value->kind != TY_INTRINSIC || !(value->flags & TYF_NULLABLE)) return;
+    }
+    error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an 'any' type.");
+}
+
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (my has_typechecked) {
         return;
@@ -920,6 +939,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
+                i->constructor.func.private_ambient = class_item_private_in_ambient(me, i);
                 function_impl_typecheck(&i->constructor.func, errs);
                 // tsc's checkConstructorDeclaration. TODO: TS2401/TS2376 (where the call must be with initialized
                 // properties or parameter properties)
@@ -939,13 +959,16 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
             case CLASS_ITEM_METHOD:
                 if (i->method.computed_key) class_computed_key_typecheck(i, errs);
+                i->method.func.private_ambient = class_item_private_in_ambient(me, i);
                 function_impl_typecheck(&i->method.func, errs);
+                function_impl_check_implicit_any_return(&i->method.func, i->method.name_span, errs);
                 break;
 
             case CLASS_ITEM_FIELD: {
                 if (i->field.computed_key) class_computed_key_typecheck(i, errs);
                 if (i->field.has_explicit_type) type_typecheck(&i->field.explicit_type, errs);
                 expr_typecheck(&i->field.value, errs);
+                class_field_check_implicit_any(me, i, errs);
                 if (i->field.has_explicit_type) {
                     ty_check_assignable_expr(
                         current_checker, expr_get_type(&i->field.value), ty_of_node(&i->field.explicit_type),

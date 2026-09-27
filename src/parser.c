@@ -2931,6 +2931,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         item.field.name_is_value,
                         type_move(&item.field.explicit_type)
                     ));
+                    vec_interface_member_back_mut(&members)->implicit_any = !item.field.has_explicit_type;
                     break;
 
                 case CLASS_ITEM_INTERFACE_MEMBER:

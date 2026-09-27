@@ -7,6 +7,8 @@
 #include "function_impl.h"
 #include "ty/ty.h"
 #include "flow.h"
+#include "source_file.h"
+#include "compiler_options.h"
 
 void interface_member_drop(InterfaceMember* me) {
     vec_span_drop(&my declarations);
@@ -68,7 +70,15 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
 
 void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs) {
     switch (my key.tag) {
-        case INTERFACE_KEY_NAME: break;
+        case INTERFACE_KEY_NAME:
+            // tsc's reportImplicitAny of a property signature, and of a method signature's return type
+            if (my implicit_any && compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js) {
+                error_ctx_error_d(errs, my key.span, 7008, "Member '", my key.span, "' implicitly has an 'any' type.");
+            }
+            if (my key.name_is_member_function && my type.tag == TYPE_CALLABLE) {
+                function_impl_check_implicit_any_return(my type.callable->function, my key.span, errs);
+            }
+            break;
 
         case INTERFACE_KEY_INDEX: {
             type_typecheck(&my key.index.type, errs);
@@ -119,7 +129,20 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             type_typecheck(&my key.mapped.as_type, errs);
             break;
 
-        case INTERFACE_KEY_CALLABLE: break;
+        case INTERFACE_KEY_CALLABLE:
+            // tsc's checkSignatureDeclaration under noImplicitAny
+            if (my type.tag == TYPE_CALLABLE && !my type.callable->function->ret_explicit && compiler_options()->no_implicit_any &&
+                vec_span_size(&my declarations) && vec_span_at(&my declarations, 0)->source &&
+                !vec_span_at(&my declarations, 0)->source->is_js
+            ) {
+                Span at = *vec_span_at(&my declarations, 0);
+                if (my type.callable->function->is_constructor) {
+                    error_ctx_error_d(errs, at, 7013, "Construct signature, which lacks return-type annotation, implicitly has an 'any' return type.");
+                } else {
+                    error_ctx_error_d(errs, at, 7020, "Call signature, which lacks return-type annotation, implicitly has an 'any' return type.");
+                }
+            }
+            break;
     }
     type_typecheck(&my type, errs);
     if (my has_write_type) type_typecheck(&my write_type, errs);

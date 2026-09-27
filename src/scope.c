@@ -2543,6 +2543,31 @@ static void declare_assignment_member(
     }
 }
 
+void scope_note_ts_this_assignment(Scope const* me, BinaryOpExpr const* op) {
+    Expr const* left = &op->left;
+    if (left->tag != EXPR_PROPERTY) return;
+    Span name = expr_static_property_name(left);
+    Expr const* prop = &left->property->prop;
+    if (!span_valid(name) && prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_NUMBER) name = prop->inner_span; // `this[0]`
+    if (!span_valid(name)) return;
+    Expr const* object = &left->property->expr;
+    if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) return;
+    // Directly in the constructor or a static block: not in a nested function, arrow functions included
+    Scope const* scope = me;
+    while (scope && scope->kind != SCOPE_FUNCTION && scope->kind != SCOPE_STATIC_BLOCK) scope = scope->parent;
+    if (!scope) return;
+    bool is_static = object->identifier.this_kind == THIS_CLASS_STATIC;
+    if (is_static ? scope->kind != SCOPE_STATIC_BLOCK :
+        (object->identifier.this_kind != THIS_CLASS_INSTANCE || !scope->function || !scope->function->is_constructor)
+    ) {
+        return;
+    }
+    Symbol const* class_symbol = object->identifier.target;
+    ClassDecl const* class_decl = class_symbol ? symbol_find_node(class_symbol, SYMBOL_DECL_CLASS) : nullptr;
+    ClassItem* field = class_decl ? class_decl_find_member(class_decl, name.sv, is_static) : nullptr;
+    if (field) field->field.ts_assigned = true;
+}
+
 void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
     Expr* left = &op->left;
     Span name = expr_static_property_name(left);
