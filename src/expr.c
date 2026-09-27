@@ -420,7 +420,7 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     }
     // `this` in a function nothing says the `this` of (tsc's checkThisExpression)
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ANY && compiler_options()->no_implicit_this &&
-        !(my this_function && ty_contextual_this_type(current_checker, my this_function))
+        !(my this_function && (ty_js_this_class(my this_function) || ty_contextual_this_type(current_checker, my this_function)))
     ) {
         error_ctx_error_d(errs, my name, 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
     }
@@ -1141,6 +1141,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 flow->assignment_target = op == BINARY_OP_EQUAL ? FLOW_TARGET_DEFINITE : FLOW_TARGET_COMPOUND;
                 flow->compound_like_target = op == BINARY_OP_EQUAL && is_compound_like(right);
                 expr_lookup_names(left, names, errs);
+                if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) scope_add_this_property(names, my binary_op);
                 expr_lookup_names(right, names, errs);
                 if (!assignment_target) {
                     flow_assignment_target(flow, left, (FlowAssign){ .kind = FLOW_ASSIGN_EXPR, .assignment = me });
@@ -2901,6 +2902,14 @@ Span expr_static_property_name(Expr const* me) {
     ret.sv.buf++;
     ret.sv.size -= 2;
     return ret;
+}
+
+Expr* expr_prototype_object(Expr* me) {
+    Span name = expr_static_property_name(me);
+    if (!span_valid(name) || !span_equals(name, "prototype")) return nullptr;
+    Expr* object = &my property->expr;
+    if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || expr_is_perenthisized(object)) return nullptr;
+    return object;
 }
 
 bool expr_is_module_exports(Expr const* me) {

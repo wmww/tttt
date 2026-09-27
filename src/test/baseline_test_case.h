@@ -90,6 +90,7 @@ typedef struct BaselineTestCase {
         Span span;
         cstr text;
         VecSpan declarations;
+        bool suppress; // No symbols line at all
     } symbol_overrides[8];
     u32 symbol_override_count;
     bool error_type; // The types line being added is the error type (see LineNumberedStr.error_type)

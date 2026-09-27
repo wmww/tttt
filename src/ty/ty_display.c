@@ -1679,6 +1679,14 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     return;
                 }
             }
+            // A JavaScript constructor function is a class
+            Symbol const* js_class = ty->anonymous.function && !ty->anonymous.target ?
+                ty_js_constructor_class(ty->anonymous.function) : nullptr;
+            if (js_class) {
+                out_lit(d, "typeof ");
+                out(d, js_class->name);
+                break;
+            }
             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
             d.visiting = &visit;
             display_structure(me, d, ty);

@@ -80,6 +80,42 @@ static void commonjs_symbol_overrides(Expr const* left, BaselineTestCase* ctx) {
     }
 }
 
+// JavaScript `F.prototype.x = v` (tsc's getSpecialPropertyAssignmentSymbol): `F.prototype` and `x` are the member x
+// of F, the access as a whole has no symbol
+static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
+    Span name = expr_static_property_name(left);
+    Expr* constructor = span_valid(name) ? expr_prototype_object(&left->property->expr) : nullptr;
+    Symbol const* symbol = constructor ? constructor->identifier.target : nullptr;
+    Symbol const* member = symbol && symbol->members ? symbol_table_get(symbol->members, name.sv) : nullptr;
+    if (!member || ctx->symbol_override_count + 3 > c_arraylen(ctx->symbol_overrides)) return;
+    ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+        .span = left->inner_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
+    };
+    add_symbol_override(ctx, left->property->expr.inner_span, member);
+    add_symbol_override(ctx, left->property->prop.outer_span, member);
+}
+
+// JavaScript `this.x = v` that declares x: the name `x` is the member it declares, whatever the access finds (a
+// base class's member: tsc's getSymbolOfDeclaration for the name of a declaration)
+static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
+    Span name = expr_static_property_name(left);
+    Expr const* object = span_valid(name) ? &left->property->expr : nullptr;
+    if (!object || object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) return;
+    IdentifierExpr const* this = &object->identifier;
+    SymbolTable const* table = nullptr;
+    if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = this->target->members;
+    if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;
+    Symbol const* js_class = this->this_kind == THIS_ANY && this->this_function ? ty_js_this_class(this->this_function) : nullptr;
+    if (js_class) table = js_class->members;
+    Symbol const* member = table ? symbol_table_get(table, name.sv) : nullptr;
+    // (Not when the class body declares it)
+    ClassDecl const* class_decl = this->target ? symbol_find_node(this->target, SYMBOL_DECL_CLASS) : nullptr;
+    if (class_decl && class_decl_find_member(class_decl, name.sv, this->this_kind == THIS_CLASS_STATIC)) return;
+    bool declares = false;
+    for (u32 i = 0; member && i < member->decl_count; i++) declares |= span_eq(member->decls[i].full, left->outer_span);
+    if (declares) add_symbol_override(ctx, left->property->prop.outer_span, member);
+}
+
 // `A.B.C` as spans
 // What the symbols baseline says about a property access, gathered over the members of a union or intersection
 typedef struct PropSymbolInfo {
@@ -1052,6 +1088,19 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         return;
     }
     Symbol const* symbol = my target;
+    Symbol const* js_class = my this_kind == THIS_ANY && my this_function ? ty_js_this_class(my this_function) : nullptr;
+    if (js_class) {
+        // A JavaScript constructor function's class: declared by the function (a function expression's own symbol
+        // to tsc, named like the variable)
+        SymbolDecl const* variable = symbol_find_decl(js_class, SYMBOL_DECL_VARIABLE);
+        Expr const* init = variable ? &((InitializedBinding const*)variable->node)->value : nullptr;
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = init ? vec_span_single(init->outer_span) : declaration_get_spans(js_class),
+            .span = my name,
+            .text = symbol_text(ctx, js_class),
+        });
+        return;
+    }
     if (!symbol && my this_kind == THIS_ANY && my this_function) {
         Signature const* sig = ty_function_assigned_contextual_signature(checker, my this_function);
         while (sig && sig->target) sig = sig->target;
@@ -1319,6 +1368,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         if (my property->form == PROPERTY_EXPR_DOT) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my inner_span, .allow_declaration_empty = true });
         }
+        ctx->any_keeps_underline = my property->form == PROPERTY_EXPR_DOT; // The object of a property access
         expr_compile_test_info(&my property->expr, ctx);
         has_compiled_expr_info = true;
         baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my property->prop.outer_span, .allow_declaration_empty = true });
@@ -1395,6 +1445,12 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         case EXPR_BINARY_OP: {
             u32 overrides = ctx->symbol_override_count;
             if (binary_commonjs_declaration(my binary_op, nullptr)) commonjs_symbol_overrides(&my binary_op->left, ctx);
+            if (my binary_op->op == BINARY_OP_EQUAL && my binary_op->left.inner_span.source &&
+                my binary_op->left.inner_span.source->is_js
+            ) {
+                prototype_symbol_overrides(&my binary_op->left, ctx);
+                this_property_symbol_overrides(&my binary_op->left, ctx);
+            }
             expr_compile_test_info(&my binary_op->left, ctx);
             while (ctx->symbol_override_count > overrides) {
                 ctx->symbol_override_count--;

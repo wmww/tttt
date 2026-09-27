@@ -551,6 +551,29 @@ static Ty const* this_type_marker(Checker* me, Ty const* contextual) {
 
 // tsc's getContextualThisParameterType: what `this` is in a function expression or object literal method that doesn't
 // declare it. Null: nothing says (it's any)
+Symbol const* ty_js_this_class(FunctionImpl const* function) {
+    Symbol const* js_class = ty_js_constructor_class(function);
+    if (js_class) return js_class;
+    // A method of a constructor function's prototype (tsc's getClassNameFromPrototypeMethod)
+    Expr const* object = function->this_assigned_object;
+    if (!object || object->tag != EXPR_PROPERTY || object->property->form != PROPERTY_EXPR_DOT ||
+        !span_equals(object->property->prop.inner_span, "prototype") || object->property->expr.tag != EXPR_IDENTIFIER
+    ) {
+        return nullptr;
+    }
+    Symbol const* symbol = object->property->expr.identifier.target;
+    SourceFile const* file = function->full_span.source;
+    if (!symbol || !file || !file->is_js || !(symbol->flags & SYMBOL_CLASS) || !symbol->members) return nullptr;
+    return symbol;
+}
+
+Ty const* ty_js_this_type(Checker* me, FunctionImpl const* function) {
+    Symbol const* js_class = ty_js_this_class(function);
+    if (!js_class) return nullptr;
+    Ty const* declared = ty_declared_type_of(me, js_class);
+    return declared->kind == TY_DECLARED && declared->declared.this_param ? declared->declared.this_param : declared;
+}
+
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
     Ty const* from_signature = intern_get(&my links, this_key, 2);
@@ -723,11 +746,13 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     switch (identifier->this_kind) {
         case THIS_NONE: break;
         case THIS_ANY: {
+            Ty const* js_this = identifier->this_function ? ty_js_this_type(me, identifier->this_function) : nullptr;
+            if (js_this) return js_this;
             Ty const* contextual = identifier->this_function ? ty_contextual_this_type(me, identifier->this_function) : nullptr;
             return contextual ? contextual : any_type(me);
         }
         case THIS_PARAMETER: break;
-        case THIS_CLASS_STATIC: return ty_static_type_of(me, decl);
+        case THIS_CLASS_STATIC: return ty_type_of_symbol(me, decl); // (With what a namespace merges in)
         case THIS_INTERFACE: return any_type(me);
         case THIS_GLOBAL: return my binder->global_this ? ty_type_of_symbol(me, my binder->global_this) : any_type(me);
         case THIS_NAMESPACE: case THIS_ENUM: return any_type(me);
@@ -2401,6 +2426,33 @@ static bool is_string_index_only(Checker* me, Ty const* ty) {
         members->index_count == 1 && (members->index[0].key->flags & TYF_STRING);
 }
 
+// JavaScript `this.x = v` in the constructor that declares x, when only such assignments do (tsc's
+// isThisPropertyAccessInConstructor with isConstructorDeclaredProperty): x is being inferred from them, any
+static bool is_constructor_declared_target(Checker* me, PropertyExpr const* access) {
+    if (access->assignment_target != FLOW_TARGET_DEFINITE || access->form != PROPERTY_EXPR_DOT) return false;
+    Expr const* object = &access->expr;
+    if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) return false;
+    SourceFile const* file = object->inner_span.source;
+    if (!file || !file->is_js) return false;
+    IdentifierExpr const* this = &object->identifier;
+    Symbol const* class_symbol = nullptr;
+    if (this->this_kind == THIS_CLASS_INSTANCE) {
+        if (!access->in_constructor_of) return false;
+        class_symbol = this->target;
+    } else if (this->this_kind == THIS_ANY && this->this_function) {
+        class_symbol = ty_js_constructor_class(this->this_function);
+    }
+    if (!class_symbol || !class_symbol->members) return false;
+    Symbol const* member = symbol_table_get(class_symbol->members, access->prop.inner_span.sv);
+    if (!member) return false;
+    if (!ty_is_constructor_declared(member)) return false;
+    // Only in the constructor (tsc: getThisContainer(node) === getDeclaringConstructor(prop))
+    if (this->this_kind == THIS_ANY && ty_js_constructor_class(this->this_function) != class_symbol) return false;
+    // Not when the class body declares it
+    ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
+    return !class_decl || !class_decl_find_member(class_decl, access->prop.inner_span.sv, false);
+}
+
 // `o[k]` with a generic key that ty_access() couldn't read through a constraint: the deferred
 // `O[K]` (tsc's getIndexedAccessType), unless o has nothing but a string index signature, which is what it reads then
 static Ty const* generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* key) {
@@ -2471,6 +2523,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_PROPERTY: {
             if (ty_is_import_meta(expr)) return ty_import_meta_type(me);
+            if (is_constructor_declared_target(me, expr->property)) return any_type(me);
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
             // `never` has no properties (TS2339), `never[k]` is never

@@ -2769,6 +2769,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
 
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
 static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
+    for_each (i, vec_jsdoc_tag, tags) function->jsdoc_typed |= i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE;
     jsdoc_apply_type_signature(tags, function);
     for_each (i, vec_function_arg, &function->args) {
         Binding* binding = &i->initializer.binding;

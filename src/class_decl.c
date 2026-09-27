@@ -73,10 +73,27 @@ bool class_item_is_static(ClassItem* me) {
     impossible;
 }
 
+ClassItem* class_decl_find_member(ClassDecl const* me, csview name, bool is_static) {
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag == CLASS_ITEM_FIELD && !i->field.computed_key && i->field.is_static == is_static &&
+            csview_equals_sv(cstr_sv(&i->field.name_string), name)
+        ) {
+            return (ClassItem*)i;
+        }
+        if (i->tag == CLASS_ITEM_METHOD && !i->method.computed_key && i->method.is_static == is_static &&
+            csview_equals_sv(cstr_sv(&i->method.name_string), name)
+        ) {
+            return (ClassItem*)i;
+        }
+    }
+    return nullptr;
+}
+
 Ty const* class_item_field_evaluate_type(ClassItem* me) {
     check(my tag == CLASS_ITEM_FIELD);
     Checker* checker = current_checker;
     if (my field.has_explicit_type) return ty_of_node(&my field.explicit_type);
+    if (my field.js_assigned) return ty_type_of_symbol(checker, my field.js_assigned);
     Ty const* ret = ty_widened_for_declaration(checker, ty_expr_type(checker, &my field.value), !my field.is_readonly);
     // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
     if ((ret->flags & TYF_UNIQUE_ES_SYMBOL) && ret->literal.unique->key != me) ret = ty_intrinsic(checker, TY_ES_SYMBOL);

@@ -1227,6 +1227,10 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
         if (my symbol_overrides[i].span.sv.buf != data.span.sv.buf || my symbol_overrides[i].span.sv.size != data.span.sv.size) continue;
         cstr_drop(&data.text);
         vec_span_drop(&data.declarations);
+        if (my symbol_overrides[i].suppress) {
+            vec_span_drop(&data.namespaces);
+            return;
+        }
         data.text = cstr_clone(my symbol_overrides[i].text);
         data.declarations = vec_span_clone(my symbol_overrides[i].declarations);
         data.allow_declaration_empty = true;

@@ -1,3 +1,4 @@
+#include "../source_file.h"
 #include "ty/ty_internal.h"
 #include "scope.h"
 #include "class_decl.h"
@@ -321,8 +322,16 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
     for (u32 i = 0; i < members->prop_count; i++) {
         // A static `#x` stays the base's (tsc's isStaticPrivateIdentifierProperty in addInheritedMembers)
         if ((members->props[i]->flags & PROP_STATIC) && ty_private_name_class(me, members->props[i]->name)) continue;
-        if (!builder_find_prop(builder, members->props[i]->name)) {
+        Prop* derived = builder_find_prop(builder, members->props[i]->name);
+        if (!derived) {
             builder_push(builder, props, members->props[i]);
+        } else if (derived->symbol && derived->symbol->decl_count && derived->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
+            !ty_is_constructor_declared(derived->symbol)
+        ) {
+            // A JavaScript `this.x = v` outside of the constructor doesn't override (tsc's addInheritedMembers)
+            for (u32 j = 0; j < builder->props_count; j++) {
+                if (builder->props[j] == derived) builder->props[j] = members->props[i];
+            }
         }
     }
     // Signatures of the bases come after the type's own (they're overloads of each other). An index signature is
@@ -456,6 +465,33 @@ static Prop* builder_add_class_prop(
     prop_add_decl_spans(me, prop, &item->span, 1);
     builder_push(builder, props, prop);
     return prop;
+}
+
+// The members JavaScript assignments declare (`this.x = v`, `F.prototype.x = v`: Symbol.members). One the class body
+// declares keeps its declaration and type, the assignments are more declarations of it
+static void builder_add_assignment_members(Checker* me, MembersBuilder* builder, Symbol const* symbol) {
+    if (!symbol->members) return;
+    u32 count;
+    SymbolEntry* entries = symbol_table_collect(symbol->members, &count);
+    for (u32 i = 0; i < count; i++) {
+        Symbol const* member = entries[i].symbol;
+        Atom const* name = checker_atom(me, entries[i].name);
+        VecSpan spans = symbol_declaration_spans(member);
+        Prop* existing = builder_find_prop(builder, name);
+        // (One the class body declares has no assignment declarations: tsc's declareSymbol with isReplaceableByMethod)
+        if (!existing) {
+            Prop* prop = arena_new(&my arena, Prop);
+            prop->name = name;
+            prop->symbol = member;
+            prop->parent = symbol;
+            prop->ctx = (LowerCtx){ .generic = true };
+            prop->name_span = member->name_span;
+            prop_add_decl_spans(me, prop, spans.data, (u32)vec_span_size(&spans));
+            builder_push(builder, props, prop);
+        }
+        vec_span_drop(&spans);
+    }
+    free(entries);
 }
 
 // A class member named by an expression of type string, number or symbol (not a literal or unique symbol, which name
@@ -961,6 +997,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     builder_add_class_items(me, &builder, node->node, false, ctx, decl);
                 }
             }
+            builder_add_assignment_members(me, &builder, decl);
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
                 if (node->kind == SYMBOL_DECL_CLASS) {
                     Ty const* base = nullptr;
@@ -1492,6 +1529,15 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 } else {
                     builder_push(&builder, call, sig);
                 }
+                // A JavaScript constructor function is also a class: `new` makes its instances (tsc's
+                // resolveAnonymousTypeMembers, the construct signatures of a function with SymbolFlags.Class)
+                Symbol const* js_class = ty_js_constructor_class(ty->anonymous.function);
+                if (js_class && !(sig->flags & SIGNATURE_CONSTRUCT)) {
+                    Signature* construct = signature_from_function(me, ty->anonymous.function, ty->anonymous.ctx);
+                    construct->flags |= SIGNATURE_CONSTRUCT;
+                    construct->class_instance = ty_declared_type_of(me, js_class);
+                    builder_push(&builder, construct, construct);
+                }
                 // `const f = () => {}; f.x = 1` (tsc merges the variable's exports into the function's symbol)
                 Symbol const* host = ty->anonymous.function->expando_host;
                 if (host) {
@@ -1665,6 +1711,21 @@ static void clone_type_params(Checker* me, Signature* sig) {
     sig->type_params = (TyList){ .data = fresh, .len = params.len };
 }
 
+Symbol const* ty_js_constructor_class(FunctionImpl const* function) {
+    if (function->is_type || span_valid(function->arrow_span) || function->this_literal) return nullptr;
+    Symbol const* symbol = function->class_symbol ? function->class_symbol : function->is_expression ? nullptr : function->symbol;
+    if (!symbol || !(symbol->flags & SYMBOL_CLASS) || !symbol->members) return nullptr;
+    SourceFile const* file = function->full_span.source;
+    return file && file->is_js ? symbol : nullptr;
+}
+
+// tsc's IsUntypedSignatureInJSFile: a function of a JavaScript file without JSDoc parameter types (or `@type`), not
+// called where it is made. Every argument is optional (getMinArgumentCount)
+static bool function_is_untyped_js(FunctionImpl const* function) {
+    SourceFile const* file = function->full_span.source;
+    return file && file->is_js && !function->is_type && !function->is_iife && !function->jsdoc_typed;
+}
+
 void signature_resolve(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     if (sig->state != LAZY_STATE_NOT_STARTED) return;
@@ -1724,6 +1785,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             }
             if (counting_required) sig->min_args++;
         }
+        if (function_is_untyped_js(function)) sig->min_args = 0;
         if (count && params[0].name == checker_atom(me, c_sv("this"))) {
             // `this: T` is about how the function is called, not an argument
             if (sig->min_args && !params[0].optional) sig->min_args--;

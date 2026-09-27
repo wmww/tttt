@@ -7,6 +7,8 @@
 #include "error.h"
 #include "ty/ty.h"
 #include "unused.h"
+#include "source_file.h"
+#include "function_impl.h"
 
 void binding_drop(Binding* me) {
     switch (my tag) {
@@ -381,6 +383,11 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     names->flow->initializing = me;
     binding_lookup_names(&my binding, names, errs);
     names->flow->contextual_depth += my binding.has_explicit_type;
+    if (my binding.tag == BINDING_IDENTIFIER && my value.tag == EXPR_FUNCTION && !span_valid(my value.function->arrow_span) &&
+        names->file && names->file->is_js
+    ) {
+        my value.function->class_symbol = my binding.symbol;
+    }
     expr_lookup_names(&my value, names, errs);
     names->flow->contextual_depth -= my binding.has_explicit_type;
     names->flow->initializing = outer;

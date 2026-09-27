@@ -225,6 +225,8 @@ typedef enum CommonJsTarget {
 } CommonJsTarget;
 // `a.b` or `a["b"]` (not parenthesized, not optional): the name b (in the source, no quotes), else an invalid span
 Span expr_static_property_name(Expr const* me);
+// `F.prototype` (F a plain identifier): F, else null
+Expr* expr_prototype_object(Expr* me);
 // `name_ret` (may be null): the name of the property an EXPORTS_PROPERTY target exports (in the source, no quotes)
 CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret);
 // What an assignment declares, in a CommonJS file (`file` of the assignment): tsc's getAssignmentDeclarationKind, which

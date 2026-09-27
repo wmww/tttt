@@ -64,6 +64,9 @@ typedef struct ClassItem {
             TypeNode explicit_type;
             Expr value;
             LazyType lazy_type;
+            // JavaScript, without a type or initializer: the member the constructor's `this.x = v` declares, whose type
+            // it has (tsc's isAutoTypedProperty). Set by the resolve walk
+            struct Symbol const* js_assigned;
         } field;
         InterfaceMember interface_memeber;
         Block static_block;
@@ -115,6 +118,8 @@ void class_decl_drop(ClassDecl* me);
 Span class_decl_display_name(ClassDecl const* me);
 /// The first member of the class named `#name` (tsc's lookupSymbolForPrivateIdentifierDeclaration for one class)
 ClassItem const* class_decl_find_private_name(ClassDecl const* me, csview name);
+/// The field, method or accessor the class body declares by this name (not computed), null if none
+ClassItem* class_decl_find_member(ClassDecl const* me, csview name, bool is_static);
 void class_decl_add_names(ClassDecl* me, Scope* scope, DeclExported exported, bool declared);
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

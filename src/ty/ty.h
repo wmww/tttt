@@ -1022,6 +1022,16 @@ Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);
 Ty const* ty_static_type_of(Checker* me, Symbol const* symbol);
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol);
 Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol);
+// The class a JavaScript function is the constructor of (tsc's isJSConstructor: `this.x = v` or `F.prototype.x = v`
+// declared members of it), else null
+Symbol const* ty_js_constructor_class(FunctionImpl const* function);
+// The JavaScript class whose `this` a function has: a constructor function's, or that of the constructor function
+// whose prototype it is a method of (`F.prototype.m = function () {}`). Null if none
+Symbol const* ty_js_this_class(FunctionImpl const* function);
+Ty const* ty_js_this_type(Checker* me, FunctionImpl const* function);
+// A JavaScript member that only `this.x = v` assignments declare, one of them in a constructor (tsc's
+// isConstructorDeclaredProperty): its type is what the constructor assigns
+bool ty_is_constructor_declared(Symbol const* symbol);
 u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out); // malloc'd
 Atom const* ty_qualified_name(Checker* me, Symbol const* decl); // `A.B.name`
 // The symbol's name as printed: its name_span, but an anonymous class expression is called what it's assigned to

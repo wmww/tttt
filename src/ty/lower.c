@@ -954,6 +954,72 @@ static Ty const* namespace_import_type(Checker* me, Symbol const* symbol) {
     return synthetic ? with_synthetic_default(me, type, true) : nullptr;
 }
 
+bool ty_is_constructor_declared(Symbol const* symbol) {
+    bool in_constructor = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind != SYMBOL_DECL_ASSIGNMENT) return false;
+        if (decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && decl->assignment != ASSIGNMENT_DECL_THIS_IN_METHOD) {
+            return false;
+        }
+        in_constructor |= decl->assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
+    }
+    return in_constructor;
+}
+
+// tsc's getTypeOfPropertyInBaseClass: the type of a class member's namesake in the base class, null if none
+static Ty const* base_class_property_type(Checker* me, Symbol const* member) {
+    ClassDecl const* class_decl = member->parent ? symbol_find_node(member->parent, SYMBOL_DECL_CLASS) : nullptr;
+    Ty const* base = class_decl ? ty_class_base_instance(me, class_decl) : nullptr;
+    return base ? ty_prop_type_of(me, base, checker_atom(me, member->name)) : nullptr;
+}
+
+// tsc's getWidenedTypeForAssignmentDeclaration: the union of what the assignments assign. A member `this.x = v`
+// declares in a constructor has the type the constructor gives it (tsc: its flow type at the end of the
+// constructor; here the union of the constructor's assignments). TODO: a JSDoc type on one of them is the type
+static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
+    Ty const* stack[16];
+    Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
+    bool constructor_declared = ty_is_constructor_declared(symbol);
+    bool in_constructor = false, in_method = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        in_constructor |= symbol->decls[i].assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
+        in_method |= symbol->decls[i].assignment == ASSIGNMENT_DECL_THIS_IN_METHOD;
+    }
+    // The constructor's assignments, unless they only assign null or undefined
+    bool constructor_only = false;
+    if (in_constructor) {
+        for (u32 i = 0; i < symbol->decl_count && !constructor_only; i++) {
+            if (symbol->decls[i].assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) continue;
+            constructor_only = !(ty_widened_for_declaration(me, ty_expr_type(me, symbol->decls[i].node), true)->flags & TYF_NULLABLE);
+        }
+        constructor_only |= constructor_declared;
+    }
+    u32 count = 0;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind != SYMBOL_DECL_ASSIGNMENT) continue;
+        if (constructor_only && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) continue;
+        types[count++] = csview_equals(symbol->name, "export=") ? value_entry_type(me, symbol, decl) :
+            assignment_declaration_type(me, symbol, decl);
+    }
+    // (Object literals are widened together: the union has their properties as optional in each other)
+    Ty const* ret = ty_widened_objects(me, ty_union(me, types, count, nullptr, (TyList){0}));
+    if (types != stack) free(types);
+    // Only methods assign it: what a base class declares it as, else possibly undefined
+    Ty const* base_type = in_method && !in_constructor ? base_class_property_type(me, symbol) : nullptr;
+    if (base_type && !(base_type->flags & TYF_NULLABLE)) {
+        ret = base_type;
+    } else if (in_method && !in_constructor && compiler_options()->strict_null_checks) {
+        Ty const* parts[2] = { ret, ty_intrinsic(me, TY_UNDEFINED) };
+        ret = ty_union(me, parts, 2, nullptr, (TyList){0});
+    }
+    // Nothing but null and undefined is any in JavaScript
+    SourceFile const* file = symbol->decls[0].full.source;
+    if (file && file->is_js && ty_non_nullable(me, ret)->flags & TYF_NEVER) return ty_intrinsic(me, TY_ANY);
+    return ret;
+}
+
 // The type of a symbol as a value. Give it the symbol a name found or the one that has the value meaning (`target`
 // of an identifier), aliases are seen through. Everything about a placeholder is any
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
@@ -965,21 +1031,9 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, symbol && symbol->is_unresolved ? TY_ERROR : TY_ANY);
     // `typeof import("./a")`, `import("./a")`, `globalThis`
     if (symbol->is_module || symbol->is_global_this) return ty_namespace_type(me, symbol);
-    if (symbol->decl_count > 1 && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) {
-        // tsc's getWidenedTypeForAssignmentDeclaration: the union of what every assignment assigns
-        // TODO: a JSDoc type on one of them is the type
-        Ty const* stack[16];
-        Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
-        u32 count = 0;
-        for (u32 i = 0; i < symbol->decl_count; i++) {
-            if (symbol->decls[i].kind != SYMBOL_DECL_ASSIGNMENT) continue;
-            types[count++] = csview_equals(symbol->name, "export=") ? value_entry_type(me, symbol, &symbol->decls[i]) :
-                assignment_declaration_type(me, symbol, &symbol->decls[i]);
-        }
-        // (Object literals are widened together: the union has their properties as optional in each other)
-        Ty const* ret = ty_widened_objects(me, ty_union(me, types, count, nullptr, (TyList){0}));
-        if (types != stack) free(types);
-        return ret;
+    bool assignments = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT;
+    if (assignments && (symbol->decl_count > 1 || symbol->decls[0].assignment != ASSIGNMENT_DECL_PROPERTY)) {
+        return assignment_symbol_type(me, symbol);
     }
     SymbolDecl const* only = nullptr;
     for (u32 i = 0; i < symbol->decl_count; i++) {

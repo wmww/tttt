@@ -127,8 +127,17 @@ typedef enum SymbolDeclKind {
     SYMBOL_DECL_EXPORT_EQUALS_PROPERTY,
 } SymbolDeclKind;
 
+// What kind of assignment a SYMBOL_DECL_ASSIGNMENT is (tsc's AssignmentDeclarationKind, as far as typing cares)
+typedef enum AssignmentDeclKind : uint8_t {
+    ASSIGNMENT_DECL_PROPERTY = 0, // `exports.x = v`, `f.x = v`
+    ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR, // `this.x = v` in a constructor or constructor function (isDeclarationInConstructor)
+    ASSIGNMENT_DECL_THIS_IN_METHOD, // `this.x = v` anywhere else
+    ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, // `F.prototype.x = v`
+} AssignmentDeclKind;
+
 typedef struct SymbolDecl {
     SymbolDeclKind kind;
+    AssignmentDeclKind assignment; // SYMBOL_DECL_ASSIGNMENT only
     u32 flags; // What this declaration added to the symbol's flags
     void const* node;
     Span name;
@@ -175,6 +184,9 @@ typedef struct Symbol {
     csview name;
     Symbol* parent; // The container: namespace, enum, module
     SymbolTable* exports; // Namespaces, enums, modules: one table, shared by all declaration blocks
+    // JavaScript classes and constructor functions: the instance members assignments declare (`this.x = v`,
+    // `F.prototype.x = v`), tsc's Symbol.members for them. Class members declared in the class body aren't in it
+    SymbolTable* members;
     Span name_span; // Of the first declaration
     SymbolDecl* decls; // Every declaration, in order
     u32 decl_count;
@@ -445,6 +457,10 @@ void scope_add_commonjs_module(Scope* me);
 // or its function (or file), or a variable initialized with a function (JavaScript: also a class or `{}`), declares x
 // in f's exports (tsc's bindSpecialPropertyAssignment)
 void scope_add_expandos(Scope* me, struct Block const* block);
+// JavaScript `this.x = v` (`op`, whose left side was just resolved): declares x as an instance member of the class
+// `this` is of (a static member in a static method), or of the constructor function it is in (tsc's
+// bindThisPropertyAssignment)
+void scope_add_this_property(Scope* me, struct BinaryOpExpr* op);
 // `require` in a `require("m")` of a JavaScript file that doesn't declare the name
 Symbol* binder_require_symbol(Binder* me);
 

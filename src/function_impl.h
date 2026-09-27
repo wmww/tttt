@@ -62,6 +62,9 @@ typedef struct FunctionImpl {
     uint8_t constructor_access; // The constructor of a class: its AccessModifier (class_decl.h)
     bool is_type; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from
     bool jsdoc_type; // A JSDoc `function(...)` type: its parameters are unnamed (`argN`)
+    // JavaScript: its JSDoc has `@param` or `@type` tags (tsc's hasJSDocParameterTags || getJSDocType), so it isn't an
+    // untyped signature whose arguments are all optional
+    bool jsdoc_typed;
     LazyType lazy_type;
     Symbol* symbol;
     Span arrow_span;
@@ -96,6 +99,9 @@ typedef struct FunctionImpl {
     // A function expression or arrow function that initializes a variable with expandos (`const f = () => {}; f.x = 1`,
     // scope_add_expandos()): the variable, whose exports are members of this function's type (tsc's getSymbolOfExpando)
     Symbol const* expando_host;
+    // JavaScript: the variable a function expression initializes (`var F = function () {}`), whose symbol is the class
+    // a constructor function makes (a function declaration's is its own symbol). Set by the resolve walk
+    Symbol* class_symbol;
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);

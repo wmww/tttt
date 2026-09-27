@@ -2302,6 +2302,28 @@ static Symbol* expando_host(Scope* me, Span name, Expr** init_ret) {
     }
 }
 
+static void declare_assignment_member(
+    Scope* me, SymbolTable** table, Symbol* parent, Span name, Expr* left, Expr* value, AssignmentDeclKind kind
+);
+
+// JavaScript `F.prototype.x = v` declares an instance member x of F, which makes F a class (tsc's
+// bindPrototypePropertyAssignment)
+static void add_prototype_property(Scope* me, Expr* constructor, Span name, Expr* left, Expr* value) {
+    SourceFile const* file = my file;
+    if (!file || !file->is_js) return;
+    Expr* init;
+    Symbol* host = expando_host(me, constructor->identifier.name, &init);
+    if (!host) return;
+    if (init && (init->tag != EXPR_FUNCTION || span_valid(init->function->arrow_span))) return;
+    if (!init && !(host->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS))) return;
+    if (init) init->function->class_symbol = host;
+    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+        value = &value->binary_op->right;
+    }
+    host->flags |= SYMBOL_CLASS;
+    declare_assignment_member(me, &host->members, host, name, left, value, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY);
+}
+
 // `f.x = v` (tsc's bindStaticPropertyAssignment -> bindPropertyAssignment for AssignmentDeclarationKind.Property)
 static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     if (op->op != BINARY_OP_EQUAL) return;
@@ -2309,6 +2331,11 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     Span name = expr_static_property_name(left);
     if (!span_valid(name)) return;
     Expr* object = &left->property->expr;
+    Expr* prototype = expr_prototype_object(object);
+    if (prototype) {
+        add_prototype_property(me, prototype, name, left, &op->right);
+        return;
+    }
     if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || expr_is_perenthisized(object)) return;
     Expr* init;
     Symbol* host = expando_host(me, object->identifier.name, &init);
@@ -2354,5 +2381,117 @@ void scope_add_expandos(Scope* me, Block const* block) {
             if (expr_is_perenthisized(e)) break;
             add_expando(me, e->binary_op, top_level);
         }
+    }
+}
+
+// JavaScript classes
+
+// The symbol of the class a constructor function (or the constructor of `X.prototype.m = function`) makes: a function
+// declaration, or a variable initialized with a function expression. Null if `symbol` is neither
+static Symbol* js_constructor_symbol(Symbol* symbol) {
+    if (!symbol || symbol->is_placeholder || (symbol->flags & SYMBOL_ALIAS)) return nullptr;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind == SYMBOL_DECL_FUNCTION) return symbol;
+        if (decl->kind == SYMBOL_DECL_CLASS) return symbol;
+        if (decl->kind == SYMBOL_DECL_VARIABLE) {
+            Binding const* binding = decl->node;
+            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
+            Expr const* init = &((InitializedBinding const*)binding)->value;
+            return init->tag == EXPR_FUNCTION && !span_valid(init->function->arrow_span) ? symbol : nullptr;
+        }
+    }
+    return nullptr;
+}
+
+// Declares an assignment member `name` (`left` = v) in a class's or constructor function's table
+static void declare_assignment_member(
+    Scope* me, SymbolTable** table, Symbol* parent, Span name, Expr* left, Expr* value, AssignmentDeclKind kind
+) {
+    if (!*table) *table = arena_new(&my binder->arena, SymbolTable);
+    bool merged;
+    Symbol* member = declare_symbol(me, *table, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
+    if (!merged) {
+        member->name = name.sv;
+        member->name_span = name;
+        member->parent = parent;
+        member->exported = true;
+    }
+    symbol_add_decl(member, (SymbolDecl){
+        .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
+        .name = left->outer_span, .full = left->outer_span,
+    });
+}
+
+void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
+    Expr* left = &op->left;
+    Span name = expr_static_property_name(left);
+    // (Private names must be declared, even in JavaScript)
+    if (!span_valid(name) || csview_starts_with(name.sv, "#")) return;
+    Expr const* object = &left->property->expr;
+    if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS || expr_is_perenthisized(object)) {
+        return;
+    }
+    Expr* value = &op->right;
+    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+        value = &value->binary_op->right;
+    }
+    // The function `this` belongs to (arrow functions have their container's)
+    FunctionImpl const* function = nullptr;
+    for (Scope const* scope = me; scope && !function; scope = scope->parent) {
+        if (scope->kind == SCOPE_FUNCTION && scope->function && !span_valid(scope->function->arrow_span)) function = scope->function;
+        if (scope->kind == SCOPE_STATIC_BLOCK || scope->kind == SCOPE_MODULE || scope->kind == SCOPE_SCRIPT) break;
+    }
+    IdentifierExpr const* this = &object->identifier;
+    switch (this->this_kind) {
+        case THIS_CLASS_INSTANCE: {
+            Symbol* class_symbol = (Symbol*)this->target;
+            if (!class_symbol) return;
+            AssignmentDeclKind kind = function && function->is_constructor ?
+                ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : ASSIGNMENT_DECL_THIS_IN_METHOD;
+            declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, kind);
+            // A field the class body declares without a type or initializer has the type the constructor assigns
+            ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
+            ClassItem* field = class_decl ? class_decl_find_member(class_decl, name.sv, false) : nullptr;
+            if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && field && field->tag == CLASS_ITEM_FIELD &&
+                !field->field.has_explicit_type && field->field.value.tag == EXPR_IMPLICIT_ANY
+            ) {
+                field->field.js_assigned = symbol_table_get(class_symbol->members, name.sv);
+            }
+        }   break;
+        case THIS_CLASS_STATIC: {
+            Symbol* class_symbol = (Symbol*)this->target;
+            if (!class_symbol) return;
+            symbol_ensure_exports(class_symbol);
+            bool has_expando = false;
+            for (u32 i = 0; i < class_symbol->decl_count; i++) has_expando |= class_symbol->decls[i].kind == SYMBOL_DECL_EXPANDO;
+            if (!has_expando) {
+                class_symbol->flags |= SYMBOL_VALUE_MODULE;
+                symbol_add_decl(class_symbol, (SymbolDecl){ .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE });
+            }
+            declare_assignment_member(me, &class_symbol->exports, class_symbol, name, left, value, ASSIGNMENT_DECL_THIS_IN_METHOD);
+        }   break;
+        case THIS_ANY: {
+            FunctionImpl* this_function = (FunctionImpl*)this->this_function;
+            if (!this_function || this_function != function) return;
+            // `X.prototype.m = function () { this.x = v }` declares x for X, else the function is a constructor
+            Symbol* class_symbol = nullptr;
+            AssignmentDeclKind kind = ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
+            Expr const* assigned_to = this_function->this_assigned_object;
+            Span prototype = assigned_to ? expr_static_property_name(assigned_to) : span_null;
+            if (span_valid(prototype) && span_equals(prototype, "prototype") &&
+                assigned_to->property->expr.tag == EXPR_IDENTIFIER
+            ) {
+                class_symbol = js_constructor_symbol((Symbol*)assigned_to->property->expr.identifier.target);
+                kind = ASSIGNMENT_DECL_THIS_IN_METHOD;
+            } else if (!assigned_to) {
+                class_symbol = this_function->class_symbol ? this_function->class_symbol :
+                    this_function->is_expression ? nullptr : this_function->symbol;
+            }
+            if (!class_symbol) return;
+            class_symbol->flags |= SYMBOL_CLASS;
+            declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, kind);
+        }   break;
+        default: break;
     }
 }

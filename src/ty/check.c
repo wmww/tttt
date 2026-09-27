@@ -2222,6 +2222,8 @@ static bool span_contains(Span outer, char const* at) {
 static void check_used_before_initialization(Checker* me, PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
     while (prop->target) prop = prop->target;
     if (!span_valid(prop->name_span) || prop->name_span.source != access->prop.outer_span.source) return;
+    // A JavaScript assignment declaration (`this.x = v` declares x from where it starts)
+    if (prop->symbol && prop->symbol->decl_count && prop->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) return;
     ClassDecl* class_decl = prop->parent && (prop->parent->flags & SYMBOL_CLASS) ? (ClassDecl*)class_decl_of(prop->parent) : nullptr;
     // A class member's declaration: a field, method or accessor, or a parameter property
     ClassItem* item = nullptr;
