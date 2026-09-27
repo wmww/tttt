@@ -481,16 +481,25 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
         }
     }
 
-    // (tsc's checkTypePredicate; TODO: TS1229 for a rest parameter, TS1225 for a name that isn't a parameter)
+    // (tsc's checkTypePredicate; TODO: TS1230 for a name bound by a parameter's binding pattern)
     TypePredicateNode const* predicate = my predicate;
-    if (predicate && predicate->has_type && !predicate->is_this && !predicate->jsdoc && predicate->param_index >= 0 &&
-        span_valid(predicate->type_span)
-    ) {
-        FunctionArg const* arg = vec_function_arg_at(&my args, (isize_t)predicate->param_index);
-        if (!arg->rest) {
-            Checker* checker = current_checker;
-            ty_check_type_predicate(checker, ty_from_node(checker, &predicate->type, (LowerCtx){ .generic = true }),
-                ty_binding_type(checker, &arg->initializer.binding, (LowerCtx){ .generic = true }), predicate->type_span, errs);
+    if (predicate && !predicate->is_this && !predicate->jsdoc && span_valid(predicate->name)) {
+        if (predicate->param_index >= 0) {
+            FunctionArg const* arg = vec_function_arg_at(&my args, (isize_t)predicate->param_index);
+            if (arg->rest) {
+                error_ctx_error_d(errs, predicate->name, 1229, "A type predicate cannot reference a rest parameter.");
+            } else if (predicate->has_type && span_valid(predicate->type_span)) {
+                Checker* checker = current_checker;
+                ty_check_type_predicate(checker, ty_from_node(checker, &predicate->type, (LowerCtx){ .generic = true }),
+                    ty_binding_type(checker, &arg->initializer.binding, (LowerCtx){ .generic = true }), predicate->type_span,
+                    errs);
+            }
+        } else {
+            bool any_pattern = false;
+            for_each (i, vec_function_arg, &my args) any_pattern |= i->initializer.binding.tag != BINDING_IDENTIFIER;
+            if (!any_pattern) {
+                error_ctx_error_d(errs, predicate->name, 1225, "Cannot find parameter '", predicate->name, "'.");
+            }
         }
     }
 }
