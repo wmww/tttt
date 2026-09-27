@@ -7070,6 +7070,29 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             .name = span_from(a),
             .keyword = KEYWORD_IDENTIFIER_SUPER,
         });
+        // tsc's parseSuperExpression
+        Parser args_p = parser(&p);
+        hop_whitespace(&args_p);
+        Anchor args_a = anchor(&args_p);
+        VecSpannedType args;
+        if (*args_p.pos == '<' && parse_generic_params(&args_p, true, &args)) {
+            vec_spanned_type_drop(&args);
+            Span args_span = span_from(args_a);
+            hop_whitespace(&args_p);
+            bool is_call = *args_p.pos == '(';
+            parse_fail(&args_p);
+            // (The call parses the type arguments again: the baselines walk them)
+            if (is_call) parse_error(&p, args_span, 2754, "'super' may not use type arguments.");
+        } else {
+            parse_fail(&args_p);
+        }
+        Parser next_p = parser(&p);
+        hop_whitespace(&next_p);
+        char next = *next_p.pos;
+        parse_fail(&next_p);
+        if (next != '(' && next != '.' && next != '[' && next != '<') {
+            parse_error(&p, span_from_token(&p), 1034, "'super' must be followed by an argument list or member access.");
+        }
     } else if (c == 'i' && parse_import_keyword_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
     } else if (word && parse_identifier_expr(&p, &ret->identifier)) {
