@@ -276,7 +276,7 @@ static bool enums_related(Checker* me, Symbol const* source, Symbol const* targe
     return true;
 }
 
-static bool same_literal_value(Ty const* s, Ty const* t) {
+static inline bool same_literal_value(Ty const* s, Ty const* t) {
     if ((s->flags & TYF_LITERAL) != (t->flags & TYF_LITERAL)) return false;
     if (s->flags & TYF_STRING_LITERAL) return s->literal.string == t->literal.string;
     if (s->flags & TYF_NUMBER_LITERAL) {
@@ -292,26 +292,10 @@ static bool is_subtype_relation(TyRelation relation) {
     return relation == TY_RELATION_SUBTYPE || relation == TY_RELATION_STRICT_SUBTYPE;
 }
 
-static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s, Ty const* t) {
+// The enum cases of is_simple_related(): only asked when one side is an enum type, most relations never get here
+static bool is_simple_related_enum(Checker* me, RelationState const* st, Ty const* s, Ty const* t) {
     u32 sf = s->flags;
     u32 tf = t->flags;
-    if ((tf & (TYF_ANY | TYF_UNKNOWN)) || (sf & TYF_NEVER)) return true;
-    if (tf & TYF_NEVER) return false;
-    if (sf & TYF_ANY) return !is_subtype_relation(st->relation);
-    if ((sf & TYF_STRING_LIKE) && (tf & TYF_STRING)) return true;
-    if ((sf & TYF_NUMBER_LITERAL) && (tf & TYF_NUMBER)) return true;
-    if ((sf & TYF_BIGINT_LITERAL) && (tf & TYF_BIGINT)) return true;
-    if ((sf & TYF_BOOLEAN_LITERAL) && (tf & TYF_BOOLEAN)) return true;
-    if ((sf & TYF_UNIQUE_ES_SYMBOL) && (tf & TYF_ES_SYMBOL)) return true;
-    if ((sf & TYF_UNDEFINED) && (tf & (TYF_UNDEFINED | TYF_VOID))) return true;
-    if ((sf & TYF_NULL) && (tf & TYF_NULL)) return true;
-    if ((sf & TYF_NULLABLE) && !compiler_options()->strict_null_checks &&
-        st->relation != TY_RELATION_ASSIGNABLE_STRICT_NULLS && !is_subtype_relation(st->relation)
-    ) {
-        return true;
-    }
-    if ((sf & TYF_OBJECT) && (tf & TYF_NON_PRIMITIVE)) return true;
-    // Enums
     if ((sf & TYF_ENUM) && (tf & TYF_NUMBER)) return true;
     if ((sf & TYF_ENUM_LITERAL) && (sf & TYF_LITERAL) && (tf & TYF_LITERAL) && !(tf & TYF_ENUM_LITERAL) &&
         s->kind == TY_LITERAL && t->kind == TY_LITERAL && same_literal_value(s, t)
@@ -351,6 +335,32 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
         ) {
             return true;
         }
+    }
+    return false;
+}
+
+static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s, Ty const* t) {
+    u32 sf = s->flags;
+    u32 tf = t->flags;
+    if ((tf & (TYF_ANY | TYF_UNKNOWN)) || (sf & TYF_NEVER)) return true;
+    if (tf & TYF_NEVER) return false;
+    if (sf & TYF_ANY) return !is_subtype_relation(st->relation);
+    if ((sf & TYF_STRING_LIKE) && (tf & TYF_STRING)) return true;
+    if ((sf & TYF_NUMBER_LITERAL) && (tf & TYF_NUMBER)) return true;
+    if ((sf & TYF_BIGINT_LITERAL) && (tf & TYF_BIGINT)) return true;
+    if ((sf & TYF_BOOLEAN_LITERAL) && (tf & TYF_BOOLEAN)) return true;
+    if ((sf & TYF_UNIQUE_ES_SYMBOL) && (tf & TYF_ES_SYMBOL)) return true;
+    if ((sf & TYF_UNDEFINED) && (tf & (TYF_UNDEFINED | TYF_VOID))) return true;
+    if ((sf & TYF_NULL) && (tf & TYF_NULL)) return true;
+    if ((sf & TYF_NULLABLE) && !compiler_options()->strict_null_checks &&
+        st->relation != TY_RELATION_ASSIGNABLE_STRICT_NULLS && !is_subtype_relation(st->relation)
+    ) {
+        return true;
+    }
+    if ((sf & TYF_OBJECT) && (tf & TYF_NON_PRIMITIVE)) return true;
+    // Enum literals and computed members carry an enum flag; enum types themselves are aliased unions
+    if (((sf | tf) & (TYF_ENUM | TYF_ENUM_LITERAL)) || (s->kind == TY_UNION && t->kind == TY_UNION && s->alias && t->alias)) {
+        return is_simple_related_enum(me, st, s, t);
     }
     return false;
 }

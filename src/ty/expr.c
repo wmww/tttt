@@ -180,9 +180,27 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
     if (flat->kind != TY_UNION || (flat->flags & TYF_BOOLEAN)) return flat;
     TyList members = flat->composite.types;
     if (members.len > 64) return flat; // PERF: quadratic
+    // Like tsc's removeSubtypes, only structured and instantiable members are candidates for removal, unless there's
+    // an empty object type to absorb primitives. Literals next to their primitive are gone already (ty_union()), of
+    // tsc's removeRedundantLiteralTypes that leaves `undefined` next to `void`
+    bool has_empty_object = false;
+    bool has_void = false;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* t = members.data[i];
+        has_void |= (t->flags & TYF_VOID) != 0;
+        if (has_empty_object || !(t->flags & TYF_OBJECT)) continue;
+        Members const* m = ty_members(me, t);
+        has_empty_object = !m->mapped && !m->prop_count && !m->call_count && !m->construct_count && !m->index_count;
+    }
+    u32 structured = TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_TEMPLATE_LITERAL |
+        TYF_STRING_MAPPING;
     Ty const** kept = malloc(sizeof(Ty const*) * members.len);
     u32 kept_len = 0;
     for (u32 i = 0; i < members.len; i++) {
+        if (!has_empty_object && !(members.data[i]->flags & structured)) {
+            if (!(has_void && (members.data[i]->flags & TYF_UNDEFINED))) kept[kept_len++] = members.data[i];
+            continue;
+        }
         bool redundant = false;
         for (u32 j = 0; j < members.len && !redundant; j++) {
             if (i == j) continue;

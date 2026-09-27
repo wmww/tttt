@@ -593,6 +593,17 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
     return ret;
 }
 
+// Some members of `of`, in its order (narrowing's filters): they are sorted and reduced already, so there's only the
+// interning left to do. Rebuilding a filtered 300-member enum union through ty_union() is most of what narrowing an
+// enum by `===` costs
+Ty const* ty_union_filtered(Checker* me, Ty const* of, Ty const* const* kept, u32 len) {
+    check(of->kind == TY_UNION);
+    if (len == of->composite.types.len) return of;
+    if (len == 0) return my intrinsics[TY_NEVER];
+    if (len == 1) return kept[0];
+    return intern_composite(me, TY_UNION, kept, len, nullptr, (TyList){0});
+}
+
 // Which disjoint family of primitives a type belongs to, 0 if none
 static u32 primitive_family(Ty const* t) {
     if (t->kind != TY_INTRINSIC && t->kind != TY_LITERAL) return 0;
@@ -1587,7 +1598,7 @@ Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
     for (u32 i = 0; i < members.len; i++) {
         if (!(members.data[i]->flags & TYF_NULLABLE)) kept[len++] = members.data[i];
     }
-    Ty const* ret = len == members.len ? ty : ty_union(me, kept, len, nullptr, (TyList){0});
+    Ty const* ret = ty_union_filtered(me, ty, kept, len);
     free(kept);
     return ret;
 }
@@ -1601,7 +1612,7 @@ Ty const* ty_without_undefined(Checker* me, Ty const* type) {
     for (u32 i = 0; i < members.len; i++) {
         if (!(members.data[i]->flags & TYF_UNDEFINED)) kept[len++] = members.data[i];
     }
-    Ty const* ret = len == members.len ? type : ty_union(me, kept, len, nullptr, (TyList){0});
+    Ty const* ret = ty_union_filtered(me, type, kept, len);
     free(kept);
     return ret;
 }

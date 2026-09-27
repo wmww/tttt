@@ -298,7 +298,7 @@ static Ty const* filter_type(Checker* me, Ty const* ty, TyFilterFn keep, void co
     for (u32 i = 0; i < members.len; i++) {
         if (keep(me, members.data[i], arg)) ty_buf_push(&kept, members.data[i]);
     }
-    Ty const* ret = kept.len == members.len ? ty : ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
+    Ty const* ret = ty_union_filtered(me, ty, kept.data, kept.len);
     ty_buf_drop(&kept);
     return ret;
 }
