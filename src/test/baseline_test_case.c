@@ -1261,7 +1261,12 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
         if (has_namespace) {
             cstr_append_lit(&text, ".");
         }
-        cstr_append_span(&text, span_valid(data.name) ? data.name : data.span);
+        Span name = span_valid(data.name) ? data.name : data.span;
+        if (name.sv.size) {
+            cstr_append_span(&text, name);
+        } else {
+            cstr_append_lit(&text, "(Missing)"); // A name the parser recovered as missing (tsc's "__missing")
+        }
     }
 
     bool found_decl = false;

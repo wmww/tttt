@@ -13617,7 +13617,7 @@ const baselines = {
     },
     'fatarrowfunctionsOptionalArgsErrors3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'fatarrowfunctionsOptionalArgsErrors4': {
@@ -27607,7 +27607,7 @@ const baselines = {
     },
     'restArgMissingName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'restElementAssignable': {
@@ -33182,7 +33182,7 @@ const baselines = {
     },
     'varArgWithNoParamName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'varArgsOnConstructorTypes': {
@@ -42661,19 +42661,19 @@ const baselines = {
         types: true,
     },
     'FunctionPropertyAssignments2_es6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'FunctionPropertyAssignments3_es6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'FunctionPropertyAssignments4_es6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'FunctionPropertyAssignments5_es6': {
         errors: true,
@@ -42681,9 +42681,9 @@ const baselines = {
         types: true,
     },
     'FunctionPropertyAssignments6_es6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'MemberFunctionDeclaration1_es6': {
         errors: true,

@@ -3610,7 +3610,11 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     } else {
         const char* name_start = p.pos;
         if (!parse_name_or_value(&p, &item.name_span, &item.name_string, &name_is_value)) {
-            return parse_fail(&p);
+            if (!flags.is_generator) return parse_fail(&p);
+            // `{ *() {} }`: committed to a generator method by the `*`, the name is missing
+            parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+            item.name_span = span_from_pos(&p);
+            item.name_string = cstr_init();
         }
         item.name_is_value = name_is_value;
         name_is_identifier = !name_is_value;
@@ -3644,6 +3648,15 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         if (item.tag == OBJECT_ITEM_PROPERTY) {
             item.tag = OBJECT_ITEM_METHOD;
         }
+        func.full_span = span_from(a);
+        item.value = expr_function(span_from(a), c_new(FunctionImpl, func));
+    } else if (must_be_method && (flags.is_generator || item.tag != OBJECT_ITEM_PROPERTY)) {
+        // `*` and `get`/`set` commit to a method (tsc's parseMethodDeclaration/parseAccessorDeclaration): the
+        // parameter list is missing, a body may follow
+        expected_token_error(&p, "(");
+        func = (FunctionImpl){ .is_generator = flags.is_generator };
+        if (parse_block(&p, false, &func.body)) func.has_body = true;
+        if (item.tag == OBJECT_ITEM_PROPERTY) item.tag = OBJECT_ITEM_METHOD;
         func.full_span = span_from(a);
         item.value = expr_function(span_from(a), c_new(FunctionImpl, func));
     } else if (must_be_method) {
