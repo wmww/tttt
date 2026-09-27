@@ -2776,16 +2776,34 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                             }
                         }
                         TypeNode type = type_any;
+                        bool typed_setter = false;
+                        Span setter_param = span_null;
                         if (is_getter) {
                             type = type_move(&item.method.func.ret);
                         } else if (vec_function_arg_size(&item.method.func.args)) {
-                            type = type_move(&item.method.func.args.data[0].initializer.binding.explicit_type);
+                            FunctionArg* arg = &item.method.func.args.data[0];
+                            typed_setter = arg->initializer.binding.has_explicit_type;
+                            if (arg->initializer.binding.tag == BINDING_IDENTIFIER) setter_param = arg->initializer.binding.content_span;
+                            type = type_move(&arg->initializer.binding.explicit_type);
                         }
                         if (existing) {
                             vec_span_push(&existing->declarations, item.span);
+                            existing->second_name = item.method.name_span;
+                            if (!is_getter) existing->setter_param = setter_param;
+                            // The setter's parameter type is what writes are checked against (tsc's getWriteTypeOfSymbol)
                             if (is_getter) {
-                                type_drop(&existing->type);
+                                if (existing->setter_first && !existing->has_write_type) {
+                                    existing->write_type = existing->type;
+                                    existing->has_write_type = true;
+                                } else {
+                                    type_drop(&existing->type);
+                                }
                                 existing->type = type;
+                                existing->setter_first = false;
+                            } else if (typed_setter && !existing->has_write_type) {
+                                existing->write_type = type;
+                                existing->has_write_type = true;
+                                existing->readonly = false;
                             } else {
                                 type_drop(&type);
                                 existing->readonly = false;
@@ -2801,6 +2819,8 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                                 item.method.name_is_value,
                                 type
                             );
+                            member.setter_first = typed_setter;
+                            member.setter_param = setter_param;
                             vec_interface_member_push(&members, member);
                         }
                         break;

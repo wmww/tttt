@@ -26,6 +26,7 @@ void interface_member_drop(InterfaceMember* me) {
         case INTERFACE_KEY_CALLABLE: break;
     }
     type_drop(&my type);
+    if (my has_write_type) type_drop(&my write_type);
 }
 
 void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs) {
@@ -57,6 +58,7 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
     }
 
     type_lookup_names(&my type, names, errs);
+    if (my has_write_type) type_lookup_names(&my write_type, names, errs);
 }
 
 void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs) {
@@ -104,4 +106,5 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
         case INTERFACE_KEY_CALLABLE: break;
     }
     type_typecheck(&my type, errs);
+    if (my has_write_type) type_typecheck(&my write_type, errs);
 }

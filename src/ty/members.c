@@ -204,6 +204,7 @@ static void builder_add_interface_member(
                 prop->name = name;
                 prop->parent = i->origin_interface ? i->origin_interface : parent;
                 prop->node = &i->type;
+                if (i->has_write_type) prop->write_node = &i->write_type;
                 prop->ctx = ctx;
                 prop->ctx.method = is_method;
                 prop->thisless = i->type.tag == TYPE_CALLABLE ?
@@ -464,11 +465,19 @@ static void builder_add_class_items(
                     prop->lazy = &i->method.accessor_type;
                     prop->flags |= PROP_ACCESSOR;
                     // Reads go by the getter's accessibility, writes by the setter's
-                    bool has_setter = false;
+                    bool has_setter = false, has_getter = false;
+                    TypeNode const* setter_type = nullptr;
                     u32 get_access = access_prop_flags(i->access), set_access = get_access;
                     for_each (other, vec_class_item, &class_decl->items) {
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor_first != i) continue;
                         has_setter |= other->method.accessor == CLASS_ACCESSOR_SET;
+                        has_getter |= other->method.accessor == CLASS_ACCESSOR_GET;
+                        FunctionImpl const* func = &other->method.func;
+                        if (other->method.accessor == CLASS_ACCESSOR_SET && vec_function_arg_size(&func->args) &&
+                            func->args.data[0].initializer.binding.has_explicit_type
+                        ) {
+                            setter_type = &func->args.data[0].initializer.binding.explicit_type;
+                        }
                         if (other != i) prop_add_decl_spans(me, prop, &other->span, 1);
                         if (other->method.accessor == CLASS_ACCESSOR_GET) get_access = access_prop_flags(other->access);
                         if (other->method.accessor == CLASS_ACCESSOR_SET) set_access = access_prop_flags(other->access);
@@ -477,6 +486,7 @@ static void builder_add_class_items(
                     prop->flags = (prop->flags & ~(u32)(PROP_PRIVATE | PROP_PROTECTED)) | get_access |
                         (set_access & PROP_PRIVATE ? PROP_SET_PRIVATE : 0) | (set_access & PROP_PROTECTED ? PROP_SET_PROTECTED : 0);
                     if (!has_setter) prop->flags |= PROP_READONLY;
+                    if (has_getter) prop->write_node = setter_type; // Writes go by the setter's parameter type
                     break;
                 }
                 // With overload signatures around, the implementation's own signature isn't visible
@@ -1452,6 +1462,20 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     }
     prop->type = type;
     prop->type_state = LAZY_STATE_DONE;
+    return type;
+}
+
+Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
+    Prop* prop = (Prop*)const_prop; // Resolved lazily like the type
+    if (prop->write_type) return prop->write_type;
+    Ty const* type = nullptr;
+    if (prop->write_node) {
+        type = ty_from_node(me, prop->write_node, prop->ctx);
+    } else if (prop->target) {
+        type = prop_write_type(me, prop->target);
+        if (type) type = ty_instantiate(me, type, prop->mapper);
+    }
+    prop->write_type = type;
     return type;
 }
 

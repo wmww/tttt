@@ -3249,12 +3249,34 @@ static bool lacks_common_properties(Checker* me, RelationState* st, Ty const* so
     return true;
 }
 
+Ty const* ty_strip_nullable_target(Checker* me, Ty const* source, Ty const* target) {
+    (void)me;
+    u32 non_nullable = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
+        TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ENUM_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_OBJECT | TYF_NON_PRIMITIVE;
+    if ((source->kind == TY_UNION && !(source->flags & TYF_BOOLEAN)) || !(source->flags & non_nullable)) return target;
+    if (target->kind != TY_UNION || target->composite.types.len < 2 || target->composite.types.len > 3) return target;
+    Ty const* candidate = nullptr;
+    for (u32 i = 0; i < target->composite.types.len; i++) {
+        Ty const* part = target->composite.types.data[i];
+        if (part->flags & TYF_NULLABLE) continue;
+        if (candidate) return target;
+        candidate = part;
+    }
+    // (`boolean | undefined` is three members in tsc: true and false aren't one)
+    return candidate && !(candidate->flags & TYF_BOOLEAN_LITERAL) ? candidate : target;
+}
+
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     // Relations (and their caches) only see regular literals (tsc's getNormalizedType)
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
     if (st->relation == TY_RELATION_IDENTITY) return identity_related(me, st, source, target);
+    Ty const* original_target = target;
+    target = ty_strip_nullable_target(me, source, target);
+    if (source == target) return TERNARY_TRUE;
+    // (Errors name an alias as it was: tsc's reportErrorResults)
+    Ty const* report_target = original_target->alias ? original_target : target;
     // Comparability is mostly bidirectional (tsc's isRelatedTo: simple relations the other way around count too)
     if (st->relation == TY_RELATION_COMPARABLE && !(target->flags & TYF_NEVER) && is_simple_related(me, st, target, source)) {
         return TERNARY_TRUE;
@@ -3263,7 +3285,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     if (ty_is_fresh_object(source) && !st->intersection_target && is_structured(target) &&
         has_excess_properties(me, st, source, target, report)
     ) {
-        if (report) report_relation_error(me, st, source, target);
+        if (report) report_relation_error(me, st, source, report_target);
         return TERNARY_FALSE;
     }
     Ternary result = TERNARY_FALSE;
@@ -3282,7 +3304,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     }
     // (tsc's reportErrorResults: JSX attributes against `IntrinsicAttributes & P` get no head, unlike an excess
     // property above)
-    if (!result && report && !ty_jsx_skips_head(me, source, target)) report_relation_error(me, st, source, target);
+    if (!result && report && !ty_jsx_skips_head(me, source, target)) report_relation_error(me, st, source, report_target);
     return result;
 }
 

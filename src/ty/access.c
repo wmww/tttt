@@ -221,3 +221,16 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
 Ty const* ty_access(Checker* me, Ty const* object, Ty const* index) {
     return access(me, object, ty_regular(me, index), 0); // `o["a"]`: keys are regular
 }
+
+// The type a write to `object[index]` is checked against when it isn't what a read gets: a divergent accessor's
+// setter parameter type (tsc's getWriteTypeOfSymbol). Null if there's nothing special about writing it
+Ty const* ty_access_write_type(Checker* me, Ty const* object, Ty const* index) {
+    Atom const* name = ty_literal_name(me, ty_regular(me, index));
+    if (!name) return nullptr;
+    object = ty_apparent_type(me, object);
+    if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
+    FoundProp prop = ty_find_prop(me, object, name);
+    if (!prop.found || !prop.prop) return nullptr;
+    Ty const* write = prop_write_type(me, prop.prop);
+    return write && (prop.flags & PROP_OPTIONAL) ? with_undefined(me, write) : write;
+}

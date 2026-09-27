@@ -46,6 +46,13 @@ typedef struct InterfaceMember {
         };
     } key;
     TypeNode type;
+    // `get x(): T` with `set x(v: U)`: writes are checked against U (tsc's write type of a divergent accessor)
+    TypeNode write_type;
+    bool has_write_type;
+    bool setter_first; // Parser only: `type` is a typed setter's parameter type until a getter shows up
+    // An accessor pair's second name, and a setter's parameter name (for the types and symbols baselines)
+    Span second_name;
+    Span setter_param;
 } InterfaceMember;
 
 static inline InterfaceMember interface_member_make(

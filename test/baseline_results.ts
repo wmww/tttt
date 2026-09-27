@@ -287,7 +287,7 @@ const baselines = {
     },
     'accessorBodyInTypeContext': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'accessorDeclarationEmitJs': {
@@ -3337,8 +3337,8 @@ const baselines = {
     },
     'circularAccessorAnnotations': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'circularBaseConstraint': {
         errors: true,
@@ -9886,19 +9886,19 @@ const baselines = {
         types: true,
     },
     'divergentAccessors1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'divergentAccessorsTypes1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'divergentAccessorsTypes2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'divergentAccessorsTypes3': {
         errors: false,
@@ -9921,8 +9921,8 @@ const baselines = {
         types: false,
     },
     'divergentAccessorsTypes7': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'divergentAccessorsTypes8': {
@@ -15531,14 +15531,14 @@ const baselines = {
         types: true,
     },
     'getAndSetNotIdenticalType2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'getAndSetNotIdenticalType3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'getParameterNameAtPosition': {
         errors: true,
@@ -15563,7 +15563,7 @@ const baselines = {
     'getterErrorMessageNotDuplicated': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'getterMissingReturnError': {
         errors: true,
@@ -18587,8 +18587,8 @@ const baselines = {
     },
     'intersectionsAndReadonlyProperties': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'intersectionsOfLargeUnions': {
         errors: false,
@@ -19881,7 +19881,7 @@ const baselines = {
         types: false,
     },
     'jsxComponentTypeErrors': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20848,7 +20848,7 @@ const baselines = {
     'mappedTypeCircularReferenceInAccessor': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'mappedTypeContextualTypesApplied': {
         errors: false,
@@ -24296,7 +24296,7 @@ const baselines = {
         types: false,
     },
     'objectCreate-errors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28196,7 +28196,7 @@ const baselines = {
         types: false,
     },
     'signatureCombiningRestParameters3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -57557,8 +57557,8 @@ const baselines = {
     },
     'parserInterfaceDeclaration9': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserMemberAccessor1': {
         errors: true,

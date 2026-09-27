@@ -405,6 +405,10 @@ struct Prop {
     TyMapper const* mapper;
     LazyState type_state;
     Ty const* type;
+    // A divergent accessor's setter parameter type (tsc's write type), lowered with `ctx`; instantiations follow
+    // `target`. See prop_write_type()
+    TypeNode const* write_node;
+    Ty const* write_type;
     // Where it was declared, for the symbols baseline (not copied to instantiations, follow `target`)
     Span name_span;
     Span const* decl_spans;
@@ -815,6 +819,9 @@ Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name); // 
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
 Ty const* ty_global_function_type(Checker* me); // Null without a lib
 Ty const* prop_type(Checker* me, Prop const* prop);
+// What writes to the property are checked against when it differs from what reads get (a `set` accessor whose
+// parameter type isn't the getter's), else null
+Ty const* prop_write_type(Checker* me, Prop const* prop);
 bool ty_props_identical(Checker* me, Prop const* source, Prop const* target); // tsc's isPropertyIdenticalTo
 // The name of the property's first declaration (instantiations follow their target), invalid if it has none
 Span ty_prop_decl_span(Prop const* prop);

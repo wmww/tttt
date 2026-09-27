@@ -2322,6 +2322,10 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* ret = ty_access(me, object, key);
             if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target) ret = object_literal_access(me, object, key);
             if (!ret || ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
+            if (expr->property->assignment_target == FLOW_TARGET_DEFINITE) {
+                Ty const* write = ty_access_write_type(me, object, key);
+                if (write) ret = write;
+            }
             ret = access_flow_type(me, expr, ret);
             return optional ? optional_type(me, ret) : ret;
         }
