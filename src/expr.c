@@ -226,8 +226,26 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
     Error* error = error_ctx_error_d(errs, my name, exported ? 1362 : 1361, "'", my name, "' cannot be used as a value "
         "because it was ", exported ? "exported using 'export type'." : "imported using 'import type'.");
     if (error) {
-        // (tsc's node: the whole `export type *` declaration, the `* as ns` of a namespace export)
-        Span at = item->tag == PORT_REEXPORT_SPLAT || item->tag == PORT_REEXPORT_GATHER ? item->full_span : item->decl_name;
+        // (tsc's node: the whole `export type *` declaration, the `* as ns` of a namespace export, the whole
+        // `import A = require()`, the import clause of a default import, the whole specifier)
+        Span at = item->decl_name;
+        if (item->tag == PORT_REEXPORT_SPLAT || item->tag == PORT_REEXPORT_GATHER || item->tag == PORT_IMPORT_ALIAS ||
+            item->is_require
+        ) {
+            at = item->full_span;
+        } else if (item->tag == PORT_IMPORT_DEFAULT && item->type_only) {
+            // (from its `type`)
+            char const* start = span_start_ptr(item->decl_name);
+            char const* file_start = item->decl_name.source ? cstr_str(&item->decl_name.source->contents) : start;
+            while (start > file_start && (start[-1] == ' ' || start[-1] == '\t')) start--;
+            if (start - file_start >= 4 && !memcmp(start - 4, "type", 4)) {
+                at = span_make(item->decl_name.source, start - 4, span_end_ptr(item->decl_name));
+            }
+        } else if ((item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC || item->tag == PORT_REEXPORT_SPECIFIC) &&
+            span_valid(item->source_name) && span_start_ptr(item->source_name) < span_start_ptr(item->decl_name)
+        ) {
+            at = item->source_name;
+        }
         error_add_related_d(error, at, exported ? 1377 : 1376, "'", my name, "' was ",
             exported ? "exported" : "imported", " here.");
     }

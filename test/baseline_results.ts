@@ -26316,7 +26316,7 @@ const baselines = {
         types: true,
     },
     'propertyOrdering': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37131,12 +37131,12 @@ const baselines = {
         types: false,
     },
     'assignParameterPropertyToPropertyDeclarationES2022': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignParameterPropertyToPropertyDeclarationESNext': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37371,7 +37371,7 @@ const baselines = {
         types: true,
     },
     'defineProperty(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37396,7 +37396,7 @@ const baselines = {
         types: true,
     },
     'initializationOrdering1(target=es2022,usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37406,7 +37406,7 @@ const baselines = {
         types: true,
     },
     'initializationOrdering1(target=esnext,usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37576,7 +37576,7 @@ const baselines = {
         types: true,
     },
     'redefinedPararameterProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49691,7 +49691,7 @@ const baselines = {
         types: false,
     },
     'filterNamespace_import': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49711,7 +49711,7 @@ const baselines = {
         types: false,
     },
     'importClause_default': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49756,7 +49756,7 @@ const baselines = {
         types: true,
     },
     'importEqualsDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50966,7 +50966,7 @@ const baselines = {
         types: true,
     },
     'ModuleWithExportedAndNonExportedFunctions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54216,7 +54216,7 @@ const baselines = {
         types: true,
     },
     'resolutionModeCache': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

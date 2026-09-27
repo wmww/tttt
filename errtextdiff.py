@@ -92,12 +92,14 @@ def chain_kind(t, o):
 
 
 def related_kind(t, o):
-    if len(t) > len(o): return 'missing'
-    if len(t) < len(o): return 'extra'
+    if len(t) != len(o):
+        c = collections.Counter(t if len(t) > len(o) else o) - collections.Counter(o if len(t) > len(o) else t)
+        first = next(iter(c.elements()), None) or (t if len(t) > len(o) else o)[0]
+        return ('missing ' if len(t) > len(o) else 'extra ') + first[0] + ' ' + template(first[2])[:60]
     for a, b in zip(t, o):
         if a == b: continue
         if a[0] != b[0]: return 'code'
-        if a[1] != b[1]: return 'position'
+        if a[1] != b[1]: return 'position ' + a[0]
         return 'text'
     return 'order'
 

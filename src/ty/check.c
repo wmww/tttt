@@ -910,7 +910,10 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
         Prop const* declared = suggestion;
         while (declared->target && !declared->decl_span_count) declared = declared->target;
         if (error && declared->decl_span_count) {
-            error_add_related_d(error, declared->decl_spans[0], 2728, "'", atom_sv(suggestion->name), "' is declared here.");
+            // (tsc's error span of the declaration: its name)
+            Span name_span = ty_prop_decl_span(suggestion);
+            Span at = span_contains_span(declared->decl_spans[0], name_span) ? name_span : declared->decl_spans[0];
+            error_add_related_d(error, at, 2728, "'", atom_sv(suggestion->name), "' is declared here.");
         }
     } else {
         error = error_ctx_error_d(errs, span, ts_code, "Property '", name, "' does not exist on type '", object_str, "'.");
@@ -2447,7 +2450,8 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
     if (fine) return;
     Span name = access->prop.inner_span;
     Error* error = error_ctx_error_d(errs, name, 2729, "Property '", name, "' is used before its initialization.");
-    error_add_related_d(error, prop->name_span, 2728, "'", name, "' is declared here.");
+    // (tsc's error span of the declaration: the name, but all of a parameter)
+    error_add_related_d(error, parameter ? parameter->span : prop->name_span, 2728, "'", name, "' is declared here.");
 }
 
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
