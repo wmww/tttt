@@ -55,6 +55,7 @@ typedef struct ParserShared {
     // type forms (`?T`, `T=`, `*`, `function(...)`...) are allowed
     bool in_jsdoc;
     const char* jsdoc_end; // The `*/` of the comment being parsed, with in_jsdoc
+    u32 parsing_context; // The lists being parsed, a bit per ParsingContext
 } ParserShared;
 
 typedef struct FunctionFlags {
@@ -246,6 +247,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret);
 static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
 static bool parse_binding_element(Parser* parent, Binding* ret);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
+static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
 
 // tsc's isNamedEvaluationSource(): `value` gets its name from where it is (`x = class {}`). An anonymous class there
@@ -360,8 +362,23 @@ static inline Error* add_error_to_parser(Parser* me, Error error) {
     return vec_error_push(&my shared->errors, error);
 }
 
+static bool last_error_starts_at(Parser* me, Span span);
+static int invalid_char_size(const char* c);
+
+// tsc's parseErrorAtPosition: an error that starts where the previous one does is dropped (the first error at a
+// position is the one that explains it; whatever recovery reports there next is noise). An error at a character no
+// token starts with is TS1127, which tsc's scanner reports before the parser gets to say anything there
 static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
-    if (vec_error_size(&my shared->errors) >= MAX_ERRORS) {
+    int invalid = span.source ? invalid_char_size(span_start_ptr(span)) : 0;
+    if (invalid && ts_code != 1127) {
+        cstr_drop(&message);
+        return parse_error_s(me, span_make(my shared->source, span_start_ptr(span), span_start_ptr(span) + invalid),
+            1127, cstr_lit("Invalid character."));
+    }
+    if (last_error_starts_at(me, span)) {
+        cstr_drop(&message);
+        return nullptr;
+    } else if (vec_error_size(&my shared->errors) >= MAX_ERRORS) {
         cstr_drop(&message);
         return nullptr;
     } else if (vec_error_size(&my shared->errors) == MAX_ERRORS - 1) {
@@ -585,6 +602,28 @@ static int unicode_whitespace_size(const char* c) {
     return 0;
 }
 
+// The length of the UTF-8 character at c (1 for a stray continuation byte)
+static int utf8_char_size(const char* c) {
+    unsigned char b = (unsigned char)c[0];
+    int size = b >= 0xF0 ? 4 : b >= 0xE0 ? 3 : b >= 0xC0 ? 2 : 1;
+    for (int i = 1; i < size; i++) {
+        if (((unsigned char)c[i] & 0xC0) != 0x80) return i;
+    }
+    return size;
+}
+
+static int identifier_escape_size(const char* c);
+
+// A character at c that starts no token (tsc's scanner: TS1127 Invalid character): its length, else 0. Non-ASCII
+// characters all count until identifiers are unicode aware (is_identifier_char)
+static int invalid_char_size(const char* c) {
+    unsigned char b = (unsigned char)c[0];
+    if (b >= 0x80) return unicode_whitespace_size(c) ? 0 : utf8_char_size(c);
+    if (b == '\\') return identifier_escape_size(c) ? 0 : 1;
+    if (b && b < 0x20 && !is_js_ascii_space((char)b)) return 1;
+    return 0;
+}
+
 static inline void hop_whitespace_full(Parser* parent, bool hop_comments, bool hop_newlines) {
     if (parent->pos == parent->whitespace_end) {
         return;
@@ -758,7 +797,7 @@ static bool hop_token(Parser* parent) {
     } else if (parse_right_unary_op(parent, &parsed.un_op)) {
         return true;
     } else {
-        parent->pos++;
+        parent->pos += utf8_char_size(parent->pos);
         return true;
     }
 }
@@ -767,6 +806,406 @@ static Span hop_token_get_span(Parser* parent) {
     Anchor a = anchor(parent);
     hop_token(parent);
     return span_from(a);
+}
+
+// Token lookahead, tsc's isStartOf* predicates. Only list recovery uses these (see ParsingContext): the parser proper
+// decides by trying to parse
+typedef struct Tok {
+    const char* start;
+    const char* end;
+    bool newline_before;
+} Tok;
+
+static Tok tok_at(Parser* parent, const char* pos, bool newline_before) {
+    Parser p = parser(parent);
+    p.pos = pos;
+    p.whitespace = newline_before ? WHITESPACE_NEWLINE : WHITESPACE_NONE;
+    p.whitespace_end = nullptr;
+    hop_whitespace(&p);
+    Tok t = { .start = p.pos, .newline_before = newline_before || p.whitespace == WHITESPACE_NEWLINE };
+    hop_token(&p);
+    t.end = p.pos;
+    parse_fail(&p);
+    return t;
+}
+
+// The token at the parser's position (after whitespace, which may be hopped already)
+static Tok tok_peek(Parser* parent) {
+    return tok_at(parent, parent->pos, parent->pos == parent->whitespace_end && parent->whitespace == WHITESPACE_NEWLINE);
+}
+
+static Tok tok_next(Parser* parent, Tok t) {
+    return tok_at(parent, t.end, false);
+}
+
+static bool tok_is(Tok t, const char* text) {
+    size_t n = strlen(text);
+    return (size_t)(t.end - t.start) == n && memcmp(t.start, text, n) == 0;
+}
+
+static bool tok_is_eof(Tok t) {
+    return !*t.start;
+}
+
+static bool tok_is_word(Tok t) {
+    return is_identifier_start_char(*t.start);
+}
+
+static bool tok_is_one_of(Tok t, const char* const* words) {
+    for (; *words; words++) {
+        if (tok_is(t, *words)) return true;
+    }
+    return false;
+}
+
+static bool is_reserved_word(csview word);
+
+// tsc's isIdentifier (reserved words aren't; `yield`/`await` are, which only matters to the stricter predicates)
+static bool tok_is_identifier(Tok t) {
+    return tok_is_word(t) && !is_reserved_word((csview){ t.start, t.end - t.start });
+}
+
+// Any keyword tsc's scanner knows, contextual ones included (tsc's isKeyword)
+static bool tok_is_keyword(Tok t) {
+    static const char* const words[] = {
+        "abstract", "accessor", "any", "as", "asserts", "assert", "bigint", "boolean", "break", "case", "catch",
+        "class", "continue", "const", "debugger", "declare", "default", "delete", "do", "else", "enum", "export",
+        "extends", "false", "finally", "for", "from", "function", "get", "if", "implements", "import", "in", "infer",
+        "instanceof", "interface", "intrinsic", "is", "keyof", "let", "module", "namespace", "never", "new", "null",
+        "number", "object", "package", "private", "protected", "public", "override", "out", "readonly", "require",
+        "global", "return", "satisfies", "set", "static", "string", "super", "switch", "symbol", "this", "throw",
+        "true", "try", "type", "typeof", "undefined", "unique", "unknown", "using", "var", "void", "while", "with",
+        "yield", "async", "await", "of", nullptr,
+    };
+    return tok_is_word(t) && tok_is_one_of(t, words);
+}
+
+static bool tok_is_modifier(Tok t) {
+    static const char* const words[] = {
+        "abstract", "accessor", "async", "const", "declare", "default", "export", "in", "public", "private",
+        "protected", "readonly", "static", "out", "override", nullptr,
+    };
+    return tok_is_word(t) && tok_is_one_of(t, words);
+}
+
+static bool tok_is_class_member_modifier(Tok t) {
+    static const char* const words[] = {
+        "public", "private", "protected", "readonly", "static", "override", "accessor", nullptr,
+    };
+    return tok_is_word(t) && tok_is_one_of(t, words);
+}
+
+static bool tok_is_string(Tok t) {
+    return *t.start == '"' || *t.start == '\'';
+}
+
+static bool tok_is_number(Tok t) {
+    return (*t.start >= '0' && *t.start <= '9') || (*t.start == '.' && t.start[1] >= '0' && t.start[1] <= '9');
+}
+
+static bool tok_is_template(Tok t) {
+    return *t.start == '`';
+}
+
+// tsc's isLiteralPropertyName
+static bool tok_is_literal_property_name(Tok t) {
+    return tok_is_word(t) || tok_is_string(t) || tok_is_number(t);
+}
+
+// tsc's canParseSemicolon at t
+static bool tok_can_parse_semicolon(Tok t) {
+    return tok_is(t, ";") || tok_is(t, "}") || tok_is_eof(t) || t.newline_before;
+}
+
+// Has a binary operator precedence in tsc (getBinaryOperatorPrecedence > 0): not assignments, `,`, `?`, `=>`
+static bool tok_is_binary_operator(Tok t) {
+    static const char* const ops[] = {
+        "??", "||", "&&", "|", "^", "&", "==", "!=", "===", "!==", "<", ">", "<=", ">=", "<<", ">>", ">>>", "+", "-",
+        "*", "/", "%", "**", nullptr,
+    };
+    static const char* const words[] = { "instanceof", "in", "as", "satisfies", nullptr };
+    return tok_is_word(t) ? tok_is_one_of(t, words) : tok_is_one_of(t, ops);
+}
+
+static bool tok_is_start_of_left_hand_side_expression(Parser* p, Tok t) {
+    static const char* const words[] = { "this", "super", "null", "true", "false", "function", "class", "new", nullptr };
+    if (tok_is_number(t) || tok_is_string(t) || tok_is_template(t)) return true;
+    switch (*t.start) {
+        case '(': case '[': case '{': case '/': return true;
+        default: break;
+    }
+    if (tok_is(t, "import")) {
+        Tok next = tok_next(p, t);
+        return tok_is(next, "(") || tok_is(next, "<") || tok_is(next, ".");
+    }
+    return tok_is_one_of(t, words) || tok_is_identifier(t);
+}
+
+// tsc's isStartOfExpression
+static bool tok_is_start_of_expression(Parser* p, Tok t) {
+    static const char* const ops[] = { "+", "-", "~", "!", "++", "--", "<", "@", nullptr };
+    static const char* const words[] = { "delete", "typeof", "void", "await", "yield", nullptr };
+    if (tok_is_start_of_left_hand_side_expression(p, t)) return true;
+    if (*t.start == '#') return true;
+    return tok_is_one_of(t, ops) || tok_is_one_of(t, words) || tok_is_binary_operator(t) || tok_is_identifier(t);
+}
+
+// tsc's isDeclaration (a lookahead from t)
+static bool tok_is_start_of_declaration(Parser* p, Tok t) {
+    static const char* const declarations[] = { "var", "let", "const", "function", "class", "enum", nullptr };
+    static const char* const modifiers[] = {
+        "abstract", "accessor", "async", "declare", "private", "protected", "public", "readonly", nullptr,
+    };
+    while (true) {
+        if (!tok_is_word(t)) return false;
+        if (tok_is_one_of(t, declarations)) return true;
+        if (tok_is(t, "using") || tok_is(t, "await")) {
+            Tok next = tok_next(p, t);
+            if (tok_is(t, "await")) {
+                if (!tok_is(next, "using") || next.newline_before) return false;
+                next = tok_next(p, next);
+            }
+            return !next.newline_before && (tok_is(next, "{") || tok_is_identifier(next));
+        }
+        if (tok_is(t, "interface") || tok_is(t, "type")) {
+            Tok next = tok_next(p, t);
+            return !next.newline_before && tok_is_identifier(next);
+        }
+        if (tok_is(t, "module") || tok_is(t, "namespace")) {
+            Tok next = tok_next(p, t);
+            return !next.newline_before && (tok_is_identifier(next) || tok_is_string(next));
+        }
+        if (tok_is_one_of(t, modifiers)) {
+            Tok next = tok_next(p, t);
+            if (next.newline_before) return false;
+            if (tok_is(t, "declare") && tok_is(next, "type")) return true;
+            t = next;
+            continue;
+        }
+        if (tok_is(t, "global")) {
+            Tok next = tok_next(p, t);
+            return tok_is(next, "{") || tok_is_identifier(next) || tok_is(next, "export");
+        }
+        if (tok_is(t, "import")) {
+            Tok next = tok_next(p, t);
+            return tok_is_string(next) || tok_is(next, "*") || tok_is(next, "{") || tok_is_word(next);
+        }
+        if (tok_is(t, "export")) {
+            Tok next = tok_next(p, t);
+            Tok after = tok_is(next, "type") ? tok_next(p, next) : next;
+            if (tok_is(after, "=") || tok_is(after, "*") || tok_is(after, "{") || tok_is(after, "default") ||
+                tok_is(after, "as") || tok_is(after, "@")
+            ) {
+                return true;
+            }
+            t = next;
+            continue;
+        }
+        if (tok_is(t, "static")) {
+            t = tok_next(p, t);
+            continue;
+        }
+        return false;
+    }
+}
+
+// tsc's isStartOfStatement
+static bool tok_is_start_of_statement(Parser* p, Tok t) {
+    static const char* const puncts[] = { "@", ";", "{", nullptr };
+    static const char* const words[] = {
+        "var", "let", "using", "function", "class", "enum", "if", "do", "while", "for", "continue", "break", "return",
+        "with", "switch", "throw", "try", "debugger", "catch", "finally",
+        "async", "declare", "interface", "module", "namespace", "type", "global", nullptr,
+    };
+    static const char* const member_modifiers[] = {
+        "accessor", "public", "private", "protected", "static", "readonly", nullptr,
+    };
+    if (tok_is_one_of(t, puncts)) return true;
+    if (!tok_is_word(t)) return tok_is_start_of_expression(p, t);
+    if (tok_is_one_of(t, words)) return true;
+    if (tok_is(t, "import")) {
+        if (tok_is_start_of_declaration(p, t)) return true;
+        Tok next = tok_next(p, t);
+        return tok_is(next, "(") || tok_is(next, "<") || tok_is(next, ".");
+    }
+    if (tok_is(t, "const") || tok_is(t, "export")) return tok_is_start_of_declaration(p, t);
+    if (tok_is_one_of(t, member_modifiers)) {
+        if (tok_is_start_of_declaration(p, t)) return true;
+        Tok next = tok_next(p, t);
+        return !(tok_is_word(next) && !next.newline_before);
+    }
+    return tok_is_start_of_expression(p, t);
+}
+
+// tsc's isClassMemberStart
+static bool tok_is_class_member_start(Parser* p, Tok t) {
+    if (tok_is(t, "@")) return true;
+    Tok id = {0};
+    while (tok_is_modifier(t)) {
+        if (tok_is_class_member_modifier(t)) return true;
+        id = t;
+        t = tok_next(p, t);
+    }
+    if (tok_is(t, "*")) return true;
+    if (tok_is_literal_property_name(t)) {
+        id = t;
+        t = tok_next(p, t);
+    }
+    if (tok_is(t, "[")) return true;
+    if (id.start) {
+        if (!tok_is_keyword(id) || tok_is(id, "set") || tok_is(id, "get")) return true;
+        static const char* const follows[] = { "(", "<", "!", ":", "=", "?", nullptr };
+        return tok_is_one_of(t, follows) || tok_can_parse_semicolon(t);
+    }
+    return false;
+}
+
+// tsc's isTypeMemberStart
+static bool tok_is_type_member_start(Parser* p, Tok t) {
+    if (tok_is(t, "(") || tok_is(t, "<") || tok_is(t, "get") || tok_is(t, "set")) return true;
+    bool id = false;
+    while (tok_is_modifier(t)) {
+        id = true;
+        t = tok_next(p, t);
+    }
+    if (tok_is(t, "[")) return true;
+    if (tok_is_literal_property_name(t)) {
+        id = true;
+        t = tok_next(p, t);
+    }
+    static const char* const follows[] = { "(", "<", "?", ":", ",", nullptr };
+    return id && (tok_is_one_of(t, follows) || tok_can_parse_semicolon(t));
+}
+
+// Every list being parsed is a bit of ParserShared.parsing_context (tsc's ParsingContext, same names). When an element
+// can't be parsed, the list reports its error and then gives up if the current token belongs to any list being parsed
+// (it starts an element or ends the list), else skips one token and goes on (tsc's abortParsingListOrMoveToNextToken).
+// The mask only matters to recovery: on valid code no list ever consults it
+typedef enum ParsingContext {
+    PARSING_SOURCE_ELEMENTS,
+    PARSING_BLOCK_STATEMENTS,
+    PARSING_SWITCH_CLAUSES,
+    PARSING_SWITCH_CLAUSE_STATEMENTS,
+    PARSING_TYPE_MEMBERS,
+    PARSING_CLASS_MEMBERS,
+    PARSING_ENUM_MEMBERS,
+    PARSING_OBJECT_LITERAL_MEMBERS,
+    PARSING_CONTEXT_COUNT,
+} ParsingContext;
+
+// tsc's isListElement with inErrorRecovery (the stricter form, which is all the abort rule asks)
+static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
+    switch (ctx) {
+        case PARSING_SOURCE_ELEMENTS:
+        case PARSING_BLOCK_STATEMENTS:
+        case PARSING_SWITCH_CLAUSE_STATEMENTS:
+            return !tok_is(t, ";") && tok_is_start_of_statement(p, t);
+        case PARSING_SWITCH_CLAUSES:
+            return tok_is(t, "case") || tok_is(t, "default");
+        case PARSING_TYPE_MEMBERS:
+            return tok_is_type_member_start(p, t);
+        case PARSING_CLASS_MEMBERS:
+            return tok_is_class_member_start(p, t);
+        case PARSING_ENUM_MEMBERS:
+            return tok_is(t, "[") || tok_is_literal_property_name(t);
+        case PARSING_OBJECT_LITERAL_MEMBERS:
+            return tok_is(t, "[") || tok_is(t, "*") || tok_is(t, "...") || tok_is(t, ".") ||
+                tok_is_literal_property_name(t);
+        case PARSING_CONTEXT_COUNT: break;
+    }
+    impossible;
+}
+
+// tsc's isListTerminator
+static bool list_is_terminator(ParsingContext ctx, Tok t) {
+    if (tok_is_eof(t)) return true;
+    switch (ctx) {
+        case PARSING_SOURCE_ELEMENTS:
+            return false;
+        case PARSING_BLOCK_STATEMENTS:
+        case PARSING_SWITCH_CLAUSES:
+        case PARSING_TYPE_MEMBERS:
+        case PARSING_CLASS_MEMBERS:
+        case PARSING_ENUM_MEMBERS:
+        case PARSING_OBJECT_LITERAL_MEMBERS:
+            return tok_is(t, "}");
+        case PARSING_SWITCH_CLAUSE_STATEMENTS:
+            return tok_is(t, "}") || tok_is(t, "case") || tok_is(t, "default");
+        case PARSING_CONTEXT_COUNT: break;
+    }
+    impossible;
+}
+
+// tsc's parsingContextErrors: reported at the current token
+static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
+    Span span = span_make(p->shared->source, t.start, t.end);
+    switch (ctx) {
+        case PARSING_SOURCE_ELEMENTS:
+            if (tok_is(t, "default")) {
+                parse_error(p, span, 1005, "'export' expected.");
+            } else {
+                parse_error(p, span, 1128, "Declaration or statement expected.");
+            }
+            break;
+        case PARSING_BLOCK_STATEMENTS:
+            parse_error(p, span, 1128, "Declaration or statement expected.");
+            break;
+        case PARSING_SWITCH_CLAUSES:
+            parse_error(p, span, 1130, "'case' or 'default' expected.");
+            break;
+        case PARSING_SWITCH_CLAUSE_STATEMENTS:
+            parse_error(p, span, 1129, "Statement expected.");
+            break;
+        case PARSING_TYPE_MEMBERS:
+            parse_error(p, span, 1131, "Property or signature expected.");
+            break;
+        case PARSING_CLASS_MEMBERS:
+            parse_error(p, span, 1068, "Unexpected token. A constructor, method, accessor, or property was expected.");
+            break;
+        case PARSING_ENUM_MEMBERS:
+            parse_error(p, span, 1132, "Enum member expected.");
+            break;
+        case PARSING_OBJECT_LITERAL_MEMBERS:
+            parse_error(p, span, 1136, "Property assignment expected.");
+            break;
+        case PARSING_CONTEXT_COUNT: impossible;
+    }
+}
+
+// Enters a list: returns the mask to restore with list_leave()
+static u32 list_enter(Parser* p, ParsingContext ctx) {
+    u32 saved = p->shared->parsing_context;
+    p->shared->parsing_context |= 1u << ctx;
+    return saved;
+}
+
+static void list_leave(Parser* p, u32 saved) {
+    p->shared->parsing_context = saved;
+}
+
+// The current token can't start an element of the ctx list: reports it, then returns true if the list should end (the
+// token belongs to some list being parsed), else skips the token and returns false (tsc's
+// abortParsingListOrMoveToNextToken). Whitespace is hopped either way
+static bool list_abort_or_skip(Parser* p, ParsingContext ctx) {
+    hop_whitespace(p);
+    Tok t = tok_peek(p);
+    list_report_error(p, ctx, t);
+    // Something that starts an element of this very list is skipped: the element parser just said no to it, where
+    // tsc's would have committed and consumed it with errors
+    if (list_is_terminator(ctx, t)) return true;
+    if (!list_is_element(p, ctx, t)) {
+        u32 mask = p->shared->parsing_context & ~(1u << ctx);
+        for (u32 i = 0; i < PARSING_CONTEXT_COUNT; i++) {
+            if ((mask & (1u << i)) &&
+                (list_is_element(p, (ParsingContext)i, t) || list_is_terminator((ParsingContext)i, t))
+            ) {
+                return true;
+            }
+        }
+    }
+    p->pos = t.end;
+    hop_whitespace(p);
+    return false;
 }
 
 static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* ret) {
@@ -3320,6 +3759,14 @@ static bool parse_index_or_expr_interface_member(
         hop_whitespace(&p);
 
         (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->key.index.type);
+        hop_whitespace(&p);
+        Expr initializer;
+        if (*p.pos == '=' && parse_initialization(&p, expr_ctx_null, &initializer)) {
+            // tsc parses index signature parameters as parameters and complains in the checker
+            // (checkGrammarIndexSignatureParameters; TS2371 is missing)
+            parse_error(&p, ret->key.index.name, 1020, "An index signature parameter cannot have an initializer.");
+            expr_drop(&initializer);
+        }
     } else {
         Expr expr;
         if (!parse_expr(&p, expr_ctx_null, &expr)) {
@@ -3754,20 +4201,15 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     hop_whitespace(&p);
 
     ClassItem item;
+    u32 saved_context = list_enter(&p, PARSING_CLASS_MEMBERS);
     while (*p.pos && *p.pos != '}') {
         if (hop_char(&p, ';')) {
             hop_whitespace(&p);
             continue;
         }
         if (!parse_class_item(&p, false, is_abstract, &item)) {
-            parse_error(
-                &p,
-                span_from_token(&p),
-                1068,
-                "Unexpected token. A constructor, method, accessor, or property was expected."
-            );
-            ret->full_span = span_from(a);
-            return parse_success(&p);
+            if (list_abort_or_skip(&p, PARSING_CLASS_MEMBERS)) break;
+            continue;
         }
         if (item.tag == CLASS_ITEM_CONSTRUCTOR) {
             if (!generic_empty(&item.constructor.func.generic)) {
@@ -3792,6 +4234,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
             hop_whitespace(&p);
         } while (hop_char(&p, ';'));
     }
+    list_leave(&p, saved_context);
     expect_char(&p, '}');
 
     ret->full_span = span_from(a);
@@ -6707,14 +7150,18 @@ static void parse_jump_target(Parser* parent, Span* ret) {
     }
 }
 
-static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecStatement* ret) {
+// ctx is the kind of list: source elements, block statements or a switch clause's statements
+static bool parse_append_statement_sequence(Parser* parent, bool toplevel, ParsingContext ctx, VecStatement* ret) {
     Parser p = parser(parent);
 
+    u32 saved_context = list_enter(&p, ctx);
     while(
         *p.pos &&
-        *p.pos != '}' &&
-        !starts_with_followed_by_word_break(&p, "default") &&
-        !starts_with_followed_by_word_break(&p, "case")
+        (ctx == PARSING_SOURCE_ELEMENTS || *p.pos != '}') &&
+        !(ctx == PARSING_SWITCH_CLAUSE_STATEMENTS && (
+            starts_with_followed_by_word_break(&p, "default") ||
+            starts_with_followed_by_word_break(&p, "case")
+        ))
     ) {
         Statement statement = {0};
         if (*p.pos == ';') {
@@ -6745,11 +7192,12 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecSt
         } else if (*p.pos == '\\') {
             parse_error(&p, span_from_pos(&p), 1127, "Invalid character.");
             p.pos++;
-        } else {
-            parse_error(&p, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
+        } else if (list_abort_or_skip(&p, ctx)) {
+            break;
         }
         hop_whitespace(&p); // TODO: is this needed?
     }
+    list_leave(&p, saved_context);
 
     return parse_success(&p);
 }
@@ -6788,7 +7236,7 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_append_statement_sequence(&p, false, &ret->statements)) {
+    if (!parse_append_statement_sequence(&p, false, PARSING_SWITCH_CLAUSE_STATEMENTS, &ret->statements)) {
         switch_case_drop(ret);
         return parse_fail(&p);
     }
@@ -6819,19 +7267,18 @@ static bool parse_switch_statement(Parser* parent, Statement* ret) {
     expect_char(&p, '{');
     hop_whitespace(&p);
 
+    u32 saved_context = list_enter(&p, PARSING_SWITCH_CLAUSES);
     while(*p.pos && *p.pos != '}') {
         SwitchCase case_;
         if (parse_switch_case(&p, &case_)) {
             vec_switch_case_push(&switch_.cases, case_);
-        } else {
+        } else if (list_abort_or_skip(&p, PARSING_SWITCH_CLAUSES)) {
             break;
         }
         hop_whitespace(&p);
     }
-
-    if (!hop_char(&p, '}')) {
-        parse_error(&p, span_from_token(&p), 1130, "'case' or 'default' expected.");
-    }
+    list_leave(&p, saved_context);
+    expect_char(&p, '}');
 
     *ret = (Statement){
         .tag = STATEMENT_SWITCH,
@@ -7388,7 +7835,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     hop_whitespace(&p);
 
     *ret = (Block){0};
-    if (!parse_append_statement_sequence(&p, toplevel, &ret->statements)) {
+    if (!parse_append_statement_sequence(&p, toplevel, PARSING_BLOCK_STATEMENTS, &ret->statements)) {
         *ret = (Block){0};
     }
     hop_whitespace(&p);
@@ -7419,19 +7866,11 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     parse_source_directives(&p, &source->ast.statements);
     hop_whitespace(&p);
 
-    while (true) {
-        parse_append_statement_sequence(&p, true, &source->ast.statements);
-        if (*p.pos) {
-            parse_error(&p, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
-            hop_whitespace(&p);
-        } else {
-            break;
-        }
-    }
+    parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, &source->ast.statements);
 
     // tsc checks modifiers in the checker (checkGrammarModifiers): those don't count as parse errors, which quiet the
     // checker's grammar errors
-    static unsigned const modifier_codes[] = { 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1184, 1248, 1253 };
+    static unsigned const modifier_codes[] = { 1020, 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1184, 1248, 1253 };
     source->has_import_meta = shared.saw_import_meta;
     source->has_commonjs = shared.saw_commonjs;
     source->module_exports_span = shared.module_exports_span;

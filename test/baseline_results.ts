@@ -3466,9 +3466,9 @@ const baselines = {
         types: false,
     },
     'class2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classAccessorInitializationInferenceWithElementAccess1': {
         errors: true,
@@ -24877,7 +24877,7 @@ const baselines = {
     },
     'overloadConsecutiveness': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'overloadCrash': {
@@ -29001,9 +29001,9 @@ const baselines = {
         types: true,
     },
     'staticClassProps': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'staticFieldWithInterfaceContext': {
         errors: false,
@@ -29166,9 +29166,9 @@ const baselines = {
         types: false,
     },
     'staticsInConstructorBodies': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'staticsNotInScopeInClodule': {
         errors: true,
@@ -57163,7 +57163,7 @@ const baselines = {
     'parser0_004152': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parser768531': {
         errors: true,
@@ -59382,7 +59382,7 @@ const baselines = {
     },
     'parserRealSource11': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserRealSource12': {
@@ -59412,7 +59412,7 @@ const baselines = {
     },
     'parserRealSource4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserRealSource5': {
@@ -59622,7 +59622,7 @@ const baselines = {
     },
     'parserComputedPropertyName27': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserComputedPropertyName28': {
