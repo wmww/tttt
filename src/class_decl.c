@@ -835,6 +835,18 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
     my has_typechecked = true;
 
+    // tsc's checkClassNameCollisionWithObject (named by the module option, not the file's format)
+    if (!my is_ambient && span_valid(my name) && csview_equals(my name.sv, "Object") && my name.source &&
+        source_file_emit_module_kind(my name.source) < MODULE_KIND_ES2015
+    ) {
+        static char const* const module_names[] = { "None", "CommonJS", "AMD", "UMD", "System" };
+        ModuleKind module = compiler_options()->module;
+        error_ctx_error_d(
+            errs, my name, 2725, "Class name cannot be 'Object' when targeting ES5 with module ",
+            module < MODULE_KIND_ES2015 ? module_names[module] : "ES2015", "."
+        );
+    }
+
     for_each (i, vec_expr, &my decorators) {
         expr_typecheck(i, errs);
     }
