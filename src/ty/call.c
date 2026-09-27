@@ -1870,6 +1870,11 @@ typedef struct AwaitedFrame {
     struct AwaitedFrame const* up;
 } AwaitedFrame;
 
+static Ty const* awaited_cycle(Checker* me) {
+    ty_error_at_current_node_d(me, 1062, "Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.");
+    return ty_intrinsic(me, TY_ERROR);
+}
+
 static bool awaited_in_progress(AwaitedFrame const* stack, Ty const* ty) {
     for (; stack; stack = stack->up) {
         if (stack->ty == ty) return true;
@@ -1880,14 +1885,14 @@ static bool awaited_in_progress(AwaitedFrame const* stack, Ty const* ty) {
 // The type `await` gives for a value of the given type. `wrap`: a generic one that could be a promise is `Awaited<T>`
 // (tsc's getAwaitedType; without it getAwaitedTypeNoAlias)
 // TODO: only unwraps Promise<T> and PromiseLike<T> by name, not arbitrary thenables
-// TODO: TS1062 where tsc reports the cycle (type is referenced in the fulfillment callback of its own `then`)
+// A cycle is TS1062 at the current node (tsc reports it at the error node its callers pass, the `await` expression)
 static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFrame const* stack) {
     Symbol const* awaited = awaited_alias(me);
     if (awaited && ty->alias == awaited) return ty;
     if (wrap && awaited && awaited_type_needed(me, ty, awaited)) return ty_alias_instance(me, awaited, (TyList){ .data = &ty, .len = 1 });
     if (ty->kind == TY_UNION) {
         // `type T = string | Promise<T>` awaits T again (a deferred reference makes it an infinite structure)
-        if (awaited_in_progress(stack, ty)) return ty_intrinsic(me, TY_ERROR);
+        if (awaited_in_progress(stack, ty)) return awaited_cycle(me);
         AwaitedFrame frame = { ty, stack };
         Ty const** parts = malloc(sizeof(Ty const*) * ty->composite.types.len);
         for (u32 i = 0; i < ty->composite.types.len; i++) parts[i] = awaited_type_in(me, ty->composite.types.data[i], wrap, &frame);
@@ -1901,7 +1906,7 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFr
         csview name = ty->reference.target->declared.symbol->name;
         TyList args = ty_reference_args(me, ty);
         if (args.len == 1 && (csview_equals(name, "Promise") || csview_equals(name, "PromiseLike"))) {
-            if (args.data[0] == ty || awaited_in_progress(stack, args.data[0])) return ty_intrinsic(me, TY_ERROR);
+            if (args.data[0] == ty || awaited_in_progress(stack, args.data[0])) return awaited_cycle(me);
             AwaitedFrame frame = { ty, stack };
             return awaited_type_in(me, args.data[0], wrap, &frame);
         }
