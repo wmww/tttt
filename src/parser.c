@@ -6255,6 +6255,7 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
         Anchor value_a = anchor(&p);
         if (hop_char(&p, '=')) {
             hop_whitespace_full(&p, false, false);
+            value_a = anchor(&p);
             if (*p.pos == '\'' || *p.pos == '"') {
                 if (!parse_string(&p, &value)) {
                     value = cstr_null;
