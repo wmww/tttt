@@ -6,6 +6,8 @@ paired by their left-hand side, and each mismatching pair is bucketed by a heuri
   ./displaydiff.py [-n N] [-k KIND] [-f REGEX] [--symbols] [--names]
     -n: examples per kind (default 4), -k: only that kind (examples and, with --names, the test names),
     -f: test names, --symbols: the symbols component instead of types
+    --fine: split the catch-alls (other, we-any, tsc-any, line-extra) into <shape>/<annotated node> (plan 35), and
+    rank the tests by the kind of their first differing line; --shape: the same with the shape only
 
 "Tests fixed by one kind" counts the tests whose every mismatching line has that kind: what fixing it alone would
 pass (the displaydiff analogue of failstats' single-code table). JS tests (with a .js/.jsx file or @allowJs) are
@@ -76,6 +78,8 @@ tests_of = collections.defaultdict(set)
 single_of = collections.Counter()
 single_js = collections.Counter()
 single_names = collections.defaultdict(list)
+first_of = collections.Counter() # tests by the kind of their first differing line (the likely root cause)
+first_names = collections.defaultdict(list)
 examples = collections.defaultdict(list)
 js_tests = 0
 for r in rows:
@@ -98,6 +102,7 @@ for r in rows:
     split = ' : '
     for l in extra: ours_by_lhs.setdefault(l.rsplit(split, 1)[0], []).append(l)
     test_kinds = set()
+    first_kind = None
     for x in missing:
         lhs = x.rsplit(split, 1)[0]
         if ours_by_lhs.get(lhs):
@@ -109,11 +114,17 @@ for r in rows:
         for k in ks:
             lines_of[k] += 1; tests_of[k].add(name); examples[k].append((name, x, y))
         test_kinds.add(tuple(ks) if len(ks) > 1 else ks[0])
+        if first_kind is None: first_kind = ks[0]
     for rest in ours_by_lhs.values():
         for y in rest:
             k = refine(['line-extra'], y.rsplit(split, 1)[0], '', y)[0]
             lines_of[k] += 1; tests_of[k].add(name); examples[k].append((name, '', y))
             test_kinds.add(k)
+            if first_kind is None: first_kind = k
+    if n == 0:
+        first_kind = 'underlines/order only'
+    if first_kind and not js:
+        first_of[first_kind] += 1; first_names[first_kind].append(name)
     if n == 0:
         test_kinds = {'underlines/order only'}
     if len(test_kinds) == 1:
@@ -129,8 +140,12 @@ for k, v in lines_of.most_common(): print(f'  {v:6} lines in {len(tests_of[k]):5
 print('tests fixed by one kind (TS tests, JS tests):')
 for k in sorted(set(single_of) | set(single_js), key=lambda k: -(single_of[k] + single_js[k])):
     print(f'  {single_of[k]:6} {single_js[k]:5}  {k}')
+if args.fine or args.shape:
+    print('TS tests by the kind of their first differing line (the likely root cause, whatever else differs):')
+    for k, v in first_of.most_common(40): print(f'  {v:6}  {k}')
 if args.names and args.k:
     print(f'\n{args.k} alone: ' + ' '.join(sorted(single_names[args.k])))
+    if args.fine or args.shape: print(f'\n{args.k} first: ' + ' '.join(sorted(first_names[args.k])))
 random.seed(1)
 for k in [args.k] if args.k else lines_of:
     print(f'\n{k}:')

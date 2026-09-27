@@ -11,3 +11,9 @@ non-widening undefined, `infer X extends C` scope), `bugs/display.md` (object li
 
 - `shows_alias()` (ty_display.c) hides type aliases declared in a block/function body when printing for a place. tsc's
   isDeclarationVisible also makes non-exported aliases inside namespaces invisible in some cases; unverified.
+- `export default;` gives TS1434 + "Cannot find name 'export'" + TS1005 "'export' expected" where tsc says only TS1109
+  Expression expected at the `;` (the modifier loop takes `default` now for any following char; something later
+  still rejects the statement). Found at plan 35 stage 1.
+- `baseline_test_traversal.c` `port_item_add_alias`: the `import type`/`export type` declared-type rule checks the
+  resolved symbol for class/interface/enum/alias only; tsc's getDeclaredTypeOfSymbol also takes type parameters and
+  enum members. Unverified whether any test reaches that.

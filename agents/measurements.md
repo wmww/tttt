@@ -10,14 +10,17 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Suite (2026-09-27, triage after the second window, at the session's end)
-**9409 / 13540** full pass (errors 11168, symbols 12349, types 10743). `./failstats.py`: errors component fails in
-2372 tests: tsc reports errors and tttt nothing 656, both missing and spurious 584, only missing 389, **same
-codes+positions, other text 311**, tttt errors where tsc has none 257, only spurious 145, column differs 30. 323 tests
+## Suite (2026-09-27, plan 35 stage 1, bef38cb)
+**9666 / 13540** full pass (errors 11180, symbols 12356, types 11049). `./failstats.py`: errors component fails in
+2360 tests: tsc reports errors and tttt nothing 654, both missing and spurious 585, only missing 389, **same
+codes+positions, other text 311**, tttt errors where tsc has none 254, only spurious 137, column differs 30. 323 tests
 have a spurious TS1xxx (42 of them expect no errors). Checker log_error output: 27 lines, all in one test (invalid
-spans of the silent call resolutions).
-- `./displaydiff.py`, tests fixed by one kind (TS, JS): other 394 + 35, we-any 127 + 39, line-extra 118 + 6,
-  underlines/order only 98 + 21, tsc-any 101 + 14, union-order 47 + 3, our-typeof 34 + 2, line-missing 27 + 4.
+spans of the silent call resolutions). The lines below the displaydiff ones are from the triage before (9409).
+- `./displaydiff.py`, tests fixed by one kind (TS, JS): other 393 + 39, we-any 93 + 41, underlines/order only
+  105 + 21, union-order 47 + 3, tsc-any 32 + 2, line-missing 28 + 4, line-extra 20 + 0.
+- `./displaydiff.py --fine`, TS tests by the kind of their first differing line: underlines/order 105,
+  we-any/declaration 95, line-missing 73, shape-other/declaration 58, union-order 57, signature-differs/declaration
+  48, object-differs/declaration 46, union-differs/declaration 44, our-typeof 42 (plan 35's queue).
 - `./errtextdiff.py --coarse` (311 tests): fixed by one part: chain 95, header 78, underline 60, related 46, outside
   diagnostics 15.
 - `./jsstats.py`: 1049 JS tests, **395 pass**. Failing by category (only / involved): other 86 / 86, CommonJS 58 /
@@ -29,7 +32,8 @@ spans of the silent call resolutions).
 
 ## Corpora (2026-09-27, same commit)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**4** (mixin classes, plan 32 stage C), webpack **135** (JSDoc, plan 26), zod **15** (plan 19).
+**4** (mixin classes, plan 32 stage C), webpack **130** (JSDoc, plan 26; 135 -> 130 at plan 35 stage 1, IIFE
+parameters), zod **15** (plan 19).
 
 ## Perf (2026-09-27, `./bench.sh --runs 2`, quiet machine)
 Best wall / peak RSS:

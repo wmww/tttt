@@ -8,8 +8,9 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 
 1. ~~**Plan 32 stage B**~~ done: outer type parameters. Suite 9409 -> 9427, nothing lost, corpora unchanged,
    callgrind neutral (zod 10.885 -> 10.858 G, valibot 5.247 -> 5.247, tsc 5.062 -> 5.063, type-fest 3.334 -> 3.341).
-2. **Plan 35 stage 1** (tool + first fixes): split displaydiff's `other`/`we-any` by mechanism, write the queue into
-   plan 35, fix from the top.
+2. ~~**Plan 35 stage 1**~~ done: `displaydiff.py --fine` (first-differing-line ranking), queue written into plan 35.
+   Suite 9427 -> 9666 (error-recovery types, type-writer rules, IIFE parameters), webpack 135 -> 130, other corpora
+   unchanged.
 3. **Perf**: webpack first (the one corpus tsgo wins, even single-threaded: profile the JSDoc/JS checking path), then
    `DEBUG_ALLOCATOR` in release (`src/prelude.h`: measure with it off), then zod's `infer_from_returns` (tsc infers
    between references to the same generic class by type arguments; `perf_leads.md`). Re-measure callgrind on every
