@@ -1421,7 +1421,10 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 ) {
                     continue;
                 }
+                // (tsc's getTemplateTypeFromMappedType adds undefined for `?`, which properties strip or add
+                // themselves, but index signatures keep)
                 Ty const* value = ty_instantiate(me, ty_mapped_template(me, mapped), mapper);
+                if (mapped->optional > 0) value = ty_optional_param_type(me, value);
                 IndexInfo* existing = nullptr;
                 for (u32 k = 0; k < builder.index_count; k++) {
                     if (builder.index[k].key == prop_name) existing = &builder.index[k];
