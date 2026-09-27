@@ -82,7 +82,7 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                 walk->bound[walk->bound_len++] = mapped->type_param;
                 bool found = mentions_type_variables(me, mapped->constraint, walk, depth + 1) ||
                     (mapped->name_type && mentions_type_variables(me, mapped->name_type, walk, depth + 1)) ||
-                    mentions_type_variables(me, mapped->template, walk, depth + 1) ||
+                    mentions_type_variables(me, ty_mapped_template(me, mapped), walk, depth + 1) ||
                     (mapped->modifiers_type && mentions_type_variables(me, mapped->modifiers_type, walk, depth + 1));
                 walk->bound_len = saved;
                 return found;

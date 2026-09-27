@@ -26823,7 +26823,7 @@ const baselines = {
     'recursiveConditionalTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveExcessPropertyChecks': {
         errors: true,
@@ -27078,7 +27078,7 @@ const baselines = {
     'recursivelyExpandingUnionNoStackoverflow': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'recursivelySpecializedConstructorDeclaration': {
         errors: true,

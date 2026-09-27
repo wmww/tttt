@@ -493,12 +493,20 @@ typedef struct MappedInfo {
     Ty const* type_param;
     Ty const* constraint;
     Ty const* name_type; // `as` clause, may be null
-    Ty const* template;
+    // The template is lowered/instantiated on first use (tsc's getTemplateTypeFromMappedType): read it through
+    // ty_mapped_template(). Lowering it while the mapped type's members are built can reach this mapped type again
+    Ty const* template_;
+    struct TypeNode const* template_node; // Declared: lowered with template_ctx
+    LowerCtx template_ctx;
+    struct MappedInfo const* template_from; // Instantiated: template_from's template through template_mapper
+    struct TyMapper const* template_mapper;
+    LazyState template_state;
     Ty const* modifiers_type; // `T` of a homomorphic `[K in keyof T]`: where optional/readonly come from. May be null
     bool keyof_constraint; // The constraint is written `keyof T` (not `K extends keyof T`): the keys are T's members
     signed char readonly; // -1 remove, +1 add
     signed char optional;
 } MappedInfo;
+Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped);
 
 struct Members {
     Prop* const* props; // declaration order

@@ -1719,13 +1719,13 @@ static Ternary mapped_related(Checker* me, RelationState* st, MappedInfo const* 
     Ty const* source_name = source->name_type ? ty_instantiate(me, source->name_type, mapper) : nullptr;
     Ty const* target_name = target->name_type ? ty_instantiate(me, target->name_type, mapper) : nullptr;
     if (source_name != target_name) return TERNARY_FALSE;
-    return result & is_related_to(me, st, ty_instantiate(me, source->template, mapper), target->template, report);
+    return result & is_related_to(me, st, ty_instantiate(me, ty_mapped_template(me, source), mapper), ty_mapped_template(me, target), report);
 }
 
 static Ternary generic_mapped_target_related(
     Checker* me, RelationState* st, Ty const* source, MappedInfo const* mapped, bool report
 ) {
-    Ty const* template = mapped->template;
+    Ty const* template = ty_mapped_template(me, mapped);
     if (source->kind == TY_ANONYMOUS && (source->flags & TYF_OBJECT) && ty_members(me, source)->mapped) {
         return mapped_related(me, st, ty_members(me, source)->mapped, mapped, report);
     }
@@ -2175,7 +2175,7 @@ static Ternary mapped_identical(Checker* me, RelationState* st, MappedInfo const
         (TyList){ .data = &target->type_param, .len = 1 });
     Ty const* source_name = source->name_type ? ty_instantiate(me, source->name_type, mapper) : nullptr;
     if (source_name != target->name_type) return TERNARY_FALSE;
-    return result & is_related_to(me, st, ty_instantiate(me, source->template, mapper), target->template, false);
+    return result & is_related_to(me, st, ty_instantiate(me, ty_mapped_template(me, source), mapper), ty_mapped_template(me, target), false);
 }
 
 static Ternary signature_lists_identical(
@@ -2463,7 +2463,7 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
             if (mapped && !mapped->name_type && mapped->optional <= 0 &&
                 is_related_to(me, st, ty_keyof(me, target), mapped->constraint, false)
             ) {
-                Ternary related = is_related_to(me, st, mapped->template, ty_indexed(me, target, mapped->type_param), report);
+                Ternary related = is_related_to(me, st, ty_mapped_template(me, mapped), ty_indexed(me, target, mapped->type_param), report);
                 if (related) return related;
             }
             if (comparable) {

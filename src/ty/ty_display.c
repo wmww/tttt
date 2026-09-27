@@ -1274,7 +1274,7 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
     out_lit(d, "]");
     if (mapped->optional) out(d, mapped->optional > 0 ? c_sv("?") : c_sv("-?"));
     out_lit(d, ": ");
-    ty_display(me, d, mapped->template);
+    ty_display(me, d, ty_mapped_template(me, mapped));
     out_lit(d, "; }");
 }
 

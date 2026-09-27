@@ -181,7 +181,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (ty_is_array(me, list)) {
         bool readonly = mapped->readonly ? mapped->readonly > 0 : list->reference.target == my readonly_array_target;
         TyMapper const* element_mapper = mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
-        return ty_array(me, ty_instantiate(me, mapped->template, element_mapper), readonly);
+        return ty_array(me, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), readonly);
     }
     if (!ty_is_tuple(list)) return nullptr;
     TupleShape const* shape = list->reference.target->declared.tuple;
@@ -206,14 +206,14 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
             if (!ty_is_array(me, array)) return nullptr;
             TyMapper const* element_mapper = mapper_with(me, mapper_with(me, mapper, mapped->modifiers_type, array),
                 mapped->type_param, ty_intrinsic(me, TY_NUMBER));
-            Ty const* mapped_element = ty_instantiate(me, mapped->template, element_mapper);
+            Ty const* mapped_element = ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper);
             mapped_elements[i] = rest ? ty_array(me, mapped_element, false) : mapped_element;
             continue;
         }
         cstr index = cstr_d(i);
         Ty const* key = ty_string_literal(me, cstr_sv(&index));
         cstr_drop(&index);
-        mapped_elements[i] = ty_instantiate(me, mapped->template, mapper_with(me, mapper, mapped->type_param, key));
+        mapped_elements[i] = ty_instantiate(me, ty_mapped_template(me, mapped), mapper_with(me, mapper, mapped->type_param, key));
         flags[i] = shape->flags[i];
         if (mapped->optional > 0) flags[i] |= TUPLE_ELEMENT_OPTIONAL;
         if (mapped->optional < 0) flags[i] &= ~(unsigned)TUPLE_ELEMENT_OPTIONAL;

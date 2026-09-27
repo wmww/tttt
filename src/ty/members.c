@@ -241,7 +241,8 @@ static void builder_add_interface_member(
                 if (i->key.mapped.has_as_type) {
                     mapped->name_type = ty_from_node(me, &i->key.mapped.as_type, mapped_ctx);
                 }
-                mapped->template = ty_from_node(me, &i->type, mapped_ctx);
+                mapped->template_node = &i->type;
+                mapped->template_ctx = mapped_ctx;
                 TypeNode const* in_type = &i->key.mapped.in_type;
                 if (in_type->tag == TYPE_KEYOF) {
                     mapped->modifiers_type = ty_from_node(me, &in_type->keyof->interface, mapped_ctx);
@@ -1029,7 +1030,11 @@ static Members const* instantiate_members(
         *mapped = *source->mapped;
         mapped->constraint = ty_instantiate(me, mapped->constraint, mapper);
         if (mapped->name_type) mapped->name_type = ty_instantiate(me, mapped->name_type, mapper);
-        mapped->template = ty_instantiate(me, mapped->template, mapper);
+        mapped->template_ = nullptr;
+        mapped->template_node = nullptr;
+        mapped->template_from = source->mapped;
+        mapped->template_mapper = mapper;
+        mapped->template_state = LAZY_STATE_NOT_STARTED;
         if (mapped->modifiers_type) mapped->modifiers_type = ty_instantiate(me, mapped->modifiers_type, mapper);
         builder.mapped = mapped;
     }
@@ -1109,7 +1114,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     Members const* source = ty_members(me, apparent);
     if (source->mapped || !source->prop_count) return members;
     Prop* template = arena_new(&my arena, Prop);
-    template->type = mapped->template;
+    template->type = ty_mapped_template(me, mapped);
     template->type_state = LAZY_STATE_DONE;
     MembersBuilder builder = { .mapped = mapped };
     for (u32 i = 0; i < source->prop_count; i++) {
@@ -1241,7 +1246,7 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
     }
     // The template as a property to instantiate per key
     Prop* template = arena_new(&my arena, Prop);
-    template->type = mapped->template;
+    template->type = ty_mapped_template(me, mapped);
     template->type_state = LAZY_STATE_DONE;
 
     MembersBuilder builder = {0};
@@ -1312,7 +1317,7 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                 ) {
                     continue;
                 }
-                Ty const* value = ty_instantiate(me, mapped->template, mapper);
+                Ty const* value = ty_instantiate(me, ty_mapped_template(me, mapped), mapper);
                 IndexInfo* existing = nullptr;
                 for (u32 k = 0; k < builder.index_count; k++) {
                     if (builder.index[k].key == prop_name) existing = &builder.index[k];
@@ -2172,4 +2177,22 @@ Ty const* ty_param_default(Checker* me, Ty const* param) {
         state->fallback_state = LAZY_STATE_DONE;
     }
     return state->fallback_state == LAZY_STATE_DONE ? state->fallback : nullptr;
+}
+
+static Ty const* compute_mapped_template(Checker* me, MappedInfo const* mapped) {
+    return mapped->template_node ? ty_from_node(me, mapped->template_node, mapped->template_ctx) :
+        ty_instantiate(me, ty_mapped_template(me, mapped->template_from), mapped->template_mapper);
+}
+
+Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped) {
+    MappedInfo* state = (MappedInfo*)mapped; // The lazy part is private to this function
+    if (state->template_state == LAZY_STATE_DONE) return state->template_;
+    // Re-entered while in flight: compute again without remembering (tsc has no guard here either, the instantiation
+    // limits end a runaway; an error type would lose the recursive types that do terminate)
+    if (state->template_state == LAZY_STATE_IN_FLIGHT) return compute_mapped_template(me, mapped);
+    state->template_state = LAZY_STATE_IN_FLIGHT;
+    Ty const* template = compute_mapped_template(me, mapped);
+    state->template_ = template;
+    state->template_state = LAZY_STATE_DONE;
+    return template;
 }

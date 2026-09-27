@@ -429,7 +429,7 @@ static Ty const* reverse_mapped_prop_type(Checker* me, Ty const* source, MappedI
     Ty const* indexed = ty_indexed(me, operand, mapped->type_param);
     Inference inf;
     inference_init(&inf, (TyList){ .data = &indexed, .len = 1 });
-    infer_types(me, &inf, source, mapped->template, INFER_PRIORITY_NORMAL);
+    infer_types(me, &inf, source, ty_mapped_template(me, mapped), INFER_PRIORITY_NORMAL);
     Ty const* ret = inference_conditional_result(me, &inf, 0);
     inference_drop(&inf);
     return ret ? ret : ty_intrinsic(me, TY_UNKNOWN_);
@@ -519,7 +519,7 @@ static bool infer_to_mapped(Checker* me, Inference* inf, Ty const* source, Mappe
         panic_if(!types, "out of memory");
         for (u32 i = 0; i < members->prop_count; i++) types[i] = prop_type(me, members->props[i]);
         for (u32 i = 0; i < members->index_count; i++) types[members->prop_count + i] = members->index[i].value;
-        infer_from(me, inf, ty_union(me, types, count, nullptr, (TyList){0}), mapped->template);
+        infer_from(me, inf, ty_union(me, types, count, nullptr, (TyList){0}), ty_mapped_template(me, mapped));
         free(types);
         return true;
     }
@@ -686,7 +686,7 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         MappedInfo const* source_mapped = source_mapped_members->mapped;
         MappedInfo const* target_mapped = target_members->mapped;
         infer_from(me, inf, source_mapped->constraint, target_mapped->constraint);
-        infer_from(me, inf, source_mapped->template, target_mapped->template);
+        infer_from(me, inf, ty_mapped_template(me, source_mapped), ty_mapped_template(me, target_mapped));
         if (source_mapped->name_type && target_mapped->name_type) {
             infer_from(me, inf, source_mapped->name_type, target_mapped->name_type);
         }
@@ -694,8 +694,9 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
     }
     if (target_members->mapped) {
         MappedInfo const* mapped = target_members->mapped;
-        if (mapped->modifiers_type && mapped->template->kind == TY_INDEXED &&
-            mapped->template->indexed.object == mapped->modifiers_type && mapped->template->indexed.index == mapped->type_param
+        Ty const* template = mapped->modifiers_type ? ty_mapped_template(me, mapped) : nullptr;
+        if (template && template->kind == TY_INDEXED &&
+            template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param
         ) {
             // A plain homomorphic `T[K]` template (Partial, Readonly...): the source itself is the candidate, as the
             // reverse mapped type it stands for (so a naked T elsewhere wins: tsc's inferToMappedType)
