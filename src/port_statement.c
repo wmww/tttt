@@ -144,6 +144,24 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             "Import assignment cannot be used when targeting ECMAScript modules. Consider using 'import * as ns from \"mod\"', "
             "'import {a} from \"mod\"', 'import d from \"mod\"', or another module format instead.");
     }
+    // tsc's checkImportEqualsDeclaration: `import x = A.B` whose target is a value, where the first name as a value or
+    // namespace is something other than a namespace (the lookup of the alias found a namespace further out)
+    PortItem const* alias = &my main;
+    if (alias->tag == PORT_IMPORT_ALIAS && alias->symbol && alias->symbol->alias && vec_span_size(&alias->alias_path)) {
+        Symbol const* target = symbol_resolve_alias(alias->symbol);
+        if (target && !target->is_placeholder && symbol_resolved_flags(target) & SYMBOL_VALUE) {
+            Span first = *vec_span_at(&alias->alias_path, 0);
+            Symbol const* found = scope_resolve(alias->symbol->alias->scope, first.sv, SYMBOL_VALUE | SYMBOL_NAMESPACE);
+            if (found && !(symbol_resolved_flags(found) & SYMBOL_NAMESPACE)) {
+                error_ctx_error_d(errs, first, 2437, "Module '", first, "' is hidden by a local declaration with the same name.");
+            }
+        }
+        if (target && !target->is_placeholder && symbol_resolved_flags(target) & SYMBOL_TYPE &&
+            type_name_is_reserved(alias->decl_name.sv)
+        ) {
+            error_ctx_error_d(errs, alias->decl_name, 2438, "Import name cannot be '", alias->decl_name, "'.");
+        }
+    }
     // tsc's checkImportAttributes()
     ImportAttributes const* node = my attributes;
     if (!node) return;

@@ -6574,7 +6574,8 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
         }
     }
 
-    statement->main.full_span = span_from(statement_start);
+    // (Up to this parser's position: the anchor is the parent's, which hasn't moved yet)
+    statement->main.full_span = span_make(p.shared->source, statement_start.start, p.pos);
     return parse_success(&p);
 }
 

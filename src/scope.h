@@ -266,6 +266,8 @@ Span symbol_decl_error_span(SymbolDecl const* decl);
 VecSpan symbol_declaration_spans(Symbol const* me);
 // The flags of the symbol with aliases seen through
 u32 symbol_resolved_flags(Symbol const* me);
+// tsc's checkTypeNameIsReserved: `any`, `string`... can't name a type
+bool type_name_is_reserved(csview name);
 Symbol* symbol_resolve_alias(Symbol* me);
 // tsc's getTypeOnlyAliasDeclaration(): the nearest `import type`/`export type` (or `type` specifier) along the chain of
 // aliases that ends in the symbol, if any. What it names can't be used as a value

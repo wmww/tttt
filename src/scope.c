@@ -628,11 +628,18 @@ static bool symbol_is_builtin_type(Symbol const* symbol) {
     return symbol && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN && symbol->flags & SYMBOL_TYPE_ALIAS;
 }
 
-// tsc's checkTypeNameIsReserved: the predefined type keywords can't name a type
-static void check_type_name_is_reserved(ErrorCtx* errs, Span name, SymbolDeclKind kind) {
+bool type_name_is_reserved(csview name) {
     static char const* const reserved[] = {
         "any", "unknown", "never", "number", "bigint", "boolean", "string", "symbol", "void", "object", "undefined",
     };
+    for (u32 i = 0; i < c_arraylen(reserved); i++) {
+        if (csview_equals(name, reserved[i])) return true;
+    }
+    return false;
+}
+
+// tsc's checkTypeNameIsReserved: the predefined type keywords can't name a type
+static void check_type_name_is_reserved(ErrorCtx* errs, Span name, SymbolDeclKind kind) {
     char const* what;
     unsigned code;
     switch (kind) {
@@ -643,12 +650,8 @@ static void check_type_name_is_reserved(ErrorCtx* errs, Span name, SymbolDeclKin
         case SYMBOL_DECL_TYPE_PARAMETER: what = "Type parameter"; code = 2368; break;
         default: return;
     }
-    if (!span_valid(name) || !name.source || name.source->is_stdlib) return;
-    for (u32 i = 0; i < c_arraylen(reserved); i++) {
-        if (!csview_equals(name.sv, reserved[i])) continue;
-        error_ctx_error_d(errs, name, code, what, " name cannot be '", name, "'.");
-        return;
-    }
+    if (!span_valid(name) || !name.source || name.source->is_stdlib || !type_name_is_reserved(name.sv)) return;
+    error_ctx_error_d(errs, name, code, what, " name cannot be '", name, "'.");
 }
 
 // tsc's checkCollisionWithRequireExportsInGeneratedCode: a declaration at the top level of a module that is emitted as
@@ -2136,7 +2139,7 @@ void binder_link(Binder* me) {
         } else {
             // tsc reports on the import specifier (`a as b`), or the whole `import a = b.c`
             Span at = item->decl_name;
-            if (item->tag == PORT_IMPORT_ALIAS) at = item->full_span;
+            if (item->tag == PORT_IMPORT_ALIAS) at = span_with_semicolon(item->full_span);
             if (item->tag == PORT_IMPORT_SPECIFIC && span_valid(item->source_name)) {
                 at = span_between(item->source_name, item->decl_name);
             }
