@@ -69,6 +69,26 @@ void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNa
     }
 }
 
+// tsc's checkVarDeclaredNamesNotShadowed(): a `var` hoists out of the blocks it is written in, past any let/const of
+// the same name one of them declares (the let/const of the function or file itself would be a duplicate declaration)
+static void binding_check_var_not_shadowed(Binding const* me, Scope const* names, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    if (!symbol || !(symbol->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE) || symbol->is_parameter) return;
+    csview name = my content_span.sv;
+    for (Scope const* scope = names; scope && scope->kind == SCOPE_BLOCK; scope = scope->parent) {
+        Symbol const* found = symbol_table_get(&scope->locals, name);
+        if (!found || found == symbol || !(found->flags & SYMBOL_VARIABLE)) continue;
+        // A catch variable is block scoped too, but isn't a let/const (the root of its pattern has no source)
+        Binding const* decl = symbol_find_node(found, SYMBOL_DECL_VARIABLE);
+        while (decl && decl->parent) decl = decl->parent;
+        if ((found->flags & SYMBOL_BLOCK_SCOPED_VARIABLE) && decl && decl->source) {
+            error_ctx_error_d(errs, my content_span, 2481, "Cannot initialize outer scoped variable '", name,
+                "' in the same scope as block scoped declaration '", name, "'.");
+        }
+        return;
+    }
+}
+
 void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     Binding const* outer_root = names->flow ? names->flow->binding_root : nullptr;
     if (names->flow && !my parent) names->flow->binding_root = me;
@@ -78,6 +98,7 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
         case BINDING_IDENTIFIER:
             // The flow container the variable belongs to: elsewhere it is assumed to be initialized
             if (my symbol && !my symbol->flow_start && names->flow) my symbol->flow_start = names->flow->start;
+            binding_check_var_not_shadowed(me, names, errs);
             break;
 
         case BINDING_ARRAY:
