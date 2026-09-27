@@ -334,24 +334,29 @@ void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
         bool await = !in_type && csview_equals(name.sv, "await"), yield = !in_type && csview_equals(name.sv, "yield");
         // The await/yield context: of the nearest function, a static block (await), nothing past a class boundary
         // (member initializers are an implicit function)
-        FunctionImpl const* context = nullptr;
-        bool static_block = false, top_level = true;
+        // (A function expression's name is in its function's context as far as that is async or a generator, and in
+        // the outer one otherwise)
+        bool await_context = false, yield_context = false, top_level = true;
         for (Scope const* scope = me; scope; scope = scope->parent) {
             if (scope->expression_name_of) {
-                context = scope->expression_name_of;
-            } else if (scope->kind == SCOPE_FUNCTION && scope->function) {
-                context = scope->function;
+                await_context |= scope->expression_name_of->is_async;
+                yield_context |= scope->expression_name_of->is_generator;
+                continue;
+            }
+            if (scope->kind == SCOPE_FUNCTION && scope->function) {
+                await_context |= scope->function->is_async;
+                yield_context |= scope->function->is_generator;
             } else if (scope->kind == SCOPE_STATIC_BLOCK) {
-                static_block = true;
+                await_context = true;
             } else if (!scope->this_ref.class_decl) {
                 continue;
             }
             top_level = false;
             break;
         }
-        if (await && my file && my file->is_module && top_level) {
+        if (await && my file && my file->is_module && top_level && !await_context) {
             error_ctx_error_d(my errs, name, 1262, "Identifier expected. '", name, "' is a reserved word at the top-level of a module.");
-        } else if ((await && (static_block || (context && context->is_async))) || (yield && context && context->is_generator)) {
+        } else if ((await && await_context) || (yield && yield_context)) {
             error_ctx_error_d(my errs, name, 1359, "Identifier expected. '", name, "' is a reserved word that cannot be used here.");
         }
         return;
