@@ -356,7 +356,7 @@ struct TyCondBranch {
 };
 
 typedef struct TyDeferredRef {
-    TypeNode const* node; // TYPE_ARRAY or TYPE_TUPLE
+    TypeNode const* node; // TYPE_ARRAY, TYPE_TUPLE or TYPE_IDENTIFIER (a generic interface or class)
     LowerCtx ctx;
     TyMapper const* mapper; // may be null
     LazyState state;

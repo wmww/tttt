@@ -3,7 +3,16 @@
 Written 2026-09-27 (planning session, from plan 19 R18/R19 and the triage "Category-sized" bullet).
 
 ## Status
-Not started. The investigation already prototyped every stage behind `getenv()` toggles:
+**Stages 1 and 2 done** (2026-09-27): suite 8579 -> 8599 (+20 tests), type-fest 53 -> 46, valibot 60 -> 54, react 1,
+tsc corpus 0, valibot RSS unchanged (544 MB, after keying deferred instantiations by the node's outer type
+parameters; without that it was 598). Two components lost, both stage 3's diagnostics:
+`recursivelyExpandingUnionNoStackoverflow` types (`M` prints `unknown`, tsc `any` + TS2615) and
+`circularTypeArgumentsLocalAndOuterNoCrash1` types. `awaited_type()` got tsc's awaitedTypeStack guard (the cycle
+gives the error type; TS1062 is stage 3's). The array/tuple switch to the syntactic rule was neutral, as predicted;
+`node_reaches_alias_in_flight()` stays for `lower_branch()` (stage 4) and `prop_judgeable()` (checker.c).
+Stages 3 and 4 are next. The prototype patch (`test/probes/plan29/experiment.patch`) can be deleted with stage 3.
+
+Original notes: the investigation prototyped every stage behind `getenv()` toggles:
 `test/probes/plan29/experiment.patch` (against 9da8c37; hacky, **don't apply as is**, read it as a map of the change).
 Measured with the prototype (stages 1+2+3): suite **+20 tests / +29 components, 2 components lost** (both need the
 diagnostics of stage 4), tsc corpus 0, type-fest **53 -> 46**, valibot **60 -> 54**, react 1, tsc corpus callgrind

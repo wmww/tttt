@@ -6,8 +6,7 @@ have run (count the commits since this file was written), the next session is in
 work goes into plans or triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the
 corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and a commit.
 
-1. **Plan 29 stages 1+2** (`plans/29_deferred_aliases.md`): lazy mapped type template, deferred generic
-   interface/class references. The prototype patch is a map, not a patch.
+1. Done: plan 29 stages 1+2 (suite 8599, type-fest 46, valibot 54, react 1, tsc 0).
 2. **Plan 29 stage 3** (diagnostics at tsc's sites: TS2589, TS2456, TS4109, TS2615), stage 4 only if its measurement
    says so. Then re-sample what's left of type-fest/valibot and update plan 19's ranking.
 3. **Plan 30 stage Q + stage 1** (`plans/30_substitution_types.md`): write constraint, restrictive "definitely true",

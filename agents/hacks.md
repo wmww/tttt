@@ -713,10 +713,13 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   extends T`) isn't checked against the inference (tsc instantiates it with the other inferences first).
   `ty_implied_infer_constraint` (tsc's getInferredTypeParameterConstraint) lacks the last rule: an `infer` template
   of a mapped extends type whose check type is a mapped type.
-- `TyCondBranch` / `ty_deferred_reference`: conditional branches and array/tuple nodes are only lazy when the node
-  syntactically reaches the alias being resolved (`node_reaches_alias_in_flight*`); tsc defers by position. A named
-  generic reference to the alias in flight outside of those (`type T = Foo<T>` is an error in tsc, but `type T =
-  { a: T } | Foo<T>`-style through other aliases isn't always) still becomes the error type.
+- `TyCondBranch` (`lower_branch`): conditional branches are only lazy when the node syntactically reaches the alias
+  being resolved right now (`node_reaches_alias_in_flight_deep`); tsc resolves trueType/falseType on first use,
+  always (plan 29 stage 4: measured +1 suite, +2 type-fest; decide there). Deferred references (arrays, tuples,
+  generic interface/class references) follow tsc's syntactic `isDeferredTypeReferenceNode` since plan 29 stage 2.
+  `instantiate_inner` turns a deferred reference whose args are resolved into an ordinary one (tsc never does; no
+  order dependence seen so far, `test/probes/plan29/rd_order.ts`).
+- `awaited_type` (call.c): the awaitedTypeStack cycle gives the error type silently; tsc reports TS1062.
 - `expand_mapped`: mapped types expand to properties/index signatures once the key type is a union of literals and
   primitives. Modifiers come from `MappedInfo.modifiers_type` only when the key type was written as `keyof T`.
 - `instantiate_mapped_over_list`: a homomorphic mapped type instantiated with an array or tuple becomes an array or

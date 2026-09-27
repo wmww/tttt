@@ -642,9 +642,7 @@ static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found) {
     if (found.unknown || found.len) ty->flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
 }
 
-static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* node) {
-    u64 key[2] = { KEY_CONDITIONAL_OUTER, root->id };
-    if (intern_get(&my links, key, 2)) return;
+static TyConditionalOuter* collect_outer_params(Checker* me, TypeNode const* node) {
     FreeParams found = {0};
     collect_free_params(me, node, &found);
     u32 kept = 0;
@@ -656,7 +654,25 @@ static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* n
     TyConditionalOuter* outer = arena_new(&my arena, TyConditionalOuter);
     outer->unknown = found.unknown;
     if (!found.unknown) outer->params = ty_list_copy(me, found.params, kept);
+    return outer;
+}
+
+static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* node) {
+    u64 key[2] = { KEY_CONDITIONAL_OUTER, root->id };
+    if (intern_get(&my links, key, 2)) return;
+    TyConditionalOuter* outer = collect_outer_params(me, node);
     *intern_slot(me, &my links, key, 2) = outer;
+}
+
+// The type parameters declared outside a deferred reference's node that it mentions: what its instantiations are
+// keyed by (tsc's getObjectTypeInstantiation keys by the outer type parameters the node references)
+static TyConditionalOuter const* deferred_node_outer(Checker* me, TypeNode const* node) {
+    u64 key[2] = { KEY_DEFERRED_OUTER, (u64)(uintptr_t)node };
+    TyConditionalOuter const* ret = intern_get(&my links, key, 2);
+    if (ret) return ret;
+    TyConditionalOuter* outer = collect_outer_params(me, node);
+    *intern_slot(me, &my links, key, 2) = outer;
+    return outer;
 }
 
 TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root) {
@@ -1141,12 +1157,48 @@ static bool node_reaches_alias_in_flight_deep(Checker* me, TypeNode const* node)
     }
 }
 
+// Whether lowering the node could resolve a type alias, going by the syntax alone (tsc's mayResolveTypeAlias): what
+// makes a reference inside an alias body deferred
+static bool may_resolve_type_alias(Checker* me, TypeNode const* node) {
+    switch (node->tag) {
+        case TYPE_IDENTIFIER: {
+            Symbol const* decl = canonical(me, node->identifier->target);
+            return decl && (decl->flags & SYMBOL_TYPE_ALIAS);
+        }
+        case TYPE_TYPEOF: return true;
+        case TYPE_KEYOF: return may_resolve_type_alias(me, &node->keyof->interface);
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) {
+                if (may_resolve_type_alias(me, i)) return true;
+            }
+            return false;
+        case TYPE_INDEXED:
+            return may_resolve_type_alias(me, &node->indexed->interface) || may_resolve_type_alias(me, &node->indexed->index);
+        case TYPE_TERNARY:
+            return may_resolve_type_alias(me, &node->ternary->maybe_sub) ||
+                may_resolve_type_alias(me, &node->ternary->maybe_super) ||
+                may_resolve_type_alias(me, &node->ternary->if_true) || may_resolve_type_alias(me, &node->ternary->if_false);
+        default: return false;
+    }
+}
+
+// tsc's mayResolveTypeAlias over the elements of a tuple node (a rest element's array type isn't one, its element is)
+static bool tuple_elements_may_resolve_type_alias(Checker* me, TypeNode const* node) {
+    for_each (i, vec_tuple_element, &node->tuple.elements) {
+        TypeNode const* type = i->rest && i->type.tag == TYPE_ARRAY ? i->type.array.element : &i->type;
+        if (may_resolve_type_alias(me, type)) return true;
+    }
+    return false;
+}
+
 // A tuple whose one element is a rest element of an array is that array (tsc's getTupleTargetType): the element
 static TypeNode const* lone_rest_array_element(TypeNode const* node) {
     return node->tag == TYPE_TUPLE ? array_element_type_node(node) : nullptr;
 }
 
 static Ty const* deferred_reference_target(Checker* me, TypeNode const* node) {
+    if (node->tag == TYPE_IDENTIFIER) return ty_declared_type_of(me, canonical(me, node->identifier->target));
     if (node->tag == TYPE_TUPLE && !lone_rest_array_element(node)) return tuple_target_of_node(me, node);
     ty_array(me, ty_intrinsic(me, TY_ANY), false); // Makes sure the targets are looked up
     ty_array(me, ty_intrinsic(me, TY_ANY), true);
@@ -1157,17 +1209,39 @@ static Ty const* deferred_reference_target(Checker* me, TypeNode const* node) {
 Ty const* ty_deferred_reference(
     Checker* me, TypeNode const* node, LowerCtx ctx, TyMapper const* mapper, Symbol const* alias, TyList alias_args
 ) {
+    // Only what the node mentions is kept of the mapper, so instantiations that differ elsewhere are one type
+    u32 kept = 0;
+    Ty const* stack_pairs[32];
+    Ty const** pairs = stack_pairs;
+    if (mapper) {
+        TyConditionalOuter const* outer = deferred_node_outer(me, node);
+        pairs = mapper->len * 2 <= c_arraylen(stack_pairs) ? stack_pairs : malloc(sizeof(Ty const*) * mapper->len * 2);
+        for (u32 i = 0; i < mapper->len; i++) {
+            bool mentioned = outer->unknown;
+            for (u32 j = 0; !mentioned && j < outer->params.len; j++) mentioned = outer->params.data[j] == mapper->sources[i];
+            if (!mentioned || mapper->sources[i] == mapper->targets[i]) continue;
+            pairs[kept * 2] = mapper->sources[i];
+            pairs[kept * 2 + 1] = mapper->targets[i];
+            kept++;
+        }
+    }
     u64 stack_key[64];
-    u32 count = 2 + (mapper ? mapper->len * 2 : 0);
+    u32 count = 2 + kept * 2;
     u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
     key[0] = KEY_DEFERRED_REFERENCE;
     key[1] = (u64)(uintptr_t)node;
-    for (u32 i = 0; mapper && i < mapper->len; i++) {
-        key[2 + i * 2] = mapper->sources[i]->id;
-        key[3 + i * 2] = mapper->targets[i]->id;
-    }
+    for (u32 i = 0; i < kept * 2; i++) key[2 + i] = pairs[i]->id;
     Ty const* ret = intern_get(&my links, key, count);
     if (!ret) {
+        if (kept != (mapper ? mapper->len : 0)) {
+            Ty const** sources = arena_new_n(&my arena, Ty const*, kept ? kept : 1);
+            Ty const** targets = arena_new_n(&my arena, Ty const*, kept ? kept : 1);
+            for (u32 i = 0; i < kept; i++) {
+                sources[i] = pairs[i * 2];
+                targets[i] = pairs[i * 2 + 1];
+            }
+            mapper = kept ? ty_mapper_new(me, (TyList){ .data = sources, .len = kept }, (TyList){ .data = targets, .len = kept }) : nullptr;
+        }
         Ty const* target = deferred_reference_target(me, node);
         // Whether it mentions type variables isn't known until the arguments resolve
         Ty* fresh = ty_alloc(me, TY_REFERENCE, TYF_OBJECT | (ctx.generic ? TYF_COULD_CONTAIN_TYPE_VARIABLES : 0));
@@ -1175,8 +1249,7 @@ Ty const* ty_deferred_reference(
         fresh->reference.state = arena_new(&my arena, TyObjectState);
         TyDeferredRef* deferred = arena_new(&my arena, TyDeferredRef);
         deferred->node = node;
-        deferred->ctx = ctx;
-        deferred->ctx.in_alias = false;
+        deferred->ctx = ctx; // Still resolved by the alias, syntactically (tsc's isResolvedByTypeAlias)
         deferred->mapper = mapper;
         fresh->reference.deferred = deferred;
         // An array or tuple written as the body of an alias goes by the alias name. The node says which alias, so the
@@ -1187,6 +1260,7 @@ Ty const* ty_deferred_reference(
         ret = fresh;
     }
     if (key != stack_key) free(key);
+    if (pairs != stack_pairs) free(pairs);
     return ret;
 }
 
@@ -1204,6 +1278,15 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     }
     deferred->state = LAZY_STATE_IN_FLIGHT;
     TypeNode const* node = deferred->node;
+    if (node->tag == TYPE_IDENTIFIER) {
+        Ty const* written_buf[MAX_TYPE_ARGS];
+        TyList written = lower_type_args(me, reference->reference.target->declared.type_params,
+            &node->identifier->generic_params, deferred->ctx, written_buf);
+        for (u32 i = 0; i < len; i++) args[i] = ty_instantiate(me, written.data[i], deferred->mapper);
+        deferred->args = (TyList){ .data = args, .len = len };
+        deferred->state = LAZY_STATE_DONE;
+        return deferred->args;
+    }
     for (u32 i = 0; i < len; i++) {
         TypeNode const* lone = lone_rest_array_element(node);
         Ty const* element = node->tag == TYPE_ARRAY ? ty_from_node(me, node->array.element, deferred->ctx) :
@@ -1775,9 +1858,35 @@ static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* ou
     }
 }
 
+// tsc's isDeferredTypeReferenceNode for a reference to a generic interface or class: the body of an alias (which it then
+// goes by), or a reference inside one with defaulted type arguments or ones that may resolve an alias, is a deferred
+// reference whose type arguments are lowered on first use (`type RD<T> = ... ReadonlyArray<RD<I>>`). Null otherwise
+static Ty const* deferred_interface_reference(
+    Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args
+) {
+    IdentifierType const* identifier = node->identifier;
+    if (identifier->keyword || identifier->jsdoc_intrinsic || span_valid(identifier->import_span)) return nullptr;
+    Symbol const* decl = canonical(me, identifier->target);
+    if (!decl || decl->is_placeholder || !(decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS))) return nullptr;
+    Ty const* declared = ty_declared_type_of(me, decl);
+    if (declared->kind != TY_DECLARED || !declared->declared.type_params.len) return nullptr;
+    TyList params = declared->declared.type_params;
+    u32 written = (u32)vec_spanned_type_size(&identifier->generic_params);
+    // A wrong number of type arguments is an error, not deferred
+    if (written > params.len) return nullptr;
+    for (u32 i = written; i < params.len; i++) {
+        if (!ty_param_default(me, params.data[i])) return nullptr;
+    }
+    if (!alias) {
+        bool defer = written != params.len;
+        for_each (i, vec_spanned_type, &identifier->generic_params) defer = defer || may_resolve_type_alias(me, &i->type);
+        if (!defer) return nullptr;
+    }
+    return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
+}
+
 static TyCondBranch lower_branch(Checker* me, TypeNode const* node, LowerCtx ctx) {
     if (node_reaches_alias_in_flight_deep(me, node)) {
-        ctx.in_alias = false;
         return (TyCondBranch){ .node = node, .ctx = ctx };
     }
     return (TyCondBranch){ .type = ty_from_node(me, node, ctx) };
@@ -1805,6 +1914,10 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             return ret;
         }
         case TYPE_IDENTIFIER: {
+            if (alias || ctx.in_alias) {
+                Ty const* deferred = deferred_interface_reference(me, node, ctx, alias, alias_args);
+                if (deferred) return deferred;
+            }
             Ty const* ret = lower_identifier(me, node->identifier, ctx);
             Symbol const* decl = node->identifier->target;
             // The body of an alias is an instantiation of a generic alias: it goes by the new name
@@ -1851,16 +1964,19 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             return ty_anonymous_from_node(me, node, outer_ctx, alias, alias_args);
 
         case TYPE_ARRAY:
-            if ((alias || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
+            // tsc's isDeferredTypeReferenceNode
+            if (alias || (ctx.in_alias && may_resolve_type_alias(me, node->array.element))) {
                 return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
             }
             return ty_array(me, ty_from_node(me, node->array.element, ctx), node->array.readonly);
 
         case TYPE_TUPLE: {
             // A tuple with a variadic element (going by the syntax) isn't deferred in tsc, so it goes by no alias
-            bool variadic = tuple_node_has_variadic(node);
-            if (((alias && !variadic) || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
-                return ty_deferred_reference(me, node, ctx, nullptr, variadic ? nullptr : alias, alias_args);
+            // An empty tuple is its target (tsc's isDeferredTypeReferenceNode, getTypeFromArrayOrTupleTypeNode)
+            if (!tuple_node_has_variadic(node) && vec_tuple_element_size(&node->tuple.elements) &&
+                (alias || (ctx.in_alias && tuple_elements_may_resolve_type_alias(me, node)))
+            ) {
+                return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
             }
         }
             return lower_tuple(me, node, ctx);
@@ -1948,6 +2064,7 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             Ty const** types = malloc(sizeof(Ty const*) * len);
             Atom const** texts = malloc(sizeof(Atom const*) * (len + 1));
             panic_if(!types || !texts, "out of memory");
+            ctx.in_alias = false; // tsc's isResolvedByTypeAlias stops at template literal types
             for_each (i, vec_type, &template->types) {
                 types[i_index] = ty_from_node(me, i, ctx);
             }

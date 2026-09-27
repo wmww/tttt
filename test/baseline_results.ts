@@ -3443,7 +3443,7 @@ const baselines = {
     'circularTypeArgumentsLocalAndOuterNoCrash1': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'circularTypeofWithFunctionModule': {
         errors: true,
@@ -3458,7 +3458,7 @@ const baselines = {
     'circularlyReferentialInterfaceAccessNoCrash': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularlySimplifyingConditionalTypesNoCrash': {
         errors: true,
@@ -5883,7 +5883,7 @@ const baselines = {
     'constraintOfRecursivelyMappedTypeWithConditionalIsResolvable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constraintPropagationThroughReturnTypes': {
         errors: true,
@@ -8943,7 +8943,7 @@ const baselines = {
     'declarationsForIndirectTypeAliasReference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationsForInferredTypeFromOtherFile': {
         errors: true,
@@ -17328,7 +17328,7 @@ const baselines = {
     'inferenceExactOptionalProperties2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'inferenceFromIncompleteSource': {
         errors: false,
@@ -17948,7 +17948,7 @@ const baselines = {
     'instanceofTypeAliasToGenericClass': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instanceofWithPrimitiveUnion': {
         errors: true,
@@ -19873,7 +19873,7 @@ const baselines = {
     'jsxClassAttributeResolution': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxComplexSignatureHasApplicabilityError': {
         errors: true,
@@ -19903,7 +19903,7 @@ const baselines = {
     'jsxElementType': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxElementTypeLiteral': {
         errors: true,
@@ -26638,7 +26638,7 @@ const baselines = {
     'reactSFCAndFunctionResolvable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactTagNameComponentWithPropsNoOOM': {
         errors: true,
@@ -26817,7 +26817,7 @@ const baselines = {
     },
     'recursiveConditionalTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveConditionalTypes2': {
@@ -27958,7 +27958,7 @@ const baselines = {
     'selfReferencingTypeReferenceInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'selfReferentialDefaultNoStackOverflow': {
         errors: false,
@@ -28201,7 +28201,7 @@ const baselines = {
         types: false,
     },
     'signatureCombiningRestParameters4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28773,7 +28773,7 @@ const baselines = {
     'specedNoStackBlown': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'specialIntersectionsInMappedTypes': {
         errors: true,
@@ -30563,7 +30563,7 @@ const baselines = {
     'transformNestedGeneratorsWithTry': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'transformParenthesizesConditionalSubexpression': {
         errors: true,
@@ -30758,7 +30758,7 @@ const baselines = {
     'tsxReactPropsInferenceSucceedsOnIntersections': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxResolveExternalModuleExportsTypes': {
         errors: true,
@@ -30823,7 +30823,7 @@ const baselines = {
     'typeAliasDeclarationEmit3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeAliasDeclareKeyword01.d': {
         errors: true,
@@ -31443,7 +31443,7 @@ const baselines = {
     'typePartameterConstraintInstantiatedWithDefaultWhenCheckingDefault': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typePredicateAcceptingPartialOfRefinedType': {
         errors: true,
@@ -31653,7 +31653,7 @@ const baselines = {
     'typeVariableConstraintedToAliasNotAssignableToUnion': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeVariableTypeGuards': {
         errors: false,
@@ -33073,7 +33073,7 @@ const baselines = {
     'unwitnessedTypeParameterVariance': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'useBeforeDeclaration': {
         errors: true,
@@ -33758,7 +33758,7 @@ const baselines = {
     'asyncAwait_es2017': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncMethodWithSuperConflict_es6': {
         errors: true,
@@ -33948,7 +33948,7 @@ const baselines = {
     'asyncAliasReturnType_es5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionWithParameterNameAsync_es5': {
         errors: true,
@@ -34038,7 +34038,7 @@ const baselines = {
     'asyncAwait_es5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncClass_es5': {
         errors: true,
@@ -34268,7 +34268,7 @@ const baselines = {
     'asyncAliasReturnType_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionWithParameterNameAsync_es6': {
         errors: true,
@@ -34348,7 +34348,7 @@ const baselines = {
     'asyncAwait_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncClass_es6': {
         errors: true,
@@ -41703,17 +41703,17 @@ const baselines = {
     'destructuringParameterDeclaration3ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration3ES5iterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration3ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration4': {
         errors: false,
@@ -53798,12 +53798,12 @@ const baselines = {
     'tsxStatelessFunctionComponentOverload5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxStatelessFunctionComponentOverload6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxStatelessFunctionComponentWithDefaultTypeParameter1': {
         errors: true,
@@ -64363,7 +64363,7 @@ const baselines = {
     'objectTypeWithStringAndNumberIndexSignatureToAny': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypeWithStringIndexerHidingObjectIndexer': {
         errors: false,
