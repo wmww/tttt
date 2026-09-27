@@ -45,6 +45,7 @@ enum {
     KEY_DEFERRED_OUTER, // TypeNode of a deferred reference -> TyConditionalOuter
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE/TYPE_IDENTIFIER node, the pairs of the mapper it mentions) -> Ty
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
+    KEY_SIMPLIFIED, // (indexed access type id, writing) -> ty_simplified() of it; itself while in flight (relate.c)
     KEY_RESTRICTIVE_PARAM, // type parameter id -> its unconstrained stand-in (conditional.c)
     KEY_BASE_SIGNATURE, // Signature -> TyMapper of its type parameters to their base constraints (infer.c)
     KEY_VARIANCES,      // declared type id -> variance array
@@ -170,6 +171,7 @@ typedef struct Inference {
 
 void inference_init(Inference* inf, TyList params);
 // Elements `from` to `arity - end_skip` of a tuple as a mutable tuple (tsc's sliceTupleType)
+bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty); // tsc's isEmptyAnonymousObjectType
 Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip);
 
 // A generic function nested in a literal argument whose contextual type wants a single non-generic signature (tsc's

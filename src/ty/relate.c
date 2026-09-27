@@ -66,6 +66,7 @@ typedef struct RelationState {
 } RelationState;
 
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
+static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth);
 
 // Relation cache
 
@@ -508,6 +509,11 @@ static Ty const* apparent_type(Checker* me, Ty const* ty) {
             ty = constraint;
         }
         if (ty->flags & (TYF_OBJECT | TYF_INTERSECTION)) return ty_with_this_arg(me, ty, param);
+    }
+    if (ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL) {
+        // (tsc's getApparentType: an instantiable type is its base constraint)
+        Ty const* constraint = base_constraint(me, ty, 0);
+        if (constraint && constraint != ty) return apparent_type(me, constraint);
     }
     u32 f = ty->flags;
     Ty const* global = nullptr;
@@ -1678,16 +1684,190 @@ static Ternary object_related(
 
 static Ty const* intersection_constraint(Checker* me, Ty const* ty);
 
+// The mapped type an object type is, generic (keys not known yet) or not (tsc's ObjectFlags.Mapped). Null if none
+static MappedInfo const* mapped_info_of(Checker* me, Ty const* ty, bool* generic) {
+    if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_OBJECT) || ty->anonymous.function) return nullptr;
+    Members const* members = ty_members(me, ty);
+    if (generic) *generic = members->mapped != nullptr;
+    return members->mapped ? members->mapped : members->expanded_from;
+}
+
+// tsc's getMappedTypeNameTypeKind == Remapping: an `as` clause that isn't just a filter of the keys
+static bool is_remapping(Checker* me, MappedInfo const* mapped) {
+    return mapped->name_type && !ty_is_related(me, mapped->name_type, mapped->type_param, TY_RELATION_ASSIGNABLE);
+}
+
+// tsc's getCombinedMappedTypeOptionality: whether the mapped types a homomorphic mapped type takes its modifiers from
+// add `?` (1) or remove it (-1)
+static int combined_mapped_optionality(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 8) return 0;
+    if (ty->kind == TY_INTERSECTION) {
+        TyList members = ty->composite.types;
+        int optionality = combined_mapped_optionality(me, members.data[0], depth + 1);
+        for (u32 i = 1; i < members.len; i++) {
+            if (combined_mapped_optionality(me, members.data[i], depth + 1) != optionality) return 0;
+        }
+        return optionality;
+    }
+    MappedInfo const* mapped = mapped_info_of(me, ty, nullptr);
+    if (!mapped) return 0;
+    if (mapped->optional) return mapped->optional;
+    return mapped->modifiers_type ? combined_mapped_optionality(me, mapped->modifiers_type, depth + 1) : 0;
+}
+
+// tsc's couldAccessOptionalProperty: some optional property of the object has a key the index could be
+static bool could_access_optional_property(Checker* me, Ty const* object, Ty const* index) {
+    Ty const* index_constraint = base_constraint(me, index, 0);
+    if (!index_constraint) return false;
+    Members const* members = ty_members(me, object);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        if (!(prop->flags & PROP_OPTIONAL)) continue;
+        Ty const* key = ty_prop_key_literal(me, prop);
+        if (key && ty_is_related(me, key, index_constraint, TY_RELATION_ASSIGNABLE)) return true;
+    }
+    return false;
+}
+
+// `{ [P in K]: E }[X]` as E with X for P (tsc's substituteIndexedMappedType), plus undefined if the property can be
+// optional
+static Ty const* substitute_indexed_mapped(Checker* me, Ty const* object, MappedInfo const* mapped, bool generic, Ty const* index) {
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &index, .len = 1 });
+    Ty const* ret = ty_instantiate(me, ty_mapped_template(me, mapped), mapper);
+    bool optional = mapped->optional > 0 || (generic ?
+        mapped->modifiers_type && combined_mapped_optionality(me, mapped->modifiers_type, 0) > 0 :
+        could_access_optional_property(me, object, index));
+    if (optional && compiler_options()->strict_null_checks) {
+        Ty const* both[2] = { ret, ty_intrinsic(me, TY_UNDEFINED) };
+        ret = ty_union(me, both, 2, nullptr, (TyList){0});
+    }
+    return ret;
+}
+
+// tsc's shouldDeferIndexType for an intersection: a type variable in it next to `{}` (`NonNullable<T[K]>` is
+// `T[K] & {}`), which distributing would lose
+static bool defers_index(Checker* me, Ty const* intersection) {
+    bool instantiable = false, empty = false;
+    for (u32 i = 0; i < intersection->composite.types.len; i++) {
+        Ty const* member = intersection->composite.types.data[i];
+        instantiable |= member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED);
+        empty |= ty_is_empty_anonymous_object(me, member);
+    }
+    return instantiable && empty;
+}
+
+static Ty const* simplified_parts(Checker* me, Ty const* object, Ty const* index, TyList over, bool over_index, bool intersect, bool writing) {
+    Ty const** parts = malloc(sizeof(Ty const*) * over.len);
+    panic_if(!parts, "out of memory");
+    for (u32 i = 0; i < over.len; i++) {
+        Ty const* part = over_index ? ty_indexed(me, object, over.data[i]) : ty_indexed(me, over.data[i], index);
+        parts[i] = ty_simplified(me, part, writing);
+    }
+    Ty const* ret = intersect ? ty_intersection(me, parts, over.len, nullptr, (TyList){0}) : ty_union(me, parts, over.len, nullptr, (TyList){0});
+    free(parts);
+    return ret;
+}
+
+static Ty const* compute_simplified(Checker* me, Ty const* ty, bool writing) {
+    Ty const* object = ty_simplified(me, ty->indexed.object, writing);
+    Ty const* index = ty_simplified(me, ty->indexed.index, writing);
+    // T[A | B] -> T[A] | T[B] (reading), T[A] & T[B] (writing)
+    if (index->kind == TY_UNION) return simplified_parts(me, object, index, index->composite.types, true, writing, writing);
+    // (T | U)[K] -> T[K] | U[K] (reading), T[K] & U[K] (writing); (T & U)[K] -> T[K] & U[K]. Only once the index can't be
+    // instantiated into a union that would distribute again
+    if (index->kind != TY_TYPE_PARAM && !(index->flags & TYF_DEFERRED)) {
+        if (object->kind == TY_UNION) return simplified_parts(me, object, index, object->composite.types, false, writing, writing);
+        if (object->kind == TY_INTERSECTION && !defers_index(me, object)) {
+            return simplified_parts(me, object, index, object->composite.types, false, true, writing);
+        }
+    }
+    // `{ [P in K]: E }[X]` with K generic is E with X for P (not through a remapping `as` clause)
+    bool generic = false;
+    MappedInfo const* mapped = (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) ? mapped_info_of(me, object, &generic) : nullptr;
+    if (mapped && generic && !is_remapping(me, mapped)) {
+        Ty const* substituted = substitute_indexed_mapped(me, object, mapped, true, ty->indexed.index);
+        if (substituted->kind != TY_UNION) return ty_simplified(me, substituted, writing);
+        TyList members = substituted->composite.types;
+        Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+        panic_if(!parts, "out of memory");
+        for (u32 i = 0; i < members.len; i++) parts[i] = ty_simplified(me, members.data[i], writing);
+        Ty const* ret = ty_union(me, parts, members.len, nullptr, (TyList){0});
+        free(parts);
+        return ret;
+    }
+    return ty;
+}
+
+// A simpler form of an indexed access type, or the type itself (tsc's getSimplifiedType; conditional types aren't
+// simplified yet). `writing`: the target of an assignment, where a union of keys is the intersection of their properties
+Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
+    if (ty->kind != TY_INDEXED) return ty;
+    u64 key[3] = { KEY_SIMPLIFIED, ty->id, writing };
+    Ty const* cached = intern_get(&my links, key, 3);
+    if (cached) return cached;
+    // (Itself while in flight, like tsc's circularConstraintType marker)
+    *intern_slot(me, &my links, key, 3) = ty;
+    Ty const* ret = compute_simplified(me, ty, writing);
+    *intern_slot(me, &my links, key, 3) = ret;
+    return ret;
+}
+
+// tsc's getIndexedAccessTypeOrUndefined without an access node: null for a property that isn't there
+static Ty const* indexed_or_null(Checker* me, Ty const* object, Ty const* index) {
+    if (ty_is_generic_object(me, object) || ty_is_generic_index(index)) return ty_indexed(me, object, index);
+    if ((object->flags & TYF_ANY) || (index->flags & (TYF_ERROR | TYF_NEVER))) return ty_indexed(me, object, index);
+    return ty_access(me, object, ty_regular(me, index));
+}
+
+// `{ [P in K]: E }[X]` with K known and X generic (tsc's isMappedTypeGenericIndexedAccess): its constraint is E with X
+// for P. Null if it isn't one
+static Ty const* mapped_generic_indexed_access(Checker* me, Ty const* indexed) {
+    Ty const* object = indexed->indexed.object;
+    if (!ty_is_generic_index(indexed->indexed.index)) return nullptr;
+    bool generic = false;
+    MappedInfo const* mapped = mapped_info_of(me, object, &generic);
+    if (!mapped || generic || mapped->optional < 0 || mapped->name_type) return nullptr;
+    return substitute_indexed_mapped(me, object, mapped, false, indexed->indexed.index);
+}
+
+static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed);
+
+// tsc's getSimplifiedTypeOrConstraint: getConstraintOfType of what can't be simplified
+static Ty const* simplified_or_constraint(Checker* me, Ty const* ty) {
+    Ty const* simplified = ty_simplified(me, ty, false);
+    if (simplified != ty) return simplified;
+    switch ((TyKind)ty->kind) {
+        case TY_TYPE_PARAM: return ty_param_constraint(me, ty);
+        case TY_INDEXED: return constraint_of_indexed(me, ty);
+        case TY_INTERSECTION: return intersection_constraint(me, ty);
+        case TY_CONDITIONAL:
+        case TY_KEYOF:
+        case TY_TEMPLATE_LITERAL:
+        case TY_STRING_MAPPING:
+            return base_constraint(me, ty, 0);
+        default:
+            return nullptr;
+    }
+}
+
+// What `T[K]` is at least (tsc's getConstraintFromIndexedAccess): through the index's constraint first, then the
+// object's. The result can be deferred itself (`T[K]` -> `Record<K, number>[K]`), the relation goes on from there
 static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed) {
+    Ty const* mapped = mapped_generic_indexed_access(me, indexed);
+    if (mapped) return mapped;
     Ty const* object = indexed->indexed.object;
     Ty const* index = indexed->indexed.index;
-    // (Of an intersection, with its type variables' constraints in their place: valibot's `NonNullable<T['a']>['b']`)
-    Ty const* object_constraint = object->kind == TY_TYPE_PARAM ? ty_param_constraint(me, object) :
-        object->kind == TY_INTERSECTION ? intersection_constraint(me, object) : nullptr;
-    Ty const* index_constraint = index->kind == TY_TYPE_PARAM ? ty_param_constraint(me, index) : nullptr;
-    if (!object_constraint && !index_constraint) return nullptr;
-    Ty const* ret = ty_indexed(me, object_constraint ? object_constraint : object, index_constraint ? index_constraint : index);
-    return ret == indexed || (ret->flags & TYF_DEFERRED) ? nullptr : ret;
+    Ty const* index_constraint = simplified_or_constraint(me, index);
+    if (index_constraint && index_constraint != index) {
+        Ty const* ret = indexed_or_null(me, object, index_constraint);
+        if (ret && ret != indexed) return ret;
+    }
+    Ty const* object_constraint = simplified_or_constraint(me, object);
+    if (object_constraint && object_constraint != object) {
+        Ty const* ret = indexed_or_null(me, object_constraint, index);
+        if (ret != indexed) return ret;
+    }
+    return nullptr;
 }
 
 // A mapped type whose keys aren't known yet as the target (tsc's isGenericMappedType branch of
@@ -1789,29 +1969,30 @@ static Ternary generic_mapped_target_related(
     return is_related_to(me, st, ty_indexed(me, source, target_keys), ty_instantiate(me, template, mapper), report);
 }
 
-// What can be written to `T[K]` whatever T and K turn out to be (tsc's AccessFlags.Writing): through a union
-// constraint of K, a value has to fit every key's property, so it's the intersection. A union constraint of T is read
-// like any union (its property is the union of the members')
+// What can be written to `T[K]` whatever T and K turn out to be (tsc's structuredTypeRelatedTo with AccessFlags.Writing):
+// the access on the base constraints, if that isn't generic any more. Through a union of keys, a value has to fit
+// every key's property, so it's the intersection; a union object is read like any union (the union of the members'
+// properties). HACK: tsc also ignores index signatures when the object is a constraint (AccessFlags.NoIndexSignatures)
 static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
+    Ty const* object = indexed->indexed.object;
     Ty const* index = indexed->indexed.index;
-    Ty const* index_constraint = index->kind == TY_TYPE_PARAM ? ty_param_constraint(me, index) : nullptr;
-    if (index_constraint && index_constraint->kind == TY_UNION) {
-        Ty const* object = indexed->indexed.object;
-        Ty const* object_constraint = object->kind == TY_TYPE_PARAM ? ty_param_constraint(me, object) : nullptr;
-        if (object_constraint) object = object_constraint;
-        TyList members = index_constraint->composite.types;
-        Ty const** parts = malloc(sizeof(Ty const*) * members.len);
-        panic_if(!parts, "out of memory");
-        bool resolved = true;
-        for (u32 i = 0; i < members.len && resolved; i++) {
-            parts[i] = ty_indexed(me, object, members.data[i]);
-            resolved = !(parts[i]->flags & TYF_DEFERRED) && parts[i]->kind != TY_TYPE_PARAM;
-        }
-        Ty const* ret = resolved ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : nullptr;
-        free(parts);
-        return ret;
+    Ty const* base_object = object->kind == TY_INTERSECTION ? intersection_constraint(me, object) : base_constraint(me, object, 0);
+    Ty const* base_index = base_constraint(me, index, 0);
+    if (!base_object) base_object = object;
+    if (!base_index) base_index = index;
+    if (ty_is_generic_object(me, base_object) || ty_is_generic_index(base_index)) return nullptr;
+    if (base_index->kind != TY_UNION || (base_index->flags & TYF_BOOLEAN)) return indexed_or_null(me, base_object, base_index);
+    TyList members = base_index->composite.types;
+    Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+    panic_if(!parts, "out of memory");
+    bool resolved = true;
+    for (u32 i = 0; i < members.len && resolved; i++) {
+        parts[i] = indexed_or_null(me, base_object, members.data[i]);
+        resolved = parts[i] != nullptr;
     }
-    return constraint_of_indexed(me, indexed);
+    Ty const* ret = resolved ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : nullptr;
+    free(parts);
+    return ret;
 }
 
 // A distributive conditional type with its check type replaced by the constraint (tsc's
@@ -1864,6 +2045,14 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             return ty_union(me, all, 3, nullptr, (TyList){0});
         }
         case TY_INDEXED: {
+            // (tsc's getResolvedBaseConstraint simplifies first)
+            Ty const* simple = ty_simplified(me, ty, false);
+            if (simple == ty) simple = mapped_generic_indexed_access(me, ty);
+            if (simple && simple != ty) {
+                if (simple->kind != TY_TYPE_PARAM && !(simple->flags & TYF_DEFERRED)) return simple;
+                Ty const* deeper = base_constraint(me, simple, depth + 1);
+                return deeper ? deeper : nullptr;
+            }
             Ty const* object = ty->indexed.object;
             Ty const* index = ty->indexed.index;
             Ty const* object_constraint = base_constraint(me, object, depth + 1);
@@ -2485,8 +2674,9 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
                 Ternary related = is_related_to(me, st, target->keyof.operand, source->keyof.operand, false);
                 if (related) return related;
             }
+            // Through the simplified operand, or its constraint (tsc's getSimplifiedTypeOrConstraint)
             Ty const* operand = target->keyof.operand;
-            Ty const* constraint = operand->kind == TY_TYPE_PARAM ? ty_param_constraint(me, operand) : nullptr;
+            Ty const* constraint = simplified_or_constraint(me, operand);
             if (constraint && constraint != operand) {
                 Ty const* keys = ty_keyof(me, constraint);
                 if (keys != target) {
@@ -3339,6 +3529,10 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     if (source == target) return TERNARY_TRUE;
     if (st->relation == TY_RELATION_IDENTITY) return identity_related(me, st, source, target);
     Ty const* original_target = target;
+    // (And simplified indexed accesses: the target as written to)
+    if (source->kind == TY_INDEXED) source = ty_regular(me, ty_simplified(me, source, false));
+    if (target->kind == TY_INDEXED) target = ty_regular(me, ty_simplified(me, target, true));
+    if (source == target) return TERNARY_TRUE;
     target = ty_strip_nullable_target(me, source, target);
     if (source == target) return TERNARY_TRUE;
     // (Errors name an alias as it was: tsc's reportErrorResults)

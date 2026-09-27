@@ -605,9 +605,10 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   leaves out and tsc's getMatchingUnionConstituentForObjectLiteral shortcut.
 - `ty_infer_type_predicate` (flow.c): builds its synthetic condition flow nodes and reference `Expr` in the arena on
   every call of `signature_predicate` for an unannotated function (once per signature, memoized there).
-- `narrowable_type` (expr.c, tsc's getNarrowableTypeForReference): only the constraint-position trigger, marked on
-  identifiers by the resolve walk (`IdentifierExpr.constraint_position`); property access chains (`a.b.c` with a
-  generic `a.b`) and the "contextual type without generic types" trigger are missing.
+- `narrowable_type` (expr.c, tsc's getNarrowableTypeForReference): identifiers and property/element accesses, marked
+  by the resolve walk (`constraint_position` on IdentifierExpr/PropertyExpr: the object of `.x` or `[literal]`, a
+  callee), plus the "contextual type without generic types" trigger. tsc's element-access rule (`obj[x]` is a constraint
+  position unless obj is generic without a nullable constraint and x is generic) is approximated by "literal x only".
 - `infer_type_arguments` second pass: a type parameter is fixed before a context-sensitive argument if the contextual
   signature's parameter types mention it, or those of a function its return type returns, for a function argument
   (`fixed_by_argument`: probed by instantiating with `unknown`; anything that isn't a single-signature object type
@@ -665,8 +666,14 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   homomorphic `Readonly<T>` to `T` and the like (generic mapped to generic mapped is tsc's mappedTypeRelatedTo,
   `mapped_related`, and decides on its own). The mapped
   type parameter P gets no constraint when lowered, so `S[P]` is compared as `S[Q]` (with an `as` clause a stand-in
-  P' constrained to Q is used, `mapped_key_param_mapper`, cached per MappedInfo). Target `T[K]` uses the write type
-  (intersection over a union constraint of T, `write_constraint_of_indexed`).
+  P' constrained to Q is used, `mapped_key_param_mapper`, cached per MappedInfo). Target `T[K]` uses the write
+  constraint (`write_constraint_of_indexed`: the access on the base constraints, intersection over a union index),
+  without tsc's AccessFlags.NoIndexSignatures (a constraint's index signature counts when writing to `T[K]`).
+- `ty_simplified` (relate.c, tsc's getSimplifiedType) only does indexed accesses: no getSimplifiedConditionalType
+  (`T extends U ? T : never`), and no generic-tuple-by-number case (getElementTypeOfSliceOfTupleType).
+- `apparent_type` (relate.c) maps TY_INDEXED/TY_CONDITIONAL to their base constraint (tsc's getApparentType), but
+  keeps the type itself when there's none (tsc: unknown -> `{}`); keyof/template literal/string mapping have their
+  own cases.
 - `class_base`: a base class *name* is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`),
   anything else takes the first construct signature (see the AST-side section; the HACK comment on it predates that).
   The static side inherits properties from the base's static side and, without a constructor of its own, its

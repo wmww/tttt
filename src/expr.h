@@ -391,6 +391,7 @@ typedef struct PropertyExpr {
         PROPERTY_EXPR_BRACKET,
     } form;
     bool optional_chain;
+    bool constraint_position; // Like IdentifierExpr.constraint_position
     uint8_t assignment_target; // FlowAssignmentKind
     bool compound_like_target; // Like IdentifierExpr.compound_like_target
     FlowNode* flow; // Like IdentifierExpr.flow

@@ -10,8 +10,7 @@ corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and
 2. Done: plan 29 stage 3 (suite 8603, type-fest 48 with different content, valibot 54, react 1, tsc 0; plan 19 R21
    rewritten with what the moved TS2589s uncovered). Stage 4 not done (optional; plan 29). The type-fest/valibot
    re-sample for plan 19's ranking wasn't done: fold it into entry 7.
-3. **Plan 30 stage Q + stage 1** (`plans/30_substitution_types.md`): write constraint, restrictive "definitely true",
-   tsc's indexed-access simplification and constraints.
+3. Done: plan 30 stages Q + 1 (suite 8613, valibot 50, type-fest 48, react 1, tsc 0; callgrind +0.5%).
 4. **Plan 30 stage 2**: substitution types (coordinate with plan 29's lazy lowering, which is in by now). Stage 3
    goes after the insights unless stage 2 finishes early.
 5. **Plan 31: the fourth corpus** (`plans/31_fourth_corpus.md`): a Node/server application, decorators if possible;

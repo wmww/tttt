@@ -1241,10 +1241,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (my property->expr.tag == EXPR_IDENTIFIER) {
                 my property->expr.identifier.super_member = my property->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
             }
-            if (my property->expr.tag == EXPR_IDENTIFIER &&
-                (my property->form == PROPERTY_EXPR_DOT || my property->prop.tag == EXPR_LITERAL)
-            ) {
-                my property->expr.identifier.constraint_position = true;
+            if (my property->form == PROPERTY_EXPR_DOT || my property->prop.tag == EXPR_LITERAL) {
+                if (my property->expr.tag == EXPR_IDENTIFIER) my property->expr.identifier.constraint_position = true;
+                if (my property->expr.tag == EXPR_PROPERTY) my property->expr.property->constraint_position = true;
             }
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
@@ -1302,6 +1301,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             Expr* callee = &my call->callable;
             while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
             if (callee->tag == EXPR_IDENTIFIER) callee->identifier.constraint_position = true;
+            if (callee->tag == EXPR_PROPERTY) callee->property->constraint_position = true;
             if (callee->tag == EXPR_FUNCTION && !my call->uses_new) {
                 // An immediately invoked function expression is part of this flow, after its arguments
                 for_each (i, vec_expr, &my call->args) {

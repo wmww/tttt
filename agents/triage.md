@@ -90,8 +90,14 @@ is one code). The triage fixed the three "misplaced" span buckets (TS2554, TS605
   null/undefined, hacks.md `widen_nullable`); object literal padding in a union
   (`{ a: 1 } | { b: "" }` -> `b?: undefined`) only happens in widening, not in tsc's other normalizations
   (getNormalizedType for relations); `const {a} = null` (TS2339/TS2488, still in the plan 14 list above).
-- **Substitution types** and tsc's constraints of `T[K]` (plan 19 R17, generic TS2536, `o[k]` on generic objects,
-  mapped-type indexed access, restrictive conditional instantiation, NoInfer): `plans/30_substitution_types.md`.
+- **Substitution types** (plan 19 R17, generic TS2536, NoInfer): `plans/30_substitution_types.md` stages 2-3.
+- typeVariableConstraintIntersections (from plan 30 stage 1): tsc reduces intersections of a type variable with
+  literals/unions by its constraint (`K & "c"` is never for `K extends "a" | "b"`, `option.kind` of `Options & { kind:
+  K }` is K, not `("one" & K) | ("two" & K)`): tsc's getReducedType/intersection-with-constraint rules. The test's
+  T01..T73 all print the alias where tsc prints the reduced type.
+- valibot pipeAsync.ts:3081 (false TS2322, count unchanged by plan 30 stage 1 but different source type): with a
+  non-generic contextual type, `...pipe[0]` now reads as TSchema's union constraint (getNarrowableTypeForReference),
+  which may or may not be what tsc does there; the error was there before as `TSchema & {...}`.
 - numericStringLiteralTypes' spurious TS2370 (`...values: UnwrapContainers<T>`) isn't substitution types (plan 30's
   finding): tsc's getResolvedApparentTypeOfMappedType makes a homomorphic mapped type over an array-constrained T
   array-like.

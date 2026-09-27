@@ -1,9 +1,29 @@
 # Plan 30: constraints of indexed accesses, then substitution types
 
-Written by a planning session on 2026-09-27. Status: not started. Premise checked: correct, but the order matters.
-Most of the triage cluster is **not** substitution types: it's tsc's *simplification* of indexed accesses
-(getSimplifiedIndexedAccessType), which tttt doesn't have at all. Substitution types are a separate, smaller-yield stage.
-Probes: `test/probes/plan30/` (`stage1_proto.diff` is a working prototype of stage 1, see there).
+Written by a planning session on 2026-09-27. **Status: stages Q and 1 done** (2026-09-27: suite 8603 -> 8613, valibot
+54 -> 50, tsc 0, type-fest 48, react 1; callgrind on the tsc corpus +0.5%). Stages 2-3 open.
+Most of the triage cluster was **not** substitution types but tsc's *simplification* of indexed accesses
+(getSimplifiedIndexedAccessType), now `ty_simplified` (relate.c). Substitution types are the smaller-yield stage left.
+Probes: `test/probes/plan30/`.
+
+### What stages Q and 1 did (for stage 2's author)
+- Restrictive check: `definitely_related` (conditional.c) collects the free type parameters with
+  `mentions_type_variables` in collect mode and maps them to cached unconstrained clones (KEY_RESTRICTIVE_PARAM). The
+  collect walk must not look inside lazy parts (it lowered the alias being declared: spurious TS2456 on type-fest's
+  ConditionalPickDeep): anonymous types use their syntactic `free_params`, conditional types their outer params, and an
+  unknown outer (`typeof x` inside) makes it "unsure", which falls back to the real constraints. Stage 2's instantiation
+  rule can reuse `restrictive_type_param`.
+- `ty_simplified(ty, writing)` memoised per (id, writing) in links (KEY_SIMPLIFIED), itself while in flight; applied
+  to both sides at the top of `is_related_to`. `constraint_of_indexed` is getConstraintFromIndexedAccess (index
+  constraint first, then object, deferred results kept), `base_constraint` simplifies first and has the
+  isMappedTypeGenericIndexedAccess case (`Members.expanded_from`, now also carried by instantiated members),
+  `write_constraint_of_indexed` is tsc's (base constraints, non-generic, intersection over a union index).
+- Found on the way: `apparent_type` now maps indexed/conditional types to their base constraint (a `T[K]` callee);
+  getNarrowableTypeForReference now covers property/element accesses and the contextual trigger (the plan's predicted
+  controlFlowComputedPropertyNames loss and nonNullMappedType); `awaited_type_needed` treats a mapped type as its own
+  base constraint (awaitedType regressed otherwise).
+- Not done: getSimplifiedConditionalType, generic tuple by number, NoIndexSignatures on the write side (hacks.md).
+  typeVariableConstraintIntersections still fails for another reason (triage.md).
 
 ## Why
 Triage items sharing this root (`agents/triage.md` "From the suite checker bugs session" and "Substitution types";
@@ -92,7 +112,7 @@ Port as functions next to `base_constraint` (relate.c) or a new `ty/indexed.c`:
 6. TY_KEYOF target: through `getSimplifiedTypeOrConstraint(operand)` for any operand (conditional, indexed,
    intersection), not only TY_TYPE_PARAM.
 7. Drop the bail-out: `generic_element_access` defers when the *key* is generic, whatever the object.
-Prototype (`stage1_proto.diff`: items 3, 4 (partly), 5 and 7, mapped-type substitution only, no memo): suite **+8
+Prototype (items 3, 4 (partly), 5 and 7, mapped-type substitution only, no memo; deleted once stage 1 landed): suite **+8
 full, 18 components gained, 1 lost** (controlFlowComputedPropertyNames: `(Record<K, string | undefined>[K] & {})
 .toUpperCase`, the apparent type of an intersection with a deferred member; fix it, don't accept it), corpora
 unchanged except valibot pick.ts:475 (an expected error now appears). typeVariableConstraintIntersections still

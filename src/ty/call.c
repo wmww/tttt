@@ -1842,15 +1842,27 @@ static Symbol const* awaited_alias(Checker* me) {
     return symbol && (symbol->flags & SYMBOL_TYPE_ALIAS) ? symbol : nullptr;
 }
 
+// tsc's maybeTypeOfKind(type, TypeVariable): a type parameter or indexed access, or a union or intersection with one
+static bool ty_type_variable_in(Ty const* ty) {
+    if (ty->kind == TY_TYPE_PARAM || ty->kind == TY_INDEXED) return true;
+    if (ty->kind != TY_UNION && ty->kind != TY_INTERSECTION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty_type_variable_in(ty->composite.types.data[i])) return true;
+    }
+    return false;
+}
+
 // tsc's isAwaitedTypeNeeded: a generic type that could be (or hold) a promise stays `Awaited<T>`
 static bool awaited_type_needed(Checker* me, Ty const* ty, Symbol const* awaited) {
     if ((ty->flags & TYF_ANY) || (awaited && ty->alias == awaited)) return false;
     if (!ty_is_generic_object(me, ty)) return false;
     Ty const* constraint = ty_base_constraint(me, ty);
-    if (!constraint || constraint == ty) return true;
+    // (A mapped type or generic tuple is its own base constraint; without one, a type variable needs it)
+    if (!constraint && ty->kind != TY_TYPE_PARAM && !(ty->flags & TYF_DEFERRED) && (ty->flags & TYF_OBJECT)) constraint = ty;
+    if (!constraint) return ty_type_variable_in(ty);
     if (constraint->flags & (TYF_ANY | TYF_UNKNOWN)) return true;
     if (constraint->flags & TYF_NON_PRIMITIVE) return true;
-    if ((constraint->flags & TYF_OBJECT) && !ty_members(me, constraint)->prop_count && !ty_members(me, constraint)->call_count &&
+    if ((constraint->flags & TYF_OBJECT) && !ty_members(me, constraint)->mapped && !ty_members(me, constraint)->prop_count && !ty_members(me, constraint)->call_count &&
         !ty_members(me, constraint)->construct_count && !ty_members(me, constraint)->index_count
     ) {
         return true; // `{}`

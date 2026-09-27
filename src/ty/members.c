@@ -984,6 +984,20 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
 
 // `this_only`: the mapper only says what `this` is, so members that can't mention it are shared rather than
 // instantiated (tsc's createInstantiatedSymbolTable with mappingThisOnly)
+static MappedInfo const* instantiate_mapped_info(Checker* me, MappedInfo const* source, TyMapper const* mapper) {
+    MappedInfo* mapped = arena_new(&my arena, MappedInfo);
+    *mapped = *source;
+    mapped->constraint = ty_instantiate(me, mapped->constraint, mapper);
+    if (mapped->name_type) mapped->name_type = ty_instantiate(me, mapped->name_type, mapper);
+    mapped->template_ = nullptr;
+    mapped->template_node = nullptr;
+    mapped->template_from = source;
+    mapped->template_mapper = mapper;
+    mapped->template_state = LAZY_STATE_NOT_STARTED;
+    if (mapped->modifiers_type) mapped->modifiers_type = ty_instantiate(me, mapped->modifiers_type, mapper);
+    return mapped;
+}
+
 static Members const* instantiate_members(
     Checker* me, Members const* source, TyMapper const* mapper, bool applies_type_args, bool this_only
 ) {
@@ -1025,20 +1039,10 @@ static Members const* instantiate_members(
         info.value = ty_instantiate(me, info.value, mapper);
         builder_push(&builder, index, info);
     }
-    if (source->mapped) {
-        MappedInfo* mapped = arena_new(&my arena, MappedInfo);
-        *mapped = *source->mapped;
-        mapped->constraint = ty_instantiate(me, mapped->constraint, mapper);
-        if (mapped->name_type) mapped->name_type = ty_instantiate(me, mapped->name_type, mapper);
-        mapped->template_ = nullptr;
-        mapped->template_node = nullptr;
-        mapped->template_from = source->mapped;
-        mapped->template_mapper = mapper;
-        mapped->template_state = LAZY_STATE_NOT_STARTED;
-        if (mapped->modifiers_type) mapped->modifiers_type = ty_instantiate(me, mapped->modifiers_type, mapper);
-        builder.mapped = mapped;
-    }
-    return builder_finish(me, &builder);
+    if (source->mapped) builder.mapped = instantiate_mapped_info(me, source->mapped, mapper);
+    Members* ret = (Members*)builder_finish(me, &builder);
+    if (source->expanded_from) ret->expanded_from = instantiate_mapped_info(me, source->expanded_from, mapper);
+    return ret;
 }
 
 static Members const* resolve_instantiated_members(Checker* me, Ty const* target, TyMapper const* mapper, bool applies_type_args) {

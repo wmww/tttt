@@ -819,7 +819,7 @@ static bool extract_redundant_templates(Checker* me, Ty const** types, u32* len,
 }
 
 // tsc's isEmptyAnonymousObjectType: `{}` (a type literal or anonymous object without members)
-static bool is_empty_anonymous_object(Checker* me, Ty const* ty) {
+bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty) {
     if (ty->kind != TY_ANONYMOUS) return false;
     // A type literal goes by its syntax (tsc's isEmptyTypeLiteralSymbol): its members may not be resolvable yet, `type
     // Foo = { x: string } & { [x: number]: Foo }` (the same for its instantiations)
@@ -996,7 +996,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         // NonNullable<1> is 1
         u32 empty_objects = 0, non_nullable = 0;
         for (u32 i = 0; i < out; i++) {
-            if (is_empty_anonymous_object(me, buf.data[i])) {
+            if (ty_is_empty_anonymous_object(me, buf.data[i])) {
                 empty_objects++;
             } else if (buf.data[i]->flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT |
                 TYF_BIGINT_LITERAL | TYF_BOOLEAN | TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE | TYF_OBJECT |
@@ -1008,7 +1008,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         if (!is_never && empty_objects && non_nullable && !keep_empty_object) {
             u32 kept = 0;
             for (u32 i = 0; i < out; i++) {
-                if (!is_empty_anonymous_object(me, buf.data[i])) buf.data[kept++] = buf.data[i];
+                if (!ty_is_empty_anonymous_object(me, buf.data[i])) buf.data[kept++] = buf.data[i];
             }
             out = kept;
         }

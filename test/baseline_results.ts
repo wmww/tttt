@@ -1933,7 +1933,7 @@ const baselines = {
     'asyncFunctionReturnType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionTempVariableScoping': {
         errors: true,
@@ -7057,7 +7057,7 @@ const baselines = {
     },
     'correlatedUnions': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'corrupted': {
@@ -9242,8 +9242,8 @@ const baselines = {
     },
     'deeplyNestedConstraints': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'deeplyNestedMappedTypes': {
         errors: false,
@@ -17041,7 +17041,7 @@ const baselines = {
         types: true,
     },
     'indexedAccessAndNullableNarrowing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -17052,7 +17052,7 @@ const baselines = {
     },
     'indexedAccessConstraints': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'indexedAccessImplicitlyAny': {
@@ -17068,7 +17068,7 @@ const baselines = {
     'indexedAccessNormalization': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexedAccessPrivateMemberOfGenericConstraint': {
         errors: false,
@@ -17372,7 +17372,7 @@ const baselines = {
     },
     'inferenceShouldFailOnEvolvingArrays': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferenceUnionOfObjectsMappedContextualType': {
@@ -18593,12 +18593,12 @@ const baselines = {
     'intersectionsOfLargeUnions': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionsOfLargeUnions2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intraBindingPatternReferences': {
         errors: true,
@@ -20856,7 +20856,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeGenericIndexedAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20882,7 +20882,7 @@ const baselines = {
     },
     'mappedTypeIndexedAccessConstraint': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeInferenceAliasSubstitution': {
@@ -24038,7 +24038,7 @@ const baselines = {
     'nonNullMappedType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonNullParameterExtendingStringAssignableToString': {
         errors: true,
@@ -25247,7 +25247,7 @@ const baselines = {
     },
     'paramsOnlyHaveLiteralTypesWhenAppropriatelyContextualized': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'paramterDestrcuturingDeclaration': {
@@ -26432,7 +26432,7 @@ const baselines = {
     },
     'quickinfoTypeAtReturnPositionsInaccurate': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'quotedAccessorName1': {
@@ -28966,8 +28966,8 @@ const baselines = {
         types: true,
     },
     'spyComparisonChecking': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'stackDepthLimitCastingType': {
@@ -31343,7 +31343,7 @@ const baselines = {
     'typeParameterExtendsPrimitive': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterFixingWithConstraints': {
         errors: true,
@@ -31911,9 +31911,9 @@ const baselines = {
         types: true,
     },
     'undefinedAssignableToGenericMappedIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'undefinedInferentialTyping': {
         errors: true,
@@ -37802,7 +37802,7 @@ const baselines = {
     },
     'controlFlowComputedPropertyNames': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowConditionalExpression': {
@@ -38013,7 +38013,7 @@ const baselines = {
     'typeGuardsTypeParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classDoesNotDependOnPrivateMember': {
         errors: true,
@@ -46758,7 +46758,7 @@ const baselines = {
     'assignmentGenericLookupTypeNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentLHSIsReference': {
         errors: true,
@@ -46818,7 +46818,7 @@ const baselines = {
     'additionOperatorWithConstrainedTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'additionOperatorWithInvalidOperands': {
         errors: true,
@@ -48162,7 +48162,7 @@ const baselines = {
     },
     'typeGuardOfFormTypeOfFunction': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeGuardOfFormTypeOfIsOrderIndependent': {
@@ -63848,7 +63848,7 @@ const baselines = {
     'keyofAndForIn': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'keyofAndIndexedAccess': {
         errors: false,
@@ -64177,7 +64177,7 @@ const baselines = {
     },
     'mappedTypeRelationships': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeWithAny': {

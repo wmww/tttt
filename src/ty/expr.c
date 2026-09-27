@@ -788,12 +788,12 @@ static bool pattern_type_has_rest(Checker* me, Ty const* pattern) {
 // tsc's getNarrowableTypeForReference: in a constraint position, or where the contextual type isn't generic, a generic
 // type with a union constraint is narrowed as its constraint (`c && c.flags` with `c: T extends Ctx | undefined` reads
 // `flags` of Ctx; `isA(x) ? takesA(x) : takesB(x)` with `x: T extends A | B`)
-static Ty const* narrowable_type(Checker* me, IdentifierExpr const* identifier, Ty const* type, Ty const* contextual) {
+static Ty const* narrowable_type(Checker* me, bool constraint_position, Ty const* type, Ty const* contextual) {
     // HACK: tsc types the initializer of a pattern with a rest element again for the rest (CheckMode.RestBindingElement),
     // without the pattern as contextual type, so that the rest of a `T` stays generic. tttt has one type per
     // expression: a pattern with a rest element isn't a contextual type here
     if (contextual && (contextual->flags & TYF_BINDING_PATTERN) && pattern_type_has_rest(me, contextual)) contextual = nullptr;
-    bool substitute = identifier->constraint_position ||
+    bool substitute = constraint_position ||
         (contextual && !my inferential_depth && !is_generic_type(contextual));
     if (!substitute || !has_generic_with_union_constraint(me, type)) return type;
     Ty const* const* members = &type;
@@ -825,7 +825,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
             }
         }
     }
-    Ty const* type = narrowable_type(me, identifier, ty_identifier_reference_type(me, identifier), contextual);
+    Ty const* type = narrowable_type(me, identifier->constraint_position, ty_identifier_reference_type(me, identifier), contextual);
     Symbol const* symbol = identifier->target;
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
@@ -919,13 +919,14 @@ static bool is_narrowable_access(Expr const* expr) {
 }
 
 // tsc's getFlowTypeOfAccessExpression()
-static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type) {
+static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type, Ty const* contextual) {
     PropertyExpr const* access = expr->property;
     if (access->assignment_target == FLOW_TARGET_DEFINITE && access->compound_like_target) return base_type_of_literal(me, type);
     if (!access->flow || access->assignment_target == FLOW_TARGET_DEFINITE) return type;
     if (!is_narrowable_access(expr)) return type;
     // Methods don't narrow
     if (type->kind == TY_ANONYMOUS && type->anonymous.function && type->anonymous.function->is_method) return type;
+    type = narrowable_type(me, access->constraint_position, type, contextual);
     Ty const* flow_type = ty_flow_type(me, expr, type, type, access->flow);
     return access->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
 }
@@ -2375,9 +2376,7 @@ static bool is_string_index_only(Checker* me, Ty const* ty) {
 // `O[K]` (tsc's getIndexedAccessType), unless o has nothing but a string index signature, which is what it reads then
 static Ty const* generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* key) {
     key = ty_regular(me, key);
-    // TODO: generic objects too, once the constraint of `T[K]` is what tsc's getBaseConstraint says (`+=` of a
-    // `Record<K, number>[K]` is a number)
-    if (!ty_is_generic_index(key) || ty_is_generic_object(me, object)) return nullptr;
+    if (!ty_is_generic_index(key)) return nullptr;
     if (object->flags & (TYF_ANY | TYF_UNKNOWN)) return object;
     Ty const* string_or_number = union_of_two(me, ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER));
     if (is_string_index_only(me, object) && !(key->flags & TYF_NULLABLE) &&
@@ -2447,7 +2446,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 Ty const* write = ty_access_write_type(me, object, key);
                 if (write) ret = write;
             }
-            ret = access_flow_type(me, expr, ret);
+            ret = access_flow_type(me, expr, ret, ctx.contextual);
             return optional ? optional_type(me, ret) : ret;
         }
 
