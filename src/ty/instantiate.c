@@ -112,7 +112,8 @@ static TyMapper const* without_own_infers(Checker* me, Ty const* root, TyMapper 
 }
 
 // The mapper with one more (or one replaced) mapping
-static TyMapper const* mapper_with(Checker* me, TyMapper const* mapper, Ty const* source, Ty const* target) {
+// The mapper with source mapped to target instead of whatever it mapped it to
+TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* source, Ty const* target) {
     u32 cap = mapper->len + 1;
     Ty const** pairs = malloc(sizeof(Ty const*) * cap * 2);
     Ty const** sources = pairs;
@@ -225,7 +226,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         panic_if(!parts, "out of memory");
         for (u32 i = 0; i < len; i++) {
             Ty const* part = list->composite.types.data[i];
-            parts[i] = part->flags & mappable ? ty_instantiate(me, root, mapper_with(me, mapper, variable, part)) : part;
+            parts[i] = part->flags & mappable ? ty_instantiate(me, root, ty_mapper_with(me, mapper, variable, part)) : part;
         }
         Ty const* alias_buf[16];
         TyList alias_args = ty->alias_args.len <= c_arraylen(alias_buf) ?
@@ -236,7 +237,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     }
     if (ty_is_array(me, list)) {
         bool readonly = mapped->readonly ? mapped->readonly > 0 : list->reference.target == my readonly_array_target;
-        TyMapper const* element_mapper = mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
+        TyMapper const* element_mapper = ty_mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
         return ty_array(me, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), readonly);
     }
     if (!ty_is_tuple(list)) return nullptr;
@@ -255,12 +256,12 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
             bool rest = (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
             flags[i] = shape->flags[i];
             if (rest && element->kind == TY_TYPE_PARAM) {
-                mapped_elements[i] = ty_instantiate(me, root, mapper_with(me, mapper, variable, element));
+                mapped_elements[i] = ty_instantiate(me, root, ty_mapper_with(me, mapper, variable, element));
                 continue;
             }
             Ty const* array = rest ? element : ty_array(me, element, false);
             if (!ty_is_array(me, array)) return nullptr;
-            TyMapper const* element_mapper = mapper_with(me, mapper_with(me, mapper, variable, array),
+            TyMapper const* element_mapper = ty_mapper_with(me, ty_mapper_with(me, mapper, variable, array),
                 mapped->type_param, ty_intrinsic(me, TY_NUMBER));
             Ty const* mapped_element = ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper);
             mapped_elements[i] = rest ? ty_array(me, mapped_element, false) : mapped_element;
@@ -269,7 +270,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         cstr index = cstr_d(i);
         Ty const* key = ty_string_literal(me, cstr_sv(&index));
         cstr_drop(&index);
-        mapped_elements[i] = ty_instantiate(me, ty_mapped_template(me, mapped), mapper_with(me, mapper, mapped->type_param, key));
+        mapped_elements[i] = ty_instantiate(me, ty_mapped_template(me, mapped), ty_mapper_with(me, mapper, mapped->type_param, key));
         flags[i] = shape->flags[i];
         if (mapped->optional > 0) flags[i] |= TUPLE_ELEMENT_OPTIONAL;
         if (mapped->optional < 0) flags[i] &= ~(unsigned)TUPLE_ELEMENT_OPTIONAL;
@@ -455,7 +456,7 @@ static Ty const* resolve_conditional_instance(Checker* me, Ty const* root, TyMap
             TyList members = check_type->composite.types;
             Ty const** results = malloc(sizeof(Ty const*) * members.len);
             for (u32 i = 0; i < members.len; i++) {
-                TyMapper const* member_mapper = mapper_with(me, combined, root->conditional.check, members.data[i]);
+                TyMapper const* member_mapper = ty_mapper_with(me, combined, root->conditional.check, members.data[i]);
                 results[i] = conditional_from_root(me, root, members.data[i], member_mapper);
             }
             Ty const* ret = ty_union(me, results, members.len, nullptr, (TyList){0});

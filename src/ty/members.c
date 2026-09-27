@@ -1292,6 +1292,47 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
     return first;
 }
 
+// What a generic key type is known to include at least (tsc's getLowerBoundOfKeyType): `keyof T` the keys of T's
+// constraint, a distributive conditional type over it (`Exclude<keyof T, K>`) that conditional type of those keys
+static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_KEYOF) {
+        Ty const* apparent = ty_apparent_type(me, ty->keyof.operand);
+        // (TODO: tsc takes the known keys of a generic tuple)
+        return apparent == ty->keyof.operand ? ty : ty_keyof(me, apparent);
+    }
+    if (ty->kind == TY_CONDITIONAL) {
+        Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
+        if (!ty->conditional.distributive || root->conditional.check->kind != TY_TYPE_PARAM) return ty;
+        Ty const* check = ty->conditional.check;
+        Ty const* lower = lower_bound_of_key_type(me, check);
+        if (lower == check) return ty;
+        Ty const* param = root->conditional.check;
+        TyMapper const* mapper = ty->conditional.mapper ? ty_mapper_with(me, ty->conditional.mapper, param, lower) :
+            ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &lower, .len = 1 });
+        return ty_instantiate(me, root, mapper);
+    }
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        TyList types = ty->composite.types;
+        if (ty->kind == TY_INTERSECTION && types.len == 2 && (types.data[0]->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT)) &&
+            ty_is_empty_anonymous_object(me, types.data[1])
+        ) {
+            return ty;
+        }
+        TyBuf parts = {0};
+        bool changed = false;
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* part = lower_bound_of_key_type(me, types.data[i]);
+            changed |= part != types.data[i];
+            ty_buf_push(&parts, part);
+        }
+        Ty const* ret = !changed ? ty : ty->kind == TY_UNION ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) :
+            ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+        ty_buf_drop(&parts);
+        return ret;
+    }
+    return ty;
+}
+
 // A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
 // clause maps a key to), an index signature per primitive key. Returns the members unchanged while the key type is
 // generic (or something this can't expand yet)
@@ -1299,7 +1340,17 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     MappedInfo const* mapped = members->mapped;
     if (!mapped) return members;
     Ty const* constraint = mapped->constraint;
-    if (ty_is_generic_index(constraint)) return expand_generic_homomorphic(me, members);
+    // A generic key type that is known to include some keys (`Pick<T, Exclude<keyof T, K>>`, as Omit is): a property
+    // per such key, but the mapped type stays generic (tsc's resolveMappedTypeMembers, which adds members for the
+    // lower bound of the key type)
+    bool generic = false;
+    if (ty_is_generic_index(constraint)) {
+        if (mapped->keyof_constraint) return expand_generic_homomorphic(me, members);
+        Ty const* lower = lower_bound_of_key_type(me, constraint);
+        if (lower == constraint) return members;
+        constraint = lower;
+        generic = true;
+    }
     Ty const* const* keys;
     u32 key_count;
     union_members(&constraint, &keys, &key_count);
@@ -1346,6 +1397,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
         }
     }
     Ty const* modifiers = mapped->modifiers_type;
+    if (generic && modifiers) modifiers = ty_apparent_type(me, modifiers);
     if (modifiers && !(modifiers->flags & TYF_OBJECT) && modifiers->kind != TY_UNION && modifiers->kind != TY_INTERSECTION) {
         modifiers = nullptr;
     }
@@ -1354,7 +1406,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     Prop* template = arena_new(&my arena, Prop);
     template->template_of = mapped;
 
-    MembersBuilder builder = {0};
+    MembersBuilder builder = { .mapped = generic ? mapped : nullptr };
     for (u32 i = 0; i < key_count; i++) {
         Ty const* key = keys[i];
         TyMapper const* mapper = ty_mapper_new(
@@ -1451,7 +1503,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
         }
     }
     Members* ret = (Members*)builder_finish(me, &builder);
-    ret->expanded_from = mapped;
+    if (!generic) ret->expanded_from = mapped;
     return ret;
 }
 

@@ -271,3 +271,4 @@ bool ty_is_generic_tuple(Checker* me, Ty const* ty); // checker.c, tsc's isGener
 bool ty_tuple_node_has_variadic(TypeNode const* node); // lower.c: a rest element not written as an array
 // inner, then outer: what inner maps to gets instantiated by outer, and outer's own mappings are carried along
 TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper const* outer); // instantiate.c
+TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* source, Ty const* target); // instantiate.c

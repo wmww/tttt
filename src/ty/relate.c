@@ -2140,6 +2140,27 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             ty_buf_drop(&bases);
             return ret;
         }
+        case TY_UNION:
+        case TY_INTERSECTION: {
+            // The union or intersection of the members' (tsc's computeBaseConstraint): `T["k"] & {}` with T["k"]
+            // constrained to `X | undefined` is X
+            if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
+            TyList types = ty->composite.types;
+            TyBuf bases = {0};
+            bool different = false;
+            for (u32 i = 0; i < types.len; i++) {
+                Ty const* part = types.data[i];
+                Ty const* base = part->kind == TY_TYPE_PARAM || (part->flags & (TYF_DEFERRED | TYF_UNION | TYF_INTERSECTION)) ?
+                    base_constraint(me, part, depth + 1) : part;
+                if (base != part) different = true;
+                if (base) ty_buf_push(&bases, base);
+            }
+            Ty const* ret = !different ? nullptr : ty->kind == TY_UNION ?
+                ty_union(me, bases.data, bases.len, nullptr, (TyList){0}) :
+                ty_intersection(me, bases.data, bases.len, nullptr, (TyList){0});
+            ty_buf_drop(&bases);
+            return ret;
+        }
         case TY_STRING_MAPPING: {
             Ty const* inner = ty->string_mapping.type;
             Ty const* constraint = inner->kind == TY_TYPE_PARAM || (inner->flags & TYF_DEFERRED) ? base_constraint(me, inner, depth + 1) : nullptr;
