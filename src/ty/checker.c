@@ -1672,7 +1672,7 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
         return ty_access(me, object, index);
     }
     if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return nullptr;
-    return ty_access(me, object, index);
+    return ty_access_without_node(me, object, index); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
 }
 
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {

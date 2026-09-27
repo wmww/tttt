@@ -632,6 +632,26 @@ Ty const* ty_js_this_type(Checker* me, FunctionImpl const* function) {
     return declared->kind == TY_DECLARED && declared->declared.this_param ? declared->declared.this_param : declared;
 }
 
+// A type variable among a contextual type (or its union members) as its apparent type (tsc's
+// getApparentTypeOfContextualType, which leaves mapped types alone)
+static Ty const* apparent_contextual_type(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_UNION) {
+        TyList types = ty->composite.types;
+        Ty const** mapped = malloc(sizeof(Ty const*) * types.len);
+        panic_if(!mapped, "out of memory");
+        bool changed = false;
+        for (u32 i = 0; i < types.len; i++) {
+            mapped[i] = apparent_contextual_type(me, types.data[i]);
+            changed |= mapped[i] != types.data[i];
+        }
+        Ty const* ret = changed ? ty_union(me, mapped, types.len, nullptr, (TyList){0}) : ty;
+        free(mapped);
+        return ret;
+    }
+    if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return ty_apparent_type(me, ty);
+    return ty;
+}
+
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
     Ty const* from_signature = intern_get(&my links, this_key, 2);
@@ -653,7 +673,12 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
             u64 parent_key[2] = { KEY_LITERAL_PARENT, (u64)(uintptr_t)outer };
             outer = intern_get(&my links, parent_key, 2);
         }
-        if (contextual) return ty_widened_for_declaration(me, ty_non_nullable(me, contextual), false);
+        if (contextual) {
+            // The apparent contextual type (tsc's getApparentTypeOfContextualType): a type variable is what it is at
+            // least, `this` of a literal returned as a generic conditional type is the conditional's constraint
+            contextual = apparent_contextual_type(me, contextual);
+            return ty_widened_for_declaration(me, ty_non_nullable(me, contextual), false);
+        }
         return ty_widened_for_declaration(me, ty_expr_type(me, literal), true);
     }
     if (function->this_assigned_object) {

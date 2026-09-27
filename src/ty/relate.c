@@ -1870,7 +1870,7 @@ Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
 static Ty const* indexed_or_null(Checker* me, Ty const* object, Ty const* index) {
     if (ty_is_generic_object(me, object) || ty_is_generic_index(index)) return ty_indexed(me, object, index);
     if ((object->flags & TYF_ANY) || (index->flags & (TYF_ERROR | TYF_NEVER))) return ty_indexed(me, object, index);
-    return ty_access(me, object, ty_regular(me, index));
+    return ty_access_without_node(me, object, index);
 }
 
 // `{ [P in K]: E }[X]` with K known and X generic (tsc's isMappedTypeGenericIndexedAccess): its constraint is E with X
