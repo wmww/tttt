@@ -151,6 +151,21 @@ static Ty const* global_type(Checker* me, GlobalType which) {
     return my global_types[which];
 }
 
+// tsc's initializeTypeChecker creates these before checking anything, in this order: their type ids come first, which
+// decides where they sort in printed unions (`string | RegExp | SomeType`)
+void ty_init_global_types(Checker* me) {
+    static char const* const names[] = {
+        "IArguments", "Array", "Object", "Function", "CallableFunction", "NewableFunction", "String", "Number", "Boolean",
+        "RegExp", "ReadonlyArray", "ThisType",
+    };
+    for (u32 i = 0; i < c_arraylen(names); i++) {
+        bool bind_call_apply = !strcmp(names[i], "CallableFunction") || !strcmp(names[i], "NewableFunction");
+        if (bind_call_apply && !compiler_options()->strict_bind_call_apply) continue;
+        Symbol const* decl = program_get_global(my program, csview_from(names[i]), SYMBOL_TYPE);
+        if (decl && decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) ty_declared_type_of(me, decl);
+    }
+}
+
 Ty const* ty_global_function_type(Checker* me) { return global_type(me, GLOBAL_FUNCTION); }
 Ty const* ty_global_object_type(Checker* me) { return global_type(me, GLOBAL_OBJECT); }
 Ty const* ty_empty_object_type(Checker* me) { return global_type(me, GLOBAL_EMPTY_OBJECT); }
@@ -465,14 +480,17 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     Ty const* declared = source;
     while (declared->param.state->clone_of) declared = declared->param.state->clone_of;
     GenericItem const* item = declared->param.state->item;
-    if (!item) return;
+    // (An `infer X` has no GenericItem: it is named where its symbol is declared)
+    Symbol const* infer_symbol = !item && declared->param.state->is_infer ? declared->param.symbol : nullptr;
+    if (!item && !(infer_symbol && infer_symbol->decl_count)) return;
     Ty const* base = target;
     for (u32 depth = 0; base && base->kind == TY_TYPE_PARAM && depth < 16; depth++) {
         if (base == source || base == declared) return;
         base = ty_param_constraint(me, base);
     }
     cstr target_str = display_for_report(me, target, false);
-    report_related(st, 2208, cstr_d("This type parameter might need an `extends ", target_str, "` constraint."), item->name);
+    report_related(st, 2208, cstr_d("This type parameter might need an `extends ", target_str, "` constraint."),
+        item ? item->name : infer_symbol->decls[0].name);
     cstr_drop(&target_str);
 }
 

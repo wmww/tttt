@@ -585,6 +585,13 @@ static Error* report_unassignable_with_head(
     return report_unrelated_with_head(me, TY_RELATION_ASSIGNABLE, source, target, ts_code, head, keep_natural_head, span, errs);
 }
 
+// tsc's checkTypePredicate: `x is T` needs T assignable to x's type (TS2677, the usual explanation under it)
+void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param, Span span, ErrorCtx* errs) {
+    if (ty_is_related(me, predicate, param, TY_RELATION_ASSIGNABLE)) return;
+    report_unassignable_with_head(me, predicate, param, 2677,
+        cstr_from("A type predicate's type must be assignable to its parameter's type."), true, span, errs);
+}
+
 void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target, Span span, ErrorCtx* errs) {
     if (target == ty_intrinsic(me, TY_ERROR) || (target->flags & TYF_ANY)) return;
     // tsc's checkAssertionDeferred: the operand's regular base type, widened, has to be comparable to the target

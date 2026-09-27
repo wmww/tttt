@@ -877,6 +877,7 @@ Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name); // 
 // The type whose members a value of `ty` has: `String` for a string, the constraint of a type parameter...
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
 Ty const* ty_global_function_type(Checker* me); // Null without a lib
+void ty_init_global_types(Checker* me); // tsc's initializeTypeChecker's global types, in its order
 Ty const* prop_type(Checker* me, Prop const* prop);
 // What writes to the property are checked against when it differs from what reads get (a `set` accessor whose
 // parameter type isn't the getter's), else null
@@ -1302,6 +1303,7 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
 
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
+void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param, Span span, ErrorCtx* errs); // TS2677
 // The same for a source that is `expr`'s type: a literal or arrow function is reported at what inside it doesn't fit
 // (tsc's elaborateError). Returns whether it was assignable
 void ty_check_enum_member_value(Checker* me, Ty const* source, Span span, ErrorCtx* errs);

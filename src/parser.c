@@ -3901,7 +3901,13 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
     TypePredicateNode predicate = { .name = name, .is_this = span_equals(name, "this"), .asserts = asserts, .param_index = -1 };
     if (hop_start_if_ends_on_word_break(&p, "is")) {
         hop_whitespace(&p);
+        Anchor a = anchor(&p);
         expect_type(&p, TYPE_PRECEDENCE_NULL, &predicate.type);
+        predicate.type_span = span_from(a);
+        // (`arg is infer R ? ...`: the `infer` looked past the space for an `extends`)
+        while (predicate.type_span.sv.size && is_js_ascii_space(predicate.type_span.sv.buf[predicate.type_span.sv.size - 1])) {
+            predicate.type_span.sv.size--;
+        }
         predicate.has_type = true;
     } else if (!asserts) {
         return parse_fail(&p);

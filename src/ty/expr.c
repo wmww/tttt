@@ -1424,8 +1424,11 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
         case UNARY_OP_RIGHT_MINUS_MINUS:
             return unary_result_type(me, ty_expr_type(me, operand));
 
-        case UNARY_OP_RIGHT_BANG:
-            return ty_non_nullable(me, ty_expr_type(me, operand));
+        case UNARY_OP_RIGHT_BANG: {
+            // (tsc's getNonNullableType: without strictNullChecks nothing is nullable, `null!` is null)
+            Ty const* type = ty_expr_type(me, operand);
+            return compiler_options()->strict_null_checks ? ty_non_nullable(me, type) : type;
+        }
     }
     impossible;
 }
@@ -2735,7 +2738,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             }
             // `x!` has the contextual type of its operand
             if (expr->unary_op->op == UNARY_OP_RIGHT_BANG && ctx.contextual) {
-                return ty_non_nullable(me, check_with(me, &expr->unary_op->expr, (ExprCtx){ .contextual = ctx.contextual }));
+                Ty const* type = check_with(me, &expr->unary_op->expr, (ExprCtx){ .contextual = ctx.contextual });
+                return compiler_options()->strict_null_checks ? ty_non_nullable(me, type) : type;
             }
             // tsc's getContextualTypeForAwaitOperand: what the context awaits to, or a promise of it
             if (expr->unary_op->op == UNARY_OP_AWAIT && ctx.contextual) {

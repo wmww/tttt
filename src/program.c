@@ -986,6 +986,7 @@ void program_typecheck(Program* me) {
 
     scope_report_missing_prefixes(my binder);
     program_report_missing_global_types(me);
+    ty_init_global_types(my checker);
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         if (!source->is_stdlib && !source->unchecked) {
