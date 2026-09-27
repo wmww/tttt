@@ -1389,6 +1389,10 @@ Ty const* ty_compound_assignee_type(Checker* me, struct Expr const* target, Ty c
 // Around the typecheck walk of a conditional type's true branch
 // `O[K]` written as a type: the property, element or index signature it reads is there (tsc's checkIndexedAccessType)
 void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs);
+// TS2536 for `o[k]` with k generic (tsc's checkIndexedAccessIndexType; the expression's type is the error type)
+void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
+Ty const* ty_invalid_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object);
+bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed);
 bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index);
 void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecSpannedType const* args, ErrorCtx* errs);
 

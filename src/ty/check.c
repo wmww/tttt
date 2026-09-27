@@ -1114,6 +1114,41 @@ Ty const* ty_instance_type_of_class(Checker* me, Symbol const* class_symbol) {
     return declared;
 }
 
+// tsc's checkIndexedAccessIndexType: every member of the index of a deferred `O[K]` is a key of O (`keyof O`), or a
+// number when O has a number index signature
+bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed) {
+    Ty const* object = indexed->indexed.object;
+    Ty const* index = indexed->indexed.index;
+    Ty const* keys = ty_keyof(me, object);
+    Ty const* apparent = ty_apparent_type(me, object);
+    bool number_index = false;
+    if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+        IndexInfo const* info = ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_NUMBER));
+        number_index = info && (info->key->flags & TYF_NUMBER);
+    }
+    Ty const* const* parts = &index;
+    u32 count = 1;
+    if (index->kind == TY_UNION && !(index->flags & TYF_BOOLEAN)) {
+        parts = index->composite.types.data;
+        count = index->composite.types.len;
+    }
+    for (u32 i = 0; i < count; i++) {
+        if (ty_is_related(me, parts[i], keys, TY_RELATION_ASSIGNABLE)) continue;
+        if (number_index && ty_is_related(me, parts[i], ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE)) continue;
+        return false;
+    }
+    return true;
+}
+
+void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
+    Ty const* invalid = ty_invalid_generic_element_access(me, access, object);
+    if (!invalid) return;
+    cstr index_str = ty_to_cstr(me, invalid->indexed.index);
+    cstr object_str = ty_to_cstr(me, invalid->indexed.object);
+    error_ctx_error_d(errs, span, 2536, "Type '", index_str, "' cannot be used to index type '", object_str, "'.");
+    c_drop(cstr, &index_str, &object_str);
+}
+
 void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs) {
     (void)span;
     index = ty_regular(me, index);

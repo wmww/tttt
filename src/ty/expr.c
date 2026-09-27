@@ -2569,7 +2569,25 @@ static Ty const* generic_element_access(Checker* me, PropertyExpr const* access,
         Ty const* string = ty_intrinsic(me, TY_STRING);
         return access->assignment_target ? ty_access(me, object, string) : ty_access_reading(me, object, string);
     }
-    return ty_indexed(me, object, key);
+    Ty const* ret = ty_indexed(me, object, key);
+    // (What tsc's checkIndexedAccessIndexType rejects is the error type, reported as TS2536 by the typecheck pass)
+    return ret->kind == TY_INDEXED && !ty_indexed_access_index_ok(me, ret) ? ty_intrinsic(me, TY_ERROR) : ret;
+}
+
+// `o[k]` with k generic that tsc's checkIndexedAccessIndexType rejects: the indexed access type, else null
+Ty const* ty_invalid_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object) {
+    if (access->form != PROPERTY_EXPR_BRACKET) return nullptr;
+    Ty const* key = ty_regular(me, ty_access_key_type(me, access));
+    if (!ty_is_generic_index(key) || (object->flags & (TYF_ANY | TYF_UNKNOWN | TYF_ERROR))) return nullptr;
+    if (ty_access(me, object, key)) return nullptr;
+    Ty const* string_or_number = union_of_two(me, ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER));
+    if (is_string_index_only(me, object) && !(key->flags & TYF_NULLABLE) &&
+        ty_is_related(me, key, string_or_number, TY_RELATION_ASSIGNABLE)
+    ) {
+        return nullptr;
+    }
+    Ty const* ret = ty_indexed(me, object, key);
+    return ret->kind == TY_INDEXED && !ty_indexed_access_index_ok(me, ret) ? ret : nullptr;
 }
 
 // A class expression's static fields without a type annotation have the contextual type of the property of the
