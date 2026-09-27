@@ -576,10 +576,10 @@ static void function_check_arguments_collision(FunctionImpl const* me, ErrorCtx*
     }
 }
 
-void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, ErrorCtx* errs) {
+void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, Span at, ErrorCtx* errs) {
     if (my private_ambient || my has_body || my ret_explicit || my accessor || my is_constructor || !span_valid(name)) return;
     if (!compiler_options()->no_implicit_any || (name.source && name.source->is_js)) return;
-    error_ctx_error_d(errs, name, 7010, "'", name, "', which lacks return-type annotation, implicitly has an 'any' return type.");
+    error_ctx_error_d(errs, at, 7010, "'", name, "', which lacks return-type annotation, implicitly has an 'any' return type.");
 }
 
 // Parameters without a type (and default) that nothing gives a type are implicitly any

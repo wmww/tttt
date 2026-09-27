@@ -83,7 +83,17 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                 error_ctx_error_d(errs, my key.span, 7008, "Member '", my key.span, "' implicitly has an 'any' type.");
             }
             if (my key.name_is_member_function && my type.tag == TYPE_CALLABLE) {
-                function_impl_check_implicit_any_return(my type.callable->function, my key.span, errs);
+                // (At the whole method signature, its `;` or `,` included: tsc's getErrorSpanForNode has no case for it)
+                FunctionImpl const* function = my type.callable->function;
+                Span at = my key.span;
+                if (span_valid(function->full_span) && function->full_span.source == at.source) {
+                    const char* end = span_end_ptr(function->full_span);
+                    const char* after = end;
+                    while (*after == ' ' || *after == '\t') after++;
+                    if (*after == ';' || *after == ',') end = after + 1;
+                    if (end > span_start_ptr(at)) at = span_make(at.source, span_start_ptr(at), end);
+                }
+                function_impl_check_implicit_any_return(function, my key.span, at, errs);
             }
             break;
 

@@ -117,7 +117,7 @@ void function_impl_drop(FunctionImpl* me);
 Span function_error_span(FunctionImpl const* me);
 // tsc's checkFunctionOrMethodDeclarationDiagnostics under noImplicitAny: a declaration without a body or return type
 // (an overload, an ambient function, a method signature) returns an implicit any (TS7010 at `name`)
-void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, ErrorCtx* errs);
+void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, Span at, ErrorCtx* errs);
 // TS7006/TS7019/TS7031: parameters that nothing types (no annotation, default or contextual type)
 void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCtx* errs);
 // hoisted: a function declaration of a nested block in non-strict code, which is declared in the enclosing function (or

@@ -15821,7 +15821,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyAmbients': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15866,7 +15866,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyDeclareVariablesWithoutTypeAndInit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15881,7 +15881,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyFunctionOverloadWithImplicitAnyReturnType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15911,7 +15911,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyInAmbientDeclaration2.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65621,7 +65621,7 @@ const baselines = {
         types: false,
     },
     'thisTypeInFunctions2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

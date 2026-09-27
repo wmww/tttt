@@ -1000,7 +1000,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 if (i->method.computed_key) class_computed_key_typecheck(i, errs);
                 i->method.func.private_ambient = class_item_private_in_ambient(me, i);
                 function_impl_typecheck(&i->method.func, errs);
-                function_impl_check_implicit_any_return(&i->method.func, i->method.name_span, errs);
+                function_impl_check_implicit_any_return(&i->method.func, i->method.name_span, i->method.name_span, errs);
                 break;
 
             case CLASS_ITEM_FIELD: {

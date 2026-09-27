@@ -147,6 +147,13 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
         source_file_emit_module_kind(my initializers.data[0].binding.content_span.source) < MODULE_KIND_SYSTEM;
     for_each (i, vec_initialized_binding, &my initializers) {
         if (check_marker) binding_check_es_module_marker(&i->binding, errs);
+        // An ambient variable without a type has nothing for control flow to type it by
+        if (declared && compiler_options()->no_implicit_any && i->binding.tag == BINDING_IDENTIFIER &&
+            !i->binding.has_explicit_type && i->value.tag == EXPR_IMPLICIT_ANY
+        ) {
+            error_ctx_error_d(errs, i->binding.content_span, 7005, "Variable '", i->binding.content_span,
+                "' implicitly has an 'any' type.");
+        }
         if (variable_statement_is_const(me) &&
             i->value.tag == EXPR_IMPLICIT_ANY &&
             !declared
@@ -1967,7 +1974,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
 
         case STATEMENT_DECL_FUNCTION:
             function_impl_typecheck(my decl.function.impl, errs);
-            function_impl_check_implicit_any_return(my decl.function.impl, my decl.function.impl->name, errs);
+            function_impl_check_implicit_any_return(my decl.function.impl, my decl.function.impl->name, my decl.function.impl->name, errs);
             function_check_duplicate_implementation(my decl.function.impl, errs);
             break;
 
