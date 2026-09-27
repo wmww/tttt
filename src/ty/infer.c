@@ -452,8 +452,38 @@ static Ty const* reverse_mapped_type(Checker* me, Ty const* source, MappedInfo c
     return ret;
 }
 
+// Of an array or tuple: an array or tuple of the reverse mapped element types
+static Ty const* reverse_mapped_array_like(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
+    if (ty_is_array(me, source)) {
+        Ty const* element = reverse_mapped_prop_type(me, source->reference.args.data[0], mapped, operand);
+        return ty_array(me, element, source->reference.target == my readonly_array_target);
+    }
+    TupleShape const* shape = ty_tuple_shape(source);
+    if (!shape->arity) return source;
+    Ty const** elements = malloc(sizeof(Ty const*) * shape->arity);
+    unsigned char* flags = malloc(shape->arity);
+    panic_if(!elements || !flags, "out of memory");
+    for (u32 i = 0; i < shape->arity; i++) {
+        elements[i] = reverse_mapped_prop_type(me, source->reference.args.data[i], mapped, operand);
+        // (`?` in the mapped type: T's element needn't be optional)
+        flags[i] = mapped->optional > 0 ? shape->flags[i] & ~(unsigned)TUPLE_ELEMENT_OPTIONAL : shape->flags[i];
+    }
+    TupleShape reversed = { .arity = shape->arity, .readonly = shape->readonly, .flags = flags, .names = shape->names };
+    Ty const* ret = ty_reference(me, ty_tuple_target(me, &reversed), (TyList){ .data = elements, .len = shape->arity });
+    free(elements);
+    free(flags);
+    return ret;
+}
+
 static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
-    if (!(source->flags & TYF_OBJECT) || ty_is_array(me, source) || ty_is_tuple(source)) return nullptr; // TODO: arrays, tuples
+    if (!(source->flags & TYF_OBJECT)) return nullptr;
+    if (ty_is_array(me, source) || ty_tuple_shape(source)) {
+        if (my reverse_mapped_depth >= 4) return nullptr;
+        my reverse_mapped_depth++;
+        Ty const* ret = reverse_mapped_array_like(me, source, mapped, operand);
+        my reverse_mapped_depth--;
+        return ret;
+    }
     Members const* members = ty_members(me, source);
     IndexInfo string_index = {0};
     bool has_string_index = false;

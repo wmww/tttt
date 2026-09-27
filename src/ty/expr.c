@@ -54,7 +54,7 @@ static bool kind_uses_context(Expr const* expr) {
         case EXPR_JSX_ATTRIBUTES:
             return true;
         case EXPR_UNARY_OP:
-            return expr->unary_op->op == UNARY_OP_RIGHT_BANG;
+            return expr->unary_op->op == UNARY_OP_RIGHT_BANG || expr->unary_op->op == UNARY_OP_AWAIT;
         case EXPR_BINARY_OP:
             switch (expr->binary_op->op) {
                 case BINARY_OP_OR_OR:
@@ -271,7 +271,8 @@ static Ty const* context_map(Checker* me, Ty const* contextual, ContextGetter ge
 }
 
 static Ty const* get_prop_context(Checker* me, Ty const* object, void const* arg) {
-    return ty_access(me, object, arg);
+    Ty const* mapped = ty_generic_mapped_prop_context(me, object, arg);
+    return mapped ? mapped : ty_access(me, object, arg);
 }
 
 static Ty const* contextual_prop_type(Checker* me, Ty const* contextual, Ty const* key) {
@@ -280,6 +281,12 @@ static Ty const* contextual_prop_type(Checker* me, Ty const* contextual, Ty cons
 
 static Ty const* get_element_context(Checker* me, Ty const* object, void const* arg) {
     u32 index = *(u32 const*)arg;
+    if (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+        cstr name = cstr_d(index);
+        Ty const* mapped = ty_generic_mapped_prop_context(me, object, ty_string_literal(me, cstr_sv(&name)));
+        cstr_drop(&name);
+        if (mapped) return mapped;
+    }
     Value value = value_number(index);
     Ty const* ret = ty_access(me, object, ty_literal(me, &value));
     if (!ret) ret = ty_access(me, object, ty_intrinsic(me, TY_NUMBER));
@@ -316,6 +323,12 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
     if (contextual->kind == TY_TYPE_PARAM) {
         Ty const* constraint = ty_param_constraint(me, contextual);
         return constraint && constraint != contextual && context_is_tuple_like(me, constraint, depth + 1);
+    }
+    // A generic homomorphic mapped type (tsc's checkArrayLiteral: `{ [K in keyof T]: X }` could map a tuple)
+    if (contextual->kind == TY_ANONYMOUS && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        MappedInfo const* mapped = ty_members(me, contextual)->mapped;
+        return mapped && !mapped->name_type && mapped->modifiers_type &&
+            (mapped->modifiers_type->kind == TY_TYPE_PARAM || (mapped->modifiers_type->flags & TYF_DEFERRED));
     }
     return false;
 }
@@ -2445,6 +2458,15 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (expr->unary_op->op == UNARY_OP_RIGHT_BANG && ctx.contextual) {
                 return ty_non_nullable(me, check_with(me, &expr->unary_op->expr, (ExprCtx){ .contextual = ctx.contextual }));
             }
+            // tsc's getContextualTypeForAwaitOperand: what the context awaits to, or a promise of it
+            if (expr->unary_op->op == UNARY_OP_AWAIT && ctx.contextual) {
+                Ty const* awaited = ty_awaited_no_alias(me, ctx.contextual);
+                Ty const* parts[2] = { awaited, ty_promise_like_of(me, awaited) };
+                Ty const* context = ty_union(me, parts, 2, nullptr, (TyList){0});
+                // (Still what a binding pattern implies, which calls treat differently: tsc's isFromBindingPattern)
+                if (ctx.contextual->flags & TYF_BINDING_PATTERN) context = ty_pattern_clone(me, context);
+                return ty_awaited(me, check_with(me, &expr->unary_op->expr, (ExprCtx){ .contextual = context }));
+            }
             return check_unary(me, expr->unary_op);
 
         case EXPR_PROPERTY: {
@@ -2480,7 +2502,10 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_AS_TYPE: {
             AsTypeExpr const* as_type = expr->as_type;
             // (tsc's checkAssertion: the regular literal type, which no longer widens)
-            if (as_type_is_const(as_type)) return ty_regular(me, check_with(me, &as_type->expr, (ExprCtx){ .is_const = true }));
+            // (Its operand has the contextual type of the assertion: tsc's getContextualType of an AsExpression)
+            if (as_type_is_const(as_type)) {
+                return ty_regular(me, check_with(me, &as_type->expr, (ExprCtx){ .contextual = ctx.contextual, .is_const = true }));
+            }
             Ty const* type = ty_from_node(me, &as_type->type, expr_lower_ctx);
             // The type of `e as T` doesn't depend on e, which is checked when the statement walk gets there (tsc defers
             // it too): `const data = get(id) as Data` in a loop that assigns id from data isn't circular

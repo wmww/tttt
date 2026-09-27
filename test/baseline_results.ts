@@ -15693,7 +15693,7 @@ const baselines = {
     'homomorphicMappedTypeWithNonHomomorphicInstantiationSpreadable1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'hugeDeclarationOutputGetsTruncatedWithError': {
         errors: false,
@@ -20963,7 +20963,7 @@ const baselines = {
     'mappedTypeUnionConstrainTupleTreatedAsArrayLike': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeUnionConstraintInferences': {
         errors: true,
@@ -27783,7 +27783,7 @@ const baselines = {
     'reverseMappedContravariantInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedIntersectionInference1': {
         errors: true,
@@ -27796,7 +27796,7 @@ const baselines = {
         types: false,
     },
     'reverseMappedPartiallyInferableTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27818,7 +27818,7 @@ const baselines = {
     'reverseMappedTypeContextualTypesPerElementOfTupleConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypeDeepDeclarationEmit': {
         errors: true,
@@ -27836,7 +27836,7 @@ const baselines = {
         types: false,
     },
     'reverseMappedTypeLimitedConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27853,7 +27853,7 @@ const baselines = {
     'reverseMappedUnionInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reversedRecusiveTypeInstantiation': {
         errors: true,
@@ -48351,9 +48351,9 @@ const baselines = {
         types: true,
     },
     'typeSatisfaction_asConstArrays': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeSatisfaction_contextualTyping1': {
         errors: true,
@@ -63551,9 +63551,9 @@ const baselines = {
         types: true,
     },
     'contextuallyTypeAsyncFunctionAwaitOperand': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypeAsyncFunctionReturnType': {
         errors: false,

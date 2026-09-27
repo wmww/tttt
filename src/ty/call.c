@@ -383,6 +383,19 @@ static bool fixed_by_type(Checker* me, Ty const* type, TyMapper const* probe, bo
     return depth < 8 && fixed_by_type(me, signature_return_type(me, contextual), probe, false, depth + 1);
 }
 
+// A function typed by contextual signature `sig`: only its parameters without a type annotation are typed by it (tsc's
+// assignContextualParameterTypes), and its `this` and what it returns
+static bool fixed_by_function(Checker* me, FunctionImpl const* function, Signature const* sig, TyMapper const* probe) {
+    signature_resolve(me, sig);
+    for (u32 i = 0; i < sig->param_count; i++) {
+        FunctionArg const* arg = i < (u32)vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, i) : nullptr;
+        if (arg && !arg->rest && arg->initializer.binding.has_explicit_type) continue;
+        if (ty_instantiate(me, sig->params[i].type, probe) != sig->params[i].type) return true;
+    }
+    if (sig->this_type && ty_instantiate(me, sig->this_type, probe) != sig->this_type) return true;
+    return fixed_by_type(me, signature_return_type(me, sig), probe, false, 1);
+}
+
 // Of an object or array literal, only the context-sensitive functions in it fix anything: the rest was inferred from in
 // the first pass already (`{ s: 1, cb: () => 0 }` against `Mapped<T>` doesn't fix T, `cb`'s contextual type
 // `() => T["cb"]` has no parameters to type)
@@ -410,8 +423,11 @@ static bool fixed_by_expr(Checker* me, Expr const* expr, Ty const* context, TyMa
         // `(() => T[K]) | Computed<T[K]>` gets `() => T[K]`, whose no parameters fix nothing)
         Signature const* sig = ty_contextual_signature(me, context, expr->function);
         if (!sig) return false;
-        Ty const* type = ty_signature_type(me, sig);
-        return fixed_by_type(me, type, probe, false, 0) || (sig->this_type && ty_instantiate(me, sig->this_type, probe) != sig->this_type);
+        return fixed_by_function(me, expr->function, sig, probe);
+    }
+    if (expr->tag == EXPR_FUNCTION) {
+        Signature const* sig = ty_contextual_signature(me, context, expr->function);
+        if (sig) return fixed_by_function(me, expr->function, sig, probe);
     }
     // (Only a function returns what the contextual return type says)
     return fixed_by_type(me, context, probe, true, expr->tag == EXPR_FUNCTION ? 0 : 8);
@@ -1994,6 +2010,15 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFr
 static Ty const* awaited_type(Checker* me, Ty const* ty, bool wrap) { return awaited_type_in(me, ty, wrap, nullptr); }
 
 Ty const* ty_awaited(Checker* me, Ty const* ty) { return awaited_type(me, ty, true); }
+
+
+// tsc's createPromiseLikeType: unknown without a global PromiseLike
+Ty const* ty_promise_like_of(Checker* me, Ty const* ty) {
+    Symbol const* symbol = program_get_global(my program, c_sv("PromiseLike"), SYMBOL_TYPE);
+    Ty const* like = symbol ? ty_declared_type_of(me, symbol) : nullptr;
+    if (!like || like->kind != TY_DECLARED || like->declared.type_params.len != 1) return ty_intrinsic(me, TY_UNKNOWN_);
+    return ty_reference(me, like, (TyList){ .data = &ty, .len = 1 });
+}
 
 // HACK: tsc's unwrapAwaitedType, applied to what a return of an async function returns. tsc relates `Awaited<X>` to X
 // through the default constraint of the conditional type, which tttt can't

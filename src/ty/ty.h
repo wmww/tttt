@@ -960,7 +960,8 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
 TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained
 Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param); // Of an `infer X` without `extends`, from its position
-Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing); // tsc's getSimplifiedType, relate.c
+Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing);
+Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const* key); // tsc's getSimplifiedType, relate.c
 Ty const* ty_base_constraint(Checker* me, Ty const* ty); // of a type parameter or deferred type, null if there's none
 Ty const* ty_param_default(Checker* me, Ty const* param); // null if none
 
@@ -1006,6 +1007,7 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file); // `mo
 Ty const* ty_any_function_type(Checker* me);
 // tsc's getTypeFromBindingPattern. include_pattern: as the contextual type of an initializer (TYF_BINDING_PATTERN)
 Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
+Ty const* ty_pattern_clone(Checker* me, Ty const* ty); // A clone marked TYF_BINDING_PATTERN
 bool ty_is_array(Checker* me, Ty const* ty); // A reference to Array<T> (not ReadonlyArray, not a tuple)
 // A class as written inside itself: `C<T, U>` with its own type parameters as the arguments
 Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol);
@@ -1381,6 +1383,7 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
 Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual);
 void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs);
 Ty const* ty_awaited(Checker* me, Ty const* ty);
+Ty const* ty_promise_like_of(Checker* me, Ty const* ty);
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);
 Ty const* ty_awaited_returned(Checker* me, Ty const* ty);
 

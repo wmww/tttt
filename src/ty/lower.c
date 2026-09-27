@@ -1561,7 +1561,7 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
 // tsc's getTypeFromBindingPattern: what an unannotated `{ a, b = 1 }` or `[a, b = 1]` parameter takes, `{ a: any; b?:
 // number }` or `[any, number?]`
 // A clone of the type marked as a pattern's (tsc's cloneTypeReference, `pattern`)
-static Ty const* pattern_clone(Checker* me, Ty const* ty) {
+Ty const* ty_pattern_clone(Checker* me, Ty const* ty) {
     Ty* ret = ty_alloc(me, (TyKind)ty->kind, ty->flags);
     u32 id = ret->id;
     *ret = *ty;
@@ -1607,7 +1607,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
         }
         Ty const* ret = ty_object_literal(me, props, count, index_count ? &index : nullptr, index_count, OBJECT_SYNTHETIC);
         free(props);
-        return include_pattern ? pattern_clone(me, ret) : ret;
+        return include_pattern ? ty_pattern_clone(me, ret) : ret;
     }
     if (pattern->tag != BINDING_ARRAY) return ty_intrinsic(me, TY_ANY);
     u32 len = (u32)vec_binding_size(&pattern->array);
@@ -1649,7 +1649,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
     TupleShape shape = { .arity = len, .flags = flags };
     Ty const* ret = ty_reference(me, ty_tuple_target(me, &shape), (TyList){ .data = elements, .len = len });
     free(flags);
-    return include_pattern ? pattern_clone(me, ret) : ret;
+    return include_pattern ? ty_pattern_clone(me, ret) : ret;
 }
 
 Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pattern) {

@@ -1744,6 +1744,20 @@ static Ty const* substitute_indexed_mapped(Checker* me, Ty const* object, Mapped
     return ret;
 }
 
+// The contextual type of property `key` in a generic mapped type without an `as` clause (tsc's
+// getTypeOfPropertyOfContextualType): the template with the key for the type parameter, if the constraint allows the
+// key. Null if it isn't such a mapped type or the key isn't one of its keys
+Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const* key) {
+    if (!(object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
+    bool generic = false;
+    MappedInfo const* mapped = mapped_info_of(me, object, &generic);
+    if (!mapped || !generic || mapped->name_type) return nullptr;
+    Ty const* constraint = mapped->constraint;
+    Ty const* base = constraint->kind == TY_TYPE_PARAM || (constraint->flags & TYF_DEFERRED) ? base_constraint(me, constraint, 0) : nullptr;
+    if (!ty_is_related(me, key, base ? base : constraint, TY_RELATION_ASSIGNABLE)) return nullptr;
+    return substitute_indexed_mapped(me, object, mapped, true, key);
+}
+
 // tsc's shouldDeferIndexType for an intersection: a type variable in it next to `{}` (`NonNullable<T[K]>` is
 // `T[K] & {}`), which distributing would lose
 static bool defers_index(Checker* me, Ty const* intersection) {
