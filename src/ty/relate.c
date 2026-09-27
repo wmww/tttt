@@ -2494,16 +2494,26 @@ static bool prop_modifiers_identical(Prop const* source, Prop const* target) {
     return is_readonly_prop(source) == is_readonly_prop(target);
 }
 
+// The type tsc's compareProperties compares: an optional property's includes undefined with strictNullChecks (tsc's
+// getTypeOfSymbol adds optionality; its missing type is identical to undefined), so `{ a?: string }` is identical to
+// `{ a?: string | undefined }` and to `Partial<{ a: string }>` mapped again (whose template read added undefined)
+static Ty const* identity_prop_type(Checker* me, Prop const* prop) {
+    Ty const* type = prop_type(me, prop);
+    if (!(prop->flags & PROP_OPTIONAL) || !compiler_options()->strict_null_checks) return type;
+    Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+    return ty_union(me, parts, 2, nullptr, (TyList){0});
+}
+
 static Ternary props_identical(Checker* me, RelationState* st, Prop const* source, Prop const* target) {
     if (source == target) return TERNARY_TRUE;
     if (!prop_modifiers_identical(source, target)) return TERNARY_FALSE;
-    return is_related_to(me, st, prop_type(me, source), prop_type(me, target), false);
+    return is_related_to(me, st, identity_prop_type(me, source), identity_prop_type(me, target), false);
 }
 
 bool ty_props_identical(Checker* me, Prop const* source, Prop const* target) {
     if (source == target) return true;
     return prop_modifiers_identical(source, target) &&
-        ty_is_related(me, prop_type(me, source), prop_type(me, target), TY_RELATION_IDENTITY);
+        ty_is_related(me, identity_prop_type(me, source), identity_prop_type(me, target), TY_RELATION_IDENTITY);
 }
 
 // tsc's mappedTypeRelatedTo under identity: the same modifiers, identical constraints, name types and templates once
