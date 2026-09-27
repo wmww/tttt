@@ -361,12 +361,19 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
     if (!contextual || depth > 8) return false;
     if (ty_is_tuple(contextual)) return true;
     if (contextual->kind == TY_DECLARED && contextual->declared.kind == TY_DECLARED_TUPLE_TARGET) return true;
-    if (contextual->kind == TY_UNION || contextual->kind == TY_INTERSECTION) {
+    if (contextual->kind == TY_UNION) {
         for (u32 i = 0; i < contextual->composite.types.len; i++) {
             if (context_is_tuple_like(me, contextual->composite.types.data[i], depth + 1)) return true;
         }
         return false;
     }
+    if (contextual->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < contextual->composite.types.len; i++) {
+            if (context_is_tuple_like(me, contextual->composite.types.data[i], depth + 1)) return true;
+        }
+    }
+    // Anything with a "0" property (tsc's isTupleLikeType: `Pick<[T, ...T[]], ...> & { length: 3 }`)
+    if (contextual->kind == TY_INTERSECTION) return ty_get_prop(me, contextual, checker_atom(me, c_sv("0"))) != nullptr;
     if (contextual->kind == TY_TYPE_PARAM) {
         Ty const* constraint = ty_param_constraint(me, contextual);
         return constraint && constraint != contextual && context_is_tuple_like(me, constraint, depth + 1);
@@ -374,9 +381,13 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
     // A generic homomorphic mapped type (tsc's checkArrayLiteral: `{ [K in keyof T]: X }` could map a tuple)
     if (contextual->kind == TY_ANONYMOUS && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         MappedInfo const* mapped = ty_members(me, contextual)->mapped;
-        return mapped && !mapped->name_type && mapped->modifiers_type &&
-            (mapped->modifiers_type->kind == TY_TYPE_PARAM || (mapped->modifiers_type->flags & TYF_DEFERRED));
+        if (mapped && !mapped->name_type && mapped->modifiers_type &&
+            (mapped->modifiers_type->kind == TY_TYPE_PARAM || (mapped->modifiers_type->flags & TYF_DEFERRED))
+        ) {
+            return true;
+        }
     }
+    if (contextual->kind == TY_ANONYMOUS) return ty_get_prop(me, contextual, checker_atom(me, c_sv("0"))) != nullptr;
     return false;
 }
 

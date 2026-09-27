@@ -2891,7 +2891,9 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
             if (shape->flags[i] & TUPLE_ELEMENT_REST) return TERNARY_FALSE;
         }
     }
-    if (source_is_tuple) source = tuple_as_array(me, source);
+    // (As the array it extends against generic interfaces and classes, where variances help; structurally, with its
+    // element properties, against anything else: `{ 0: number }`, `Pick<[string, ...string[]], ...>`)
+    if (source_is_tuple && (target->kind == TY_REFERENCE || target->kind == TY_DECLARED)) source = tuple_as_array(me, source);
 
     // A class or interface with a `this` type is a reference to itself (tsc: its declared type is one)
     bool source_self = source->kind == TY_DECLARED && source->declared.this_param;
