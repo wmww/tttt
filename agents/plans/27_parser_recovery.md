@@ -219,8 +219,7 @@ Parser items that were in triage.md; fold them into whichever stage they fit.
   modifiers on object literal members (TS1042, modifiersInObjectLiterals); enum members named `1`/`[2]`/`"3"`
   (TS2452/TS1357: enumErrors, literalsInComputedProperties1, parserEnum5/7; TS1164 done); `class void {}` / `type void = I`
   (TS1005/TS2457); `import { as as as }` (importSpecifiers1);
-  `this is T` predicates in more positions (TS1228, typeGuardOfFormThisMember); a bare `super` (TS1034); `{ x = 1 }`
-  outside patterns (TS1312); `let x!` misplaced (TS1263/1264); `const c;` in ambient files; malformed import types
+  `this is T` predicates in more positions (TS1228, typeGuardOfFormThisMember); a bare `super` (TS1034); `let x!` misplaced (TS1263/1264); `const c;` in ambient files; malformed import types
   (nodeModulesImport*DeclarationEmitErrors); `bigintPropertyName` (a parse failure in a.ts line 12).
 - Recovery fidelity where the harness typechecks next to parse errors: parserGreaterThanTokenAmbiguity12-14/17-19
   (`1 >> = 2` parses as an assignment and gets TS2364); arrow functions in `?:` recovery (`(a?) => {} ? b : c`) give
@@ -233,5 +232,8 @@ Parser items that were in triage.md; fold them into whichever stage they fit.
   jsxNamespacePrefixInName(React) (`<:a>`, `<a:>`), tsxAttributeInvalidNames (`32data`: TS1351 and a number token), an
   unclosed fragment's TS17014 span (tsc starts it at the previous token's end: tsxFragmentErrors), jsxAndTypeAssertion
   (two errors at EOF where tsc's one-error-per-position rule should have dropped one: not understood).
+- `infer T extends U ?` (tsc's speculative lookahead in parseTypeParameterOfInferType / tryParseConstraintOfInferType):
+  `T extends (infer U extends number ? 1 : 0) ? 1 : 0` is a conditional in parentheses, and `infer U extends number)
+  ?` (inferTypesWithExtends1 X12/X13) the other half of the rule; tttt gets TS1005s.
 - Small: `parse_type` turns a leading `&`/`|` into an `any`/`never` operand that every consumer must skip (hacks.md).
   Overloads of `*()`-style nameless members. `override`/TS4112+.

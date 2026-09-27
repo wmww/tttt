@@ -53,8 +53,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   is the cost (not fixable by dispatch), that's the profile vision asked for before revisiting the no-rewrite rule:
   write it up for the next insights rather than starting a rewrite.
 - **Suite checker bugs sessions work** (+72, +98, +245): one per window stays, fed by `bugs/missing_checks.md`.
-- **Doc sprawl**: plan 19 (443 lines) and measurements.md (551) are mostly history; the triage at the end of this
-  window shrinks them. Plan 29 is done (its optional stage 4 moved to `bugs/type_core.md`).
+- **Doc sprawl**: handled by the triage at the end of the window (plan 19 and measurements.md cut to the live
+  items; history is in git). Plan 29 is done (its optional stage 4 moved to `bugs/type_core.md`).
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **Every todo window has corpus sessions** (the corpora were once left alone for ~30 sessions), and todo.md has a

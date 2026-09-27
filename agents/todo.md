@@ -31,6 +31,7 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    leftovers ranked in plan 19 "zod corpus": the missing type, ProtoOf inference, keyof deferral), type-fest 11 -> 4
    (mixins only), webpack 515 -> 135 (sub-agent; plan 26 "Stage 3 leftovers"); suite 9363 -> 9395. zod is the
    heaviest corpus (11.7 G instructions, profile in perf_leads.md).
-10. **Triage**: drain triage.md; also shrink plan 19 (443 lines, mostly done R-items: keep the live ones and the
-    lessons, history is in git) and measurements.md (551 lines: keep the latest of each kind).
+10. ~~Triage~~ done: triage.md drained (fixes + routing), plan 19 524 -> ~100 lines (live items and lessons only),
+    measurements.md 623 -> ~70 (latest of each kind, fresh failstats/bench); suite 9395 -> 9409, corpora unchanged.
+    Bench: webpack is the one corpus where tsgo single-threaded beats tttt (0.60 vs 0.69 s).
 11. **Insights.**

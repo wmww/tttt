@@ -321,6 +321,14 @@ JS items that were in triage.md (statuses checked then); stage 4, the "Stage 3 l
   from the `@type` in tsc's types baseline (jsdocTypeTagParameterType, jsdocTypeTagRequiredParameters).
 - `expandoFunctionSymbolProperty(Js)`: `f[symb] = ...` with a unique symbol key is a late-bound expando (tsc's
   hasDynamicName -> addLateBoundAssignmentDeclarationToSymbol); only static names are expandos so far (spurious TS2741).
+- JSDoc attachment: tsc attaches a comment on the same line as the previous token only to parameters, type
+  parameters, function/arrow expressions, parenthesized expressions, variable declarations and export specifiers
+  (getJSDocCommentRanges: trailing + leading comments), not to statements; `jsdoc_before()` attaches any comment that
+  ends right before the host. `/** @type {T} */ const x = require("m")` isn't an alias to tsc (the type tag makes it a
+  variable, bindVariableDeclarationOrBindingElement): tttt makes it one and skips the check.
+- Printing through the CommonJS export= clone: from another file tsc prints a typedef of a module whose `export=` got
+  merged as `Cbs`, tttt `w.Cbs` (test/probes/plan19/webpack/export_equals_merge.ts); a `const X = require()` alias in a
+  function prints its class as `typeof import("X")` (the printer's accessibility walk skips function locals).
 - `requireOfJsonFileInJsFile` (JSON through `require` in JS); JS-only duplicate buckets (TS2323/TS2528/TS2451 in
   `module.exports`/`@typedef` tests); TS8002/TS8006/TS8010 (stage 4); the displaydiff `tsc-typeof` bucket (expando
   functions print `typeof f`).

@@ -12,8 +12,9 @@ statuses checked 2026-09-27 (triage, suite 8952).
   TS5055 11, TS5069 6, TS2742 10 (declaration emit: out of scope); spurious TS2307 14 (APISample_*: resolving
   `typescript` from the harness).
 - Checker: missing TS2353 11, TS2538 8 (below), TS2449 6, TS7023 5, TS2352 5, TS1259 5 (esModuleInterop default
-  import, a TODO in scope.c), TS18050 5, TS7010 5, TS2318 5 (the lazily looked-up globals: `Awaited`,
-  `TypedPropertyDescriptor`, iteration types; the eager ones are done in `program_report_missing_global_types`);
+  import, a TODO in scope.c), TS18050 5, TS7010 5, TS2318 (the lazily looked-up globals: `Awaited`,
+  `TypedPropertyDescriptor`; the eager ones are done in `program_report_missing_global_types`, IterableIterator in
+  `ty_generator_type`);
   spurious TS2349 13 (betterErrorForUnionCall, classExtendsNull, functionType), TS2403 12 (below), TS7006 8, TS2300 10.
 - TS7053 6 are JS (lateBoundAssignmentDeclarationSupport*: element access on a CommonJS module object is skipped in
   JS, `ty_check_element_implicit_any`'s TODO).
@@ -66,7 +67,8 @@ statuses checked 2026-09-27 (triage, suite 8952).
   unannotated async function was tried and lost 6 tests. Needs a "return type was inferred" signal that matches tsc's
   demand, not tttt's (tttt infers more eagerly). TS2802 (iteration needs `downlevelIteration`), TS1056 (accessors below
   ES5), TS2659 (`super` in an object literal below ES2015), TS2496's other places (`arguments` in ES5 arrows), TS2815
-  (`arguments` in a class field initializer). Await grammar leftovers: `await` in a class field initializer inside an
+  (`arguments` of an outer function in a field initializer, or in an expression statement directly in a static block:
+  tsc's isInPropertyInitializerOrClassStaticBlock; classStaticBlock6, which also wants TS2662 for `arguments` there). Await grammar leftovers: `await` in a class field initializer inside an
   async function (awaitInClassInAsyncFunction: the parser's in_async carries into class members), `await` in a
   namespace body counts as top level (tsc: TS1308), TS18037 (await in a static block) is parser territory
   (classStaticBlock6/7/26).

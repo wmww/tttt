@@ -47,8 +47,12 @@ Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `displa
   back to real constraints. Making it precise made a variance measurement on react-hook-form (bulletproof-react
   form.tsx:40) overflow into TS2589 (check_related's overflow HACK), +30% RSS. Look at why the restrictive relation
   goes that deep first; an overflow while measuring variances should probably mark the measurement unreliable.
-- `in`/`out` variance annotations are parsed and dropped (`GenericItem` has no field): tsc takes the variance from them
-  (getVariancesWorker) and checks them (TS2636/TS2637). Small now that `measure_variances` is shared.
+- `in`/`out` variance annotations are parsed and dropped (`parse_generic_decl_item()`, `GenericItem` has no field):
+  tsc takes the variance from them (getVariancesWorker) and checks them: TS2636 (declared variance disagrees with the
+  measured one, marker types), TS2637 (annotation on a type that isn't an object/alias of one), TS1273/TS1274/TS1030
+  (misplaced or repeated modifiers). varianceAnnotations (27 errors), varianceReferences, varianceAnnotationValidation,
+  varianceAnnotationsWithCircularlyReferencesError, jsdocTemplateTag7/8: ~6 tests. One session: store the modifiers,
+  use them in `measure_variances`, port checkVarianceAnnotations.
 - **isTupleLikeType's length half**: an array-like context whose `length` is a number literal isn't tuple-like
   (only the "0" property rule is in `context_is_tuple_like`).
 - **Conditional true branch with `infer`s**: relating a deferred conditional through its true branch with `infer`s as
@@ -73,6 +77,12 @@ Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `displa
 - Module augmentation / `export =` merges don't add members (moduleAugmentationsImports3/4,
   moduleAugmentationDoesInterfaceMergeOfReexport; umd-augmentation-1..4 and augmentExportEquals6_1 fail symbols/types).
   moduleAssignmentCompat1-4: `Symbol(A)` without a Decl for a non-instantiated namespace used as a value.
+
+- tsc's non-widening `undefined`: `{}["hi"]` under noImplicitAny is `undefined` and `var x = {}["hi"]` stays
+  `undefined`; tttt widens it to any (noImplicitAnyIndexing(Suppressed) fail types on it only). hacks.md `widen_nullable`.
+- `infer X extends C`: C is resolved in the scope of the whole extends type (`type_lookup_names`), so another `infer`
+  of the same clause isn't visible (tsc: TS2304, inferTypesWithExtends2 passes); unchecked: an `infer` of an *outer*
+  conditional's extends type in C.
 
 ## Circularity (plan 29 stage 3 leftovers)
 - Plan 29's optional stage 4, always-lazy conditional branches (hacks.md `TyCondBranch`): the prototype (`P29_BRANCH`

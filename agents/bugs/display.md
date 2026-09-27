@@ -34,6 +34,8 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   (objectTypeWithNumericProperty, binaryIntegerLiteral, octalIntegerLiteral,
   emitAccessExpressionOfCastedObjectLiteralExpressionInArrowFunctionES5). A computed negative number name prints
   `[-1]` (computedPropertyNamesDeclarationEmit6): `Prop.name_is_value` doesn't tell a number name from a string one.
+- The same for object literals: `{ "0": 0 }` prints `{ 0: number; }`, tsc `{ "0": number; }` (probe: `var m:
+  MyMap<number> = { "0": 0 }`, types baseline).
 - `{ 2n: 1 }` is `{ 2: number }` here, `{}` in tsc (plus TS1539, `bugs/missing_checks.md`).
 - `A & ({} | undefined)` for a truthiness-narrowed generic (typePredicatesOptionalChaining1,
   assertionFunctionWildcardImport2). Lone surrogates `"\u{D800}"` print `""` (unicodeExtendedEscapesInStrings10/11,
