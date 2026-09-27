@@ -1011,7 +1011,9 @@ static Ty const* narrowable_type(Checker* me, bool constraint_position, Ty const
 }
 
 // The tail of tsc's checkIdentifier(): a variable or parameter has the type control flow gives it where it is read
-static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* contextual, IdentifierFlowIssue* issue) {
+// With `issue_only` it only looks for the issue: nullptr when there can't be one, before walking the flow graph (every
+// identifier is asked when checked, and its type has been computed with its contextual type already)
+static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* contextual, IdentifierFlowIssue* issue, bool issue_only) {
     IdentifierExpr const* identifier = &expr->identifier;
     if (my contextual_pattern_count && identifier->target && (identifier->target->flags & SYMBOL_VARIABLE)) {
         Binding const* binding = symbol_find_node(identifier->target, SYMBOL_DECL_VARIABLE);
@@ -1027,6 +1029,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     Ty const* type = narrowable_type(me, identifier->constraint_position, ty_identifier_reference_type(me, identifier), contextual);
     Symbol const* symbol = identifier->target;
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
+        if (issue_only) return nullptr;
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
     }
     if (!symbol || identifier->keyword || !(symbol->flags & SYMBOL_VARIABLE)) return type;
@@ -1049,6 +1052,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         (type->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID)) || !binding || binding->definitely_assigned ||
         identifier->assume_initialized ||
         includes_undefined(type);
+    if (issue_only && assume_initialized) return nullptr;
     Ty const* initial = type;
     if (symbol->is_parameter && binding && binding->has_explicit_type && compiler_options()->strict_null_checks &&
         includes_undefined(type) && binding->source && binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING
@@ -1078,7 +1082,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
 
 IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* identifier) {
     IdentifierFlowIssue ret = IDENTIFIER_FLOW_OK;
-    identifier_flow_type(me, c_container_of(identifier, Expr, identifier), nullptr, &ret);
+    identifier_flow_type(me, c_container_of(identifier, Expr, identifier), nullptr, &ret, true);
     return ret;
 }
 
@@ -2785,7 +2789,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_LITERAL: return ty_fresh_literal(me, ty_literal(me, &expr->literal));
         case EXPR_IDENTIFIER: {
             IdentifierFlowIssue issue = IDENTIFIER_FLOW_OK; // Reported by the typecheck walk
-            return identifier_flow_type(me, expr, ctx.contextual, &issue);
+            return identifier_flow_type(me, expr, ctx.contextual, &issue, false);
         }
         case EXPR_BINARY_OP: return check_binary(me, expr->binary_op, ctx);
         case EXPR_UNARY_OP:

@@ -33,7 +33,7 @@ executable(
     baseline_test_files,
     include_directories: src_inc,
     dependencies: thirdparty_deps,
-    c_args: cleat_c_args,
+    c_args: cleat_c_args + ['-DDEBUG_ALLOCATOR'],
     link_args: '-lm',
 )
 
@@ -42,7 +42,7 @@ executable(
     diffapp_runner_files,
     include_directories: src_inc,
     dependencies: thirdparty_deps,
-    c_args: cleat_c_args,
+    c_args: cleat_c_args + ['-DDEBUG_ALLOCATOR'],
     link_args: '-lm',
     build_by_default: false,
 )

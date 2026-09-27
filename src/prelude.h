@@ -1,9 +1,8 @@
 #pragma once
 
-// PERF: make this optional (it's always on in debug mode, but it hardly slows us down so it's nice to have in release
-// mode sometimes). Has to come before any STC/cleat header, see debug_allocator.h.
-#define DEBUG_ALLOCATOR
-
+// The allocation counter (debug_allocator.h) is on in debug builds and in the test runners (meson.build passes
+// -DDEBUG_ALLOCATOR to them, for their per-test leak check), off in the release tttt binary. Has to come before any
+// STC/cleat header, see debug_allocator.h.
 #if defined DEBUG_BUILD || defined DEBUG_ALLOCATOR
 #include "debug_allocator.h"
 #endif

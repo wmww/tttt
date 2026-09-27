@@ -2579,6 +2579,10 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
 }
 
 ClassItem const* scope_invalid_initializer_field(Scope const* me, csview name, Symbol const* found) {
+    // (Every identifier asks: skip the lookups when no scope around it has constructor locals, nearly always)
+    Scope const* with_locals = me;
+    while (with_locals && !with_locals->constructor_local_count) with_locals = with_locals->parent;
+    if (!with_locals) return nullptr;
     ClassItem const* ret = nullptr;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         if (found && scope_declares_symbol(scope, found)) break;

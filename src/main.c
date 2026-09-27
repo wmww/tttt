@@ -47,11 +47,21 @@ static double now_ms() {
     return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
 }
 
+// The resident set so far, in MB (0 where /proc isn't there)
+static long resident_mb() {
+    FILE* statm = fopen("/proc/self/statm", "r");
+    if (!statm) return 0;
+    long size = 0, resident = 0;
+    if (fscanf(statm, "%ld %ld", &size, &resident) != 2) resident = 0;
+    fclose(statm);
+    return resident * 4096 / (1024 * 1024);
+}
+
 // Reports the time since *last under the given name and resets *last. Reading and parsing can't be told apart, since
 // program_load() does both (and chases imports) in one go
 static void phase_done(Options const* opts, const char* name, double* last) {
     const double now = now_ms();
-    if (opts->time) eprintln("time: ", name, " ", now - *last, " ms");
+    if (opts->time) eprintln("time: ", name, " ", now - *last, " ms (resident ", resident_mb(), " MB)");
     *last = now;
 }
 

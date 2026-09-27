@@ -281,6 +281,12 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_block(Parser* parent, bool toplevel, Block* ret);
 static bool parse_interface(Parser* parent, Interface* ret);
+
+// The first push reserves room for 4, and these elements are big (a parameter is ~570 bytes): lists of one or two were
+// most of the AST's memory. A finished list gives back what it doesn't use
+#define shrink_list(vec_kind, vec) do { \
+        if ((vec)->size && (vec)->size < (vec)->capacity) vec_kind##_shrink_to_fit(vec); \
+    } while (0)
 static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static inline bool expect_statement(Parser* parent, bool toplevel, Statement* ret);
@@ -3608,6 +3614,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
     list_leave(&p, saved_context);
 
     expect_char(&p, '}');
+    shrink_list(vec_interface_member, &members);
 
     *ret = (Interface) {
         .members = members,
@@ -4066,6 +4073,7 @@ static bool parse_function_args(
     bool success = parse_function_args_inner(
         parent, parse_abstract_and_new, parse_type_return_syntax, parse_ret_type, commit_on_paren, ret
     );
+    if (success) shrink_list(vec_function_arg, &ret->args);
     list_leave(parent, saved_context);
     parent->shared->in_parameters = outer;
     return success;
@@ -4792,6 +4800,7 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
         hop_whitespace(&p);
     }
     list_leave(&p, saved_context);
+    shrink_list(vec_object_expr_item, ret);
 
     expect_closing(&p, '}', open);
 
@@ -5599,6 +5608,7 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
     }
     list_leave(&p, saved_context);
     expect_char(&p, '}');
+    shrink_list(vec_class_item, &ret->items);
 
     ret->full_span = span_from(a);
     return parse_success(&p);
@@ -5639,6 +5649,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
     }
     list_leave(&p, saved_context);
     expect_char(&p, ')');
+    shrink_list(vec_expr, args);
 
     return parse_success(&p);
 }
@@ -8335,6 +8346,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         hop_whitespace(&p);
     }
     list_leave(&p, saved_context);
+    shrink_list(vec_initialized_binding, &ret->initializers);
 
     ret->span = span_from(start);
     while (ret->span.sv.size && is_js_ascii_space(ret->span.sv.buf[ret->span.sv.size - 1])) ret->span.sv.size--;
@@ -8895,6 +8907,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
         hop_whitespace(&p); // TODO: is this needed?
     }
     list_leave(&p, saved_context);
+    shrink_list(vec_statement, ret);
     p.shared->statement_parent = outer_parent;
     // (the end of the file has JSDoc in tsc, a block's `}` doesn't)
     if (p.shared->source->is_js) jsdoc_bind_comments(&p, jsdoc_from, p.pos, ctx == PARSING_SOURCE_ELEMENTS, toplevel, ret);
