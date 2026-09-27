@@ -53,6 +53,7 @@ Atom const* ty_literal_name(Checker* me, Ty const* index) {
 // Whether a specific (not `string`) index signature applies to a key (tsc's isApplicableIndexType): a numeric one to
 // numbers and numeric strings, a symbol one to symbols, a pattern (`[k: `data-${string}`]`) to what it matches
 bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* index) {
+    if (index->flags & TYF_NEVER) return true; // (Assignable to any key type)
     u32 key_flags = ty_key_flags(index);
     bool stringish = (key_flags & TYF_STRING_LIKE) != 0;
     bool numeric = (key_flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
@@ -87,7 +88,8 @@ static IndexInfo const* find_applicable_index_info(Checker* me, IndexInfo const*
     ty_buf_drop(&values);
     if (found) return found;
     u32 key_flags = ty_key_flags(index);
-    bool stringish_or_numeric = (key_flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
+    bool stringish_or_numeric = (key_flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
+        (index->flags & TYF_NEVER);
     for (u32 i = 0; i < count; i++) {
         IndexInfo const* info = &infos[i];
         if ((info->key->flags & TYF_STRING) && stringish_or_numeric) return info;
@@ -193,6 +195,15 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     }
     if (object->flags & TYF_ANY) return object;
     if (object->flags & TYF_NEVER) return object;
+    if (index->flags & TYF_NEVER) {
+        // What the index signatures say (never is assignable to every key type), else never (tsc's
+        // getPropertyTypeForIndexType)
+        Ty const* apparent = ty_apparent_type(me, object);
+        if (apparent->flags & TYF_ANY) return apparent;
+        IndexInfo const* info = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_applicable_index_info(me, apparent, index) : nullptr;
+        if (!info) return index;
+        return include_undefined ? with_undefined(me, info->value) : info->value;
+    }
     if (index->flags & TYF_ANY) {
         // What a string index signature says, if there is one (tsc's getPropertyTypeForIndexType: any is assignable to
         // string)

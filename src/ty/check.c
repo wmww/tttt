@@ -952,6 +952,8 @@ static void check_access(
         return;
     }
     if (index->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) return; // TODO: TS2536 against `keyof` of the object
+    // never indexes anything, to never (tsc's getPropertyTypeForIndexType: it is assignable to every key kind)
+    if (index->flags & TYF_NEVER) return;
     if (!(ty_key_flags(index) & key_like)) {
         cstr index_str = ty_to_cstr(me, index);
         error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
