@@ -865,7 +865,10 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
         return;
     }
 
-    // To what isn't a naked type parameter first, remembering which sources that used up
+    // To what isn't a naked type parameter first, every source that is left to every such target, remembering which
+    // sources that used up for the naked type parameter
+    bool* used_up = calloc(sources.len, sizeof(bool));
+    panic_if(!used_up, "out of memory");
     u32 naked_count = 0;
     Ty const* naked = nullptr;
     for (u32 t = 0; t < targets.len; t++) {
@@ -881,7 +884,7 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
             u32 saved = inf->hit_priority;
             inf->hit_priority = UINT32_MAX;
             infer_from(me, inf, sources.data[s], targets.data[t]);
-            if (inf->hit_priority == inf->priority) source_done[s] = true;
+            if (inf->hit_priority == inf->priority) used_up[s] = true;
             if (saved < inf->hit_priority) inf->hit_priority = saved;
         }
     }
@@ -889,7 +892,7 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
         Ty const** unmatched = malloc(sizeof(Ty const*) * sources.len);
         u32 unmatched_len = 0;
         for (u32 s = 0; s < sources.len; s++) {
-            if (!source_done[s]) unmatched[unmatched_len++] = sources.data[s];
+            if (!source_done[s] && !used_up[s]) unmatched[unmatched_len++] = sources.data[s];
         }
         if (naked_count == 1) {
             if (unmatched_len) infer_from(me, inf, ty_union(me, unmatched, unmatched_len, nullptr, (TyList){0}), naked);
@@ -902,6 +905,7 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
         }
         free(unmatched);
     }
+    free(used_up);
     free(source_done);
 }
 
