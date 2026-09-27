@@ -760,6 +760,11 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
     }
 }
 
+void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function) {
+    if (!function->jsdoc_signature_type) return;
+    assign_contextual_signature(me, function, ty_of_node(function->jsdoc_signature_type));
+}
+
 bool ty_function_is_context_sensitive(FunctionImpl const* function) {
     if (vec_generic_item_size(&function->generic.items)) return false;
     for_each (i, vec_function_arg, &function->args) {

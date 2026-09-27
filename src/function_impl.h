@@ -106,6 +106,9 @@ typedef struct FunctionImpl {
     // JavaScript: the variable a function expression initializes (`var F = function () {}`), whose symbol is the class
     // a constructor function makes (a function declaration's is its own symbol). Set by the resolve walk
     Symbol* class_symbol;
+    // Owned, JavaScript: a JSDoc `@type {F}` on the function that isn't a written signature (`{Processor<A, B>}`): its
+    // signature types the parameters like a contextual one (tsc's getSignatureOfTypeTag, ty_function_apply_jsdoc_type())
+    TypeNode* jsdoc_signature_type;
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);

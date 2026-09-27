@@ -485,6 +485,7 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     }
     if (!my binding.has_explicit_type) {
         // A parameter of a function expression gets its type from the contextual signature, initializer or not
+        if (my jsdoc_typed_by) ty_function_apply_jsdoc_type(checker, my jsdoc_typed_by);
         Ty const* contextual = ty_contextual_parameter_type(checker, me);
         if (contextual) return contextual;
         if (my is_rest_parameter && my value.tag == EXPR_IMPLICIT_ANY && my binding.tag == BINDING_IDENTIFIER) {

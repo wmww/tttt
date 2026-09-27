@@ -3013,6 +3013,11 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
         }
         binding->explicit_type.from_jsdoc = true;
     }
+    // A `@type` that isn't a written signature: its signature is resolved by the checker
+    JsDocTag* type_tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
+    if (type_tag && type_tag->type.tag != TYPE_CALLABLE && type_tag->type.tag != TYPE_INTERFACE && !function->jsdoc_signature_type) {
+        function->jsdoc_signature_type = c_new(TypeNode, jsdoc_take_type(type_tag, nullptr));
+    }
     if (!function->ret_explicit && !function->is_constructor) {
         JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_RETURNS);
         if (tag) {

@@ -92,6 +92,8 @@ typedef struct InitializedBinding {
     LazyType lazy_type;
     // The unannotated parameter of a setter: the getter of the same property, whose return type it has
     struct FunctionImpl const* getter;
+    // The parameter of a JavaScript function whose JSDoc `@type` types it (FunctionImpl.jsdoc_signature_type)
+    struct FunctionImpl const* jsdoc_typed_by;
     // JavaScript: `const x = require("m")`, `const { a, b: c } = require("m")`, `const a = require("m").a` declare
     // aliases like imports (tsc's isVariableDeclarationInitializedToBareOrAccessedRequire), one per name (owned)
     struct PortItem* require_ports;

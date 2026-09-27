@@ -26,6 +26,10 @@ void function_impl_drop(FunctionImpl* me) {
     lazy_type_drop(&my lazy_type);
     block_drop(&my body);
     free(my yields);
+    if (my jsdoc_signature_type) {
+        type_drop(my jsdoc_signature_type);
+        free(my jsdoc_signature_type);
+    }
 }
 
 void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted, bool declared) {
@@ -240,6 +244,10 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     type_flow_restore(saved_flow);
     function_scope->no_super = NO_SUPER_NONE;
     type_lookup_names(&my ret, function_scope, errs);
+    if (my jsdoc_signature_type) {
+        type_lookup_names(my jsdoc_signature_type, names, errs);
+        for_each (i, vec_function_arg, &my args) i->initializer.jsdoc_typed_by = me;
+    }
     if (my predicate) {
         TypePredicateNode* predicate = my predicate;
         if (predicate->has_type) type_lookup_names(&predicate->type, function_scope, errs);
@@ -553,6 +561,7 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
     if (!compiler_options()->no_implicit_any || my private_ambient || my jsdoc_type) return;
     for_each (i, vec_function_arg, &my args) {
         if (i->initializer.binding.has_explicit_type || i->initializer.value.tag != EXPR_IMPLICIT_ANY) continue;
+        if (my jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me);
         if (i->initializer.getter || ty_contextual_parameter_type(current_checker, &i->initializer)) continue;
         if (i->rest && i->initializer.binding.tag == BINDING_IDENTIFIER) {
             error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", i->initializer.binding.content_span,
