@@ -1019,7 +1019,7 @@ bool ty_is_constructor_declared(Symbol const* symbol) {
     bool in_constructor = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
-        if (decl->kind != SYMBOL_DECL_ASSIGNMENT) return false;
+        if (decl->kind != SYMBOL_DECL_ASSIGNMENT || decl->jsdoc_type) return false;
         if (decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && decl->assignment != ASSIGNMENT_DECL_THIS_IN_METHOD) {
             return false;
         }
@@ -1040,6 +1040,10 @@ static Ty const* base_class_property_type(Checker* me, Symbol const* member) {
 // constructor; here the union of the constructor's assignments). TODO: a JSDoc type on one of them is the type
 static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     if (is_js_container(symbol, symbol->decls[0].node, span_null)) return ty_namespace_type(me, symbol);
+    // The first JSDoc `@type` of an assignment is the type (tsc's getAnnotatedTypeForAssignmentDeclaration)
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT && symbol->decls[i].jsdoc_type) return ty_of_node(symbol->decls[i].jsdoc_type);
+    }
     Ty const* stack[16];
     Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
     bool constructor_declared = ty_is_constructor_declared(symbol);
@@ -1108,7 +1112,9 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     // `typeof import("./a")`, `import("./a")`, `globalThis`
     if (symbol->is_module || symbol->is_global_this) return ty_namespace_type(me, symbol);
     bool assignments = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT;
-    if (assignments && (symbol->decl_count > 1 || symbol->decls[0].assignment != ASSIGNMENT_DECL_PROPERTY)) {
+    if (assignments && (symbol->decl_count > 1 || symbol->decls[0].assignment != ASSIGNMENT_DECL_PROPERTY ||
+        symbol->decls[0].jsdoc_type)
+    ) {
         return assignment_symbol_type(me, symbol);
     }
     SymbolDecl const* only = nullptr;

@@ -351,6 +351,8 @@ typedef struct BinaryOpExpr {
     bool indirect_call; // `(0, o.f)()`: the comma is how to call f without `this` (tsc's isIndirectCall)
     // `<a /><b />` where one element is expected: a comma made up by the parser, which already reported TS2657
     bool jsx_siblings;
+    // Owned, `/** @type {T} */ a.b = v` in JavaScript: the declared type of what the assignment declares (SymbolDecl.jsdoc_type)
+    TypeNode* jsdoc_type;
 } BinaryOpExpr;
 
 static inline void expr_mark_binary_operand(Expr* me) {

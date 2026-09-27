@@ -512,6 +512,10 @@ void expr_drop(Expr* me) {
         case EXPR_BINARY_OP:
             expr_drop(&my binary_op->left);
             expr_drop(&my binary_op->right);
+            if (my binary_op->jsdoc_type) {
+                type_drop(my binary_op->jsdoc_type);
+                free(my binary_op->jsdoc_type);
+            }
             free(my binary_op);
             break;
 
@@ -1145,6 +1149,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             BinaryOp op = my binary_op->op;
             Expr* left = &my binary_op->left;
             Expr* right = &my binary_op->right;
+            if (my binary_op->jsdoc_type) type_lookup_names(my binary_op->jsdoc_type, names, errs);
             // `o.m = function () {}` (or `??=` & co.): `this` in there may be `o`
             if (binary_op_is_assignment(op) && right->tag == EXPR_FUNCTION && !span_valid(right->function->arrow_span) &&
                 left->tag == EXPR_PROPERTY
@@ -2498,6 +2503,7 @@ static void binary_expr_typecheck_rest(Expr const* me, ErrorCtx* errs) {
 // The binary case of expr_typecheck(). A chain (`a + b + c + ...`) is walked down its left spine with a loop, not a
 // recursion per operand: generated code has chains long enough to overflow the stack (tsc checks them iteratively too)
 static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
+    if (my binary_op->jsdoc_type) type_typecheck(my binary_op->jsdoc_type, errs);
     if (my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
         !expr_is_perenthisized(&my binary_op->left)
     ) {

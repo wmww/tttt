@@ -140,6 +140,9 @@ typedef struct SymbolDecl {
     AssignmentDeclKind assignment; // SYMBOL_DECL_ASSIGNMENT only
     u32 flags; // What this declaration added to the symbol's flags
     void const* node;
+    // SYMBOL_DECL_ASSIGNMENT: the JSDoc `@type` of the assignment (`/** @type {T} */ this.x = v`), which is the
+    // declared type (tsc's getAnnotatedTypeForAssignmentDeclaration)
+    struct TypeNode const* jsdoc_type;
     Span name;
     Span full;
     // The scope (block) it was declared in, when scope_init_declaration() declared it: the symbols baseline lists a

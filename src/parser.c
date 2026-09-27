@@ -2453,10 +2453,13 @@ typedef struct JsDocTag {
     bool nested;
     // `@returns {x is T}`, `{asserts x}`: owned, `type` is then the return type the predicate goes with
     TypePredicateNode* predicate;
+    bool has_default;
+    TypeNode default_type; // `@template [T=D]`, owned while has_default
 } JsDocTag;
 
 static void jsdoc_tag_drop(JsDocTag* me) {
     if (my has_type) type_drop(&my type);
+    if (my has_default) type_drop(&my default_type);
     if (my predicate) {
         if (my predicate->has_type) type_drop(&my predicate->type);
         free(my predicate);
@@ -2537,6 +2540,26 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     p.shared->in_jsdoc = outer_in_jsdoc;
     p.shared->jsdoc_end = outer_end;
     parse_fail(&p);
+}
+
+// A type without braces at `*pos` (`@template [T=D]`'s default), moves `*pos` past it
+static bool parse_jsdoc_bare_type(Parser* parent, const char** pos, const char* end, TypeNode* ret) {
+    Parser p = parser(parent);
+    p.pos = *pos;
+    p.whitespace_end = nullptr;
+    bool outer_in_jsdoc = p.shared->in_jsdoc;
+    const char* outer_end = p.shared->jsdoc_end;
+    p.shared->in_jsdoc = true;
+    p.shared->jsdoc_end = end;
+    hop_whitespace(&p);
+    bool parsed = parse_type(&p, TYPE_PRECEDENCE_NULL, ret) && p.pos <= end;
+    if (parsed) {
+        *pos = p.pos;
+    }
+    p.shared->in_jsdoc = outer_in_jsdoc;
+    p.shared->jsdoc_end = outer_end;
+    parse_fail(&p);
+    return parsed;
 }
 
 static const char* jsdoc_parse_name(const char* c, const char* end, Span* ret, SourceFile const* source) {
@@ -2645,6 +2668,16 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 tag.name = span_make(source, name_start, c);
                 tag.bracketed = bracketed;
                 if (bracketed) {
+                    while (c < end && (*c == ' ' || *c == '\t')) c++;
+                    if (c < end && *c == '=') {
+                        c++;
+                        TypeNode type;
+                        if (parse_jsdoc_bare_type(parent, &c, end, &type)) {
+                            if (tag.has_default) type_drop(&tag.default_type);
+                            tag.default_type = type;
+                            tag.has_default = true;
+                        }
+                    }
                     while (c < end && *c != ']' && *c != '\n') c++;
                     if (c < end && *c == ']') c++;
                 }
@@ -2713,7 +2746,7 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
                 owner = JSDOC_TAG_OTHER;
             }
         } else {
-            if (ch == '`' && !line_start) in_backticks = !in_backticks;
+            if (ch == '`') in_backticks = !in_backticks;
             line_start = false;
             c++;
         }
@@ -2848,6 +2881,11 @@ static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
             item.extends = jsdoc_take_type(i, nullptr);
             item.extends.from_jsdoc = false;
             item.extends_explicit = true;
+        }
+        if (i->has_default) {
+            item.fallback = i->default_type;
+            item.fallback_explicit = true;
+            i->has_default = false;
         }
         vec_generic_item_push(&generic->items, item);
     }
@@ -3017,6 +3055,11 @@ static Generic jsdoc_template_generic(VecJsDocTag* tags) {
             item.extends.from_jsdoc = false;
             item.extends_explicit = true;
         }
+        if (i->has_default) {
+            item.fallback = i->default_type;
+            item.fallback_explicit = true;
+            i->has_default = false;
+        }
         vec_generic_item_push(&ret.items, item);
     }
     return ret;
@@ -3118,6 +3161,13 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
         }
         vec_jsdoc_tag_drop(&tags);
     }
+}
+
+// A function or arrow function expression is a JSDoc host of its own (`f(/** @param {T} x */ (x) => {})`)
+static void jsdoc_apply_function_expression(Parser* p, Expr* function) {
+    VecJsDocTag tags = {0};
+    if (jsdoc_before(p, span_start_ptr(function->outer_span), &tags)) jsdoc_apply_function(&tags, function->function);
+    vec_jsdoc_tag_drop(&tags);
 }
 
 static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
@@ -4191,12 +4241,12 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         VecJsDocTag tags = {0};
         FunctionImpl* function = jsdoc_function_of(&item.value);
         if ((function || item.tag == OBJECT_ITEM_PROPERTY) && jsdoc_before(&p, a.start, &tags)) {
-            if (function) {
-                jsdoc_apply_function(&tags, function);
-            } else {
-                JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
-                if (tag) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
-            }
+            // A `@type` that isn't a written signature (`{F["tap"]}`) is the declared type, which a function value is
+            // contextually typed by
+            JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
+            bool signature = tag && (tag->type.tag == TYPE_CALLABLE || tag->type.tag == TYPE_INTERFACE);
+            if (tag && !(function && signature)) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+            if (function) jsdoc_apply_function(&tags, function);
         }
         vec_jsdoc_tag_drop(&tags);
     }
@@ -5704,6 +5754,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             parse_success(&sub_p);
             expr_drop(left_and_ret);
             *left_and_ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+            if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, left_and_ret);
             return parse_success(&p);
         } else {
             parse_fail(&sub_p);
@@ -6536,8 +6587,10 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_left_unary_op_expr(&p, ctx, ret)) {
     } else if (parse_function_keyword_function(&p, false, &parsed.function)) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+        if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (parse_async_function_expr(&p, ctx, &parsed.function)) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+        if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
         *ret = expr_identifier((IdentifierExpr){
             .name = span_from(a),
@@ -6557,6 +6610,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         parse_arrow_function(&p, ctx, function_flags_null, arrow_tristate == TRISTATE_TRUE, &parsed.function)
     ) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+        if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (hop_char(&p, '(')) {
         // Committed like tsc's parseParenthesizedExpression: `()` is missing its expression
         hop_whitespace(&p);
@@ -8549,8 +8603,15 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             break;
         case STATEMENT_EXPR:
             if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
-                FunctionImpl* function = jsdoc_function_of(&statement->expr.binary_op->right);
-                if (function) jsdoc_apply_function(&tags, function);
+                BinaryOpExpr* assignment = statement->expr.binary_op;
+                FunctionImpl* function = jsdoc_function_of(&assignment->right);
+                if (function) {
+                    jsdoc_apply_function(&tags, function);
+                } else {
+                    // The declared type of what the assignment declares (`this.x`, `exports.x`, `module.exports`)
+                    JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
+                    if (tag) assignment->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                }
             }
             break;
         case STATEMENT_RETURN_EXPR:

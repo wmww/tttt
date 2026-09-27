@@ -2051,6 +2051,12 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 if (!name) type = ty_object_literal_accessor_type(me, i->value.function, i->tag == OBJECT_ITEM_GETTER);
                 break;
             case OBJECT_ITEM_METHOD:
+                if (i->jsdoc_type) {
+                    member_ctx.contextual = ty_of_node(i->jsdoc_type);
+                    check_with(me, &i->value, member_ctx);
+                    type = member_ctx.contextual;
+                    break;
+                }
                 type = check_with(me, &i->value, member_ctx);
                 break;
             default:

@@ -831,7 +831,7 @@ const baselines = {
         types: true,
     },
     'amdLikeInputDeclarationEmit': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1376,9 +1376,9 @@ const baselines = {
         types: true,
     },
     'arrowFunctionJSDocAnnotation': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionMissingCurlyWithSemicolon': {
         errors: true,
@@ -3183,7 +3183,7 @@ const baselines = {
     'checkJsFiles7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsFiles_noErrorLocation': {
         errors: true,
@@ -6826,7 +6826,7 @@ const baselines = {
         types: false,
     },
     'contravariantOnlyInferenceFromAnnotatedFunctionJs': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -19221,7 +19221,7 @@ const baselines = {
         types: true,
     },
     'jsFileClassPropertyType2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -51773,7 +51773,7 @@ const baselines = {
     'jsDeclarationsTypedefAndImportTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsTypedefAndLatebound': {
         errors: true,
@@ -52666,9 +52666,9 @@ const baselines = {
         types: true,
     },
     'typeTagModuleExports': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeTagNoErasure': {
         errors: true,
@@ -52681,9 +52681,9 @@ const baselines = {
         types: false,
     },
     'typeTagPrototypeAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeTagWithGenericSignature': {
         errors: true,
@@ -60038,7 +60038,7 @@ const baselines = {
     'annotatedThisPropertyInitializerDoesntNarrow': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentToVoidZero1': {
         errors: true,
@@ -60128,7 +60128,7 @@ const baselines = {
     'constructorFunctions3': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructorFunctionsStrict': {
         errors: false,
