@@ -136,12 +136,12 @@ const baselines = {
         types: true,
     },
     'ExportAssignment7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ExportAssignment8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11251,7 +11251,7 @@ const baselines = {
         types: true,
     },
     'errorForConflictingExportEqualsValue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11691,7 +11691,7 @@ const baselines = {
         types: true,
     },
     'es5ExportEquals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -12661,7 +12661,7 @@ const baselines = {
         types: false,
     },
     'exportAssignmentWithExports': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48951,7 +48951,7 @@ const baselines = {
         types: false,
     },
     'exportAssignmentAndDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57016,12 +57016,12 @@ const baselines = {
         types: true,
     },
     'parserExportAssignment7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserExportAssignment8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

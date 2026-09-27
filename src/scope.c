@@ -945,6 +945,12 @@ Span symbol_decl_error_span(SymbolDecl const* decl) {
 void scope_check_duplicate_exports(Scope* me) {
     if (!my container || !my container->exports) return;
     SymbolTable const* exports = my container->exports;
+    Symbol const* export_equals = symbol_table_get(exports, c_sv("export="));
+    if (export_equals && exports->count > 1 && export_equals->decl_count) {
+        // (tsc's checkExternalModuleExports)
+        error_ctx_error_d(my errs, export_equals->decls[0].full, 2309,
+            "An export assignment cannot be used in a module with other exported elements.");
+    }
     for (u32 i = 0; i < exports->count; i++) {
         Symbol const* symbol = exports->entries[i].symbol;
         if (symbol->flags & SYMBOL_NAMESPACE) continue; // (Namespaces and enums merge)
