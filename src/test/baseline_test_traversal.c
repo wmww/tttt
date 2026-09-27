@@ -546,6 +546,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             if (my identifier->target && !span_valid(my identifier->target->name_span)) {
                 break;
             }
+            bool heritage = ctx->heritage_type;
+            ctx->heritage_type = false;
             VecSpan so_far = vec_span_init();
             for_each (i, vec_span, &my identifier->namespaces) {
                 intptr_t index = i_index;
@@ -554,6 +556,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     nullptr;
                 ctx->any_keeps_underline = true; // Part of a qualified name
                 baseline_test_case_add_type_node(ctx, *i, &type_any);
+                if (heritage && !decl) break;
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declaration_get_spans(decl),
                     .allow_declaration_empty = true,
@@ -566,7 +569,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             vec_span_drop(&so_far);
             if (!span_valid(my identifier->name)) break; // A bare `import("./a")`
             Symbol const* shown = shown_declaration(my identifier->symbol, my identifier->target);
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            if (!(heritage && !shown)) baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_clone(my identifier->namespaces),
                 .declarations = declaration_get_spans(shown),
                 .allow_declaration_empty = true,
@@ -938,6 +941,42 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
     }
 }
 
+// An expression where a heritage clause means a type (`implements A?.B`, `interface I extends f()`), which the
+// checker rejected: tsc's walk takes the property accesses on top of it for type nodes (isPartOfTypeNode), which
+// get no types line, what's under them is an expression like any other
+static void heritage_invalid_compile_test_info(Expr* expr, BaselineTestCase* ctx) {
+    Expr* e = expr->tag == EXPR_GENERIC_PARAMS ? &expr->generic_params->expr : expr;
+    u32 saved = ctx->hidden_type_span_count;
+    while (e->tag == EXPR_PROPERTY && e->property->form == PROPERTY_EXPR_DOT && ctx->hidden_type_span_count + 2 <= c_arraylen(ctx->hidden_type_spans)) {
+        ctx->hidden_type_spans[ctx->hidden_type_span_count++] = e->inner_span;
+        ctx->hidden_type_spans[ctx->hidden_type_span_count++] = e->property->prop.outer_span;
+        e = &e->property->expr;
+    }
+    expr_compile_test_info(expr, ctx);
+    ctx->hidden_type_span_count = saved;
+}
+
+static void heritage_type_compile_test_info(TypeNode const* type, BaselineTestCase* ctx) {
+    ctx->heritage_type = type->tag == TYPE_IDENTIFIER;
+    type_compile_test_info(type, ctx);
+    ctx->heritage_type = false;
+}
+
+// An element of a class's `extends` clause: the base type (instance) if there is one, else the expression's
+static void class_extends_compile_test_info(Expr* extends, Ty const* instance, BaselineTestCase* ctx) {
+    bool generic = extends->tag == EXPR_GENERIC_PARAMS;
+    Expr* base = generic ? &extends->generic_params->expr : extends;
+    if (instance && !(instance->flags & TYF_ANY)) {
+        baseline_test_case_add_type_recursive(ctx, base->outer_span, base->inner_span, instance);
+        expr_compile_test_info_inner(base, ctx);
+    } else {
+        expr_compile_test_info(base, ctx);
+    }
+    if (generic) {
+        for_each (i, vec_spanned_type, &extends->generic_params->params) type_compile_test_info(&i->type, ctx);
+    }
+}
+
 void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase* ctx) {
     for_each (i, vec_expr, &my decorators) {
         expr_compile_test_info(i, ctx);
@@ -959,29 +998,18 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         }
     }
     generic_compile_test_info(&my generic, ctx);
-    if (my extends.tag != EXPR_IMPLICIT_ANY) {
-        // tsc shows the base type (getBaseTypes, with its arguments) at the base expression, not `typeof Base`, unless
-        // there is none or it's `any`; then the name's parts
-        bool generic = my extends.tag == EXPR_GENERIC_PARAMS;
-        Expr* base = generic ? &my extends.generic_params->expr : &my extends;
-        Ty const* instance = ty_class_base_instance(current_checker, me);
-        // (A class that is its own base has none: then it's the expression's type, like any other)
-        if (instance && my symbol && ty_has_base_type(current_checker, instance, ty_declared_type_of(current_checker, my symbol))) {
-            instance = nullptr;
-        }
-        if (instance && !(instance->flags & TYF_ANY)) {
-            baseline_test_case_add_type_recursive(ctx, base->outer_span, base->inner_span, instance);
-            expr_compile_test_info_inner(base, ctx);
-        } else {
-            expr_compile_test_info(base, ctx);
-        }
-        if (generic) {
-            for_each (i, vec_spanned_type, &my extends.generic_params->params) type_compile_test_info(&i->type, ctx);
-        }
+    // tsc shows the base type (getBaseTypes, with its arguments) at the base expression, not `typeof Base`, unless
+    // there is none or it's `any`; then the name's parts. At every element of every `extends` clause
+    Ty const* instance = my extends.tag == EXPR_IMPLICIT_ANY ? nullptr : ty_class_base_instance(current_checker, me);
+    // (A class that is its own base has none: then it's the expression's type, like any other)
+    if (instance && my symbol && ty_has_base_type(current_checker, instance, ty_declared_type_of(current_checker, my symbol))) {
+        instance = nullptr;
     }
-    for_each (i, vec_type, &my implements) {
-        type_compile_test_info(i, ctx);
-    }
+    if (my extends.tag != EXPR_IMPLICIT_ANY) class_extends_compile_test_info(&my extends, instance, ctx);
+    for_each (i, vec_spanned_type, &my implements) heritage_type_compile_test_info(&i->type, ctx);
+    for_each (i, vec_expr, &my unchecked_extends) class_extends_compile_test_info(i, instance, ctx);
+    for_each (i, vec_type, &my unchecked_implements) heritage_type_compile_test_info(i, ctx);
+    for_each (i, vec_expr, &my invalid_implements) heritage_invalid_compile_test_info(i, ctx);
     Symbol const* outer_class = ctx->class_symbol;
     Symbol const* outer_container = ctx->member_container;
     ctx->class_symbol = my symbol;
@@ -1040,9 +1068,9 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
         });
     }
     generic_compile_test_info(&my generic, ctx);
-    for_each (i, vec_spanned_type, &my extends) {
-        type_compile_test_info(&i->type, ctx);
-    }
+    for_each (i, vec_spanned_type, &my extends) heritage_type_compile_test_info(&i->type, ctx);
+    for_each (i, vec_type, &my unchecked_extends) heritage_type_compile_test_info(i, ctx);
+    for_each (i, vec_expr, &my invalid_extends) heritage_invalid_compile_test_info(i, ctx);
     Ty const* outer_owner = ctx->member_owner;
     ctx->member_owner = my symbol && !(my symbol->flags & SYMBOL_CLASS) ? ty_declared_type_of(current_checker, my symbol) : nullptr;
     Symbol const* outer_container = ctx->member_container;

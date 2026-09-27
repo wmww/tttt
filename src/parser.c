@@ -1263,6 +1263,8 @@ typedef enum ParsingContext {
     PARSING_ARGUMENT_EXPRESSIONS,
     PARSING_ARRAY_LITERAL_MEMBERS,
     PARSING_VARIABLE_DECLARATIONS,
+    PARSING_HERITAGE_CLAUSES,
+    PARSING_HERITAGE_CLAUSE_ELEMENT,
     PARSING_CONTEXT_COUNT,
 } ParsingContext;
 
@@ -1284,6 +1286,22 @@ static bool tok_is_start_of_parameter_type(Tok t) {
 static bool tok_is_start_of_parameter(Tok t) {
     return tok_is(t, "...") || tok_is(t, "{") || tok_is(t, "[") || tok_is(t, "@") || tok_is_modifier(t) ||
         (*t.start == '#' && tok_is_word(t)) || tok_is_identifier(t) || tok_is_start_of_parameter_type(t);
+}
+
+// tsc's isListElement(HeritageClauseElement): an expression, but `{}` only if it can't be the body, and not the keyword
+// of the next clause (`extends A implements B`)
+static bool tok_is_heritage_clause_element(Parser* p, Tok t, bool in_error_recovery) {
+    if (tok_is(t, "{")) {
+        // tsc's isValidHeritageClauseObjectLiteral: `extends {} {`, `extends {},`, `extends {} extends`...
+        Tok next = tok_next(p, t);
+        if (!tok_is(next, "}")) return true;
+        Tok after = tok_next(p, next);
+        return tok_is(after, ",") || tok_is(after, "{") || tok_is(after, "extends") || tok_is(after, "implements");
+    }
+    if ((tok_is(t, "extends") || tok_is(t, "implements")) && tok_is_start_of_expression(p, tok_next(p, t))) {
+        return false;
+    }
+    return in_error_recovery ? tok_is_identifier(t) : tok_is_start_of_left_hand_side_expression(p, t);
 }
 
 // tsc's isListElement with inErrorRecovery (the stricter form, which is all the abort rule asks)
@@ -1315,6 +1333,10 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
             return tok_is(t, "...") || tok_is_start_of_expression(p, t);
         case PARSING_VARIABLE_DECLARATIONS:
             return tok_is(t, "{") || tok_is(t, "[") || (*t.start == '#' && tok_is_word(t)) || tok_is_identifier(t);
+        case PARSING_HERITAGE_CLAUSES:
+            return tok_is(t, "extends") || tok_is(t, "implements");
+        case PARSING_HERITAGE_CLAUSE_ELEMENT:
+            return tok_is_heritage_clause_element(p, t, true);
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1344,6 +1366,10 @@ static bool list_is_terminator(ParsingContext ctx, Tok t) {
         case PARSING_VARIABLE_DECLARATIONS:
             // tsc's isVariableDeclaratorListTerminator
             return tok_can_parse_semicolon(t) || tok_is(t, "in") || tok_is(t, "of") || tok_is(t, "=>");
+        case PARSING_HERITAGE_CLAUSES:
+            return tok_is(t, "{") || tok_is(t, "}");
+        case PARSING_HERITAGE_CLAUSE_ELEMENT:
+            return tok_is(t, "{") || tok_is(t, "extends") || tok_is(t, "implements");
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1400,6 +1426,12 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
             } else {
                 parse_error(p, span, 1134, "Variable declaration expected.");
             }
+            break;
+        case PARSING_HERITAGE_CLAUSES:
+            parse_error(p, span, 1179, "Unexpected token. '{' expected.");
+            break;
+        case PARSING_HERITAGE_CLAUSE_ELEMENT:
+            parse_error(p, span, 1109, "Expression expected.");
             break;
         case PARSING_CONTEXT_COUNT: impossible;
     }
@@ -3461,6 +3493,200 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     return parse_success(&p);
 }
 
+// The heritage clauses of a class or interface, as tsc parses them: any number of `extends` and `implements` clauses
+// in any order, each a list of expressions with type arguments. What tsc's checker doesn't look at (a second clause,
+// a class's second base) is kept only for the baselines; checkGrammarClassDeclarationHeritageClauses and
+// checkGrammarInterfaceDeclaration's complaints about it are grammar errors reported here
+typedef struct HeritageClauses {
+    bool is_class;
+    Expr base; // A class's: the first element of its first `extends` clause
+    Span base_clause; // `extends A<T>`
+    VecExpr unchecked_exprs; // A class's other `extends` elements
+    // Entity names (`A.B<T>`) of the checked clause: a class's first `implements` clause, an interface's first `extends`
+    VecSpannedType types;
+    VecTypeNode unchecked_types; // Entity names of the other clauses
+    // Other expressions (`A?.B`, `f()`), which the checker rejects (TS2499/TS2500) in the checked clause, and only
+    // resolves in the others
+    VecExpr invalid;
+    VecExpr unchecked_invalid;
+} HeritageClauses;
+
+// An `extends` element of a class or an interface
+static bool heritage_is_entity_name(Expr const* e) {
+    if (e->tag == EXPR_GENERIC_PARAMS) e = &e->generic_params->expr;
+    while (e->tag == EXPR_PROPERTY && e->property->form == PROPERTY_EXPR_DOT && !e->property->optional_chain) {
+        e = &e->property->expr;
+    }
+    return e->tag == EXPR_IDENTIFIER && !e->identifier.keyword;
+}
+
+// tsc's parseExpressionWithTypeArguments. Where a type is meant (`implements`, an interface's `extends`) an entity
+// name is parsed again as the type reference it means
+// tsc's parseExpressionWithTypeArguments: a left-hand side expression and type arguments (in JavaScript too, where
+// the expression parser leaves `<` alone)
+static void parse_heritage_expr(Parser* p, Expr* ret) {
+    ExprCtx ctx = expr_ctx_null;
+    ctx.reject_operators = true;
+    Anchor a = anchor(p);
+    expect_expr(p, ctx, ret);
+    if (ret->tag == EXPR_GENERIC_PARAMS || !p->shared->source->is_js) return;
+    Parser gp = parser(p);
+    hop_whitespace(&gp);
+    VecSpannedType params;
+    if (*gp.pos == '<' && parse_generic_params(&gp, false, &params)) {
+        parse_success(&gp);
+        *ret = expr_generic_params(span_from(a), c_new(GenericParamsExpr, { .expr = *ret, .params = params }));
+    } else {
+        parse_fail(&gp);
+    }
+}
+
+// An element of a heritage clause. Where a type is meant (`implements`, an interface's `extends`) an entity name is
+// parsed again as the type reference it means
+static void parse_heritage_element(Parser* p, HeritageClauses* h, bool is_extends, bool checked, Span keyword, u32 index) {
+    if (h->is_class && is_extends) {
+        Expr e;
+        parse_heritage_expr(p, &e);
+        if (checked && index == 0) {
+            h->base = e;
+            h->base_clause = span_make(p->shared->source, span_start_ptr(keyword), p->pos);
+        } else {
+            vec_expr_push(&h->unchecked_exprs, e);
+        }
+        return;
+    }
+    Parser ep = parser(p);
+    const char* start = ep.pos;
+    Expr e;
+    parse_heritage_expr(&ep, &e);
+    if (heritage_is_entity_name(&e)) {
+        const char* end = ep.pos;
+        parse_fail(&ep);
+        Parser tp = parser(p);
+        TypeNode t;
+        if (parse_type(&tp, TYPE_PRECEDENCE_OPERATOR, &t)) {
+            if (tp.pos == end) {
+                Span span = span_make(p->shared->source, start, end);
+                parse_success(&tp);
+                expr_drop(&e);
+                if (checked) {
+                    vec_spanned_type_push(&h->types, spanned_type(span, t));
+                } else {
+                    vec_type_push(&h->unchecked_types, t);
+                }
+                return;
+            }
+            type_drop(&t);
+        }
+        parse_fail(&tp);
+        expr_drop(&e);
+        parse_heritage_expr(p, &e);
+    } else {
+        parse_success(&ep);
+    }
+    vec_expr_push(checked ? &h->invalid : &h->unchecked_invalid, e);
+}
+
+// The expressions that aren't entity names: the checked clause's first (checked_ret of them), then the others'
+static void heritage_take_invalid(HeritageClauses* h, VecExpr* ret, u32* checked_ret) {
+    *checked_ret = (u32)vec_expr_size(&h->invalid);
+    *ret = h->invalid;
+    for_each (i, vec_expr, &h->unchecked_invalid) vec_expr_push(ret, *i);
+    h->unchecked_invalid.size = 0; // (The expressions were moved)
+    vec_expr_drop(&h->unchecked_invalid);
+}
+
+// tsc's parseHeritageClauses (parseList(HeritageClauses, parseHeritageClause))
+static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
+    hop_whitespace(p);
+    Tok first = tok_peek(p);
+    if (!tok_is(first, "extends") && !tok_is(first, "implements")) return;
+    bool grammar_done = false;
+    bool seen_extends = false;
+    bool seen_implements = false;
+    bool first_extends = true;
+    bool first_implements = true;
+    u32 saved_clauses = list_enter(p, PARSING_HERITAGE_CLAUSES);
+    while (true) {
+        hop_whitespace(p);
+        Tok t = tok_peek(p);
+        if (list_is_terminator(PARSING_HERITAGE_CLAUSES, t)) break;
+        bool is_extends = tok_is(t, "extends");
+        if (!is_extends && !tok_is(t, "implements")) {
+            if (list_abort_or_skip(p, PARSING_HERITAGE_CLAUSES)) break;
+            continue;
+        }
+        Span keyword = span_make(p->shared->source, t.start, t.end);
+        p->pos = t.end;
+        // The clause the checker looks at: the first `extends` clause, a class's first `implements` clause
+        bool checked = is_extends ? first_extends : (h->is_class && first_implements);
+        if (is_extends) first_extends = false;
+        else first_implements = false;
+
+        // tsc's parseDelimitedList(HeritageClauseElement, parseExpressionWithTypeArguments)
+        u32 count = 0;
+        Span trailing_comma = span_null;
+        Span second_element = span_null;
+        u32 saved_elements = list_enter(p, PARSING_HERITAGE_CLAUSE_ELEMENT);
+        while (true) {
+            hop_whitespace(p);
+            Tok e = tok_peek(p);
+            if (tok_is_heritage_clause_element(p, e, false)) {
+                const char* start = p->pos;
+                if (count == 1) second_element = span_make(p->shared->source, e.start, e.end);
+                parse_heritage_element(p, h, is_extends, checked, keyword, count);
+                count++;
+                trailing_comma = span_null;
+                hop_whitespace(p);
+                if (hop_char(p, ',')) {
+                    trailing_comma = span_from_previous_char(p);
+                    continue;
+                }
+                if (list_is_terminator(PARSING_HERITAGE_CLAUSE_ELEMENT, tok_peek(p))) break;
+                expect_char(p, ',');
+                if (p->pos == start) hop_token(p);
+                continue;
+            }
+            if (list_is_terminator(PARSING_HERITAGE_CLAUSE_ELEMENT, e)) break;
+            if (list_abort_or_skip(p, PARSING_HERITAGE_CLAUSE_ELEMENT)) break;
+        }
+        list_leave(p, saved_elements);
+
+        // checkGrammarClassDeclarationHeritageClauses, checkGrammarInterfaceDeclaration: the first complaint about
+        // the clauses ends the check, then checkGrammarHeritageClause for each clause until then
+        if (grammar_done) continue;
+        if (is_extends) {
+            if (seen_extends) {
+                parse_error(p, keyword, 1172, "'extends' clause already seen.");
+                grammar_done = true;
+            } else if (seen_implements) {
+                parse_error(p, keyword, 1173, "'extends' clause must precede 'implements' clause.");
+                grammar_done = true;
+            } else if (h->is_class && count > 1) {
+                parse_error(p, second_element, 1174, "Classes can only extend a single class.");
+                grammar_done = true;
+            }
+            seen_extends = true;
+        } else if (!h->is_class) {
+            parse_error(p, keyword, 1176, "Interface declaration cannot have 'implements' clause.");
+            grammar_done = true;
+        } else if (seen_implements) {
+            parse_error(p, keyword, 1175, "'implements' clause already seen.");
+            grammar_done = true;
+        } else {
+            seen_implements = true;
+        }
+        if (grammar_done) continue;
+        if (span_valid(trailing_comma)) {
+            parse_error(p, trailing_comma, 1009, "Trailing comma not allowed.");
+        } else if (count == 0) {
+            Span at = span_make(p->shared->source, span_end_ptr(keyword), span_end_ptr(keyword));
+            parse_error(p, at, 1097, "'", keyword, "' list cannot be empty.");
+        }
+    }
+    list_leave(p, saved_clauses);
+}
+
 static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -3483,76 +3709,25 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
     }
     hop_whitespace(&p);
 
-    vec_spanned_type extends = {0};
+    HeritageClauses heritage = { .is_class = false };
+    parse_heritage_clauses(&p, &heritage);
+    hop_whitespace(&p);
     Interface interface;
-    if (hop_start_if_ends_on_word_break(&p, "extends")) {
-        hop_whitespace(&p);
-
-        Span last_comma_span = span_null;
-        Span second_last_comma_span = span_null;
-        TypeNode last_type = type_any;
-        Span last_type_span = span_null;
-
-        while (*p.pos) {
-            TypeNode t;
-            Anchor type_start = anchor(&p);
-            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-                if (span_valid(last_type_span)) {
-                    vec_spanned_type_push(&extends, spanned_type(last_type_span, last_type));
-                }
-                last_type_span = span_from(type_start);
-                last_type = t;
-                if (!span_valid(last_comma_span) && last_type.tag == TYPE_INTERFACE) {
-                    second_last_comma_span = span_null;
-                    break;
-                }
-                hop_whitespace(&p);
-            } else {
-                if (!span_valid(last_type_span) || span_valid(last_comma_span)) {
-                    hop_whitespace(&p);
-                    expected_expression_error(&p);
-                } else {
-                    break;
-                }
-            }
-
-            second_last_comma_span = last_comma_span;
-
-            if (*p.pos == '{' || !*p.pos) {
-                last_comma_span = span_null;
-            } else if (expect_char(&p, ',')) {
-                last_comma_span = span_from_previous_char(&p);
-            } else {
-                last_comma_span = hop_token_get_span(&p);
-            }
-            hop_whitespace(&p);
-        }
-
-        if (last_type.tag == TYPE_INTERFACE) {
-            interface = last_type.interface;
-            if (span_valid(second_last_comma_span)) {
-                parse_error(&p, second_last_comma_span, 1009, "Trailing comma not allowed.");
-            }
-        } else {
-            vec_spanned_type_push(&extends, spanned_type(last_type_span, last_type));
-            interface = (Interface){0};
-            expected_token_error(&p, "{");
-        }
-    } else {
-        if (!parse_interface(&p, &interface)) {
-            interface = (Interface){0};
-            expected_token_error(&p, "{");
-            hop_token(&p);
-        }
+    if (!parse_interface(&p, &interface)) {
+        interface = (Interface){0};
+        expected_token_error(&p, "{");
+        hop_token(&p);
     }
 
     *ret = (InterfaceDecl) {
         .name = name,
         .full_span = span_from(a),
         .generic = generic,
-        .extends = extends,
+        .extends = heritage.types,
+        .unchecked_extends = heritage.unchecked_types,
         .type = type_interface(interface),
     };
+    heritage_take_invalid(&heritage, &ret->invalid_extends, &ret->invalid_extends_checked);
     return parse_success(&p);
 }
 
@@ -5169,41 +5344,14 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
         ret->generic = (Generic){0};
     }
 
-    Anchor extends_start = anchor(&p);
-    if (hop_start_if_ends_on_word_break(&p, "extends")) {
-        hop_whitespace(&p);
-
-        ExprCtx ctx = expr_ctx_null;
-        ctx.reject_operators = true;
-        expect_expr(&p, ctx, &ret->extends);
-        ret->extends_clause = span_from(extends_start);
-        hop_whitespace(&p);
-
-        if (hop_char(&p, ',')) {
-            // TODO consume and give correct error when multiple classes are extended
-            parse_error(&p, span_from_previous_char(&p), 1009, "Trailing comma not allowed.");
-            hop_whitespace(&p);
-        }
-    }
-
-    if (hop_start_if_ends_on_word_break(&p, "implements")) {
-        hop_whitespace(&p);
-
-        while (true) {
-            TypeNode t;
-            if (!expect_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-                break;
-            }
-
-            vec_type_push(&ret->implements, t);
-
-            hop_whitespace(&p);
-            if (!hop_char(&p, ',')) {
-                break;
-            }
-            hop_whitespace(&p);
-        }
-    }
+    HeritageClauses heritage = { .is_class = true, .base = expr_implicit_any_no_span };
+    parse_heritage_clauses(&p, &heritage);
+    ret->extends = heritage.base;
+    ret->extends_clause = heritage.base_clause;
+    ret->implements = heritage.types;
+    heritage_take_invalid(&heritage, &ret->invalid_implements, &ret->invalid_implements_checked);
+    ret->unchecked_extends = heritage.unchecked_exprs;
+    ret->unchecked_implements = heritage.unchecked_types;
 
     if (!expect_char(&p, '{')) {
         ret->full_span = span_from(a);
@@ -9173,9 +9321,9 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
 
 static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
-        1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071, 1079,
-        1089, 1090, 1096, 1120, 1162, 1184, 1191, 1193, 1242, 1243, 1244, 1248, 1253, 1255, 1275, 1276, 1319, 1491, 1495,
-        18010, 18019,
+        1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
+        1079, 1089, 1090, 1096, 1097, 1120, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1242, 1243, 1244,
+        1248, 1253, 1255, 1275, 1276, 1319, 1491, 1495, 18010, 18019,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;

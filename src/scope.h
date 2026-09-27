@@ -248,6 +248,9 @@ typedef struct Symbol {
 // The symbol that gives the name the given meaning: itself, or for an alias its target (null if there is none).
 // Placeholders mean everything
 Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning);
+/// tsc's isPrimitiveTypeName: the type keywords that are no symbol (`any`, `string`, `number`, `boolean`, `never`,
+/// `unknown`)
+bool is_primitive_type_name(csview name);
 // The symbol whose exports are the members of a namespace, enum or module symbol
 static inline Symbol const* symbol_members(Symbol const* me) {
     return me && my gather_module ? my gather_module : me;

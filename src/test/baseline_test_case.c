@@ -1333,6 +1333,12 @@ static void append_span_contents_without_newlines(cstr* target, Span span) {
 // One `>text : type` line plus its underline per parenthesization level of the expression
 // `underline` null: all of it synthetic (`^`)
 static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_span, csview rendered, cstr const* underline_of_type) {
+    for (u32 i = 0; i < my hidden_type_span_count; i++) {
+        if (my hidden_type_spans[i].sv.buf == inner_span.sv.buf && my hidden_type_spans[i].sv.size == inner_span.sv.size) {
+            my any_keeps_underline = false;
+            return;
+        }
+    }
     const char* outer_start = span_start_ptr(outer_span);
     const char* outer_last = span_end_ptr(outer_span) - 1;
     const char* inner_start = span_start_ptr(inner_span);

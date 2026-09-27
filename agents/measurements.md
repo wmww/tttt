@@ -2,6 +2,10 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 27 stage 2: heritage clauses
+Suite 9210 -> **9243 / 13542** full (+33 tests, no component lost; errors/symbols/types all move). `./syntaxstats.py`
+cluster permissive:heritage 22 -> 0. Corpora unchanged (tsc 0, type-fest 11, valibot 0, react 0; zero syntax errors).
+
 ## 2026-09-27, parser perf (todo entry 7, at 67f6c83)
 Suite **9210** unchanged; corpus diagnostics and file counts unchanged. Callgrind (instructions, session start 7cf7633
 -> end): tsc corpus 5.844 -> **5.052 G**, nest 1.364 -> **0.988**, webpack 4.213 -> **3.398**, react 2.212 -> 1.918,

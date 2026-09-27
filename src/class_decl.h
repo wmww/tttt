@@ -111,7 +111,16 @@ typedef struct ClassDecl {
     Generic generic;
     Expr extends;
     Span extends_clause; // `extends A<T>`
-    VecTypeNode implements;
+    VecSpannedType implements; // The first `implements` clause's entity names (`A.B<T>`)
+    // Heritage tsc parses but doesn't check (the parser reports checkGrammarClassDeclarationHeritageClauses' TS1172-
+    // TS1175 about it): the elements after the base (`extends A, B`, a second `extends` clause) and those of later
+    // `implements` clauses. Only resolved, silently, for the baselines
+    VecExpr unchecked_extends;
+    VecTypeNode unchecked_implements;
+    // `implements` elements that aren't entity names (`A?.B`, `f()`): the first invalid_implements_checked (those of the
+    // first clause) are TS2500, and all are only resolved, silently
+    VecExpr invalid_implements;
+    u32 invalid_implements_checked;
     VecClassItem items;
     Symbol* symbol;
     struct ClassDecl const* outer_class; // The class this one is in (scope_enclosing_class()), set when resolving

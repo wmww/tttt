@@ -132,7 +132,10 @@ void class_decl_drop(ClassDecl* me) {
     vec_expr_drop(&my decorators);
     generic_drop(&my generic);
     expr_drop(&my extends);
-    vec_type_drop(&my implements);
+    vec_spanned_type_drop(&my implements);
+    vec_expr_drop(&my unchecked_extends);
+    vec_type_drop(&my unchecked_implements);
+    vec_expr_drop(&my invalid_implements);
     vec_class_item_drop(&my items);
 }
 
@@ -338,10 +341,15 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         }
     }
 
+    Expr* base = my extends.tag == EXPR_GENERIC_PARAMS ? &my extends.generic_params->expr : &my extends;
+    if (base->tag == EXPR_IDENTIFIER) base->identifier.class_base = true;
     expr_lookup_names(&my extends, names, errs);
-    for_each (i, vec_type, &my implements) {
-        type_lookup_names(i, names, errs);
+    for_each (i, vec_spanned_type, &my implements) {
+        type_lookup_names(&i->type, names, errs);
     }
+    for_each (i, vec_expr, &my unchecked_extends) expr_lookup_names(i, names, nullptr);
+    for_each (i, vec_type, &my unchecked_implements) type_lookup_names(i, names, nullptr);
+    for_each (i, vec_expr, &my invalid_implements) expr_lookup_names(i, names, nullptr);
 
     class_members_lookup_names(me, names, errs, true);
     class_members_lookup_names(me, names, errs, false);
@@ -585,8 +593,8 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
             ty_check_static_heritage(checker, ty_static_type_of(checker, my symbol), base_static, span, errs);
         }
     }
-    for_each (i, vec_type, &my implements) {
-        Ty const* implemented = ty_of_node(i);
+    for_each (i, vec_spanned_type, &my implements) {
+        Ty const* implemented = ty_of_node(&i->type);
         if (!(implemented->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
         Ty const* target = implemented->kind == TY_REFERENCE ? implemented->reference.target : implemented;
         bool is_class = target->kind == TY_DECLARED && target->declared.symbol && (target->declared.symbol->flags & SYMBOL_CLASS);
@@ -1042,8 +1050,18 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
 
     // (Whether the class implements them is class_check_heritage()'s business)
-    for_each (i, vec_type, &my implements) {
-        type_typecheck(i, errs);
+    for_each (i, vec_spanned_type, &my implements) {
+        type_typecheck(&i->type, errs);
+        // (A keyword type: what the parser made of an identifier in an expression's place, tsc's
+        // checkAndReportErrorForUsingTypeAsValue)
+        if (i->type.tag != TYPE_IDENTIFIER && is_primitive_type_name(i->span.sv)) {
+            error_ctx_error_d(errs, i->span, 2864, "A class cannot implement a primitive type like '", i->span,
+                "'. It can only implement other named object types.");
+        }
+    }
+    for (u32 i = 0; i < my invalid_implements_checked; i++) {
+        error_ctx_error_d(errs, my invalid_implements.data[i].outer_span, 2500,
+            "A class can only implement an identifier/qualified-name with optional type arguments.");
     }
     class_check_base_arity(me, errs);
 }

@@ -8,10 +8,13 @@
 #include "unused.h"
 #include "flow.h"
 #include "source_file.h"
+#include "expr.h"
 
 void interface_decl_drop(InterfaceDecl* me) {
     generic_drop(&my generic);
     vec_spanned_type_drop(&my extends);
+    vec_type_drop(&my unchecked_extends);
+    vec_expr_drop(&my invalid_extends);
     type_drop(&my type);
 }
 
@@ -43,6 +46,8 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     for_each (i, vec_spanned_type, &my extends) {
         type_lookup_names(&i->type, names, errs);
     }
+    for_each (i, vec_type, &my unchecked_extends) type_lookup_names(i, names, nullptr);
+    for_each (i, vec_expr, &my invalid_extends) expr_lookup_names(i, names, nullptr);
     // The body's members directly: it isn't a type literal (whose `this` would be invalid). Computed names in there
     // aren't uses of values (tsc's isInAmbientOrTypeNode)
     bool saved_type_query = names->flow->in_type_query;
@@ -172,7 +177,12 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     check(my type.tag == TYPE_INTERFACE);
     for_each (extends, vec_spanned_type, &my extends) {
         type_typecheck(&extends->type, errs);
-        if (extends->type.tag != TYPE_IDENTIFIER) {
+        if (extends->type.tag != TYPE_IDENTIFIER && is_primitive_type_name(extends->span.sv)) {
+            // (A keyword type: what the parser made of an identifier in an expression's place, tsc's
+            // checkAndReportErrorForUsingTypeAsValue)
+            error_ctx_error_d(errs, extends->span, 2840, "An interface cannot extend a primitive type like '", extends->span,
+                "'. It can only extend other named object types.");
+        } else if (extends->type.tag != TYPE_IDENTIFIER) {
             error_ctx_error_d(
                 errs,
                 extends->span,
@@ -181,6 +191,10 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
             );
         }
         // TODO: TS2312 (not an object type)
+    }
+    for (u32 i = 0; i < my invalid_extends_checked; i++) {
+        error_ctx_error_d(errs, my invalid_extends.data[i].outer_span, 2499,
+            "An interface can only extend an identifier/qualified-name with optional type arguments.");
     }
 
     interface_typecheck(&my type.interface, errs);

@@ -65,6 +65,7 @@ typedef struct IdentifierExpr {
     // `super.x` / `super[x]` (the base instance), `super(...)` (the base constructor)
     bool super_member;
     bool super_call;
+    bool class_base; // The whole element of a class's `extends` clause (TS2863 rather than TS2693 for `extends number`)
     // `this` in a function that isn't a method or arrow function (THIS_ANY): that function, whose `this` may be
     // contextually typed (ty_contextual_this_type())
     FunctionImpl const* this_function;

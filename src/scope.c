@@ -1748,7 +1748,11 @@ cstr symbol_fully_qualified_name(Symbol const* me) {
 // `export { string }`, `export { undefined }`: what tsc's resolveName finds no symbol for but still reports as
 // global (checkAndReportErrorForExportingPrimitiveType, undefinedSymbol)
 static bool export_names_global_primitive(csview name) {
-    static char const* const names[] = { "undefined", "any", "string", "number", "boolean", "never", "unknown" };
+    return csview_equals(name, "undefined") || is_primitive_type_name(name);
+}
+
+bool is_primitive_type_name(csview name) {
+    static char const* const names[] = { "any", "string", "number", "boolean", "never", "unknown" };
     for (u32 i = 0; i < c_arraylen(names); i++) {
         if (csview_equals(name, names[i])) return true;
     }

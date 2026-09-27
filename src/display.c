@@ -726,10 +726,10 @@ static void display_class_decl(Display d, ClassDecl const* me) {
         display_expr(d, &my extends);
         display_lit(d, " ");
     }
-    if (!vec_type_is_empty(&my implements)) {
+    if (!vec_spanned_type_is_empty(&my implements)) {
         display_lit(d, "implements ");
-        for_each (i, vec_type, &my implements) {
-            display_type(d, i);
+        for_each (i, vec_spanned_type, &my implements) {
+            display_type(d, &i->type);
             display_lit(d, ", ");
         }
     }

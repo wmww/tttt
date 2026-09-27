@@ -84,6 +84,9 @@ typedef struct BaselineTestCase {
     // harness exempts children of property accesses and qualified names, binding elements, labels and import/export
     // names). The next types line consumes it
     bool any_keeps_underline;
+    // Set right before walking a heritage clause's type (`implements A`, an interface's `extends A`): tsc has no
+    // symbols line for names there that don't resolve (not so in a type reference). The type consumes it
+    bool heritage_type;
     // Symbols lines at these spans show another symbol (tsc's getSpecialPropertyAssignmentSymbol: the parts of a
     // CommonJS assignment's target show what it declares). Set around the traversal of such a target
     struct {
@@ -93,6 +96,10 @@ typedef struct BaselineTestCase {
         bool suppress; // No symbols line at all
     } symbol_overrides[8];
     u32 symbol_override_count;
+    // No types line at these spans (the nodes tsc's isPartOfTypeNode takes for a type: the property accesses of a
+    // heritage clause's expression where a type is meant). Set around the traversal of such an expression
+    Span hidden_type_spans[8];
+    u32 hidden_type_span_count;
     bool error_type; // The types line being added is the error type (see LineNumberedStr.error_type)
     // In the body of a `with`: tsc's getTypeOfNode and getSymbolAtLocation answer nothing there, every types line is
     // the error type and there are no symbols lines

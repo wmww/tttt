@@ -385,6 +385,9 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         if (later_lib) {
             error_ctx_error_d(errs, my name, 2585, "'", my name, "' only refers to a type, but is being used as a value "
                 "here. Do you need to change your target library? Try changing the 'lib' compiler option to es2015 or later.");
+        } else if (my class_base && is_primitive_type_name(my name.sv)) {
+            error_ctx_error_d(errs, my name, 2863, "A class cannot extend a primitive type like '", my name,
+                "'. Classes can only extend constructable values.");
         } else {
             error_ctx_error_d(errs, my name, 2693, "'", my name, "' only refers to a type, but is being used as a value here.");
         }

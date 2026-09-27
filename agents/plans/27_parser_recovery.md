@@ -143,8 +143,10 @@ has parse errors: `hasParseDiagnostics`, see how `SourceFile.has_parse_errors` i
 - `yield`/`await` outside their functions are identifiers (with TS1212-family or TS1308 from the checker).
 - Index signatures: done (`parse_index_signature()`, TS1017/1018/1019/1020/1022/1025/1096 from the parser as grammar
   codes, TS1337/1268/1021/2369 from `interface_member_typecheck()`). Enum computed names (TS1164) done too.
-- Heritage clauses: a list of `extends`/`implements` clauses in any order and count, each a list of expressions
-  with type arguments (`checkGrammarClassDeclarationHeritageClauses`: TS1172-TS1176; interfaces TS1175/TS1176).
+- ~~Heritage clauses~~ done (2026-09-27, `parse_heritage_clauses()`; the cluster went 22 -> 0). Left: TS2552's
+  `Did you mean 'undefined'?` (scope_suggest() doesn't offer `undefined`; classExtendingPrimitive), tsc's
+  checkGrammarExpressionWithTypeArguments (`import<T>` in heritage, empty `<>`).
+- `with`: a real statement (`STATEMENT_WITH`); the checker reports TS1101 in strict mode and TS2410 always, and tsc
 - `with`: done (`STATEMENT_WITH`, `WithStatement`).
 - Private names are identifiers everywhere tsc's parser allows `#x` as a property name, with TS18016 et al.
 - Decorators before any expression/declaration tsc accepts them at (TS1206 from the checker).
