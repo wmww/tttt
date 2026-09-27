@@ -882,6 +882,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     ty_check_class_duplicate_members(current_checker, me, errs);
     if (my symbol && symbol_find_node(my symbol, SYMBOL_DECL_CLASS) == me) {
         ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);
+        ty_check_property_modifiers(current_checker, my symbol, me, nullptr, errs);
+    } else if (!my symbol) {
+        ty_check_property_modifiers(current_checker, nullptr, me, nullptr, errs);
     }
     {
         InterfaceMember const* indexes[16];

@@ -1331,6 +1331,10 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
 // The same for the members of type literals and interfaces: `lists` are the member lists of the declarations (one for
 // a type literal), whose binder table is shared; checkObjectTypeForDuplicateDeclarations runs per list
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs);
+// TS2687: the property declarations of each instance member of the classes and interfaces that declare `symbol` (else of
+// a class without one, else of a type literal) have the same modifiers and optionality
+void ty_check_property_modifiers(Checker* me, Symbol const* symbol, struct ClassDecl const* class_decl,
+    VecInterfaceMember const* type_literal, ErrorCtx* errs);
 // `in_type`: of a class, interface or type literal member
 // The property a key type names (a string, number or unique symbol literal), null if none; *is_number for numbers
 Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number);

@@ -194,6 +194,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     }
     if (first_checked == me && !(my symbol->flags & SYMBOL_CLASS)) { // A class checks its own
         ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);
+        ty_check_property_modifiers(current_checker, my symbol, nullptr, nullptr, errs);
     }
     if (first_checked == me) {
         InterfaceMember const* indexes[32];

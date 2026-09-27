@@ -376,6 +376,7 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             {
                 VecInterfaceMember const* list = &my interface.members;
                 ty_check_object_type_duplicate_members(current_checker, &list, 1, errs);
+                ty_check_property_modifiers(current_checker, nullptr, nullptr, list, errs);
                 InterfaceMember const* indexes[16];
                 u32 index_count = 0;
                 for_each (i, vec_interface_member, &my interface.members) {

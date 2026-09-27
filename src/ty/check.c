@@ -1959,6 +1959,105 @@ static Ty const* member_declared_type(Checker* me, InterfaceMember const* member
     return type;
 }
 
+// A declaration of a property, as far as tsc's areDeclarationFlagsIdentical goes
+typedef struct PropertyDeclEntry {
+    csview name;
+    Span span;
+    bool optional;
+    uint8_t modifiers; // PROPERTY_MOD_*
+} PropertyDeclEntry;
+
+enum { PROPERTY_MOD_PRIVATE = 1, PROPERTY_MOD_PROTECTED = 2, PROPERTY_MOD_ABSTRACT = 4, PROPERTY_MOD_READONLY = 8 };
+
+#define g_key PropertyDeclEntry, property_decl_entry
+#include <cleat/generic/vec.h>
+
+static uint8_t access_modifier_bits(AccessModifier access) {
+    return access == ACCESS_MODIFIER_PRIVATE ? PROPERTY_MOD_PRIVATE : access == ACCESS_MODIFIER_PROTECTED ? PROPERTY_MOD_PROTECTED : 0;
+}
+
+// The instance properties a class declares: its (non-static) fields and parameter properties, in binding order
+static void collect_class_property_decls(ClassDecl const* class_decl, VecPropertyDeclEntry* out) {
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
+            for_each (arg, vec_function_arg, &i->constructor.func.args) {
+                Binding const* binding = &arg->initializer.binding;
+                if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
+                vec_property_decl_entry_push(out, (PropertyDeclEntry){
+                    .name = binding->content_span.sv, .span = binding->content_span, .optional = arg->explicit_optional,
+                    .modifiers = access_modifier_bits(arg->access) | (arg->is_readonly_property ? PROPERTY_MOD_READONLY : 0),
+                });
+            }
+        }
+        if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || i->field.computed_key || i->field.is_auto_accessor) continue;
+        vec_property_decl_entry_push(out, (PropertyDeclEntry){
+            .name = cstr_sv(&i->field.name_string), .span = i->field.name_span, .optional = i->field.is_optional,
+            .modifiers = access_modifier_bits(i->access) | (i->field.is_readonly ? PROPERTY_MOD_READONLY : 0) |
+                (i->field.is_abstract ? PROPERTY_MOD_ABSTRACT : 0),
+        });
+    }
+}
+
+static void collect_interface_property_decls(VecInterfaceMember const* members, VecPropertyDeclEntry* out) {
+    for_each (i, vec_interface_member, members) {
+        if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function) continue;
+        vec_property_decl_entry_push(out, (PropertyDeclEntry){
+            .name = cstr_sv(&i->key.name_string), .span = i->key.span, .optional = i->optional,
+            .modifiers = i->readonly ? PROPERTY_MOD_READONLY : 0,
+        });
+    }
+}
+
+// TS2687: tsc's checkVariableLikeDeclaration, for the property declarations of one member symbol: the first one
+// (the valueDeclaration) against every other one, every other one against the first. HACK: methods and accessors of
+// the same name are left out (they can be tsc's valueDeclaration too, but merging with them is an error already)
+static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx* errs) {
+    isize count = vec_property_decl_entry_size(decls);
+    for (isize i = 0; i < count; i++) {
+        PropertyDeclEntry const* decl = vec_property_decl_entry_at(decls, i);
+        if (!span_valid(decl->span) || decl->span.source->is_stdlib) continue;
+        PropertyDeclEntry const* first = nullptr;
+        bool differs = false;
+        for (isize j = 0; j < count; j++) {
+            PropertyDeclEntry const* other = vec_property_decl_entry_at(decls, j);
+            if (!csview_equals_sv(other->name, decl->name)) continue;
+            if (!first) first = other;
+            bool identical = other->optional == decl->optional && other->modifiers == decl->modifiers;
+            if (first == decl) {
+                differs |= other != decl && !identical;
+            } else {
+                differs = !identical;
+                break;
+            }
+        }
+        if (differs) {
+            error_ctx_error_d(errs, decl->span, 2687, "All declarations of '", decl->span, "' must have identical modifiers.");
+        }
+    }
+}
+
+void ty_check_property_modifiers(Checker* me, Symbol const* symbol, ClassDecl const* class_decl,
+    VecInterfaceMember const* type_literal, ErrorCtx* errs
+) {
+    (void)me;
+    VecPropertyDeclEntry decls = {0};
+    if (symbol) {
+        for (u32 d = 0; d < symbol->decl_count; d++) {
+            SymbolDecl const* decl = &symbol->decls[d];
+            if (decl->kind == SYMBOL_DECL_CLASS) collect_class_property_decls(decl->node, &decls);
+            if (decl->kind == SYMBOL_DECL_INTERFACE) {
+                collect_interface_property_decls(&((InterfaceDecl const*)decl->node)->type.interface.members, &decls);
+            }
+        }
+    } else if (class_decl) {
+        collect_class_property_decls(class_decl, &decls);
+    } else if (type_literal) {
+        collect_interface_property_decls(type_literal, &decls);
+    }
+    check_property_modifiers(&decls, errs);
+    vec_property_decl_entry_drop(&decls);
+}
+
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs) {
     MemberTables* tables = malloc(sizeof(MemberTables)); // Big, and only read below count
     panic_if(!tables, "out of memory");
