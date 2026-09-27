@@ -829,6 +829,21 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
     error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an 'any' type.");
 }
 
+// tsc's resolveBaseTypesOfClass: a base constructor that is a class is referenced like a type (getTypeFromClassOrInterfaceReference),
+// which needs its type arguments
+static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
+    Expr const* base = &my extends;
+    u32 arg_count = 0;
+    if (base->tag == EXPR_GENERIC_PARAMS) {
+        arg_count = (u32)vec_spanned_type_size(&base->generic_params->params);
+        base = &base->generic_params->expr;
+    }
+    if (base->tag != EXPR_IDENTIFIER || base->identifier.keyword || expr_is_perenthisized(base)) return;
+    Symbol const* target = base->identifier.target;
+    if (!target || target->is_placeholder || !(target->flags & SYMBOL_CLASS)) return;
+    several_types_check_arity(target, arg_count, my extends.outer_span, errs);
+}
+
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (my has_typechecked) {
         return;
@@ -1014,8 +1029,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
     }
 
+    // (Whether the class implements them is class_check_heritage()'s business)
     for_each (i, vec_type, &my implements) {
-        ignore i;
-        // TODO: check that we do, in fact, implement each type
+        type_typecheck(i, errs);
     }
+    class_check_base_arity(me, errs);
 }

@@ -332,6 +332,12 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         if (arg_count) error_ctx_error_d(errs, span, 2315, "Type '", my name, "' is not generic.");
         return;
     }
+    if (!several_types_check_arity(symbol, arg_count, span, errs) && arg_count) {
+        ty_check_type_reference_constraints(current_checker, symbol, &my generic_params, errs);
+    }
+}
+
+bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, ErrorCtx* errs) {
     bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
     u32 min = 0;
     Generic const* params = generic_kind ? declared_type_params(symbol, &min) : nullptr;
@@ -340,17 +346,15 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         bool maybe_template = symbol->decl_count && symbol->decls[0].name.source && symbol->decls[0].name.source->is_js;
         if (arg_count && (symbol->flags & SYMBOL_TYPE) && !maybe_template) {
             error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
+            return true;
         }
-        return;
+        return false;
     }
     u32 count = (u32)vec_generic_item_size(&params->items);
     // In JavaScript without noImplicitAny any number of type arguments goes (tsc's isJsImplicitAny: the missing ones
     // are any)
-    bool js_implicit_any = my name.source->is_js && !compiler_options()->no_implicit_any;
-    if ((arg_count >= min && arg_count <= count) || js_implicit_any) {
-        if (arg_count) ty_check_type_reference_constraints(current_checker, symbol, &my generic_params, errs);
-        return;
-    }
+    bool js_implicit_any = span.source && span.source->is_js && !compiler_options()->no_implicit_any;
+    if ((arg_count >= min && arg_count <= count) || js_implicit_any) return false;
     cstr name = cstr_from_sv(symbol->name);
     if (!(symbol->flags & SYMBOL_TYPE_ALIAS)) {
         // (tsc's typeToString of the generic type: its parameters)
@@ -367,6 +371,7 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         error_ctx_error_d(errs, span, 2707, "Generic type '", name, "' requires between ", min, " and ", count, " type arguments.");
     }
     cstr_drop(&name);
+    return true;
 }
 
 static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* errs);
