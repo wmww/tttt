@@ -247,6 +247,12 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             my target = this_ref.symbol;
             my this_function = this_ref.function;
             check_before_super(me, names, 17009, "'this'", errs);
+            // tsc's checkThisExpression: the this container (arrow functions count) is a class member's computed name
+            for (Scope const* scope = names; scope && scope->kind != SCOPE_FUNCTION && !scope->this_ref.kind; scope = scope->parent) {
+                if (scope->no_super != NO_SUPER_COMPUTED_NAME) continue;
+                error_ctx_error_d(errs, my name, 2465, "'this' cannot be referenced in a computed property name.");
+                break;
+            }
             if (!this_ref.kind) {
                 // At the top level: of a script `typeof globalThis`, of a module `undefined`; in a namespace an error
                 Scope const* file = names;
