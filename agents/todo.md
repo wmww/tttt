@@ -19,7 +19,10 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    members, JSDoc names report TS2304; JS tests 310 -> 375, suite 9091 -> 9156, webpack 3981 -> 515. Its leftovers
    (global expando namespaces, prototype methods' templates: 13 tests lost to the now-visible TS2304/TS2503) are ranked
    in plan 26 "Stage 3 leftovers"; the next insights places them.
-6. **Suite checker bugs 3** (`bugs/missing_checks.md`: single-code buckets, target/module-gated diagnostics).
+6. ~~Suite checker bugs 3~~ done: await grammar (top-level await/for await, TS1308/TS1103 with TS1356), import.meta
+   module gating, TS1216, TS2816, eager TS2318, TS2839, TS2842, enum member value checks, TS7005 ambients, `any` keys
+   and index signatures; node module kinds imply their target; suite 9156 -> 9210, corpora unchanged. TS2705 (lazy in
+   tsc) tried and reverted, notes in missing_checks.md.
 7. **Perf: the parser** (`bugs/perf_leads.md` "Parser": first-char dispatch in `parse_expr`/`parse_type`/keyword
    probes, the `parse_fail` count; nest is 170 of 300 ms parsing and the closest margin to tsgo) plus the
    `is_simple_related` same-enum shortcut. Callgrind before/after on every corpus, `./bench.sh`, `measurements.md`.

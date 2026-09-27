@@ -2,6 +2,11 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, suite checker bugs 3 (todo entry 6)
+Suite 9156 -> **9210** (errors 10963, symbols 12250, types 10596), no lost components. Checker log_error output 89
+lines in 31 tests -> 28 in 2 (the silent call resolutions' "invalid span" noise). Corpora unchanged: tsc 0, type-fest
+11, valibot/react/nest 0, webpack 515. Bench not rerun (checks only; no relation or inference paths changed).
+
 ## 2026-09-27, plan 26 stage 3 (JSDoc declarations, todo entry 5)
 Suite 9091 -> **9156** (errors 10900, symbols 12249, types 10593); 26 tests lost a component, all JS tests that passed
 only because unresolved JSDoc names were silent (plan 26 "Stage 3 leftovers"). JS tests (`./jsstats.py`): **310 ->

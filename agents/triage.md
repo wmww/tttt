@@ -20,3 +20,12 @@ interfaceThatIndirectlyInheritsFromItself, reverseMappedUnionInference, the `W["
 - The scope of `infer X extends C`: C is resolved in the scope of the whole extends type (`type_lookup_names`,
   TYPE_INFERRED), so another `infer` of the same clause isn't visible (tsc: TS2304, inferTypesWithExtends2 passes);
   check what tsc does for an `infer` declared in an *outer* conditional's extends type.
+
+## From suite checker bugs 3 (2026-09-27)
+- An object literal with a numeric-string key prints unquoted: `{ "0": 0 }` is `{ 0: number; }` here, tsc
+  `{ "0": number; }` (probe: `var m: MyMap<number> = { "0": 0 }` types baseline). Display (bugs/display.md).
+- inferTypes1 logs `scope.c: Declaration B acquired multiple times` (the only log_error left besides the lib-file
+  errors of modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib).
+- tsc's non-widening `undefined` (`{}["hi"]` under noImplicitAny is `undefined`, and `var x = {}["hi"]` stays
+  `undefined`; tttt widens it to any): noImplicitAnyIndexing(Suppressed) fail types on it only. Related to hacks.md
+  `widen_nullable`.

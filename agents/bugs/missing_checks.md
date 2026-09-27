@@ -4,18 +4,19 @@ Each is small (one check, a few tests). Find fresh buckets with `./failstats.py`
 one code alone in `build/failstats/tests.tsv`) and `./unimplemented_codes.sh` (codes `src/` never mentions). Test
 statuses checked 2026-09-27 (triage, suite 8952).
 
-## Buckets (tests whose errors fail on this one code, 2026-09-27)
-- Mixed bags (sample, don't assume one cause): missing/spurious TS2322 ~50 each, missing TS2339 49, spurious TS2304
-  39, spurious TS2339 30, missing TS2304 16, spurious TS2345 14. Missing TS2339 overall is ~380 in 166 tests: the gates
-  in `check_access()` (JS, callables, mapped, unresolved bases) and whatever is typed `any` by failure.
+## Buckets (tests whose errors fail on this one code, 2026-09-27, after suite checker bugs 3)
+- Mixed bags (sample, don't assume one cause): missing TS2339 52, spurious TS2322 46, missing TS2322 44, spurious
+  TS2304 44, spurious TS2339 29, spurious TS2345 14. Missing TS2339 overall is ~380 in 166 tests: the gates in
+  `check_access()` (JS, callables, mapped, unresolved bases) and whatever is typed `any` by failure.
 - Module resolution / emit: missing TS2303 15 (package pattern exports, below), TS8002 9 (JS, plan 26), TS2209 6,
-  TS1470 6, TS1309 6, TS5055 11, TS5069 6, TS2742 10 (declaration emit: out of scope); spurious TS2307 14 (APISample_*:
-  resolving `typescript` from the harness).
-- Checker: missing TS2318 12 (noLib global types), TS2353 12, TS1216 8, TS7053 8, TS2816 8
-  (typeOfThisInStaticMembers10/11, all targets), TS7005 6 (`declare var x;` without a type:
-  implicitAnyDeclareVariablesWithoutTypeAndInit), TS2449 6, TS7023 5, TS2352 5, TS1259 5 (esModuleInterop default
-  import, a TODO in scope.c), TS18033 5; spurious TS2349 13 (betterErrorForUnionCall, classExtendsNull, functionType),
-  TS2403 12 (below), TS7006 11, TS2300 10.
+  TS5055 11, TS5069 6, TS2742 10 (declaration emit: out of scope); spurious TS2307 14 (APISample_*: resolving
+  `typescript` from the harness).
+- Checker: missing TS2353 11, TS2538 8 (below), TS2449 6, TS7023 5, TS2352 5, TS1259 5 (esModuleInterop default
+  import, a TODO in scope.c), TS18050 5, TS7010 5, TS2318 5 (the lazily looked-up globals: `Awaited`,
+  `TypedPropertyDescriptor`, iteration types; the eager ones are done in `program_report_missing_global_types`);
+  spurious TS2349 13 (betterErrorForUnionCall, classExtendsNull, functionType), TS2403 12 (below), TS7006 8, TS2300 10.
+- TS7053 6 are JS (lateBoundAssignmentDeclarationSupport*: element access on a CommonJS module object is skipped in
+  JS, `ty_check_element_implicit_any`'s TODO).
 
 ## Known missing checks
 - **Conditions**: TS2774/TS2801 (uncalled function / promise in a condition): tsc's
@@ -41,7 +42,8 @@ statuses checked 2026-09-27 (triage, suite 8952).
   TS2806 (set-only private accessor), TS2804/TS18010/TS2300/TS2717 duplicates (privateNameDuplicateField).
 - **Declarations**: `export function g() {}` + `function g() {}` is TS2395 here, TS2393 in tsc (re-probed). TS2300
   for a second `export =`. TS1319 (default export outside a module, TODO in `scope_export_default_expr`). TS1330-1335
-  (misplaced `unique symbol`, silently `symbol`). TS2475 (const enum used as a value). TS6200 amalgamated cross-file
+  (misplaced `unique symbol`, silently `symbol`). TS2475 (const enum used as a value). TS18055/TS18056 (isolatedModules enum string/initializer rules; the enum
+  member value checks are in `enum_decl_typecheck`). TS6200 amalgamated cross-file
   duplicates (8+ conflicting names between two files are one TS6200 per file with related TS6201, tsc's
   `amalgamatedDuplicates`: duplicateIdentifierRelatedSpans*), and TS6203 related info on a static duplicated by a
   namespace export (duplicateIdentifiersAcrossFileBoundaries). TS2492 (`catch (x) { let x }`:
@@ -58,10 +60,19 @@ statuses checked 2026-09-27 (triage, suite 8952).
   f([a1] = [undefined])`, noImplicitAnyDestructuring*: tsc's reportErrorsFromWidening, hacks.md `widen_nullable`);
   TS7051 (a parameter named like a type); TS7041 (`this` captured by a top-level arrow); TS7017 (`typeof globalThis` has
   no index signature); TS7055/TS7057 (generators).
-- **Target/module-gated**: TS2705/TS2468 (async needs `Promise`), TS1375/TS1378 (top-level await), TS1432
-  (top-level `for await`), TS2802 (iteration needs `downlevelIteration`), TS1056 (accessors below ES5), TS2659 (`super`
-  in an object literal below ES2015), TS1343/TS1470 (`import.meta` vs the module option / CommonJS output), TS2496's
-  other places (`arguments` in ES5 arrows), TS2815 (`arguments` in a class field initializer).
+- **Target/module-gated**: TS2705/TS2468 (async function needs the `Promise` constructor): tsc reports it from
+  createPromiseReturnType, ie only when something asks for an async function's *inferred* return type, which is lazy
+  (asyncFunctionNoReturnType reports it, asyncFunctionWithForStatementNoInitializer doesn't); reporting it for every
+  unannotated async function was tried and lost 6 tests. Needs a "return type was inferred" signal that matches tsc's
+  demand, not tttt's (tttt infers more eagerly). TS2802 (iteration needs `downlevelIteration`), TS1056 (accessors below
+  ES5), TS2659 (`super` in an object literal below ES2015), TS2496's other places (`arguments` in ES5 arrows), TS2815
+  (`arguments` in a class field initializer). Await grammar leftovers: `await` in a class field initializer inside an
+  async function (awaitInClassInAsyncFunction: the parser's in_async carries into class members), `await` in a
+  namespace body counts as top level (tsc: TS1308), TS18037 (await in a static block) is parser territory
+  (classStaticBlock6/7/26).
+- **TS2538 with `any`** (8 tests): `any[[]]` (a tuple as an index type on `any`) and `{[z]: x}` parameter patterns
+  with an unresolved `z` (asyncFunctionDeclarationParameterEvaluation, asyncGeneratorParameterEvaluation): tsc's
+  getPropertyTypeForIndexType reports past the `any` object shortcut; find which path.
 - **Iteration**: TS2489/TS2490 (iterator without `next`/`value`), TS2763-2765 (iterator next-type mismatches);
   generator next types aren't inferred from `yield` uses (tsc's `nextTypes`).
 - **Modules**: exports in non-module containers dropped silently (`scope_add_port()`, TODO TS1194); `import { type
