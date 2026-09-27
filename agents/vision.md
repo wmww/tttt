@@ -12,15 +12,18 @@ types components) are the oracle, not the goal; real projects that are clean und
   Of the 4961 failing tests, 1488 fail errors only by *missing* diagnostics, spread over hundreds of codes (the top,
   TS2339/TS2322, are in <90 tests each): small missing checks, module/target-gated diagnostics, JS. Spurious errors
   concentrate in the parser (472 tests have a spurious TS1xxx; most of the 924 spurious TS2304 follow bad recovery).
-- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **53**, valibot **60**, react
-  **1** (bulletproof-react's Vite app, plan 25: 362 at first run). Flat since 2026-09-26 on type-fest/valibot: the
-  rest is structural (plans 29 and 30, see the course correction).
+- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **47**, valibot **49**, react
+  **1** (bulletproof-react's Vite app, plan 25: 362 at first run), nest **0** (brocoders/nestjs-boilerplate: NestJS
+  11, TypeORM, Mongoose, aws-sdk, decorators, CommonJS; plan 31: 134 at first run, 0 the same day through nine tsc
+  rules, none of them about decorators). type-fest/valibot moved again after plans 29/30 (53 -> 47, 60 -> 49).
 - **Perf** (`measurements.md`, 2026-09-27 perf check-up; tsgo = typescript 7.0.2 on 4 cores): tsc corpus 0.87 s vs
   tsgo 1.27 (single-threaded 1.77), type-fest 0.48 vs 1.93, valibot 0.81 s / 541 MB vs 1.64 s / 827 MB, react 0.30 s /
   242 MB vs 1.06 s / 553 MB (tsgo single-threaded 0.96). Ahead everywhere, single-threaded. The "drift" to 0.93 s was
   mostly the machine (~15% slower than on 09-25); callgrind counts are the stable measure: 6.92 G -> 5.91 G that
   session (tsc's key-property map, reverse mapped cache, containsType). Next levers: calls resolved twice (plan 28,
-  ~8%), the backtracking parser (~20% of instructions).
+  ~8%), the backtracking parser (~20% of instructions). nest: 0.30 s vs tsgo 0.40 s (parallel), the closest margin
+  yet: with skipLibCheck an application is mostly parsing (170 ms of 300), so the parser matters there. valibot
+  regressed to 0.95 s in plan 31 (mapped-type instantiation through the root; partly fixed, see measurements.md).
 - **Built and holding**: hand-written backtracking parser (JSX included), tsc-shaped binder with persistent symbols
   and merging, interned `Ty` core with id-keyed relations and tsc's identity relation, mapper instantiation, two-pass
   inference with priorities, contextual typing, conditional/mapped/indexed/template types, flow graph + narrowing,
@@ -43,9 +46,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   functions, not new architecture. They go first in this window, back to back.
 - **The corpora are running out of signal.** tsc 0 and react 1 no longer find bugs; type-fest/valibot are
   type-level libraries. Nothing checks server-side code (`@types/node`, ORMs, DI containers, decorators, CommonJS
-  output settings). **Plan 31 adds a fourth corpus** (a Node application, decorator-heavy if possible) and ranks its
-  root causes into plan 19, like plan 25 did for React (362 diagnostics, five type-core rules). Then one corpus
-  session works its top causes. The rule stands: a rising pass count with flat corpus counts is test-chasing.
+  output settings). **Plan 31 added a fourth corpus** (NestJS; 134 -> 0 in one session, see plan 19). Lesson: a
+  clean corpus only finds *spurious* diagnostics, so decorator-heavy code that tttt doesn't check at all looks
+  perfect; missing checks (decorators included) are found by the suite only. The rule stands: a rising pass count
+  with flat corpus counts is test-chasing.
 - **The suite's remaining errors are a long tail, not a category.** Work it in "suite checker bugs" sessions driven by
   failstats' single-code buckets (the last two such sessions moved +72 and +98) and the module/target-gated
   diagnostics (TS1202/1203/2441/2725/1262..., triage.md "Target-gated"). Plan 27 stage 2 (permissive grammar, ~190

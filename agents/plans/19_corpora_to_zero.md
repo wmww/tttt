@@ -365,7 +365,7 @@ R18/R19 are plan 29 and R17 is plan 30 stage 3 (both written 2026-09-27): run th
 19 sessions: R20, R21, sample valibot (unsampled since the R10 session) and the rest of type-fest; R15 (react's last,
 the permissive instantiation; plan 30 stage Q adds the restrictive half of the same machinery).
 
-## NestJS corpus (plan 31, 2026-09-27): 134 -> NEST_FINAL
+## NestJS corpus (plan 31, 2026-09-27): 134 -> 0, done the same day
 `./realworld.py --corpus nest`: brocoders/nestjs-boilerplate (NestJS 11, TypeORM + Mongoose, class-validator,
 passport, nestjs-i18n, aws-sdk v3, supertest/jest e2e tests; experimentalDecorators + emitDecoratorMetadata,
 CommonJS, node10 resolution, 2394 files / 259k lines with dependencies). Before the first run could happen: STC's
@@ -378,3 +378,24 @@ same day (probes in `test/probes/plan31/`):
   Request` extended the global fetch `Request` (~85 diagnostics, all the e2e tests). `exportEqualsPropertyBase.ts`.
 - `await` unwrapped only `Promise`/`PromiseLike` by name; now any thenable (tsc's getPromisedTypeOfPromise in
   `awaited_type_in`). superagent's requests and every mongoose `Query` (~20). `awaitCustomThenable.ts`.
+- tsc's instantiateMappedType works on the mapped type's root with the combined mapper: the app's own recursive
+  `DeepPartial<T[P]>` never distributed over `string | null` (8). `wtb_deepPartial.ts`.
+- getDefaultConstructSignatures: a class extending a non-class base (aws-sdk's `declare const X_base: { new (...) }`)
+  inherits the base expression's construct signatures (2). `wtb_classExtendsConstCtor.ts`.
+- isLiteralOfContextualType asks maybeTypeOfKind(baseConstraint, String), through unions: `P extends Path<T>` (nest's
+  `ConfigService.getOrThrow('app.corsOrigins', { infer: true })`) kept the literal only if the base constraint was
+  `string` itself, so PathValue gave never (5: the `ms()` overload and `corsOrigins.includes`). Also regularizes the
+  candidate in `inference_call_result`, since tttt doesn't do it when checking the argument.
+  `literalOfConditionalConstraint.ts`.
+- nestjs-i18n's `[a, b] = await Promise.all([i18n.t(k), ...])` (13): the await operand had no contextual type
+  (getContextualTypeForAwaitOperand), reverse mapped types didn't do arrays/tuples (createReverseMappedType),
+  a generic homomorphic mapped context didn't make array literals tuples nor give their elements contextual types
+  (getTypeOfPropertyOfContextualType's substituteIndexedMappedType), and fixing went through annotated parameters.
+  `awaitContextReverseTuple.ts`.
+
+What the corpus did *not* show: anything about decorators. A clean corpus only finds spurious diagnostics, and
+tttt reports none on NestJS's decorator-heavy code; the checks tsc does on decorators (TS1238/TS1241/TS1270...)
+are missing checks, which only the suite finds. Decorator checking stays a suite item, not a corpus one.
+Note: nestjs-i18n's shipped `.d.ts` imports `Path`/`PathValue`/`IfAnyOrNever` from a module that doesn't export them
+(hidden by skipLibCheck), so those are error types; a regression in how tttt treats them would look like an i18n
+bug.

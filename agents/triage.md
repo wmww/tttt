@@ -6,6 +6,16 @@ plan 29, substitution types and `T[K]` constraints plan 30.
 Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the codes `src/` never mentions, and
 "Missing checks after plan 15" below has the tail worth knowing about.
 
+## From plan 31 (2026-09-27)
+- **`Awaited<string | undefined>` displays as the alias**: `declare const z: Awaited<string | undefined>` (target
+  es2021, strict) prints `Awaited<string | undefined>` where tsc prints `string | undefined`; so do `Promise.all`
+  results over optional elements. A distributive conditional that resolves to a union keeps the alias it was reached
+  through; tsc only attaches the alias to a deferred conditional (getConditionalTypeInstantiation's result for a
+  union check type is a new union without aliasSymbol). Check `displaydiff.py` for how many tests this is.
+- **Contextual TS1062 duplication risk**: `awaited_type_in` reports TS1062 at the current node on a cyclic thenable;
+  the await operand's contextual type (tsc's getAwaitedTypeNoAlias, which never reports) now goes through it too.
+  Not seen in a test; if a TS1062 test gains a duplicate, give the contextual path a non-reporting mode.
+
 ## From the triage of 2026-09-27
 - **TS2303 through namespace imports** (22 node-modules tests miss only this: nodeModulesPackageExports,
   nodeModules*PatternExports*, nodeModulesConditionalPackageExports, x3 module kinds): `import * as cjs from

@@ -2,6 +2,28 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 31 (fourth corpus: nestjs-boilerplate)
+Suite 8622 -> **8631 / 13540** (errors 10417, symbols 12057, types 10384), no lost components. Corpora: tsc 0,
+type-fest 47, valibot 49, react 1, **nest 134 -> 0**. `./bench.sh` (best wall; tttt / tsc 5.8 / tsgo 7.0.2 / tsgo
+single-threaded; only these three rows were kept):
+
+| corpus | tttt | tsc | tsgo | tsgo 1 thread |
+|---|---|---|---|---|
+| nest (2394 files) | **0.30 s** / 253 MB | 2.59 s / 402 MB | 0.40 s / 249 MB | 0.51 s / 213 MB |
+| valibot | 0.99 s / 603 MB (0.95 s / 514 MB after the fix below) | 8.92 s | 1.63 s / 831 MB | 2.41 s |
+| react | 0.36 s / 266 MB | 3.74 s | 1.04 s / 542 MB | 0.93 s |
+
+nest is tsgo's best showing yet (parallel tsgo only 25% behind): its tttt time is parsing (172 ms of files +
+22 ms libs, 65 ms resolve) and only 35 ms of checking, because skipLibCheck leaves just the app's own files to check.
+Parse speed (plan 27's backtracking, ~20% of the tsc corpus) is what decides this kind of project.
+**Valibot regression from plan 31 part 3 (abe4481)**: 0.80 s / 514 MB -> 1.02 s / 618 MB (callgrind 5.41 G -> 8.83 G).
+`instantiate_mapped_over_list` composed the instance's whole mapper on every instantiation of a mapped instance
+(`ty_compose_mappers` 44% inclusive); now it instantiates the homomorphic variable through both mappers and composes
+only when distributing: 8.19 G, 0.95 s / 514 MB. The remaining +19% wall (+51% instructions) over 6ad4573 is instantiation work
+(`instantiate_inner` self 0.50 G -> 1.55 G, `ty_instantiate_signature_in_context_of` 0.47 G -> 0.98 G inclusive),
+not yet explained: the perf session (todo entry 9) should find out whether it's legitimate extra distribution.
+The tsc corpus didn't move (0.87-0.88 s).
+
 ## 2026-09-27, plan 30 stage 2
 Suite 8613 -> **8616 / 13540** (errors 10403, symbols 12055, types 10366), no lost components. Corpora unchanged: tsc 0,
 type-fest 48, valibot 50 (0.81 s / 502 MB), react 1. Callgrind on the tsc corpus 5.974 G -> **5.986 G** (+0.2%; +0.8%

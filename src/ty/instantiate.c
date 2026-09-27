@@ -181,12 +181,16 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     // (tsc's getHomomorphicTypeVariable: a type parameter substituted in a true branch is still the one)
     Ty const* variable = ty_actual_type_variable(me, mapped->modifiers_type);
     if (variable->kind != TY_TYPE_PARAM) return nullptr;
+    // (The instance's mapper, then this one: composing them is only worth it when the result distributes, which is
+    // rare, and composing eagerly was 40% of valibot)
     TyMapper const* outer = mapper;
-    if (root != ty) mapper = ty_compose_mappers(me, ty->anonymous.mapper, mapper);
-    Ty const* list = ty_instantiate(me, variable, mapper);
+    Ty const* list = ty_instantiate(me, root != ty ? ty_instantiate(me, variable, ty->anonymous.mapper) : variable, mapper);
     if (list == variable) return nullptr;
     u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
     if (list->kind != TY_UNION && !(list->flags & (mappable | TYF_ERROR))) return list;
+    // (With an `as` clause, arrays and tuples map like any object)
+    if (list->kind != TY_UNION && (list->kind != TY_REFERENCE || mapped->name_type)) return nullptr;
+    if (root != ty) mapper = ty_compose_mappers(me, ty->anonymous.mapper, mapper);
     if (list->kind == TY_UNION) {
         // Distributes over a union (tsc's mapTypeWithAlias): `Mutable<A | B>` is `Mutable<A> | Mutable<B>` by the
         // name it was written with. Primitives map to themselves
@@ -204,9 +208,6 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         free(parts);
         return ret;
     }
-    // (With an `as` clause, arrays and tuples map like any object)
-    if (list->kind != TY_REFERENCE || mapped->name_type) return nullptr;
-
     if (ty_is_array(me, list)) {
         bool readonly = mapped->readonly ? mapped->readonly > 0 : list->reference.target == my readonly_array_target;
         TyMapper const* element_mapper = mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
