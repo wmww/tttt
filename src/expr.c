@@ -2066,13 +2066,16 @@ static bool check_symbol_operands(Ty const* left, Ty const* right, Expr const* e
     return false;
 }
 
-static void binary_op_typecheck(
+// Returns whether a compound assignment is checked too: not after its operands were rejected (tsc's
+// checkBinaryLikeExpression, whose checkAssignmentOperator is skipped then)
+static bool binary_op_typecheck(
     Ty const* left,
     BinaryOp op,
     Ty const* right,
     Expr const* expr,
     ErrorCtx* errs
 ) {
+    bool operands_ok = true;
     switch (op) {
         case BINARY_OP_PLUS: {
             Checker* checker = current_checker;
@@ -2083,7 +2086,7 @@ static void binary_op_typecheck(
                 // Null or undefined operands are an error of their own (tsc's checkNonNullType), then any
                 left = ty_check_non_null_type(checker, left, &expr->binary_op->left, errs);
                 right = ty_check_non_null_type(checker, right, &expr->binary_op->right, errs);
-                if (!left || !right) break;
+                if (!left || !right) return false;
             }
             u32 number_like = TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM, bigint_like = TYF_BIGINT | TYF_BIGINT_LITERAL;
             u32 string_like = TYF_STRING_LIKE;
@@ -2098,6 +2101,7 @@ static void binary_op_typecheck(
             // Shown as their base types (`false` as `boolean`) unless both could plausibly be operands
             u32 close_enough = number_like | bigint_like | string_like | TYF_ANY | TYF_UNKNOWN;
             report_operator_error(left, right, expr, close_enough, errs);
+            operands_ok = false;
         }   break;
 
         case BINARY_OP_STAR_STAR:
@@ -2125,6 +2129,7 @@ static void binary_op_typecheck(
             ) {
                 error_ctx_error_d(errs, expr->inner_span, 2447, "The '", binary_op_get_zv(expr->binary_op->op).str,
                     "' operator is not allowed for boolean types. Consider using '", binary_op_get_zv(suggested).str, "' instead.");
+                operands_ok = false;
                 break;
             }
             Ty const* numeric_types[] = { ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_BIGINT) };
@@ -2132,10 +2137,12 @@ static void binary_op_typecheck(
             if (!ty_is_related(checker, left, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
                 error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2362,
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
+                operands_ok = false;
             }
             if (!ty_is_related(checker, right, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
                 error_ctx_error_d(errs, expr->binary_op->right.outer_span, 2363,
                     "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
+                operands_ok = false;
             }
             // Mixing bigint with anything else
             u32 bigint_like = TYF_BIGINT | TYF_BIGINT_LITERAL;
@@ -2150,6 +2157,7 @@ static void binary_op_typecheck(
                 }
             } else {
                 report_operator_error(left, right, expr, bigint_like, errs);
+                operands_ok = false;
             }
         }   break;
 
@@ -2247,15 +2255,17 @@ static void binary_op_typecheck(
         case BINARY_OP_OR_OR_EQUAL:
         case BINARY_OP_EH_EH_EQUAL: {
             BinaryOp without_assignment = binary_op_without_assignment(op);
-            binary_op_typecheck(left, without_assignment, right, expr, errs);
             // The expression's own type is what gets assigned
-            binary_op_typecheck(left, BINARY_OP_EQUAL, expr_get_type((Expr*)expr), expr, errs);
+            if (binary_op_typecheck(left, without_assignment, right, expr, errs)) {
+                binary_op_typecheck(left, BINARY_OP_EQUAL, expr_get_type((Expr*)expr), expr, errs);
+            }
         }   break;
 
         case BINARY_OP_COMMA:
         case BINARY_OP_EH_EH:
             break;
     }
+    return operands_ok;
 }
 
 Ty const* expr_evaluate_type(Expr const* me) {
@@ -2458,6 +2468,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                         csview op_text = csview_trim(zsview_sv(unary_op_get_zv(my unary_op->op)));
                         error_ctx_error_d(errs, expr_error_span(&my unary_op->expr), 2469, "The '", op_text,
                             "' operator cannot be applied to type 'symbol'.");
+                    }
+                    // `+x` converts to a number, which throws for a bigint
+                    if (my unary_op->op == UNARY_OP_PLUS && maybe_kind(operand, TYF_BIGINT | TYF_BIGINT_LITERAL, true)) {
+                        error_ctx_error_d(errs, expr_error_span(&my unary_op->expr), 2736, "Operator '+' cannot be applied to type '",
+                            ty_base_type_of_literal(current_checker, operand), "'.");
                     }
                 }   break;
 

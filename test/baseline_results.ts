@@ -2356,14 +2356,14 @@ const baselines = {
         types: true,
     },
     'bigIntWithTargetES2016': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bigIntWithTargetLessThanES2016': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bigint64ArraySubarray': {
         errors: true,
@@ -2466,7 +2466,7 @@ const baselines = {
         types: true,
     },
     'bitwiseCompoundAssignmentOperators': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18788,7 +18788,7 @@ const baselines = {
     'isolatedDeclarationErrorsExpressions': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationErrorsFunctionDeclarations': {
         errors: false,
@@ -24171,7 +24171,7 @@ const baselines = {
         types: true,
     },
     'numberVsBigIntOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -45371,7 +45371,7 @@ const baselines = {
         types: true,
     },
     'compoundExponentiationAssignmentLHSCannotBeAssigned': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46796,7 +46796,7 @@ const baselines = {
         types: true,
     },
     'compoundArithmeticAssignmentWithInvalidOperands': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
