@@ -43,6 +43,7 @@ typedef enum GlobalType {
     GLOBAL_NEWABLE_FUNCTION,
     GLOBAL_EMPTY_OBJECT, // Not a global: the `{}` type
     GLOBAL_ANY_FUNCTION, // Not a global: tsc's anyFunctionType
+    GLOBAL_UNKNOWN_EMPTY_OBJECT, // Not a global: tsc's unknownEmptyObjectType, the `{}` of `unknown` narrowed
 } GlobalType;
 
 typedef struct RelationState {
@@ -125,7 +126,7 @@ static Ty const* global_type(Checker* me, GlobalType which) {
     static char const* const names[] = { "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Object", "RegExp", "CallableFunction", "NewableFunction" };
     if (!my global_types_resolved[which]) {
         my global_types_resolved[which] = true;
-        if (which == GLOBAL_EMPTY_OBJECT || which == GLOBAL_ANY_FUNCTION) {
+        if (which == GLOBAL_EMPTY_OBJECT || which == GLOBAL_ANY_FUNCTION || which == GLOBAL_UNKNOWN_EMPTY_OBJECT) {
             Ty* empty = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | (which == GLOBAL_ANY_FUNCTION ? TYF_NON_INFERRABLE : 0));
             empty->anonymous.state = arena_new(&my arena, TyObjectState);
             empty->anonymous.state->members = arena_new(&my arena, Members);
@@ -147,6 +148,7 @@ static Ty const* global_type(Checker* me, GlobalType which) {
 Ty const* ty_global_function_type(Checker* me) { return global_type(me, GLOBAL_FUNCTION); }
 Ty const* ty_global_object_type(Checker* me) { return global_type(me, GLOBAL_OBJECT); }
 Ty const* ty_empty_object_type(Checker* me) { return global_type(me, GLOBAL_EMPTY_OBJECT); }
+Ty const* ty_unknown_empty_object_type(Checker* me) { return global_type(me, GLOBAL_UNKNOWN_EMPTY_OBJECT); }
 Ty const* ty_any_function_type(Checker* me) { return global_type(me, GLOBAL_ANY_FUNCTION); }
 
 // The type of a regular expression literal
@@ -358,7 +360,16 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     ) {
         return true;
     }
-    if ((sf & TYF_OBJECT) && (tf & TYF_NON_PRIMITIVE)) return true;
+    if ((sf & TYF_OBJECT) && (tf & TYF_NON_PRIMITIVE)) {
+        // `{}` may be a primitive, so it isn't a strict subtype of `object` (unless it's a fresh `{}` literal)
+        if (st->relation != TY_RELATION_STRICT_SUBTYPE || s->kind != TY_ANONYMOUS || s->anonymous.function ||
+            (sf & TYF_FRESH_OBJECT)
+        ) {
+            return true;
+        }
+        Members const* members = ty_members(me, s);
+        return members->prop_count || members->call_count || members->construct_count || members->index_count || members->mapped;
+    }
     // Enum literals and computed members carry an enum flag; enum types themselves are aliased unions
     if (((sf | tf) & (TYF_ENUM | TYF_ENUM_LITERAL)) || (s->kind == TY_UNION && t->kind == TY_UNION && s->alias && t->alias)) {
         return is_simple_related_enum(me, st, s, t);

@@ -369,7 +369,7 @@ static Ty const* adjusted_type_with_facts(Checker* me, Ty const* ty, u32 facts) 
     bool strict = compiler_options()->strict_null_checks;
     bool was_unknown = strict && (ty->flags & TYF_UNKNOWN);
     if (was_unknown) {
-        Ty const* parts[3] = { ty_empty_object_type(me), ty_intrinsic(me, TY_NULL), ty_intrinsic(me, TY_UNDEFINED) };
+        Ty const* parts[3] = { ty_unknown_empty_object_type(me), ty_intrinsic(me, TY_NULL), ty_intrinsic(me, TY_UNDEFINED) };
         Ty const* unknown_union = ty_union(me, parts, 3, nullptr, (TyList){0});
         Ty const* filtered = type_with_facts(me, unknown_union, facts);
         return filtered == unknown_union ? ty : filtered;
@@ -1001,7 +1001,7 @@ static Ty const* narrowed_type_uncached(Checker* me, Ty const* type, Ty const* c
         if (check_derived) return filter_type(me, type, is_not_derived_from, candidate);
         bool was_unknown = (type->flags & TYF_UNKNOWN) != 0;
         if (was_unknown) {
-            Ty const* parts[3] = { ty_empty_object_type(me), ty_intrinsic(me, TY_NULL), ty_intrinsic(me, TY_UNDEFINED) };
+            Ty const* parts[3] = { ty_unknown_empty_object_type(me), ty_intrinsic(me, TY_NULL), ty_intrinsic(me, TY_UNDEFINED) };
             type = ty_union(me, parts, 3, nullptr, (TyList){0});
         }
         Ty const* true_type = narrowed_type(me, type, candidate, true, false);

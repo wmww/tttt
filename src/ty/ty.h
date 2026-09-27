@@ -664,8 +664,8 @@ struct Checker {
     InternTable links;  // Symbol -> SymbolLinks, AST node -> Ty, Generic -> type parameter list...
     Ty const* array_target;
     Ty const* readonly_array_target;
-    Ty const* global_types[12]; // GlobalType in relate.c: String, Number... looked up on first use
-    bool global_types_resolved[12];
+    Ty const* global_types[13]; // GlobalType in relate.c: String, Number... looked up on first use
+    bool global_types_resolved[13];
     u32 instantiation_depth;
     // Conditional types picked as the branch of a conditional type being instantiated now, which don't count towards
     // instantiation_depth (tsc resolves those in a loop, getConditionalType's tailCount), and the next ty_instantiate()
@@ -1001,6 +1001,8 @@ Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
 // with `ctx`), else what is assigned to it
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx);
 Ty const* ty_empty_object_type(Checker* me); // `{}`
+// Also `{}`, but only as the non-nullish part of `unknown` while narrowing it (tsc's unknownEmptyObjectType, for TS2638)
+Ty const* ty_unknown_empty_object_type(Checker* me);
 Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file); // `module` of a CommonJS file
 // What a context-sensitive function is while context-sensitive arguments are skipped (tsc's anyFunctionType): no
 // members, non-inferrable, related to every function type

@@ -161,6 +161,19 @@ static TyList instantiate_list(Checker* me, TyList list, TyMapper const* mapper,
     return changed ? (TyList){ .data = buf, .len = list.len } : list;
 }
 
+// Whether every constituent of the constraint of a mapped type's type variable is an array or tuple (tsc's everyType
+// isArrayOrTupleType of getConstraintOfTypeParameter)
+static bool mapped_variable_is_list(Checker* me, Ty const* variable) {
+    Ty const* constraint = ty_param_constraint(me, variable);
+    if (!constraint) return false;
+    if (constraint->kind != TY_UNION) return ty_is_array(me, constraint) || ty_is_tuple(constraint);
+    for (u32 i = 0; i < constraint->composite.types.len; i++) {
+        Ty const* part = constraint->composite.types.data[i];
+        if (!ty_is_array(me, part) && !ty_is_tuple(part)) return false;
+    }
+    return true;
+}
+
 // A homomorphic mapped type (`{ [P in keyof T]: X }`) instantiated with an array or tuple for T is an array or tuple of
 // the template, not an object with the array methods mapped, with a union for T a union, and with a primitive for T the
 // primitive (tsc's instantiateMappedType). Null if this isn't that
@@ -188,9 +201,16 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (list == variable) return nullptr;
     u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
     if (list->kind != TY_UNION && !(list->flags & (mappable | TYF_ERROR))) return list;
+    // any for a T constrained to arrays or tuples maps to an array too: `{ [K in keyof T]: X }` with `T extends
+    // readonly unknown[]` is `X[]` for any (tsc's instantiateConstituent)
+    bool any_as_array = list->kind == TY_ANY && !mapped->name_type && mapped_variable_is_list(me, variable);
     // (With an `as` clause, arrays and tuples map like any object)
-    if (list->kind != TY_UNION && (list->kind != TY_REFERENCE || mapped->name_type)) return nullptr;
+    if (list->kind != TY_UNION && !any_as_array && (list->kind != TY_REFERENCE || mapped->name_type)) return nullptr;
     if (root != ty) mapper = ty_compose_mappers(me, ty->anonymous.mapper, mapper);
+    if (any_as_array) {
+        TyMapper const* element_mapper = mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
+        return ty_array(me, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), mapped->readonly > 0);
+    }
     if (list->kind == TY_UNION) {
         // Distributes over a union (tsc's mapTypeWithAlias): `Mutable<A | B>` is `Mutable<A> | Mutable<B>` by the
         // name it was written with. Primitives map to themselves

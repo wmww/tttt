@@ -2372,8 +2372,30 @@ Ty const* ty_private_name_owner(Checker* me, Expr const* private_name, Atom cons
     return class_item_is_static(item) ? ty_static_type_of(me, class_decl->symbol) : ty_declared_type_of(me, class_decl->symbol);
 }
 
+// tsc's isEmptyAnonymousObjectType
+static bool is_empty_anonymous_object(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS || ty->anonymous.function) return false;
+    Members const* members = ty_members(me, ty);
+    return !members->prop_count && !members->call_count && !members->construct_count && !members->index_count &&
+        !members->mapped;
+}
+
+// tsc's hasEmptyObjectIntersection: `{}` from narrowing `unknown`, or an intersection whose constraint is `{}` (`T & {}`),
+// which are assignable to `object` but may be primitives
+static bool has_empty_object_intersection(Checker* me, Ty const* ty) {
+    u32 len = ty->kind == TY_UNION ? ty->composite.types.len : 1;
+    for (u32 i = 0; i < len; i++) {
+        Ty const* part = ty->kind == TY_UNION ? ty->composite.types.data[i] : ty;
+        if (part == ty_unknown_empty_object_type(me)) return true;
+        if (part->kind == TY_INTERSECTION) {
+            Ty const* constraint = ty_base_constraint(me, part);
+            if (is_empty_anonymous_object(me, constraint ? constraint : part)) return true;
+        }
+    }
+    return false;
+}
+
 // tsc's checkInExpression
-// TODO: TS2638 for a right operand that may be a primitive (`{}`, an intersection with `{}`: hasEmptyObjectIntersection)
 void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* right_expr, ErrorCtx* errs) {
     Ty const* right = ty_expr_type(me, right_expr);
     if (left_expr->tag == EXPR_PRIVATE_NAME) {
@@ -2397,8 +2419,16 @@ void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* righ
             ty_check_assignable(me, left, ty_union(me, keys, 3, nullptr, (TyList){0}), left_expr->inner_span, errs);
         }
     }
-    right = ty_check_non_null_type(me, right, right_expr, errs);
-    if (right) ty_check_assignable(me, right, ty_intrinsic(me, TY_NON_PRIMITIVE), right_expr->inner_span, errs);
+    Ty const* non_null = ty_check_non_null_type(me, right, right_expr, errs);
+    if (!non_null) return;
+    if (!ty_is_related(me, non_null, ty_intrinsic(me, TY_NON_PRIMITIVE), TY_RELATION_ASSIGNABLE)) {
+        ty_check_assignable(me, non_null, ty_intrinsic(me, TY_NON_PRIMITIVE), right_expr->inner_span, errs);
+    } else if (has_empty_object_intersection(me, right)) {
+        cstr right_str = ty_to_cstr(me, right);
+        error_ctx_error_d(errs, right_expr->inner_span, 2638, "Type '", right_str,
+            "' may represent a primitive value, which is not permitted as the right operand of the 'in' operator.");
+        cstr_drop(&right_str);
+    }
 }
 
 // tsc's checkPropertyAccessExpressionOrQualifiedName for a PrivateIdentifier, and checkPrivateIdentifierPropertyAccess
