@@ -1088,7 +1088,11 @@ void scope_add_port(Scope* me, PortItem* item) {
             break;
     }
 
-    if (!port_item_is_export(item) && !item->type_only) check_require_exports_collision(me, item->decl_name);
+    if (!port_item_is_export(item)) {
+        // (Its local name: an imported or exported name is an identifier name, tsc's isIdentifierName)
+        scope_check_strict_identifier(me, item->decl_name, false);
+        if (!item->type_only) check_require_exports_collision(me, item->decl_name);
+    }
     bool exported = port_item_declares_export(item);
     if (port_item_is_export(item) && !(my container && my kind != SCOPE_ENUM)) {
         return; // TODO: TS1194 export declarations are not permitted in a namespace... and nowhere else either
