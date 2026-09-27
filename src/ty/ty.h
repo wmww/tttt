@@ -815,6 +815,7 @@ Ty const* ty_string_mapping(Checker* me, TyStringMapping mapping, Symbol const* 
 // template literals from resolving. `{ a: T }` isn't, nor is `string & { tag: T }`
 bool ty_is_generic_index(Ty const* ty);
 bool ty_is_pattern_literal(Ty const* ty); // A template or mapping of nothing but placeholders: `a${string}`
+bool ty_is_valid_index_key(Ty const* ty); // tsc's isValidIndexKeyType: string, number, symbol, a pattern, `string & T`
 bool ty_is_pattern_placeholder(Ty const* ty); // Something a pattern can be made of: string, number, a pattern...
 // tsc's isTypeMatchedByTemplateLiteralType, isMemberOfStringMapping, templateLiteralTypesDefinitelyUnrelated
 bool ty_template_matches(Checker* me, Ty const* source, Ty const* target);

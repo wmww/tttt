@@ -1249,6 +1249,16 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     return builder_finish(me, &builder);
 }
 
+bool ty_is_valid_index_key(Ty const* ty) {
+    if (ty->kind == TY_INTRINSIC && (ty->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL))) return true;
+    if (ty_is_pattern_literal(ty)) return true;
+    if (ty->kind != TY_INTERSECTION || ty_is_generic_index(ty)) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty_is_valid_index_key(ty->composite.types.data[i])) return true;
+    }
+    return false;
+}
+
 // `string & Tag`: a key of an index signature of its own (tsc's isValidIndexKeyType)
 static bool is_index_key_intersection(Ty const* ty) {
     if (ty->kind != TY_INTERSECTION || ty_is_generic_index(ty)) return false;

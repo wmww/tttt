@@ -70,9 +70,25 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
 
-        case INTERFACE_KEY_INDEX:
+        case INTERFACE_KEY_INDEX: {
             type_typecheck(&my key.index.type, errs);
-            break;
+            // tsc's checkGrammarIndexSignatureParameters, the type part
+            Checker* checker = current_checker;
+            Ty const* key = ty_of_node(&my key.index.type);
+            TyList parts = key->kind == TY_UNION ? key->composite.types : (TyList){ .data = &key, .len = 1 };
+            bool literal = false, valid = true;
+            for (u32 i = 0; i < parts.len; i++) {
+                literal |= (parts.data[i]->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL)) != 0;
+                valid &= ty_is_valid_index_key(parts.data[i]);
+            }
+            if (literal || ty_is_generic_object(checker, key) || ty_is_generic_index(key)) {
+                error_ctx_grammar_error_d(errs, my key.index.name, 1337, "An index signature parameter type cannot be a "
+                    "literal type or generic type. Consider using a mapped object type instead.");
+            } else if (!valid) {
+                error_ctx_grammar_error_d(errs, my key.index.name, 1268,
+                    "An index signature parameter type must be 'string', 'number', 'symbol', or a template literal type.");
+            }
+        }   break;
 
         case INTERFACE_KEY_EXPR:
             ty_check_computed_name(current_checker, my key.expr.ref, my key.span, true, errs);
