@@ -70,6 +70,7 @@ typedef struct TypeDecl {
     // A JavaScript file's `@typedef`/`@callback` (jsdoc_typedef_statements()): not part of the baselines' walk, and
     // exported from a module's top level (tsc's jsdocTreatAsExported)
     bool jsdoc;
+    bool jsdoc_enum; // `/** @enum {T} */ const E = ...`: named by the variable, of type T
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);

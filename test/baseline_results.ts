@@ -1022,8 +1022,8 @@ const baselines = {
     },
     'argumentsReferenceInConstructor4_Js': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'argumentsReferenceInConstructor5_Js': {
         errors: true,
@@ -1038,7 +1038,7 @@ const baselines = {
     'argumentsReferenceInConstructor7_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInFunction1_Js': {
         errors: false,
@@ -1058,17 +1058,17 @@ const baselines = {
     'argumentsReferenceInMethod3_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod4_Js': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'argumentsReferenceInMethod5_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod6_Js': {
         errors: true,
@@ -19171,7 +19171,7 @@ const baselines = {
         types: true,
     },
     'jsEnumTagOnObjectFrozen': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19788,7 +19788,7 @@ const baselines = {
     'jsdocTypedefMissingType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypedefNoCrash': {
         errors: true,
@@ -41747,7 +41747,7 @@ const baselines = {
     },
     'destructuringParameterDeclaration9(strict=false)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringParameterDeclaration9(strict=true)': {
@@ -51431,8 +51431,8 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsEnumTag': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsEnums': {
@@ -51672,7 +51672,7 @@ const baselines = {
     },
     'jsDeclarationsParameterTagReusesInputNodeInEmit1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsParameterTagReusesInputNodeInEmit2': {
@@ -51802,18 +51802,18 @@ const baselines = {
     },
     'enumTag': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enumTagCircularReference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'enumTagImported': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'enumTagOnExports': {
         errors: true,
@@ -51827,8 +51827,8 @@ const baselines = {
     },
     'enumTagUseBeforeDefCrash': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'errorIsolation': {
         errors: true,
@@ -60343,7 +60343,7 @@ const baselines = {
     'malformedTags': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'methodsReturningThis': {
         errors: true,

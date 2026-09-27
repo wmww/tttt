@@ -112,6 +112,25 @@ static void variable_statement_check_let_names(VariableStatement const* me, Init
     binding_check_let_name(&i->binding, errs);
 }
 
+// `/** @enum {T} */ const E = { a: v }`: every member's value is checked against T (tsc's checkObjectLiteral)
+static void variable_check_jsdoc_enum(InitializedBinding const* me, ErrorCtx* errs) {
+    if (my binding.tag != BINDING_IDENTIFIER || !my binding.symbol || my value.tag != EXPR_OBJECT) return;
+    SourceFile const* file = my binding.content_span.source;
+    if (!file || !file->is_js) return;
+    Symbol const* symbol = my binding.symbol;
+    TypeDecl const* enum_decl = nullptr;
+    for (u32 d = 0; d < symbol->decl_count && !enum_decl; d++) {
+        TypeDecl const* decl = symbol->decls[d].kind == SYMBOL_DECL_TYPE_ALIAS ? symbol->decls[d].node : nullptr;
+        if (decl && decl->jsdoc_enum) enum_decl = decl;
+    }
+    if (!enum_decl) return;
+    Ty const* type = ty_of_node(&enum_decl->type);
+    for_each (i, vec_object_expr_item, &my value.object) {
+        if (i->tag != OBJECT_ITEM_PROPERTY || i->jsdoc_type) continue;
+        ty_check_assignable_expr(current_checker, expr_get_type(&i->value), type, i->span, &i->value, errs);
+    }
+}
+
 void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs) {
     variable_statement_check_using(me, false, errs);
     for_each (i, vec_initialized_binding, &my initializers) {
@@ -157,6 +176,7 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
             variable_statement_check_let_names(me, i, errs);
         }
         initialized_binding_typecheck(i, errs);
+        variable_check_jsdoc_enum(i, errs);
         if ((my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING) && i->value.tag != EXPR_IMPLICIT_ANY) {
             // tsc widens it first: no excess property checks
             Ty const* type = ty_widened_objects(current_checker, expr_get_type(&i->value));

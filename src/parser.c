@@ -59,6 +59,8 @@ typedef struct ParserShared {
     // type forms (`?T`, `T=`, `*`, `function(...)`...) are allowed
     bool in_jsdoc;
     const char* jsdoc_end; // The `*/` of the comment being parsed, with in_jsdoc
+    // The type alias an `@enum` on the statement just parsed declares, for the statement list to append after it
+    Statement* jsdoc_enum;
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
     u32 errors_attempted; // Every parse_error() call, the ones dropped too (a position that already has one)
 } ParserShared;
@@ -81,6 +83,10 @@ typedef struct FunctionCtx {
 void parser_shared_drop(ParserShared* me) {
     vec_u8_drop(&my fail_cache);
     vec_jsdoc_range_drop(&my jsdoc_comments);
+    if (my jsdoc_enum) {
+        statement_drop(my jsdoc_enum);
+        free(my jsdoc_enum);
+    }
     vec_error_drop(&my errors);
 }
 
@@ -2700,6 +2706,19 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
             if (after < end && *after == '{') {
                 parse_jsdoc_type_expression(parent, &after, end, &tag);
                 c = after;
+            } else if ((tag.kind == JSDOC_TAG_TYPE || tag.kind == JSDOC_TAG_ENUM) && after < end && after > c &&
+                !memchr(c, '\n', (size_t)(after - c)) && *after != '@'
+            ) {
+                // Braces may be omitted (tsc's parseJSDocTypeExpression(mayOmitBraces)): `@type object`, `@enum number`
+                const char* type_start = after;
+                TypeNode type;
+                if (parse_jsdoc_bare_type(parent, &after, end, &type)) {
+                    tag.has_type = true;
+                    tag.type = type;
+                    tag.type_span = span_make(source, type_start, after);
+                    while (tag.type_span.sv.size && is_jsdoc_space(tag.type_span.sv.buf[tag.type_span.sv.size - 1])) tag.type_span.sv.size--;
+                    c = after;
+                }
             }
         }   break;
         default:
@@ -2867,67 +2886,6 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
     }
 }
 
-// A declaration's `@template` tags as its type parameters, when it has none written (tsc's
-// getJSDocTypeParameterDeclarations: not the templates of a comment with a `@typedef`/`@callback`, those are its)
-static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
-    if (!generic_empty(generic)) return;
-    for_each (i, vec_jsdoc_tag, tags) {
-        if (i->kind == JSDOC_TAG_TYPEDEF || i->kind == JSDOC_TAG_CALLBACK) return;
-    }
-    for_each (i, vec_jsdoc_tag, tags) {
-        if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
-        GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true };
-        if (i->has_type) {
-            item.extends = jsdoc_take_type(i, nullptr);
-            item.extends.from_jsdoc = false;
-            item.extends_explicit = true;
-        }
-        if (i->has_default) {
-            item.fallback = i->default_type;
-            item.fallback_explicit = true;
-            i->has_default = false;
-        }
-        vec_generic_item_push(&generic->items, item);
-    }
-}
-
-// What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
-static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
-    jsdoc_apply_template(tags, &function->generic);
-    for_each (i, vec_jsdoc_tag, tags) function->jsdoc_typed |= i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE;
-    jsdoc_apply_type_signature(tags, function);
-    for_each (i, vec_function_arg, &function->args) {
-        Binding* binding = &i->initializer.binding;
-        if (binding->has_explicit_type) continue;
-        JsDocTag* tag = jsdoc_param_tag(tags, function, i);
-        if (!tag) continue;
-        bool variadic = tag->variadic;
-        bool bracketed = tag->bracketed;
-        binding->explicit_type = jsdoc_take_type(tag, &binding->explicit_type_span);
-        binding->has_explicit_type = true;
-        if (binding->explicit_type.jsdoc_optional || bracketed) {
-            // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
-            if (i->initializer.value.tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
-        }
-        if (variadic && i->rest) {
-            binding->explicit_type = type_array(c_new(TypeNode, binding->explicit_type), false);
-            binding->explicit_type.parsed = true;
-        }
-        binding->explicit_type.from_jsdoc = true;
-    }
-    if (!function->ret_explicit && !function->is_constructor) {
-        JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_RETURNS);
-        if (tag) {
-            function->ret = jsdoc_take_type(tag, &function->ret_span);
-            function->ret_explicit = true;
-            if (tag->predicate && !function->predicate) {
-                function->predicate = tag->predicate;
-                tag->predicate = nullptr;
-            }
-        }
-    }
-}
-
 // `@` to the end of the tag's name: where tsc's declarations made by tags are
 static Span jsdoc_tag_decl_span(JsDocTag const* tag) {
     const char* end = span_valid(tag->name) ? tag->name.sv.buf + tag->name.sv.size : tag->tag_name.sv.buf + tag->tag_name.sv.size;
@@ -2982,6 +2940,11 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
             type = type_any;
         }
         bool optional = tag->bracketed || type.jsdoc_optional;
+        if (tag->bracketed && !type.jsdoc_optional) {
+            // (tsc's addOptionality of a bracketed property tag: the declared type says undefined)
+            type = type_composite_without_simplify(TYPE_UNION, type, jsdoc_synthesized(type_undefined));
+            type.parsed = true;
+        }
         Span name_span = span_make(tag->name.source, name.buf, name.buf + name.size);
         vec_interface_member_push(&members, interface_member_make(
             jsdoc_tag_decl_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type
@@ -2990,6 +2953,88 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
     TypeNode ret = type_interface((Interface){ .members = members, .parsed = true, .span = span });
     ret.parsed = true;
     return ret;
+}
+
+// A declaration's `@template` tags as its type parameters, when it has none written (tsc's
+// getJSDocTypeParameterDeclarations: not the templates of a comment with a `@typedef`/`@callback`, those are its)
+static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
+    if (!generic_empty(generic)) return;
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind == JSDOC_TAG_TYPEDEF || i->kind == JSDOC_TAG_CALLBACK) return;
+    }
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
+        GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true };
+        if (i->has_type) {
+            item.extends = jsdoc_take_type(i, nullptr);
+            item.extends.from_jsdoc = false;
+            item.extends_explicit = true;
+        }
+        if (i->has_default) {
+            item.fallback = i->default_type;
+            item.fallback_explicit = true;
+            i->has_default = false;
+        }
+        vec_generic_item_push(&generic->items, item);
+    }
+}
+
+// What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
+static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
+    jsdoc_apply_template(tags, &function->generic);
+    for_each (i, vec_jsdoc_tag, tags) function->jsdoc_typed |= i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE;
+    jsdoc_apply_type_signature(tags, function);
+    for_each (i, vec_function_arg, &function->args) {
+        Binding* binding = &i->initializer.binding;
+        if (binding->has_explicit_type) continue;
+        JsDocTag* tag = jsdoc_param_tag(tags, function, i);
+        if (!tag) continue;
+        bool variadic = tag->variadic;
+        bool bracketed = tag->bracketed;
+        // `@param {Object} o` + `@param {string} o.a`: a literal of the nested ones
+        isize children = 0;
+        while (tag + 1 + children < tags->data + tags->size && tag[1 + children].kind == JSDOC_TAG_PARAM &&
+            span_valid(tag[1 + children].name) && jsdoc_name_is_under(tag[1 + children].name.sv, tag->name.sv)
+        ) {
+            children++;
+        }
+        bool direct = false; // (`o.a.b` without `o.a` is TS8032, which isn't reported: o keeps its type)
+        for (isize j = 1; j <= children && !direct; j++) {
+            csview rest = csview_from_range(tag[j].name.sv.buf + tag->name.sv.size + 1, tag[j].name.sv.buf + tag[j].name.sv.size);
+            direct = !memchr(rest.buf, '.', (size_t)rest.size);
+        }
+        bool array;
+        if (direct && jsdoc_is_object_type(tag, &array)) {
+            Span type_span = tag->type_span;
+            TypeNode literal = jsdoc_type_literal(tag + 1, children, tag->name.sv, jsdoc_tag_decl_span(tag));
+            if (array) literal = type_array(c_new(TypeNode, literal), false), literal.parsed = true;
+            type_drop(&tag->type);
+            tag->type = literal;
+            tag->type_span = type_span;
+        }
+        binding->explicit_type = jsdoc_take_type(tag, &binding->explicit_type_span);
+        binding->has_explicit_type = true;
+        if (binding->explicit_type.jsdoc_optional || bracketed) {
+            // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
+            if (i->initializer.value.tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
+        }
+        if (variadic && i->rest) {
+            binding->explicit_type = type_array(c_new(TypeNode, binding->explicit_type), false);
+            binding->explicit_type.parsed = true;
+        }
+        binding->explicit_type.from_jsdoc = true;
+    }
+    if (!function->ret_explicit && !function->is_constructor) {
+        JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_RETURNS);
+        if (tag) {
+            function->ret = jsdoc_take_type(tag, &function->ret_span);
+            function->ret_explicit = true;
+            if (tag->predicate && !function->predicate) {
+                function->predicate = tag->predicate;
+                tag->predicate = nullptr;
+            }
+        }
+    }
 }
 
 // The function type of a `@callback` tag and its `@param`/`@returns` tags (tsc's JSDocSignature)
@@ -8003,6 +8048,14 @@ static bool statement_takes_semicolon(Statement const* me) {
 }
 
 // ctx is the kind of list: source elements, block statements or a switch clause's statements
+// What a statement parsed outside of a statement list (an `if` arm) left behind
+static void jsdoc_drop_enum(Parser* p) {
+    if (!p->shared->jsdoc_enum) return;
+    statement_drop(p->shared->jsdoc_enum);
+    free(p->shared->jsdoc_enum);
+    p->shared->jsdoc_enum = nullptr;
+}
+
 // list_start: where the list's own text starts (past the `{`), for the JSDoc comments it binds
 static bool parse_append_statement_sequence(Parser* parent, bool toplevel, ParsingContext ctx, const char* list_start, VecStatement* ret) {
     Parser p = parser(parent);
@@ -8024,8 +8077,13 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             statement.span = span_make(p.shared->source, p.pos, p.pos + 1);
             vec_statement_push(ret, statement);
             p.pos++;
-        } else if (parse_statement(&p, toplevel, &statement)) {
+        } else if (jsdoc_drop_enum(&p), parse_statement(&p, toplevel, &statement)) {
             vec_statement_push(ret, statement);
+            if (p.shared->jsdoc_enum) {
+                vec_statement_push(ret, *p.shared->jsdoc_enum);
+                free(p.shared->jsdoc_enum);
+                p.shared->jsdoc_enum = nullptr;
+            }
             if (p.shared->source->is_js) {
                 jsdoc_bind_comments(&p, jsdoc_from, p.pos, true, toplevel, ret);
                 jsdoc_from = p.pos;
@@ -8590,6 +8648,25 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             VecInitializedBinding* list = &statement->decl.variable.initializers;
             if (vec_initialized_binding_size(list) != 1) break;
             InitializedBinding* initializer = list->data;
+            JsDocTag* enum_tag = jsdoc_find_typed(&tags, JSDOC_TAG_ENUM);
+            if (enum_tag && initializer->binding.tag == BINDING_IDENTIFIER) {
+                // `/** @enum {T} */ const E = {...}`: E is also a type alias of T (tsc's JSDocEnumTag)
+                Span span = jsdoc_tag_decl_span(enum_tag);
+                if (p->shared->jsdoc_enum) {
+                    statement_drop(p->shared->jsdoc_enum);
+                    free(p->shared->jsdoc_enum);
+                }
+                TypeNode type = jsdoc_take_type(enum_tag, nullptr);
+                type.from_jsdoc = false;
+                p->shared->jsdoc_enum = c_new(Statement, (Statement){
+                    .tag = STATEMENT_DECL_TYPE,
+                    .decl.type = {
+                        .name = initializer->binding.content_span, .full_span = span, .type = type, .jsdoc = true,
+                        .jsdoc_enum = true,
+                    },
+                    .span = span,
+                });
+            }
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
             FunctionImpl* function = jsdoc_function_of(&initializer->value);
             if (function) jsdoc_apply_function(&tags, function);
