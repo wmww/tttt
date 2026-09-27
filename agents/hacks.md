@@ -354,6 +354,14 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   properties of a renaming `as` clause lose their declarations.
 
 ## Type core (`src/ty/`)
+- Relation error reporting (`relate.c`, plan 34): `flush_incompatible()` reads a property's name back out of its
+  pending "Types of property 'NAME' are incompatible." message (fixed prefix length) instead of storing it. tsc's
+  `headMessage` is approximated by `RelationState.at_top` (the first `is_related_to()` call): a suppressed top-level
+  head is only kept when a pending incompatible step suppressed it, because the callers of `ty_explain_unrelated()`
+  rely on other overrides (TS2741...) dropping the natural head. `skipped_source/target` (tsc's lastSkippedInfo) and
+  `override_next_head` aren't restored by `report_truncate()` (tsc's resetErrorInfo restores both).
+- `check_type_only_value()` (expr.c): the start of a type-only default import's clause is found by scanning back from
+  the name for `type` (PortItem has no span for the import clause).
 - Substitution types (TY_SUBSTITUTION): the true-branch chain around a node is `TypeNode.flow`, set by the resolve
   walk; it flips at function parameters and index signature keys and stops only at function bodies (setter write types,
   `typeof` operands, arrow functions in type queries not special). The homomorphic mapped key rule (`number |

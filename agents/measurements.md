@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 34 (error text fidelity, todo entry 3)
+Suite 8958 -> **9090** (errors 10884, symbols 12218, types 10523), no lost components. failstats' "same
+codes+positions, message text differs" 432 -> **302**; `./errtextdiff.py --coarse`: tests fixed by one part: chain 92,
+header 77, underline 60, related 44, outside diagnostics 12. Corpora unchanged: tsc 0, type-fest 11, valibot/react/nest
+0, webpack 3977 (bench not rerun: reporting-only changes, the relation fast paths are untouched).
+
 ## 2026-09-27, plan 30 stage 3
 Suite 8953 -> **8958** (errors 10754, symbols 12184, types 10498), no losses. Corpora: tsc 0, valibot/react/nest 0,
 type-fest 19 -> **11**, webpack 3981 -> **3977**. Callgrind (instructions) vs the session start: tsc corpus 5.794 G ->

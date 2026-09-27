@@ -10,8 +10,8 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    assignments/properties, `@template`), ranked into plan 26 stage 3. No sixth corpus pinned (entry 9 has it).
 2. ~~Plan 30 stage 3~~ done, plan 30 complete and deleted: generic TS2536, R17 (type-fest 19 -> 11), `infer X
    extends C` names resolved at last, the mapped-key half of conditional flow types; suite 8953 -> 8958.
-3. **Plan 34: error text fidelity**, stage 1 (the tool) and as much of stage 2 as fits: the 431 tests with the right
-   codes at the right places and the wrong text.
+3. ~~Plan 34 stages 1-2~~ done: `errtextdiff.py`, tsc's incompatible stack and a dozen message rules; the bucket
+   432 -> 302, suite 8958 -> 9090. The rest is a ranked queue in plan 34 (no session scheduled for it).
 4. **Plan 32 planning** (mixin classes, a draft): research tsc's mixin rules against tttt's `class_base()`, prototype,
    rewrite the plan. If it turns out to be one session of work, execute it in the same session.
 5. **Plan 26 stage 3** (`@typedef`/`@template`, in the order plan 26's stage 3 section now gives from webpack; store
