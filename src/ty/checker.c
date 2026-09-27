@@ -208,6 +208,7 @@ Checker* checker_new(Program* program) {
     my next_type_id = 1;
     my intrinsics[TY_ANY] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_AUTO] = make_intrinsic(me, "any", TYF_ANY);
+    my intrinsics[TY_WILDCARD] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_ERROR] = make_intrinsic(me, "any", TYF_ANY | TYF_ERROR);
     my intrinsics[TY_CIRCULAR] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_UNKNOWN_] = make_intrinsic(me, "unknown", TYF_UNKNOWN);
@@ -536,6 +537,9 @@ static u32 remove_literals_matched_by_patterns(Checker* me, Ty const** types, u3
 // Subtype reduction is a separate operation (TODO, the legacy type_composite() does its own through the relation).
 Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
     if (len == 1) return types[0];
+    for (u32 i = 0; i < len; i++) {
+        if (types[i] == my intrinsics[TY_WILDCARD]) return types[i];
+    }
     TyBuf buf = {0};
     ty_buf_add_flattened(&buf, TY_UNION, types, len);
 
@@ -907,6 +911,9 @@ static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const
 
 static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object) {
     if (len == 1) return types[0];
+    for (u32 i = 0; i < len; i++) {
+        if (types[i] == my intrinsics[TY_WILDCARD]) return types[i];
+    }
     TyBuf buf = {0};
     ty_buf_add_flattened(&buf, TY_INTERSECTION, types, len);
     // The members of an intersection are regular (freshLiteralTypesInIntersections)
@@ -1676,6 +1683,7 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
 }
 
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
+    if (object == my intrinsics[TY_WILDCARD] || index == my intrinsics[TY_WILDCARD]) return my intrinsics[TY_WILDCARD];
     index = ty_regular(me, index);
     Ty const* resolved = try_resolve_indexed(me, object, index);
     if (resolved) return resolved;
@@ -1824,6 +1832,7 @@ Ty const* ty_conditional(
     Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
     Ty const* root, TyMapper const* mapper, bool distributive, TyList infers
 ) {
+    if (check_type == my intrinsics[TY_WILDCARD] || extends == my intrinsics[TY_WILDCARD]) return my intrinsics[TY_WILDCARD];
     Ty const* resolved = ty_conditional_resolve(me, ty_actual_type_variable(me, check_type), extends, infers, if_true, if_false);
     if (resolved) return resolved;
     u64 stack_key[64];

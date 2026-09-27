@@ -610,6 +610,9 @@ typedef enum TyIntrinsic {
     // Creation order copies tsc's, since union members print in id order
     TY_ANY,
     TY_AUTO, // The declared type of `let x;` under noImplicitAny: any, but typed by control flow (tsc's autoType)
+    // What type parameters are while a conditional type checks whether it is definitely false (tsc's wildcardType):
+    // any, and a conditional type, indexed access, union or intersection with it in it is it
+    TY_WILDCARD,
     TY_ERROR,
     // What a declaration whose type depends on itself is (tsc's reportCircularityError gives plain any): kept apart
     // from `any` for TS7022 & co.

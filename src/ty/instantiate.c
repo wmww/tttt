@@ -292,6 +292,17 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     if (ty->anonymous.applies_type_args) return ty;
     Ty const* as_list = instantiate_mapped_over_list(me, ty, mapper);
     if (as_list) return as_list;
+    // A mapped type whose constraint becomes the wildcard is the wildcard (tsc's instantiateMappedType)
+    bool maps_to_wildcard = false;
+    for (u32 i = 0; i < mapper->len && !maps_to_wildcard; i++) maps_to_wildcard = mapper->targets[i] == ty_intrinsic(me, TY_WILDCARD);
+    if (maps_to_wildcard) {
+        Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+        MappedInfo const* mapped = root->anonymous.node && root->anonymous.node->tag == TYPE_INTERFACE ? ty_members(me, root)->mapped : nullptr;
+        if (mapped) {
+            Ty const* constraint = ty->anonymous.mapper ? ty_instantiate(me, mapped->constraint, ty->anonymous.mapper) : mapped->constraint;
+            if (ty_instantiate(me, constraint, mapper) == ty_intrinsic(me, TY_WILDCARD)) return ty_intrinsic(me, TY_WILDCARD);
+        }
+    }
     Ty const* target = ty->anonymous.target ? ty->anonymous.target : ty;
     TyMapper const* inner = ty->anonymous.mapper;
 

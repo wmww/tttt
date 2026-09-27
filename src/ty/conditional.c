@@ -303,6 +303,35 @@ static bool definitely_related(Checker* me, Ty const* check_type, Ty const* exte
     return ret;
 }
 
+// Whether the check type isn't assignable to the extends type whatever the type variables in them turn out to be: not
+// even with each of them the wildcard, which relates to everything (tsc's getPermissiveInstantiation). When the walk
+// can't tell which type variables there are, it doesn't know
+static bool definitely_unrelated(Checker* me, Ty const* check_type, Ty const* extends) {
+    if (!((check_type->flags | extends->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        return !ty_is_related(me, check_type, extends, TY_RELATION_ASSIGNABLE);
+    }
+    TyBuf params = {0};
+    MentionWalk walk = { .collect = &params };
+    bool unsure = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, extends, &walk, 0);
+    free(walk.visited);
+    bool ret = false;
+    if (!unsure) {
+        Ty const** wildcards = malloc(sizeof(Ty const*) * (params.len ? params.len : 1));
+        panic_if(!wildcards, "out of memory");
+        for (u32 i = 0; i < params.len; i++) wildcards[i] = ty_intrinsic(me, TY_WILDCARD);
+        TyMapper const* mapper = ty_mapper_new(
+            me, (TyList){ .data = params.data, .len = params.len }, (TyList){ .data = wildcards, .len = params.len }
+        );
+        free(wildcards);
+        Ty const* source = params.len ? ty_instantiate(me, check_type, mapper) : check_type;
+        Ty const* target = params.len ? ty_instantiate(me, extends, mapper) : extends;
+        ret = source != ty_intrinsic(me, TY_WILDCARD) && target != ty_intrinsic(me, TY_WILDCARD) &&
+            !ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
+    }
+    ty_buf_drop(&params);
+    return ret;
+}
+
 bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target) {
     bool mentions = false;
     return definitely_related(me, source, target, &mentions);
@@ -352,12 +381,12 @@ Ty const* ty_conditional_resolve(
         return ty_union(me, parts, 2, nullptr, (TyList){0});
     }
     if (inferred_extends->flags & (TYF_ANY | TYF_UNKNOWN)) return branch_type_with(me, if_true, mapper);
+    // Definitely false: not even with every type variable in either side the wildcard (tsc's permissive
+    // instantiation); definitely true: with each one unconstrained (restrictive); otherwise deferred
+    if (definitely_unrelated(me, check_type, inferred_extends)) return branch_type(me, if_false);
     bool mentions = false;
     if (definitely_related(me, check_type, inferred_extends, &mentions)) {
         return branch_type_with(me, if_true, mapper);
     }
-    // HACK: tsc picks the false branch only if the check fails even with every type variable replaced by `any`
-    // (permissive instantiation), and defers otherwise. There's no such instantiation here yet: with a type variable
-    // nested in either side, a failed check defers
     return mentions ? nullptr : branch_type(me, if_false);
 }
