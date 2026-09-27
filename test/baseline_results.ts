@@ -51347,7 +51347,7 @@ const baselines = {
     },
     'jsDeclarationsClassExtendsVisibility': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsClassImplementsGenericsSerialization': {
@@ -51472,7 +51472,7 @@ const baselines = {
     },
     'jsDeclarationsExportAssignedClassInstance3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsExportAssignedConstructorFunction': {
@@ -51492,7 +51492,7 @@ const baselines = {
     },
     'jsDeclarationsExportAssignmentExpressionPlusSecondary': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsExportAssignmentWithKeywordName': {
@@ -51527,7 +51527,7 @@ const baselines = {
     },
     'jsDeclarationsExportSubAssignments': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsExportedClassAliases': {
@@ -54396,19 +54396,19 @@ const baselines = {
         types: false,
     },
     'nodeModulesAllowJsCjsFromJs(module=node16)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJsCjsFromJs(module=node18)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJsCjsFromJs(module=nodenext)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJsConditionalPackageExports(module=node16)': {
         errors: false,
@@ -54686,12 +54686,12 @@ const baselines = {
         types: false,
     },
     'nodeModulesCJSEmit1(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesCJSEmit1(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60077,7 +60077,7 @@ const baselines = {
     },
     'commonJSAliasedExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'commonJSImportClassTypeReference': {
@@ -60422,7 +60422,7 @@ const baselines = {
     },
     'moduleExportAssignment5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleExportAssignment6': {
@@ -60457,7 +60457,7 @@ const baselines = {
     },
     'moduleExportPropertyAssignmentDefault': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleExportWithExportPropertyAssignment': {

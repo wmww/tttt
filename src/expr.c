@@ -291,6 +291,12 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         return;
     }
     my target = scope_get_value(names, my name.sv, &my symbol);
+    if (my target && names->file && names->file->is_commonjs && span_equals(my name, "exports") &&
+        my symbol == symbol_table_get(&names->binder->globals, my name.sv)
+    ) {
+        // A global `exports` doesn't hide the module (tsc's resolveNameHelper tries the file before the globals)
+        my target = my symbol = nullptr;
+    }
     if (!my target && names->file && names->file->is_js) {
         if (my require_call) {
             // tsc's requireSymbol, and the module like an import's (a declaration's aliases report it themselves)

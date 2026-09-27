@@ -1496,9 +1496,14 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 return assigned;
             }
             if (!found) {
-                if (compiler_options()->allow_synthetic_default_imports &&
-                    (!item->module_ref->file || item->module_ref->file->is_declaration)
+                SourceFile const* file = item->module_ref->file;
+                if (compiler_options()->allow_synthetic_default_imports && file && file->is_commonjs &&
+                    !symbol_get_export(module, c_sv("__esModule"))
                 ) {
+                    // A CommonJS JavaScript module's synthetic default is the module (tsc's canHaveSyntheticDefault)
+                    return module;
+                }
+                if (compiler_options()->allow_synthetic_default_imports && (!file || file->is_declaration)) {
                     return nullptr;
                 }
                 cstr module_name = module_name_for_error(module, item->module_ref, false);

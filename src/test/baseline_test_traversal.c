@@ -40,6 +40,13 @@ static cstr symbol_text(BaselineTestCase* ctx, Symbol const* symbol) {
     return ret;
 }
 
+static bool has_symbol_override(BaselineTestCase const* ctx, Span span) {
+    for (u32 i = 0; i < ctx->symbol_override_count; i++) {
+        if (span_eq(ctx->symbol_overrides[i].span, span)) return true;
+    }
+    return false;
+}
+
 static void add_symbol_override(BaselineTestCase* ctx, Span span, Symbol const* symbol) {
     if (!symbol || ctx->symbol_override_count >= c_arraylen(ctx->symbol_overrides)) return;
     ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
@@ -1095,7 +1102,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         }
         return;
     }
-    if (my target && my target->is_module && my target->module->file) {
+    if (my target && my symbol == my target && my target->is_module && my target->module->file) {
         // `exports` in a CommonJS file: the file's symbol, `"a"` declared by the whole file
         SourceFile const* file = my target->module->file;
         VecSpan declarations = vec_span_init();
@@ -1293,6 +1300,16 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         }
     }
     vec_span_drop(&info.declarations);
+    if (!info.found && has_symbol_override(ctx, my property->prop.outer_span)) {
+        // The target of a CommonJS assignment shows what it declares, even through an `exports` that is any
+        if (my property->form == PROPERTY_EXPR_DOT) {
+            baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my inner_span, .allow_declaration_empty = true });
+        }
+        expr_compile_test_info(&my property->expr, ctx);
+        has_compiled_expr_info = true;
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my property->prop.outer_span, .allow_declaration_empty = true });
+        info.found = true;
+    }
     if (!info.found && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
         !(key->flags & TYF_ENUM_LITERAL) && my property->prop.tag == EXPR_LITERAL &&
         !csview_starts_with(my property->prop.outer_span.sv, "#")
