@@ -63,6 +63,7 @@ typedef struct ParserShared {
 typedef struct FunctionFlags {
     bool is_async;
     bool is_generator;
+    Span asterisk; // The `*` of a generator
 } FunctionFlags;
 
 static const FunctionFlags function_flags_null = {0};
@@ -3628,6 +3629,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, Functi
     if (success) {
         ret->is_async = flags.is_async;
         ret->is_generator = flags.is_generator;
+        ret->asterisk = flags.asterisk;
     }
     return success;
 }
@@ -3665,6 +3667,7 @@ static bool parse_function_keyword_function(Parser* parent, bool is_async, Funct
     FunctionFlags flags = { .is_async = is_async };
     if (hop_char(&p, '*')) {
         flags.is_generator = true;
+        flags.asterisk = span_from_previous_char(&p);
         hop_whitespace(&p);
     }
 
@@ -3751,6 +3754,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         flags.is_async = true;
     }
     if (hop_char(&p, '*')) {
+        flags.asterisk = span_from_previous_char(&p);
         hop_whitespace(&p);
         must_be_method = true;
         flags.is_generator = true;
@@ -3829,7 +3833,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         // `*` and `get`/`set` commit to a method (tsc's parseMethodDeclaration/parseAccessorDeclaration): the
         // parameter list is missing, a body may follow
         expected_token_error(&p, "(");
-        func = (FunctionImpl){ .is_generator = flags.is_generator };
+        func = (FunctionImpl){ .is_generator = flags.is_generator, .asterisk = flags.asterisk };
         if (parse_block(&p, false, &func.body)) func.has_body = true;
         if (item.tag == OBJECT_ITEM_PROPERTY) item.tag = OBJECT_ITEM_METHOD;
         func.full_span = span_from(a);
@@ -4252,6 +4256,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         is_setter = true;
     } else if (!is_type && hop_char(&p, '*')) {
         function_flags.is_generator = true;
+        function_flags.asterisk = span_from_previous_char(&p);
         hop_whitespace(&p);
     }
 

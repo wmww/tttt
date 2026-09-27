@@ -198,7 +198,7 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl const* getter)
 }
 
 // tsc's checkGrammarParameterList(): the first misplaced rest parameter, `?`, or required parameter after an optional one
-static void function_impl_check_grammar_parameters(FunctionImpl const* me, ErrorCtx* errs) {
+static bool function_impl_check_grammar_parameters(FunctionImpl const* me, ErrorCtx* errs) {
     bool seen_optional = false;
     for_each (i, vec_function_arg, &my args) {
         bool has_initializer = i->initializer.value.tag != EXPR_IMPLICIT_ANY;
@@ -206,32 +206,84 @@ static void function_impl_check_grammar_parameters(FunctionImpl const* me, Error
         if (i->rest) {
             if (i_index != vec_function_arg_size(&my args) - 1) {
                 error_ctx_grammar_error_d(errs, i->rest_span, 1014, "A rest parameter must be last in a parameter list.");
-                return;
+                return true;
             }
             if (span_valid(i->question_span)) {
                 error_ctx_grammar_error_d(errs, i->question_span, 1047, "A rest parameter cannot be optional.");
-                return;
+                return true;
             }
             if (has_initializer) {
                 error_ctx_grammar_error_d(errs, name, 1048, "A rest parameter cannot have an initializer.");
-                return;
+                return true;
             }
         } else if (i->explicit_optional) {
             seen_optional = true;
             if (span_valid(i->question_span) && has_initializer) {
                 error_ctx_grammar_error_d(errs, name, 1015, "Parameter cannot have question mark and initializer.");
-                return;
+                return true;
             }
         } else if (seen_optional && !has_initializer) {
             error_ctx_grammar_error_d(errs, name, 1016, "A required parameter cannot follow an optional parameter.");
-            return;
+            return true;
         }
     }
+    return false;
+}
+
+static bool is_this_parameter(FunctionArg const* arg) {
+    return arg->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(arg->initializer.binding.content_span, "this");
+}
+
+// tsc's checkGrammarAccessor(), the parameter part
+static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCtx* errs) {
+    bool is_getter = my accessor == 1;
+    isize count = vec_function_arg_size(&my args);
+    isize expected = is_getter ? 0 : 1;
+    bool has_this = count == expected + 1 && is_this_parameter(vec_function_arg_at(&my args, 0));
+    if (count != expected && !has_this) {
+        if (is_getter) {
+            error_ctx_grammar_error_d(errs, my member_name, 1054, "A 'get' accessor cannot have parameters.");
+        } else {
+            error_ctx_grammar_error_d(errs, my member_name, 1049, "A 'set' accessor must have exactly one parameter.");
+        }
+        return true;
+    }
+    if (is_getter) return false;
+    if (my ret_explicit) {
+        error_ctx_grammar_error_d(errs, my member_name, 1095, "A 'set' accessor cannot have a return type annotation.");
+        return true;
+    }
+    FunctionArg const* value = vec_function_arg_at(&my args, has_this ? 1 : 0);
+    if (value->rest) {
+        error_ctx_grammar_error_d(errs, value->rest_span, 1053, "A 'set' accessor cannot have rest parameter.");
+        return true;
+    }
+    if (span_valid(value->question_span)) {
+        error_ctx_grammar_error_d(errs, value->question_span, 1051, "A 'set' accessor cannot have an optional parameter.");
+        return true;
+    }
+    if (value->initializer.value.tag != EXPR_IMPLICIT_ANY) {
+        error_ctx_grammar_error_d(errs, value->initializer.binding.content_span, 1052,
+            "A 'set' accessor parameter cannot have an initializer.");
+        return true;
+    }
+    return false;
 }
 
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
-    function_impl_check_grammar_parameters(me, errs);
+    bool grammar_error = function_impl_check_grammar_parameters(me, errs);
+    if (!grammar_error && my accessor && span_valid(my member_name)) {
+        grammar_error = function_impl_check_grammar_accessor(me, errs);
+    }
+    if (!grammar_error && span_valid(my asterisk)) {
+        // tsc's checkGrammarForGenerator()
+        if (my ambient) {
+            error_ctx_grammar_error_d(errs, my asterisk, 1221, "Generators are not allowed in an ambient context.");
+        } else if (!my has_body) {
+            error_ctx_grammar_error_d(errs, my asterisk, 1222, "An overload signature cannot be declared as a generator.");
+        }
+    }
 
     for_each (i, vec_function_arg, &my args) {
         bool has_initializer = i->initializer.value.tag != EXPR_IMPLICIT_ANY;

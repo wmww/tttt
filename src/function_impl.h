@@ -56,6 +56,7 @@ typedef struct FunctionImpl {
     bool is_method; // Declared with method syntax (parameters compare bivariantly)
     bool is_async;
     bool is_generator;
+    Span asterisk; // The `*` of a generator
     Symbol const* promise_decl; // The global Promise type (if any), looked up for async functions
     bool is_abstract_constructor;
     struct Expr const* first_super_call; // A constructor: the first `super(...)` in its body, not in a nested function
