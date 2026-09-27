@@ -84,17 +84,17 @@ echo "tttt phases (one run):"
 # relative to the tsconfig either way). The NestJS app (plan 31) is `incremental`: without --incremental false tsc
 # writes a tsbuildinfo and later runs check nothing; tsgo 7 also defaults to strict, which its tsconfig doesn't unset.
 # webpack (plan 33) is checkJs JavaScript; tsgo 7 rejects 3 of its JSDoc comments (TS1003), so its time may not be of
-# a full check
+# a full check. zod (plan 19) is checked through its tsconfig.test.json
 thirdparty/ensure-corpora.sh
 REACT=bulletproof-react/apps/react-vite
 NEST=nestjs-boilerplate
 echo '{"extends": "./tsconfig.json", "compilerOptions": {"baseUrl": null}}' > thirdparty/corpora/$REACT/tsconfig.tsgo.json
-for CORPUS in type-fest valibot/library $REACT $NEST webpack; do
+for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/tsconfig.test.json; do
     DIR=thirdparty/corpora/$CORPUS
     TSGO_ARGS="--moduleResolution bundler --module esnext -p $DIR"
     TSC_EXTRA=""
     if test $CORPUS = $REACT; then TSGO_ARGS="-p $DIR/tsconfig.tsgo.json"; fi
-    if test $CORPUS = webpack; then TSGO_ARGS="-p $DIR"; fi
+    if test $CORPUS = webpack || test $CORPUS = zod/packages/zod/tsconfig.test.json; then TSGO_ARGS="-p $DIR"; fi
     if test $CORPUS = $NEST; then TSC_EXTRA="--incremental false"; TSGO_ARGS="$TSGO_ARGS --incremental false --strict false"; fi
     echo
     echo "corpus $CORPUS: $(node thirdparty/tsc/lib/tsc.js -p $DIR --noEmit $TSC_EXTRA --listFilesOnly | grep -c .) files incl. dependencies and libs"

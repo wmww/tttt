@@ -4458,7 +4458,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     FunctionFlags flags = {0};
     // tsc parses modifiers in front of any member and reports them from the checker (a grammar error)
     ModifierList modifiers;
-    parse_modifier_list(&p, false, &modifiers);
+    parse_modifier_list(&p, true, &modifiers);
     hop_whitespace(&p);
     if (modifiers.includes[MODIFIER_ASYNC]) {
         must_be_method = true;

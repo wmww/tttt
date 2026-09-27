@@ -12,9 +12,10 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 RELOCK=0
 if test "${1:-}" = --relock; then RELOCK=1; fi
 
-# NAME URL COMMIT PROJECT_DIR [self-link] (PROJECT_DIR: the directory with the tsconfig.json and package.json, relative
-# to the checkout; self-link: node_modules/NAME is the checkout itself, as a project that imports its own package name
-# gets from `yarn link`)
+# NAME URL COMMIT PROJECT_DIR [LINK] (PROJECT_DIR: the directory with the package.json the dependencies are installed
+# for, relative to the checkout; LINK: node_modules/NAME is a symlink to LINK, relative to node_modules, as a project
+# that imports its own package name gets from `yarn link` or a workspace). If corpora-locks/NAME.package.json exists, it
+# replaces PROJECT_DIR/package.json before installing (a monorepo whose package manager npm can't read)
 CORPORA=(
     # type-fest v4.26.1: type-level utilities (template literal types, key remapping, deep recursion) + tsd tests
     "type-fest https://github.com/sindresorhus/type-fest.git 2b98d9f2ac8921b79ed07ceeef278a5406edbe05 ."
@@ -32,12 +33,18 @@ CORPORA=(
     # JSDoc types (lib/, tooling/, examples' configs), CommonJS, @types/node. Its examples require("webpack"). The lock
     # is npm's resolution of its package.json with watchpack held at yarn.lock's 2.5.1 (2.5.2 fails tsc; --relock
     # loses that, redo it by hand)
-    "webpack https://github.com/webpack/webpack.git 45a1bab632b09773938e5bde99b2614ee78f2284 . self-link"
+    "webpack https://github.com/webpack/webpack.git 45a1bab632b09773938e5bde99b2614ee78f2284 . .."
+    # zod v4.6.5 (Sep 2026): the schema library's package (classic, mini, core, v3) and its vitest tests (expectTypeOf,
+    # heavy inference), checked through packages/zod/tsconfig.test.json (tsconfig.json has noUnusedLocals, which only
+    # biome satisfies); exactOptionalPropertyTypes, nodenext, customConditions. A pnpm workspace: the dependencies are the
+    # root's devDependencies (without `zod: workspace:*`, plus the @types/node vitest hoists), from
+    # corpora-locks/zod.package.json
+    "zod https://github.com/colinhacks/zod.git 59bbc03e10c636b9eb3c393dfeb552819774ec21 . ../packages/zod"
 )
 
 mkdir -p corpora
 for ENTRY in "${CORPORA[@]}"; do
-    read -r NAME URL COMMIT DIR SELF_LINK <<<"$ENTRY"
+    read -r NAME URL COMMIT DIR LINK <<<"$ENTRY"
     if test ! -e "corpora/$NAME"; then
         printf "\x1b[34mCloning corpus %s at %s...\x1b[0m\n" "$NAME" "$COMMIT"
         rm -rf "corpora/$NAME-tmp"
@@ -51,6 +58,7 @@ for ENTRY in "${CORPORA[@]}"; do
     fi
     PROJECT="corpora/$NAME/$DIR"
     LOCK="corpora-locks/$NAME.package-lock.json"
+    if test -e "corpora-locks/$NAME.package.json"; then cp "corpora-locks/$NAME.package.json" "$PROJECT/package.json"; fi
     if test $RELOCK = 1; then
         rm -rf "$PROJECT/node_modules" "$PROJECT/package-lock.json"
         (cd "$PROJECT" && npm install --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund)
@@ -60,6 +68,6 @@ for ENTRY in "${CORPORA[@]}"; do
         printf "\x1b[34mInstalling the dependencies of corpus %s...\x1b[0m\n" "$NAME"
         cp "$LOCK" "$PROJECT/package-lock.json"
         (cd "$PROJECT" && npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund > /dev/null)
-        if test -n "$SELF_LINK"; then ln -s .. "$PROJECT/node_modules/$NAME"; fi
+        if test -n "$LINK"; then ln -s "$LINK" "$PROJECT/node_modules/$NAME"; fi
     fi
 done
