@@ -35,6 +35,12 @@ typedef struct JsDocRange {
 
 #define MAX_ERRORS 500 // Must be less than the max value storable in Parser.error_count
 
+typedef enum WhitespaceType {
+    WHITESPACE_NONE = 0,
+    WHITESPACE_PARSED,
+    WHITESPACE_NEWLINE,
+} WhitespaceType;
+
 typedef struct ParserShared {
     SourceFile const* source;
     const char* fail_cache_start;
@@ -89,12 +95,6 @@ void parser_shared_drop(ParserShared* me) {
     }
     vec_error_drop(&my errors);
 }
-
-typedef enum WhitespaceType {
-    WHITESPACE_NONE = 0,
-    WHITESPACE_PARSED,
-    WHITESPACE_NEWLINE,
-} WhitespaceType;
 
 typedef struct ExprCtx {
     bool reject_in_operator;
@@ -515,14 +515,22 @@ static Span span_from_token(Parser* me) {
     return span_from(a);
 }
 
-// TODO: unicode support: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Start%7D
-static inline bool is_identifier_char(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$';
-}
+// Of each ASCII character: bit 1 if it can start an identifier, bit 2 if it can continue one
+static const uint8_t identifier_char_class[256] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0,
+    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 3,
+    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0,
+};
 
 // TODO: unicode support: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Continue%7D
+static inline bool is_identifier_char(char c) {
+    return identifier_char_class[(uint8_t)c] & 2;
+}
+
+// TODO: unicode support: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Start%7D
 static inline bool is_identifier_start_char(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '$';
+    return identifier_char_class[(uint8_t)c] & 1;
 }
 
 static inline bool is_number_char(char c) {
@@ -548,6 +556,21 @@ static inline bool parse_identifier_or_keyword(Parser* parent, Span* ret) {
     }
 }
 
+// The words parse_identifier() refuses
+static inline bool is_reserved_identifier(const char* word, intptr_t len) {
+#define WORD_IS(lit) (len == sizeof(lit) - 1 && memcmp(word, lit, sizeof(lit) - 1) == 0)
+    switch (word[0]) {
+        case 'r': return WORD_IS("return");
+        case 't': return WORD_IS("throw") || WORD_IS("typeof") || WORD_IS("this");
+        case 'c': return WORD_IS("case");
+        case 'i': return WORD_IS("in");
+        case 's': return WORD_IS("super");
+        case 'd': return WORD_IS("default");
+        default: return false;
+    }
+#undef WORD_IS
+}
+
 // ret can be null
 static bool parse_identifier(Parser* parent, Span* ret) {
     Anchor a = anchor(parent);
@@ -555,18 +578,9 @@ static bool parse_identifier(Parser* parent, Span* ret) {
         return false;
     }
     Span s = span_from(a);
-    if (span_equals(s, "return") ||
-        span_equals(s, "throw") ||
-        span_equals(s, "case") ||
-        span_equals(s, "in") ||
-        span_equals(s, "typeof") ||
-        span_equals(s, "case") ||
-        span_equals(s, "this") ||
-        span_equals(s, "super") ||
-        span_equals(s, "default")
-    ) {
+    if (is_reserved_identifier(a.start, parent->pos - a.start)) {
         parent->pos = a.start;
-        return false; // PERF: check for keywords efficiently
+        return false;
     }
     if (ret) {
         *ret = s;
@@ -611,10 +625,8 @@ static inline bool hop_comment(Parser* parent) {
     const char* start = parent->pos;
     switch (*(parent->pos + 1)) {
         case '/': {
-            (parent->pos) += 2;
-            while (*parent->pos && *parent->pos != '\n') {
-                (parent->pos)++;
-            }
+            const char* newline = strchr(parent->pos + 2, '\n');
+            parent->pos = newline ? newline : parent->pos + 2 + strlen(parent->pos + 2);
             if (parent->whitespace == WHITESPACE_NONE) {
                 parent->whitespace = WHITESPACE_PARSED;
             }
@@ -629,18 +641,25 @@ static inline bool hop_comment(Parser* parent) {
             if (parent->whitespace == WHITESPACE_NONE) {
                 parent->whitespace = WHITESPACE_PARSED;
             }
-            const char* pos = parent->pos;
-            const char* last_line_start = pos;
-            pos += 2;
-            while (*(pos - 1) != '*' || *pos != '/') {
-                switch (*pos) {
-                    case '\n': parent->whitespace = WHITESPACE_NEWLINE; last_line_start = pos + 1; break;
-                    case '\0': return false;
-                    default: break;
+            // The `*/` (not the `*` of the `/*`), found with the libc scans
+            const char* pos = start + 2;
+            const char* slash;
+            while (true) {
+                slash = strchr(pos, '/');
+                if (!slash) {
+                    if (strchr(start, '\n')) parent->whitespace = WHITESPACE_NEWLINE;
+                    return false;
                 }
-                pos++;
+                if (slash[-1] == '*' && slash - 1 >= start + 2) break;
+                pos = slash + 1;
             }
-            pos++;
+            pos = slash + 1;
+            const char* last_line_start = start;
+            if (memchr(start, '\n', pos - start)) {
+                parent->whitespace = WHITESPACE_NEWLINE;
+                last_line_start = pos;
+                while (last_line_start[-1] != '\n') last_line_start--;
+            }
             parent->pos = pos;
             if (start[2] == '*' && start[3] != '/' && parent->shared->source->is_js) note_jsdoc_comment(parent, start, pos);
             // The last line, trimmed, against /^(?:\/|\*)*\s*@(ts-expect-error|ts-ignore)/
@@ -810,14 +829,21 @@ static Error* expected_expression_error(Parser* parent) {
     return parse_error(parent, span_from_token(parent), 1109, "Expression expected.");
 }
 
-static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* prefix) {
-    Parser p = parser(parent);
-    if (hop_start(&p, prefix)) {
-        if (!is_identifier_char(*p.pos)) {
-            return parse_success(&p);
-        }
+// The keyword probe: no child parser (nothing to backtrack), and most probes fail on the first character
+__attribute__((always_inline)) static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* prefix) {
+#ifdef DEBUG_BUILD
+    check(!parent->has_panding_child);
+#endif
+    const char* pos = parent->pos;
+    if (*pos != *prefix) return false;
+    while (*prefix) {
+        if (*pos != *prefix) return false;
+        prefix++;
+        pos++;
     }
-    return parse_fail(&p);
+    if (is_identifier_char(*pos)) return false;
+    parent->pos = pos;
+    return true;
 }
 
 static inline bool starts_with_followed_by_word_break(Parser* parent, const char* prefix) {
@@ -2278,6 +2304,9 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     Anchor value_anchor = anchor(&p);
     char const* left_start = value_anchor.start;
     *ret = (TypeNode){0}; // (Some branches only fill in what they're about)
+    // Every branch below needs a particular first character: test it before trying the branch
+    char c = *p.pos;
+    bool word = is_identifier_start_char(c);
     if (p.shared->in_jsdoc && parse_jsdoc_prefix_type(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "any")) {
         *ret = type_any;
@@ -2315,7 +2344,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         *ret = type_keyof(c_new(KeyofType, {
             .interface = parsed.type,
         }));
-    } else if (parse_import_type(&p, ret)) {
+    } else if ((c == 't' || c == 'i') && parse_import_type(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "typeof")) {
         hop_whitespace(&p);
         Expr expr;
@@ -2331,11 +2360,13 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
             .expr = c_new(Expr, expr),
             .owns_expr = true,
         }));
-    } else if (parse_template_type(&p, ret)) {
-    } else if (parse_type_compat_literal(&p, &ret->value)) {
+    } else if (c == '`' && parse_template_type(&p, ret)) {
+    } else if ((word || c == '"' || c == '\'' || c == '`' || is_number_start_char(c)) &&
+        parse_type_compat_literal(&p, &ret->value)
+    ) {
         ret->tag = TYPE_VALUE;
         ret->value_span = span_from(value_anchor);
-    } else if (hop_start(&p, "-")) {
+    } else if (hop_char(&p, '-')) {
         hop_whitespace(&p);
         if (parse_numeric_value(&p, &ret->value)) {
             ret->tag = TYPE_VALUE;
@@ -2345,17 +2376,19 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         } else {
             return parse_fail(&p);
         }
-    } else if (parse_function_args(&p, true, true, true, false, &parsed.func)) {
+    } else if ((c == '(' || c == '<' || c == 'a' || c == 'n') &&
+        parse_function_args(&p, true, true, true, false, &parsed.func)
+    ) {
         parsed.func.full_span = span_from(value_anchor);
         *ret = function_impl_into_type(parsed.func);
-    } else if (parse_inferred_type(&p, &parsed.inferred)) {
+    } else if (c == 'i' && parse_inferred_type(&p, &parsed.inferred)) {
         *ret = type_inferred(c_new(InferredType, parsed.inferred));
-    } else if (parse_unique_symbol_type(&p)) {
+    } else if (c == 'u' && parse_unique_symbol_type(&p)) {
         *ret = (TypeNode){ .tag = TYPE_UNIQUE_SYMBOL };
-    } else if (parse_identifier_type(&p, &parsed.identifier)) {
+    } else if (word && parse_identifier_type(&p, &parsed.identifier)) {
         parsed.identifier.jsdoc = p.shared->in_jsdoc;
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
-    } else if (parse_tuple(&p, &parsed.tuple_elements)){
+    } else if (c == '[' && parse_tuple(&p, &parsed.tuple_elements)) {
         *ret = type_tuple(parsed.tuple_elements, false);
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
@@ -2363,7 +2396,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         hop_whitespace(&p);
         expect_char(&p, ')');
         parenthesized = true;
-    } else if (parse_interface(&p, &ret->interface)) {
+    } else if (c == '{' && parse_interface(&p, &ret->interface)) {
         ret->tag = TYPE_INTERFACE;
     } else if (*p.pos == '|' || *p.pos == '&') {
         *ret = *p.pos == '|' ? type_never : type_any;
@@ -5542,7 +5575,11 @@ static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escape
         } else if (*p.pos == '\r') {
             // Ignore?
         } else {
-            cstr_append_n(&str, p.pos, 1);
+            // The plain run up to whatever the loop has to look at, appended at once
+            const char* run = p.pos++;
+            while (*p.pos && *p.pos != quote && *p.pos != '\n' && *p.pos != '\\' && *p.pos != '\r') p.pos++;
+            cstr_append_n(&str, run, p.pos - run);
+            continue;
         }
         p.pos++;
     }
@@ -5648,8 +5685,10 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
         } else if (*p.pos == '\r') {
             p.pos++; // CRLF is LF in a template
         } else {
-            cstr_append_n(&text, p.pos, 1);
+            const char* run = p.pos;
             p.pos++;
+            while (*p.pos && *p.pos != '`' && *p.pos != '\\' && *p.pos != '$' && *p.pos != '\r') p.pos++;
+            cstr_append_n(&text, run, p.pos - run);
         }
     }
     vec_cstr_push(&template.texts, text);
@@ -5679,6 +5718,12 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     hop_whitespace(&p);
     bool hit_newline = p.whitespace == WHITESPACE_NEWLINE;
+    // Where most expressions end: no branch below starts with these
+    char c = *p.pos;
+    switch (c) {
+        case ';': case ',': case ')': case ']': case '}': case ':': case '\0': return parse_fail(&p);
+        default: break;
+    }
 
     union {
         VecExpr args;
@@ -5783,7 +5828,9 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     Span as_type_span;
     bool is_satisfies = false;
-    if (as_type_precedence > ctx.min_precedence && parse_as_type(&p, &parsed.type, &as_type_span, &is_satisfies)) {
+    if ((c == 'a' || c == 's') && as_type_precedence > ctx.min_precedence &&
+        parse_as_type(&p, &parsed.type, &as_type_span, &is_satisfies)
+    ) {
         *left_and_ret = expr_as_type(
             span_from(a),
             c_new(AsTypeExpr, {
@@ -5814,7 +5861,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     Parser generic_p = parser(&p);
     // Never in JavaScript files, to avoid the ambiguity with `<` and `>` (tsc's parseTypeArgumentsInExpression)
-    if (!p.shared->source->is_js && parse_generic_params(&generic_p, true, &parsed.generic_params)) {
+    if (c == '<' && !p.shared->source->is_js && parse_generic_params(&generic_p, true, &parsed.generic_params)) {
         bool success = false;
         if (ctx.reject_operators) {
             success = true;
@@ -6602,29 +6649,34 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
     VecExpr substitutions;
     VecCStr texts;
-    if (parse_template(&p, &substitutions, &texts)) {
+    // Most branches below need a particular first character: test it before trying the branch
+    char c = *p.pos;
+    bool word = is_identifier_start_char(c);
+    if (c == '`' && parse_template(&p, &substitutions, &texts)) {
         *ret = expr_template(span_from(a), c_new(TemplateExpr, {
             .template_span = span_from(a),
             .substitutions = substitutions,
             .texts = texts,
         }));
-    } else if (parse_literal(&p, &ret->literal)) {
+    } else if ((c == 'u' || c == 'n' || c == 't' || c == 'f' || c == '"' || c == '\'' || c == '`' ||
+            is_number_start_char(c)) && parse_literal(&p, &ret->literal)
+    ) {
         ret->tag = EXPR_LITERAL;
-    } else if (parse_regex(&p)) {
+    } else if (c == '/' && parse_regex(&p)) {
         *ret = expr_regex(span_from(a));
     } else if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
         p.pos++;
         Span ignored;
         parse_identifier_or_keyword(&p, &ignored);
         *ret = expr_private_name(span_from(a), c_new(PrivateNameExpr, {0}));
-    } else if (parse_object(&p, &ret->object)) {
+    } else if (c == '{' && parse_object(&p, &ret->object)) {
         ret->tag = EXPR_OBJECT;
-    } else if (parse_array(&p, &ret->array)) {
+    } else if (c == '[' && parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
-    } else if (parse_class_decl(&p, &parsed.class_decl)) {
+    } else if ((c == '@' || c == 'a' || c == 'c') && parse_class_decl(&p, &parsed.class_decl)) {
         parsed.class_decl.is_expression = true;
         *ret = expr_class_decl(span_from(a), c_new(ClassDecl, parsed.class_decl));
-    } else if (parse_new_target(&p, ret)) {
+    } else if (c == 'n' && parse_new_target(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "new")) {
         hop_whitespace(&p);
         ExprCtx sub_ctx = ctx;
@@ -6635,11 +6687,13 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             call.args = vec_expr_init();
         }
         *ret = expr_call(span_from(a), c_new(CallExpr, call));
-    } else if (parse_left_unary_op_expr(&p, ctx, ret)) {
-    } else if (parse_function_keyword_function(&p, false, &parsed.function)) {
+    } else if ((!word || c == 'd' || c == 'a' || c == 'y' || c == 't' || c == 'v') &&
+        parse_left_unary_op_expr(&p, ctx, ret)
+    ) {
+    } else if (c == 'f' && parse_function_keyword_function(&p, false, &parsed.function)) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
-    } else if (parse_async_function_expr(&p, ctx, &parsed.function)) {
+    } else if (c == 'a' && parse_async_function_expr(&p, ctx, &parsed.function)) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
@@ -6652,9 +6706,9 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             .name = span_from(a),
             .keyword = KEYWORD_IDENTIFIER_SUPER,
         });
-    } else if (parse_import_keyword_expr(&p, &ret->identifier)) {
+    } else if (c == 'i' && parse_import_keyword_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
-    } else if (parse_identifier_expr(&p, &ret->identifier)) {
+    } else if (word && parse_identifier_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
         inner_span_set = true;
     } else if ((*p.pos == '(' || *p.pos == '<') && (arrow_tristate = arrow_function_tristate(&p)) != TRISTATE_FALSE &&

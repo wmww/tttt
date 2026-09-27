@@ -97,13 +97,48 @@ void module_resolver_destroy(ModuleResolver* me) {
 
 // ---- Paths ----
 
+// Appends `path`'s segments to the absolute path in `out` (length `*len`) the way absolute_path_of() does
+static void push_segments(char* out, intptr_t* len, csview path) {
+    const char* c = path.buf;
+    const char* end = path.buf + path.size;
+    while (c < end) {
+        const char* segment = c;
+        while (c < end && *c != '/') c++;
+        intptr_t n = c - segment;
+        if (c < end) c++;
+        if (!n || (n == 1 && segment[0] == '.')) continue;
+        if (n == 2 && segment[0] == '.' && segment[1] == '.') {
+            intptr_t i = *len;
+            while (i > 0 && out[--i] != '/') {}
+            *len = i < 1 ? 1 : i;
+            continue;
+        }
+        if (*len > 1) out[(*len)++] = '/';
+        memcpy(out + *len, segment, n);
+        *len += n;
+    }
+}
+
+// absolute_path_of(cwd, path) in one buffer (it appends a segment at a time; the resolver makes paths by the thousand)
+static cstr absolute_path_fast(csview cwd, csview path) {
+    bool rooted = path.size && path.buf[0] == '/';
+    cstr ret = cstr_with_size(1 + (rooted ? 0 : cwd.size + 1) + path.size, 0);
+    char* out = cstr_data(&ret);
+    intptr_t len = 1;
+    out[0] = '/';
+    if (!rooted) push_segments(out, &len, cwd);
+    push_segments(out, &len, path);
+    cstr_resize(&ret, len, 0);
+    return ret;
+}
+
 static cstr join(csview dir, csview rest) {
-    if (rest.size && rest.buf[0] == '/') return absolute_path_of(c_sv("/"), rest); // A rooted name: `import "/foo"`
-    cstr combined = cstr_from_sv(dir);
-    cstr_append_lit(&combined, "/");
-    cstr_append_sv(&combined, rest);
-    cstr ret = absolute_path_of(c_sv("/"), cstr_sv(&combined));
-    cstr_drop(&combined);
+    if (rest.size && rest.buf[0] == '/') return absolute_path_fast(c_sv("/"), rest); // A rooted name: `import "/foo"`
+    cstr ret = absolute_path_fast(c_sv("/"), dir);
+    intptr_t len = cstr_size(&ret);
+    cstr_resize(&ret, len + 1 + rest.size, 0);
+    push_segments(cstr_data(&ret), &len, rest);
+    cstr_resize(&ret, len, 0);
     return ret;
 }
 
@@ -1170,7 +1205,7 @@ static State state_make(ModuleResolver* resolver, ResolutionMode mode) {
 }
 
 static cstr absolute_containing_dir(ModuleResolver* me, csview containing_file) {
-    cstr absolute = absolute_path_of(cstr_sv(&my cwd), containing_file);
+    cstr absolute = absolute_path_fast(cstr_sv(&my cwd), containing_file);
     cstr ret = cstr_from_sv(parent_of(cstr_sv(&absolute)));
     cstr_drop(&absolute);
     return ret;
