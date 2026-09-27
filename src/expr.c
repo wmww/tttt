@@ -1360,6 +1360,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             Scope* name_scope = names;
             if (span_valid(my function->name)) {
                 name_scope = scope_new(names, SCOPE_BLOCK);
+                name_scope->expression_name_of = my function;
                 function_impl_add_names(my function, name_scope, DECL_EXPORTED_NO, false, false);
             }
             my function->syntactically_contextual = flow->contextual_depth > 0;

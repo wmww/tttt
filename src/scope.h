@@ -333,6 +333,9 @@ typedef struct Scope {
     // valid during the walk
     FlowBuilder* flow;
     FunctionImpl* function; // The function this scope is in, null outside of functions
+    // The scope of a function expression's name, which is in that function's await/yield context (tsc's
+    // parseFunctionExpression)
+    FunctionImpl const* expression_name_of;
     // A computed member name, a member decorator or a constructor's parameters: `super` can't be used, tsc's
     // isLegalUsageOfSuperExpression (see resolve_super())
     NoSuper no_super;
