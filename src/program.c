@@ -910,6 +910,7 @@ void program_resolve_names(Program* me) {
         }
     }
     binder_link(my binder);
+    binder_check_export_star_conflicts(my binder, my errs);
 
     // Resolve: every identifier gets its symbol, function and block scopes are made on the way
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {

@@ -1394,6 +1394,119 @@ static void extend_export_stars(
     }
 }
 
+// The position of the name among the table's own entries, -1 if it isn't there
+static i32 symbol_table_own_index(SymbolTable const* me, csview name, u64 hash) {
+    if (!my index) {
+        for (u32 i = 0; i < my count; i++) {
+            if (entry_matches(&my entries[i], name, hash)) return (i32)i;
+        }
+        return -1;
+    }
+    u32 mask = my index_cap - 1;
+    for (u32 pos = (u32)hash & mask; my index[pos]; pos = (pos + 1) & mask) {
+        if (entry_matches(&my entries[my index[pos] - 1], name, hash)) return (i32)(my index[pos] - 1);
+    }
+    return -1;
+}
+
+static Symbol const* resolve_for_comparison(Symbol* symbol) {
+    Symbol* ret = symbol && symbol->flags & SYMBOL_ALIAS ? symbol_resolve_alias(symbol) : symbol;
+    return ret ? ret : symbol;
+}
+
+typedef struct ExportStarWalk {
+    Arena arena;
+    Symbol** visited;
+    u32 visited_count;
+    u32 visited_cap;
+    ErrorCtx* errs;
+} ExportStarWalk;
+
+// tsc's getExportsOfModuleWorker visit(): the exports of a module with those of its `export *`s (own exports win, of
+// two stars the first one). Where two stars of the module being checked (report) export different things by one name
+// that it doesn't export itself, the later star is TS2308
+static SymbolTable const* export_star_visit(ExportStarWalk* walk, Symbol* module, bool report) {
+    if (!module || !module->exports || module_visited(walk->visited, walk->visited_count, module)) return nullptr;
+    if (walk->visited_count == walk->visited_cap) {
+        walk->visited_cap = walk->visited_cap ? walk->visited_cap * 2 : 16;
+        walk->visited = realloc(walk->visited, sizeof(Symbol*) * walk->visited_cap);
+    }
+    walk->visited[walk->visited_count++] = module;
+    u32 star_count = module->is_module ? module->module->export_star_count : 0;
+    if (!star_count) return module->exports;
+
+    SymbolTable* symbols = arena_new(&walk->arena, SymbolTable);
+    u32 count;
+    SymbolEntry* own = symbol_table_collect(module->exports, &count);
+    for (u32 i = 0; i < count; i++) symbol_table_insert(symbols, &walk->arena, own[i].name, own[i].hash, own[i].symbol);
+    free(own);
+
+    SymbolTable nested = {0};
+    PortItem const** first_star = nullptr; // Parallel to nested's entries
+    u32 first_star_cap = 0;
+    // Pairs of (nested entry index, the later star), in order
+    struct { u32 entry; PortItem const* star; }* dups = nullptr;
+    u32 dup_count = 0, dup_cap = 0;
+    for (u32 s = 0; s < star_count; s++) {
+        PortItem const* star = module->module->export_stars[s];
+        Symbol* target = module_export_equals(binder_module_of_ref(module->binder, star->module_ref));
+        SymbolTable const* exported = export_star_visit(walk, target, false);
+        if (!exported) continue;
+        SymbolEntry* entries = symbol_table_collect(exported, &count);
+        for (u32 i = 0; i < count; i++) {
+            if (csview_equals(entries[i].name, "default")) continue;
+            i32 at = symbol_table_own_index(&nested, entries[i].name, entries[i].hash);
+            if (at < 0) {
+                symbol_table_insert(&nested, &walk->arena, entries[i].name, entries[i].hash, entries[i].symbol);
+                if (nested.count > first_star_cap) {
+                    first_star_cap = first_star_cap ? first_star_cap * 2 : 16;
+                    first_star = realloc(first_star, sizeof(PortItem const*) * first_star_cap);
+                }
+                first_star[nested.count - 1] = star;
+            } else if (report && resolve_for_comparison(nested.entries[at].symbol) != resolve_for_comparison(entries[i].symbol)) {
+                if (dup_count == dup_cap) {
+                    dup_cap = dup_cap ? dup_cap * 2 : 8;
+                    dups = realloc(dups, sizeof(*dups) * dup_cap);
+                }
+                dups[dup_count++] = (typeof(*dups)){ (u32)at, star };
+            }
+        }
+        free(entries);
+    }
+    for (u32 e = 0; e < nested.count && dup_count; e++) {
+        SymbolEntry const* entry = &nested.entries[e];
+        if (csview_equals(entry->name, "export=") || symbol_table_get_own(symbols, entry->name, entry->hash)) continue;
+        for (u32 d = 0; d < dup_count; d++) {
+            if (dups[d].entry != e || !span_valid(dups[d].star->full_span)) continue;
+            Span at = span_with_semicolon(dups[d].star->full_span);
+            if (!at.source || at.source->is_stdlib) continue;
+            error_ctx_error_d(walk->errs, at, 2308, "Module ", first_star[e]->module_ref->span,
+                " has already exported a member named '", entry->name,
+                "'. Consider explicitly re-exporting to resolve the ambiguity.");
+        }
+    }
+    for (u32 e = 0; e < nested.count; e++) {
+        SymbolEntry const* entry = &nested.entries[e];
+        if (!symbol_table_get_own(symbols, entry->name, entry->hash)) {
+            symbol_table_insert(symbols, &walk->arena, entry->name, entry->hash, entry->symbol);
+        }
+    }
+    free(first_star);
+    free(dups);
+    return symbols;
+}
+
+void binder_check_export_star_conflicts(Binder* me, ErrorCtx* errs) {
+    for (u32 i = 0; i < my symbol_count; i++) {
+        Symbol* module = my symbols[i];
+        if (!module->is_module || !module->module || !module->module->export_star_count) continue;
+        ExportStarWalk walk = { .errs = errs };
+        export_star_visit(&walk, module_export_equals(module), true);
+        free(walk.visited);
+        arena_drop(&walk.arena);
+    }
+}
+
 static SymbolTable const* module_resolved_exports(Symbol* me) {
     if (!my module->export_star_count) return my exports;
     if (my module->resolved_exports_state == ALIAS_DONE) return my module->resolved_exports;
@@ -1624,7 +1737,17 @@ static Symbol* resolve_alias_target(Symbol* me) {
                     return nullptr;
                 }
                 cstr module_name = module_name_for_error(module, item->module_ref, false);
-                error_ctx_error_d(errs, item->decl_name, 1192, "Module '", module_name, "' has no default export.");
+                Error* error = error_ctx_error_d(errs, item->decl_name, 1192, "Module '", module_name, "' has no default export.");
+                // (tsc's reportNonDefaultExport: the first `export *` of a module that has a default)
+                for (u32 s = 0; error && module->is_module && s < module->module->export_star_count; s++) {
+                    PortItem const* star = module->module->export_stars[s];
+                    Symbol const* from = binder_module_of_ref(module->binder, star->module_ref);
+                    if (from && from->exports && symbol_table_get(from->exports, c_sv("default"))) {
+                        error_add_related_d(error, span_with_semicolon(star->full_span), 1195,
+                            "'export *' does not re-export a default.");
+                        break;
+                    }
+                }
                 cstr_drop(&module_name);
                 return nullptr;
             }

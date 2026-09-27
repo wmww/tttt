@@ -6724,6 +6724,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 }
             } else {
                 statement.main.tag = PORT_REEXPORT_SPLAT;
+                a = statement_start; // (What TS2308 underlines: tsc's ExportDeclaration)
             }
         } else {
             if (!hop_start_if_ends_on_word_break(&p, "as")) {

@@ -427,6 +427,8 @@ void scope_check_export_merges(Scope* me, Span block);
 void scope_check_duplicate_exports(Scope* me);
 // The same for the ambient modules that have an export assignment, once every file is declared
 void binder_check_ambient_module_exports(Binder* me, ErrorCtx* errs);
+// TS2308: two `export *` of a module that export different things by the same name (after binder_link())
+void binder_check_export_star_conflicts(Binder* me, ErrorCtx* errs);
 // Whether a block starts with a "use strict" directive
 bool block_has_use_strict(struct Block const* block);
 // tsc's checkStrictModeIdentifier: in strict mode code the future reserved words aren't names (TS1212/TS1213/TS1214)
