@@ -360,6 +360,7 @@ typedef struct TyDeferredRef {
     LowerCtx ctx;
     TyMapper const* mapper; // may be null
     LazyState state;
+    bool circular; // Its arguments needed its arguments (TS4109/TS4110 when they're done, see ty_reference_args())
     TyList args;
 } TyDeferredRef;
 
@@ -417,6 +418,9 @@ struct Prop {
     bool literal_own; // A property of an object literal written in it (not spread): see ObjectLiteralProp.own
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
     TypeNode const* asserted;
+    Ty const* mapped_type; // A property of this mapped type (the resolved one): for TS2615, see prop_type()
+    struct MappedInfo const* template_of; // The template of this mapped type, as a property its properties instantiate
+    bool circular; // Its type needed its type (a mapped type property: TS2615 when done)
 };
 
 typedef enum SignatureFlags {

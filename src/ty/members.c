@@ -1190,7 +1190,7 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
 // A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
 // clause maps a key to), an index signature per primitive key. Returns the members unchanged while the key type is
 // generic (or something this can't expand yet)
-static Members const* expand_mapped(Checker* me, Members const* members) {
+static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* members) {
     MappedInfo const* mapped = members->mapped;
     if (!mapped) return members;
     Ty const* constraint = mapped->constraint;
@@ -1244,10 +1244,10 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
     if (modifiers && !(modifiers->flags & TYF_OBJECT) && modifiers->kind != TY_UNION && modifiers->kind != TY_INTERSECTION) {
         modifiers = nullptr;
     }
-    // The template as a property to instantiate per key
+    // The template as a property to instantiate per key (lowered when a property's type is first asked for, like tsc's
+    // getTypeOfMappedSymbol: the members can be there before the template can be lowered)
     Prop* template = arena_new(&my arena, Prop);
-    template->type = ty_mapped_template(me, mapped);
-    template->type_state = LAZY_STATE_DONE;
+    template->template_of = mapped;
 
     MembersBuilder builder = {0};
     for (u32 i = 0; i < key_count; i++) {
@@ -1293,6 +1293,7 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                     .flags = flags,
                     .target = template,
                     .mapper = mapper,
+                    .mapped_type = ty,
                 };
                 // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers), unless
                 // the `as` clause renamed it (tsc: a remapping rather than a filtering `as` clause; approximated per key)
@@ -1396,7 +1397,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
 }
 
 static Members const* resolve_members(Checker* me, Ty const* ty) {
-    return expand_mapped(me, resolve_members_inner(me, ty));
+    return expand_mapped(me, ty, resolve_members_inner(me, ty));
 }
 
 static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
@@ -1507,7 +1508,9 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
     switch (prop->type_state) {
         case LAZY_STATE_DONE: return prop->type;
-        case LAZY_STATE_IN_FLIGHT: return ty_intrinsic(me, TY_CIRCULAR); // TODO: TS2502 and friends
+        case LAZY_STATE_IN_FLIGHT:
+            prop->circular = true;
+            return ty_intrinsic(me, TY_CIRCULAR); // TODO: TS2502 and friends
         case LAZY_STATE_NOT_STARTED: break;
     }
     prop->type_state = LAZY_STATE_IN_FLIGHT;
@@ -1525,8 +1528,21 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         type = ty_function_type(me, prop->function);
     } else if (prop->lazy) {
         type = lazy_type_get((LazyType*)prop->lazy);
+    } else if (prop->template_of) {
+        type = ty_mapped_template(me, prop->template_of);
     } else {
         type = ty_from_node(me, prop->node, prop->ctx);
+    }
+    if (prop->circular && prop->mapped_type) {
+        // tsc's getTypeOfMappedSymbol when popTypeResolution fails
+        prop->type = ty_intrinsic(me, TY_ERROR);
+        prop->type_state = LAZY_STATE_DONE;
+        cstr name = ty_prop_name_cstr(me, prop->name);
+        cstr mapped = ty_to_cstr(me, prop->mapped_type);
+        ty_error_at_current_node_d(me, 2615, "Type of property '", name, "' circularly references itself in mapped type '",
+            mapped, "'.");
+        c_drop(cstr, &name, &mapped);
+        return prop->type;
     }
     prop->type = type;
     prop->type_state = LAZY_STATE_DONE;

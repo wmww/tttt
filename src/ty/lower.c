@@ -1290,6 +1290,7 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     Ty const** args = arena_new_n(&my arena, Ty const*, len ? len : 1);
     if (deferred->state == LAZY_STATE_IN_FLIGHT) {
         // Only an illegal cycle gets here (its arguments need its arguments)
+        deferred->circular = true;
         for (u32 i = 0; i < len; i++) args[i] = ty_intrinsic(me, TY_ERROR);
         return (TyList){ .data = args, .len = len };
     }
@@ -1300,16 +1301,26 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
         TyList written = lower_type_args(me, reference->reference.target->declared.type_params,
             &node->identifier->generic_params, deferred->ctx, written_buf);
         for (u32 i = 0; i < len; i++) args[i] = ty_instantiate(me, written.data[i], deferred->mapper);
-        deferred->args = (TyList){ .data = args, .len = len };
-        deferred->state = LAZY_STATE_DONE;
-        return deferred->args;
+    } else {
+        for (u32 i = 0; i < len; i++) {
+            TypeNode const* lone = lone_rest_array_element(node);
+            Ty const* element = node->tag == TYPE_ARRAY ? ty_from_node(me, node->array.element, deferred->ctx) :
+                lone ? ty_from_node(me, lone, deferred->ctx) :
+                tuple_element_type(me, vec_tuple_element_at(&node->tuple.elements, i), deferred->ctx);
+            args[i] = ty_instantiate(me, element, deferred->mapper);
+        }
     }
-    for (u32 i = 0; i < len; i++) {
-        TypeNode const* lone = lone_rest_array_element(node);
-        Ty const* element = node->tag == TYPE_ARRAY ? ty_from_node(me, node->array.element, deferred->ctx) :
-            lone ? ty_from_node(me, lone, deferred->ctx) :
-            tuple_element_type(me, vec_tuple_element_at(&node->tuple.elements, i), deferred->ctx);
-        args[i] = ty_instantiate(me, element, deferred->mapper);
+    if (deferred->circular) {
+        // tsc's getTypeArguments when popTypeResolution fails: error type arguments, reported at the node (array and
+        // tuple nodes have no span here: the current node instead)
+        for (u32 i = 0; i < len; i++) args[i] = ty_intrinsic(me, TY_ERROR);
+        if (node->tag == TYPE_IDENTIFIER) {
+            Symbol const* symbol = reference->reference.target->declared.symbol;
+            ty_error_at(me, identifier_type_span(node->identifier), 4109, cstr_d("Type arguments for '",
+                symbol ? symbol->name : c_sv("?"), "' circularly reference themselves."));
+        } else {
+            ty_error_at_current_node_d(me, 4110, "Tuple type arguments circularly reference themselves.");
+        }
     }
     deferred->args = (TyList){ .data = args, .len = len };
     deferred->state = LAZY_STATE_DONE;

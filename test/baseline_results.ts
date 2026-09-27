@@ -2216,7 +2216,7 @@ const baselines = {
         types: true,
     },
     'awaitedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27078,7 +27078,7 @@ const baselines = {
     'recursivelyExpandingUnionNoStackoverflow': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursivelySpecializedConstructorDeclaration': {
         errors: true,
