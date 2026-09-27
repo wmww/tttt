@@ -17,6 +17,7 @@
 #include <cleat/filesystem.h>
 #include <time.h>
 #include <stdlib.h>
+#include <string.h>
 
 // What gets loaded when neither --lib nor --target say otherwise (tsc would load just lib.d.ts, which makes for..of
 // over anything but an array an error; bench.sh gives tsc the same list)
@@ -256,7 +257,25 @@ static_failable check_files(Options const* opts, returns int) {
     return ok(ret);
 }
 
+// glibc's malloc can back its heap with transparent huge pages, which takes a tenth off the wall time of a big project
+// (the page faults of a few hundred MB of AST and types were ~18% of it), but only takes the setting from the
+// environment at startup: start over once with it set. Not when GLIBC_TUNABLES says something already (the user's,
+// or ours after the re-exec), under valgrind (the new process would run outside the tool), or with TTTT_NO_REEXEC
+static void reexec_with_huge_pages(char const* const* argv) {
+#ifdef __GLIBC__
+    if (getenv("GLIBC_TUNABLES") || getenv("TTTT_NO_REEXEC")) return;
+    char const* preload = getenv("LD_PRELOAD");
+    if (preload && strstr(preload, "vgpreload")) return;
+    if (setenv("GLIBC_TUNABLES", "glibc.malloc.hugetlb=1", 1) != 0) return;
+    execv("/proc/self/exe", (char* const*)argv);
+    unsetenv("GLIBC_TUNABLES"); // (Carry on as we are if that didn't work)
+#else
+    (void)argv;
+#endif
+}
+
 int main(int argc, const char** argv) {
+    reexec_with_huge_pages(argv);
     Options opts = { .paths = argv };
     for (int i = 1; i < argc; i++) {
         if (streq(argv[i], "--help") || streq(argv[i], "-h")) {
