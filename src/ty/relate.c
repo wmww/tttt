@@ -2052,6 +2052,28 @@ static Ty const* distributive_constraint(Checker* me, Ty const* conditional, u32
     return instantiated != conditional && !(instantiated->flags & TYF_NEVER) ? instantiated : nullptr;
 }
 
+// The true branch of a conditional type as its default constraint sees it (tsc's getInferredTrueTypeFromConditionalType):
+// with its `infer` type parameters instantiated with what was inferred for them. A deferred conditional type whose
+// check type is generic inferred nothing, so they're unknown (or their constraint, when unknown doesn't satisfy it):
+// the true branch of Awaited<T> is `F extends (value: infer V, ...) => any ? Awaited<V> : never` with F unknown, never
+static Ty const* inferred_true_branch(Checker* me, Ty const* conditional) {
+    Ty const* branch = ty_conditional_branch(me, conditional, true);
+    Ty const* root = conditional->conditional.root ? conditional->conditional.root : conditional;
+    TyList infers = ty_conditional_own_infers(me, root);
+    if (!infers.len || !(conditional->conditional.check->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return branch;
+    Ty const* stack_buf[16];
+    Ty const** targets = infers.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * infers.len);
+    panic_if(!targets, "out of memory");
+    for (u32 i = 0; i < infers.len; i++) {
+        Ty const* constraint = ty_param_constraint(me, infers.data[i]);
+        if (constraint && conditional->conditional.mapper) constraint = ty_instantiate(me, constraint, conditional->conditional.mapper);
+        targets[i] = constraint && !(constraint->flags & (TYF_UNKNOWN | TYF_ANY)) ? constraint : ty_intrinsic(me, TY_UNKNOWN_);
+    }
+    Ty const* ret = ty_instantiate(me, branch, ty_mapper_new(me, infers, (TyList){ .data = targets, .len = infers.len }));
+    if (targets != stack_buf) free(targets);
+    return ret;
+}
+
 // What a type variable is known to be at least: tsc's getBaseConstraintOfType, without the circularity reporting.
 // Null if there's nothing to know (an unconstrained type parameter, `T[K]` that stays generic...)
 static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
@@ -2858,8 +2880,13 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
             // Already checking this conditional type as a source further up: don't recurse (tsc's
             // isDeeplyNestedType(source, sourceStack, sourceDepth, 10); it is on the stack already)
             if (st->depth && is_deeply_nested_max(source, st->source_stack, st->depth - 1, 10)) return TERNARY_MAYBE;
-            Ternary related = is_related_to(me, st, ty_conditional_branch(me, source, true), target, false);
-            if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), target, false);
+            // Through the default constraint, the union of the branches (an any branch counts as never)
+            Ty const* true_branch = inferred_true_branch(me, source);
+            Ty const* false_branch = ty_conditional_branch(me, source, false);
+            if (true_branch->flags & TYF_ANY) true_branch = ty_intrinsic(me, TY_NEVER);
+            else if (false_branch->flags & TYF_ANY) false_branch = ty_intrinsic(me, TY_NEVER);
+            Ternary related = is_related_to(me, st, true_branch, target, false);
+            if (related) related &= is_related_to(me, st, false_branch, target, false);
             if (related) return related;
             // Through the distributive constraint (not to another conditional type, like in tsc)
             if (target->kind != TY_CONDITIONAL) {
@@ -2869,8 +2896,8 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
                     if (related) return related;
                 }
             }
-            related = is_related_to(me, st, ty_conditional_branch(me, source, true), target, report);
-            if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), target, report);
+            related = is_related_to(me, st, true_branch, target, report);
+            if (related) related &= is_related_to(me, st, false_branch, target, report);
             return related;
         }
 
