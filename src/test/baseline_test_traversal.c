@@ -690,6 +690,7 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     }
     generic_compile_test_info(&my generic, ctx);
     for_each (i, vec_function_arg, &my args) {
+        if (i->jsdoc_this) continue;
         for_each (decorator, vec_expr, &i->decorators) {
             expr_compile_test_info(decorator, ctx);
         }
@@ -1175,6 +1176,14 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         }
     }
     if (!symbol || !symbol->decl_count) return;
+    // The `this` parameter of a JSDoc `@this {T}` (its name is the tag's): no declaration to tsc
+    Span first = symbol->decls[0].name;
+    if (symbol->is_parameter && span_valid(first) && first.source && first.sv.buf > source_file_start(first.source) &&
+        first.sv.buf[-1] == '@'
+    ) {
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my name, .allow_declaration_empty = true, .text = cstr_lit("this") });
+        return;
+    }
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = declaration_get_spans(symbol),
         .span = my name,

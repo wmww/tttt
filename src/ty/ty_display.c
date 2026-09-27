@@ -1181,6 +1181,8 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool instantiated = root != sig;
     if (instantiated && root->type_params.len && !this_only) d.fresh_params = root->type_params;
     FunctionImpl const* function = root->class_instance ? nullptr : root->function;
+    // (A JSDoc `@this` makes a parameter of its own, which isn't reused)
+    bool jsdoc_this = function && vec_function_arg_size(&function->args) && function->args.data[0].jsdoc_this;
     bool reusable = d.underline && function;
     bool syntactic = function && d.syntactic_function == function; // (Its parameter declarations are reused whole)
     d.syntactic_function = nullptr;
@@ -1190,11 +1192,11 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     SigParam const* params = expanded_params(me, sig, &param_count);
     if (!params) params = sig->params;
     if (sig->this_type) {
-        out(reused_if(d, d.reused || function), c_sv("this"));
+        out(reused_if(d, d.reused || (function && !jsdoc_this)), c_sv("this"));
         out_lit(d, ": ");
         FunctionArg const* this_decl = function ? vec_function_arg_at(&function->args, 0) : nullptr;
         Binding const* binding = this_decl ? &this_decl->initializer.binding : nullptr;
-        bool reused = reusable && binding && binding->has_explicit_type &&
+        bool reused = reusable && !jsdoc_this && binding && binding->has_explicit_type &&
             (!instantiated || (sig->this_type == root->this_type && !mentions(me, sig->this_type, d.fresh_params)));
         display_annotated(me, reused_if(d, false), reused ? &binding->explicit_type : nullptr, sig->this_type, false);
         if (param_count) out_lit(d, ", ");

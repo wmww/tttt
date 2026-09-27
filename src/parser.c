@@ -3188,6 +3188,26 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
     for_each (i, vec_jsdoc_tag, tags) {
         function->jsdoc_typed |= (i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE) && !i->nested && !i->earlier;
     }
+    // `@this {T}`: the function's `this` parameter (tsc's getJSDocThisTag in getSignatureFromDeclaration and
+    // getTypeForThisExpressionFromJSDoc). Not of an arrow function, which has no `this` of its own
+    JsDocTag* this_tag = jsdoc_find_typed(tags, JSDOC_TAG_THIS);
+    FunctionArg const* first = vec_function_arg_size(&function->args) ? function->args.data : nullptr;
+    bool has_this = first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
+        span_equals(first->initializer.binding.content_span, "this");
+    if (this_tag && !has_this && !span_valid(function->arrow_span) && !function->is_constructor) {
+        // (No declaration span: tsc's this-parameter symbol of a JSDoc tag has no declaration, `Symbol(this)`)
+        FunctionArg arg = {
+            .initializer.value = expr_implicit_any(this_tag->tag_name),
+            .jsdoc_this = true,
+        };
+        arg.initializer.binding = (Binding){
+            .tag = BINDING_IDENTIFIER,
+            .content_span = this_tag->tag_name,
+            .has_explicit_type = true,
+        };
+        arg.initializer.binding.explicit_type = jsdoc_take_type(this_tag, &arg.initializer.binding.explicit_type_span);
+        vec_function_arg_insert_n(&function->args, 0, &arg, 1);
+    }
     jsdoc_apply_type_signature(tags, function);
     for_each (i, vec_function_arg, &function->args) {
         Binding* binding = &i->initializer.binding;

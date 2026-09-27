@@ -23,6 +23,7 @@ typedef struct FunctionArg {
     bool is_parameter_property;
     bool is_readonly_property;
     uint8_t access; // AccessModifier (class_decl.h) of a parameter property
+    bool jsdoc_this; // The `this` parameter a JSDoc `@this {T}` declares (not in the baselines' walk)
 } FunctionArg;
 
 void function_arg_drop(FunctionArg* me);
