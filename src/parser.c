@@ -8552,6 +8552,25 @@ static void jsdoc_drop_enum(Parser* p) {
 }
 
 // list_start: where the list's own text starts (past the `{`), for the JSDoc comments it binds
+// Whether the statement at p could be one tsc's isStartOfStatement rejects but parse_statement() accepts (as an
+// expression statement with a missing semicolon: `private x = 1;`, `export x`, `import x`); anything else that isn't
+// a statement
+// fails to parse. Keeps the full predicate off the path of ordinary statements
+static bool statement_start_needs_check(Parser* p) {
+    switch (*p->pos) {
+        case 'a': return starts_with_followed_by_word_break(p, "accessor");
+        case 'c': return starts_with_followed_by_word_break(p, "const");
+        case 'e': return starts_with_followed_by_word_break(p, "export");
+        case 'i': return starts_with_followed_by_word_break(p, "import");
+        case 'p':
+            return starts_with_followed_by_word_break(p, "public") || starts_with_followed_by_word_break(p, "private") ||
+                starts_with_followed_by_word_break(p, "protected");
+        case 'r': return starts_with_followed_by_word_break(p, "readonly");
+        case 's': return starts_with_followed_by_word_break(p, "static");
+        default: return false;
+    }
+}
+
 static bool parse_append_statement_sequence(Parser* parent, bool toplevel, ParsingContext ctx, const char* list_start, VecStatement* ret) {
     Parser p = parser(parent);
     const char* jsdoc_from = list_start;
@@ -8577,7 +8596,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             vec_statement_push(ret, statement);
             p.pos++;
         } else if (
-            list_is_element(&p, ctx, tok_peek(&p)) &&
+            (!statement_start_needs_check(&p) || list_is_element(&p, ctx, tok_peek(&p))) &&
             (jsdoc_drop_enum(&p), parse_statement(&p, toplevel, &statement))
         ) {
             vec_statement_push(ret, statement);
