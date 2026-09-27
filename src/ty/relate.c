@@ -2683,7 +2683,24 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             FoundProp target_prop = { .found = true, .flags = all_optional ? PROP_OPTIONAL : 0,
                 .type = part_count == 1 ? parts[0] : ty_intersection(me, parts, part_count, nullptr, (TyList){0}) };
             FoundProp source_prop = find_prop(me, apparent_type(me, source), name, 0);
-            if (!source_prop.found) continue; // (Missing ones were the members' business)
+            if (!source_prop.found) {
+                // Usually the members' business already, but a member can have been related without looking at its
+                // properties: `Omit<any, K> & X` to `Omit<I, K> & X` through the alias's variances (tsc's
+                // getUnmatchedProperty in propertiesRelatedTo)
+                if (all_optional && (!is_subtype_relation(st->relation) || !requires_optional_properties(me, source))) continue;
+                if (report) {
+                    // (tsc names the member the property is in)
+                    cstr source_str, target_str;
+                    display_pair(me, source, true, members.data[m], &source_str, &target_str);
+                    cstr prop_name = ty_prop_name_cstr(me, name);
+                    report_line(st, 2741, cstr_d(
+                        "Property '", prop_name, "' is missing in type '", source_str, "' but required in type '", target_str, "'."
+                    ));
+                    report_related(st, 2728, cstr_d("'", prop_name, "' is declared here."), ty_prop_decl_span(member->props[i]));
+                    c_drop(cstr, &source_str, &target_str, &prop_name);
+                }
+                return TERNARY_FALSE;
+            }
             Ty const* target_type = target_prop.type;
             Ty const* source_type = source_prop.type;
             if (compiler_options()->strict_null_checks) {
