@@ -18,6 +18,10 @@ typedef struct TypecheckLabel {
 typedef struct BlockTypecheckCtx {
     TypeNode const* specified_return;
     struct Symbol const* constructed_class; // In a constructor: what a returned value has to be an instance of
+    // In an async function or generator with an annotation: what returned values are checked against instead of
+    // specified_return (tsc's unwrapReturnType), and whether they're awaited first. Null: not checked
+    struct Ty const* unwrapped_return;
+    bool await_returned;
     bool break_allowed;
     bool continue_allowed;
     bool inside_label; // Labeled breaks are allowed

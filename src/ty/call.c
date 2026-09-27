@@ -1828,12 +1828,43 @@ void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty c
     resolve(me, callee, call, contextual, call_span, errs);
 }
 
-// The type `await` gives for a value of the given type
-// TODO: only unwraps Promise<T> and PromiseLike<T> by name, not arbitrary thenables. Should be the lib's Awaited<T>
-Ty const* ty_awaited(Checker* me, Ty const* ty) {
+static Symbol const* awaited_alias(Checker* me) {
+    Symbol const* symbol = program_get_global(my program, c_sv("Awaited"), SYMBOL_TYPE);
+    return symbol && (symbol->flags & SYMBOL_TYPE_ALIAS) ? symbol : nullptr;
+}
+
+// tsc's isAwaitedTypeNeeded: a generic type that could be (or hold) a promise stays `Awaited<T>`
+static bool awaited_type_needed(Checker* me, Ty const* ty, Symbol const* awaited) {
+    if ((ty->flags & TYF_ANY) || (awaited && ty->alias == awaited)) return false;
+    if (!ty_is_generic_object(me, ty)) return false;
+    Ty const* constraint = ty_base_constraint(me, ty);
+    if (!constraint || constraint == ty) return true;
+    if (constraint->flags & (TYF_ANY | TYF_UNKNOWN)) return true;
+    if (constraint->flags & TYF_NON_PRIMITIVE) return true;
+    if ((constraint->flags & TYF_OBJECT) && !ty_members(me, constraint)->prop_count && !ty_members(me, constraint)->call_count &&
+        !ty_members(me, constraint)->construct_count && !ty_members(me, constraint)->index_count
+    ) {
+        return true; // `{}`
+    }
+    TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+    Atom const* then = checker_atom(me, c_sv("then"));
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* apparent = ty_apparent_type(me, parts.data[i]);
+        if ((apparent->flags & TYF_OBJECT) && ty_get_prop(me, apparent, then)) return true; // Thenable
+    }
+    return false;
+}
+
+// The type `await` gives for a value of the given type. `wrap`: a generic one that could be a promise is `Awaited<T>`
+// (tsc's getAwaitedType; without it getAwaitedTypeNoAlias)
+// TODO: only unwraps Promise<T> and PromiseLike<T> by name, not arbitrary thenables
+static Ty const* awaited_type(Checker* me, Ty const* ty, bool wrap) {
+    Symbol const* awaited = awaited_alias(me);
+    if (awaited && ty->alias == awaited) return ty;
+    if (wrap && awaited && awaited_type_needed(me, ty, awaited)) return ty_alias_instance(me, awaited, (TyList){ .data = &ty, .len = 1 });
     if (ty->kind == TY_UNION) {
         Ty const** parts = malloc(sizeof(Ty const*) * ty->composite.types.len);
-        for (u32 i = 0; i < ty->composite.types.len; i++) parts[i] = ty_awaited(me, ty->composite.types.data[i]);
+        for (u32 i = 0; i < ty->composite.types.len; i++) parts[i] = awaited_type(me, ty->composite.types.data[i], wrap);
         Ty const* ret = ty_union(me, parts, ty->composite.types.len, nullptr, (TyList){0});
         free(parts);
         return ret;
@@ -1844,8 +1875,32 @@ Ty const* ty_awaited(Checker* me, Ty const* ty) {
         csview name = ty->reference.target->declared.symbol->name;
         TyList args = ty_reference_args(me, ty);
         if (args.len == 1 && (csview_equals(name, "Promise") || csview_equals(name, "PromiseLike"))) {
-            return ty_awaited(me, args.data[0]);
+            return awaited_type(me, args.data[0], wrap);
         }
     }
     return ty;
 }
+
+Ty const* ty_awaited(Checker* me, Ty const* ty) { return awaited_type(me, ty, true); }
+
+// HACK: tsc's unwrapAwaitedType, applied to what a return of an async function returns. tsc relates `Awaited<X>` to X
+// through the default constraint of the conditional type, which tttt can't
+Ty const* ty_awaited_returned(Checker* me, Ty const* ty) {
+    ty = awaited_type(me, ty, false);
+    Symbol const* awaited = awaited_alias(me);
+    if (!awaited) return ty;
+    if (ty->alias == awaited && ty->alias_args.len == 1) return ty->alias_args.data[0];
+    if (ty->kind != TY_UNION) return ty;
+    Ty const** parts = malloc(sizeof(Ty const*) * ty->composite.types.len);
+    bool changed = false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        Ty const* part = ty->composite.types.data[i];
+        parts[i] = part->alias == awaited && part->alias_args.len == 1 ? part->alias_args.data[0] : part;
+        changed |= parts[i] != part;
+    }
+    Ty const* ret = changed ? ty_union(me, parts, ty->composite.types.len, nullptr, (TyList){0}) : ty;
+    free(parts);
+    return ret;
+}
+// HACK: iteration and generator types use this where tsc has Awaited<T> too, which tttt can't relate to T yet
+Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty) { return awaited_type(me, ty, false); }

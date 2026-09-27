@@ -2,6 +2,8 @@
 #include "program.h"
 #include "scope.h"
 #include "error.h"
+#include "class_decl.h"
+#include "function_impl.h"
 
 // Type relations (assignable, comparable) over Ty. The structure follows tsc's isTypeRelatedTo -> isRelatedTo ->
 // recursiveTypeRelatedTo -> structuredTypeRelatedTo, because what's observable (which errors, which elaboration lines)
@@ -886,6 +888,13 @@ static bool same_signature_origin(Ty const* source, Ty const* target) {
         source->anonymous.target == target->anonymous.target;
 }
 
+// The accessibility of the constructor a construct signature was declared by, -1 if none declared it
+static int constructor_access(Signature const* sig) {
+    while (sig && !sig->function && sig->target) sig = sig->target;
+    FunctionImpl const* function = sig ? sig->function : nullptr;
+    return function && function->constructed_class && function->is_constructor ? function->constructor_access : -1;
+}
+
 // tsc's signaturesRelatedTo
 static Ternary signatures_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool construct, bool report
@@ -901,6 +910,22 @@ static Ternary signatures_related(
     if (construct && source_count && (source_sigs[0]->flags & SIGNATURE_ABSTRACT) && !(target_sigs[0]->flags & SIGNATURE_ABSTRACT)) {
         if (report) report_line(st, 2517, cstr_lit("Cannot assign an abstract constructor type to a non-abstract constructor type."));
         return TERNARY_FALSE;
+    }
+    if (construct && source_count) {
+        // tsc's constructorVisibilitiesAreCompatible: a less visible constructor isn't assignable to a more visible one
+        int source_access = constructor_access(source_sigs[0]), target_access = constructor_access(target_sigs[0]);
+        if (source_access >= 0 && target_access >= 0 && target_access != ACCESS_MODIFIER_PRIVATE &&
+            !(target_access == ACCESS_MODIFIER_PROTECTED && source_access != ACCESS_MODIFIER_PRIVATE) &&
+            source_access != ACCESS_MODIFIER_PUBLIC
+        ) {
+            if (report) {
+                static char const* const names[] = { [ACCESS_MODIFIER_PUBLIC] = "public", [ACCESS_MODIFIER_PROTECTED] = "protected",
+                    [ACCESS_MODIFIER_PRIVATE] = "private" };
+                report_line(st, 2672, cstr_d("Cannot assign a '", names[source_access], "' constructor type to a '",
+                    names[target_access], "' constructor type."));
+            }
+            return TERNARY_FALSE;
+        }
     }
     Ternary result = TERNARY_TRUE;
     if (source_count == target_count && same_signature_origin(source, target)) {

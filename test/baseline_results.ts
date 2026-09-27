@@ -7148,7 +7148,7 @@ const baselines = {
     'customAsyncIterator': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'customEventDetail': {
         errors: true,
@@ -35481,7 +35481,7 @@ const baselines = {
         types: true,
     },
     'classConstructorAccessibility3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45321,7 +45321,7 @@ const baselines = {
         types: false,
     },
     'generatorTypeCheck6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45346,7 +45346,7 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45356,7 +45356,7 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50171,7 +50171,7 @@ const baselines = {
         types: true,
     },
     'generatorExplicitReturnType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52868,7 +52868,7 @@ const baselines = {
     'checkJsxSubtleSkipContextSensitiveBug': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsxUnionSFXContextualTypeInferredCorrectly': {
         errors: true,

@@ -158,7 +158,9 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         TyIterationTypes const* context = ty_generator_context(checker, me);
         checker->return_context = context && !(context->return_type->flags & (TYF_ANY | TYF_VOID)) ? context->return_type : nullptr;
     } else if (my is_async) {
-        checker->return_context = nullptr; // TODO: the awaited part of the annotation
+        // The awaited annotation (tsc's getContextualTypeForReturnExpression also has a PromiseLike of it)
+        Ty const* annotated = my ret_explicit ? ty_unwrapped_return_type(checker, me) : nullptr;
+        checker->return_context = annotated && !(annotated->flags & (TYF_ANY | TYF_VOID)) ? annotated : nullptr;
     } else if (my ret_explicit) {
         Ty const* annotated = ty_from_node(checker, &my ret, (LowerCtx){ .generic = true });
         checker->return_context = annotated->flags & (TYF_ANY | TYF_VOID) ? nullptr : annotated;
@@ -376,7 +378,10 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         // TODO: returns in async functions and generators aren't checked, the declared type wraps what's returned
         .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret : &type_any,
         .constructed_class = my is_constructor ? my constructed_class : nullptr,
+        .unwrapped_return = my ret_explicit && (my is_async || my is_generator) ? ty_unwrapped_return_type(current_checker, me) : nullptr,
+        .await_returned = my is_async,
     };
+    if (my ret_explicit && my is_generator) ty_check_generator_annotation(current_checker, me, errs);
     Ty const* outer_context = function_impl_enter_return_context(me);
     block_typecheck(&my body, ctx, errs);
     current_checker->return_context = outer_context;

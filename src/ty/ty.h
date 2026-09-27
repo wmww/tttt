@@ -1185,6 +1185,8 @@ TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty
 Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* ty, Span span, ErrorCtx* errs);
 TyIterationTypes const* ty_generator_return_iteration_types(Checker* me, Ty const* ret, bool async);
 TyIterationTypes const* ty_generator_context(Checker* me, FunctionImpl const* generator);
+void ty_check_generator_annotation(Checker* me, FunctionImpl const* generator, ErrorCtx* errs);
+Ty const* ty_unwrapped_return_type(Checker* me, FunctionImpl const* function);
 Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty const* return_type, Ty const* next_type);
 
 // check.c: what the statement/expression walk checks, with tsc's errors
@@ -1304,6 +1306,8 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
 Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual);
 void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs);
 Ty const* ty_awaited(Checker* me, Ty const* ty);
+Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);
+Ty const* ty_awaited_returned(Checker* me, Ty const* ty);
 
 // ty_display.c
 // The old display's `underline` mode underlines a type's whole rendering, so the `.types` traversal can do that from

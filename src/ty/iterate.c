@@ -321,11 +321,11 @@ static TyIterationTypes const* iteration_types_of_method(Checker* me, Ty const* 
         if (which == METHOD_NEXT) {
             next_type = param;
         } else {
-            ty_buf_push(&return_types, async ? ty_awaited(me, param) : param);
+            ty_buf_push(&return_types, async ? ty_awaited_no_alias(me, param) : param);
         }
     }
     Ty const* result = ty_intersection(me, return_parts.data, return_parts.len, nullptr, (TyList){0});
-    if (async) result = ty_awaited(me, result);
+    if (async) result = ty_awaited_no_alias(me, result);
     TyIterationTypes const* from_result = iteration_types_of_result(me, result);
     Ty const* yield_type;
     if (from_result == &no_iteration_types) {
@@ -379,7 +379,7 @@ TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty
 
 static TyIterationTypes const* resolve_types(Checker* me, TyIterationTypes const* types, bool async) {
     if (!async) return types;
-    return make_types(me, ty_awaited(me, types->yield_type), ty_awaited(me, types->return_type), types->next_type);
+    return make_types(me, ty_awaited_no_alias(me, types->yield_type), ty_awaited_no_alias(me, types->return_type), types->next_type);
 }
 
 // tsc's getIterationTypesOfIterableFast + Slow for one of the resolvers
@@ -591,6 +591,35 @@ static bool generator_fits(Checker* me, Ty const* ret, bool async) {
     return ty_is_related(me, ty_generator_type(me, async, yield_type, return_type, next_type), ret, TY_RELATION_ASSIGNABLE);
 }
 
+// tsc's checkGeneratorInstantiationAssignabilityToReturnType, and TS2505 for `void`
+void ty_check_generator_annotation(Checker* me, FunctionImpl const* generator, ErrorCtx* errs) {
+    Ty const* ret = ty_from_node(me, &generator->ret, (LowerCtx){ .generic = true });
+    if (ret->flags & TYF_VOID) {
+        error_ctx_error_d(errs, generator->ret_span, 2505, "A generator cannot have a 'void' type annotation.");
+        return;
+    }
+    if (ret->flags & (TYF_ANY | TYF_ERROR)) return;
+    bool async = generator->is_async;
+    TyIterationTypes const* types = ty_generator_return_iteration_types(me, ret, async);
+    Ty const* yield_type = types ? types->yield_type : ty_intrinsic(me, TY_ANY);
+    Ty const* return_type = types ? types->return_type : yield_type;
+    Ty const* next_type = types ? types->next_type : ty_intrinsic(me, TY_UNKNOWN_);
+    ty_check_assignable(me, ty_generator_type(me, async, yield_type, return_type, next_type), ret, generator->ret_span, errs);
+}
+
+// What a `return` in an annotated async function or generator is checked against (tsc's unwrapReturnType), null if
+// nothing (the annotation isn't something a generator could be)
+Ty const* ty_unwrapped_return_type(Checker* me, FunctionImpl const* function) {
+    Ty const* ret = ty_from_node(me, &function->ret, (LowerCtx){ .generic = true });
+    if (function->is_generator) {
+        if (ret->flags & TYF_ANY) return nullptr;
+        TyIterationTypes const* types = ty_generator_return_iteration_types(me, ret, function->is_async);
+        if (!types || !types->return_type) return nullptr;
+        return function->is_async ? ty_awaited_no_alias(me, types->return_type) : types->return_type;
+    }
+    return ty_awaited_no_alias(me, ret);
+}
+
 TyIterationTypes const* ty_generator_context(Checker* me, FunctionImpl const* generator) {
     Ty const* ret = generator->ret_explicit ?
         ty_from_node(me, &generator->ret, (LowerCtx){ .generic = true }) : ty_contextual_return_type(me, generator);
@@ -614,8 +643,8 @@ TyIterationTypes const* ty_generator_context(Checker* me, FunctionImpl const* ge
 Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty const* return_type, Ty const* next_type) {
     IterationState const* state = iteration_state(me);
     if (async) {
-        yield_type = ty_awaited(me, yield_type);
-        return_type = ty_awaited(me, return_type);
+        yield_type = ty_awaited_no_alias(me, yield_type);
+        return_type = ty_awaited_no_alias(me, return_type);
     }
     Ty const* args[3] = { yield_type, return_type, next_type };
     Ty const* target = state->globals[async ? IG_ASYNC_GENERATOR : IG_GENERATOR];
