@@ -25,10 +25,8 @@ corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and
    small missing checks, two thirds by two worktree sub-agents (module/export codes; declaration/scoping codes).
    Leftovers in triage.md "Single-code error buckets". Also: unresolved names and missing properties are error-typed
    now (TS2347), empty statements exist in the AST.
-9. **Perf: plan 28** (resolve calls once), then a check-up with callgrind counts on the tsc corpus (the stable
-   measure) and `./bench.sh` including the fourth corpus; update `measurements.md`. First: valibot is still ~19%
-   slower than before plan 31 part 3 (measurements.md "plan 31": callgrind 5.41 G -> 8.19 G, instantiation);
-   find out if that's legitimate distribution work or waste.
+9. Done: perf (plan 28: calls resolve once, tsc corpus callgrind 6.17 G -> 5.79 G; valibot's plan 31 regression
+   was eager instantiation of mapped instances, fixed: 8.15 G -> 5.64 G, 0.81 s wall). Suite 8948, corpora unchanged.
 10. **Triage.** Drain triage.md; also prune hacks.md (914 lines: drop what plans 26-30 fixed, consolidate).
 11. **Insights.** Waiting to be scheduled: plan 27 stage 2 (permissive grammar), plan 30 stage 3, plan 26 stages 3-4,
     plan 32 (mixin classes, a draft needing a planning session), decorators (if the fourth corpus asks for them).

@@ -2,6 +2,38 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, perf: plan 28 + valibot regression + check-up (todo entry 9)
+Suite **8948** unchanged (no component moved); corpora identical (tsc 0, type-fest 19, valibot/react/nest 0).
+Callgrind (`valgrind --tool=callgrind ./release/tttt -q --keep-going -p DIR`):
+
+| corpus | before | plan 28 | + valibot fix |
+|---|---|---|---|
+| tsc | 6.171 G | 5.792 G | 5.792 G |
+| valibot | 8.147 G | 7.295 G | **5.637 G** |
+| type-fest / react / nest | | | 3.277 / 2.211 / 1.390 G |
+
+- Plan 28 (calls resolve once): `ty_call_typecheck` inclusive 7.3% -> 1.1% on the tsc corpus. What's left is calls whose
+  last resolution happened during an enclosing call's inference (not recorded, so resolved again).
+- Valibot's +51% since plan 31 part 3 (abe4481; bisected in worktrees: 5.41 G -> 8.77 G, all in instantiate.c) was
+  not the extra distribution: `instantiate_mapped_over_list` instantiated every mapped instance's modifiers type
+  eagerly to see whether it became a union/list, ~263k times on mapped instances over mapped instances.
+  `may_map_specially()` answers that without instantiating. The 4% left over 6ad4573 is the tsc-rule work since.
+
+`./bench.sh --runs 2` (best wall / peak RSS; tsgo 7.0.2 on 4 cores; the machine is slower than on the last recording:
+tsgo's tsc corpus 1.27 -> 1.54 s, tsc 5.8 7.9 -> 8.5 s):
+
+| corpus | tttt | tsc | tsgo | tsgo 1 thread |
+|---|---|---|---|---|
+| synthetic (969 tests x 200) | 6.15 s / 4903 MB | 44.6 s | 12.2 s / 5399 MB | 13.8 s |
+| tsc src/compiler | **0.90 s** / 423 MB | 8.49 s | 1.54 s / 425 MB | 1.90 s |
+| type-fest | 0.43 s / 456 MB | 6.41 s | 2.35 s / 794 MB | 2.60 s |
+| valibot | 0.81 s / 467 MB | 10.45 s | 2.27 s / 833 MB | 2.66 s |
+| react | 0.34 s / 257 MB | 4.47 s | 1.32 s / 548 MB | 1.07 s |
+| nest | 0.31 s / 261 MB | 3.06 s | 0.58 s / 255 MB | 0.59 s |
+
+Phase split on the tsc corpus: parse 210 ms, resolve 122 ms, typecheck 565 ms. On nest: parse 173 + 22 ms libs,
+resolve 73 ms, typecheck 35 ms (parsing decides applications with skipLibCheck; plan 27's backtracking).
+
 ## 2026-09-27, suite checker bugs 2 (todo entry 8)
 Suite 8703 -> **8948 / 13540** (errors 10746, symbols 12174, types 10491), no lost components. Corpora unchanged:
 tsc 0 (0.92 s / 423 MB, was 0.89 s / 413 MB), valibot 0 (0.94 s / 468 MB), type-fest 19 (0.41 s), react 0 (0.34 s),

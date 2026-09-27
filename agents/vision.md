@@ -26,8 +26,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   mostly the machine (~15% slower than on 09-25); callgrind counts are the stable measure: 6.92 G -> 5.91 G that
   session (tsc's key-property map, reverse mapped cache, containsType). Calls now resolve once (plan 28, -6%: 6.17 G ->
   5.79 G). Next lever: the backtracking parser (~20% of instructions). nest: 0.30 s vs tsgo 0.40 s (parallel), the closest margin
-  yet: with skipLibCheck an application is mostly parsing (170 ms of 300), so the parser matters there. valibot
-  regressed to 0.95 s in plan 31 (mapped-type instantiation through the root; partly fixed, see measurements.md).
+  yet: with skipLibCheck an application is mostly parsing (170 ms of 300), so the parser matters there. valibot's
+  plan 31 regression is fixed (eager instantiation of mapped instances; 0.81 s, 5.64 G). 2026-09-27 check-up: tsc
+  corpus 0.90 s vs tsgo 1.54 s on a slower day, every corpus 2-5x ahead of parallel tsgo except nest (0.31 vs 0.58).
 - **Built and holding**: hand-written backtracking parser (JSX included), tsc-shaped binder with persistent symbols
   and merging, interned `Ty` core with id-keyed relations and tsc's identity relation, mapper instantiation, two-pass
   inference with priorities, contextual typing, conditional/mapped/indexed/template types, flow graph + narrowing,

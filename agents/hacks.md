@@ -583,6 +583,12 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `ty_access`: `null`/`undefined` members of a union object are skipped silently (TS18047/18048 come from
   `check_access` instead), optional chaining isn't known here.
 
+- `ty_call_typecheck` / `KEY_CALL_RESOLUTION` (plan 28): the typecheck walk skips resolving a call again when the
+  type pass's last settled resolution under the same contextual type would have reported nothing. It trusts that no
+  state that affects resolution changed in between; a diagnostic that only a second resolution produced would now be
+  lost (none in the suite or corpora at the time). "Would report" is set by hand at each error site of
+  `resolve_call`/`resolve_with_signatures` (`mark_would_report`): a new diagnostic there must set it too.
+
 ## Expressions (`ty/expr.c`), contextual typing, the call passes
 `ty_check_expr(expr, contextual)` is meant to stay; what's listed is where it stops short of tsc.
 - **Assignment targets** (`assignment_target_typecheck`, expr.c): a property target is checked against its *read*
