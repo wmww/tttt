@@ -57,6 +57,7 @@ typedef struct ParserShared {
     bool in_jsdoc;
     const char* jsdoc_end; // The `*/` of the comment being parsed, with in_jsdoc
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
+    u32 errors_attempted; // Every parse_error() call, the ones dropped too (a position that already has one)
 } ParserShared;
 
 typedef struct FunctionFlags {
@@ -371,6 +372,7 @@ static int invalid_char_size(const char* c);
 // position is the one that explains it; whatever recovery reports there next is noise). An error at a character no
 // token starts with is TS1127, which tsc's scanner reports before the parser gets to say anything there
 static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
+    my shared->errors_attempted++;
     int invalid = span.source ? invalid_char_size(span_start_ptr(span)) : 0;
     if (invalid && ts_code != 1127) {
         cstr_drop(&message);
@@ -829,15 +831,51 @@ typedef struct Tok {
     bool newline_before;
 } Tok;
 
+// The end of the token at c, tsc's scanner's idea of it but cheap: no values, templates are just their backtick
+static const char* tok_scan_end(const char* c) {
+    if (!*c) return c;
+    if (is_identifier_start_char(*c) || (*c == '#' && is_identifier_start_char(c[1]))) {
+        c++;
+        while (is_identifier_char(*c)) c++;
+        return c;
+    }
+    if ((*c >= '0' && *c <= '9') || (*c == '.' && c[1] >= '0' && c[1] <= '9')) {
+        c++;
+        while (is_number_char(*c) || ((*c == '+' || *c == '-') && (c[-1] == 'e' || c[-1] == 'E'))) c++;
+        return c;
+    }
+    if (*c == '"' || *c == '\'') {
+        char quote = *c++;
+        while (*c && *c != quote && *c != '\n') {
+            if (*c == '\\' && c[1]) c++;
+            c++;
+        }
+        return *c == quote ? c + 1 : c;
+    }
+    // Longest punctuator first
+    static const char* const puncts[] = {
+        ">>>=", "...", "===", "!==", "**=", "<<=", ">>=", ">>>", "&&=", "||=", "?\?=",
+        "=>", "==", "!=", "<=", ">=", "&&", "||", "??", "?.", "++", "--", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=",
+        "**", "<<", ">>", nullptr,
+    };
+    for (const char* const* punct = puncts; *punct; punct++) {
+        size_t n = strlen(*punct);
+        if (strncmp(c, *punct, n) == 0) {
+            // `?.5` is `?` then a number
+            if (n == 2 && c[0] == '?' && c[1] == '.' && c[2] >= '0' && c[2] <= '9') break;
+            return c + n;
+        }
+    }
+    return c + utf8_char_size(c);
+}
+
 static Tok tok_at(Parser* parent, const char* pos, bool newline_before) {
     Parser p = parser(parent);
     p.pos = pos;
     p.whitespace = newline_before ? WHITESPACE_NEWLINE : WHITESPACE_NONE;
     p.whitespace_end = nullptr;
     hop_whitespace(&p);
-    Tok t = { .start = p.pos, .newline_before = newline_before || p.whitespace == WHITESPACE_NEWLINE };
-    hop_token(&p);
-    t.end = p.pos;
+    Tok t = { .start = p.pos, .end = tok_scan_end(p.pos), .newline_before = newline_before || p.whitespace == WHITESPACE_NEWLINE };
     parse_fail(&p);
     return t;
 }
@@ -1113,6 +1151,8 @@ typedef enum ParsingContext {
     PARSING_VARIABLE_DECLARATIONS,
     PARSING_CONTEXT_COUNT,
 } ParsingContext;
+
+static bool parse_list_member(Parser* parent, ParsingContext ctx, bool is_type, bool is_abstract, ClassItem* ret);
 
 // tsc's isStartOfType(inStartOfParameter = true)
 static bool tok_is_start_of_parameter_type(Tok t) {
@@ -2721,7 +2761,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         hop_whitespace(&p);
 
         ClassItem item;
-        if (list_is_element(&p, PARSING_TYPE_MEMBERS, tok_peek(&p)) && parse_class_item(&p, true, true, &item)) {
+        if (parse_list_member(&p, PARSING_TYPE_MEMBERS, true, true, &item)) {
             switch (item.tag) {
                 case CLASS_ITEM_METHOD: {
                     if (item.method.accessor) {
@@ -3152,7 +3192,7 @@ static bool parse_function_args_inner(
             } else {
                 InitializedBinding initializer = {0};
                 const char* before_param = p.pos;
-                uint16_t errors_before_param = p.error_count;
+                u32 errors_before_param = p.shared->errors_attempted;
                 bool explicit_optional = false;
                 bool rest = false;
                 Span rest_span = span_null;
@@ -3216,7 +3256,7 @@ static bool parse_function_args_inner(
 
                 // tsc's skipParameterStart: only a name or pattern that parses without errors counts
                 if (vec_function_arg_is_empty(&ret->args) && initializer.binding.has_explicit_type &&
-                    p.error_count == errors_before_param
+                    p.shared->errors_attempted == errors_before_param
                 ) {
                     is_definitely_function = true;
                 }
@@ -3806,15 +3846,15 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
     // tsc's parseDelimitedList(ArrayLiteralMembers): an element at `,` is omitted
     u32 saved_context = list_enter(&p, PARSING_ARRAY_LITERAL_MEMBERS);
     while (*p.pos && *p.pos != ']') {
-        if (!list_is_element(&p, PARSING_ARRAY_LITERAL_MEMBERS, tok_peek(&p))) {
-            if (list_abort_or_skip(&p, PARSING_ARRAY_LITERAL_MEMBERS)) break;
-            continue;
-        }
         const char* start = p.pos;
         Expr expr;
         if (*p.pos == ',') {
             expr = expr_undefined(span_from_pos(&p));
         } else if (!parse_expr_or_spread(&p, &expr)) {
+            if (!list_is_element(&p, PARSING_ARRAY_LITERAL_MEMBERS, tok_peek(&p))) {
+                if (list_abort_or_skip(&p, PARSING_ARRAY_LITERAL_MEMBERS)) break;
+                continue;
+            }
             expect_expr(&p, expr_ctx_null, &expr);
         }
         vec_expr_push(ret, expr);
@@ -4320,6 +4360,20 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     return parse_success(&p);
 }
 
+// A class or type member where tsc's parseList would try one: its isClassMemberStart/isTypeMemberStart (`class C2 {`
+// or `return 1;` in a class body aren't members, where parse_class_item() would make a field of the keyword). The
+// predicate is only asked about members that parsed with errors, which keeps it off the path of valid code
+static bool parse_list_member(Parser* parent, ParsingContext ctx, bool is_type, bool is_abstract, ClassItem* ret) {
+    Parser p = parser(parent);
+    u32 errors_before = p.shared->errors_attempted;
+    if (!parse_class_item(&p, is_type, is_abstract, ret)) return parse_fail(&p);
+    if (p.shared->errors_attempted != errors_before && !list_is_element(&p, ctx, tok_at(&p, parent->pos, false))) {
+        class_item_drop(ret);
+        return parse_fail(&p);
+    }
+    return parse_success(&p);
+}
+
 static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -4416,9 +4470,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
             hop_whitespace(&p);
             continue;
         }
-        if (!list_is_element(&p, PARSING_CLASS_MEMBERS, tok_peek(&p)) ||
-            !parse_class_item(&p, false, is_abstract, &item)
-        ) {
+        if (!parse_list_member(&p, PARSING_CLASS_MEMBERS, false, is_abstract, &item)) {
             if (list_abort_or_skip(&p, PARSING_CLASS_MEMBERS)) break;
             continue;
         }
@@ -4464,13 +4516,16 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
     *args = vec_expr_init();
     u32 saved_context = list_enter(&p, PARSING_ARGUMENT_EXPRESSIONS);
     while (*p.pos && *p.pos != ')' && *p.pos != ';') {
-        if (!list_is_element(&p, PARSING_ARGUMENT_EXPRESSIONS, tok_peek(&p))) {
-            if (list_abort_or_skip(&p, PARSING_ARGUMENT_EXPRESSIONS)) break;
-            continue;
-        }
         const char* start = p.pos;
         Expr arg = {0};
-        if (!parse_expr_or_spread(&p, &arg)) expect_expr(&p, expr_ctx_null, &arg);
+        if (!parse_expr_or_spread(&p, &arg)) {
+            // (The predicate only after the parser said no: it's what the list does on valid code that costs)
+            if (!list_is_element(&p, PARSING_ARGUMENT_EXPRESSIONS, tok_peek(&p))) {
+                if (list_abort_or_skip(&p, PARSING_ARGUMENT_EXPRESSIONS)) break;
+                continue;
+            }
+            expect_expr(&p, expr_ctx_null, &arg);
+        }
         vec_expr_push(args, arg);
         hop_whitespace(&p);
         if (hop_char(&p, ',')) {
@@ -6859,6 +6914,7 @@ static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, 
 
 // ECMAScript's reserved words: never a binding identifier (strict mode ones are, with a grammar error)
 static bool is_reserved_word(csview word) {
+    if (word.size < 2 || word.size > 10 || word.buf[0] < 'b' || word.buf[0] > 'w') return false;
     static const char* const words[] = {
         "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else", "enum",
         "export", "extends", "false", "finally", "for", "function", "if", "import", "in", "instanceof", "new", "null",
