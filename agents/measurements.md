@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 26 stage 3 (JSDoc declarations, todo entry 5)
+Suite 9091 -> **9156** (errors 10900, symbols 12249, types 10593); 26 tests lost a component, all JS tests that passed
+only because unresolved JSDoc names were silent (plan 26 "Stage 3 leftovers"). JS tests (`./jsstats.py`): **310 ->
+375 pass**, 674 fail; cumulative bounds 1+2 134, +3 304, +4 315, +5 417, +3b 523. **webpack 3981 -> 515** (TS7006 115,
+TS2322 113, TS2345 106, TS2578 26, TS18048 25, TS2339 25; wall 0.75 -> 0.81 s: more of it is typed now). Other corpora
+unchanged (tsc 0, type-fest 11, valibot/react/nest 0). Bench not rerun (JS-only paths; TS corpora walls unchanged).
+
 ## 2026-09-27, plan 34 (error text fidelity, todo entry 3)
 Suite 8958 -> **9090** (errors 10884, symbols 12218, types 10523), no lost components. failstats' "same
 codes+positions, message text differs" 432 -> **302**; `./errtextdiff.py --coarse`: tests fixed by one part: chain 92,

@@ -26,10 +26,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   module resolution + tsconfig, iteration protocol, generators, `this` types, elaboration, JSX (namespaces,
   components, runtimes), tsc's type printer and symbol chains for the baselines, JSDoc + CommonJS. ~64k lines of C.
   `documentation.md` describes it, `hacks.md` lists what is approximated.
-- **JS/JSDoc (plan 26)**: stages 1-2 done (JSDoc lowered into the annotation slots at parse time, CommonJS,
-  expandos, JS classes and constructor functions): JS tests 160 -> 299. Stages 3-4 (typedef/template, the other tags,
-  TS8xxx) are next, ordered by the webpack corpus (checkJs, pinned by plan 33: 3981 diagnostics, essentially all
-  unresolved `@typedef`s and ignored `@type` on assignments; plan 26 stage 3 has the order).
+- **JS/JSDoc (plan 26)**: stages 1-3 done (JSDoc lowered into the annotation slots at parse time, CommonJS,
+  expandos, JS classes and constructor functions, typedefs/imports/enums as synthesized declarations, `@template`):
+  JS tests 160 -> 375, webpack 6146 -> 515, unresolved JSDoc names are TS2304 like in tsc. Left: stage 3's leftovers
+  (global expando namespaces, generic constructor functions) and stage 4 (the other tags, TS8xxx).
 - **Absent**: outer type parameters (a local class/interface/alias in a generic function doesn't capture its `T`:
   `f(3).x` is `T`; plan 32 stage B), union origins, lazy reverse mapped types, decorator checking,
   declaration emit (out of scope: typechecker only, `--noEmit` semantics), project references, parallelism.

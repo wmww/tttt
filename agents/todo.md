@@ -15,8 +15,10 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 4. ~~Plan 32 planning~~ done: rewritten into three stages; stage A (intersection members, the mixin signature rule)
    executed too, suite 9090 -> 9091. Stages B (outer type parameters: local declarations in generic functions leak `T`)
    and C (mixin classes) are unscheduled: the next insights places them.
-5. **Plan 26 stage 3** (`@typedef`/`@template`, in the order plan 26's stage 3 section now gives from webpack; store
-   JSDoc tags first, as the stage 1 note says). Measure with `./realworld.py --corpus webpack` (3981 at the start).
+5. ~~Plan 26 stage 3~~ done: typedefs/callbacks/imports/enums declare, `@template`, `@type` on assignments and
+   members, JSDoc names report TS2304; JS tests 310 -> 375, suite 9091 -> 9156, webpack 3981 -> 515. Its leftovers
+   (global expando namespaces, prototype methods' templates: 13 tests lost to the now-visible TS2304/TS2503) are ranked
+   in plan 26 "Stage 3 leftovers"; the next insights places them.
 6. **Suite checker bugs 3** (`bugs/missing_checks.md`: single-code buckets, target/module-gated diagnostics).
 7. **Perf: the parser** (`bugs/perf_leads.md` "Parser": first-char dispatch in `parse_expr`/`parse_type`/keyword
    probes, the `parse_fail` count; nest is 170 of 300 ms parsing and the closest margin to tsgo) plus the

@@ -4,12 +4,9 @@ Written 2026-09-26 (planning session, todo entry 4).
 
 ## Status
 **Stage 1 done** (2026-09-27, 8 commits "Plan 26 stage 1, part N"): JS tests passing 160 -> 247, suite 8258 -> 8345.
-Built as designed except: JSDoc is consumed at parse time rather than stored (fine for stage 1; stage 3's `@typedef`
-and `@template` need tags that outlive a host's parse: store them first), and `exports.x =` is only declared from a
-file's top-level statements. What was left out or approximated is in hacks.md "JavaScript" and "Leftovers collected
-by triage" below; the most valuable leftovers for later stages: `module.exports.x` merging into export= (stage 2),
-`@type` on declaring assignments (stage 3, with typedefs), JSDoc parse errors. Unresolved JSDoc names are silent
-until stage 3 (HACK). `documentation.md` "JSDoc" / "CommonJS" describe what exists.
+Built as designed except: JSDoc is consumed at parse time rather than stored (stage 3 managed without storing it
+too), and `exports.x =` is only declared from a file's top-level statements. What was left out or approximated is in
+hacks.md "JavaScript". `documentation.md` "JSDoc" / "CommonJS" describe what exists.
 **Stage 2 done** (2026-09-27, 3 commits "Plan 26 stage 2, part N"): JS tests passing 260 -> 299, suite 8631 -> 8686.
 Built: expandos in TS and JS (declare step, exports of the host, entity-name hosts, `{}` containers, class expression
 hosts), `this.x` members of JS classes and constructor functions (resolve walk, `Symbol.members`), `F.prototype.x`,
@@ -18,6 +15,13 @@ TS2339 gate removed. Not done: `F.prototype = {...}`, `Object.defineProperty` de
 parameter (tsc only does that with a JSDoc `...T` now), JS widening of `null`/`[]` initializers, **the JS TS2339
 gate** (removing it still loses ~57 tests: hacks.md "Assignment declarations" lists why). `documentation.md`
 "Assignment declarations" describes what exists.
+**Stage 3 done** (2026-09-27, 6 commits, todo entry 5): JS tests passing 310 -> 375, suite 9091 -> 9156, webpack
+3981 -> 515. Built: `@typedef`/`@callback`/`@import`/`@enum` as synthesized declarations bound by the innermost statement
+list (`jsdoc_bind_comments()`), `@template` (functions, methods, classes, typedefs, defaults), nested `@param o.a`,
+`@type` on declaring assignments and object literal members, non-literal `@type {F}` as a function's signature, JSDoc
+`import("./m")` as value-or-type, JS calls inferring any (AnyDefault), braceless `@type`/`@enum`, `@returns {asserts x}`.
+Unresolved JSDoc names report TS2304 now (the silencing HACK is gone), which is what the "Stage 3 leftovers" below
+cost: 26 tests lost a component. `documentation.md` "JSDoc" describes what exists.
 Stage 2 notes (kept for the leftovers): `Object.defineProperty(exports, ...)` is the rest of spurious TS2580; the symbols baseline already has
 an override hook for tsc's getSpecialPropertyAssignmentSymbol shapes (`commonjs_symbol_overrides()`), `this.x =` and
 expandos will need the same kinds of lines; `binary_commonjs_declaration()` is where assignment declaration kinds
@@ -220,38 +224,35 @@ each.
 - Target: JS tests passing ~230 -> ~320; the expando baselines' symbol shapes (the `Symbol(C.x, Decl(...),
   Decl(...))` lines above) matching.
 
-### Stage 3: declarations in JSDoc
-`@typedef` (with `{Object}` + `@property`, nested), `@callback`, `@template` (constraints, defaults, on functions,
-classes and typedefs), nested `@param {T} o.a`, `@enum`, `@import`. Target ~+80 tests (`@typedef` alone blocks 71
-of the basic-JSDoc set).
-
-**Order, from the webpack corpus** (plan 33, 2026-09-27: 3981 diagnostics, essentially all JSDoc; tag counts over
-lib/tooling/bin/setup: @param 6800, @type 6611, @typedef 4555 (3429 of them `@typedef {import("./X")} X`), @returns
-2987, @property 1632, @template 546, @callback 33, @overload 29, @import 22, @extends 17, @this 9). Unresolved
-typedef names are silently `any` today (several_types.c HACK), so every hook callback, `compilation`, `chunk`...
-parameter is implicitly any: that alone is TS7006 2689 + TS7031 375. The order:
-1. **Store JSDoc tags** (the stage 1 note) so typedefs outlive the host's parse.
-2. **`@typedef {T} Name`** as a file-level type alias (a module's export in a module file, tsc's
-   JSDocTypedefTag binding), **`{import("./x")}` / `import("./x").Y`** as the type (`typeof` of an `export =` class
-   instance is its instance type: `@typedef {import("./Compiler")} Compiler` names the class), **`@typedef {object}`
-   + `@property`** (1632 sites). A typedef whose name is also a value in scope (`/** @typedef {object}
-   ImportPhaseUtils */ const ImportPhaseUtils = {...}`, 5 TS2502) must resolve to the typedef in type position.
-   JS typedefs are importable from .d.ts files (`import("../lib/X").Fn`: TS2694 77, TS2749 9 in declarations/).
-3. **`@type` on declaring assignments**: `/** @type {Set<X>} */ this.x = new Set()` (800 sites; today the member is
-   the initializer's type: TS18046 `unknown`, TS2339 on `never`, TS2488) and on **object literal properties**
-   (`Object.freeze({ /** @type {SyncHook<[Compilation]>} */ compilation: new SyncHook([...]) })`: contextual type
-   for the `new`, and the property's declared type; TS2345 `readonly string[] & { 0: string; length: 1 }` ~250,
-   TS2554 on hook `.call()` arity 127, TS2322 `unknown`).
-4. **`@template`** (546) on functions, classes and typedefs, then `@callback` (33).
-Probes: `/tmp`-style multi-file tests with `@filename`, like plan 33's (`td.ts`/`feat.ts` shapes are described
-above). Remeasure `./realworld.py --corpus webpack` after each piece: expect most of the 3981 to go with 2+3.
+### Stage 3: declarations in JSDoc (done, see Status)
+**Stage 3 leftovers**, by what they cost (tests that lost a component when unresolved JSDoc names stopped being silent,
+plus webpack's residue):
+- **Global expando namespaces** (tsc's jsGlobalAugmentations): `Outer.Inner = class {}` in a script where `Outer` is a
+  global of another script declares nothing (`expando_host()` only extends the file's own symbols), so `@type
+  {Outer.Inner}` is TS2503. 8 tests (typeFromPropertyAssignment4/6/10/10_1/14/35/OutOfOrder, exportNestedNamespaces,
+  moduleExportNestedNamespaces). Needs a per-file list of unresolved expando hosts merged into the globals in the link
+  step (it is also one of the TS2339 gate's causes).
+- **Constructor function type parameters seen from prototype methods** (tsc's getAssignmentDeclarationLocation):
+  `/** @param {K} k */ F.prototype.get = function (k)` finds K on F's `@template`. Also the instance type of a generic
+  constructor function isn't generic. 5 tests (jsdocTemplateTag4/5/6, constructorFunctionMethodTypeParameters,
+  propertiesOfGenericConstructorFunctions); `@this` (inferThis) with it.
+- Dotted typedef names (`@callback NS.Nested.Inner`: namespaces), 6 tests; `@typedef` named by its host.
+- Display: a typedef of a CommonJS module with `export=` prints through the export= name in tsc
+  (`memoize.FunctionReturning<T>`, `MF.CompilationHooks`), tttt prints `import("memoize").FunctionReturning<T>`; a
+  JSDoc type literal is printed by tsc with its newlines dropped (`{    a: string;}`); aliases of JSDoc function types
+  (`@enum {function(number): number}` prints `Fs`).
+- JSDoc parse errors (TS8032 `o.a.b` without `o.a`, TS1003...): dropped.
+- webpack 515: TS7006 115 (mostly contextual typing through `memoize(() => require(...))` and hooks of lazily required
+  modules; not reproduced by small probes yet), TS2322 113 / TS2345 106 (`string | Buffer` from fs overloads, `number |
+  undefined` narrowing), TS2578 26 (unused `@ts-expect-error` above `require()` calls tsc flags, microsoft/TypeScript
+  #41697), TS2314 16. Rank again with `./realworld.py --corpus webpack` before picking.
 
 ### Stage 4: the rest of the tags and JS syntax diagnostics
 `@this`, `@extends`/`@augments` (type arguments for a JS class's base), `@implements`, `@overload`, `@satisfies`,
 `@private`/`@protected`/`@public`/`@readonly`/`@override`; the TS8xxx syntactic walk (design 4, last item) and the
 JS-only grammar errors (TS1xxx that only apply to JS, e.g. TS18030 private names). Then `./jsstats.py`'s `0other`
 bucket gets sampled into triage.md. webpack uses `@overload` 29, `@extends` 17, `@this` 9, `@import` 22 (`@import`
-belongs with typedefs in stage 3 if cheap).
+is done).
 
 ## Validation
 - Per stage: `./fasttest.sh --summary` shows no lost tests (a lost TS test is a bug in the shared paths: JSDoc must
@@ -287,26 +288,19 @@ belongs with typedefs in stage 3 if cheap).
   which declaration a merged export prints and whether `module.exports = {}` object literal members are
   `Symbol(a, Decl(...))` of the property assignment. Match them per construct; don't guess.
 - `esModuleInterop` / `allowSyntheticDefaultImports` when a TS file default-imports a CommonJS JS module.
-- Whether a file-scope `@typedef` in a script and one in a module both work with the current global/exports split
-  without new cases in `scope_init_declaration()`.
 
 ## Leftovers collected by triage (2026-09-27)
-JS items that were in triage.md (statuses checked then); most are stage 3 or the TS2339 gate session.
-- argumentsReferenceInMethod3_Js / 5_Js (types): `/** @type object */ this.x = v` needs `@type` without braces (tsc's
-  parseTypeTag with mayOmitBraces), `@type` on a declaring assignment as its declared type, and JSDoc `object` in a JS
-  file without noImplicitAny being any (getTypeFromTypeNodeWorker ObjectKeyword).
+JS items that were in triage.md (statuses checked then); stage 4, the "Stage 3 leftovers" or the TS2339 gate session.
 - jsEnumCrossFileExport: `@param {!Host.UserMetrics.Action}` resolves to the expando value (its object type) where tsc
   takes the `@enum` tag; `@typedef {string} Host.UserMetrics.Bargh` isn't declared.
 - The JS TS2339 gate: hacks.md "JavaScript" lists what removing it still breaks; each item is a small binder piece.
-  Worth one session after stage 3 (typedefs are part of it).
+  Worth one session (after the global expando namespaces of the "Stage 3 leftovers").
 - multipleDeclarations: `F.prototype.m = function` next to `this.m = v` is two symbols in tsc (Method excludes
   Property), one member here.
 - `module.exports.x = v` after `module.exports = C` is a member of the export= type in tsc (members copied into a new
   anonymous type, getInitializerTypeFromAssignmentDeclaration), symbols `wat.D` / `Symbol(C.x)`:
   jsDeclarationsExportSubAssignments, moduleExportAlias4.
-- `@type` on declaring assignments (`/** @type {Foo} */ module.exports = {...}`, `exports.x = ...`) and on `export
-  default <expr>`: the declared type, context and assignability target (checkJsdocTypeTagOnExportAssignment1-8, which
-  also need @typedef).
+- `@type` on `export default <expr>` (checkJsdocTypeTagOnExportAssignment1-8); on declaring assignments it's done.
 - TS6210 related info of an arrow function under a variable's `@type` points at the arrow's parameter; tsc points at
   the JSDoc signature's (getSignatureOfTypeTag applies to the arrow). Same root: the arrow's return type is reused
   from the `@type` in tsc's types baseline (jsdocTypeTagParameterType, jsdocTypeTagRequiredParameters).

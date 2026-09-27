@@ -512,12 +512,24 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   logs) errors with an invalid span. `error_cmp` orders by span only.
 
 ## JavaScript (plan 26)
-- **Unresolved JSDoc names are silent** (`identifier_type_lookup_names()` in several_types.c, HACK): lookup errors go
-  to a dropped ErrorCtx until stage 3 declares `@typedef`/`@callback`/`@template`/`@import` names.
-  `identifier_type_check_arity()` skips TS2315 on JS classes/functions (HACK, `@template`, stage 3).
 - **JSDoc is consumed at parse time, not stored**: `jsdoc_before()` re-parses a host's comment into transient
-  `JsDocTag`s; unused tags dropped. Stage 3 needs stored tags. Only the *last* comment ending right before the host's
-  first token is read; JSDoc parse errors are dropped.
+  `JsDocTag`s; unused tags dropped. Only the *last* comment ending right before the host's first token is read for the
+  host's own tags; JSDoc parse errors are dropped (no TS8032 & co.). Declaration tags go through
+  `jsdoc_bind_comments()`, which parses every comment with `@typedef`/`@callback`/`@import` a second time.
+- `jsdoc_bind_comments()`: a comment is claimed by the innermost statement list containing it, host or not (tsc binds
+  only comments attached to a node: one before a block's `}` is claimed without binding, one inside an expression that
+  isn't a host still binds). Claims set by a parse attempt that failed stay set. `@import` only at a list's top level.
+  Dotted typedef names (`@callback NS.Nested.Inner`, tsc: namespaces) and `@typedef` without a name (named by the
+  host) are skipped. Several typedefs in one comment share its templates, and only the first gets the constraints.
+- `ParserShared.jsdoc_enum`: a one-slot handoff from `jsdoc_apply_statement()` to the statement list; statements
+  parsed outside a list (if arms) drop theirs.
+- `baseline_test_case.c` Decl printing: a declaration starting at an `@` preceded by `*` and spaces is a JSDoc tag and
+  gets no leading trivia (sniffed from the text).
+- `jsdoc_reference_reusable()`: an `@import` alias isn't reused by the types printer (tsc: not a visible declaration),
+  sniffed through `PortItem.jsdoc`.
+- `@type` on declaring assignments reaches the symbol through `SymbolDecl.jsdoc_type`, threaded by every
+  assignment-declaration site in scope.c (a new site has to pass it too). Assignment chains (`a.x = b.y = v`): only the
+  outermost has the JSDoc.
 - `jsdoc_parameter_name()`: `argN` names are spans into static strings, not the file (`span_is_written()` tells them
   apart); position arithmetic on them reads garbage.
 - `jsdoc_apply_type_signature()`: `@type {F}` on a function *moves* the signature's TypeNodes into it, only for a
@@ -532,7 +544,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `readonly_assignment()` never reports a declaring `exports.x =`.
 - **The JS TS2339 gate** (`check_access()`): removing it costs ~57 tests for +6. Spurious TS2339s behind it: expandos of
   a global namespace declared in another script (tsc's jsGlobalAugmentations), `exports.x`/`this.x` in nested
-  blocks/functions, class expressions assigned to members, `@type` on declaring assignments, `F.prototype = {...}`,
+  blocks/functions, class expressions assigned to members, `F.prototype = {...}`,
   `Object.defineProperty` declarations, JSDoc names resolving to expando values.
 - `scope_add_expandos()` runs in `block_add_names()`, so nested top-level blocks write expandos into file-level symbols
   from the resolve walk, and `scope_add_this_property()` writes `Symbol.members` from it: should be a per-file list
