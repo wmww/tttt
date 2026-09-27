@@ -20,7 +20,7 @@ Permissions are skipped (--dangerously-skip-permissions): the agent runs
 unattended, so only point it at somewhere you are happy for it to act freely.
 
   -p, --prompt TEXT   prompt to send          (default: "go!")
-  -m, --model NAME    model alias or id       (default: fable)
+  -m, --model NAME    model alias or id       (default: opus)
   -C, --dir DIR       run the session in DIR  (default: cwd)
   -n, --runs N        run N sessions back to back, stop on the first failure
   -l, --loop          run sessions back to back forever, stop on the first failure
