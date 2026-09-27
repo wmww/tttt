@@ -274,6 +274,12 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   doesn't count). The widened literal stays an object literal type.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`, `ty/access.c`)
+- `props_related` (`ty/relate.c`): tsc skips a property whose source and target are the same symbol; tttt's props are
+  per type, so only object literal accessors of the same function are recognized as "the same" (what the recursive
+  getter idiom needs). Other shared symbols are related (and typed) as usual.
+- `access` union branch (`ty/access.c`): exactOptionalPropertyTypes has no missing type. Optional reads add a real
+  `undefined`, so `{ [K in keyof T]: T[K] }` over an optional property holds `X | undefined` where tsc holds
+  `X | missing` (dropped against index signatures). Plan 19 "zod corpus" has the fix (tsc's missingType).
 - `ty_call_typecheck` / `KEY_CALL_RESOLUTION` (plan 28): the typecheck walk skips resolving a call again when the type
   pass's last settled resolution under the same contextual type would report nothing; it trusts no resolution-relevant
   state changed. "Would report" is set by hand at each error site of `resolve_call`/`resolve_with_signatures`
@@ -342,6 +348,13 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   attributes outside `ty_check_jsx_element` don't see it.
 
 ## Expressions (`ty/expr.c`), contextual typing
+- `context_map` (`ty/expr.c`): tsc maps contextual types without union reduction (mapType's noReductions), so an
+  `unknown` from one member stays a member; tttt's unions absorb into unknown, so context_map drops an `unknown` part
+  when other parts give something. Equivalent while unknown contributes nothing to a contextual type; a real
+  no-reduction union would be the general form.
+- `ty_return_expressions_context` / `KEY_CONTEXT_IIFE_RETURN` (`ty/expr.c`, set in `check_call`): an IIFE's call's
+  contextual type is recorded on the function the first time the call is checked with one; if the function's return
+  type was computed before that (a context-free evaluation of the call first), its return expressions never see it.
 - Expression memo (`check_with`, `LazyMemo.context`, `lazy_type_set`): an `Expr`'s memo is whatever the last check
   with a contextual type produced; `kind_uses_context` decides what gets rechecked. Correctness rests on "whoever knows
   the contextual type checks first". Flow analysis asks bottom-up: `initial_or_assigned_type()` re-derives the context

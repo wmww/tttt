@@ -1,7 +1,7 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
 **Status 2026-09-27 (after plan 33)**: tsc 0, **valibot 0**, **react 0**, **nest 0**, **webpack 3981** (checkJs,
-nearly all JSDoc typedefs: plan 26 stage 3, section "webpack corpus" at the end), **type-fest 4** (abstract-class 4 = plan 32's mixin classes; R17, R20 and jsonify:57 fixed). The newest section is "Corpus session of 2026-09-27" at the end; the older ones are
+nearly all JSDoc typedefs: plan 26 stage 3, section "webpack corpus" at the end), **type-fest 4** (abstract-class 4 = plan 32's mixin classes; R17, R20 and jsonify:57 fixed), **zod 15** (pinned by todo entry 9, section "zod corpus" at the end). The newest section is "Corpus session of 2026-09-27" at the end; the older ones are
 history (their counts are stale).
 
 `./realworld.py --corpus valibot`, `--corpus type-fest` and `--corpus react` (tsc 5.8 reports 0 on all; tsgo only 2
@@ -465,3 +465,52 @@ constructor, TS2554 127 on hook arities, TS18046 104, TS2339 on `never`, TS2322 
 546 sites. TS2578 33 (unused `@ts-expect-error`) are missing diagnostics behind the same gaps. No TypeScript-side
 cause is left that I could find; re-rank after each stage 3 piece.
 
+
+## zod corpus (todo entry 9, 2026-09-27): 87 -> 15
+`./realworld.py --corpus zod`: zod v4.6.5's `packages/zod` (classic, mini, core, v3 and their vitest tests, 522 files
+with libs and dependencies) through `packages/zod/tsconfig.test.json` (tsconfig.json adds noUnusedLocals, which only
+biome satisfies upstream): exactOptionalPropertyTypes, nodenext, customConditions `@zod/source`, the package importing
+itself (`node_modules/zod -> ../packages/zod`). A pnpm workspace: ensure-corpora.sh installs the root's
+devDependencies from `corpora-locks/zod.package.json` (minus `zod: workspace:*`, plus the @types/node vitest hoists).
+tsc 5.8 and tsgo 7 report 0 (11.3 s, 3.0 s); tttt ~1.4 s, 11.6 G instructions (the heaviest corpus). It is the
+inference-heavy corpus the 2026-09-27 insights asked for, and its expectTypeOf tests check tttt's identity relation.
+
+At first run tttt reported ~300 syntax errors: `{ readonly() {} }` broke in plan 27 stage 2 (object literal members
+parsed modifiers with is_member false). Fixed the same day, by tsc rule (probes in `test/probes/plan19/zod/`):
+untyped calls of `Function` (isUntypedFunctionCall, absent until now), `Symbol.for()` unique symbols
+(getQuickTypeOfExpression), unique symbols as unit types in `===` narrowing, IIFE return context, for-in's non-nullable
+right side, the `unknown` fallback constraint of an indexed access (comparable `undefined as T[K]`), object literal
+getters that refer back to the variable they initialize (zod v4's recursive-schema idiom: no contextual type for
+accessors, a literal's accessor not related to itself), contextual types mapped without an absorbing `unknown`
+(noReductions), generic indexed-access targets only relate through their constraint for assignability, union members
+that are object literals read a missing property as undefined, tuple -> array inference from the element union,
+rest-parameter contextual types by position, union-target inference not skipping used-up sources, identity of an
+interface and a type literal in inference's matching, `infer` in a type predicate, and the return mapper's constraint
+fallback (tsc's getInferredType).
+
+### What is left (15)
+- **exactOptionalPropertyTypes' missing type** (recursive-types.test.ts 17, 35; probe
+  `exact_optional_mapped.ts`): a homomorphic `{ [K in keyof T]: T[K] }` over an optional property reads
+  `X | undefined` in tttt, `X | missing` in tsc, and the missing is dropped against an index signature
+  (getNonMissingTypeOfSymbol). tttt has no missing type (type-fest's jsonify:57 was approximated with `?: never`).
+  The real fix is tsc's missingType: an undefined of its own identity that optional reads add under
+  exactOptionalPropertyTypes and that removeMissingType strips. Medium; touches access(), union construction and
+  display. Worth doing before more exactOptional corpora show up.
+- **ProtoOf inference** (classic/schemas.ts 2850-2858, 4; probe `proto_of_infer.ts`): `$constructor<T>(name, (inst,
+  def) => ..., proto?: ProtoOf<T>)` against a `$constructor<ZodInstanceOf>` annotation. Cause found: a non-arrow
+  function without an explicit `this` parameter is context sensitive (tsc's hasContextSensitiveParameters: implicit
+  `this`), so the proto literal is non-inferrable in the first pass, and tsc's createReverseMappedType requires
+  isPartiallyInferableType: no candidate, T comes from the return type. tttt builds the reverse mapped type anyway
+  (`{ properties: unknown }` at PartialHomomorphicMappedType, which beats ReturnType), which fails the constraint.
+  Adding the check to `reverse_mapped_type_uncached` fixes the probe but loses reverseMappedPartiallyInferableTypes and
+  contextualComputedNonBindablePropertyType: with no candidate at all, tsc's second pass keeps the argument's contextual
+  type uninstantiated (the generic mapped type, members through substituteIndexedMappedType) and instantiates contextual
+  *signatures* with the fixing mapper as parameters are assigned (`k: unknown`); tttt instantiates the whole contextual
+  type with T -> unknown (`{}`, so `k` is implicitly any). Fix both together: `context_mapper` in
+  `infer_type_arguments` (`ty/call.c`) and the parameter assignment in `assign_contextual_signature`.
+- deep-partial.test.ts 111/113 (2 TS2589): `DeepPartial` over a getter-recursive schema; tsc stops after one unfold.
+  Hidden behind `any` until the getter fix; also the likely reason the corpus costs 11.6 G instructions.
+- detached-methods.test.ts (3): vitest's `MockReturnType` of a method picked by key from an overloaded interface.
+- in-out.test.ts:59, v3 generics.test.ts:20, v3 types.ts 2778/2795 (TS7053 on `{ [k in keyof T]?: true } &
+  Record<Exclude<keyof Mask, keyof T>, never>` indexed by string): unsampled.
+- tsc 5.8's TS2677 for `(arg: string) => arg is infer R` is missing (a missing check, suite-side).
