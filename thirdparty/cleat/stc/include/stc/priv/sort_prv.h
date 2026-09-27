@@ -83,7 +83,11 @@ static void _c_MEMB(_insertsort_lowhigh)(Self* self, isize_t lo, isize_t hi) {
 STC_DEF void _c_MEMB(_sort_lowhigh)(Self* self, isize_t lo, isize_t hi) {
     isize_t i = lo, j;
     while (lo < hi) {
-        _m_raw pivot = i_keytoraw(i_at(self, (isize_t)(lo + (hi - lo)*7LL/16))), rx;
+        // Patched (stc-sort-pivot-patch.txt): the pivot is a bitwise copy of the element, not a raw view into the
+        // array. A raw view of a short cstr points into the element itself, which the swaps below overwrite, and
+        // the partition then runs off the end of the array.
+        _m_value pivot_value = *i_at(self, (isize_t)(lo + (hi - lo)*7LL/16));
+        _m_raw pivot = i_keytoraw((&pivot_value)), rx;
         j = hi;
         do {
             do { rx = i_keytoraw(i_at(self, i)); } while ((i_less((&rx), (&pivot))) && ++i);

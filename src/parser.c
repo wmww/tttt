@@ -7965,7 +7965,7 @@ static bool parse_global_block(Parser* parent, NamespaceDecl* ret) {
     };
 
     hop_whitespace(&p);
-    if (!parse_block(&p, false, &ret->contents)) {
+    if (!parse_block(&p, true, &ret->contents)) {
         return parse_fail(&p);
     }
 

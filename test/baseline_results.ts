@@ -12366,7 +12366,7 @@ const baselines = {
         types: true,
     },
     'evalOrArgumentsInDeclarationFunctions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

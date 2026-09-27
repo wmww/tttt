@@ -22,6 +22,10 @@ CORPORA=(
     # react-hook-form + zod, tailwind) with vitest/testing-library tests; the lock is npm's resolution of its
     # package.json (upstream ships a yarn.lock)
     "bulletproof-react https://github.com/alan2207/bulletproof-react.git 9506629ed003a561c6627735480cce4994244bb4 apps/react-vite"
+    # nestjs-boilerplate (Aug 2026, plan 31): a NestJS 11 server application (TypeORM + Mongoose, class-validator,
+    # passport, swagger; experimentalDecorators + emitDecoratorMetadata, CommonJS, @types/node) with jest e2e tests;
+    # the lock is upstream's
+    "nestjs-boilerplate https://github.com/brocoders/nestjs-boilerplate.git 9620f159eefe38f47747d02ab162852367c5472c ."
 )
 
 mkdir -p corpora
