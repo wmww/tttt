@@ -2,6 +2,20 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 33 (fifth corpus: webpack, checkJs)
+Suite 8952 -> **8953** (errors 10749, symbols 12176, types 10498). Corpora: tsc 0, type-fest 19, valibot/react/nest
+0, **webpack 6146 -> 3981** (nearly all JSDoc: plan 26 stage 3). `./bench.sh` (best wall; the machine was loaded
+this session: every tsc/tttt time is ~1.3-2x the previous entry's, compare ratios only):
+
+| corpus | tttt | tsc 5.8 | tsgo | tsgo 1 thread |
+|---|---|---|---|---|
+| webpack (1188 files, 377k lines) | 1.07 s / 408 MB | 17.3 s / 739 MB | 1.22 s / 499 MB | 1.05 s / 307 MB |
+
+tttt phases on webpack: parse 310 ms of files, resolve 144 ms, typecheck 498 ms, over an incomplete check (typedefs
+are any, so much of the JSDoc typing isn't done yet); tsgo exits at 3 JSDoc TS1003 it parses differently, so its
+number may not include checking either. This is the first corpus where single-threaded tsgo matches tttt: parsing
+(JS + JSDoc comments) is a third of tttt's time; plan 26's stored tags must not make it worse.
+
 ## 2026-09-27, triage (todo entry 10)
 Suite 8948 -> **8952** (errors 10748, symbols 12174, types 10497); corpora identical (tsc 0, type-fest 19,
 valibot/react/nest 0). displaydiff: `other` 387+45 tests alone, `we-any` 121+43, `underlines/order only` 109+20,
