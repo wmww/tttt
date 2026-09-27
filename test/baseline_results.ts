@@ -5558,7 +5558,7 @@ const baselines = {
     'conditionalTypesSimplifyWhenTrivial': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionallyDuplicateOverloadsCausedByOverloadResolution': {
         errors: true,
@@ -6298,7 +6298,7 @@ const baselines = {
     'contextualTypesNegatedTypeLikeConstraintInGenericMappedType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypesNegatedTypeLikeConstraintInGenericMappedType3': {
         errors: true,
@@ -12401,7 +12401,7 @@ const baselines = {
         types: true,
     },
     'excessPropertyCheckIntersectionWithRecursiveType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26168,7 +26168,7 @@ const baselines = {
     'promiseType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'promiseTypeInference': {
         errors: true,
@@ -26633,7 +26633,7 @@ const baselines = {
     'reactReduxLikeDeferredInferenceAllowsAssignment': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactSFCAndFunctionResolvable': {
         errors: true,
@@ -28198,12 +28198,12 @@ const baselines = {
     'signatureCombiningRestParameters3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'signatureCombiningRestParameters4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'signatureCombiningRestParameters5': {
         errors: false,
@@ -64056,7 +64056,7 @@ const baselines = {
         types: false,
     },
     'templateLiteralTypes4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

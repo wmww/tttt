@@ -2183,15 +2183,18 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 bool object = links->declared_state == LAZY_STATE_DONE ?
                     links->declared_type->kind == TY_ANONYMOUS : body->tag == TYPE_INTERFACE || body->tag == TYPE_CALLABLE;
                 renames = object ? !is_homomorphic_mapped_node(body) || ret->kind == TY_UNION : ret->alias == canonical(me, decl);
-                // An indexed access distributed over a union index is that union by the new name (getIndexedAccessType)
-                if (!renames && ret->kind == TY_UNION && links->declared_state == LAZY_STATE_DONE &&
-                    links->declared_type->kind == TY_INDEXED
-                ) {
+                // An indexed access distributed over a union index is that union by the new name (getIndexedAccessType),
+                // and so is a conditional type distributed over a union (getConditionalTypeInstantiation's mapTypeWithAlias)
+                Ty const* declared = links->declared_state == LAZY_STATE_DONE ? links->declared_type : nullptr;
+                Ty const* distributes_over = !declared ? nullptr :
+                    declared->kind == TY_INDEXED ? declared->indexed.index :
+                    declared->kind == TY_CONDITIONAL && declared->conditional.distributive ? declared->conditional.check : nullptr;
+                if (!renames && ret->kind == TY_UNION && distributes_over) {
                     Ty const* args_buf[MAX_TYPE_ARGS];
                     TyList params = ty_type_params_of(me, symbol_type_generic(canonical(me, decl)));
                     TyList args = lower_type_args(me, params, &node->identifier->generic_params, ctx, args_buf);
                     TyMapper const* mapper = ty_mapper_new(me, params, args);
-                    renames = ty_instantiate(me, links->declared_type->indexed.index, mapper)->kind == TY_UNION;
+                    renames = ty_instantiate(me, distributes_over, mapper)->kind == TY_UNION;
                 }
             }
             if (renames) {

@@ -685,8 +685,9 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
         case TY_CONDITIONAL: {
             bool distributed = false;
             Ty const* ret = instantiate_conditional(me, ty, mapper, &distributed);
-            bool keeps_alias = ret->kind == (distributed ? TY_UNION : TY_CONDITIONAL);
-            return keeps_alias ? instantiate_alias(me, ty, ret, mapper) : ret;
+            // Only a deferred one goes by the alias it was declared with (tsc's getConditionalType); a distribution
+            // is a plain union unless an alias declaration names it (`type A = Awaited<X | Y>`, lower.c)
+            return !distributed && ret->kind == TY_CONDITIONAL ? instantiate_alias(me, ty, ret, mapper) : ret;
         }
     }
     impossible;
