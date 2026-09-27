@@ -101,14 +101,16 @@ bool ty_union_non_public_conflict(Checker* me, Ty const* object, Atom const* nam
     return non_public && differ;
 }
 
-static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth) {
+// `include_undefined`: what an index signature or the rest of a tuple gives includes undefined (noUncheckedIndexedAccess, tsc's
+// AccessFlags.IncludeUndefined)
+static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth, bool include_undefined) {
     if (depth > 16) return nullptr;
     if (index->kind == TY_UNION && !(index->flags & TYF_BOOLEAN)) {
         Ty const** parts = malloc(sizeof(Ty const*) * index->composite.types.len);
         Ty const* ret = nullptr;
         u32 len = 0;
         for (u32 i = 0; i < index->composite.types.len; i++) {
-            Ty const* part = access(me, object, index->composite.types.data[i], depth + 1);
+            Ty const* part = access(me, object, index->composite.types.data[i], depth + 1, include_undefined);
             if (!part) break;
             parts[len++] = part;
         }
@@ -118,7 +120,14 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     }
     if (object->flags & TYF_ANY) return object;
     if (object->flags & TYF_NEVER) return object;
-    if (index->flags & TYF_ANY) return ty_intrinsic(me, TY_ANY);
+    if (index->flags & TYF_ANY) {
+        // What a string index signature says, if there is one (tsc's getPropertyTypeForIndexType: any is assignable to
+        // string)
+        Ty const* apparent = ty_apparent_type(me, object);
+        IndexInfo const* info = (apparent->flags & TYF_OBJECT) ? ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_STRING)) : nullptr;
+        if (!info || !(info->key->flags & TYF_STRING)) return ty_intrinsic(me, TY_ANY);
+        return include_undefined ? with_undefined(me, info->value) : info->value;
+    }
     bool simple = (ty_key_flags(index) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
     if (!simple) return nullptr;
 
@@ -131,7 +140,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         for (u32 i = 0; i < object->composite.types.len && !missing; i++) {
             Ty const* member = object->composite.types.data[i];
             if (member->flags & TYF_NULLABLE) continue;
-            Ty const* part = access(me, member, index, depth + 1);
+            Ty const* part = access(me, member, index, depth + 1, include_undefined);
             // A tuple too short to have the element has undefined there when others have it (tsc's
             // createUnionOrIntersectionProperty: its index signature applies, and the rest element or undefined is read)
             if (!part && (index->flags & TYF_NUMBER_LITERAL) && ty_is_tuple(ty_apparent_type(me, member))) {
@@ -152,7 +161,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
 
     object = ty_apparent_type(me, object);
     if (object->flags & TYF_ANY) return object;
-    if (object->kind == TY_UNION) return access(me, object, index, depth + 1); // The constraint of a type parameter
+    if (object->kind == TY_UNION) return access(me, object, index, depth + 1, include_undefined); // The constraint of a type parameter
     if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
 
     // `T["0"]` is `T[0]` for a list (mapped types over tuples index with the property name)
@@ -180,12 +189,16 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
                 return shape->flags[at] & TUPLE_ELEMENT_OPTIONAL ? with_undefined(me, elements.data[at]) : elements.data[at];
             }
             if (shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST)) {
-                return ty_rest_element_type(me, elements.data[shape->arity - 1]);
+                Ty const* rest = ty_rest_element_type(me, elements.data[shape->arity - 1]);
+                return include_undefined ? with_undefined(me, rest) : rest;
             }
             return nullptr;
         }
     }
-    if (numeric && (ty_is_tuple(object) || ty_is_array(me, object))) return ty_rest_element_type(me, object);
+    if (numeric && (ty_is_tuple(object) || ty_is_array(me, object))) {
+        Ty const* element = ty_rest_element_type(me, object);
+        return include_undefined ? with_undefined(me, element) : element;
+    }
 
     Atom const* name = ty_literal_name(me, index);
     if (object->kind == TY_INTERSECTION && (index->flags & TYF_NUMBER_LITERAL)) {
@@ -200,7 +213,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             Ty const* part = ty_apparent_type(me, parts.data[i]);
             if (ty_is_tuple(part)) {
                 some_tuple = true;
-                Ty const* element = access(me, part, index, depth + 1);
+                Ty const* element = access(me, part, index, depth + 1, include_undefined);
                 if (element) found[len++] = element;
             } else if (name) {
                 FoundProp prop = ty_find_prop(me, part, name);
@@ -215,11 +228,18 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         FoundProp prop = ty_find_prop(me, object, name);
         if (prop.found) return prop.flags & PROP_OPTIONAL ? with_undefined(me, prop.type) : prop.type;
     }
-    return access_index_infos(me, object, index);
+    Ty const* value = access_index_infos(me, object, index);
+    // (Not an enum object indexed by its own members: `E[E.A]`)
+    bool own_enum = (index->flags & TYF_ENUM_LITERAL) && object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT;
+    return value && include_undefined && !own_enum ? with_undefined(me, value) : value;
+}
+
+Ty const* ty_access_reading(Checker* me, Ty const* object, Ty const* index) {
+    return access(me, object, ty_regular(me, index), 0, compiler_options()->no_unchecked_indexed_access);
 }
 
 Ty const* ty_access(Checker* me, Ty const* object, Ty const* index) {
-    return access(me, object, ty_regular(me, index), 0); // `o["a"]`: keys are regular
+    return access(me, object, ty_regular(me, index), 0, false); // `o["a"]`: keys are regular
 }
 
 // The type a write to `object[index]` is checked against when it isn't what a read gets: a divergent accessor's

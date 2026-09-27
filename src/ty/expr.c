@@ -2328,6 +2328,38 @@ static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* 
     return ret;
 }
 
+// tsc's isStringIndexSignatureOnlyType: nothing but a string index signature
+static bool is_string_index_only(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!is_string_index_only(me, ty->composite.types.data[i])) return false;
+        }
+        return true;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, ty);
+    return !members->prop_count && !members->call_count && !members->construct_count && !members->mapped &&
+        members->index_count == 1 && (members->index[0].key->flags & TYF_STRING);
+}
+
+// `o[k]` with a generic key that ty_access() couldn't read through a constraint: the deferred
+// `O[K]` (tsc's getIndexedAccessType), unless o has nothing but a string index signature, which is what it reads then
+static Ty const* generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* key) {
+    key = ty_regular(me, key);
+    // TODO: generic objects too, once the constraint of `T[K]` is what tsc's getBaseConstraint says (`+=` of a
+    // `Record<K, number>[K]` is a number)
+    if (!ty_is_generic_index(key) || ty_is_generic_object(me, object)) return nullptr;
+    if (object->flags & (TYF_ANY | TYF_UNKNOWN)) return object;
+    Ty const* string_or_number = union_of_two(me, ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER));
+    if (is_string_index_only(me, object) && !(key->flags & TYF_NULLABLE) &&
+        ty_is_related(me, key, string_or_number, TY_RELATION_ASSIGNABLE)
+    ) {
+        Ty const* string = ty_intrinsic(me, TY_STRING);
+        return access->assignment_target ? ty_access(me, object, string) : ty_access_reading(me, object, string);
+    }
+    return ty_indexed(me, object, key);
+}
+
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     // tsc's checkExpression: the instantiation limit is per expression, not per program
     ty_reset_instantiation_count(me);
@@ -2356,8 +2388,9 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
             // `never` has no properties (TS2339), `never[k]` is never
             if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
             Ty const* key = ty_access_key_type(me, expr->property);
-            Ty const* ret = ty_access(me, object, key);
+            Ty const* ret = expr->property->assignment_target ? ty_access(me, object, key) : ty_access_reading(me, object, key);
             if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target) ret = object_literal_access(me, object, key);
+            if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET) ret = generic_element_access(me, expr->property, object, key);
             if (!ret || ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
             if (expr->property->assignment_target == FLOW_TARGET_DEFINITE) {
                 Ty const* write = ty_access_write_type(me, object, key);

@@ -7128,7 +7128,7 @@ const baselines = {
     'crashRegressionTest': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'createArray': {
         errors: true,
@@ -13681,9 +13681,9 @@ const baselines = {
         types: true,
     },
     'firstMatchRegExpMatchArray': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fixCrashAliasLookupForDefauledImport': {
         errors: true,
@@ -20856,8 +20856,8 @@ const baselines = {
         types: false,
     },
     'mappedTypeGenericIndexedAccess': {
-        errors: true,
-        symbols: false,
+        errors: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeGenericInstantiationPreservesHomomorphism': {
@@ -22788,7 +22788,7 @@ const baselines = {
     'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=false,nouncheckedindexedaccess=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=true,nouncheckedindexedaccess=false)': {
         errors: true,
@@ -22798,7 +22798,7 @@ const baselines = {
     'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=true,nouncheckedindexedaccess=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowCommaOperatorNestedWithinLHS': {
         errors: false,
@@ -28776,9 +28776,9 @@ const baselines = {
         types: false,
     },
     'specialIntersectionsInMappedTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'specializationError': {
         errors: true,
@@ -31023,7 +31023,7 @@ const baselines = {
     'typeGuardNarrowsIndexedAccessOfKnownProperty10': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty11': {
         errors: false,
@@ -31646,7 +31646,7 @@ const baselines = {
         types: true,
     },
     'typeVariableConstraintIntersections': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46757,7 +46757,7 @@ const baselines = {
     },
     'assignmentGenericLookupTypeNarrowing': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assignmentLHSIsReference': {
