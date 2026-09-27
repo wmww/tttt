@@ -1687,7 +1687,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 display_tuple(me, d, target->declared.tuple, args);
             } else if (target == my array_target || target == my readonly_array_target) {
                 if (target == my readonly_array_target) out_lit(d, "readonly ");
-                display_parenthesized_if(me, d, args.data[0], needs_parens_in_array(me, args.data[0]));
+                // (An `infer U` declared here is parenthesized too: `readonly (infer U)[]`)
+                bool infer_here = false;
+                for (u32 i = 0; i < d.infer_params.len; i++) infer_here |= d.infer_params.data[i] == args.data[0];
+                display_parenthesized_if(me, d, args.data[0], infer_here || needs_parens_in_array(me, args.data[0]));
                 out_lit(d, "[]");
             } else {
                 if (ty_elides_default_type_args(me, target)) {

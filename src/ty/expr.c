@@ -592,7 +592,10 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
             return ty_access(me, param->type, ty_literal(me, &value));
         }
         if (ty_is_array(me, param->type) || (param->type->flags & TYF_ANY)) return ty_rest_element_type(me, param->type);
-        return ty_access(me, param->type, ty_intrinsic(me, TY_NUMBER));
+        // By position (tsc's tryGetTypeAtPosition): a union of tuples gives each one's element there
+        Value value = value_number(index - i);
+        Ty const* at = ty_access(me, param->type, ty_literal(me, &value));
+        return at ? at : ty_access(me, param->type, ty_intrinsic(me, TY_NUMBER));
     }
     // A rest parameter where the signature has plain ones: the tuple of those left
     return as_rest ? ty_signature_params_tuple(me, sig, index, nullptr) : nullptr;
