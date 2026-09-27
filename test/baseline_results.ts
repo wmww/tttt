@@ -2631,7 +2631,7 @@ const baselines = {
         types: false,
     },
     'booleanLiteralsContextuallyTypedFromUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9076,7 +9076,7 @@ const baselines = {
         types: true,
     },
     'decoratorMetadataNoLibIsolatedModulesTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -21446,7 +21446,7 @@ const baselines = {
         types: true,
     },
     'modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -23381,7 +23381,7 @@ const baselines = {
         types: false,
     },
     'noCrashOnNoLib': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -29261,7 +29261,7 @@ const baselines = {
         types: true,
     },
     'strictNullNotNullIndexTypeNoLib': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -36006,42 +36006,42 @@ const baselines = {
         types: true,
     },
     'typeOfThisInStaticMembers10(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeOfThisInStaticMembers10(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeOfThisInStaticMembers10(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeOfThisInStaticMembers10(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeOfThisInStaticMembers11(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeOfThisInStaticMembers11(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeOfThisInStaticMembers11(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeOfThisInStaticMembers11(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53001,7 +53001,7 @@ const baselines = {
         types: true,
     },
     'jsxSpreadOverwritesAttributeStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58176,7 +58176,7 @@ const baselines = {
         types: true,
     },
     'parser509698': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -362,6 +362,8 @@ typedef struct Scope {
     struct ClassItem const* instance_field;
     Span const* constructor_locals;
     u32 constructor_local_count;
+    // A static field of a class with legacy decorators: no `this` in its initializer (TS2816)
+    bool decorated_static_field;
 } Scope;
 
 // Symbol pointer -> symbol pointer, open addressing

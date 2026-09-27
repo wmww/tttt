@@ -963,6 +963,20 @@ Symbol const* program_get_global(Program const* me, csview name, u32 meaning) {
     return symbol_for_meaning(symbol_table_get(&my binder->globals, name), meaning);
 }
 
+// The global types tsc's initializeTypeChecker looks up with reportErrors (missing with noLib or a partial lib)
+static void program_report_missing_global_types(Program* me) {
+    static char const* const names[] = {
+        "IArguments", "Array", "Object", "Function", "CallableFunction", "NewableFunction", "String", "Number", "Boolean",
+        "RegExp",
+    };
+    for (u32 i = 0; i < c_arraylen(names); i++) {
+        bool bind_call_apply = !strcmp(names[i], "CallableFunction") || !strcmp(names[i], "NewableFunction");
+        if (bind_call_apply && !my options.strict_bind_call_apply) continue;
+        if (program_get_global(me, csview_from(names[i]), SYMBOL_TYPE)) continue;
+        error_ctx_global_error_d(my errs, 2318, "Cannot find global type '", names[i], "'.");
+    }
+}
+
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     my errs->phase = ERROR_PHASE_TYPECHECK;
@@ -970,6 +984,7 @@ void program_typecheck(Program* me) {
     program_make_current(me);
 
     scope_report_missing_prefixes(my binder);
+    program_report_missing_global_types(me);
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         if (!source->is_stdlib && !source->unchecked) {

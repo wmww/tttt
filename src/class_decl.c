@@ -274,6 +274,12 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
                 scope->constructor_locals = locals;
                 scope->constructor_local_count = local_count;
             }
+            if (static_members && i->tag == CLASS_ITEM_FIELD && !vec_expr_is_empty(&my decorators) &&
+                compiler_options()->experimental_decorators
+            ) {
+                scope = scope_new(this_scope, SCOPE_BLOCK);
+                scope->decorated_static_field = true;
+            }
             class_item_lookup_names(i, scope, errs);
         }
     }
