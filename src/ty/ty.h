@@ -1331,6 +1331,8 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
 // a type literal), whose binder table is shared; checkObjectTypeForDuplicateDeclarations runs per list
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs);
 // `in_type`: of a class, interface or type literal member
+// The property a key type names (a string, number or unique symbol literal), null if none; *is_number for numbers
+Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number);
 void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_type, ErrorCtx* errs);
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS2345
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684

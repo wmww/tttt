@@ -1774,6 +1774,20 @@ static bool is_destructuring_target(Expr const* me) {
     }
 }
 
+// tsc's getEffectivePropertyNameForPropertyNameNode: a computed key is named by its literal or unique symbol type, and
+// `[+1]` by its operand. Null: no name the grammar check can compare
+static Atom const* object_item_effective_name(ObjectExprItem const* item) {
+    if (!item->computed_key) return checker_atom(current_checker, cstr_sv(&item->name_string));
+    Expr const* key = item->computed_key;
+    if (key->tag == EXPR_UNARY_OP && key->unary_op->op == UNARY_OP_PLUS && key->unary_op->expr.tag == EXPR_LITERAL &&
+        key->unary_op->expr.literal.tag == VALUE_NUMBER
+    ) {
+        key = &key->unary_op->expr;
+    }
+    bool is_number = false;
+    return ty_property_name_of_key(current_checker, ty_expr_type(current_checker, key), &is_number);
+}
+
 // tsc's checkGrammarObjectLiteralExpression: a name can be one property, one method or one get/set pair
 static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
     if (!my outer_span.source || my outer_span.source->has_parse_errors || is_destructuring_target(me)) return;
@@ -1781,7 +1795,8 @@ static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
     ObjectExpr const* object = &my object;
     isize count = vec_object_expr_item_size(object);
     uint8_t* seen = calloc(count ? (size_t)count : 1, 1);
-    panic_if(!seen, "out of memory");
+    Atom const** names = calloc(count ? (size_t)count : 1, sizeof(Atom const*));
+    panic_if(!seen || !names, "out of memory");
     for (isize n = 0; n < count; n++) {
         ObjectExprItem const* item = vec_object_expr_item_at(object, n);
         uint8_t kind;
@@ -1792,11 +1807,11 @@ static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
             case OBJECT_ITEM_SETTER: kind = SET; break;
             default: continue;
         }
-        if (item->computed_key) continue; // TODO: literal-typed computed names (tsc's tryGetNameFromType)
+        names[n] = object_item_effective_name(item);
+        if (!names[n]) continue;
         isize existing = -1;
         for (isize j = 0; j < n && existing < 0; j++) {
-            ObjectExprItem const* other = vec_object_expr_item_at(object, j);
-            if (seen[j] && !other->computed_key && cstr_equals_sv(&other->name_string, cstr_sv(&item->name_string))) existing = j;
+            if (seen[j] && names[j] == names[n]) existing = j;
         }
         if (existing < 0) {
             seen[n] = kind;
@@ -1821,6 +1836,7 @@ static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
         }
     }
     free(seen);
+    free(names);
 }
 
 // tsc's binder declares the members of an object literal like any symbols: properties and methods exclude nothing, an

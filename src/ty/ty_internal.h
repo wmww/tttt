@@ -238,8 +238,6 @@ Signature const* ty_signature_with_type_params(Checker* me, Signature const* sig
 bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_global_regexp_type(Checker* me);
 Ty const* ty_global_object_type(Checker* me); // Null without a lib
-// The property name a key type stands for (a string or number literal), null if none
-Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number);
 bool ty_is_numeric_name(Atom const* name); // relate.c, tsc's isNumericLiteralName: the name is what its number prints as
 typedef struct FoundProp {
     Ty const* type;
