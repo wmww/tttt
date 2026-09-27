@@ -394,12 +394,16 @@ static SymbolDecl const* first_non_ambient_class_or_function(Symbol const* symbo
 }
 
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) {
-    // tsc's checkModuleDeclaration: an instantiated namespace merged with a class or function comes after it
+    // tsc's checkModuleDeclaration: an instantiated namespace merged with a class or function comes after it, in the
+    // same file
     if (!declared && !my is_global && !my is_ambient_module && my symbol && my symbol->decl_count > 1 &&
         namespace_decl_is_instantiated(me)
     ) {
         SymbolDecl const* first = first_non_ambient_class_or_function(my symbol);
-        if (first && first->full.source == my full_span.source && span_start_ptr(my full_span) < span_start_ptr(first->full)) {
+        if (first && first->full.source != my full_span.source) {
+            error_ctx_error_d(errs, my name, 2433,
+                "A namespace declaration cannot be in a different file from a class or function with which it is merged.");
+        } else if (first && span_start_ptr(my full_span) < span_start_ptr(first->full)) {
             error_ctx_error_d(errs, my name, 2434,
                 "A namespace declaration cannot be located prior to a class or function with which it is merged.");
         }
