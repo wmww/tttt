@@ -693,13 +693,18 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         if (ty_is_array(me, source)) {
             infer_from(me, inf, ty_reference_args(me, source).data[0], element);
         } else {
+            // From the union of its elements, one candidate (tsc gets it from the tuple's number index type): `["a", 1]`
+            // against `readonly T[]` infers `"a" | 1`, not two candidates of which the first wins
             TupleShape const* shape = source->reference.target->declared.tuple;
             TyList source_args = ty_reference_args(me, source);
+            Ty const** elements = malloc(sizeof(Ty const*) * (source_args.len ? source_args.len : 1));
+            panic_if(!elements, "out of memory");
             for (u32 i = 0; i < source_args.len; i++) {
                 Ty const* arg = source_args.data[i];
-                if (shape->flags[i] & TUPLE_ELEMENT_REST) arg = ty_rest_element_type(me, arg);
-                infer_from(me, inf, arg, element);
+                elements[i] = shape->flags[i] & TUPLE_ELEMENT_REST ? ty_rest_element_type(me, arg) : arg;
             }
+            if (source_args.len) infer_from(me, inf, ty_union(me, elements, source_args.len, nullptr, (TyList){0}), element);
+            free(elements);
         }
         return;
     }
