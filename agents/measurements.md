@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, suite checker bugs session (todo entry 8, at the session's last code commit)
+Suite 8408 -> **8480 / 13540** full (errors 10233 -> 10274, symbols 11977 -> 12032, types 10208 -> 10273); three
+tests lost one component each (mappedTypeGenericIndexedAccess, typeVariableConstraintIntersections: their errors had
+passed on an `any`, triage.md; asyncGeneratorGenericNonWrappedReturn's was won back). Single-code errors buckets:
+spurious TS2322 72 -> 57 tests, missing TS2322 62 -> 55, missing TS2339 59 -> 53. Biggest movers: JSON modules (+28),
+divergent accessors and write types (~12), noUncheckedIndexedAccess (~6), async/generator returns (~7). Corpora: tsc
+0, type-fest 53, valibot 61 -> 60, react 1.
+
 ## 2026-09-27, plan 27 stage 1 (parser list recovery and commit points)
 Suite 8345 -> **8408 / 13540** full (errors 10157 -> 10233, symbols 11930 -> 11977, types 10151 -> 10208), no
 component lost. `./syntaxstats.py`: **687 -> 583** tests whose parser diagnostics differ (48 JS). TS tests: A 183 ->

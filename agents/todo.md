@@ -17,10 +17,10 @@ what's left and what stage 3 needs first.)
 (Entry 7, plan 27 stage 1, is mostly done, 2026-09-27: parser-differing tests 687 -> 583, suite 8345 -> 8408; the
 plan's Status lists what's left of stage 1. Stage 2, permissive grammar, is the next parser session whenever the
 insights schedules one.)
-8. **Execution: suite checker bugs**, one session, plan-19 style but on the suite: sample `./displaydiff.py`'s
-   `other` bucket (378 TS tests, mostly checker bugs the types baseline shows first) and failstats' single-code
-   buckets (missing TS2322 74 tests, spurious TS2322 71, missing TS2339 56), reduce, fix the tsc rule. Not display
-   polish: skip clusters that are only printing.
+(Entry 8, suite checker bugs, is done, 2026-09-27: suite 8408 -> 8480, nine commits; what it found and left is in
+triage.md "From the suite checker bugs session". The `other` displaydiff bucket turned out to be one-offs; the
+single-code errors buckets and missing features (JSON modules, noUncheckedIndexedAccess, write types, async returns)
+moved more.)
 9. **Perf check-up**: `./bench.sh` with the React corpus; tsc corpus wall has drifted 0.67 -> ~0.8 s since the last
    perf session. Profile the corpus tsgo is closest on, fix what's cheap, update `measurements.md`.
 10. **Triage.**

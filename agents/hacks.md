@@ -630,6 +630,24 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   least that many type arguments; signatures that don't fit aren't dropped, and nothing reports TS2635.
 
 ## Type core (`src/ty/`): known gaps
+- `Awaited<T>` (call.c, 2026-09-27): `ty_awaited()` wraps a generic result that could be a promise in the lib's
+  `Awaited<T>` (tsc's getAwaitedType), but iteration and generator types use `ty_awaited_no_alias()` and returns of
+  async functions `ty_awaited_returned()`, which strips `Awaited<X>` back to X. tsc has `Awaited<T>` in those places
+  too and relates it to T through the default constraint of the conditional type (structuredTypeRelatedTo on a
+  conditional source), which tttt's relation can't; once it can, use ty_awaited() everywhere and drop both.
+  `ty_awaited` still only unwraps `Promise`/`PromiseLike` by name, not any thenable.
+- Substitution types (`ty_enter_true_branch`, check.c): only the indexed access *type* check knows that `A` is
+  `A & X` in the true branch of `A extends X ? ... : ...`, from a stack the typecheck walk keeps in the Checker
+  (`true_branch_check`, 16 deep). Lowering itself has no substitution types (tsc's getSubstitutionType), so a
+  constraint implied by a conditional is invisible everywhere else.
+- Divergent accessors (members.c, access.c): `Prop.write_node` is a class or interface setter's annotated parameter;
+  object literal accessors have none (tsc gives them one too). The symbols baseline of an interface's second accessor
+  and its setter parameter come from `InterfaceMember.second_name`/`setter_param`, spans the parser keeps for that.
+- Namespace imports of `export =` modules (`namespace_import_type`, lower.c): `ty_identifier_reference_type()` asks
+  `ty_type_of_symbol()` about the alias symbol rather than its target whenever the name found an alias, so that
+  function can tell a namespace import from the value it names. Only identifiers: `import("./m")` and
+  `typeof import` don't get the interop shapes. The synthetic `default` property prints as `default` in the symbols
+  baseline where tsc names it after the module (`Symbol("package")`).
 - Template literal types and string mappings (`template.c`, plan 18): `apply_mapping` (Uppercase & co.) maps ASCII,
   Latin-1, basic Greek and Cyrillic only (JS's toUpperCase covers all of Unicode, some characters to several); a
   one-character placeholder match steps one UTF-8 code point (JS: one UTF-16 unit). The cross-product cap (100k,

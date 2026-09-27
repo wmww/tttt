@@ -22,6 +22,35 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   at the JSDoc signature's (getSignatureOfTypeTag applies to the arrow too). Same root: the arrow's return type is
   "reused" from the `@type` in tsc's types baseline (jsdocTypeTagParameterType, jsdocTypeTagRequiredParameters).
 
+## From the suite checker bugs session (2026-09-27, todo entry 8)
+- **Generic TS2536** (`T[K]` written as a type with K not assignable to `keyof T`): `ty_check_indexed_access_type`
+  returns early for generic operands. Doing tsc's checkIndexedAccessIndexType there (index related to `ty_keyof`,
+  numeric index signature) regressed 16 tests (conditionalTypeSubclassExtendsTypeParam, inferenceAndHKTs,
+  deferredLookupTypeResolution2...): tttt's keyof of generic types and the missing substitution types (hacks.md) aren't
+  good enough yet. ~8 tests want TS2536 (constraintWithIndexedAccess, infiniteConstraints, mappedTypeErrors2...).
+- **`o[k]` on a generic object** still goes through `ty_access` (usually any) rather than the deferred `T[K]`:
+  deferring it regressed 14 tests because the constraint of `T[K]` isn't tsc's (`Record<K, number>[K]` isn't a number
+  to `+=`: typeParameterExtendsPrimitive, additionOperatorWithConstrainedTypeParameter, literalTypeWidening). Fix the
+  base constraint of indexed accesses first, then drop the ty_is_generic_object() bail-out in
+  `generic_element_access` (ty/expr.c).
+- **`{[P in K]: E}[T]` with a generic T over a non-generic mapped object**: tsc reads members of it through `E[P:=T]`
+  (`this.entries[name]?.push(entry)` in mappedTypeGenericIndexedAccess, `optionHandlers[kind](option)` in
+  typeVariableConstraintIntersections); tttt relates against the union of all properties. Both lost their errors
+  component when `o[k]` stopped being any.
+- **`@pretty: true`** (14 tests: prettyFileWithErrorsAndTabs, duplicateIdentifierRelatedSpans1-7,
+  manyCompilerErrorsInTheTwoFiles, multiLineContextDiagnosticWithPretty...): the errors baseline starts with tsc's
+  formatDiagnosticsWithColorAndContext output (ANSI colours, source line with gutter, `~` underline, related info,
+  "Found N errors" summary) before the usual section. Harness work; the CLI could use the same formatter.
+- **Numeric-named properties in printed types**: tsc prints a property declared with a numeric literal name as
+  written (`1.1`, `9.671406556917009e+24`) and one declared with a string literal quoted (`{ "1": string }`); tttt
+  quotes by the name's shape (objectTypeWithNumericProperty, binaryIntegerLiteral, octalIntegerLiteral,
+  emitAccessExpressionOfCastedObjectLiteralExpressionInArrowFunctionES5). Display only.
+- **Destructuring assignment flow order** (controlFlowAssignmentPatternOrder, 12 spurious TS2322;
+  controlFlowBindingPatternOrder): assignments inside a pattern's computed keys and defaults happen in tsc's
+  evaluation order, which the flow builder doesn't follow.
+- **Bare `return;`** under strictNullChecks isn't checked against the return type (tsc: TS2322 'undefined' is not
+  assignable), in any kind of function; the new async/generator return checks skip it too.
+
 ## Category-sized (worth a plan or a whole session)
 - **Deferred alias instantiation and type references** (plan 19 R18/R19, 2026-09-26). tttt lowers a type node once
   into a memo and gets the error type when the same node is lowered again while in flight; tsc resolves aliases and
