@@ -646,6 +646,13 @@ static void builder_add_class_items(
                         if (has_overloads && other->method.func.has_body) continue;
                         functions[count++] = &other->method.func;
                     }
+                    // JSDoc `@overload`s instead of the method's own signature
+                    if (count == 1 && functions[0]->jsdoc_overload_count) {
+                        FunctionImpl const* method = functions[0];
+                        count = method->jsdoc_overload_count;
+                        functions = arena_new_n(&my arena, FunctionImpl const*, count);
+                        for (u32 f = 0; f < count; f++) functions[f] = method->jsdoc_overloads[f].callable->function;
+                    }
                     Span* spans = arena_new_n(&my arena, Span, visible);
                     u32 span_count = 0;
                     for_each (other, vec_class_item, &class_decl->items) {
@@ -1709,8 +1716,14 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
             if (ty->anonymous.merged_value) {
                 builder_add_merged_value(me, &builder, ty->anonymous.merged_value);
             } else if (ty->anonymous.function) {
-                Signature* sig = signature_from_function(me, ty->anonymous.function, ty->anonymous.ctx);
-                if (sig->flags & SIGNATURE_CONSTRUCT) {
+                FunctionImpl const* function = ty->anonymous.function;
+                Signature* sig = signature_from_function(me, function, ty->anonymous.ctx);
+                if (function->jsdoc_overload_count) {
+                    // JSDoc `@overload`s instead of its own
+                    for (u32 i = 0; i < function->jsdoc_overload_count; i++) {
+                        builder_add_callable(me, &builder, function->jsdoc_overloads[i].callable->function, ty->anonymous.ctx);
+                    }
+                } else if (sig->flags & SIGNATURE_CONSTRUCT) {
                     builder_push(&builder, construct, sig);
                 } else {
                     builder_push(&builder, call, sig);

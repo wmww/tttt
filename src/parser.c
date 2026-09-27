@@ -2597,6 +2597,10 @@ typedef struct JsDocTag {
     TypePredicateNode* predicate;
     bool has_default;
     TypeNode default_type; // `@template [T=D]`, owned while has_default
+    // From a JSDoc comment before the one right before the host: only its `@overload` tags (with their children and
+    // the comment's `@template`s) are kept, nothing else about the host (tsc's filterOwnedJSDocTags)
+    bool earlier;
+    const char* comment; // The start of the comment the tag is in
 } JsDocTag;
 
 static void jsdoc_tag_drop(JsDocTag* me) {
@@ -2886,16 +2890,22 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
             saw_asterisk = true;
             c++;
         } else if (ch == '@' && !in_backticks && (line_start || ((c[-1] == ' ' || c[-1] == '\t') && !is_jsdoc_space(c[1])))) {
+            isize before = tags->size;
             c = parse_jsdoc_tag(parent, c, end, tags);
             line_start = false;
-            // tsc's parseCallbackTag/parseTypedefTag take the tags that follow as their children
+            for (isize i = before; i < tags->size; i++) tags->data[i].comment = range.start;
+            // tsc's parseCallbackTag/parseTypedefTag/parseOverloadTag take the tags that follow as their children
             JsDocTag* tag = vec_jsdoc_tag_back_mut(tags);
-            if (tag->kind == JSDOC_TAG_TYPEDEF || tag->kind == JSDOC_TAG_CALLBACK) {
+            if (tag->kind == JSDOC_TAG_TYPEDEF || tag->kind == JSDOC_TAG_CALLBACK || tag->kind == JSDOC_TAG_OVERLOAD) {
                 owner = tag->kind;
             } else if (owner == JSDOC_TAG_CALLBACK && (tag->kind == JSDOC_TAG_PARAM || tag->kind == JSDOC_TAG_RETURNS ||
                 tag->kind == JSDOC_TAG_TEMPLATE)
             ) {
                 tag->nested = true;
+            } else if (owner == JSDOC_TAG_OVERLOAD && (tag->kind == JSDOC_TAG_PARAM || tag->kind == JSDOC_TAG_RETURNS)) {
+                // (tsc's parseJSDocSignature: parameters, then one `@returns`, which ends it)
+                tag->nested = true;
+                if (tag->kind == JSDOC_TAG_RETURNS) owner = JSDOC_TAG_OTHER;
             } else if (owner == JSDOC_TAG_TYPEDEF && (tag->kind == JSDOC_TAG_PROPERTY || tag->kind == JSDOC_TAG_TEMPLATE)) {
                 tag->nested = true;
             } else {
@@ -2927,6 +2937,31 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
         else hi = mid;
     }
     if (lo >= comments->size || comments->data[lo].end != c) return false;
+    // The comments before it (only whitespace between) for their `@overload` tags (tsc's getJSDocOverloadTags)
+    isize first = lo;
+    while (first > 0) {
+        const char* start = comments->data[first].start;
+        while (start > file_start && is_js_ascii_space(start[-1])) start--;
+        if (comments->data[first - 1].end != start) break;
+        first--;
+    }
+    for (isize i = first; i < lo; i++) {
+        JsDocRange range = comments->data[i];
+        if (!csview_contains(csview_from_range(range.start, range.end), "@overload")) continue;
+        VecJsDocTag earlier = {0};
+        parse_jsdoc_comment(parent, range, &earlier);
+        bool in_overload = false;
+        for_each (t, vec_jsdoc_tag, &earlier) {
+            if (t->kind == JSDOC_TAG_OVERLOAD) in_overload = true;
+            else if (!t->nested) in_overload = false;
+            if (in_overload || t->kind == JSDOC_TAG_TEMPLATE) {
+                t->earlier = true;
+                vec_jsdoc_tag_push(tags, *t);
+                *t = (JsDocTag){0};
+            }
+        }
+        vec_jsdoc_tag_drop(&earlier);
+    }
     parse_jsdoc_comment(parent, comments->data[lo], tags);
     return true;
 }
@@ -3095,6 +3130,8 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
 // A declaration's `@template` tags as its type parameters, when it has none written (tsc's
 // getJSDocTypeParameterDeclarations: not the templates of a comment with a `@typedef`/`@callback`, those are its)
 static Generic jsdoc_template_generic(VecJsDocTag* tags);
+static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* comment);
+static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isize count);
 
 static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
     if (!generic_empty(generic)) return;
@@ -3107,8 +3144,36 @@ static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
 
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
 static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
+    // `@overload` tags (of every comment before the host), each a signature of their own: the function's, whose
+    // implementation isn't one (tsc's getSignaturesOfSymbol). The comment's `@template`s are the overload's
+    // (getEffectiveTypeParameterDeclarations of a JSDocSignature)
+    if (!function->jsdoc_overload_count) {
+        for_each (i, vec_jsdoc_tag, tags) {
+            if (i->kind != JSDOC_TAG_OVERLOAD) continue;
+            isize children = 0;
+            while (i + 1 + children < tags->data + tags->size && i[1 + children].nested) children++;
+            TypeNode type = jsdoc_callback_type(i, i + 1, children);
+            if (i->earlier) {
+                type.callable->function->generic = jsdoc_comment_template_generic(tags, i->comment);
+            } else {
+                // (The host's own comment: its `@template`s, which are the host's too)
+                Generic* generic = &type.callable->function->generic;
+                for_each (t, vec_jsdoc_tag, tags) {
+                    if (t->kind != JSDOC_TAG_TEMPLATE || t->earlier || !span_valid(t->name)) continue;
+                    vec_generic_item_push(&generic->items, (GenericItem){
+                        .name = t->name, .full_span = t->name, .jsdoc = true, .jsdoc_shared = true,
+                    });
+                }
+            }
+            function->jsdoc_overloads = realloc(function->jsdoc_overloads, sizeof(TypeNode) * (function->jsdoc_overload_count + 1));
+            panic_if(!function->jsdoc_overloads, "out of memory");
+            function->jsdoc_overloads[function->jsdoc_overload_count++] = type;
+        }
+    }
     jsdoc_apply_template(tags, &function->generic);
-    for_each (i, vec_jsdoc_tag, tags) function->jsdoc_typed |= i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE;
+    for_each (i, vec_jsdoc_tag, tags) {
+        function->jsdoc_typed |= (i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE) && !i->nested && !i->earlier;
+    }
     jsdoc_apply_type_signature(tags, function);
     for_each (i, vec_function_arg, &function->args) {
         Binding* binding = &i->initializer.binding;
@@ -3222,9 +3287,15 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
 // The type parameters of the `@typedef`/`@callback` tags of a comment: every `@template` in it (tsc's
 // getEffectiveTypeParameterDeclarations of a JSDocTypeAlias)
 static Generic jsdoc_template_generic(VecJsDocTag* tags) {
+    return jsdoc_comment_template_generic(tags, nullptr);
+}
+
+// The `@template`s of one comment (null: of the host's, not an earlier one's)
+static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* comment) {
     Generic ret = {0};
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
+        if (comment ? i->comment != comment : i->earlier) continue;
         GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true };
         if (i->has_type) {
             item.extends = jsdoc_take_type(i, nullptr);

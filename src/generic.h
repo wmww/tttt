@@ -15,6 +15,9 @@ typedef struct GenericItem {
     Symbol* owned_symbol;
     Symbol const* symbol_ref;
     bool jsdoc; // A JSDoc `@template`: not part of the baselines' walk
+    // A JSDoc `@overload` in its host's comment: the host's `@template` of that name (symbol_ref, set when the host's
+    // names are resolved), which it doesn't declare again (tsc: the same TypeParameterDeclaration)
+    bool jsdoc_shared;
 } GenericItem;
 
 void generic_item_drop(GenericItem* me);

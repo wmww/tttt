@@ -30,6 +30,8 @@ void function_impl_drop(FunctionImpl* me) {
         type_drop(my jsdoc_signature_type);
         free(my jsdoc_signature_type);
     }
+    for (u32 i = 0; i < my jsdoc_overload_count; i++) type_drop(&my jsdoc_overloads[i]);
+    free(my jsdoc_overloads);
 }
 
 void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted, bool declared) {
@@ -244,6 +246,15 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     type_flow_restore(saved_flow);
     function_scope->no_super = NO_SUPER_NONE;
     type_lookup_names(&my ret, function_scope, errs);
+    for (u32 i = 0; i < my jsdoc_overload_count; i++) {
+        for_each (item, vec_generic_item, &my jsdoc_overloads[i].callable->function->generic.items) {
+            if (!item->jsdoc_shared) continue;
+            for_each (own, vec_generic_item, &my generic.items) {
+                if (csview_equals_sv(own->name.sv, item->name.sv)) item->symbol_ref = own->owned_symbol;
+            }
+        }
+        type_lookup_names(&my jsdoc_overloads[i], function_scope, errs);
+    }
     if (my jsdoc_signature_type) {
         type_lookup_names(my jsdoc_signature_type, names, errs);
         for_each (i, vec_function_arg, &my args) i->initializer.jsdoc_typed_by = me;

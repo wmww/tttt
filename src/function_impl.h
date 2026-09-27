@@ -110,6 +110,10 @@ typedef struct FunctionImpl {
     // Owned, JavaScript: a JSDoc `@type {F}` on the function that isn't a written signature (`{Processor<A, B>}`): its
     // signature types the parameters like a contextual one (tsc's getSignatureOfTypeTag, ty_function_apply_jsdoc_type())
     TypeNode* jsdoc_signature_type;
+    // Owned, JavaScript: the JSDoc `@overload` signatures (function types), which are the function's signatures
+    // instead of its own (tsc's getSignaturesOfSymbol)
+    TypeNode* jsdoc_overloads;
+    u32 jsdoc_overload_count;
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);

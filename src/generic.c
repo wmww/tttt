@@ -19,6 +19,7 @@ void generic_drop(Generic* me) {
 
 void generic_add_names(Generic const* me, Scope* scope) {
     for_each (i, vec_generic_item, &my items) {
+        if (i->jsdoc_shared) continue;
         scope_init_declaration(scope, &i->owned_symbol, (DeclProps){
             .name = i->name,
             .full = i->full_span, // (tsc's declaration position starts at the modifiers)
