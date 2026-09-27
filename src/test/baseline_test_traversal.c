@@ -711,8 +711,10 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     ctx->parameter_property_class = outer_parameter_property_class;
 }
 
-// An alias shows its own declaration as the symbol and the value of what it resolves to as the type
-static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx) {
+// An alias shows its own declaration as the symbol and the value of what it resolves to as the type. In a type-only
+// `import type`/`export type` (not `* as ns`) its name is a type declaration's to tsc's getTypeOfNode: the declared
+// type of what it resolves to, errorType if that isn't a type
+static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx, bool type_declaration) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = symbol_declaration_spans(my symbol),
         .span = my decl_name,
@@ -720,6 +722,17 @@ static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx) {
     });
     // tsc shows aliases of pure types as any
     ctx->any_keeps_underline = true; // An import/export name
+    if (type_declaration && my tag != PORT_IMPORT_GATHER && my tag != PORT_REEXPORT_GATHER) {
+        Symbol const* type_symbol = symbol_for_meaning(my symbol, SYMBOL_TYPE);
+        bool declared = type_symbol && !type_symbol->is_placeholder &&
+            (type_symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM | SYMBOL_TYPE_ALIAS));
+        if (declared) {
+            baseline_test_case_add_type(ctx, my decl_name, ty_declared_type_of(current_checker, type_symbol));
+        } else {
+            baseline_test_case_add_type_node(ctx, my decl_name, &type_any);
+        }
+        return;
+    }
     baseline_test_case_add_symbol_value(ctx, my decl_name, my symbol);
 }
 
@@ -731,7 +744,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         case PORT_REEXPORT_GATHER:
         case PORT_EXPORT_AS_NAMESPACE: // (the global alias of the module)
             // Null when the scope refused the import, eg `import a = require("b")` inside an ambient module
-            if (my main.symbol) port_item_add_alias(&my main, ctx);
+            if (my main.symbol) port_item_add_alias(&my main, ctx, my main.type_only);
             break;
 
         case PORT_IMPORT_ALIAS:
@@ -739,7 +752,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                 ctx->any_keeps_underline = true;
                 baseline_test_case_add_type_node(ctx, my main.decl_name, &type_any);
             } else {
-                port_item_add_alias(&my main, ctx);
+                port_item_add_alias(&my main, ctx, false);
             }
             for_each (i, vec_span, &my main.alias_path) {
                 ctx->any_keeps_underline = true; // Part of a qualified name
@@ -773,7 +786,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
     for_each (i, vec_port_item, &my items) {
         if (!i->symbol) continue;
         if (i->tag == PORT_IMPORT_GATHER) { // `import d, * as ns`
-            port_item_add_alias(i, ctx);
+            port_item_add_alias(i, ctx, false);
             continue;
         }
         if (i->decl_name.sv.buf != i->source_name.sv.buf) {
@@ -789,7 +802,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
             ctx->any_keeps_underline = true;
             baseline_test_case_add_symbol_value(ctx, i->source_name, i->symbol);
         }
-        port_item_add_alias(i, ctx);
+        port_item_add_alias(i, ctx, my main.type_only);
     }
     // `with { type: "json" }`: the keys written as identifiers are any
     if (my attributes) {

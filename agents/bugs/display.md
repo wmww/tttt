@@ -49,7 +49,16 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 ## Names and specifiers
 - **`import("…")` specifiers**: tsc prints some specifiers as absolute paths the harness then strips (`/.src/a` -> `a`),
   so the text matches but the `^^^` underline is 6 longer (e.g. `exports` inside its own CommonJS file,
-  intersectionsAndEmptyObjects). moduleSpecifiers' getModuleSpecifiers falling back to the file name. Separately, tsc
+  intersectionsAndEmptyObjects). **45 tests fail on this alone** (`displaydiff.py`'s `underlines/order only`, the
+  single biggest one-kind bucket; ambient modules are never affected). Probes (2026-09-27, `./tscbaseline.sh`): `a.ts`
+  exports class C, `e.ts` returns `new A.C()`, `b.ts` has `export const v = E.mk()`. `v : import("a").C` gets the
+  +6 underline iff b.ts (the file the type is printed in) contains an `import X = require(...)`, even an unrelated
+  one; `import * as`, `export =` and dynamic `import()` don't trigger it. commonJSImportClassTypeReference (JS
+  `require`) fits, intersectionsAndEmptyObjects (only `import('./ex')`, esModuleInterop) doesn't: find the real
+  condition in the checker (getSpecifierForModuleSymbol falls back to the full fileName without a resolver host, so
+  the question is where the non-prefixed specifier comes from). A tried implementation: `SourceFile.hidden_path_prefix`
+  (6 for a test file named relatively) with the underline growing after the specifier in ty_display.c's
+  out_symbol_name/out_declared_name, unconditionally: -190 tests, so the condition is essential. moduleSpecifiers' getModuleSpecifiers falling back to the file name. Separately, tsc
   prefers a package entry/`index` that re-exports the symbol and non-relative paths:
   declarationEmitForGlobalishSpecifierSymlink2, symbolLinkDeclarationEmitModuleNames(RootDir),
   bundledDtsLateExportRenaming, declarationEmitTopLevelNodeFromCrossFile2, declarationsForInferredTypeFromOtherFile.
