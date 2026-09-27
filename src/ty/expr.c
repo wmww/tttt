@@ -500,15 +500,12 @@ static bool is_arity_smaller(Checker* me, Signature const* sig, FunctionImpl con
 // tsc's getContextualCallSignature: the call signatures that don't take fewer parameters than the function has
 // required ones. Several are combined into one (getIntersectedSignatures), under noImplicitAny only
 static Signature const* contextual_call_signature(Checker* me, Ty const* type, FunctionImpl const* function) {
-    TyList parts = type->kind == TY_INTERSECTION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
     Signature const* stack_buf[16];
     Signature const** applicable = stack_buf;
     u32 cap = c_arraylen(stack_buf);
     u32 count = 0;
-    for (u32 i = 0; i < parts.len; i++) {
-        Ty const* part = type->kind == TY_INTERSECTION ? ty_apparent_type(me, parts.data[i]) : parts.data[i];
-        if (!(part->flags & TYF_OBJECT)) continue;
-        Members const* members = ty_members(me, part);
+    if (type->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+        Members const* members = ty_members(me, type);
         for (u32 j = 0; j < members->call_count; j++) {
             if (is_arity_smaller(me, members->call[j], function)) continue;
             if (count == cap) {

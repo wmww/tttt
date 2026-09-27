@@ -1457,12 +1457,59 @@ static bool index_key_applies(IndexInfo const* source, IndexInfo const* target) 
 
 // tsc's isObjectTypeWithInferableIndex: object literal and type literal types, namespaces and enums, but nothing callable
 static bool has_inferable_index(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!has_inferable_index(me, ty->composite.types.data[i])) return false;
+        }
+        return true;
+    }
     if (ty->kind == TY_ANONYMOUS) {
         Members const* members = ty_members(me, ty);
         return !members->call_count && !members->construct_count;
     }
     return ty->kind == TY_DECLARED &&
         (ty->declared.kind == TY_DECLARED_NAMESPACE || ty->declared.kind == TY_DECLARED_ENUM_OBJECT);
+}
+
+typedef struct SourceProp {
+    Prop const* prop;
+    Ty const* type;
+    u32 flags;
+} SourceProp;
+
+// The properties of an object type, or of every member of an intersection (tsc's getPropertiesOfUnionOrIntersectionType:
+// the first of each name, with the type and flags of the intersection's). Free the result
+static SourceProp* source_props(Checker* me, Ty const* source, Members const* source_members, u32* count_out) {
+    u32 count = 0, cap = 8;
+    SourceProp* ret = malloc(sizeof(SourceProp) * cap);
+    panic_if(!ret, "out of memory");
+    TyList parts = source->kind == TY_INTERSECTION ? source->composite.types : (TyList){ .data = &source, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        Members const* members = source->kind == TY_INTERSECTION ? ty_members(me, parts.data[i]) : source_members;
+        for (u32 j = 0; j < members->prop_count; j++) {
+            Prop const* prop = members->props[j];
+            SourceProp entry = { .prop = prop, .type = nullptr, .flags = prop->flags };
+            if (source->kind == TY_INTERSECTION) {
+                bool seen = false;
+                for (u32 k = 0; k < count && !seen; k++) seen = ret[k].prop->name == prop->name;
+                if (seen) continue;
+                FoundProp found = ty_find_prop(me, source, prop->name);
+                if (!found.found) continue;
+                entry.type = found.type;
+                entry.flags = found.flags;
+            } else {
+                entry.type = prop_type(me, prop);
+            }
+            if (count == cap) {
+                cap *= 2;
+                ret = realloc(ret, sizeof(SourceProp) * cap);
+                panic_if(!ret, "out of memory");
+            }
+            ret[count++] = entry;
+        }
+    }
+    *count_out = count;
+    return ret;
 }
 
 // `source_is_primitive`: `source` is a primitive's apparent type, which a string `any` index signature doesn't take as is
@@ -1505,9 +1552,12 @@ static Ternary index_signatures_related(
             result &= related;
         } else if (has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || (source->flags & TYF_FRESH_OBJECT))) {
             // An object literal type is related if each of its properties the signature applies to is. Not in the strict
-            // subtype relation unless it's fresh: `{ [k: string]: X }` is a strict subtype of `{}`, not vice versa
-            for (u32 j = 0; j < source_members->prop_count; j++) {
-                Prop const* prop = source_members->props[j];
+            // subtype relation unless it's fresh: `{ [k: string]: X }` is a strict subtype of `{}`, not vice versa. Of an
+            // intersection, every property of every member, with the type they have together
+            u32 prop_count;
+            SourceProp* props = source_props(me, source, source_members, &prop_count);
+            for (u32 j = 0; j < prop_count; j++) {
+                Prop const* prop = props[j].prop;
                 bool symbol_named = ty_unique_symbol_of_name(me, prop->name) != nullptr;
                 if ((target_info->key->flags & TYF_NUMBER) && !is_numeric_prop_name(prop->name)) continue;
                 if (((target_info->key->flags & TYF_ES_SYMBOL) != 0) != symbol_named) continue;
@@ -1520,8 +1570,8 @@ static Ternary index_signatures_related(
                 // (tsc's isIgnoredJsxProperty)
                 if (source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes && csview_contains(atom_sv(prop->name), "-")) continue;
                 // An optional property's undefined doesn't count (tsc's membersRelatedToIndexer)
-                Ty const* type = prop_type(me, prop);
-                if ((prop->flags & PROP_OPTIONAL) && !(target_info->key->flags & TYF_NUMBER) && !(type->flags & TYF_UNDEFINED) &&
+                Ty const* type = props[j].type;
+                if ((props[j].flags & PROP_OPTIONAL) && !(target_info->key->flags & TYF_NUMBER) && !(type->flags & TYF_UNDEFINED) &&
                     !compiler_options()->exact_optional_property_types
                 ) {
                     type = ty_without_undefined(me, type);
@@ -1533,10 +1583,12 @@ static Ternary index_signatures_related(
                         report_line(st, 2530, cstr_d("Property '", name, "' is incompatible with index signature."));
                         cstr_drop(&name);
                     }
+                    free(props);
                     return TERNARY_FALSE;
                 }
                 result &= related;
             }
+            free(props);
         } else {
             if (report) {
                 cstr key_str = display_for_report(me, target_info->key, false);
@@ -3371,23 +3423,11 @@ static Ternary structured_related_impl(
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return TERNARY_FALSE;
     if (my variance_depth && target_mapped) my variance_unreliable = true;
     if (apparent->kind == TY_INTERSECTION) {
-        // HACK: the signatures and index signatures of an intersection aren't combined (tsc concatenates signatures
-        // and intersects index infos), each kind has to be satisfied by one member on its own
+        // As a whole: its signatures and index infos are those of its members together (resolve_intersection_members())
         Ternary result = props_related(me, st, apparent, target, report, false);
-        Members const* target_members = ty_members(me, target);
-        TyList parts = apparent->composite.types;
-        for (u32 kind = 0; kind < 3 && result; kind++) {
-            u32 count = kind == 0 ? target_members->call_count : kind == 1 ? target_members->construct_count : target_members->index_count;
-            if (!count) continue;
-            Ternary some = TERNARY_FALSE;
-            for (u32 i = 0; i < parts.len && !some; i++) {
-                Ty const* part = apparent_type(me, parts.data[i]);
-                if (!(part->flags & TYF_OBJECT)) continue;
-                some = kind == 2 ? index_signatures_related(me, st, part, target, false, false) :
-                    signatures_related(me, st, part, target, kind == 1, false);
-            }
-            result &= some;
-        }
+        if (result) result &= signatures_related(me, st, apparent, target, false, report);
+        if (result) result &= signatures_related(me, st, apparent, target, true, report);
+        if (result) result &= index_signatures_related(me, st, apparent, target, false, report);
         return result;
     }
     return object_related(me, st, source, apparent, target, report, apparent != source);
@@ -3943,13 +3983,16 @@ static bool lacks_common_properties(Checker* me, RelationState* st, Ty const* so
     Ty const* apparent = ty_apparent_type(me, source);
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
     Members const* members = ty_members(me, apparent);
-    if (!members->prop_count && !members->call_count && !members->construct_count) return false;
+    u32 prop_count;
+    SourceProp* props = source_props(me, apparent, members, &prop_count);
+    bool ret = prop_count || members->call_count || members->construct_count;
     bool is_jsx = source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes;
-    for (u32 i = 0; i < members->prop_count; i++) {
-        if (is_known_property(me, target, members->props[i]->name)) return false;
-        if (is_jsx && csview_contains(atom_sv(members->props[i]->name), "-")) return false; // `data-x`
+    for (u32 i = 0; i < prop_count && ret; i++) {
+        if (is_known_property(me, target, props[i].prop->name)) ret = false;
+        if (is_jsx && csview_contains(atom_sv(props[i].prop->name), "-")) ret = false; // `data-x`
     }
-    return true;
+    free(props);
+    return ret;
 }
 
 Ty const* ty_strip_nullable_target(Checker* me, Ty const* source, Ty const* target) {
@@ -4422,25 +4465,7 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
     panic_if(!lists || !lens, "out of memory");
     for (u32 i = 0; i < members.len; i++) {
         Ty const* member = ty_apparent_type(me, members.data[i]);
-        if (member->kind == TY_INTERSECTION) {
-            // An intersection has the signatures of all of its members (tsc's resolveIntersectionTypeMembers)
-            TyList parts = member->composite.types;
-            u32 total = 0;
-            for (u32 j = 0; j < parts.len; j++) {
-                Members const* m = ty_members(me, ty_apparent_type(me, parts.data[j]));
-                total += construct ? m->construct_count : m->call_count;
-            }
-            Signature** all = total ? arena_new_n(&my arena, Signature*, total) : nullptr;
-            u32 len = 0;
-            for (u32 j = 0; j < parts.len; j++) {
-                Members const* m = ty_members(me, ty_apparent_type(me, parts.data[j]));
-                u32 count = construct ? m->construct_count : m->call_count;
-                for (u32 k = 0; k < count; k++) all[len++] = (construct ? m->construct : m->call)[k];
-            }
-            lists[i] = all;
-            lens[i] = len;
-            continue;
-        }
+        // (An intersection's are its members', see resolve_intersection_members())
         Members const* m = ty_members(me, member);
         lists[i] = construct ? m->construct : m->call;
         lens[i] = construct ? m->construct_count : m->call_count;

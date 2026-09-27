@@ -314,6 +314,7 @@ struct Ty {
         } anonymous;
         struct {
             TyList types; // sorted by id, no duplicates
+            TyObjectState* state; // Intersections: their signatures and index infos (see ty_members())
         } composite;
         struct {
             Ty const* operand;

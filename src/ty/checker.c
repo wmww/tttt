@@ -505,6 +505,7 @@ static Ty const* intern_composite(
         ret->alias = alias;
         ret->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
         ret->composite.types = ty_list_copy(me, types, len);
+        if (kind == TY_INTERSECTION) ret->composite.state = arena_new(&my arena, TyObjectState);
         *slot = ret;
     }
     return *slot;

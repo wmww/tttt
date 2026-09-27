@@ -107,54 +107,7 @@ static IndexInfo const* find_applicable_index_info(Checker* me, IndexInfo const*
 }
 
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index) {
-    if (object->kind == TY_INTERSECTION) {
-        // The members' index infos, those with the same key type as one whose value is the intersection of theirs and
-        // readonly if all are (tsc's resolveIntersectionTypeMembers/appendIndexInfo)
-        IndexInfo* merged = nullptr;
-        u32 count = 0, cap = 0;
-        Members const* single_members = nullptr; // While only one member has index infos, its list is the list
-        u32 members_with_infos = 0;
-        for (u32 i = 0; i < object->composite.types.len; i++) {
-            Ty const* member = ty_apparent_type(me, object->composite.types.data[i]);
-            if (!(member->flags & TYF_OBJECT) && member->kind != TY_INTERSECTION) continue;
-            Members const* members = ty_members(me, member);
-            if (!members->index_count) continue;
-            if (members_with_infos++ == 0) {
-                single_members = members;
-                continue;
-            }
-            if (members_with_infos == 2) {
-                cap = single_members->index_count + members->index_count;
-                merged = arena_alloc(&my arena, sizeof(IndexInfo) * cap);
-                for (u32 j = 0; j < single_members->index_count; j++) merged[count++] = single_members->index[j];
-            }
-            for (u32 j = 0; j < members->index_count; j++) {
-                IndexInfo const* info = &members->index[j];
-                IndexInfo* existing = nullptr;
-                for (u32 k = 0; k < count && !existing; k++) {
-                    if (merged[k].key == info->key) existing = &merged[k];
-                }
-                if (existing) {
-                    Ty const* both[2] = { existing->value, info->value };
-                    existing->value = ty_intersection(me, both, 2, nullptr, (TyList){0});
-                    existing->readonly &= info->readonly;
-                    existing->components = nullptr;
-                    existing->component_count = 0;
-                    continue;
-                }
-                if (count == cap) {
-                    IndexInfo* grown = arena_alloc(&my arena, sizeof(IndexInfo) * cap * 2);
-                    memcpy(grown, merged, sizeof(IndexInfo) * count);
-                    merged = grown;
-                    cap *= 2;
-                }
-                merged[count++] = *info;
-            }
-        }
-        if (!members_with_infos) return nullptr;
-        if (members_with_infos == 1) return find_applicable_index_info(me, single_members->index, single_members->index_count, index);
-        return find_applicable_index_info(me, merged, count, index);
-    }
+    // (An intersection's are its members' intersected per key, see resolve_intersection_members())
     Members const* members = ty_members(me, object);
     return find_applicable_index_info(me, members->index, members->index_count, index);
 }

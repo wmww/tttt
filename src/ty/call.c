@@ -1546,26 +1546,24 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
         return ret;
     }
 
-    // An intersection is called through the signatures of all of its members
+    // (An intersection's signatures are those of its members, see resolve_intersection_members())
     Signature** signatures = nullptr;
     u32 count = 0;
     u32 other_count = 0; // signatures of the kind that wasn't asked for
-    TyList parts = apparent->kind == TY_INTERSECTION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
     if (union_sigs) {
-        parts.len = 0;
         signatures = malloc(sizeof(Signature*) * union_count);
         panic_if(!signatures, "out of memory");
         for (u32 i = 0; i < union_count; i++) signatures[count++] = union_sigs[i];
-    }
-    for (u32 i = 0; i < parts.len; i++) {
-        Members const* members = ty_members(me, ty_apparent_type(me, parts.data[i]));
+    } else {
+        Members const* members = ty_members(me, apparent);
         Signature* const* list = construct ? members->construct : members->call;
         u32 list_count = construct ? members->construct_count : members->call_count;
-        other_count += construct ? members->call_count : members->construct_count;
-        if (!list_count) continue;
-        signatures = realloc(signatures, sizeof(Signature*) * (count + list_count));
-        panic_if(!signatures, "out of memory");
-        for (u32 j = 0; j < list_count; j++) signatures[count++] = list[j];
+        other_count = construct ? members->call_count : members->construct_count;
+        if (list_count) {
+            signatures = malloc(sizeof(Signature*) * list_count);
+            panic_if(!signatures, "out of memory");
+            for (u32 j = 0; j < list_count; j++) signatures[count++] = list[j];
+        }
     }
 
     Ty const* ret = any;
@@ -1734,23 +1732,15 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
         }
         if (!count) signatures = jsx_union_signatures(me, element, apparent->composite.types, 0, &count);
     } else if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
-        TyList parts = apparent->kind == TY_INTERSECTION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
-        for (u32 pass = 0; pass < 2 && !count; pass++) {
-            for (u32 i = 0; i < parts.len; i++) {
-                Members const* members = ty_members(me, ty_apparent_type(me, parts.data[i]));
-                Signature* const* list = pass == 0 ? members->construct : members->call;
-                u32 list_count = pass == 0 ? members->construct_count : members->call_count;
-                if (!list_count) continue;
-                Signature** grown = arena_new_n(&my arena, Signature*, count + list_count);
-                for (u32 j = 0; j < count; j++) grown[j] = signatures[j];
-                for (u32 j = 0; j < list_count; j++) grown[count + j] = list[j];
-                signatures = grown;
-                count += list_count;
-            }
-            if (count) {
-                ret.class_component = pass == 0;
-                ret.function_component = pass == 1;
-            }
+        Members const* members = ty_members(me, apparent);
+        if (members->construct_count) {
+            signatures = members->construct;
+            count = members->construct_count;
+            ret.class_component = true;
+        } else if (members->call_count) {
+            signatures = members->call;
+            count = members->call_count;
+            ret.function_component = true;
         }
     }
     if (!count) {

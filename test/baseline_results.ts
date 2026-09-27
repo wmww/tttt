@@ -7748,7 +7748,7 @@ const baselines = {
     'declarationEmitClassMixinLocalClassDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitClassPrivateConstructor': {
         errors: true,
@@ -37022,7 +37022,7 @@ const baselines = {
     },
     'mixinAbstractClasses': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mixinAbstractClassesReturnTypeInference': {
@@ -37047,8 +37047,8 @@ const baselines = {
     },
     'mixinClassesMembers': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mixinWithBaseDependingOnSelfNoCrash1': {
         errors: false,
@@ -55728,7 +55728,7 @@ const baselines = {
     'override19': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'override2': {
         errors: false,
@@ -55737,8 +55737,8 @@ const baselines = {
     },
     'override20': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'override21': {
         errors: false,

@@ -192,13 +192,10 @@ static void call_signatures(Checker* me, Ty const* ty, SigList* out) {
         for (u32 i = 0; i < count; i++) sig_list_push(out, sigs[i]);
         return;
     }
-    TyList parts = ty->kind == TY_INTERSECTION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
-    for (u32 i = 0; i < parts.len; i++) {
-        Ty const* part = ty_apparent_type(me, parts.data[i]);
-        if (!(part->flags & TYF_OBJECT)) continue;
-        Members const* members = ty_members(me, part);
-        for (u32 j = 0; j < members->call_count; j++) sig_list_push(out, members->call[j]);
-    }
+    Ty const* apparent = ty_apparent_type(me, ty);
+    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return;
+    Members const* members = ty_members(me, apparent);
+    for (u32 j = 0; j < members->call_count; j++) sig_list_push(out, members->call[j]);
 }
 
 static void sig_list_drop(SigList* me) {

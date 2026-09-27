@@ -385,7 +385,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `apparent_type` (relate.c) keeps a TY_INDEXED/TY_CONDITIONAL without base constraint as itself (tsc: `{}`).
 - `class_base()` (members.c HACK): a base class *name* is found syntactically; any other `extends` expression is the
   return type of its first construct signature taking no type arguments (written type arguments not handled, no static
-  members inherited, no intersection with the base constraint for mixins: plan 32). `ty_has_unresolved_base()` gates
+  members inherited, no intersection with the base constraint for mixins: plan 32 stage C). `ty_has_unresolved_base()` gates
   TS2339/TS7053 for such classes.
 - `this` types: `Prop.thisless` follows tsc's syntactic isThisless rules; `this` in a static member is the static side;
   relations compare a reference with a this-argument structurally with the plain one (tsc: one more covariant argument).
@@ -393,8 +393,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `ty_resolve_enum` / `evaluate` (enums.c): no property accesses of `const` objects; `const` variables in other files
   count as constant without tsc's resolvedOtherFiles; members of ambient non-const enums without initializer
   auto-increment (tsc: computed).
-- `relate.c`: no optionality of parameters (no `undefined` added); signatures/index signatures of a source intersection
-  aren't combined (HACK in `structured_related`); Array<S> -> ReadonlyArray<T> shortcut on element types (HACK);
+- `relate.c`: no optionality of parameters (no `undefined` added); Array<S> -> ReadonlyArray<T> shortcut on element types (HACK);
   `is_rest_array` (HACK) counts any non-type-parameter as a rest array (tsc normalizes `[...X]`).
 - `has_conflicting_discriminants` (checker.c HACK): intersections with disjoint discriminants reduce to never when made,
   not lazily (getReducedType); properties/aliases in flight (`ty_node_reaches_alias_in_flight`, `members_judgeable`)

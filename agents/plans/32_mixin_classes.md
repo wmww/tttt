@@ -1,7 +1,7 @@
 # Plan 32: mixin classes (and the two type-core gaps under them)
 
 Draft by the plan 19 corpus session; rewritten 2026-09-27 by the planning session (todo entry 4). Three stages, one
-session each. Stages A and B are type-core gaps that aren't about mixins at all; mixins are just where they
+session each; stage A is done. Stages A and B are type-core gaps that aren't about mixins at all; mixins are just where they
 show up together. Do them in order (C needs both).
 
 ## What the planning session found
@@ -54,25 +54,16 @@ Probes in `test/probes/plan32/` (`./filetest.sh`, `FAST=1`).
    - Afterwards `ty_has_unresolved_base()` (the TS2339/TS7053 gate for classes whose base class_base() can't see) should
      have nothing left to gate for mixins; delete it or narrow it to the truly unresolvable (an `any` base).
 
-## Stage A: intersection members (one session)
-Give `TY_INTERSECTION` resolved members: call signatures concatenated (duplicates dropped), construct signatures with
-the mixin rule, index infos intersected per key. Properties stay where they are (tttt finds intersection properties
-through its own path: `ty_find_prop` & co.; tsc's intersection members have no properties either), so `Members.props`
-stays empty and nothing that iterates props changes.
-- Storage: intersections need a `TyObjectState` (a new field on the composite, or a side table keyed by type id;
-  pick whatever keeps `Ty` small; unions don't need it). Resolve lazily in `ty_members()`.
-- The mixin return type is a new signature (tsc clones with resolvedReturnType): tttt signatures have `target`/`mapper`
-  for instantiation; a clone with an overridden return type needs a field or a variant. Check how
-  `ty_union_signature` / `combine_signatures` (relate.c) build synthetic signatures and do the same.
-- Then replace the ad-hoc sites with `ty_members()`: `resolve_call()`, the relate.c HACK (the source intersection's
-  signatures and index infos as a whole: tsc's structuredTypeRelatedTo just calls signaturesRelatedTo on the
-  intersection), `class_base()`, `builder_add_class_static` (inherited construct signatures of an intersection
-  constructor), infer.c:745. `grep -n "composite.types" src/ty/*.c | grep -i "construct\|call_count\|index"` finds
-  more. Every site that loops over parts for signatures is a candidate.
-- Validate: `probe_intersection_members.ts` clean vs tsc, mixinClassesMembers errors component,
-  intersectionOfMixinConstructorTypeAndNonConstructorType still passes, no lost components (`./resultdiff.py --lost`),
-  corpora unchanged (type-fest 11 or less), callgrind on valibot not worse by more than ~1% (intersections are hot
-  there: resolve lazily, never on property lookups).
+## Stage A: intersection members: done (same session as the planning)
+`resolve_intersection_members()` (members.c): `TY_INTERSECTION` has a `TyObjectState` (`composite.state`) and
+`ty_members()` gives its call signatures (identical ones dropped), construct signatures with the mixin rule (a clone
+with the intersected return type) and index infos intersected per key; no properties. Sites that looped over the
+parts now just ask `ty_members()`: `resolve_call()`, JSX tags, `ty_applicable_index_info()`, the contextual call
+signature, iteration's call signatures, union signatures, signature inference, and relate.c's per-part HACK
+(an intersection source is related as a whole; `index_signatures_related()` and `lacks_common_properties()` get the
+intersection's properties from `source_props()`). mixinClassesMembers errors, mixinAbstractClasses and override19/20
+symbols, declarationEmitClassMixinLocalClassDeclaration; webpack 3981 -> 3977; callgrind neutral (valibot 5.376 ->
+5.375 G, type-fest 3.354 -> 3.330 G). Not done: `source_props()` doesn't take the apparent type of type-variable parts.
 
 ## Stage B: outer type parameters (one session, maybe two)
 The riskiest stage: it touches how every local class/interface/alias is lowered and printed. Prototype first on the

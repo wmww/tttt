@@ -30,7 +30,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   expandos, JS classes and constructor functions): JS tests 160 -> 299. Stages 3-4 (typedef/template, the other tags,
   TS8xxx) are next, ordered by the webpack corpus (checkJs, pinned by plan 33: 3981 diagnostics, essentially all
   unresolved `@typedef`s and ignored `@type` on assignments; plan 26 stage 3 has the order).
-- **Absent**: union origins, lazy reverse mapped types, decorator checking,
+- **Absent**: outer type parameters (a local class/interface/alias in a generic function doesn't capture its `T`:
+  `f(3).x` is `T`; plan 32 stage B), union origins, lazy reverse mapped types, decorator checking,
   declaration emit (out of scope: typechecker only, `--noEmit` semantics), project references, parallelism.
 
 ## Course correction (second insights of 2026-09-27)

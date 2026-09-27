@@ -1647,7 +1647,10 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     return builder_finish(me, &builder);
 }
 
+static Members const* resolve_intersection_members(Checker* me, Ty const* ty);
+
 static Members const* resolve_members(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_INTERSECTION) return resolve_intersection_members(me, ty);
     return expand_mapped(me, ty, resolve_members_inner(me, ty));
 }
 
@@ -1718,11 +1721,121 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
     }
 }
 
+// The members of what an intersection member stands for (tsc's getSignaturesOfType/getIndexInfosOfType on it: its
+// apparent type)
+static Members const* part_members(Checker* me, Ty const* part) {
+    Ty const* apparent = ty_apparent_type(me, part);
+    return apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : &empty_members;
+}
+
+// tsc's isMixinConstructorType: a single construct signature `new (...args: any[]) => X` (or `...args: any`) without
+// type parameters
+static bool is_mixin_constructor(Checker* me, Members const* members) {
+    if (members->construct_count != 1) return false;
+    Signature const* sig = members->construct[0];
+    signature_resolve(me, sig);
+    if (sig->type_params.len || sig->param_count != 1 || !sig->params[0].rest) return false;
+    Ty const* type = sig->params[0].type;
+    return (type->flags & TYF_ANY) || (ty_is_array(me, type) && (ty_reference_args(me, type).data[0]->flags & TYF_ANY));
+}
+
+// Adds a signature unless an identical one is there (tsc's appendSignatures)
+static void builder_add_signature(Checker* me, MembersBuilder* builder, Signature* sig, bool construct) {
+    Signature* const* list = construct ? builder->construct : builder->call;
+    u32 count = construct ? builder->construct_count : builder->call_count;
+    for (u32 i = 0; i < count; i++) {
+        if (list[i] == sig || ty_signatures_identical(me, list[i], sig, false, false)) return;
+    }
+    if (construct) {
+        builder_push(builder, construct, sig);
+    } else {
+        builder_push(builder, call, sig);
+    }
+}
+
+// tsc's resolveIntersectionTypeMembers: no properties (those are found member by member), the members' call signatures,
+// their construct signatures except those of mixin constructors, whose return types are intersected into every other
+// construct signature's instead (`{ new (...args: any[]): A } & { new (s: string): B }` is `new (s: string) => A & B`;
+// when every constructor is a mixin, the first stays one), index infos of the same key intersected
+static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
+    TyList types = ty->composite.types;
+    Members const** parts = malloc(sizeof(Members const*) * types.len);
+    bool* mixin = malloc(sizeof(bool) * types.len);
+    panic_if(!parts || !mixin, "out of memory");
+    u32 constructors = 0, mixins = 0;
+    for (u32 i = 0; i < types.len; i++) {
+        parts[i] = part_members(me, types.data[i]);
+        mixin[i] = is_mixin_constructor(me, parts[i]);
+        constructors += parts[i]->construct_count > 0;
+        mixins += mixin[i];
+    }
+    if (constructors && constructors == mixins) {
+        for (u32 i = 0; i < types.len; i++) {
+            if (mixin[i]) {
+                mixin[i] = false;
+                mixins--;
+                break;
+            }
+        }
+    }
+    MembersBuilder builder = {0};
+    for (u32 i = 0; i < types.len; i++) {
+        Members const* members = parts[i];
+        if (!mixin[i]) {
+            for (u32 j = 0; j < members->construct_count; j++) {
+                Signature* sig = members->construct[j];
+                if (mixins) {
+                    // (tsc's includeMixinType: the mixins' instances, this one's in its place)
+                    Ty const** mixed = malloc(sizeof(Ty const*) * types.len);
+                    panic_if(!mixed, "out of memory");
+                    u32 mixed_len = 0;
+                    for (u32 k = 0; k < types.len; k++) {
+                        if (k == i) {
+                            mixed[mixed_len++] = signature_return_type(me, sig);
+                        } else if (mixin[k]) {
+                            mixed[mixed_len++] = signature_return_type(me, parts[k]->construct[0]);
+                        }
+                    }
+                    Signature* clone = arena_new(&my arena, Signature);
+                    signature_resolve(me, sig);
+                    *clone = *sig;
+                    clone->ret = ty_intersection(me, mixed, mixed_len, nullptr, (TyList){0});
+                    clone->ret_state = LAZY_STATE_DONE;
+                    free(mixed);
+                    sig = clone;
+                }
+                builder_add_signature(me, &builder, sig, true);
+            }
+        }
+        for (u32 j = 0; j < members->call_count; j++) builder_add_signature(me, &builder, members->call[j], false);
+        for (u32 j = 0; j < members->index_count; j++) {
+            IndexInfo info = members->index[j];
+            bool merged = false;
+            for (u32 k = 0; k < builder.index_count && !merged; k++) {
+                IndexInfo* existing = &builder.index[k];
+                if (existing->key != info.key) continue;
+                Ty const* both[] = { existing->value, info.value };
+                existing->value = ty_intersection(me, both, 2, nullptr, (TyList){0});
+                existing->readonly = existing->readonly && info.readonly;
+                existing->decl_span = span_null;
+                existing->components = nullptr;
+                existing->component_count = 0;
+                merged = true;
+            }
+            if (!merged) builder_push(&builder, index, info);
+        }
+    }
+    free(parts);
+    free(mixin);
+    return builder_finish(me, &builder);
+}
+
 static TyObjectState* object_state(Ty const* ty) {
     switch (ty->kind) {
         case TY_DECLARED: return ty->declared.state;
         case TY_REFERENCE: return ty->reference.state;
         case TY_ANONYMOUS: return ty->anonymous.state;
+        case TY_INTERSECTION: return ty->composite.state;
         default: return nullptr;
     }
 }
