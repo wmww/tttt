@@ -63,84 +63,89 @@ bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* ind
             ty_is_related(me, index, info->key, TY_RELATION_ASSIGNABLE));
 }
 
-// The members whose index signatures count: an intersection's are all of its members' (tsc's
-// resolveIntersectionTypeMembers, whose index infos of one key type are the intersection of theirs)
-static void collect_index_members(Checker* me, Ty const* object, Members const** out, u32* len, u32 cap) {
-    if (object->kind != TY_INTERSECTION) {
-        if (*len < cap) out[(*len)++] = ty_members(me, object);
-        return;
-    }
-    for (u32 i = 0; i < object->composite.types.len; i++) {
-        collect_index_members(me, ty_apparent_type(me, object->composite.types.data[i]), out, len, cap);
-    }
-}
-
-// Several index infos applying as one, whose value is the intersection of theirs
-static IndexInfo const* combined_index_info(Checker* me, IndexInfo const* first, TyBuf const* values, bool readonly, bool keep_key) {
-    if (values->len == 1) return first;
-    IndexInfo* combined = arena_new(&my arena, IndexInfo);
-    *combined = *first;
-    if (!keep_key) combined->key = ty_intrinsic(me, TY_UNKNOWN_);
-    combined->value = ty_intersection(me, values->data, values->len, nullptr, (TyList){0});
-    combined->readonly = readonly;
-    return combined;
-}
-
-IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index) {
-    Members const* stack[16];
-    Members const** all = stack;
-    u32 len = 0;
-    collect_index_members(me, object, all, &len, c_arraylen(stack));
-    if (len == c_arraylen(stack) && object->kind == TY_INTERSECTION) {
-        // (Deeply nested or wide intersections: collect them all)
-        u32 cap = 1024;
-        all = malloc(sizeof(Members const*) * cap);
-        panic_if(!all, "out of memory");
-        len = 0;
-        collect_index_members(me, object, all, &len, cap);
-    }
-    // The specific ones first. Several of them apply as one, whose value is the intersection of theirs (tsc's
-    // findApplicableIndexInfo); `string` ones only when no other applies
+// tsc's findApplicableIndexInfo over a list of index infos
+static IndexInfo const* find_applicable_index_info(Checker* me, IndexInfo const* infos, u32 count, Ty const* index) {
+    // The specific ones first. Several of them apply as one, whose value is the intersection of theirs
     IndexInfo const* found = nullptr;
     TyBuf values = {0};
     bool readonly = true;
-    for (u32 m = 0; m < len; m++) {
-        for (u32 i = 0; i < all[m]->index_count; i++) {
-            IndexInfo const* info = &all[m]->index[i];
-            if ((info->key->flags & TYF_STRING) || !ty_specific_index_applies(me, info, index)) continue;
-            if (!found) found = info;
-            ty_buf_push(&values, info->value);
-            readonly &= info->readonly;
-        }
+    for (u32 i = 0; i < count; i++) {
+        IndexInfo const* info = &infos[i];
+        if ((info->key->flags & TYF_STRING) || !ty_specific_index_applies(me, info, index)) continue;
+        if (!found) found = info;
+        ty_buf_push(&values, info->value);
+        readonly &= info->readonly;
     }
-    // (Infos of one key type from several members of an intersection keep that key)
-    bool one_key = true;
-    for (u32 m = 0; found && m < len; m++) {
-        for (u32 i = 0; i < all[m]->index_count; i++) {
-            IndexInfo const* info = &all[m]->index[i];
-            if (!(info->key->flags & TYF_STRING) && info->key != found->key && ty_specific_index_applies(me, info, index)) one_key = false;
-        }
-    }
-    if (found) found = combined_index_info(me, found, &values, readonly, one_key);
-    if (!found) {
-        u32 key_flags = ty_key_flags(index);
-        if (key_flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) {
-            readonly = true;
-            for (u32 m = 0; m < len; m++) {
-                for (u32 i = 0; i < all[m]->index_count; i++) {
-                    IndexInfo const* info = &all[m]->index[i];
-                    if (!(info->key->flags & TYF_STRING)) continue;
-                    if (!found) found = info;
-                    ty_buf_push(&values, info->value);
-                    readonly &= info->readonly;
-                }
-            }
-            if (found) found = combined_index_info(me, found, &values, readonly, true);
-        }
+    if (values.len > 1) {
+        IndexInfo* combined = arena_new(&my arena, IndexInfo);
+        *combined = *found;
+        combined->key = ty_intrinsic(me, TY_UNKNOWN_);
+        combined->value = ty_intersection(me, values.data, values.len, nullptr, (TyList){0});
+        combined->readonly = readonly;
+        found = combined;
     }
     ty_buf_drop(&values);
-    if (all != stack) free(all);
-    return found;
+    if (found) return found;
+    u32 key_flags = ty_key_flags(index);
+    bool stringish_or_numeric = (key_flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
+    for (u32 i = 0; i < count; i++) {
+        IndexInfo const* info = &infos[i];
+        if ((info->key->flags & TYF_STRING) && stringish_or_numeric) return info;
+    }
+    return nullptr;
+}
+
+IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index) {
+    if (object->kind == TY_INTERSECTION) {
+        // The members' index infos, those with the same key type as one whose value is the intersection of theirs and
+        // readonly if all are (tsc's resolveIntersectionTypeMembers/appendIndexInfo)
+        IndexInfo* merged = nullptr;
+        u32 count = 0, cap = 0;
+        Members const* single_members = nullptr; // While only one member has index infos, its list is the list
+        u32 members_with_infos = 0;
+        for (u32 i = 0; i < object->composite.types.len; i++) {
+            Ty const* member = ty_apparent_type(me, object->composite.types.data[i]);
+            if (!(member->flags & TYF_OBJECT) && member->kind != TY_INTERSECTION) continue;
+            Members const* members = ty_members(me, member);
+            if (!members->index_count) continue;
+            if (members_with_infos++ == 0) {
+                single_members = members;
+                continue;
+            }
+            if (members_with_infos == 2) {
+                cap = single_members->index_count + members->index_count;
+                merged = arena_alloc(&my arena, sizeof(IndexInfo) * cap);
+                for (u32 j = 0; j < single_members->index_count; j++) merged[count++] = single_members->index[j];
+            }
+            for (u32 j = 0; j < members->index_count; j++) {
+                IndexInfo const* info = &members->index[j];
+                IndexInfo* existing = nullptr;
+                for (u32 k = 0; k < count && !existing; k++) {
+                    if (merged[k].key == info->key) existing = &merged[k];
+                }
+                if (existing) {
+                    Ty const* both[2] = { existing->value, info->value };
+                    existing->value = ty_intersection(me, both, 2, nullptr, (TyList){0});
+                    existing->readonly &= info->readonly;
+                    existing->components = nullptr;
+                    existing->component_count = 0;
+                    continue;
+                }
+                if (count == cap) {
+                    IndexInfo* grown = arena_alloc(&my arena, sizeof(IndexInfo) * cap * 2);
+                    memcpy(grown, merged, sizeof(IndexInfo) * count);
+                    merged = grown;
+                    cap *= 2;
+                }
+                merged[count++] = *info;
+            }
+        }
+        if (!members_with_infos) return nullptr;
+        if (members_with_infos == 1) return find_applicable_index_info(me, single_members->index, single_members->index_count, index);
+        return find_applicable_index_info(me, merged, count, index);
+    }
+    Members const* members = ty_members(me, object);
+    return find_applicable_index_info(me, members->index, members->index_count, index);
 }
 
 static Ty const* access_index_infos(Checker* me, Ty const* object, Ty const* index) {

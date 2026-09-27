@@ -1423,10 +1423,14 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 ) {
                     continue;
                 }
-                // (tsc's getTemplateTypeFromMappedType adds undefined for `?`, which properties strip or add
-                // themselves, but index signatures keep)
                 Ty const* value = ty_instantiate(me, ty_mapped_template(me, mapped), mapper);
-                if (mapped->optional > 0) value = ty_optional_param_type(me, value);
+                // `?` makes the index signature's values possibly undefined, even with exactOptionalPropertyTypes
+                // (tsc's getTemplateTypeFromMappedType adds optionality to the template: its missing type prints and
+                // relates as undefined in an index signature)
+                if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
+                    Ty const* parts[2] = { value, ty_intrinsic(me, TY_UNDEFINED) };
+                    value = ty_union(me, parts, 2, nullptr, (TyList){0});
+                }
                 IndexInfo* existing = nullptr;
                 for (u32 k = 0; k < builder.index_count; k++) {
                     if (builder.index[k].key == prop_name) existing = &builder.index[k];
