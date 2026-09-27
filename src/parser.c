@@ -8160,7 +8160,10 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             statement.span = span_make(p.shared->source, p.pos, p.pos + 1);
             vec_statement_push(ret, statement);
             p.pos++;
-        } else if (jsdoc_drop_enum(&p), parse_statement(&p, toplevel, &statement)) {
+        } else if (
+            list_is_element(&p, ctx, tok_peek(&p)) &&
+            (jsdoc_drop_enum(&p), parse_statement(&p, toplevel, &statement))
+        ) {
             vec_statement_push(ret, statement);
             if (p.shared->jsdoc_enum) {
                 vec_statement_push(ret, *p.shared->jsdoc_enum);
