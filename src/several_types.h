@@ -53,6 +53,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 // tsc's getTypeFromClassOrInterfaceReference arity check of a reference to `symbol` with arg_count type arguments
 // (TS2314/TS2707, TS2315 for a type that isn't generic). Whether it reported
+bool several_types_arity_fits(struct Symbol const* symbol, u32 arg_count, struct SourceFile const* source);
 bool several_types_check_arity(struct Symbol const* symbol, u32 arg_count, Span span, ErrorCtx* errs);
 // The reference as written: from its first name to its closing `>` (just the name of a keyword or `import()`)
 Span identifier_type_span(IdentifierType const* me);

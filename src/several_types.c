@@ -322,22 +322,29 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
     }
 }
 
+// Whether a reference to symbol with arg_count type arguments has the right number of them (in source)
+bool several_types_arity_fits(Symbol const* symbol, u32 arg_count, SourceFile const* source) {
+    bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
+    u32 min = 0;
+    Generic const* params = generic_kind ? declared_type_params(symbol, &min) : nullptr;
+    if (!params) return !arg_count || !(symbol->flags & SYMBOL_TYPE);
+    u32 count = (u32)vec_generic_item_size(&params->items);
+    // In JavaScript without noImplicitAny any number of type arguments goes (tsc's isJsImplicitAny: the missing ones
+    // are any)
+    bool js_implicit_any = source && source->is_js && !compiler_options()->no_implicit_any;
+    return (arg_count >= min && arg_count <= count) || js_implicit_any;
+}
+
 bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, ErrorCtx* errs) {
+    if (several_types_arity_fits(symbol, arg_count, span.source)) return false;
     bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
     u32 min = 0;
     Generic const* params = generic_kind ? declared_type_params(symbol, &min) : nullptr;
     if (!params) {
-        if (arg_count && (symbol->flags & SYMBOL_TYPE)) {
-            error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
-            return true;
-        }
-        return false;
+        error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
+        return true;
     }
     u32 count = (u32)vec_generic_item_size(&params->items);
-    // In JavaScript without noImplicitAny any number of type arguments goes (tsc's isJsImplicitAny: the missing ones
-    // are any)
-    bool js_implicit_any = span.source && span.source->is_js && !compiler_options()->no_implicit_any;
-    if ((arg_count >= min && arg_count <= count) || js_implicit_any) return false;
     cstr name = cstr_from_sv(symbol->name);
     if (!(symbol->flags & SYMBOL_TYPE_ALIAS)) {
         // (tsc's typeToString of the generic type: its parameters)

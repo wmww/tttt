@@ -462,6 +462,13 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     }
 
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_intrinsic(me, TY_ERROR); // TS2526: no `this` type in statics
+    // Too many or too few type arguments (TS2314, TS2315, TS2707) make errorType outside JavaScript (tsc's
+    // getTypeFromClassOrInterfaceReference, getTypeFromTypeAliasReference)
+    if (!identifier->keyword && span_valid(identifier->name) && identifier->target && identifier->name.source && !identifier->name.source->is_js &&
+        !several_types_arity_fits(identifier->target, (u32)vec_spanned_type_size(&identifier->generic_params), identifier->name.source)
+    ) {
+        return ty_intrinsic(me, TY_ERROR);
+    }
 
     Ty const* declared = ty_declared_type_of(me, decl);
     if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {

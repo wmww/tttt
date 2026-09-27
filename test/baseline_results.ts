@@ -1273,7 +1273,7 @@ const baselines = {
     'arrayLiteralAndArrayConstructorEquivalence1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayLiteralComments': {
         errors: true,
@@ -1308,7 +1308,7 @@ const baselines = {
     'arrayReferenceWithoutTypeArgs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arraySigChecking': {
         errors: true,
@@ -10908,7 +10908,7 @@ const baselines = {
     'emptyGenericParamList': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyIndexer': {
         errors: true,
@@ -13493,7 +13493,7 @@ const baselines = {
     'externalModuleExportingGenericClass': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'externalModuleImmutableBindings': {
         errors: true,
@@ -14673,7 +14673,7 @@ const baselines = {
     'genericArrayAssignmentCompatErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericArrayExtenstions': {
         errors: false,
@@ -14693,7 +14693,7 @@ const baselines = {
     'genericArrayWithoutTypeAnnotation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericAssignmentCompatOfFunctionSignatures1': {
         errors: true,
@@ -14862,8 +14862,8 @@ const baselines = {
     },
     'genericCloduleInModule2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'genericCloneReturnTypes': {
         errors: true,
@@ -15058,7 +15058,7 @@ const baselines = {
     'genericGetter2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericGetter3': {
         errors: true,
@@ -15133,7 +15133,7 @@ const baselines = {
     'genericInterfacesWithoutTypeArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericIsNeverEmptyObject': {
         errors: true,
@@ -15142,8 +15142,8 @@ const baselines = {
     },
     'genericLambaArgWithoutTypeArguments': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'genericMappedTypeAsClause': {
         errors: false,
@@ -15241,8 +15241,8 @@ const baselines = {
         types: true,
     },
     'genericRecursiveImplicitConstructorErrors3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'genericReduce': {
@@ -15263,7 +15263,7 @@ const baselines = {
     'genericReturnTypeFromGetter1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericReversingTypeParameters': {
         errors: true,
@@ -15373,7 +15373,7 @@ const baselines = {
     'genericTypeReferencesRequireTypeArgs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericTypeUsedWithoutTypeArguments1': {
         errors: true,
@@ -15458,7 +15458,7 @@ const baselines = {
     'generics1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generics1NoError': {
         errors: true,
@@ -15468,7 +15468,7 @@ const baselines = {
     'generics2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generics2NoError': {
         errors: true,
@@ -15513,7 +15513,7 @@ const baselines = {
     'genericsWithoutTypeParameters1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'getAccessorWithImpliedReturnTypeAndFunctionClassMerge': {
         errors: true,
@@ -21338,12 +21338,12 @@ const baselines = {
     'missingTypeArguments1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'missingTypeArguments2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'missingTypeArguments3': {
         errors: true,
@@ -21523,7 +21523,7 @@ const baselines = {
     'moduleAndInterfaceSharingName2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleAndInterfaceSharingName3': {
         errors: true,
@@ -27758,7 +27758,7 @@ const baselines = {
     'returnTypeTypeArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'returnValueInSetter': {
         errors: false,
@@ -65248,7 +65248,7 @@ const baselines = {
     'nonGenericTypeReferenceWithTypeArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectSpread': {
         errors: true,
