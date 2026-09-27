@@ -601,6 +601,9 @@ typedef struct TyReportLine {
     bool replaces_head;
     // The whole diagnostic goes to `span`, while this line stays where it is in the chain (an excess JSX attribute)
     bool relocates;
+    // While relating: a step down (tsc's reportIncompatibleError) that becomes a line once the path through the
+    // consecutive ones is known, eg "The types of 'a.b' are incompatible between these types."
+    bool incompatible;
 } TyReportLine;
 static inline void ty_report_line_drop(TyReportLine* me) { cstr_drop(&my message); }
 static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message = cstr_clone(me.message); return me; }

@@ -63,6 +63,12 @@ typedef struct RelationState {
     u32 depth;
     unsigned expanding; // 1: source is deeply nested, 2: target is
     bool overflow;
+    // The relation whose "not assignable" line the last incompatible step stood in for (tsc's lastSkippedInfo)
+    Ty const* skipped_source;
+    Ty const* skipped_target;
+    // The top-level relation's line is the error's head, which nothing stands in for (tsc's headMessage)
+    bool at_top;
+    Checker* checker;
     struct RelationState* outer;
 } RelationState;
 
@@ -385,7 +391,10 @@ static bool is_structured(Ty const* ty) {
 
 // Reporting
 
+static void flush_incompatible(RelationState* st);
+
 static void report_line(RelationState* st, unsigned ts_code, cstr message) {
+    flush_incompatible(st);
     // `boolean` is a union, whose member `false` reads as 'boolean' again once widened for display
     TyReportLine const* last = nullptr;
     for (isize_t i = vec_ty_report_line_size(&st->lines); i > 0 && !last; i--) {
@@ -399,6 +408,7 @@ static void report_line(RelationState* st, unsigned ts_code, cstr message) {
 }
 
 static void report_line_at(RelationState* st, unsigned ts_code, cstr message, Span span) {
+    flush_incompatible(st);
     vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message, .span = span });
 }
 
@@ -466,12 +476,125 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     cstr_drop(&target_str);
 }
 
-static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+// tsc's reportIncompatibleError: `message` is what the step says on its own (for a signature's return types, always
+// in the words of the ones with parameters)
+static void report_incompatible(RelationState* st, unsigned ts_code, cstr message) {
+    st->override_next_head++;
+    st->skipped_source = st->skipped_target = nullptr;
+    vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message, .incompatible = true });
+}
+
+static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target);
+
+static bool is_identifier_text(csview text) {
+    if (!text.size) return false;
+    for (isize i = 0; i < text.size; i++) {
+        unsigned char c = (unsigned char)text.buf[i];
+        bool letter = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '$' || c >= 0x80;
+        if (!letter && !(i && c >= '0' && c <= '9')) return false;
+    }
+    return true;
+}
+
+// tsc's reportIncompatibleStack: the pending incompatible steps (the innermost first) become one line naming the path
+// through them, eg "The types of 'a.b' are incompatible between these types.", unless there's only one
+static void flush_incompatible(RelationState* st) {
+    isize_t count = 0;
+    for (isize_t i = vec_ty_report_line_size(&st->lines); i > 0 && vec_ty_report_line_at(&st->lines, i - 1)->incompatible; i--) {
+        count++;
+    }
+    if (!count) return;
+    Ty const* skipped_source = st->skipped_source;
+    Ty const* skipped_target = st->skipped_target;
+    st->skipped_source = st->skipped_target = nullptr;
+    if (count == 1) {
+        TyReportLine only = vec_ty_report_line_pull(&st->lines);
+        only.incompatible = false;
+        // A signature's return types alone say nothing (elidedInCompatabilityPyramid)
+        if (only.ts_code >= 2202 && only.ts_code <= 2205) {
+            cstr_drop(&only.message);
+        } else {
+            vec_ty_report_line_push(&st->lines, only);
+        }
+    } else {
+        cstr path = cstr_null;
+        VecTyReportLine secondary = {0};
+        // Off the end, the outermost first: the path is built from left to right
+        for (isize_t i = 0; i < count; i++) {
+            TyReportLine step = vec_ty_report_line_pull(&st->lines);
+            step.incompatible = false;
+            if (step.ts_code == 2326) {
+                // "Types of property 'NAME' are incompatible."
+                csview message = cstr_sv(&step.message);
+                csview name = csview_slice(message, 19, message.size - 19);
+                if (cstr_starts_with(&path, "new ")) {
+                    cstr wrapped = cstr_d("(", path, ")");
+                    cstr_take(&path, wrapped);
+                }
+                if (!cstr_size(&path)) {
+                    cstr_append_sv(&path, name);
+                } else if (is_identifier_text(name)) {
+                    cstr_append(&path, ".");
+                    cstr_append_sv(&path, name);
+                } else if (name.size && name.buf[0] == '[' && name.buf[name.size - 1] == ']') {
+                    cstr_append_sv(&path, name);
+                } else {
+                    cstr_append(&path, "[");
+                    cstr_append_sv(&path, name);
+                    cstr_append(&path, "]");
+                }
+                cstr_drop(&step.message);
+            } else if (step.ts_code >= 2202 && step.ts_code <= 2205 && cstr_size(&path)) {
+                bool construct = step.ts_code == 2203 || step.ts_code == 2205;
+                char const* params = step.ts_code >= 2204 ? "" : "...";
+                cstr called = cstr_d(construct ? "new " : "", path, "(", params, ")");
+                cstr_take(&path, called);
+                cstr_drop(&step.message);
+            } else {
+                // (a signature's return types at the start of the path, said like those with parameters: see
+                // report_incompatible(); positions in tuples)
+                if (step.ts_code == 2204 || step.ts_code == 2205) step.ts_code -= 2;
+                vec_ty_report_line_insert_n(&secondary, 0, &step, 1);
+            }
+        }
+        if (cstr_size(&path)) {
+            bool returned = cstr_ends_with(&path, ")");
+            vec_ty_report_line_push(&st->lines, (TyReportLine){
+                .ts_code = returned ? 2201 : 2200,
+                .message = returned ? cstr_d("The types returned by '", path, "' are incompatible between these types.") :
+                    cstr_d("The types of '", path, "' are incompatible between these types."),
+            });
+        } else if (vec_ty_report_line_size(&secondary)) {
+            // (the innermost says what the line below it says already)
+            vec_ty_report_line_erase_n(&secondary, 0, 1);
+        }
+        for (isize_t i = 0; i < vec_ty_report_line_size(&secondary); i++) {
+            vec_ty_report_line_push(&st->lines, *vec_ty_report_line_at(&secondary, i));
+        }
+        secondary.size = 0; // (moved)
+        vec_ty_report_line_drop(&secondary);
+        cstr_drop(&path);
+    }
+    if (skipped_source) report_relation_error_now(st->checker, st, skipped_source, skipped_target);
+}
+
+static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top) {
     if (st->override_next_head) {
         st->override_next_head--;
-        report_missing_constraint(me, st, source, target);
-        return;
+        // (the head stays when what stood in for it is an incompatible step, tsc's headMessage)
+        bool pending = vec_ty_report_line_size(&st->lines) && vec_ty_report_line_back(&st->lines)->incompatible;
+        if (!top || !pending) {
+            report_missing_constraint(me, st, source, target);
+            st->skipped_source = source;
+            st->skipped_target = target;
+            return;
+        }
     }
+    report_relation_error_now(me, st, source, target);
+}
+
+static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+    flush_incompatible(st);
     bool widen = report_widens(me, target);
     Ty const* generalized = widen ? ty_base_type_of_literal(me, source) : source;
     cstr source_str, target_str;
@@ -812,8 +935,11 @@ static u32 min_argument_count(Checker* me, Signature const* sig) {
     return min;
 }
 
+// `return_code`: what failing return types say (tsc's incompatibleErrorReporter), 0 for nothing: 2202-2205, see
+// report_incompatible()
 static Ternary compare_signatures(
-    Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report
+    Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report,
+    unsigned return_code
 ) {
     signature_resolve(me, source);
     signature_resolve(me, target);
@@ -865,7 +991,7 @@ static Ternary compare_signatures(
             ty_undefined_or_null_facts(me, source_type) == ty_undefined_or_null_facts(me, target_type)
         ) {
             related = compare_signatures(me, st, target_callback, source_callback,
-                strict ? CALLBACK_STRICT : CALLBACK_BIVARIANT, report);
+                strict ? CALLBACK_STRICT : CALLBACK_BIVARIANT, report, return_code);
         } else {
             if (!callback && !strict) related = is_related_to(me, st, source_type, target_type, false);
             if (!related) related = is_related_to(me, st, target_type, source_type, report);
@@ -937,7 +1063,21 @@ static Ternary compare_signatures(
         related = is_related_to(me, st, target_return, source_return, false);
     }
     if (!related) related = is_related_to(me, st, source_return, target_return, report);
+    if (!related && report && return_code) {
+        cstr source_str = display_for_report(me, source_return, false);
+        cstr target_str = display_for_report(me, target_return, false);
+        bool construct = return_code == 2203 || return_code == 2205;
+        report_incompatible(st, return_code, cstr_d(construct ? "Construct" : "Call", " signature return types '", source_str,
+            "' and '", target_str, "' are incompatible."));
+        c_drop(cstr, &source_str, &target_str);
+    }
     return result & related;
+}
+
+// The return_code of compare_signatures() for signatures_related()
+static unsigned signature_return_code(Signature const* source, Signature const* target, bool construct) {
+    bool no_params = !source->param_count && !target->param_count;
+    return construct ? (no_params ? 2205 : 2203) : (no_params ? 2204 : 2202);
 }
 
 // tsc's getErasedSignature: every type parameter is any
@@ -1024,7 +1164,8 @@ static Ternary signatures_related(
         // Pairwise, with type parameters erased: they are the same ones
         for (u32 i = 0; i < target_count; i++) {
             Ternary related = compare_signatures(
-                me, st, erased_signature(me, source_sigs[i]), erased_signature(me, target_sigs[i]), CALLBACK_NONE, report
+                me, st, erased_signature(me, source_sigs[i]), erased_signature(me, target_sigs[i]), CALLBACK_NONE, report,
+                signature_return_code(source_sigs[i], target_sigs[i], construct)
             );
             if (!related) return TERNARY_FALSE;
             result &= related;
@@ -1034,7 +1175,8 @@ static Ternary signatures_related(
         bool erase = st->relation == TY_RELATION_COMPARABLE;
         result = compare_signatures(
             me, st, erase ? erased_signature(me, source_sigs[0]) : source_sigs[0],
-            erase ? erased_signature(me, target_sigs[0]) : target_sigs[0], CALLBACK_NONE, report
+            erase ? erased_signature(me, target_sigs[0]) : target_sigs[0], CALLBACK_NONE, report,
+            signature_return_code(source_sigs[0], target_sigs[0], construct)
         );
     } else {
         // Every target signature needs a source signature, type parameters erased. Only the first failure explains
@@ -1044,7 +1186,8 @@ static Ternary signatures_related(
             bool elaborate = report;
             Ternary related = TERNARY_FALSE;
             for (u32 j = 0; j < source_count && !related; j++) {
-                related = compare_signatures(me, st, erased_signature(me, source_sigs[j]), target_sig, CALLBACK_NONE, elaborate);
+                related = compare_signatures(me, st, erased_signature(me, source_sigs[j]), target_sig, CALLBACK_NONE, elaborate,
+                    signature_return_code(source_sigs[j], target_sigs[i], construct));
                 elaborate = false;
             }
             if (related) {
@@ -1274,7 +1417,7 @@ static Ternary props_related(
         if (!related) {
             if (report) {
                 cstr name = ty_prop_name_cstr(me, target_prop->name);
-                report_line(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
+                report_incompatible(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
                 cstr_drop(&name);
             }
             return TERNARY_FALSE;
@@ -1477,10 +1620,10 @@ static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, 
         if (!related) {
             if (report && (target_arity > 1 || source_arity > 1)) {
                 if (target_variable && i >= target_start && from_end >= target_end && target_start != source_arity - target_end - 1) {
-                    report_line(st, 2627, cstr_d("Type at positions ", target_start, " through ", source_arity - target_end - 1,
+                    report_incompatible(st, 2627, cstr_d("Type at positions ", target_start, " through ", source_arity - target_end - 1,
                         " in source is not compatible with type at position ", target_index, " in target."));
                 } else {
-                    report_line(st, 2626, cstr_d("Type at position ", i, " in source is not compatible with type at position ", target_index, " in target."));
+                    report_incompatible(st, 2626, cstr_d("Type at position ", i, " in source is not compatible with type at position ", target_index, " in target."));
                 }
             }
             return TERNARY_FALSE;
@@ -2736,7 +2879,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             Ternary related = is_related_to(me, st, source_type, target_type, report);
             if (!related && report) {
                 cstr prop_name = ty_prop_name_cstr(me, name);
-                report_line(st, 2326, cstr_d("Types of property '", prop_name, "' are incompatible."));
+                report_incompatible(st, 2326, cstr_d("Types of property '", prop_name, "' are incompatible."));
                 cstr_drop(&prop_name);
             }
             result &= related;
@@ -3700,7 +3843,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
             if (!is_related_to(me, st, prop_type(me, prop), expected, report)) {
                 if (report) {
                     cstr name = ty_prop_name_cstr(me, prop->name);
-                    report_line(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
+                    report_incompatible(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
                     cstr_drop(&name);
                 }
                 return true;
@@ -3771,6 +3914,8 @@ Ty const* ty_strip_nullable_target(Checker* me, Ty const* source, Ty const* targ
 }
 
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    bool top = st->at_top;
+    st->at_top = false;
     // Relations (and their caches) only see regular literals (tsc's getNormalizedType)
     source = ty_regular(me, source);
     target = ty_regular(me, target);
@@ -3812,7 +3957,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     if (ty_is_fresh_object(source) && !st->intersection_target && is_structured(target) &&
         has_excess_properties(me, st, source, target, report)
     ) {
-        if (report) report_relation_error(me, st, source, report_target);
+        if (report) report_relation_error(me, st, source, report_target, top);
         return TERNARY_FALSE;
     }
     Ternary result = TERNARY_FALSE;
@@ -3831,7 +3976,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     }
     // (tsc's reportErrorResults: JSX attributes against `IntrinsicAttributes & P` get no head, unlike an excess
     // property above)
-    if (!result && report && !ty_jsx_skips_head(me, source, target)) report_relation_error(me, st, source, report_target);
+    if (!result && report && !ty_jsx_skips_head(me, source, target)) report_relation_error(me, st, source, report_target, top);
     return result;
 }
 
@@ -3856,6 +4001,9 @@ static bool check_related(
     st->expanding = 0;
     st->overflow = false;
     st->head_reported = false;
+    st->skipped_source = st->skipped_target = nullptr;
+    st->at_top = true;
+    st->checker = me;
     st->outer = my relating;
     if (source == target) return true;
     if (relation != TY_RELATION_IDENTITY && !st->reporting && is_simple_related(me, st, source, target)) return true;
@@ -3875,6 +4023,7 @@ static bool check_related(
         result = TERNARY_FALSE;
     }
     if (report_into && !result) {
+        flush_incompatible(st);
         // Collected innermost first; related information goes last, in the order it was associated
         for (isize_t i = vec_ty_report_line_size(&st->lines); i > 0; i--) {
             TyReportLine* line = vec_ty_report_line_at_mut(&st->lines, i - 1);

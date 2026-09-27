@@ -418,13 +418,15 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         csview tag_key, tag_value;
         if (parse_tag(i, &tag_key, &tag_value)) {
             if (tag_equals(tag_key, "filename")) {
-                // (what precedes the first `@filename` is a file of its own only if there is something in it)
-                if (cstr_size(&source_contents) || seen_filename) {
+                // (what precedes the first `@filename` is dropped: tsc's harness only allows comments there)
+                if (seen_filename) {
                     try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
                         cstr_drop(&unparsed_contents);
                     }
-                    source_contents = cstr_null;
+                } else {
+                    cstr_drop(&source_contents);
                 }
+                source_contents = cstr_null;
                 seen_filename = true;
                 current_filename = tag_value;
                 my current_unit = current_filename;
