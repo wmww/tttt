@@ -125,6 +125,17 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
         out_symbol_name(me, d, symbol_members(symbol), meaning);
         return;
     }
+    // (without a place to be named from, as the module: messages say `typeof import("m")`)
+    if (!d.enclosing && symbol && !symbol->is_module && symbol_members(symbol)->is_module && symbol_members(symbol)->module &&
+        symbol_members(symbol)->module->file
+    ) {
+        cstr module_name = module_name_for_error(symbol_members(symbol), nullptr, false);
+        out_lit(d, "import(");
+        out(d, cstr_sv(&module_name));
+        out_lit(d, ")");
+        cstr_drop(&module_name);
+        return;
+    }
     if (symbol && !symbol->is_module && span_valid(symbol->name_span)) {
         out_symbol_name(me, d, symbol, meaning);
     } else {

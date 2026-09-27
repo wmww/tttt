@@ -376,7 +376,7 @@ const baselines = {
         types: true,
     },
     'aliasAssignments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -516,7 +516,7 @@ const baselines = {
         types: false,
     },
     'allowSyntheticDefaultImports10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13496,7 +13496,7 @@ const baselines = {
         types: false,
     },
     'externalModuleImmutableBindings': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13516,7 +13516,7 @@ const baselines = {
         types: true,
     },
     'externalModuleRefernceResolutionOrderInImportDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16066,7 +16066,7 @@ const baselines = {
         types: true,
     },
     'importAsBaseClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31706,7 +31706,7 @@ const baselines = {
         types: true,
     },
     'typeofAmbientExternalModules': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31721,7 +31721,7 @@ const baselines = {
         types: true,
     },
     'typeofExternalModules': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38676,7 +38676,7 @@ const baselines = {
         types: true,
     },
     'importCallExpressionCheckReturntype1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -49111,7 +49111,7 @@ const baselines = {
         types: false,
     },
     'importTsBeforeDTs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49796,7 +49796,7 @@ const baselines = {
         types: false,
     },
     'namespaceImportTypeQuery4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49901,7 +49901,7 @@ const baselines = {
         types: true,
     },
     'typesOnlyExternalModuleStillHasInstance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
