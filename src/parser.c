@@ -5750,7 +5750,10 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     if (precedence == binary_op_get_precedence(BINARY_OP_EQUAL) &&
         left_and_ret->outer_span.sv.size == left_and_ret->inner_span.sv.size &&
         ((left_and_ret->tag == EXPR_UNARY_OP && left_and_ret->unary_op->op != UNARY_OP_RIGHT_BANG) ||
-            left_and_ret->tag == EXPR_BINARY_OP || left_and_ret->tag == EXPR_AS_TYPE)) {
+            left_and_ret->tag == EXPR_BINARY_OP ||
+            // (A JSDoc `/** @type {T} */ (x)` is tsc's ParenthesizedExpression: its type comes before the expression)
+            (left_and_ret->tag == EXPR_AS_TYPE &&
+                span_start_ptr(left_and_ret->as_type->keyword_span) > span_start_ptr(left_and_ret->outer_span)))) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
