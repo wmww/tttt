@@ -484,7 +484,7 @@ static void report_incompatible(RelationState* st, unsigned ts_code, cstr messag
     vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message, .incompatible = true });
 }
 
-static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target);
+static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top);
 
 static bool is_identifier_text(csview text) {
     if (!text.size) return false;
@@ -575,7 +575,7 @@ static void flush_incompatible(RelationState* st) {
         vec_ty_report_line_drop(&secondary);
         cstr_drop(&path);
     }
-    if (skipped_source) report_relation_error_now(st->checker, st, skipped_source, skipped_target);
+    if (skipped_source) report_relation_error_now(st->checker, st, skipped_source, skipped_target, false);
 }
 
 // tsc's reportErrorResults
@@ -607,10 +607,11 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
             return;
         }
     }
-    report_relation_error_now(me, st, source, target);
+    report_relation_error_now(me, st, source, target, top);
 }
 
-static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
+// `top`: the error's head, which callers replace with their own words (tsc's headMessage)
+static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top) {
     flush_incompatible(st);
     bool widen = report_widens(me, target);
     Ty const* generalized = widen ? ty_base_type_of_literal(me, source) : source;
@@ -640,6 +641,9 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
     }
     if (st->relation == TY_RELATION_COMPARABLE) {
         report_line(st, 2678, cstr_d("Type '", source_str, "' is not comparable to type '", target_str, "'."));
+    } else if (!top && cstr_eq(&source_str, &target_str)) {
+        report_line(st, 2719, cstr_d("Type '", source_str, "' is not assignable to type '", target_str,
+            "'. Two different types with this name exist, but they are unrelated."));
     } else {
         report_line(st, 2322, cstr_d("Type '", source_str, "' is not assignable to type '", target_str, "'."));
     }

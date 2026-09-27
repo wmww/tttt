@@ -66301,7 +66301,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithGenericCallSignaturesWithOptionalParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66416,7 +66416,7 @@ const baselines = {
         types: true,
     },
     'callSignatureAssignabilityInInheritance6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66446,7 +66446,7 @@ const baselines = {
         types: true,
     },
     'constructSignatureAssignabilityInInheritance6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66831,7 +66831,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithConstructSignatures6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66846,12 +66846,12 @@ const baselines = {
         types: true,
     },
     'subtypingWithGenericCallSignaturesWithOptionalParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'subtypingWithGenericConstructSignaturesWithOptionalParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
