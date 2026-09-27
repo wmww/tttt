@@ -1133,11 +1133,21 @@ void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool expor
     bool alias = expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword;
     u32 includes = alias ? SYMBOL_ALIAS : SYMBOL_BLOCK_SCOPED_VARIABLE;
     bool merged;
-    // (With its `;`, which tsc's ExportAssignment has: the parser's statement spans end before it)
-    char const* end = span_end_ptr(statement);
-    char const* file_end = statement.source ? cstr_str(&statement.source->contents) + cstr_size(&statement.source->contents) : end;
-    while (end < file_end && (*end == ' ' || *end == '\t')) end++;
-    if (end < file_end && *end == ';') statement.sv.size = end + 1 - statement.sv.buf;
+    statement = span_with_semicolon(statement); // (tsc's ExportAssignment has it)
+    // tsc's checkExportAssignment: `export =` can't be emitted as an ES module. A declaration file is only an ES module
+    // when its format says so, an implementation file whenever it isn't CommonJS
+    ModuleKind module_kind = compiler_options()->module;
+    // (A JSON module's `export =` is only ours, tsc has no node for it)
+    if (export_equals && my file && !my file->is_json && module_kind >= MODULE_KIND_ES2015 &&
+        module_kind != MODULE_KIND_PRESERVE
+    ) {
+        ModuleKind implied = source_file_implied_format_for_emit(my file);
+        if (my ambient ? implied == MODULE_KIND_ESNEXT : implied != MODULE_KIND_COMMONJS) {
+            error_ctx_grammar_error_d(my errs, statement, 1203,
+                "Export assignment cannot be used when targeting ECMAScript modules. Consider using 'export default' or "
+                "another module format instead.");
+        }
+    }
     Span name = alias ? expr->outer_span : statement;
     Symbol* symbol = declare_symbol(
         me, my container->exports, export_name, name, includes, SYMBOL_ANY_MEANING | SYMBOL_ALIAS, !export_equals, &merged

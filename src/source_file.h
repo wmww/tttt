@@ -132,6 +132,9 @@ SourceFile source_file_make(cstr canonical_path, cstr contents);
 // The module format the file is emitted in (tsc's getEmitModuleFormatOfFile): with node16/nodenext its implied format,
 // else a .cts/.mts extension or an explicit package.json `type` decide, else the `module` option
 ModuleKind source_file_emit_module_kind(SourceFile const* me);
+// tsc's getImpliedNodeFormatForEmit: MODULE_KIND_COMMONJS, MODULE_KIND_ESNEXT or MODULE_KIND_NONE (undefined: the module
+// option decides)
+ModuleKind source_file_implied_format_for_emit(SourceFile const* me);
 void source_file_drop(SourceFile* me);
 // Takes path
 ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span);

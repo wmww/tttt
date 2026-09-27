@@ -53,6 +53,9 @@ unsigned span_col_index(Span me);
 const char* span_line_start(Span me);
 const char* span_line_end(Span me);
 Span span_between(Span a, Span b);
+// A statement's span with the `;` that follows it on the same line, if any (the parser's statement spans end before it,
+// tsc's nodes include it)
+Span span_with_semicolon(Span statement);
 int span_cmp(Span a, Span b);
 void cstr_append_span(cstr* target, Span me);
 

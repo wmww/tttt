@@ -134,6 +134,16 @@ static void port_statement_check_emit_helpers(PortStatement const* me, Span span
 
 void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs) {
     if (!ambient) port_statement_check_emit_helpers(me, span, errs);
+    // tsc's checkImportEqualsDeclaration: `import x = require()` can't be emitted as an ES module (by the module
+    // option, whatever the file's format)
+    ModuleKind module_kind = compiler_options()->module;
+    if (my is_import_require && !ambient && !my main.type_only &&
+        module_kind >= MODULE_KIND_ES2015 && module_kind <= MODULE_KIND_ESNEXT
+    ) {
+        error_ctx_grammar_error_d(errs, span_with_semicolon(span), 1202,
+            "Import assignment cannot be used when targeting ECMAScript modules. Consider using 'import * as ns from \"mod\"', "
+            "'import {a} from \"mod\"', 'import d from \"mod\"', or another module format instead.");
+    }
     // tsc's checkImportAttributes()
     ImportAttributes const* node = my attributes;
     if (!node) return;

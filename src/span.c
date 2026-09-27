@@ -43,6 +43,15 @@ const char* span_line_end(Span me) {
     }
 }
 
+Span span_with_semicolon(Span statement) {
+    if (!span_valid(statement) || !statement.source) return statement;
+    char const* end = span_end_ptr(statement);
+    char const* file_end = cstr_str(&statement.source->contents) + cstr_size(&statement.source->contents);
+    while (end < file_end && (*end == ' ' || *end == '\t')) end++;
+    if (end < file_end && *end == ';') statement.sv.size = end + 1 - statement.sv.buf;
+    return statement;
+}
+
 Span span_between(Span const a, Span const b) {
     if (!span_valid(a)) {
         return b;

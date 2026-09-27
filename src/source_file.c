@@ -3,9 +3,9 @@
 #include "string_helpers.h"
 #include "compiler_options.h"
 
-ModuleKind source_file_emit_module_kind(SourceFile const* me) {
+ModuleKind source_file_implied_format_for_emit(SourceFile const* me) {
     CompilerOptions const* o = compiler_options();
-    if (my is_json) return o->module; // (No implied format)
+    if (my is_json) return MODULE_KIND_NONE; // (No implied format)
     if (o->module >= MODULE_KIND_NODE16 && o->module <= MODULE_KIND_NODENEXT) {
         return my is_esm ? MODULE_KIND_ESNEXT : MODULE_KIND_COMMONJS;
     }
@@ -14,7 +14,12 @@ ModuleKind source_file_emit_module_kind(SourceFile const* me) {
     if (csview_ends_with(path, ".mts") || csview_ends_with(path, ".mjs")) return MODULE_KIND_ESNEXT;
     // (is_esm and package_has_type are only known with node16/nodenext resolution, where tsc looks at package.json)
     if (my package_has_type) return my is_esm ? MODULE_KIND_ESNEXT : MODULE_KIND_COMMONJS;
-    return o->module;
+    return MODULE_KIND_NONE;
+}
+
+ModuleKind source_file_emit_module_kind(SourceFile const* me) {
+    ModuleKind implied = source_file_implied_format_for_emit(me);
+    return implied != MODULE_KIND_NONE ? implied : compiler_options()->module;
 }
 
 SourceFile source_file_make(cstr canonical_path, cstr contents) {
