@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 29 stage 3
+Suite 8599 -> **8603 / 13540** (errors 10393, symbols 12043, types 10349), no lost components. Corpora: tsc 0,
+type-fest 46 -> **48** (misplaced TS2589s gone; array-slice/jsonify/writable-deep/int-range now visible, plan 19 R21),
+valibot 54, react 1. Callgrind on the tsc corpus 5.920 G -> **5.945 G** (+0.42%; +0.9% before `compute()` stopped
+computing its error span up front). valibot 0.84 s / 525 MB (544 before: the deferred-reference shortcut is gone).
+
 ## 2026-09-27, plan 29 stages 1+2
 Suite 8579 -> **8599 / 13540** (errors 10389, symbols 12043, types 10345), two components lost (stage 3's
 diagnostics). Corpora: tsc 0, type-fest 53 -> **46**, valibot 60 -> **54**, react 1. Callgrind on the tsc corpus

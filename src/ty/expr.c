@@ -2407,7 +2407,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx);
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     // tsc's checkExpression: the current node, and the instantiation limit is per expression, not per program
-    Span saved = ty_enter_node(me, expr_error_span(expr));
+    CurrentNode saved = ty_enter_expr(me, expr);
     Ty const* ret = compute_inner(me, expr, ctx);
     ty_leave_node(me, saved);
     return ret;

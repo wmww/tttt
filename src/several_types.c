@@ -373,7 +373,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
 
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     // tsc's checkSourceElement of a TypeReference: where its instantiation errors go
-    Span saved = ty_enter_node(current_checker, identifier_type_span(me));
+    CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(me));
     identifier_type_typecheck_inner(me, errs);
     ty_leave_node(current_checker, saved);
 }
@@ -422,7 +422,7 @@ void indexed_type_lookup_names(IndexedType* me, Scope* names, ErrorCtx* errs) {
 }
 
 void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs) {
-    Span saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
+    CurrentNode saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
     type_typecheck(&my interface, errs);
     type_typecheck(&my index, errs);
     ty_check_indexed_access_type(current_checker, ty_of_node(&my interface), ty_of_node(&my index), my index_span, my span, errs);

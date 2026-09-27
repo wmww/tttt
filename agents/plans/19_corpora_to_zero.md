@@ -334,10 +334,20 @@ Not re-entry and no limit (gdb): the nested `ConditionalPickDeep<{string: string
 `ConditionalKeys` drops, and `Inner["object"]` prints `Inner`. Probe `test/probes/plan29/cpd_steps.ts` (tsc itself is
 order-dependent there: `sub: any`).
 
-### R21. TS2589 from type-fest's `ArraySlice` (ts41, async-return-type, invariant-of: one each)
-`MAX_TAIL_COUNT` reached while resolving `ArraySlice` for some call; reported on the first check of the next file
-(plan 29 stage 3 moves the report to the real site). Suspect: tttt's tail count spans more than tsc's
-per-`getConditionalType` loop.
+### R21. TS2589 from type-fest's `ArraySlice` (fixed by plan 29 stage 3; what it uncovered)
+Reported at the real site since plan 29 stage 3 (15 in array-slice, 8 in string-slice, 1 in int-range). Cause:
+`[...BuildTuple<A>]['length']` resolved eagerly to `number` (no isGenericTupleType), so `Sum<1, 1>` was `number` and
+`ArraySliceByPositiveIndex` never ended; fixed, as was the tail count spanning non-tail instantiations. Left, now
+visible (they were behind the error type):
+- array-slice:24/25/34 (TS2322): `ArraySlice` of variable-length tuples (`[...string[], 1, 2]`) gives `string | 1 | 2`
+  where tsc has the right element.
+- int-range:17 (TS2589): `IntRange<0, 999>`.
+- jsonify:57 (TS2345, `test/probes/plan29/jsonvalue_missing_type.ts`): no exactOptionalPropertyTypes *missing* type;
+  the widened `{}` gets `a?: undefined` where tsc's getUndefinedProperty gives the missing type, which index
+  signatures ignore. Was hidden by JsonObject's index signature being the error type (lowered while in flight).
+- writable-deep:93/94 (`test/probes/plan29/writable_deep_tuples.ts`): `lower_tuple` keeps a rest element's written
+  array type, so `ReadonlyDeep<[string, ...number[]]>` is `readonly [string, ...readonly number[]]` and WritableDeep
+  of that `[string, ...unknown[]]`. Order-dependent (direct `WritableDeep<readonly [string, ...number[]]>` is right).
 
 ### Also seen
 - Suite: spurious TS7053 where tttt lacks the rule, not the check: index signatures keyed by tagged strings

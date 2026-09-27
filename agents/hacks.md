@@ -688,7 +688,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   or an alias its type names (`type B = X & { e: A }; type A = I | B`, the corpus' BindableStatic*Expression), so a
   property that is in flight or whose node reaches an alias in flight (through unresolved aliases,
   `ty_node_reaches_alias_in_flight`) isn't judged, and the answer isn't remembered. The intersection itself is
-  interned with that answer. The real fix is a lazy reduced view of intersections.
+  interned with that answer. Operands whose index signatures, mapped templates or unresolved deferred reference
+  arguments reach an alias in flight are skipped the same way (`members_judgeable`, plan 29 stage 3: each gave a
+  spurious TS2456). The real fix is a lazy reduced view of intersections.
 - `get_variances` / `get_alias_variances`: arrays, tuples and synthetic targets are hardcoded covariant (tsc does the
   same for arrays and tuples). `VARIANCE_UNRELIABLE` is set from a checker-wide flag whenever a deferred type or mapped
   type is compared while *any* variance is being measured (tsc: only when a marker is reached through it), and
@@ -703,8 +705,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   the source's `infer` type parameters from the target's extends type. Inference matches identical members with it
   (`is_identical` in infer.c, pointers first).
 - Relation cache keys are plain (source id, target id); tsc's key postfix for in-scope type parameters and
-  intersection state isn't there. `RelationState.overflow` (100 deep) reports through `instantiation_limit_hit`,
-  which only `check_assignable_or_error_internal` turns into TS2589.
+  intersection state isn't there. `RelationState.overflow` (100 deep) reports TS2589 at the current node (tsc: TS2321
+  "Excessive stack depth comparing types", at the error node else the current node; tttt's relation depth runs out
+  where tsc's instantiations do).
 - `ty_conditional_resolve`: without a permissive instantiation, a failed check with a type variable nested in either
   side stays deferred (tsc would pick the false branch if it fails even with them replaced by `any`). Whether one is
   nested is a walk over members (`mentions_type_variables`, up to 8192 types / 48 deep, "unsure" beyond), since
@@ -717,9 +720,18 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   being resolved right now (`node_reaches_alias_in_flight_deep`); tsc resolves trueType/falseType on first use,
   always (plan 29 stage 4: measured +1 suite, +2 type-fest; decide there). Deferred references (arrays, tuples,
   generic interface/class references) follow tsc's syntactic `isDeferredTypeReferenceNode` since plan 29 stage 2.
-  `instantiate_inner` turns a deferred reference whose args are resolved into an ordinary one (tsc never does; no
-  order dependence seen so far, `test/probes/plan29/rd_order.ts`).
-- `awaited_type` (call.c): the awaitedTypeStack cycle gives the error type silently; tsc reports TS1062.
+  Stage 4 (always-lazy branches) wasn't done: its type-fest regressions (writable-deep 2 x TS2345, writable TS2589 in
+  the prototype) aren't understood yet.
+- `Checker.current_node` (tsc's currentNode, where TS2589/TS2615/TS4110/TS1062 go): statements, expressions
+  (`compute`), type references and indexed access types in the walk. tttt's walk often asks for an annotation's type
+  before visiting it (bindings check the initializer first, functions build signatures first), so `lower()` makes a
+  generic reference that lies inside the current node the current node while lowering it: a guess at tsc's walk
+  order. TS4110 has no node span (tuple/array TypeNodes carry none) and goes to the current node.
+- Reference resolution in the walk: `identifier_type_typecheck` resolves referenced aliases and `type_decl_typecheck`
+  an alias whose body is a reference (tsc's checkTypeReferenceNode resolves every reference it walks, including
+  instantiations; tttt doesn't lower `Foo<X>` in the walk because the walk has no `in_alias` context, so deferral
+  would differ). Resolving every alias declaration's type instead changed type id order (+4 tests, -1:
+  unionTypeCallSignatures6), i.e. union order in tttt still depends on who asks first.
 - `expand_mapped`: mapped types expand to properties/index signatures once the key type is a union of literals and
   primitives. Modifiers come from `MappedInfo.modifiers_type` only when the key type was written as `keyof T`.
 - `instantiate_mapped_over_list`: a homomorphic mapped type instantiated with an array or tuple becomes an array or
@@ -757,7 +769,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   lazy); computed keys that don't name a literal or unique symbol are dropped (tsc: late bound index signature, see
   "Computed member names" above).
 - `ty_union`: no subtype reduction (that's `ty_union_subtype_reduced`, asked for explicitly), doesn't drop
-  `null`/`undefined` without strictNullChecks. TS2456 (circular alias) is only a TODO in `lower.c`.
+  `null`/`undefined` without strictNullChecks.
 
 ## JavaScript: JSDoc and CommonJS (plan 26 stage 1)
 - **Unresolved JSDoc names are silent** (`identifier_type_lookup_names()`, HACK): a JSDoc type's lookup errors go to a

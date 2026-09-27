@@ -637,6 +637,11 @@ typedef struct FlowSharedEntry {
     bool incomplete;
 } FlowSharedEntry;
 
+typedef struct CurrentNode {
+    Span span;
+    struct Expr const* expr; // If set, the node is this expression (the span isn't)
+} CurrentNode;
+
 struct Checker {
     Program* program;
     struct Binder const* binder;
@@ -663,7 +668,7 @@ struct Checker {
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
     struct JsxElement const* jsx_element; // The JSX element being checked (relation errors about its attributes)
-    Span current_node; // See ty_enter_node()
+    CurrentNode current_node; // See ty_enter_node()
     // The type aliases being resolved, innermost last (the aliases in tsc's resolutionTargets)
     Symbol const** aliases_in_flight;
     u32 aliases_in_flight_len;
@@ -949,8 +954,21 @@ Ty const* ty_instantiate_tail(Checker* me, Ty const* ty, TyMapper const* mapper)
 // tsc's currentNode: the statement, type node or expression being checked (checkSourceElement, checkExpression), where
 // diagnostics about what went wrong deep inside the checker go. Entering one starts the instantiation count over.
 // Returns the previous one, to give back to ty_leave_node()
-Span ty_enter_node(Checker* me, Span span);
-static inline void ty_leave_node(Checker* me, Span saved) { me->current_node = saved; }
+static inline CurrentNode ty_enter_node(Checker* me, Span span) {
+    CurrentNode saved = me->current_node;
+    me->current_node = (CurrentNode){ .span = span };
+    me->instantiation_count = 0;
+    me->instantiation_epoch++;
+    return saved;
+}
+// An expression: its error span is only worked out if something is reported
+static inline CurrentNode ty_enter_expr(Checker* me, struct Expr const* expr) {
+    CurrentNode saved = ty_enter_node(me, (Span){0});
+    me->current_node.expr = expr;
+    return saved;
+}
+static inline void ty_leave_node(Checker* me, CurrentNode saved) { me->current_node = saved; }
+Span ty_current_node_span(Checker* me);
 // tsc's error(currentNode, ...): only while the program is being typechecked (not while a baseline prints types)
 void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message);
 void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message); // tsc's error(node, ...), likewise

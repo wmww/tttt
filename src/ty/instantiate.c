@@ -12,12 +12,8 @@
 
 // The branch a conditional type resolved to: when it is a conditional type itself, it doesn't count towards the
 // instantiation depth (see Checker.instantiation_tail_count)
-Span ty_enter_node(Checker* me, Span span) {
-    Span saved = my current_node;
-    my current_node = span;
-    my instantiation_count = 0;
-    my instantiation_epoch++;
-    return saved;
+Span ty_current_node_span(Checker* me) {
+    return my current_node.expr ? expr_error_span(my current_node.expr) : my current_node.span;
 }
 
 void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message) {
@@ -32,7 +28,7 @@ void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message) {
 }
 
 void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message) {
-    ty_error_at(me, my current_node, ts_code, message);
+    ty_error_at(me, ty_current_node_span(me), ts_code, message);
 }
 
 void ty_instantiation_limit_reached(Checker* me) {

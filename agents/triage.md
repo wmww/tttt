@@ -199,9 +199,13 @@ is one code). The triage fixed the three "misplaced" span buckets (TS2554, TS605
   `f.x` in tsc's symbols baseline.
 - `import.meta` is typed now (ty_import_meta_type) but its module-kind checks aren't: TS1343 (module option doesn't
   allow import.meta), TS1470 (in a CommonJS output file).
-- Circular aliases: `type N<T, K extends string> = T | { [P in K]: N<T, K> }[K]` is TS2589 + TS2615 in tsc
-  (recursivelyExpandingUnionNoStackoverflow, re-probed), here it prints `N<number, "M">`. TS2456 is only a TODO in
-  `ty_declared_type_of`.
+- Plan 29 stage 3 leftovers (circularity diagnostics): recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc
+  reaches first (tttt's interned instantiations find the TS2615 cycle at once) and tsc prints the mapped type with
+  `containsError` in mapped syntax (`{ [P in "M"]: any; }`, tttt `{ M: any; }`). TS4109 missing where tttt catches the
+  cycle elsewhere: circularTypeArgumentsLocalAndOuterNoCrash1 (relating the deferred reference to `{}` short-circuits;
+  tsc also prints `NumArray<any>` there, not `X`), circularlyReferentialInterfaceAccessNoCrash (members in flight).
+  limitDeepInstantiations: `Foo<"true", {}>` never reaches the limit, a prop-in-flight cycle gives any first.
+  Spurious TS2589: recursiveConditionalTypes (the `unbox(b1)` calls, 12), recursiveTypeReferences1.
 - A homomorphic mapped type over a `satisfies`/const object doesn't resolve its keys (the `computedOptions` mapped
   type in the tsc corpus's `utilities.ts` printed with a huge `keyof "a" & keyof "b"` key).
 - `expandoFunctionSymbolProperty` (re-probed; plan 26 stage 2 should cover it): `f[symb] = ...` on a function declaration isn't an expando property,

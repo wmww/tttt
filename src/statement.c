@@ -156,7 +156,7 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     // tsc's checkTypeReferenceNode resolves every reference it walks. When the reference is the body, that is the alias's
     // own type, which lowers it in the alias's context (a deferred reference, the alias name)
     if (my symbol && my type.tag == TYPE_IDENTIFIER) {
-        Span saved = ty_enter_node(current_checker, identifier_type_span(my type.identifier));
+        CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(my type.identifier));
         ty_declared_type_of(current_checker, my symbol);
         ty_leave_node(current_checker, saved);
     }
@@ -1490,7 +1490,7 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
 static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
-    Span saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
+    CurrentNode saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
     statement_typecheck_inner(me, ctx, errs);
     ty_leave_node(current_checker, saved);
 }

@@ -1948,9 +1948,11 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             }
             // tsc's walk checks a type reference (checkSourceElement: its errors go there) before anything asks for its
             // type; tttt's often asks first. A generic reference inside the node being checked stands for it
-            Span saved_node = my current_node;
-            if (vec_spanned_type_size(&node->identifier->generic_params) && span_contains_span(my current_node, node->identifier->name)) {
-                my current_node = identifier_type_span(node->identifier);
+            CurrentNode saved_node = my current_node;
+            if (vec_spanned_type_size(&node->identifier->generic_params) &&
+                span_contains_span(ty_current_node_span(me), node->identifier->name)
+            ) {
+                my current_node = (CurrentNode){ .span = identifier_type_span(node->identifier) };
             }
             Ty const* ret = lower_identifier(me, node->identifier, ctx);
             my current_node = saved_node;
