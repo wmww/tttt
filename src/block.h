@@ -17,6 +17,7 @@ typedef struct TypecheckLabel {
 
 typedef struct BlockTypecheckCtx {
     TypeNode const* specified_return;
+    struct Symbol const* constructed_class; // In a constructor: what a returned value has to be an instance of
     bool break_allowed;
     bool continue_allowed;
     bool inside_label; // Labeled breaks are allowed

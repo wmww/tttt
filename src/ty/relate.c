@@ -703,6 +703,21 @@ static Signature const* callback_signature(Checker* me, Signature const* sig, u3
     return ret && !signature_predicate(me, ret) ? ret : nullptr;
 }
 
+// tsc's getMinArgumentCount: trailing parameters that accept void can be left out
+static u32 min_argument_count(Checker* me, Signature const* sig) {
+    u32 min = sig->min_args;
+    while (min > 0) {
+        Ty const* type = param_type_at(me, sig, min - 1);
+        bool accepts_void = type && (type->flags & TYF_VOID);
+        for (u32 i = 0; type && type->kind == TY_UNION && i < type->composite.types.len && !accepts_void; i++) {
+            accepts_void = (type->composite.types.data[i]->flags & TYF_VOID) != 0;
+        }
+        if (!accepts_void) break;
+        min--;
+    }
+    return min;
+}
+
 static Ternary compare_signatures(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report
 ) {
@@ -715,10 +730,11 @@ static Ternary compare_signatures(
     }
 
     u32 target_count = ty_signature_param_count(target);
-    if (!ty_signature_has_rest(target) && source->min_args > target_count) {
+    u32 source_min = source->min_args > target_count ? min_argument_count(me, source) : source->min_args;
+    if (!ty_signature_has_rest(target) && source_min > target_count) {
         if (report) {
             report_line(st, 2849, cstr_d(
-                "Target signature provides too few arguments. Expected ", source->min_args, " or more, but got ",
+                "Target signature provides too few arguments. Expected ", source_min, " or more, but got ",
                 target_count, "."
             ));
         }

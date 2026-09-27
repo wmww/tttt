@@ -1286,6 +1286,8 @@ void ty_check_property_access(
 );
 // `o[k]` under noImplicitAny that finds nothing: TS7053, TS7015, TS7052... (`span`: the whole access)
 void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
+// A class's instance type as its constructor returns it (generic: applied to its own type parameters)
+Ty const* ty_instance_type_of_class(Checker* me, struct Symbol const* class_symbol);
 // What a compound assignment (`o.x += 1`) to `target` is checked against: a divergent setter's type for a property
 // (tsc's checkAssignmentOperatorWorker), else the type it reads
 Ty const* ty_compound_assignee_type(Checker* me, struct Expr const* target, Ty const* read_type);

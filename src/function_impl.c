@@ -375,6 +375,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         .in_function = true,
         // TODO: returns in async functions and generators aren't checked, the declared type wraps what's returned
         .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret : &type_any,
+        .constructed_class = my is_constructor ? my constructed_class : nullptr,
     };
     Ty const* outer_context = function_impl_enter_return_context(me);
     block_typecheck(&my body, ctx, errs);

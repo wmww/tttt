@@ -6026,7 +6026,7 @@ const baselines = {
         types: true,
     },
     'constructorReturnsInvalidType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27721,7 +27721,7 @@ const baselines = {
         types: true,
     },
     'returnInConstructor1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35581,7 +35581,7 @@ const baselines = {
         types: true,
     },
     'constructorWithAssignableReturnExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47476,7 +47476,7 @@ const baselines = {
         types: true,
     },
     'voidParamAssignmentCompatibility': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1107,6 +1107,14 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
     cstr_drop(&object_str);
 }
 
+Ty const* ty_instance_type_of_class(Checker* me, Symbol const* class_symbol) {
+    Ty const* declared = ty_declared_type_of(me, class_symbol);
+    if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
+        return ty_reference(me, declared, declared->declared.type_params);
+    }
+    return declared;
+}
+
 void ty_enter_true_branch(Checker* me, TypeNode const* check_node, TypeNode const* extends_node) {
     u32 depth = my true_branch_depth++;
     if (depth >= c_arraylen(my true_branch_check)) return;

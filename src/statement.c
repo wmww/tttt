@@ -1364,19 +1364,19 @@ static void statement_check_jump(Statement const* me, BlockTypecheckCtx ctx, Err
 
 // tsc's checkReturnExpression: the branches of a conditional expression are checked one by one. An error that isn't
 // elaborated goes on the `return` keyword (of a real return statement)
-static void return_typecheck(Statement const* statement, Expr const* expr, Ty const* target, bool in_conditional, ErrorCtx* errs) {
+static bool return_typecheck(Statement const* statement, Expr const* expr, Ty const* target, bool in_conditional, ErrorCtx* errs) {
     Checker* checker = current_checker;
     if (expr->tag == EXPR_TERNARY) {
-        return_typecheck(statement, &expr->ternary->yes, target, true, errs);
-        return_typecheck(statement, &expr->ternary->no, target, true, errs);
-        return;
+        bool yes = return_typecheck(statement, &expr->ternary->yes, target, true, errs);
+        bool no = return_typecheck(statement, &expr->ternary->no, target, true, errs);
+        return yes && no;
     }
     Expr const* effective = expr_effective_check_node(expr);
     Span span = effective->inner_span;
     if (!in_conditional && span_valid(statement->span)) {
         span = span_make(statement->span.source, span_start_ptr(statement->span), span_start_ptr(statement->span) + 6);
     }
-    ty_check_assignable_expr(checker, ty_expr_type(checker, expr), target, span, effective, errs);
+    return ty_check_assignable_expr(checker, ty_expr_type(checker, expr), target, span, effective, errs);
 }
 
 static FunctionImpl const* function_declaration(Statement const* me) {
@@ -1692,7 +1692,13 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
         case STATEMENT_RETURN_EXPR:
             ty_check_expr(current_checker, &my expr, current_checker->return_context);
             expr_typecheck(&my expr, errs);
-            if (ctx.specified_return) {
+            if (ctx.constructed_class && !statement_is_bare_return(me)) {
+                // What a constructor returns replaces the instance (tsc's checkReturnStatement)
+                if (!return_typecheck(me, &my expr, ty_instance_type_of_class(current_checker, ctx.constructed_class), false, errs)) {
+                    error_ctx_error_d(errs, span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6), 2409,
+                        "Return type of constructor signature must be assignable to the instance type of the class.");
+                }
+            } else if (ctx.specified_return) {
                 return_typecheck(me, &my expr, ty_of_node(ctx.specified_return), false, errs);
             }
             break;
