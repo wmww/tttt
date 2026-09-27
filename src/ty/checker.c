@@ -1566,7 +1566,11 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
     if (operand->flags & (TYF_UNKNOWN | TYF_NON_PRIMITIVE | TYF_VOID | TYF_NULLABLE)) {
         return my intrinsics[TY_NEVER];
     }
-    // TODO: keyof a primitive is the keys of its apparent type (`String`, `Number`...), needs the globals
+    // keyof a primitive is the keys of its apparent type (`String`, `Number`...)
+    if (operand->kind == TY_INTRINSIC || operand->kind == TY_LITERAL) {
+        Ty const* apparent = ty_apparent_type(me, operand);
+        if (apparent != operand && (apparent->flags & TYF_OBJECT)) return ty_keyof(me, apparent);
+    }
     u64 key[2] = { KEY_KEYOF, operand->id };
     Ty* fresh;
     Ty const* ret = intern_deferred(me, key, 2, TY_KEYOF, operand->flags, &fresh);
