@@ -769,10 +769,21 @@ static bool hop_token(Parser* parent) {
         case '.':
             if (is_number_char(*(parent->pos + 1))) {
                 break;
+            } else if (parent->pos[1] == '.' && parent->pos[2] == '.') {
+                parent->pos += 3;
+                return true;
             } else {
                 parent->pos++;
                 return true;
             }
+
+        case '#':
+            if (is_identifier_start_char(parent->pos[1])) {
+                parent->pos++;
+                parse_identifier_or_keyword(parent, nullptr);
+                return true;
+            }
+            break;
 
         default: break;
     }
@@ -847,8 +858,9 @@ static bool tok_is_eof(Tok t) {
     return !*t.start;
 }
 
+// tsc's tokenIsIdentifierOrKeyword, which private names (`#x`) pass too
 static bool tok_is_word(Tok t) {
-    return is_identifier_start_char(*t.start);
+    return is_identifier_start_char(*t.start) || (*t.start == '#' && is_identifier_start_char(t.start[1]));
 }
 
 static bool tok_is_one_of(Tok t, const char* const* words) {
@@ -860,9 +872,10 @@ static bool tok_is_one_of(Tok t, const char* const* words) {
 
 static bool is_reserved_word(csview word);
 
-// tsc's isIdentifier (reserved words aren't; `yield`/`await` are, which only matters to the stricter predicates)
+// tsc's isIdentifier (reserved words and private names aren't; `yield`/`await` are, which only matters to the
+// stricter predicates)
 static bool tok_is_identifier(Tok t) {
-    return tok_is_word(t) && !is_reserved_word((csview){ t.start, t.end - t.start });
+    return is_identifier_start_char(*t.start) && !is_reserved_word((csview){ t.start, t.end - t.start });
 }
 
 // Any keyword tsc's scanner knows, contextual ones included (tsc's isKeyword)
@@ -1103,7 +1116,9 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
         case PARSING_SWITCH_CLAUSES:
             return tok_is(t, "case") || tok_is(t, "default");
         case PARSING_TYPE_MEMBERS:
-            return tok_is_type_member_start(p, t);
+            // `{ -readonly [K in T]: X }` is a mapped type, which tsc parses before it gets to any list
+            return tok_is_type_member_start(p, t) ||
+                ((tok_is(t, "-") || tok_is(t, "+")) && tok_is(tok_next(p, t), "readonly"));
         case PARSING_CLASS_MEMBERS:
             return tok_is_class_member_start(p, t);
         case PARSING_ENUM_MEMBERS:
@@ -2642,7 +2657,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         hop_whitespace(&p);
 
         ClassItem item;
-        if (parse_class_item(&p, true, true, &item)) {
+        if (list_is_element(&p, PARSING_TYPE_MEMBERS, tok_peek(&p)) && parse_class_item(&p, true, true, &item)) {
             switch (item.tag) {
                 case CLASS_ITEM_METHOD: {
                     if (item.method.accessor) {
@@ -4232,7 +4247,9 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
             hop_whitespace(&p);
             continue;
         }
-        if (!parse_class_item(&p, false, is_abstract, &item)) {
+        if (!list_is_element(&p, PARSING_CLASS_MEMBERS, tok_peek(&p)) ||
+            !parse_class_item(&p, false, is_abstract, &item)
+        ) {
             if (list_abort_or_skip(&p, PARSING_CLASS_MEMBERS)) break;
             continue;
         }

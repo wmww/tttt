@@ -26342,7 +26342,7 @@ const baselines = {
     },
     'propertyWrappedInTry': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'protectedAccessThroughContextualThis': {
@@ -50682,8 +50682,8 @@ const baselines = {
     },
     'interfaceExtendingClass2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'interfaceExtendingClassWithPrivates': {
         errors: true,
@@ -56666,14 +56666,14 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_ClassElement1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ClassElement2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ClassElement3': {
         errors: false,
