@@ -1281,7 +1281,7 @@ static bool modifiers_related(
         code = 2444;
     }
     if (related || !report) return related;
-    cstr name = ty_prop_name_cstr(me, target_prop->name);
+    cstr name = ty_prop_written_name(me, target_prop);
     if (code == 2442) {
         report_line(st, code, cstr_d("Types have separate declarations of a private property '", name, "'."));
     } else if (code == 2325) {
@@ -1425,7 +1425,7 @@ static Ternary props_related(
         Ternary related = is_related_to(me, st, source_type, target_type, report);
         if (!related) {
             if (report) {
-                cstr name = ty_prop_name_cstr(me, target_prop->name);
+                cstr name = ty_prop_written_name(me, target_prop);
                 report_incompatible(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
                 cstr_drop(&name);
             }
@@ -1436,7 +1436,7 @@ static Ternary props_related(
             if (report) {
                 cstr source_str = display_for_report(me, source, true);
                 cstr target_str = display_for_report(me, target, false);
-                cstr name = ty_prop_name_cstr(me, target_prop->name);
+                cstr name = ty_prop_written_name(me, target_prop);
                 report_line(st, 2327, cstr_d(
                     "Property '", name, "' is optional in type '", source_str, "' but required in type '", target_str, "'."
                 ));
@@ -1529,7 +1529,7 @@ static Ternary index_signatures_related(
                 Ternary related = is_related_to(me, st, type, target_info->value, report);
                 if (!related) {
                     if (report) {
-                        cstr name = ty_prop_name_cstr(me, prop->name);
+                        cstr name = ty_prop_written_name(me, prop);
                         report_line(st, 2530, cstr_d("Property '", name, "' is incompatible with index signature."));
                         cstr_drop(&name);
                     }
@@ -3876,7 +3876,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                 });
                 c_drop(cstr, &name, &target_str);
             } else if (report) {
-                cstr name = ty_prop_name_cstr(me, prop->name);
+                cstr name = ty_prop_written_name(me, prop);
                 cstr target_str = display_for_report(me, filter_excess_check_targets(me, reduced), false);
                 report_line_at(st, 2353, cstr_d(
                     "Object literal may only specify known properties, and '", name, "' does not exist in type '",
@@ -3898,7 +3898,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
             ty_buf_drop(&parts);
             if (!is_related_to(me, st, prop_type(me, prop), expected, report)) {
                 if (report) {
-                    cstr name = ty_prop_name_cstr(me, prop->name);
+                    cstr name = ty_prop_written_name(me, prop);
                     report_incompatible(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
                     cstr_drop(&name);
                 }

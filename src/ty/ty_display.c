@@ -283,6 +283,17 @@ cstr ty_prop_name_cstr(Checker* me, Atom const* name) {
     return ret;
 }
 
+cstr ty_prop_written_name(Checker* me, Prop const* prop) {
+    while (prop->target) prop = prop->target;
+    Span name = prop->name_span;
+    // (tsc's getNameOfSymbolAsWritten: a name that isn't an identifier as written, `"a"`, `2.0`, `["a"]`)
+    if (span_valid(name) && name.sv.size >= 2 && (name.sv.buf[0] == '"' || name.sv.buf[0] == '\'' || name.sv.buf[0] == '[')) {
+        return cstr_from_sv(name.sv);
+    }
+    if (span_valid(name) && name.sv.size && name.sv.buf[0] >= '0' && name.sv.buf[0] <= '9') return cstr_from_sv(name.sv);
+    return ty_prop_name_cstr(me, prop->name);
+}
+
 static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
     if (unique) {

@@ -2241,13 +2241,6 @@ static Span prop_error_span(Prop const* prop) {
 }
 
 // tsc's symbolToString of a property: as written if that was a string literal
-static cstr prop_name_str(Checker* me, Prop const* prop) {
-    while (prop->target) prop = prop->target;
-    Span name = prop->name_span;
-    if (span_valid(name) && name.sv.size >= 2 && (name.sv.buf[0] == '"' || name.sv.buf[0] == '\'')) return cstr_from_sv(name.sv);
-    return ty_prop_name_cstr(me, prop->name);
-}
-
 void ty_check_index_constraints(
     Checker* me, Ty const* type, Symbol const* owner, bool is_static, Ty const* const* bases, u32 base_count, Span name,
     ErrorCtx* errs
@@ -2273,7 +2266,7 @@ void ty_check_index_constraints(
             if (!span_valid(at)) continue;
             if (!prop_ty) prop_ty = prop_type(me, prop);
             if (ty_is_related(me, prop_ty, info->value, TY_RELATION_ASSIGNABLE)) continue;
-            cstr prop_str = prop_name_str(me, prop);
+            cstr prop_str = ty_prop_written_name(me, prop);
             cstr type_str = ty_to_cstr(me, prop_ty);
             cstr key_str = ty_to_cstr(me, info->key);
             cstr value_str = ty_to_cstr(me, info->value);

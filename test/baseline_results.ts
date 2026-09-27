@@ -40976,12 +40976,12 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames36_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames36_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41046,32 +41046,32 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames42_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames42_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames43_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames43_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames44_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames44_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64741,12 +64741,12 @@ const baselines = {
         types: false,
     },
     'numericIndexerConstrainsPropertyDeclarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'numericIndexerConstrainsPropertyDeclarations2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64756,7 +64756,7 @@ const baselines = {
         types: false,
     },
     'stringIndexerConstrainsPropertyDeclarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
