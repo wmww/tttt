@@ -332,6 +332,11 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // A global `exports` doesn't hide the module (tsc's resolveNameHelper tries the file before the globals)
         my target = my symbol = nullptr;
     }
+    if (my require_call && my target && names->file && names->file->is_js && expr_symbol_is_commonjs_require(my target)) {
+        // An ambient `require` (@types/node's) is tsc's requireSymbol too (isCommonJsRequire)
+        if (my require_call == 1) module_ref_report(my module_ref, names, errs);
+        return;
+    }
     if (!my target && names->file && names->file->is_js) {
         if (my require_call) {
             // tsc's requireSymbol, and the module like an import's (a declaration's aliases report it themselves)
@@ -3138,6 +3143,11 @@ CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret) {
     if (!expr_is_plain_identifier(object, "exports") && !expr_is_module_exports(object)) return COMMONJS_TARGET_NONE;
     if (name_ret) *name_ret = name;
     return COMMONJS_TARGET_EXPORTS_PROPERTY;
+}
+
+bool expr_symbol_is_commonjs_require(Symbol const* symbol) {
+    if (!symbol || symbol == symbol->binder->require_symbol) return symbol != nullptr;
+    return !(symbol->flags & SYMBOL_ALIAS) && (symbol->flags & (SYMBOL_FUNCTION | SYMBOL_VARIABLE)) && symbol->is_ambient;
 }
 
 bool expr_is_require_call(Expr const* me) {

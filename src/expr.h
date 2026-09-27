@@ -240,6 +240,9 @@ CommonJsTarget binary_commonjs_declaration(struct BinaryOpExpr const* assignment
 bool expr_is_module_exports(Expr const* me);
 // `require("m")` with a single argument (tsc's isRequireCall without the string literal requirement)
 bool expr_is_require_call(Expr const* me);
+// tsc's isCommonJsRequire for what the callee of `require(x)` resolves to: its requireSymbol (no `require` in scope)
+// or an ambient function or variable (@types/node's)
+bool expr_symbol_is_commonjs_require(Symbol const* symbol);
 
 // Should only be used in the typecheck phase
 static inline Ty const* expr_get_type(Expr* me) {

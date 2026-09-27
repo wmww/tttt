@@ -1895,8 +1895,7 @@ static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
 // resolveExternalModuleTypeByLiteral)
 static Ty const* require_type(Checker* me, CallExpr const* call) {
     if (call->callable.tag != EXPR_IDENTIFIER || !call->callable.identifier.require_call) return nullptr;
-    Symbol const* require = program_get_binder(my program)->require_symbol;
-    if (!require || call->callable.identifier.target != require) return nullptr;
+    if (!expr_symbol_is_commonjs_require(call->callable.identifier.target)) return nullptr;
     ModuleRef const* ref = call->callable.identifier.module_ref;
     if (!ref || !ref->module || ref->module->is_shorthand_module) return ty_intrinsic(me, TY_ANY);
     return ty_type_of_symbol(me, module_export_equals(ref->module));
