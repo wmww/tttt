@@ -1,7 +1,7 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-27 (after plan 33)**: tsc 0, **valibot 0**, **react 0**, **nest 0**, **webpack 3981** (checkJs,
-nearly all JSDoc typedefs: plan 26 stage 3, section "webpack corpus" at the end), **type-fest 4** (abstract-class 4 = plan 32's mixin classes; R17, R20 and jsonify:57 fixed), **zod 15** (pinned by todo entry 9, section "zod corpus" at the end). The newest section is "Corpus session of 2026-09-27" at the end; the older ones are
+**Status 2026-09-27 (after todo entry 9)**: tsc 0, **valibot 0**, **react 0**, **nest 0**, **webpack 135** (checkJs;
+remaining causes in plan 26 "Stage 3 leftovers"), **type-fest 4** (abstract-class 4 = plan 32's mixin classes; R17, R20 and jsonify:57 fixed), **zod 15** (pinned by todo entry 9, section "zod corpus" at the end). The newest section is "Corpus session of 2026-09-27" at the end; the older ones are
 history (their counts are stale).
 
 `./realworld.py --corpus valibot`, `--corpus type-fest` and `--corpus react` (tsc 5.8 reports 0 on all; tsgo only 2

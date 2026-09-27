@@ -27,9 +27,10 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    resolution cache; callgrind tsc corpus 5.84 -> 5.05 G, nest -28%, webpack -19%. Next levers in `perf_leads.md`.
 8. ~~Plan 27 stage 2~~ done: modifiers (a checkGrammarModifiers port), heritage clauses, index signatures, `with`,
    yield/await, private names; parser-diff tests 544 -> 402, suite 9210 -> 9363. Leftovers in plan 27.
-9. **Corpus session** (plan 19): the fifth corpus' remaining causes, type-fest's 11 (R20,
-   exactOptional; mixins are plan 32 stage C), and if plan 33 pinned no second new corpus, pin an inference-heavy one
-   (tRPC / zod v4 / drizzle).
+9. ~~Corpus session~~ done: zod v4.6.5 pinned (inference-heavy, exactOptionalPropertyTypes; 87 -> 15 the same day,
+   leftovers ranked in plan 19 "zod corpus": the missing type, ProtoOf inference, keyof deferral), type-fest 11 -> 4
+   (mixins only), webpack 515 -> 135 (sub-agent; plan 26 "Stage 3 leftovers"); suite 9363 -> 9395. zod is the
+   heaviest corpus (11.7 G instructions, profile in perf_leads.md).
 10. **Triage**: drain triage.md; also shrink plan 19 (443 lines, mostly done R-items: keep the live ones and the
     lessons, history is in git) and measurements.md (551 lines: keep the latest of each kind).
 11. **Insights.**
