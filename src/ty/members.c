@@ -434,6 +434,66 @@ static Prop* builder_add_class_prop(
     return prop;
 }
 
+// A class member named by an expression of type string, number or symbol (not a literal or unique symbol, which name
+// it) makes an index signature for that key of every member of the class (tsc's getIndexInfosOfIndexSymbol with
+// hasLateBindableIndexSignature), unless the class declares one itself
+static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builder, ClassDecl const* class_decl, bool static_side) {
+    static TyIntrinsic const keys[3] = { TY_STRING, TY_NUMBER, TY_ES_SYMBOL };
+    bool computed[3] = {0}, readonly[3] = { true, true, true };
+    for_each (i, vec_class_item, &class_decl->items) {
+        bool field = i->tag == CLASS_ITEM_FIELD;
+        if (!field && i->tag != CLASS_ITEM_METHOD) continue;
+        if ((field ? i->field.is_static : i->method.is_static) != static_side) continue;
+        Expr const* key = field ? i->field.computed_key : i->method.computed_key;
+        if (!key || !expr_is_entity_name(key)) continue;
+        Ty const* key_type = ty_regular(me, ty_expr_type(me, key));
+        if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM | TYF_ANY | TYF_NEVER)) continue;
+        u32 k = ty_is_related(me, key_type, ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE) ? 1 :
+            ty_is_related(me, key_type, ty_intrinsic(me, TY_ES_SYMBOL), TY_RELATION_ASSIGNABLE) ? 2 :
+            ty_is_related(me, key_type, ty_intrinsic(me, TY_STRING), TY_RELATION_ASSIGNABLE) ? 0 : 3;
+        if (k == 3) continue;
+        computed[k] = true;
+        readonly[k] &= field && i->field.is_readonly;
+    }
+    for (u32 k = 0; k < 3; k++) {
+        if (!computed[k]) continue;
+        Ty const* key = ty_intrinsic(me, keys[k]);
+        bool declared = false;
+        for (u32 j = 0; j < builder->index_count; j++) declared |= builder->index[j].key == key;
+        if (declared) continue;
+        // The value is what every member of that kind of name has: the computed ones and the others (getObjectLiteralIndexInfo)
+        TyBuf types = {0};
+        for (u32 j = 0; j < builder->props_count; j++) {
+            Atom const* name = builder->props[j]->name;
+            bool symbol_name = ty_unique_symbol_of_name(me, name) != nullptr;
+            bool included = k == 0 ? !symbol_name : k == 1 ? ty_is_numeric_name(name) : symbol_name;
+            // (A class's `prototype` isn't one of its members in tsc, it's made with the static side's type)
+            if (static_side && csview_equals(atom_sv(name), "prototype")) continue;
+            if (included) ty_buf_push(&types, prop_type(me, builder->props[j]));
+        }
+        for_each (i, vec_class_item, &class_decl->items) {
+            bool field = i->tag == CLASS_ITEM_FIELD;
+            if (!field && i->tag != CLASS_ITEM_METHOD) continue;
+            if ((field ? i->field.is_static : i->method.is_static) != static_side) continue;
+            Expr const* name_expr = field ? i->field.computed_key : i->method.computed_key;
+            if (!name_expr || !expr_is_entity_name(name_expr)) continue;
+            Ty const* key_type = ty_regular(me, ty_expr_type(me, name_expr));
+            if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM | TYF_ANY | TYF_NEVER)) continue;
+            if (!ty_is_related(me, key_type, key, TY_RELATION_ASSIGNABLE) && k != 0) continue;
+            if (!field && i->method.accessor && i->method.accessor_first != i) continue; // One type per accessor pair
+            ty_buf_push(&types, field || i->method.accessor ? class_item_get_type((ClassItem*)i) : ty_function_type(me, &i->method.func));
+        }
+        IndexInfo info = {
+            .key = key,
+            .value = types.len ? ty_union_subtype_reduced(me, types.data, types.len) : ty_intrinsic(me, TY_UNDEFINED),
+            .param_name = checker_atom(me, c_sv("x")),
+            .readonly = readonly[k],
+        };
+        ty_buf_drop(&types);
+        builder_push(builder, index, info);
+    }
+}
+
 // The members a class declares itself, on the instance or the static side
 static void builder_add_class_items(
     Checker* me, MembersBuilder* builder, ClassDecl const* class_decl, bool static_side, LowerCtx ctx, Symbol const* parent
@@ -589,6 +649,7 @@ static void builder_add_class_items(
         }
         next_item:;
     }
+    builder_add_computed_index_infos(me, builder, class_decl, static_side);
 }
 
 static Signature* class_construct_signature(Checker* me, ClassDecl const* class_decl, Ty const* instance_declared) {
@@ -892,6 +953,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 Symbol const* symbol = exports[i].symbol;
                 Symbol const* member = symbol_for_meaning(symbol, SYMBOL_VALUE);
                 if (!member || member->is_placeholder) continue;
+                // `typeof globalThis` has the global `var`s and functions, not let, const, classes and enums
+                if (ty->declared.namespace_symbol->is_global_this && (symbol->flags & GLOBAL_BLOCK_SCOPED)) continue;
                 Prop* prop = arena_new(&my arena, Prop);
                 prop->name = checker_atom(me, exports[i].name);
                 prop->symbol = member;

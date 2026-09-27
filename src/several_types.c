@@ -408,6 +408,7 @@ void indexed_type_lookup_names(IndexedType* me, Scope* names, ErrorCtx* errs) {
 void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs) {
     type_typecheck(&my interface, errs);
     type_typecheck(&my index, errs);
+    ty_check_indexed_access_type(current_checker, ty_of_node(&my interface), ty_of_node(&my index), my index_span, my span, errs);
 }
 
 // Keyof

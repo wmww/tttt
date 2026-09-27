@@ -3913,7 +3913,7 @@ const baselines = {
     'classNonUniqueSymbolMethodHasSymbolIndexer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classOrder1': {
         errors: true,
@@ -7798,7 +7798,7 @@ const baselines = {
     'declarationEmitComputedNameWithQuestionToken': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitComputedNamesInaccessible': {
         errors: true,
@@ -32081,7 +32081,7 @@ const baselines = {
         types: true,
     },
     'unionPropertyOfProtectedAndIntersectionProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33528,12 +33528,12 @@ const baselines = {
     'ES5SymbolProperty4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5SymbolProperty5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5SymbolProperty6': {
         errors: true,
@@ -39191,7 +39191,7 @@ const baselines = {
         types: false,
     },
     'globalThisBlockscopedProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -40286,13 +40286,13 @@ const baselines = {
         types: false,
     },
     'emitArrowFunctionThisCapturing': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionThisCapturingES6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments01': {
@@ -47948,7 +47948,7 @@ const baselines = {
     'superSymbolIndexedAccess1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superSymbolIndexedAccess2': {
         errors: true,
@@ -60196,9 +60196,9 @@ const baselines = {
         types: false,
     },
     'globalMergeWithCommonJSAssignmentDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importAliasModuleExports': {
         errors: false,
@@ -65616,7 +65616,7 @@ const baselines = {
         types: true,
     },
     'thisTypeInFunctions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

@@ -1889,7 +1889,8 @@ static bool parse_jsdoc_postfix_type(Parser* parent, TypeNode* left_and_ret) {
     return parse_fail(&p);
 }
 
-static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence, TypeNode* left_and_ret) {
+// `left_start`: where the type on the left began (the span of `T[K]`)
+static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret) {
     Parser p = parser(parent);
     TypeNode type;
 
@@ -1901,12 +1902,16 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
     if (p.whitespace != WHITESPACE_NEWLINE && hop_char(&p, '[')) {
         hop_whitespace(&p);
+        Anchor index_anchor = anchor(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+            Span index_span = span_from(index_anchor);
             hop_whitespace(&p);
             expect_char(&p, ']');
             *left_and_ret = type_indexed(c_new(IndexedType, {
                 .interface = *left_and_ret,
                 .index = type,
+                .index_span = index_span,
+                .span = span_make(p.shared->source, left_start, p.pos),
             }));
             return parse_success(&p);
         } else {
@@ -2190,6 +2195,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     }
 
     Anchor value_anchor = anchor(&p);
+    char const* left_start = value_anchor.start;
     if (p.shared->in_jsdoc && parse_jsdoc_prefix_type(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "any")) {
         *ret = type_any;
@@ -2294,7 +2300,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
 
     if (span_valid(readonly_span)) {
         // `readonly` applies to the whole postfix chain: `readonly T[][]` is a readonly array of `T[]`
-        while (parse_type_right_side(&p, TYPE_PRECEDENCE_OPERATOR, ret)) {}
+        while (parse_type_right_side(&p, TYPE_PRECEDENCE_OPERATOR, left_start, ret)) {}
         if (ret->tag == TYPE_ARRAY) {
             ret->array.readonly = true;
             readonly_span = span_null;
@@ -2303,7 +2309,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
             readonly_span = span_null;
         }
     }
-    while (parse_type_right_side(&p, min_precedence, ret)) {}
+    while (parse_type_right_side(&p, min_precedence, left_start, ret)) {}
     ret->parsed = true; // (Also what the right side made)
 
     if (span_valid(readonly_span)) {

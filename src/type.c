@@ -374,7 +374,9 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
         case TYPE_TERNARY:
             type_typecheck(&my ternary->maybe_sub, errs);
             type_typecheck(&my ternary->maybe_super, errs);
+            ty_enter_true_branch(current_checker, &my ternary->maybe_sub, &my ternary->maybe_super);
             type_typecheck(&my ternary->if_true, errs);
+            ty_leave_true_branch(current_checker);
             type_typecheck(&my ternary->if_false, errs);
             break;
 

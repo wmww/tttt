@@ -934,6 +934,11 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     c_drop(cstr, &name, &object_str);
 }
 
+static bool is_global_this(Ty const* ty) {
+    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.namespace_symbol &&
+        ty->declared.namespace_symbol->is_global_this;
+}
+
 static void check_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
     bool error_if_not_found, u32 depth, ErrorCtx* errs
@@ -1038,10 +1043,17 @@ static void check_access(
     }
     if (object->flags & TYF_NULLABLE) return; // TODO: TS18050 (the value 'undefined' cannot be used here)
     if (ty_access(me, object, index)) return;
-    // What `typeof globalThis` doesn't have is any (TS7017 under noImplicitAny, TODO)
-    if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE && object->declared.namespace_symbol &&
-        object->declared.namespace_symbol->is_global_this
-    ) {
+    // What `typeof globalThis` doesn't have is any, but a block scoped global isn't there (tsc's
+    // checkPropertyAccessExpressionOrQualifiedName)
+    if (is_global_this(object)) {
+        Atom const* name = ty_literal_name(me, index);
+        Symbol const* global = name ? symbol_get_export(object->declared.namespace_symbol, atom_sv(name)) : nullptr;
+        if (global && (global->flags & GLOBAL_BLOCK_SCOPED)) {
+            report_no_property(me, object, index, 2339, index_span, errs);
+        } else if (compiler_options()->no_implicit_any) {
+            error_ctx_error_d(errs, index_span, 7017,
+                "Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.");
+        }
         return;
     }
     report_no_property(me, object, index, 2339, index_span, errs);
@@ -1052,6 +1064,87 @@ void ty_check_property_access(
     bool error_if_not_found, ErrorCtx* errs
 ) {
     check_access(me, object, index, object_span, index_span, object_is_named, error_if_not_found, 0, errs);
+}
+
+// One member of the index of a non-generic `O[K]` type (tsc's getPropertyTypeForIndexType with an access node)
+static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const* index, Span index_span, ErrorCtx* errs) {
+    if (index->flags & TYF_NEVER) return;
+    if (ty_access(me, apparent, index)) return;
+    if (ty_is_tuple(apparent) && (index->flags & TYF_NUMBER_LITERAL)) {
+        // (ty_access() only misses an element past the end of a tuple without a rest element)
+        double n = index->literal.value.number;
+        if (n < 0) {
+            error_ctx_error_d(errs, index_span, 2514, "A tuple type cannot be indexed with a negative value.");
+        } else {
+            cstr object_str = ty_to_cstr(me, apparent);
+            error_ctx_error_d(errs, index_span, 2493, "Tuple type '", object_str, "' of length '",
+                (i64)apparent->reference.target->declared.tuple->arity, "' has no element at index '", &index->literal.value, "'.");
+            cstr_drop(&object_str);
+        }
+        return;
+    }
+    if (is_global_this(apparent) && !(index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) return;
+    cstr object_str = ty_to_cstr(me, apparent);
+    if (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
+        cstr name = cstr_null;
+        cstr_append_value_js(&name, &index->literal.value);
+        if (index->literal.string) {
+            cstr_drop(&name);
+            name = cstr_from_sv(atom_sv(index->literal.string));
+        }
+        error_ctx_error_d(errs, index_span, 2339, "Property '", name, "' does not exist on type '", object_str, "'.");
+        cstr_drop(&name);
+    } else if (index->flags & (TYF_STRING | TYF_NUMBER)) {
+        cstr index_str = ty_to_cstr(me, index);
+        error_ctx_error_d(errs, index_span, 2537, "Type '", object_str, "' has no matching index signature for type '",
+            index_str, "'.");
+        cstr_drop(&index_str);
+    } else {
+        cstr index_str = ty_to_cstr(me, index);
+        error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
+        cstr_drop(&index_str);
+    }
+    cstr_drop(&object_str);
+}
+
+void ty_enter_true_branch(Checker* me, TypeNode const* check_node, TypeNode const* extends_node) {
+    u32 depth = my true_branch_depth++;
+    if (depth >= c_arraylen(my true_branch_check)) return;
+    my true_branch_check[depth] = ty_of_node(check_node);
+    my true_branch_extends[depth] = ty_of_node(extends_node);
+}
+
+void ty_leave_true_branch(Checker* me) {
+    my true_branch_depth--;
+}
+
+// What `ty` is known to be in the true branches around (tsc's getSubstitutionType with getImpliedConstraint)
+static Ty const* substituted(Checker* me, Ty const* ty) {
+    u32 depth = my true_branch_depth < c_arraylen(my true_branch_check) ? my true_branch_depth : c_arraylen(my true_branch_check);
+    for (u32 i = 0; i < depth; i++) {
+        if (my true_branch_check[i] != ty) continue;
+        Ty const* both[2] = { ty, my true_branch_extends[i] };
+        ty = ty_intersection(me, both, 2, nullptr, (TyList){0});
+    }
+    return ty;
+}
+
+void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs) {
+    (void)span;
+    object = substituted(me, object);
+    index = substituted(me, ty_regular(me, index));
+    if ((object->flags | index->flags) & TYF_ERROR) return;
+    if (ty_is_generic_index(index) || ty_is_generic_object(me, object)) return; // TODO: TS2536 against keyof O
+    if (object->flags & (TYF_ANY | TYF_NEVER)) return;
+    Ty const* apparent = ty_apparent_type(me, object);
+    if (apparent->flags & (TYF_ANY | TYF_NEVER)) return;
+    if (index->kind == TY_UNION && !(index->flags & TYF_BOOLEAN)) {
+        for (u32 i = 0; i < index->composite.types.len; i++) {
+            check_indexed_access_part(me, apparent, index->composite.types.data[i], index_span, errs);
+        }
+    } else {
+        check_indexed_access_part(me, apparent, index, index_span, errs);
+    }
 }
 
 // tsc's getSuggestionForNonexistentIndexSignature: `o[k]` on something with a `get(k)` (`set(k, v)` when written)
@@ -1089,7 +1182,18 @@ static Ty const* missing_index_member(Checker* me, Ty const* object, Ty const* i
 // TS7053 (with what is missing), TS7015 (a number index signature and a key that isn't a number), TS7052 (a `get`
 // method to call instead), TS2551, TS2576, and TS2339 on an object literal expression
 void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
-    if (!compiler_options()->no_implicit_any || access->form != PROPERTY_EXPR_BRACKET) return;
+    if (access->form != PROPERTY_EXPR_BRACKET) return;
+    if (is_global_this(object)) {
+        // `globalThis["x"]` for a block scoped x (tsc's getPropertyTypeForIndexType), with or without noImplicitAny
+        Ty const* key = ty_regular(me, ty_access_key_type(me, access));
+        Atom const* name = ty_literal_name(me, key);
+        Symbol const* global = name ? symbol_get_export(object->declared.namespace_symbol, atom_sv(name)) : nullptr;
+        if (global && (global->flags & GLOBAL_BLOCK_SCOPED)) {
+            report_no_property(me, object, key, 2339, span, errs);
+            return;
+        }
+    }
+    if (!compiler_options()->no_implicit_any) return;
     Span index_span = access->prop.outer_span;
     if (index_span.source && index_span.source->is_js) return; // TODO: JS literal types (any)
     Ty const* full_index = ty_regular(me, ty_access_key_type(me, access));
@@ -1499,11 +1603,6 @@ static bool check_accessibility(
         return false;
     }
     return true;
-}
-
-static bool is_global_this(Ty const* ty) {
-    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_NAMESPACE && ty->declared.namespace_symbol &&
-        ty->declared.namespace_symbol->is_global_this;
 }
 
 static Span with_member_separator(Span span);

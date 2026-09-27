@@ -105,6 +105,8 @@ static inline void tuple_element_drop(TupleElement* me) { type_drop(&my type); }
 typedef struct IndexedType {
     TypeNode interface;
     TypeNode index;
+    Span index_span; // Where errors about the index go
+    Span span; // The whole `T[K]`
 } IndexedType;
 
 void indexed_type_drop(IndexedType* me);
