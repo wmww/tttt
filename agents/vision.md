@@ -30,6 +30,11 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **JS/JSDoc (plan 26)**: stage 1 done 2026-09-27 (JSDoc `@type`/`@param`/`@returns`/casts lowered into the
   annotation slots at parse time, CommonJS modules, `require` aliases): JS tests 160 -> 247, suite 8345. Stages 2-4
   (expandos and JS classes, typedef/template declarations, the other tags and TS8xxx) are unscheduled.
+- **Suite checker bugs (todo entry 8, 2026-09-27)**: suite 8408 -> 8480 from features that were simply missing
+  rather than subtle rules: JSON modules (were any), divergent accessor write types, noUncheckedIndexedAccess (parsed,
+  inert), returns of async functions/generators (never checked), indexed access *types* (never checked). Worth a
+  sweep for more parsed-but-inert options and TODO'd checks. The two things backed out both need tsc's constraint of
+  `T[K]` (triage.md).
 - **Absent**: substitution types, union origins, lazy reverse mapped types, decorator checking,
   declaration emit (out of scope: typechecker only, `--noEmit` semantics), project references, parallelism.
 
