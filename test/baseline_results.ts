@@ -22981,7 +22981,7 @@ const baselines = {
         types: true,
     },
     'nativeToBoxedTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25766,7 +25766,7 @@ const baselines = {
         types: true,
     },
     'primitiveMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31431,7 +31431,7 @@ const baselines = {
         types: true,
     },
     'typeParametersShouldNotBeEqual2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40191,7 +40191,7 @@ const baselines = {
         types: true,
     },
     'symbolType15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64836,12 +64836,12 @@ const baselines = {
         types: true,
     },
     'assignFromBooleanInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignFromBooleanInterface2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64891,12 +64891,12 @@ const baselines = {
         types: false,
     },
     'assignFromNumberInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignFromNumberInterface2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64921,12 +64921,12 @@ const baselines = {
         types: true,
     },
     'assignFromStringInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignFromStringInterface2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66166,12 +66166,12 @@ const baselines = {
         types: false,
     },
     'apparentTypeSubtyping': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'apparentTypeSupertype': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66511,7 +66511,7 @@ const baselines = {
         types: true,
     },
     'typeParameterAssignability3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66686,7 +66686,7 @@ const baselines = {
         types: true,
     },
     'objectTypeWithRecursiveWrappedPropertyCheckedNominally': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66751,12 +66751,12 @@ const baselines = {
         types: true,
     },
     'subtypesOfTypeParameterWithConstraints4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'subtypesOfTypeParameterWithRecursiveConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

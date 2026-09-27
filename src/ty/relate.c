@@ -578,11 +578,28 @@ static void flush_incompatible(RelationState* st) {
     if (skipped_source) report_relation_error_now(st->checker, st, skipped_source, skipped_target);
 }
 
+// tsc's reportErrorResults
 static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top) {
-    if (st->override_next_head) {
-        st->override_next_head--;
-        // (the head stays when what stood in for it is an incompatible step, tsc's headMessage)
-        bool pending = vec_ty_report_line_size(&st->lines) && vec_ty_report_line_back(&st->lines)->incompatible;
+    bool suppress = st->override_next_head > 0;
+    if (suppress) st->override_next_head--;
+    // (the head stays when what stood in for it is an incompatible step, tsc's headMessage)
+    bool pending = vec_ty_report_line_size(&st->lines) && vec_ty_report_line_back(&st->lines)->incompatible;
+    // Said below the head whether or not there is one (tsc's tryElaborateErrorsForPrimitivesAndObjects)
+    static struct { GlobalType wrapper; TyIntrinsic primitive; } const wrappers[] = {
+        { GLOBAL_STRING, TY_STRING }, { GLOBAL_NUMBER, TY_NUMBER }, { GLOBAL_BOOLEAN, TY_BOOLEAN }, { GLOBAL_SYMBOL, TY_ES_SYMBOL },
+    };
+    u32 primitive = TYF_VOID | TYF_NULLABLE | TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_BOOLEAN | TYF_ES_SYMBOL_LIKE | TYF_LITERAL |
+        TYF_ENUM | TYF_ENUM_LITERAL | TYF_TEMPLATE_LITERAL;
+    bool wrapper_case = (source->flags & TYF_OBJECT) && (target->flags & primitive);
+    for (u32 i = 0; i < c_arraylen(wrappers) && wrapper_case; i++) {
+        if (source != global_type(me, wrappers[i].wrapper) || target != ty_intrinsic(me, wrappers[i].primitive)) continue;
+        cstr source_str = display_for_report(me, source, false);
+        cstr target_str = display_for_report(me, target, false);
+        report_line(st, 2692, cstr_d("'", target_str, "' is a primitive, but '", source_str, "' is a wrapper object. Prefer using '",
+            target_str, "' when possible."));
+        c_drop(cstr, &source_str, &target_str);
+    }
+    if (suppress) {
         if (!top || !pending) {
             report_missing_constraint(me, st, source, target);
             st->skipped_source = source;
@@ -3138,7 +3155,8 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
                 if (target->flags & TYF_NON_PRIMITIVE) return TERNARY_FALSE;
                 return is_related_to(me, st, global_type(me, GLOBAL_EMPTY_OBJECT), target, false);
             }
-            return is_related_to(me, st, constraint, target, report);
+            // (from one type parameter to another, the constraint's failure doesn't explain anything)
+            return is_related_to(me, st, constraint, target, report && target->kind != TY_TYPE_PARAM);
         }
 
         case TY_KEYOF: {
