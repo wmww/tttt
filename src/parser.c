@@ -230,6 +230,7 @@ static bool parse_function_args(
     bool parse_abstract_and_new,
     bool parse_type_return_syntax,
     bool parse_function_args,
+    bool commit_on_paren,
     FunctionImpl* ret
 );
 static bool parse_number(Parser* parent, double* ret);
@@ -767,11 +768,11 @@ static bool hop_token(Parser* parent) {
             return true;
 
         case '.':
-            if (is_number_char(*(parent->pos + 1))) {
-                break;
-            } else if (parent->pos[1] == '.' && parent->pos[2] == '.') {
+            if (parent->pos[1] == '.' && parent->pos[2] == '.') {
                 parent->pos += 3;
                 return true;
+            } else if (is_number_char(*(parent->pos + 1))) {
+                break;
             } else {
                 parent->pos++;
                 return true;
@@ -1103,8 +1104,27 @@ typedef enum ParsingContext {
     PARSING_CLASS_MEMBERS,
     PARSING_ENUM_MEMBERS,
     PARSING_OBJECT_LITERAL_MEMBERS,
+    PARSING_PARAMETERS,
     PARSING_CONTEXT_COUNT,
 } ParsingContext;
+
+// tsc's isStartOfType(inStartOfParameter = true)
+static bool tok_is_start_of_parameter_type(Tok t) {
+    static const char* const words[] = {
+        "any", "unknown", "string", "number", "bigint", "boolean", "readonly", "symbol", "unique", "void",
+        "undefined", "null", "this", "typeof", "never", "new", "true", "false", "object", "infer", "import", "asserts",
+        nullptr,
+    };
+    static const char* const puncts[] = { "{", "[", "<", "|", "&", "*", "?", "!", "...", nullptr };
+    return tok_is_string(t) || tok_is_number(t) || tok_is_template(t) || tok_is_one_of(t, puncts) ||
+        tok_is_one_of(t, words) || tok_is_identifier(t);
+}
+
+// tsc's isStartOfParameter
+static bool tok_is_start_of_parameter(Tok t) {
+    return tok_is(t, "...") || tok_is(t, "{") || tok_is(t, "[") || tok_is(t, "@") || tok_is_modifier(t) ||
+        (*t.start == '#' && tok_is_word(t)) || tok_is_identifier(t) || tok_is_start_of_parameter_type(t);
+}
 
 // tsc's isListElement with inErrorRecovery (the stricter form, which is all the abort rule asks)
 static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
@@ -1126,6 +1146,8 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
         case PARSING_OBJECT_LITERAL_MEMBERS:
             return tok_is(t, "[") || tok_is(t, "*") || tok_is(t, "...") || tok_is(t, ".") ||
                 tok_is_literal_property_name(t);
+        case PARSING_PARAMETERS:
+            return tok_is_start_of_parameter(t);
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1146,6 +1168,8 @@ static bool list_is_terminator(ParsingContext ctx, Tok t) {
             return tok_is(t, "}");
         case PARSING_SWITCH_CLAUSE_STATEMENTS:
             return tok_is(t, "}") || tok_is(t, "case") || tok_is(t, "default");
+        case PARSING_PARAMETERS:
+            return tok_is(t, ")") || tok_is(t, "]");
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1182,6 +1206,13 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
             break;
         case PARSING_OBJECT_LITERAL_MEMBERS:
             parse_error(p, span, 1136, "Property assignment expected.");
+            break;
+        case PARSING_PARAMETERS:
+            if (tok_is_keyword(t)) {
+                parse_error(p, span, 1390, "'", span, "' is not allowed as a parameter name.");
+            } else {
+                parse_error(p, span, 1138, "Parameter declaration expected.");
+            }
             break;
         case PARSING_CONTEXT_COUNT: impossible;
     }
@@ -2153,7 +2184,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         } else {
             return parse_fail(&p);
         }
-    } else if (parse_function_args(&p, true, true, true, &parsed.func)) {
+    } else if (parse_function_args(&p, true, true, true, false, &parsed.func)) {
         parsed.func.full_span = span_from(value_anchor);
         *ret = function_impl_into_type(parsed.func);
     } else if (parse_inferred_type(&p, &parsed.inferred)) {
@@ -3013,19 +3044,31 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
 }
 
 static bool parse_function_args_inner(
-    Parser* parent, bool parse_abstract_and_new, bool parse_type_return_syntax, bool parse_ret_type, FunctionImpl* ret
+    Parser* parent,
+    bool parse_abstract_and_new,
+    bool parse_type_return_syntax,
+    bool parse_ret_type,
+    bool commit_on_paren,
+    FunctionImpl* ret
 );
 
+// commit_on_paren: once the `(` is there this is a parameter list whatever follows (tsc has chosen a function by then):
+// the list recovers from what isn't a parameter instead of failing
 static bool parse_function_args(
     Parser* parent,
     bool parse_abstract_and_new,
     bool parse_type_return_syntax,
     bool parse_ret_type,
+    bool commit_on_paren,
     FunctionImpl* ret
 ) {
     bool outer = parent->shared->in_parameters;
     parent->shared->in_parameters = true;
-    bool success = parse_function_args_inner(parent, parse_abstract_and_new, parse_type_return_syntax, parse_ret_type, ret);
+    u32 saved_context = list_enter(parent, PARSING_PARAMETERS);
+    bool success = parse_function_args_inner(
+        parent, parse_abstract_and_new, parse_type_return_syntax, parse_ret_type, commit_on_paren, ret
+    );
+    list_leave(parent, saved_context);
     parent->shared->in_parameters = outer;
     return success;
 }
@@ -3035,6 +3078,7 @@ static bool parse_function_args_inner(
     bool parse_abstract_and_new,
     bool parse_type_return_syntax,
     bool parse_ret_type,
+    bool commit_on_paren,
     FunctionImpl* ret
 ) {
     Parser p = parser(parent);
@@ -3067,6 +3111,7 @@ static bool parse_function_args_inner(
 
     if (hop_char(&p, '(')) {
         hop_whitespace(&p);
+        is_definitely_function |= commit_on_paren;
 
         while (*p.pos && *p.pos != ')') {
             if (hop_char(&p, ',')) {
@@ -3074,6 +3119,7 @@ static bool parse_function_args_inner(
             } else {
                 InitializedBinding initializer = {0};
                 const char* before_param = p.pos;
+                uint16_t errors_before_param = p.error_count;
                 bool explicit_optional = false;
                 bool rest = false;
                 Span rest_span = span_null;
@@ -3102,9 +3148,18 @@ static bool parse_function_args_inner(
                 } else if (hop_start_if_ends_on_word_break(&p, "this")) {
                     initializer.binding.tag = BINDING_IDENTIFIER;
                     initializer.binding.content_span = span_make(p.shared->source, p.pos - 4, p.pos);
-                } else {
+                } else if (!is_definitely_function) {
                     vec_expr_drop(&decorators);
                     goto drop_and_fail;
+                } else if (p.pos == before_param) {
+                    // Nothing of a parameter: the list's recovery (tsc's parseDelimitedList)
+                    vec_expr_drop(&decorators);
+                    if (list_abort_or_skip(&p, PARSING_PARAMETERS)) break;
+                    continue;
+                } else {
+                    // `(...)`, `(@dec)`: tsc's parseParameter with a missing name
+                    parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                    initializer.binding = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_from_pos(&p) };
                 }
                 hop_whitespace(&p);
 
@@ -3126,7 +3181,10 @@ static bool parse_function_args_inner(
                 if (initializer.binding.tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(&initializer.value, false);
                 hop_whitespace(&p);
 
-                if (vec_function_arg_is_empty(&ret->args) && initializer.binding.has_explicit_type) {
+                // tsc's skipParameterStart: only a name or pattern that parses without errors counts
+                if (vec_function_arg_is_empty(&ret->args) && initializer.binding.has_explicit_type &&
+                    p.error_count == errors_before_param
+                ) {
                     is_definitely_function = true;
                 }
 
@@ -3239,11 +3297,55 @@ static void function_ctx_leave(Parser* p, FunctionCtx saved) {
     p->shared->function_depth--;
 }
 
-static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, FunctionImpl* ret);
+typedef enum Tristate {
+    TRISTATE_FALSE,
+    TRISTATE_TRUE,
+    TRISTATE_UNKNOWN,
+} Tristate;
 
-static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionFlags flags, FunctionImpl* ret) {
+// tsc's isParenthesizedArrowFunctionExpressionWorker, at `(`, `<` or `async`: TRUE is an arrow function whatever
+// follows (`() {` is missing its `=>`, `(...)` its parameter name), FALSE is never one (`().x` is a parenthesized
+// expression missing its contents), UNKNOWN is up to trying
+static Tristate arrow_function_tristate(Parser* p) {
+    Tok first = tok_peek(p);
+    if (tok_is(first, "async")) {
+        first = tok_next(p, first);
+        if (first.newline_before || !(tok_is(first, "(") || tok_is(first, "<"))) return TRISTATE_FALSE;
+    }
+    Tok second = tok_next(p, first);
+    if (tok_is(first, "(")) {
+        if (tok_is(second, ")")) {
+            Tok third = tok_next(p, second);
+            return tok_is(third, "=>") || tok_is(third, ":") || tok_is(third, "{") ? TRISTATE_TRUE : TRISTATE_FALSE;
+        }
+        if (tok_is(second, "[") || tok_is(second, "{")) return TRISTATE_UNKNOWN;
+        if (tok_is(second, "...")) return TRISTATE_TRUE;
+        Tok third = tok_next(p, second);
+        if (tok_is_modifier(second) && !tok_is(second, "async") && tok_is_identifier(third)) {
+            return tok_is(third, "as") ? TRISTATE_FALSE : TRISTATE_TRUE;
+        }
+        if (!tok_is_identifier(second) && !tok_is(second, "this")) return TRISTATE_FALSE;
+        if (tok_is(third, ":")) return TRISTATE_TRUE;
+        if (tok_is(third, "?")) {
+            Tok fourth = tok_next(p, third);
+            return tok_is(fourth, ":") || tok_is(fourth, ",") || tok_is(fourth, "=") || tok_is(fourth, ")") ?
+                TRISTATE_TRUE : TRISTATE_FALSE;
+        }
+        if (tok_is(third, ",") || tok_is(third, "=") || tok_is(third, ")")) return TRISTATE_UNKNOWN;
+        return TRISTATE_FALSE;
+    }
+    if (tok_is(first, "<")) {
+        return tok_is_identifier(second) || tok_is(second, "const") ? TRISTATE_UNKNOWN : TRISTATE_FALSE;
+    }
+    return TRISTATE_UNKNOWN;
+}
+
+static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committed, FunctionImpl* ret);
+
+// committed: arrow_function_tristate() said TRUE, so this parses as an arrow function with errors rather than failing
+static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionFlags flags, bool committed, FunctionImpl* ret) {
     FunctionCtx saved = function_ctx_enter(parent, flags);
-    bool success = parse_arrow_function_inner(parent, ctx, ret);
+    bool success = parse_arrow_function_inner(parent, ctx, committed, ret);
     function_ctx_leave(parent, saved);
     if (success) {
         ret->is_async = flags.is_async;
@@ -3251,7 +3353,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionFlags flag
     return success;
 }
 
-static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
+static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committed, FunctionImpl* ret) {
     Parser p = parser(parent);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_ARROW_FUNCTION);
     Anchor a = anchor(&p);
@@ -3263,11 +3365,12 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, FunctionImpl
         return parse_fail(&p);
     }
 
-    if (parse_function_args(&p, false, false, !ctx.is_parsing_ternary, ret)) {
+    if (parse_function_args(&p, false, false, !ctx.is_parsing_ternary, committed, ret)) {
 
-        is_definitely_function =
+        is_definitely_function = committed || (
             !vec_function_arg_is_empty(&ret->args) &&
-            vec_function_arg_at(&ret->args, 0)->initializer.binding.has_explicit_type;
+            vec_function_arg_at(&ret->args, 0)->initializer.binding.has_explicit_type
+        );
 
         if (ret->ret_explicit) {
             is_definitely_function = true;
@@ -3333,7 +3436,7 @@ static bool parse_function_header(Parser* parent, FunctionFlags flags, FunctionI
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (!parse_function_args(&p, false, false, true, ret)) {
+    if (!parse_function_args(&p, false, false, true, true, ret)) {
         return parse_fail(&p);
     }
 
@@ -3358,7 +3461,7 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (!parse_function_args(&p, false, false, true, ret)) {
+    if (!parse_function_args(&p, false, false, true, true, ret)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -4124,7 +4227,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             if (member->key.tag == INTERFACE_KEY_MAPPED && member->readonly && !member->key.mapped.readonly) {
                 member->key.mapped.readonly = 1;
             }
-        } else if (parse_function_args(&p, true, false, true, &func)) {
+        } else if (parse_function_args(&p, true, false, true, false, &func)) {
             modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER | MODIFIER_VALIDATION_FLAG_METHOD);
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
@@ -4348,20 +4451,28 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
     if (!hop_char(&p, '.')) {
         return parse_fail(&p);
     }
-    if (optional_chain && *p.pos >= '0' && *p.pos <= '9') {
-        return parse_fail(&p); // `a ? .5 : b`
+    if ((*p.pos >= '0' && *p.pos <= '9') || *p.pos == '.') {
+        return parse_fail(&p); // `a ? .5 : b`, `01.0`: a number; `@dec ...rest`: a spread
     }
+    const char* after_dot = p.pos;
     hop_whitespace(&p);
 
+    // Committed after the dot (tsc's parseRightSideOfDot): a missing name is TS1003 and an empty name. `a.` followed
+    // by two words on the next line is missing its name too, reported right after the dot
     Span prop;
-    if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+    Tok t = tok_peek(&p);
+    if (t.newline_before && tok_is_word(t) && tok_is_word(tok_next(&p, t)) && !tok_next(&p, t).newline_before) {
+        prop = span_make(p.shared->source, after_dot, after_dot);
+        parse_error(&p, prop, 1003, "Identifier expected.");
+    } else if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
         // Private name, the `#` is part of the member's name
         Anchor name_anchor = anchor(&p);
         p.pos++;
         parse_identifier_or_keyword(&p, &prop);
         prop = span_from(name_anchor);
     } else if (!parse_identifier_or_keyword(&p, &prop)) {
-        return parse_fail(&p);
+        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+        prop = span_from_pos(&p);
     }
 
     *ret = expr_literal(prop, value_string(cstr_from_span(prop)));
@@ -5030,7 +5141,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         Parser sub_p = parser(&p);
         sub_p.pos = span_start_ptr(left_and_ret->outer_span);
 
-        if (parse_arrow_function(&sub_p, ctx, function_flags_null, &parsed.function)) {
+        if (parse_arrow_function(&sub_p, ctx, function_flags_null, false, &parsed.function)) {
             parse_success(&sub_p);
             expr_drop(left_and_ret);
             *left_and_ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
@@ -5230,16 +5341,18 @@ static bool parse_async_function_expr(Parser* parent, ExprCtx ctx, FunctionImpl*
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (!hop_start_if_ends_on_word_break(&p, "async")) {
+    if (!starts_with_followed_by_word_break(&p, "async")) {
         return parse_fail(&p);
     }
+    Tristate arrow_tristate = arrow_function_tristate(&p);
+    hop_start_if_ends_on_word_break(&p, "async");
     hop_whitespace(&p);
     if (p.whitespace == WHITESPACE_NEWLINE) {
         return parse_fail(&p);
     }
 
     if (!parse_function_keyword_function(&p, true, ret) &&
-        !parse_arrow_function(&p, ctx, (FunctionFlags){ .is_async = true }, ret)
+        !parse_arrow_function(&p, ctx, (FunctionFlags){ .is_async = true }, arrow_tristate == TRISTATE_TRUE, ret)
     ) {
         return parse_fail(&p);
     }
@@ -5827,6 +5940,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ClassDecl class_decl;
     } parsed;
     bool inner_span_set = false;
+    Tristate arrow_tristate;
 
     VecExpr substitutions;
     VecCStr texts;
@@ -5883,13 +5997,14 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_identifier_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
         inner_span_set = true;
-    } else if (parse_arrow_function(&p, ctx, function_flags_null, &parsed.function)) {
+    } else if ((*p.pos == '(' || *p.pos == '<') && (arrow_tristate = arrow_function_tristate(&p)) != TRISTATE_FALSE &&
+        parse_arrow_function(&p, ctx, function_flags_null, arrow_tristate == TRISTATE_TRUE, &parsed.function)
+    ) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_char(&p, '(')) {
+        // Committed like tsc's parseParenthesizedExpression: `()` is missing its expression
         hop_whitespace(&p);
-        if (!parse_expr(&p, expr_ctx_null, ret)) {
-            return parse_fail(&p);
-        }
+        expect_expr(&p, expr_ctx_null, ret);
         parse_comma_ops_right_side(&p, ret);
         hop_whitespace(&p);
         expect_char(&p, ')');

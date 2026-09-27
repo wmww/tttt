@@ -108,7 +108,7 @@ const baselines = {
     'ClassDeclaration26': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ClassDeclaration8': {
         errors: true,
@@ -10916,9 +10916,9 @@ const baselines = {
         types: true,
     },
     'emptyMemberAccess': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emptyModuleName': {
         errors: true,
@@ -11021,7 +11021,7 @@ const baselines = {
         types: true,
     },
     'enumConflictsWithGlobalIdentifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -11091,7 +11091,7 @@ const baselines = {
         types: true,
     },
     'enumMemberResolution': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -11357,7 +11357,7 @@ const baselines = {
     },
     'errorRecoveryWithDotFollowedByNamespaceKeyword': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'errorSpanForUnclosedJsxTag': {
@@ -11796,9 +11796,9 @@ const baselines = {
         types: true,
     },
     'es6ClassTest9': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6DeclOrdering': {
         errors: true,
@@ -13616,9 +13616,9 @@ const baselines = {
         types: true,
     },
     'fatarrowfunctionsOptionalArgsErrors3': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'fatarrowfunctionsOptionalArgsErrors4': {
         errors: false,
@@ -19476,7 +19476,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationTypeArgumentSyntaxOfCall': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23261,9 +23261,9 @@ const baselines = {
         types: true,
     },
     'newMissingIdentifier': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newNamesInGlobalAugmentations1': {
         errors: true,
@@ -24233,12 +24233,12 @@ const baselines = {
     'numericLiteralsWithTrailingDecimalPoints01': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'numericLiteralsWithTrailingDecimalPoints02': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'numericMethodName1': {
         errors: true,
@@ -25293,7 +25293,7 @@ const baselines = {
     'parse1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parse2': {
         errors: false,
@@ -27606,9 +27606,9 @@ const baselines = {
         types: true,
     },
     'restArgMissingName': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'restElementAssignable': {
         errors: true,
@@ -31861,9 +31861,9 @@ const baselines = {
         types: true,
     },
     'uncaughtCompilerError2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unclosedExportClause01': {
         errors: false,
@@ -33181,9 +33181,9 @@ const baselines = {
         types: true,
     },
     'varArgWithNoParamName': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'varArgsOnConstructorTypes': {
         errors: true,
@@ -33876,8 +33876,8 @@ const baselines = {
         types: false,
     },
     'asyncFunctionDeclaration10_es2017': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration11_es2017': {
@@ -34181,8 +34181,8 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration10_es5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration11_es5': {
@@ -34516,8 +34516,8 @@ const baselines = {
         types: false,
     },
     'asyncFunctionDeclaration10_es6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration11_es6': {
@@ -42581,8 +42581,8 @@ const baselines = {
         types: true,
     },
     'FunctionDeclaration10_es6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'FunctionDeclaration11_es6': {
@@ -56681,9 +56681,9 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_Expression1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_ExtendsOrImplementsClause1': {
         errors: false,
@@ -56807,8 +56807,8 @@ const baselines = {
     },
     'parserErrorRecovery_ParameterList4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ParameterList5': {
         errors: false,
@@ -56886,9 +56886,9 @@ const baselines = {
         types: true,
     },
     'parserEmptyParenthesizedExpression1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEqualsGreaterThanAfterFunction1': {
         errors: false,
@@ -58216,9 +58216,9 @@ const baselines = {
         types: true,
     },
     'parser566700': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser579071': {
         errors: false,
@@ -58402,7 +58402,7 @@ const baselines = {
     },
     'parserSkippedTokens16': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserSkippedTokens17': {
@@ -59151,14 +59151,14 @@ const baselines = {
         types: true,
     },
     'parserTypeQuery3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserTypeQuery4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserTypeQuery5': {
         errors: true,
