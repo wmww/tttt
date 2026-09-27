@@ -1455,8 +1455,13 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
         }
 
         hop_whitespace(&p);
-        // Only `static` can be followed by a line break (tsc's nextTokenCanFollowModifier): `static\n x` is static
-        if (p.whitespace == WHITESPACE_NEWLINE && !(is_member && span_equals(mod.span, "static"))) {
+        // Only `static`, `export` and `default` can be followed by a line break (tsc's nextTokenCanFollowModifier):
+        // `static\n x` is static, `export default\n@dec class C {}` a default export
+        if (p.whitespace == WHITESPACE_NEWLINE &&
+            !(is_member && span_equals(mod.span, "static")) &&
+            !span_equals(mod.span, "export") &&
+            !(prev_was_export && span_equals(mod.span, "default"))
+        ) {
             goto loop_end;
         }
 
