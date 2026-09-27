@@ -1894,9 +1894,68 @@ static bool awaited_in_progress(AwaitedFrame const* stack, Ty const* ty) {
     return false;
 }
 
+static bool primitive_or_never(Ty const* ty) {
+    u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
+        TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_NULLABLE | TYF_NEVER;
+    if (ty->kind != TY_UNION) return ty->flags & primitive;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (!primitive_or_never(ty->composite.types.data[i])) return false;
+    }
+    return true;
+}
+
+static Signature* const* call_signatures_of(Checker* me, Ty const* ty, u32* count) {
+    if (ty->kind == TY_UNION) return ty_union_signatures(me, ty->composite.types, false, count);
+    Ty const* apparent = ty_apparent_type(me, ty);
+    Members const* members = apparent->flags & TYF_OBJECT ? ty_members(me, apparent) : nullptr;
+    *count = members ? members->call_count : 0;
+    return members ? members->call : nullptr;
+}
+
+// What the first parameter of each signature takes, never for a signature without parameters (tsc's
+// getTypeOfFirstParameterOfSignature), in a union. Null without signatures
+static Ty const* first_params_union(Checker* me, Signature* const* sigs, u32 count, bool subtype) {
+    if (!count) return nullptr;
+    Ty const** types = malloc(sizeof(Ty const*) * count);
+    for (u32 i = 0; i < count; i++) {
+        signature_resolve(me, sigs[i]);
+        Ty const* param = sigs[i]->param_count ? ty_signature_param_type_at(me, sigs[i], 0) : nullptr;
+        types[i] = param ? param : ty_intrinsic(me, TY_NEVER);
+    }
+    Ty const* ret = subtype ? ty_union_subtype_reduced(me, types, count) : ty_union(me, types, count, nullptr, (TyList){0});
+    free(types);
+    return ret;
+}
+
+// What a thenable's `then` passes its fulfillment callback (tsc's getPromisedTypeOfPromise), null if it isn't one
+// TODO: the errors (TS1320 and friends) when it's not a proper thenable
+static Ty const* promised_type_of(Checker* me, Ty const* ty) {
+    if (ty->flags & TYF_ANY) return nullptr;
+    Ty const* constraint = ty_base_constraint(me, ty);
+    if (primitive_or_never(constraint ? constraint : ty)) return nullptr;
+    Ty const* then = ty_prop_type_of(me, ty, checker_atom(me, c_sv("then")));
+    if (!then || then->flags & TYF_ANY) return nullptr;
+    u32 count = 0;
+    Signature* const* sigs = call_signatures_of(me, then, &count);
+    Signature** candidates = malloc(sizeof(Signature*) * (count + 1));
+    u32 candidate_count = 0;
+    for (u32 i = 0; i < count; i++) {
+        signature_resolve(me, sigs[i]);
+        Ty const* this_type = sigs[i]->this_type;
+        if (this_type && !(this_type->flags & TYF_VOID) && !ty_is_related(me, ty, this_type, TY_RELATION_SUBTYPE)) continue;
+        candidates[candidate_count++] = sigs[i];
+    }
+    Ty const* onfulfilled = first_params_union(me, candidates, candidate_count, false);
+    free(candidates);
+    if (!onfulfilled) return nullptr;
+    onfulfilled = ty_non_nullable(me, onfulfilled);
+    if (onfulfilled->flags & TYF_ANY) return nullptr;
+    Signature* const* callbacks = call_signatures_of(me, onfulfilled, &count);
+    return first_params_union(me, callbacks, count, true);
+}
+
 // The type `await` gives for a value of the given type. `wrap`: a generic one that could be a promise is `Awaited<T>`
 // (tsc's getAwaitedType; without it getAwaitedTypeNoAlias)
-// TODO: only unwraps Promise<T> and PromiseLike<T> by name, not arbitrary thenables
 // A cycle is TS1062 at the current node (tsc reports it at the error node its callers pass, the `await` expression)
 static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFrame const* stack) {
     Symbol const* awaited = awaited_alias(me);
@@ -1922,6 +1981,12 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFr
             AwaitedFrame frame = { ty, stack };
             return awaited_type_in(me, args.data[0], wrap, &frame);
         }
+    }
+    Ty const* promised = promised_type_of(me, ty);
+    if (promised) {
+        if (promised == ty || awaited_in_progress(stack, promised)) return awaited_cycle(me);
+        AwaitedFrame frame = { ty, stack };
+        return awaited_type_in(me, promised, wrap, &frame);
     }
     return ty;
 }

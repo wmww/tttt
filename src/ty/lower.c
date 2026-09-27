@@ -867,6 +867,10 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         case SYMBOL_DECL_NAMESPACE:
         case SYMBOL_DECL_ALIAS: // `import * as ns`
             return ty_namespace_type(me, symbol);
+        case SYMBOL_DECL_EXPORT_EQUALS_PROPERTY: {
+            Ty const* type = ty_prop_type_of(me, ty_type_of_symbol(me, decl->node), checker_atom(me, symbol->name));
+            return type ? type : ty_intrinsic(me, TY_ERROR);
+        }
         default:
             return ty_intrinsic(me, TY_ERROR);
     }

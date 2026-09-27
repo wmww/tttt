@@ -753,6 +753,7 @@ static void symbol_flags_of_props(DeclProps const* props, u32* includes, u32* ex
         case SYMBOL_DECL_ALIAS:
         case SYMBOL_DECL_ASSIGNMENT:
         case SYMBOL_DECL_COMMONJS_MODULE:
+        case SYMBOL_DECL_EXPORT_EQUALS_PROPERTY:
         case SYMBOL_DECL_NONE:
             break;
     }
@@ -1478,9 +1479,25 @@ static Symbol* resolve_alias_target(Symbol* me) {
             Symbol* found = symbol_get_export(module, port_item_name(item->source_name));
             if (!found && assigned) {
                 if (assigned->is_placeholder) return nullptr;
-                // TODO: properties of the type of what is assigned are importable too
                 Symbol const* container = symbol_for_meaning(assigned, SYMBOL_NAMESPACE);
                 if (container) found = symbol_get_export(container, port_item_name(item->source_name));
+                // The properties of the value `export =` names are importable too (tsc's getExternalModuleMember).
+                // Whether it has the property is up to the checker: without one the value is the error type
+                bool from_value = symbol_resolved_flags(assigned) & SYMBOL_VALUE &&
+                    !csview_equals(port_item_name(item->source_name), "default");
+                if (from_value && !(found && symbol_resolved_flags(found) & SYMBOL_VALUE)) {
+                    Symbol* property = binder_new_symbol(my binder, port_item_name(item->source_name), SYMBOL_PROPERTY);
+                    property->name_span = item->source_name;
+                    symbol_add_decl(property, (SymbolDecl){
+                        .kind = SYMBOL_DECL_EXPORT_EQUALS_PROPERTY,
+                        .flags = SYMBOL_PROPERTY,
+                        .node = assigned,
+                        .name = item->source_name,
+                        .full = item->full_span,
+                    });
+                    if (!found) return property;
+                    my alias->value_target = property;
+                }
                 if (!found) return nullptr;
             }
             if (!found) {
@@ -1591,6 +1608,7 @@ static u32 resolved_flags(Symbol const* me, int depth) {
     u32 flags = my flags & ~(u32)SYMBOL_ALIAS;
     if (my flags & SYMBOL_ALIAS && depth < ALIAS_CHAIN_MAX) {
         flags |= resolved_flags(symbol_resolve_alias((Symbol*)me), depth + 1);
+        if (my alias->value_target) flags |= my alias->value_target->flags;
     }
     return flags;
 }
@@ -1603,7 +1621,11 @@ Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning) {
     for (int depth = 0; me && depth < ALIAS_CHAIN_MAX; depth++) {
         if (my flags & meaning || my is_placeholder) return me;
         if (!(my flags & SYMBOL_ALIAS)) return nullptr;
-        me = symbol_resolve_alias((Symbol*)me);
+        Symbol const* target = symbol_resolve_alias((Symbol*)me);
+        if (target && !(target->flags & meaning) && my alias->value_target && my alias->value_target->flags & meaning) {
+            return my alias->value_target;
+        }
+        me = target;
     }
     return nullptr;
 }

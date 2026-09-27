@@ -119,6 +119,9 @@ typedef enum SymbolDeclKind {
     SYMBOL_DECL_ASSIGNMENT,     // Expr: the value of a JavaScript assignment that declares (`exports.x = <expr>`)
     SYMBOL_DECL_COMMONJS_MODULE, // SourceFile: the `module` of a CommonJS file, `{ exports: ... }`
     SYMBOL_DECL_BUILTIN,        // TypeNode const*: `number`, `globalThis`... (program_add_builtins())
+    // Symbol const*: what `export =` names in a module a named import is from; the value is its property of the
+    // import's name (tsc's symbolFromVariable in getExternalModuleMember)
+    SYMBOL_DECL_EXPORT_EQUALS_PROPERTY,
 } SymbolDeclKind;
 
 typedef struct SymbolDecl {
@@ -146,6 +149,10 @@ typedef struct SymbolAlias {
     Span name; // `export default x`, which has no item: the name to resolve from scope
     AliasState state;
     Symbol* target; // Never an alias that is nothing else. A placeholder when resolution failed
+    // `import { Request } from "m"` where m's `export =` names a value whose namespace exports `Request` without a
+    // value meaning: the property `Request` of the value, which gives the import its value meaning (tsc's
+    // combineValueAndTypeSymbols). Null otherwise
+    Symbol* value_target;
 } SymbolAlias;
 
 // What only modules (files and ambient modules) have

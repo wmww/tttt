@@ -1953,7 +1953,7 @@ const baselines = {
     'asyncFunctionsAndStrictNullChecks': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncIIFE': {
         errors: true,
@@ -23638,7 +23638,7 @@ const baselines = {
     'noImplicitReturnsExclusions': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noImplicitReturnsInAsync1': {
         errors: true,
@@ -33848,7 +33848,7 @@ const baselines = {
     'awaitInheritedPromise_es2017': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'await_incorrectThisType': {
         errors: false,
