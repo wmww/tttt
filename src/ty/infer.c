@@ -1208,6 +1208,11 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
         bool widen = !keep_literals && !primitive && param->top_level;
         for (u32 j = 0; j < param->co_len; j++) {
             Ty const* candidate = param->co[j];
+            // (tsc regularizes an argument's literal when its contextual type has room for it, checkExpressionWithContextualType;
+            // tttt looks at the candidates here instead, the contextual type being the type parameter where it's inferred to)
+            if (!primitive && widen && (candidate->flags & TYF_FRESH_LITERAL) && ty_is_literal_of_contextual_type(me, candidate, param->param)) {
+                candidate = ty_regular(me, candidate);
+            }
             candidates[j] = primitive ? ty_regular(me, candidate) : widen ? ty_widened_literal(me, candidate) : candidate;
         }
         // Several object literals are one candidate, their union (tsc's unionObjectAndArrayLiteralCandidates; array

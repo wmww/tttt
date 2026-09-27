@@ -320,6 +320,14 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
     return false;
 }
 
+// The flags of a type and, through unions and intersections, of its parts
+static u32 ty_flags_in_parts(Ty const* ty) {
+    if (ty->kind != TY_UNION && ty->kind != TY_INTERSECTION) return ty->flags;
+    u32 ret = ty->flags;
+    for (u32 i = 0; i < ty->composite.types.len; i++) ret |= ty_flags_in_parts(ty->composite.types.data[i]);
+    return ret;
+}
+
 // tsc's isLiteralOfContextualType: a literal type stays as it is where the contextual type has room for literals of
 // its kind
 static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty const* contextual, u32 depth) {
@@ -336,13 +344,16 @@ static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty con
         // A type parameter or deferred type: what its constraint has room for. `T extends string` keeps "a"
         Ty const* constraint = ty_base_constraint(me, contextual);
         if (!constraint || constraint == contextual) return false;
-        if (constraint->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_BOOLEAN | TYF_ES_SYMBOL)) {
-            u32 f = literal->flags;
-            return ((constraint->flags & TYF_ES_SYMBOL) && (f & TYF_UNIQUE_ES_SYMBOL)) ||
-                ((constraint->flags & TYF_STRING) && (f & TYF_STRING_LITERAL)) ||
-                ((constraint->flags & TYF_NUMBER) && (f & TYF_NUMBER_LITERAL)) ||
-                ((constraint->flags & TYF_BIGINT) && (f & TYF_BIGINT_LITERAL)) ||
-                ((constraint->flags & TYF_BOOLEAN) && (f & TYF_BOOLEAN_LITERAL));
+        // (tsc's maybeTypeOfKind: `string` anywhere in a union or intersection counts)
+        u32 kinds = ty_flags_in_parts(constraint);
+        u32 f = literal->flags;
+        if (((kinds & TYF_ES_SYMBOL) && (f & TYF_UNIQUE_ES_SYMBOL)) ||
+            ((kinds & TYF_STRING) && (f & TYF_STRING_LITERAL)) ||
+            ((kinds & TYF_NUMBER) && (f & TYF_NUMBER_LITERAL)) ||
+            ((kinds & TYF_BIGINT) && (f & TYF_BIGINT_LITERAL)) ||
+            ((kinds & TYF_BOOLEAN) && (f & TYF_BOOLEAN_LITERAL))
+        ) {
+            return true;
         }
         return is_literal_of_contextual_type(me, literal, constraint, depth + 1);
     }
@@ -361,6 +372,10 @@ static bool any_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* 
         }
     }
     return (ty->flags & TYF_BOOLEAN) && contextual && is_literal_of_contextual_type(me, ty_intrinsic(me, TY_TRUE), contextual, 0);
+}
+
+bool ty_is_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* contextual) {
+    return any_literal_of_contextual_type(me, ty, contextual);
 }
 
 // tsc's checkExpressionForMutableLocation: the type a property or element gets from its initializer

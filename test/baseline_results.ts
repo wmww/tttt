@@ -2448,7 +2448,7 @@ const baselines = {
     'bindingPatternContextualTypeDoesNotCauseWidening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bindingPatternInParameter01': {
         errors: true,
@@ -9206,7 +9206,7 @@ const baselines = {
         types: false,
     },
     'deepKeysIndexing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -13538,7 +13538,7 @@ const baselines = {
     'extractInferenceImprovement': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fakeInfinity1': {
         errors: true,
@@ -20342,8 +20342,8 @@ const baselines = {
     },
     'keyofIsLiteralContexualType': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'keyofModuleObjectHasCorrectKeys': {
         errors: true,
@@ -24326,9 +24326,9 @@ const baselines = {
         types: false,
     },
     'objectFreezeLiteralsDontWiden': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectFromEntries': {
         errors: true,
@@ -30806,9 +30806,9 @@ const baselines = {
         types: false,
     },
     'twiceNestedKeyofIndexInference': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeAliasDeclarationEmit': {
         errors: true,
@@ -64116,7 +64116,7 @@ const baselines = {
         types: false,
     },
     'isomorphicMappedTypeInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

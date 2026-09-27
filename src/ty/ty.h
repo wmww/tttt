@@ -1068,6 +1068,8 @@ Ty const* ty_expr_type(Checker* me, Expr const* expr); // The memo, else checked
 // The memo as a mutable location holds it (tsc's checkExpressionForMutableLocation with a contextual type): fresh
 // literals widen unless the contextual type has room for them
 Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* contextual);
+// tsc's isLiteralOfContextualType (of a literal or a union with literals in it)
+bool ty_is_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* contextual);
 // An array literal re-read as a tuple of its elements (tsc's checkArrayLiteral with forceTuple), from the elements'
 // memos
 Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual);
