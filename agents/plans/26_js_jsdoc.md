@@ -10,7 +10,15 @@ file's top-level statements. What was left out or approximated is in hacks.md "J
 stage 1"; the most valuable leftovers for later stages: `module.exports.x` merging into export= (stage 2),
 `@type` on declaring assignments (stage 3, with typedefs), JSDoc parse errors. Unresolved JSDoc names are silent
 until stage 3 (HACK). `documentation.md` "JSDoc" / "CommonJS" describe what exists.
-Stage 2 notes: `Object.defineProperty(exports, ...)` is the rest of spurious TS2580; the symbols baseline already has
+**Stage 2 done** (2026-09-27, 3 commits "Plan 26 stage 2, part N"): JS tests passing 260 -> 299, suite 8631 -> 8686.
+Built: expandos in TS and JS (declare step, exports of the host, entity-name hosts, `{}` containers, class expression
+hosts), `this.x` members of JS classes and constructor functions (resolve walk, `Symbol.members`), `F.prototype.x`,
+constructor functions as classes (construct signature, `this`, `typeof F`), JS optional parameters, the TS callable
+TS2339 gate removed. Not done: `F.prototype = {...}`, `Object.defineProperty` declarations, `arguments` as a rest
+parameter (tsc only does that with a JSDoc `...T` now), JS widening of `null`/`[]` initializers, **the JS TS2339
+gate** (removing it still loses ~57 tests: hacks.md "Assignment declarations" lists why). `documentation.md`
+"Assignment declarations" describes what exists.
+Stage 2 notes (kept for the leftovers): `Object.defineProperty(exports, ...)` is the rest of spurious TS2580; the symbols baseline already has
 an override hook for tsc's getSpecialPropertyAssignmentSymbol shapes (`commonjs_symbol_overrides()`), `this.x =` and
 expandos will need the same kinds of lines; `binary_commonjs_declaration()` is where assignment declaration kinds
 start (tsc's getAssignmentDeclarationKind), extend it rather than adding a second classifier.

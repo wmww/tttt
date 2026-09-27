@@ -1020,7 +1020,16 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
 
         case TY_DECLARED_CLASS_STATIC:
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
-                if (node->kind == SYMBOL_DECL_CLASS) builder_add_class_static_side(me, &builder, ty, node->node);
+                if (node->kind != SYMBOL_DECL_CLASS) continue;
+                builder_add_class_static_side(me, &builder, ty, node->node);
+                // `var C = class {}; C.x = 1`
+                Symbol const* host = ((ClassDecl const*)node->node)->expando_host;
+                if (host && host != decl) {
+                    Members const* expandos = ty_members(me, ty_namespace_type(me, host));
+                    for (u32 i = 0; i < expandos->prop_count; i++) {
+                        if (!builder_find_prop(&builder, expandos->props[i]->name)) builder_push(&builder, props, expandos->props[i]);
+                    }
+                }
             }
             break;
 

@@ -457,6 +457,10 @@ void scope_add_commonjs_module(Scope* me);
 // or its function (or file), or a variable initialized with a function (JavaScript: also a class or `{}`), declares x
 // in f's exports (tsc's bindSpecialPropertyAssignment)
 void scope_add_expandos(Scope* me, struct Block const* block);
+// The expression a declaration initialized (or a member assigned) with `init` is an expando container of (tsc's
+// getExpandoInitializer/getDefaultedExpandoInitializer): a function or arrow function, in JavaScript also a class
+// expression or `{}`, possibly defaulted (`var ns = ns || {}`: `name` is the declared name, invalid for a member)
+Expr* expando_initializer(Expr* init, Span name, bool js);
 // JavaScript `this.x = v` (`op`, whose left side was just resolved): declares x as an instance member of the class
 // `this` is of (a static member in a static method), or of the constructor function it is in (tsc's
 // bindThisPropertyAssignment)

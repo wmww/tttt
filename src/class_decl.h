@@ -111,6 +111,9 @@ typedef struct ClassDecl {
     VecClassItem items;
     Symbol* symbol;
     struct ClassDecl const* outer_class; // The class this one is in (scope_enclosing_class()), set when resolving
+    // A JavaScript class expression that initializes a variable with expandos (`var C = class {}; C.x = 1`,
+    // scope_add_expandos()): the variable, whose exports are static members of this class
+    Symbol const* expando_host;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

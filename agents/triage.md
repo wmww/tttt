@@ -46,6 +46,18 @@ is one code). The triage fixed the three "misplaced" span buckets (TS2554, TS605
 - The big ones (spurious/missing TS2322 ~55 each, missing TS2339 53, spurious TS2304 39, spurious TS2339 28) are
   mixed bags: sample, don't assume one cause.
 
+## From plan 26 stage 2 (2026-09-27)
+- argumentsReferenceInMethod3_Js / argumentsReferenceInMethod5_Js lost their types component: `/** @type object */
+  this.x = v` needs `@type` without braces (tsc's parseTypeTag with mayOmitBraces) *and* `@type` on a declaring
+  assignment as its declared type, and JSDoc `object` in a JS file without noImplicitAny is any (tsc's
+  getTypeFromTypeNodeWorker ObjectKeyword). Stage 3 material.
+- jsEnumCrossFileExport lost its errors: `@param {!Host.UserMetrics.Action}` now resolves to the expando value (its
+  object type) where tsc takes the `@enum` tag; `@typedef {string} Host.UserMetrics.Bargh` isn't declared. Stage 3.
+- The JS TS2339 gate: hacks.md "Assignment declarations" lists what removing it still breaks; each item is a small
+  binder piece. Worth one session after stage 3 (JSDoc typedefs are part of it).
+- multipleDeclarations: `F.prototype.m = function` next to `this.m = v` is two symbols in tsc (Method excludes
+  Property), one member here.
+
 ## From plan 26 stage 1 (2026-09-27)
 - **`import("…")` specifiers in the types baseline**: tsc prints some module specifiers as absolute paths that the
   harness then strips (`/.src/a` -> `a`), so the text matches but the `^^^` underline is 6 longer (742 baseline lines,
@@ -224,11 +236,6 @@ is one code). The triage fixed the three "misplaced" span buckets (TS2554, TS605
   false branch); a flat `TyMapper` can't say "every type parameter -> any". Now costs `reactHOCSpreadprops` (React's LibraryManagedAttributes
   over `ComponentClass<P>`: tsc resolves it to the false branch). Plan-worthy: a wildcard type + cached permissive
   instantiation, the plan 22 file (deleted, git history) had no more on it. Relevant to plan 25's React corpus.
-- TS function expandos (`function f() {}; f.defaultProps = ...`) now cost `tsxStatelessComponentDefaultProps` (React's
-  Defaultize never sees `defaultProps`). tsc: binder bindSpecialPropertyAssignment for function symbols, members in
-  resolveAnonymousTypeMembers. Covered by plan 26 stage 2 (expandos in JS and TS). Also the biggest part of plan 21's
-  symbols `decls-missing` bucket (~50 tests alone after stage 6): each `f.x = ...` is a declaration of `f` and of
-  `f.x` in tsc's symbols baseline.
 - `import.meta` is typed now (ty_import_meta_type) but its module-kind checks aren't: TS1343 (module option doesn't
   allow import.meta), TS1470 (in a CommonJS output file).
 - Plan 29 stage 3 leftovers (circularity diagnostics): recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc
@@ -240,8 +247,9 @@ is one code). The triage fixed the three "misplaced" span buckets (TS2554, TS605
   Spurious TS2589: recursiveConditionalTypes (the `unbox(b1)` calls, 12), recursiveTypeReferences1.
 - A homomorphic mapped type over a `satisfies`/const object doesn't resolve its keys (the `computedOptions` mapped
   type in the tsc corpus's `utilities.ts` printed with a huge `keyof "a" & keyof "b"` key).
-- `expandoFunctionSymbolProperty` (re-probed; plan 26 stage 2 should cover it): `f[symb] = ...` on a function declaration isn't an expando property,
-  so `f` misses `[symb]` (spurious TS2741).
+- `expandoFunctionSymbolProperty(Js)` (re-probed after plan 26 stage 2): `f[symb] = ...` with a unique symbol key is
+  a late-bound expando (tsc's hasDynamicName -> bindAnonymousDeclaration + addLateBoundAssignmentDeclarationToSymbol),
+  not declared here: `f` misses `[symb]` (spurious TS2741). Only static names are expandos so far.
 - mappedTypeAsClauseRelationships (re-probed): elaborates one line tsc doesn't ("Type 'T[(P extends string ?
   `bool${P}` : never) & keyof T]' is not assignable to type 'T[P]'") for `+?` with a remapping `as`.
 - templateLiteralTypes1/3/4: TS1125/TS1121 for escapes in template literal types, TS2590 not reported, `${symbol}` not

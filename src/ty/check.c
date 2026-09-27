@@ -1027,12 +1027,13 @@ static void check_access(
         report_no_property(me, object, index, 2339, index_span, errs);
         return;
     }
-    // HACK: no expando members yet (`function f() {} f.x = 1`, and everything JS files declare by assignment:
-    // `this.x = 1`, `module.exports.x`, prototype assignments), so callables and JS files are let through
+    // HACK: JavaScript files get no TS2339 yet: what they declare by assignment isn't all there (nested
+    // namespaces `ns.a.b = v`, `var ns = {}` containers and tsc's JS literal leniency, class expressions)
+    // HACK: JavaScript files get no TS2339 yet: what they declare by assignment isn't all there (plan 26 stage 2
+    // notes in hacks.md: class expression hosts, expandos of another file's global namespace, nested `exports.x`...)
     if (index_span.source && index_span.source->is_js) return;
     if (object->flags & TYF_OBJECT) {
         Members const* members = ty_members(me, object);
-        if (members->call_count && !members->construct_count) return;
         // HACK: a mapped type over something generic (`Pick<T, K>`) only knows its members through its constraint
         if (members->mapped && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
         if (ty_has_unresolved_base(me, object)) return;

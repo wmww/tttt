@@ -16,7 +16,8 @@ corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and
 5. Done: plan 31 (nestjs-boilerplate pinned as `--corpus nest`: 134 -> 0 over five commits, all tsc rules; suite
    8631, type-fest 47, valibot 49, react 1, tsc 0). Decorators showed nothing: a clean corpus only finds spurious
    diagnostics (plan 19's NestJS section). Plan file deleted.
-6. **Plan 26 stage 2**: expandos and JS classes (the binder's assignment declarations). `./jsstats.py` before/after.
+6. Done: plan 26 stage 2 (JS tests 260 -> 299, suite 8686, corpora unchanged). The JS TS2339 gate stays (hacks.md
+   "Assignment declarations"; triage.md "From plan 26 stage 2").
 7. **Corpus session (plan 19)**: the top root causes from entry 2 (type-fest/valibot re-sample; nest is at 0 and
    react at 1), across all four corpora.
 8. **Suite checker bugs 2**: failstats' single-code buckets (triage.md "Single-code error buckets") and the

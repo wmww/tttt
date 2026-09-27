@@ -2235,12 +2235,15 @@ Generic const* symbol_type_generic(Symbol const* me) {
 
 // The expression a variable of this initializer is an expando container of (tsc's getDeclaredExpandoInitializer):
 // a function or arrow function, in JavaScript also a class expression or `{}`, possibly defaulted (`var ns = ns || {}`)
-static Expr* expando_initializer(Expr* init, Span name, bool js) {
+Expr* expando_initializer(Expr* init, Span name, bool js) {
     if (init->tag == EXPR_BINARY_OP && !expr_is_perenthisized(init) &&
         (init->binary_op->op == BINARY_OP_OR_OR || init->binary_op->op == BINARY_OP_EH_EH)
     ) {
+        // `var ns = ns || {}`, `ns.a = ns.a || {}` (tsc's getDefaultedExpandoInitializer: the same name on the left)
         Expr const* left = &init->binary_op->left;
-        if (!js || left->tag != EXPR_IDENTIFIER || !csview_equals_sv(left->identifier.name.sv, name.sv)) return nullptr;
+        bool same = span_valid(name) ? left->tag == EXPR_IDENTIFIER && csview_equals_sv(left->identifier.name.sv, name.sv) :
+            left->tag == EXPR_PROPERTY || left->tag == EXPR_IDENTIFIER;
+        if (!js || !same) return nullptr;
         init = &init->binary_op->right;
     }
     while (init->tag == EXPR_BINARY_OP && init->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(init)) {
@@ -2254,24 +2257,53 @@ static Expr* expando_initializer(Expr* init, Span name, bool js) {
     }
 }
 
-// What `f` of `f.x = v` names, if it can have expandos: tsc's lookupSymbolForPropertyAccess in the block, then in the
-// function (or file), and isExpandoSymbol / isFunctionSymbol. `init_ret`: a variable's expando initializer
-static Symbol* expando_host(Scope* me, Span name, Expr** init_ret) {
+static Symbol* lookup_name_for_property_access(Scope* me, csview name);
+
+// What an entity name `a` or `a.b.c` names where an assignment to one of its properties is (tsc's
+// lookupSymbolForPropertyAccess): a name in the block, then in its function (or file); a property of a namespace-like
+// symbol's exports. Null for anything else
+static Symbol* lookup_for_property_access(Scope* me, Expr const* entity) {
+    if (expr_is_perenthisized(entity)) return nullptr;
+    if (entity->tag == EXPR_PROPERTY) {
+        Span name = expr_static_property_name(entity);
+        Symbol* object = span_valid(name) ? lookup_for_property_access(me, &entity->property->expr) : nullptr;
+        return object && object->exports && !object->is_module ? symbol_table_get(object->exports, name.sv) : nullptr;
+    }
+    if (entity->tag != EXPR_IDENTIFIER || entity->identifier.keyword) return nullptr;
+    Symbol* found = lookup_name_for_property_access(me, entity->identifier.name.sv);
+    // The local `f` of `export default function f` is the default export
+    return found && found->export_symbol ? found->export_symbol : found;
+}
+
+static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
+    u64 hash = symbol_name_hash(name);
+    for (Scope* scope = me; scope; scope = scope->parent) {
+        if (scope != me && !scope_is_var_container(scope)) continue;
+        bool global = scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_GLOBAL_AUGMENTATION;
+        Symbol* found = symbol_table_lookup(global ? &my binder->globals : &scope->locals, name, hash);
+        Symbol* container = scope->container;
+        if (!found && container && container->exports && !container->is_global_this) {
+            found = symbol_table_lookup(container->exports, name, hash);
+            // `export default function f`, which is `default`
+            Symbol* default_export = found ? nullptr : symbol_table_get(container->exports, c_sv("default"));
+            if (default_export && default_export->is_default_export &&
+                csview_equals_sv(symbol_default_export_local_name(default_export), name)
+            ) {
+                found = default_export;
+            }
+        }
+        if (found || scope_is_var_container(scope)) return found;
+    }
+    return nullptr;
+}
+
+// What `f` of `f.x = v` names, if it can have expandos: tsc's isExpandoSymbol, and in TypeScript isFunctionSymbol.
+// `init_ret`: a variable's expando initializer
+static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
     *init_ret = nullptr;
     SourceFile const* file = my file;
     bool js = file && file->is_js;
-    u64 hash = symbol_name_hash(name.sv);
-    // The block's own names, then its function's (or file's)
-    Symbol* found = nullptr;
-    for (Scope* scope = me; scope && !found; scope = scope->parent) {
-        if (scope != me && !scope_is_var_container(scope)) continue;
-        bool global = scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_GLOBAL_AUGMENTATION;
-        found = symbol_table_lookup(global ? &my binder->globals : &scope->locals, name.sv, hash);
-        if (!found && scope->container && scope->container->exports && !scope->container->is_global_this) {
-            found = symbol_table_lookup(scope->container->exports, name.sv, hash);
-        }
-        if (scope_is_var_container(scope)) break;
-    }
+    Symbol* found = lookup_for_property_access(me, entity);
     if (!found || found->is_placeholder || (found->flags & SYMBOL_ALIAS)) return nullptr;
     // A global declared in another file isn't this file's to extend (tsc looks in the file's locals)
     bool here = false;
@@ -2292,13 +2324,40 @@ static Symbol* expando_host(Scope* me, Span name, Expr** init_ret) {
             Binding const* binding = value->node;
             if (binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
             InitializedBinding* initialized = (InitializedBinding*)binding;
-            Expr* init = expando_initializer(&initialized->value, name, js);
+            Expr* init = expando_initializer(&initialized->value, binding->content_span, js);
             if (!init) return nullptr;
             // An annotated variable has the type it says (its expandos are declarations, not members)
             if (!binding->has_explicit_type) *init_ret = init;
             return found;
         }
+        case SYMBOL_DECL_ASSIGNMENT: {
+            // JavaScript `ns.a = {}` (or a function, a class): `ns.a.b = v` declares b in it
+            if (!js) return nullptr;
+            Expr* init = expando_initializer((Expr*)value->node, span_null, js);
+            if (!init) return nullptr;
+            *init_ret = init;
+            return found;
+        }
         default: return nullptr;
+    }
+}
+
+// An assignment at the top level of a file to a property of `a.b` makes each of a and a.b a namespace: a declaration
+// of it (tsc's bindPotentiallyMissingNamespaces), `full` null for one elsewhere, which is only a way into its members
+static void add_expando_namespace_decls(Scope* me, Expr const* entity, bool top_level) {
+    if (entity->tag == EXPR_PROPERTY) add_expando_namespace_decls(me, &entity->property->expr, top_level);
+    Symbol* symbol = lookup_for_property_access(me, entity);
+    if (!symbol) return;
+    Span name = entity->tag == EXPR_PROPERTY ? entity->property->prop.outer_span : entity->outer_span;
+    symbol_ensure_exports(symbol);
+    symbol->flags |= SYMBOL_VALUE_MODULE;
+    bool has_expando = false;
+    for (u32 i = 0; i < symbol->decl_count && !has_expando; i++) has_expando = symbol->decls[i].kind == SYMBOL_DECL_EXPANDO;
+    if (top_level || !has_expando) {
+        symbol_add_decl(symbol, (SymbolDecl){
+            .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = entity,
+            .name = top_level ? name : span_null, .full = top_level ? name : span_null,
+        });
     }
 }
 
@@ -2312,7 +2371,7 @@ static void add_prototype_property(Scope* me, Expr* constructor, Span name, Expr
     SourceFile const* file = my file;
     if (!file || !file->is_js) return;
     Expr* init;
-    Symbol* host = expando_host(me, constructor->identifier.name, &init);
+    Symbol* host = expando_host(me, constructor, &init);
     if (!host) return;
     if (init && (init->tag != EXPR_FUNCTION || span_valid(init->function->arrow_span))) return;
     if (!init && !(host->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS))) return;
@@ -2336,23 +2395,12 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
         add_prototype_property(me, prototype, name, left, &op->right);
         return;
     }
-    if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || expr_is_perenthisized(object)) return;
     Expr* init;
-    Symbol* host = expando_host(me, object->identifier.name, &init);
+    Symbol* host = expando_host(me, object, &init);
     if (!host) return;
     if (init && init->tag == EXPR_FUNCTION) init->function->expando_host = host;
-    // The host becomes a namespace (bindPotentiallyMissingNamespaces): a declaration where the assignment is at the top
-    // level of the file, else only a way into its members
-    symbol_ensure_exports(host);
-    host->flags |= SYMBOL_VALUE_MODULE;
-    bool has_expando = false;
-    for (u32 i = 0; i < host->decl_count && !has_expando; i++) has_expando = host->decls[i].kind == SYMBOL_DECL_EXPANDO;
-    if (top_level || !has_expando) {
-        symbol_add_decl(host, (SymbolDecl){
-            .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = object,
-            .name = top_level ? object->outer_span : span_null, .full = top_level ? object->outer_span : span_null,
-        });
-    }
+    if (init && init->tag == EXPR_CLASS_DECL) init->class_decl->expando_host = host;
+    add_expando_namespace_decls(me, object, top_level);
     // The member (bindPotentiallyNewExpandoMemberToNamespace)
     bool merged;
     Symbol* member = declare_symbol(me, host->exports, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
@@ -2372,14 +2420,21 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     });
 }
 
+// Every assignment of a chain (`f.a = f.b = 1`)
+static void add_expando_chain(Scope* me, Expr* e, bool top_level) {
+    for (; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL; e = &e->binary_op->right) {
+        if (expr_is_perenthisized(e)) break;
+        add_expando(me, e->binary_op, top_level);
+    }
+}
+
 void scope_add_expandos(Scope* me, Block const* block) {
     bool top_level = my kind == SCOPE_MODULE || my kind == SCOPE_SCRIPT;
     for_each (i, vec_statement, &block->statements) {
-        if (i->tag != STATEMENT_EXPR) continue;
-        // Every assignment of a chain (`f.a = f.b = 1`)
-        for (Expr* e = &i->expr; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL; e = &e->binary_op->right) {
-            if (expr_is_perenthisized(e)) break;
-            add_expando(me, e->binary_op, top_level);
+        if (i->tag == STATEMENT_EXPR) add_expando_chain(me, &i->expr, top_level);
+        // `var a = f.x = {}` (not at the top level: the assignment's parent is the declaration)
+        if (i->tag == STATEMENT_DECL_VARIABLE) {
+            for_each (j, vec_initialized_binding, &i->decl.variable.initializers) add_expando_chain(me, &j->value, false);
         }
     }
 }
@@ -2421,6 +2476,16 @@ static void declare_assignment_member(
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
         .name = left->outer_span, .full = left->outer_span,
     });
+    // In source order, like tsc's one binder walk (`F.prototype.x = v` is declared before the walk reaches a
+    // `this.x = v` above it)
+    for (u32 i = member->decl_count - 1; i > 0; i--) {
+        SymbolDecl* a = &member->decls[i - 1];
+        SymbolDecl* b = &member->decls[i];
+        if (a->full.source != b->full.source || span_start_ptr(a->full) <= span_start_ptr(b->full)) break;
+        SymbolDecl swap = *a;
+        *a = *b;
+        *b = swap;
+    }
 }
 
 void scope_add_this_property(Scope* me, BinaryOpExpr* op) {

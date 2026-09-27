@@ -1474,6 +1474,15 @@ void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx
     assignment_target_typecheck(target, source, nullptr, errs);
 }
 
+// JavaScript `ns.a = {}` where `ns.a.b = v` makes `ns.a` a namespace: an assignment declaration that isn't checked
+// against what it declares, which is necessarily incomplete (tsc's isAssignmentDeclaration in checkBinaryLikeExpression)
+static bool is_container_declaration(BinaryOpExpr const* op) {
+    SourceFile const* file = op->left.inner_span.source;
+    if (op->op != BINARY_OP_EQUAL || !file || !file->is_js || op->left.tag != EXPR_PROPERTY) return false;
+    Expr const* init = expando_initializer((Expr*)&op->right, span_null, true);
+    return init && init->tag == EXPR_OBJECT;
+}
+
 static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs) {
     Checker* checker = current_checker;
     if (source && (source->flags & TYF_ANY)) source = nullptr;
@@ -2194,6 +2203,7 @@ static bool binary_op_typecheck(
         }   break;
 
         case BINARY_OP_EQUAL:
+            if (is_container_declaration(expr->binary_op)) break;
             assignment_target_typecheck(&expr->binary_op->left, right, &expr->binary_op->right, errs);
             break;
 

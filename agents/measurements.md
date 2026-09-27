@@ -2,6 +2,13 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 26 stage 2 (expandos, JS classes, JS optional parameters)
+Suite 8631 -> **8686 / 13540** (errors 10445, symbols 12168, types 10441); lost: argumentsReferenceInMethod3/5_Js
+types, jsEnumCrossFileExport errors (triage.md "From plan 26 stage 2"). JS tests (`./jsstats.py`): **260 -> 299
+pass**, 750 fail; by category (only / involved): CommonJS 61 / 173, expandos & JS classes 54 / 217, basic JSDoc 98 /
+351, other tags 13 / 123, leniency 2 / 23, syntax 41 / 157, emit 16 / 39, `.ts`-only 17 / 32, unclassified 91.
+Corpora unchanged (tsc 0 at 0.89 s, type-fest 47, valibot 49, react 1, nest 0).
+
 ## 2026-09-27, plan 31 (fourth corpus: nestjs-boilerplate)
 Suite 8622 -> **8631 / 13540** (errors 10417, symbols 12057, types 10384), no lost components. Corpora: tsc 0,
 type-fest 47, valibot 49, react 1, **nest 134 -> 0**. `./bench.sh` (best wall; tttt / tsc 5.8 / tsgo 7.0.2 / tsgo

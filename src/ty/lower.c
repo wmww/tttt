@@ -857,10 +857,25 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     return symbol->parent && !symbol->parent->is_module ? ty_widened_literal(me, type) : ty_regular(me, type);
 }
 
+// JavaScript `var ns = {}` or `ns.a = {}` with expandos (`ns.x = 1`): the members they declare (tsc's
+// getJSContainerObjectType). `value` is the initializer or assigned value
+static bool is_js_container(Symbol const* symbol, Expr const* value, Span name) {
+    if (!symbol->exports || !value) return false;
+    SourceFile const* file = value->inner_span.source;
+    if (!file || !file->is_js) return false;
+    Expr const* init = expando_initializer((Expr*)value, name, true);
+    return init && init->tag == EXPR_OBJECT;
+}
+
 static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
     switch (decl->kind) {
         case SYMBOL_DECL_VARIABLE: {
             Binding const* binding = decl->node;
+            if (!binding->parent && binding->tag == BINDING_IDENTIFIER && !binding->has_explicit_type &&
+                is_js_container(symbol, &((InitializedBinding const*)binding)->value, binding->content_span)
+            ) {
+                return ty_namespace_type(me, symbol);
+            }
             Ty const* type = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
             // `x?: T` is read as `T | undefined` inside the function. TODO: tsc also shows it in the signature
             if (binding->optional_parameter && compiler_options()->strict_null_checks && !(type->flags & TYF_ANY)) {
@@ -873,6 +888,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         // `export default e` (exportDefaultStripsFreshness)
         case SYMBOL_DECL_EXPR: return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
         case SYMBOL_DECL_ASSIGNMENT:
+            if (is_js_container(symbol, decl->node, span_null)) return ty_namespace_type(me, symbol);
             // tsc's getInitializerTypeFromAssignmentDeclaration: `exports.x = 1` exports `1`, `module.exports = 1` number
             if (csview_equals(symbol->name, "export=")) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
             return ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));
@@ -978,6 +994,7 @@ static Ty const* base_class_property_type(Checker* me, Symbol const* member) {
 // declares in a constructor has the type the constructor gives it (tsc: its flow type at the end of the
 // constructor; here the union of the constructor's assignments). TODO: a JSDoc type on one of them is the type
 static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
+    if (is_js_container(symbol, symbol->decls[0].node, span_null)) return ty_namespace_type(me, symbol);
     Ty const* stack[16];
     Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
     bool constructor_declared = ty_is_constructor_declared(symbol);
@@ -1018,6 +1035,20 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     SourceFile const* file = symbol->decls[0].full.source;
     if (file && file->is_js && ty_non_nullable(me, ret)->flags & TYF_NEVER) return ty_intrinsic(me, TY_ANY);
     return ret;
+}
+
+Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module) {
+    Symbol* assigned = module_export_equals(module);
+    Ty const* type = ty_type_of_symbol(me, assigned);
+    // tsc's getTypeWithSyntheticDefaultImportType: an `export =` module gets a synthetic `default` (not one that says
+    // it's an ES module)
+    if (assigned == module || assigned->is_placeholder || (type->flags & TYF_ERROR) ||
+        !compiler_options()->allow_synthetic_default_imports || symbol_get_export(module, c_sv("__esModule"))
+    ) {
+        return type;
+    }
+    bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
+    return with_synthetic_default(me, type, structured);
 }
 
 // The type of a symbol as a value. Give it the symbol a name found or the one that has the value meaning (`target`

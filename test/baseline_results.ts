@@ -6117,8 +6117,8 @@ const baselines = {
     },
     'contextualReturnTypeOfIIFE2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'contextualReturnTypeOfIIFE3': {
         errors: false,
@@ -7892,8 +7892,8 @@ const baselines = {
     },
     'declarationEmitDefaultExportWithStaticAssignment': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitDefaultExportWithTempVarName': {
         errors: true,
@@ -12282,7 +12282,7 @@ const baselines = {
     },
     'esModuleInteropImportCall': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'esModuleInteropImportDefaultWhenAllNamedAreDefaultAlias': {
@@ -12986,12 +12986,12 @@ const baselines = {
         types: true,
     },
     'exportEqualErrorType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'exportEqualMemberMissing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -19161,7 +19161,7 @@ const baselines = {
         types: true,
     },
     'jsEnumCrossFileExport': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -20371,7 +20371,7 @@ const baselines = {
         types: true,
     },
     'knockout': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21096,7 +21096,7 @@ const baselines = {
         types: false,
     },
     'mergedDeclarations3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21451,7 +21451,7 @@ const baselines = {
         types: false,
     },
     'modularizeLibrary_ErrorFromUsingES6FeaturesWithOnlyES5Lib': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29832,8 +29832,8 @@ const baselines = {
     },
     'syntheticDefaultExportsWithDynamicImports': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'systemDefaultExportCommentValidity': {
         errors: true,
@@ -38032,8 +38032,8 @@ const baselines = {
     },
     'exportDefaultNamespace': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'leaveOptionalParameterAsWritten': {
         errors: true,
@@ -40091,7 +40091,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty52': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52092,7 +52092,7 @@ const baselines = {
     },
     'jsdocImplements_class': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocImplements_interface': {
@@ -52703,7 +52703,7 @@ const baselines = {
     'typedefCrossModule3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typedefCrossModule4': {
         errors: false,
@@ -60062,8 +60062,8 @@ const baselines = {
     },
     'checkSpecialPropertyAssignments': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'circularMultipleAssignmentDeclaration': {
         errors: false,
@@ -60161,7 +60161,7 @@ const baselines = {
         types: false,
     },
     'enumMergeWithExpando': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60256,9 +60256,9 @@ const baselines = {
         types: true,
     },
     'inferringClassStaticMembersFromAssignments': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsContainerMergeJsContainer': {
         errors: true,
@@ -60612,7 +60612,7 @@ const baselines = {
     },
     'prototypePropertyAssignmentMergeAcrossFiles2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'prototypePropertyAssignmentMergeWithInterfaceMethod': {
@@ -60812,13 +60812,13 @@ const baselines = {
     },
     'typeFromPropertyAssignment25': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment26': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment27': {
         errors: true,
@@ -60902,7 +60902,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment6': {
@@ -60912,8 +60912,8 @@ const baselines = {
     },
     'typeFromPropertyAssignment7': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment8': {
         errors: true,
@@ -60942,8 +60942,8 @@ const baselines = {
     },
     'typeFromPropertyAssignmentWithExport': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPrototypeAssignment': {
         errors: false,

@@ -48,8 +48,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `SourceFile.unchecked` + `error_ctx_remove_unchecked`: the JS gate is a *filter* run after name resolution and
   after typechecking (semantic errors in an unchecked file are removed from the ErrorCtx), not a skip: names are
   still resolved (imports from an unchecked file need its exports) and `block_typecheck` is skipped only for the
-  whole-file case. `check_access()` keeps its own "JS file: no TS2339" gate on top (`is_js`), because expando
-  members don't exist. `program_load` refuses a `.js` root without `allowJs` (TS6504) but a `.js` file reached
+  whole-file case. `check_access()` keeps its own "JS file: no TS2339" gate on top (`is_js`), because not
+  everything JS declares by assignment exists yet (see "Assignment declarations" below). `program_load` refuses a `.js` root without `allowJs` (TS6504) but a `.js` file reached
   through an import is refused by `program_load_module_ref` with `MODULE_REF_IS_JS` (TS7016-style), two paths.
 - `TTTT_IGNORE_UNDERLINES=1` (`compare_outputs`): the types component compared without its `^^^` lines, a
   measurement of what the underlines still cost (73 tests on 2026-09-22), not a mode to save results in.
@@ -381,8 +381,9 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   members `getNarrowedType()` starts from), erasure of generic construct signatures in `constructor_instance_type()`.
   Destructured discriminants and the `in` rule show as spurious TS18048 / TS2339 (dependentDestructuredVariables,
   inKeywordTypeguard).
-- `ty_check_element_implicit_any()` (TS7053 & co.) skips what `check_access()` skips for lack of expandos: callable
-  objects (`fn["x"]` is TS7053 in tsc unless fn is a function declaration with expando assignments), mapped types over
+- `ty_check_element_implicit_any()` (TS7053 & co.) skips callable objects (`fn["x"]` is TS7053 in tsc unless fn is a
+  function declaration with expando assignments: expandos exist now, plan 26 stage 2, the gate wasn't retried), mapped
+  types over
   something generic, unresolved bases, JS files. `is_for_in_numeric_variable()` doesn't check that the access is inside
   the loop's body.
 - `prop_has_explicit_type()`: a property of a mapped type (`Readonly<Services>`) counts as explicitly typed; tsc asks
@@ -441,8 +442,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   set in `class_decl_lookup_names` (which also reports TS1093 and drops a written return type).
 - `ty/check.c: check_access` (TS2339 and friends) is honest about unions, intersections, `null`/`undefined` and
   `unknown` objects since plan 05 stage 4, but lets through what it knows the type core can't answer yet: **JS files**
-  (members declared by assignment: `this.x = 1`, `module.exports`, prototypes), **callables without construct
-  signatures** (expando functions, `function f() {} f.x = 1`, also in TS), **generic mapped types** (`Pick<T, K>`,
+  (see "Assignment declarations" below for what's missing; the TS callable gate went with plan 26 stage 2),
+  **generic mapped types** (`Pick<T, K>`,
   `Readonly<T>`: members only through the constraint) and **classes with a base `class_base()` can't fully see**
   (`ty_has_unresolved_base()`: mixins `class extends B` with `B: T`, unresolvable `extends` expressions, the static
   side of any expression base). Bracket access never reports a missing property.
@@ -816,10 +817,38 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `identifier_type_check_arity()`: TS2315 ("not generic") on a class/function declared in a JavaScript file is skipped
   (HACK until `@template` makes them generic, stage 3).
 - Gates still in place (plan 26 asks to list them): `check_access()` / `ty_check_element_implicit_any()` skip JS files
-  (no TS2339/TS7053: expandos, stage 2), `binary_op_typecheck` skips TS2358 in JS, `scope_add_port()` has no
+  (no TS2339/TS7053: see "Assignment declarations"), `binary_op_typecheck` skips TS2358 in JS, `scope_add_port()` has no
   `export as namespace` alias in JS, `expr.c` (a JS value module in `check_declared_before_use`-like code) and
   `several_types.c:257` (JS skip in a type check). None was removed by stage 1: they're about expandos and TS-only
   syntax.
+
+## Assignment declarations: expandos and JavaScript classes (plan 26 stage 2)
+- **The JS TS2339 gate stays** (`check_access()`): removing it costs ~57 JS tests their errors component for +6. What
+  is still missing, by the spurious TS2339s it gives (2026-09-27 sample): expandos of a global namespace another
+  script declares (`First.Item = ...` where roots.js has `var First = {}`: tsc's `file.jsGlobalAugmentations`),
+  `exports.x`/`this.x` inside nested blocks or functions assigned to `exports.Cls` (`commonjsAccessExports`),
+  class expressions assigned to members (`Outer.Inner = class I {}` then `@type {Outer.Inner}`), `@type` on a
+  declaring assignment, `F.prototype = { ... }` (tsc's Prototype kind: getAssignedClassSymbol), `Object.defineProperty`
+  declarations, JSDoc names that resolve to expando values (`@param {Host.UserMetrics.Action}`, needs `@enum`/`@typedef`).
+- `scope_add_expandos()` runs in `block_add_names()`, which the resolve walk calls for function bodies and nested
+  blocks: a nested block at a file's top level (`if (x) { f.y = 1 }`) writes an expando into a file-level symbol from
+  the resolve walk, and `scope_add_this_property()` writes `Symbol.members` of a class/function from it (always).
+  Both are the file's own symbols except for script globals, but it breaks the letter of the parallelism contract
+  (documentation.md "Resolve names"): should become a per-file list merged after the walks, like plan 26 said.
+- Only expression statements and `var` initializers are scanned for expandos, not assignments nested in other
+  expressions (`(f.x = 1, f.y = 2)`, `if (f.x = 1)`): tsc binds every binary expression.
+- The type of a constructor-declared `this.x` is the union of the constructor's assignments, not tsc's flow type at
+  the end of the constructor (getFlowTypeInConstructor); reads of `this.x` inside the constructor aren't auto-typed
+  (tsc starts them from autoType).
+- tsc makes `F.prototype.m = function` and a `this.m = v` of the same name *two* symbols (Method excludes Property);
+  here they're one member (multipleDeclarations).
+- A JavaScript constructor function's type is still the function's anonymous type with a construct signature added
+  in `resolve_members()` and `typeof F` special-cased in the printer (`ty_js_constructor_class()`), not a class static
+  type; `new.target`, `instanceof` narrowing and `@template` on constructor functions don't know it's a class.
+- `is_container_declaration()` (expr.c) skips checking `ns.a = {}` against what it declares; tsc also requires that
+  the target have expando exports (isAssignmentDeclaration). Not needed yet.
+- The symbols baseline of `F.prototype.x = v` / `this.x = v` goes through two override hooks in the baseline case
+  (`prototype_symbol_overrides()`, `this_property_symbol_overrides()`), keyed by span, like the CommonJS ones.
 
 ## Module resolution (`src/module_resolution.c`, `src/tsconfig.c`, plan 06)
 - A resolved `.json` module is `any` (`MODULE_REF_IS_JSON`): the file isn't parsed into a type, `path_is_script` keeps
