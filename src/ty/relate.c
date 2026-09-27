@@ -3164,6 +3164,8 @@ static Ternary structured_related_impl(
                 if (related) related &= is_related_to(me, st, source->indexed.index, target->indexed.index, false);
                 if (related) return related;
             }
+            // (tsc: only for assignability and comparability, not the subtype relations)
+            if (is_subtype_relation(st->relation)) break;
             Ty const* constraint = write_constraint_of_indexed(me, target);
             if (constraint) {
                 Ternary related = is_related_to(me, st, source, constraint, false);

@@ -190,7 +190,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         Ty const** parts = malloc(sizeof(Ty const*) * object->composite.types.len);
         Ty const* ret = nullptr;
         u32 len = 0;
-        bool missing = false, short_tuple = false, found_in_some = false;
+        bool missing = false, padded = false, found_in_some = false;
         for (u32 i = 0; i < object->composite.types.len && !missing; i++) {
             Ty const* member = object->composite.types.data[i];
             if (member->flags & TYF_NULLABLE) continue;
@@ -199,13 +199,19 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             // createUnionOrIntersectionProperty: its index signature applies, and the rest element or undefined is read)
             if (!part && (index->flags & TYF_NUMBER_LITERAL) && ty_is_tuple(ty_apparent_type(me, member))) {
                 part = ty_intrinsic(me, TY_UNDEFINED);
-                short_tuple = true;
+                padded = true;
+            } else if (!part && (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
+                ty_is_object_literal_without_spread(me, member)
+            ) {
+                // An object literal without it reads undefined (the same rule: `(params ?? {}).target`)
+                part = ty_intrinsic(me, TY_UNDEFINED);
+                padded = true;
             } else if (part) {
                 found_in_some = true;
             }
             if (part) parts[len++] = part; else missing = true;
         }
-        missing |= short_tuple && !found_in_some;
+        missing |= padded && !found_in_some;
         if (!missing && len) ret = ty_union(me, parts, len, nullptr, (TyList){0});
         free(parts);
         Atom const* name = ret ? ty_literal_name(me, index) : nullptr;

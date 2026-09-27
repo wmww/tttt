@@ -2309,6 +2309,10 @@ static bool contains_spread(Checker* me, Ty const* literal) {
     return false;
 }
 
+bool ty_is_object_literal_without_spread(Checker* me, Ty const* ty) {
+    return is_object_literal_type(ty) && !contains_spread(me, ty);
+}
+
 // tsc's getPropertiesOfContext
 static void context_props(Checker* me, WideningCtx* ctx) {
     if (ctx->props_done) return;
