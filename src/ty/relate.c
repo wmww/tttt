@@ -1401,6 +1401,15 @@ static Ternary props_related(
     Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
     for (u32 i = 0; i < target_members->prop_count; i++) {
         Prop const* target_prop = target_members->props[i];
+        // The same accessor of the same object literal, typed or not (tsc's `sourceProp !== targetProp`: the literal's
+        // types share the declaration's symbol). Not typing it matters when the literal is rechecked against what was
+        // inferred from it, in the initializer its getter refers back to
+        if ((target_prop->flags & (PROP_GETTER | PROP_SETTER)) && target_prop->function && !target_prop->target &&
+            (source->flags & TYF_OBJECT)
+        ) {
+            Prop const* same = ty_get_object_prop(me, source, target_prop->name);
+            if (same && same->function == target_prop->function && !same->target && same->flags == target_prop->flags) continue;
+        }
         FoundProp source_prop = find_prop(me, source, target_prop->name, 0);
         if (!source_prop.found) {
             // Subtypes need the optional properties too, unless an object literal, [] or a tuple leaves them out

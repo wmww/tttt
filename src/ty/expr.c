@@ -2046,7 +2046,11 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         // The type
         Ty const* member_context = nullptr;
-        if (ctx.contextual) {
+        bool is_accessor = i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER;
+        // (An accessor has none: asking for it would type the contextual type's same-named accessor, which is this
+        // one again when inference rechecks the literal against what it inferred from it, `get sub() { return f(X) }`
+        // in X's initializer)
+        if (ctx.contextual && !is_accessor) {
             Ty const* key = name ? ty_prop_name_literal(me, name) : key_type;
             if (key) member_context = contextual_prop_type(me, ctx.contextual, key);
         }
@@ -2055,7 +2059,6 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .generic_mode = ctx.generic_mode,
         };
         Ty const* type = nullptr;
-        bool is_accessor = i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER;
         switch (i->tag) {
             case OBJECT_ITEM_GETTER:
             case OBJECT_ITEM_SETTER:
