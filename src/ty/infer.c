@@ -802,9 +802,9 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
 // tsc's isTypeIdenticalTo, pointers first (structured types of the same kind can be identical without being the same)
 static bool is_identical(Checker* me, Ty const* source, Ty const* target) {
     if (source == target) return true;
-    if (source->kind != target->kind || source->kind == TY_INTRINSIC || source->kind == TY_LITERAL || source->kind == TY_TYPE_PARAM) {
-        return false;
-    }
+    if (source->kind == TY_INTRINSIC || source->kind == TY_LITERAL || source->kind == TY_TYPE_PARAM) return false;
+    // (An interface and a type literal can be identical: tsc's TypeFlags.Object covers both)
+    if (source->kind != target->kind && !(source->flags & target->flags & TYF_OBJECT)) return false;
     return ty_is_related(me, source, target, TY_RELATION_IDENTITY);
 }
 
