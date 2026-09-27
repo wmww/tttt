@@ -59,6 +59,7 @@ typedef struct IdentifierExpr {
     // the call is what a declaration's aliases import (InitializedBinding.require_ports, which report the module)
     uint8_t require_call;
     bool shorthand; // The value of a shorthand property `{ a }`
+    bool shorthand_unchecked; // `{ a = 1 }` outside a pattern: tsc checks the default instead of the name
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
     bool constraint_position;
@@ -516,6 +517,7 @@ typedef struct ObjectExprItem {
     // Owned, `{ a = 1 }` (a destructuring assignment target): the default. Only its names are looked up (TODO: check it
     // and show it in the baselines)
     Expr* shorthand_default;
+    Span shorthand_equals; // Its `=`
     // Owned, a JavaScript property's JSDoc `@type` (`/** @type {T} */ a: v`): the property's declared type, which the
     // value is contextually typed by and checked against (tsc's getTypeForDeclarationFromJSDocComment in checkObjectLiteral)
     TypeNode* jsdoc_type;

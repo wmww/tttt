@@ -2216,6 +2216,7 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
 
     Span name;
     expect_identifier(&p, &name);
+    Span full_span = span_from(a);
     hop_whitespace(&p);
 
     TypeNode extends;
@@ -2223,13 +2224,14 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
         hop_whitespace(&p);
         if (expect_type(&p, TYPE_PRECEDENCE_NULL, &extends)) {
         }
+        full_span = span_from(a);
     } else {
         extends = type_any;
     }
 
     *ret = (InferredType){
         .name = name,
-        .full_span = span_from(a),
+        .full_span = full_span,
         .extends = extends,
     };
     return parse_success(&p);
@@ -4719,7 +4721,9 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         item.value = expr_identifier((IdentifierExpr){ .name = item.name_span, .shorthand = true });
         if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
             // `{ a = 1 }` is only valid as a destructuring assignment target
+            Anchor equals = anchor(&p);
             hop_char(&p, '=');
+            item.shorthand_equals = span_from(equals);
             hop_whitespace(&p);
             Expr default_value;
             if (expect_expr(&p, expr_ctx_null, &default_value)) {

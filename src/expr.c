@@ -396,7 +396,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         } else {
             error_ctx_error_d(errs, my name, 2693, "'", my name, "' only refers to a type, but is being used as a value here.");
         }
-    } else {
+    } else if (!my shorthand_unchecked) {
         scope_report_value_not_found(names, my name, my shorthand, errs);
     }
 }
@@ -1495,6 +1495,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 }
                 flow->assignment_target = assignment_target; // A pattern: the values are the targets
                 if (i->jsdoc_type) type_lookup_names(i->jsdoc_type, names, errs);
+                if (i->shorthand_default && assignment_target == FLOW_TARGET_NONE && i->value.tag == EXPR_IDENTIFIER) {
+                    i->value.identifier.shorthand_unchecked = true;
+                }
                 expr_lookup_names(&i->value, names, errs);
                 if (i->shorthand_default) expr_lookup_names_initializer(i->shorthand_default, names, errs);
             }
@@ -2821,6 +2824,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
                     ty_check_computed_name(current_checker, i->computed_key, i->name_span, false, errs);
+                }
+                if (i->shorthand_default && !(i->value.tag == EXPR_IDENTIFIER && i->value.identifier.assignment_target)) {
+                    error_ctx_grammar_error_d(errs, i->shorthand_equals, 1312,
+                        "Did you mean to use a ':'? An '=' can only follow a property name when the containing object literal is part of a destructuring pattern.");
                 }
                 if (object_item_is_private_name(i)) {
                     // tsc's checkGrammarObjectLiteralExpression; a method's is checkMethodDeclaration's (at its name, no

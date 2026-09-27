@@ -215,8 +215,9 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
         case TYPE_TYPEOF: break;
 
         case TYPE_TERNARY:
+            // A nested conditional's extends type declares its own `infer`s, the rest belong to the nearest
+            // conditional whose extends type holds them (tsc's getInferTypeContainer)
             type_add_inferred_names_at(&my ternary->maybe_sub, scope, INFER_POSITION_OTHER, nullptr, 0);
-            type_add_inferred_names_at(&my ternary->maybe_super, scope, INFER_POSITION_OTHER, nullptr, 0);
             type_add_inferred_names_at(&my ternary->if_true, scope, INFER_POSITION_OTHER, nullptr, 0);
             type_add_inferred_names_at(&my ternary->if_false, scope, INFER_POSITION_OTHER, nullptr, 0);
             break;
@@ -299,7 +300,12 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             break;
 
         // (`infer X extends C`: C is resolved where the extends type is)
-        case TYPE_INFERRED: type_lookup_names(&my inferred->extends, names, errs); break;
+        case TYPE_INFERRED:
+            if (!my inferred->owned_symbol) {
+                error_ctx_error_d(errs, my inferred->full_span, 1338, "'infer' declarations are only permitted in the 'extends' clause of a conditional type.");
+            }
+            type_lookup_names(&my inferred->extends, names, errs);
+            break;
         case TYPE_IDENTIFIER: identifier_type_lookup_names(my identifier, names, errs); break;
         case TYPE_CALLABLE: callable_type_resolve_names(my callable, names, errs); break;
 
@@ -333,10 +339,11 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
 
         case TYPE_TERNARY: {
             type_lookup_names(&my ternary->maybe_sub, names, errs);
-            type_lookup_names(&my ternary->maybe_super, names, errs);
-
+            // (Declared before the extends type is looked up, which tells an `infer` without a conditional of its own)
             Scope* inferred_types_scope = scope_new(names, SCOPE_BLOCK);
             type_add_inferred_names_at(&my ternary->maybe_super, inferred_types_scope, INFER_POSITION_OTHER, nullptr, 0);
+            type_lookup_names(&my ternary->maybe_super, names, errs);
+
             TypeFlow const* saved_flow = current_flow;
             my ternary->true_flow[0] = (TypeFlow){ .ternary = my ternary, .covariant = true, .outer = current_flow };
             my ternary->true_flow[1] = (TypeFlow){ .ternary = my ternary, .covariant = false, .outer = flow_flipped(current_flow) };
