@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "scope.h"
 #include "block.h"
 #include "interface.h"
 #include "interface_member.h"
@@ -879,9 +880,8 @@ static bool tok_is_identifier(Tok t) {
     return is_identifier_start_char(*t.start) && !is_reserved_word((csview){ t.start, t.end - t.start });
 }
 
-// Any keyword tsc's scanner knows, contextual ones included (tsc's isKeyword)
-static bool tok_is_keyword(Tok t) {
-    static const char* const words[] = {
+// Any keyword tsc's scanner knows, contextual ones included (tsc's textToKeywordObj)
+static const char* const all_keywords[] = {
         "abstract", "accessor", "any", "as", "asserts", "assert", "bigint", "boolean", "break", "case", "catch",
         "class", "continue", "const", "debugger", "declare", "default", "delete", "do", "else", "enum", "export",
         "extends", "false", "finally", "for", "from", "function", "get", "if", "implements", "import", "in", "infer",
@@ -890,8 +890,11 @@ static bool tok_is_keyword(Tok t) {
         "global", "return", "satisfies", "set", "static", "string", "super", "switch", "symbol", "this", "throw",
         "true", "try", "type", "typeof", "undefined", "unique", "unknown", "using", "var", "void", "while", "with",
         "yield", "async", "await", "of", nullptr,
-    };
-    return tok_is_word(t) && tok_is_one_of(t, words);
+};
+
+// tsc's isKeyword
+static bool tok_is_keyword(Tok t) {
+    return tok_is_word(t) && tok_is_one_of(t, all_keywords);
 }
 
 static bool tok_is_modifier(Tok t) {
@@ -7343,6 +7346,60 @@ static void parse_jump_target(Parser* parent, Span* ret) {
     }
 }
 
+// tsc's parseErrorForMissingSemicolonAfter for an expression statement that is an identifier followed by more on the
+// same line: `module {`, `type = 1`, `asynd function f()`...
+static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
+    Tok t = tok_peek(p);
+    Span token = span_make(p->shared->source, t.start, t.end);
+    if (span_equals(name, "const") || span_equals(name, "let") || span_equals(name, "var")) {
+        parse_error(p, name, 1440, "Variable declaration not allowed at this location.");
+    } else if (span_equals(name, "declare")) {
+        // A declaration that failed to parse has reported already
+    } else if (span_equals(name, "interface")) {
+        if (tok_is(t, "{")) {
+            parse_error(p, token, 1438, "Interface must be given a name.");
+        } else {
+            parse_error(p, token, 2427, "Interface name cannot be '", token, "'.");
+        }
+    } else if (span_equals(name, "is")) {
+        parse_error(p, span_make(p->shared->source, span_start_ptr(name), t.start), 1228,
+            "A type predicate is only allowed in return type position for functions and methods.");
+    } else if (span_equals(name, "module") || span_equals(name, "namespace")) {
+        if (tok_is(t, "{")) {
+            parse_error(p, token, 1437, "Namespace must be given a name.");
+        } else {
+            parse_error(p, token, 2819, "Namespace name cannot be '", token, "'.");
+        }
+    } else if (span_equals(name, "type")) {
+        if (tok_is(t, "=")) {
+            parse_error(p, token, 1439, "Type alias must be given a name.");
+        } else {
+            parse_error(p, token, 2457, "Type alias name cannot be '", token, "'.");
+        }
+    } else {
+        // A misspelled keyword (tsc's viableKeywordSuggestions: the keywords longer than two characters), or one
+        // missing its space (`declareconst`)
+        csview keywords[c_arraylen(all_keywords)];
+        isize count = 0;
+        for (const char* const* k = all_keywords; *k; k++) {
+            if (strlen(*k) > 2) keywords[count++] = c_sv(*k, strlen(*k));
+        }
+        isize best = spelling_suggestion(name.sv, keywords, count);
+        if (best >= 0) {
+            parse_error(p, name, 1435, "Unknown keyword or identifier. Did you mean '", keywords[best], "'?");
+            return;
+        }
+        for (isize i = 0; i < count; i++) {
+            if (name.sv.size > keywords[i].size + 2 && memcmp(name.sv.buf, keywords[i].buf, keywords[i].size) == 0) {
+                csview rest = { name.sv.buf + keywords[i].size, name.sv.size - keywords[i].size };
+                parse_error(p, name, 1435, "Unknown keyword or identifier. Did you mean '", keywords[i], " ", rest, "'?");
+                return;
+            }
+        }
+        parse_error(p, name, 1434, "Unexpected keyword or identifier.");
+    }
+}
+
 // ctx is the kind of list: source elements, block statements or a switch clause's statements
 static bool parse_append_statement_sequence(Parser* parent, bool toplevel, ParsingContext ctx, VecStatement* ret) {
     Parser p = parser(parent);
@@ -7377,7 +7434,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                     statement.expr.tag == EXPR_IDENTIFIER &&
                     !expr_is_perenthisized(&statement.expr)
                 ) {
-                    parse_error(&p, statement.expr.inner_span, 1434, "Unexpected keyword or identifier.");
+                    report_missing_semicolon_after_identifier(&p, statement.expr.inner_span);
                 } else {
                     expected_token_error(&p, ";");
                 }

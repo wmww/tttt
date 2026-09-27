@@ -881,7 +881,7 @@ const baselines = {
         types: true,
     },
     'anonymousModules': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
