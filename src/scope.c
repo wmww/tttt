@@ -2185,7 +2185,7 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
             // no symbol, see IdentifierExpr.is_arguments
             return nullptr;
         }
-        from_parameters = scope->parameters;
+        from_parameters = scope->parameters && !scope->parameters_see_body;
         if (scope->container && scope->container->is_module && scope->container->exports) {
             // `A` of `export default class A` (tsc's resolveName)
             Symbol* found = symbol_table_lookup(scope->container->exports, c_sv("default"), symbol_name_hash(c_sv("default")));

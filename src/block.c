@@ -58,6 +58,9 @@ void block_lookup_names_inline_container(Block const* me, Scope* scope, ErrorCtx
     flow.current = outer->current;
     flow.dead = outer->dead;
     flow.has_flow_effects = outer->has_flow_effects;
+    // Runs with the class: in a parameter's initializer it's still there (tsc's getIsDeferredContext)
+    flow.parameter_initializing = outer->parameter_initializing;
+    flow.parameter_function_scope = outer->parameter_function_scope;
     flow.return_target = flow_new_branch_label(&flow);
     scope->flow = &flow;
     for_each (i, vec_statement, &my statements) {

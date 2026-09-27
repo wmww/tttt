@@ -327,6 +327,8 @@ typedef struct Scope {
     // The parameter list of a function: from ES2015 on the variables its body declares aren't visible there (tsc's
     // useOuterVariableScopeInParameter), although they share the function's scope
     bool parameters;
+    // Unless the downlevel emit moves the parameters into the body (tsc's useOuterVariableScopeInParameter)
+    bool parameters_see_body;
     // The inside of the declaration of this symbol (a function, class, interface, type alias, enum or namespace
     // declaration): a use of it from here isn't a reference (tsc's isSelfReferenceLocation)
     Symbol const* self;

@@ -8,6 +8,7 @@
 #include "ty/ty.h"
 #include "program.h"
 #include "unused.h"
+#include "class_decl.h"
 
 void function_arg_drop(FunctionArg* me) {
     vec_expr_drop(&my decorators);
@@ -37,6 +38,127 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported export
         .node = me,
         .function_scoped = hoisted,
     });
+}
+
+// tsc's requiresScopeChange (useOuterVariableScopeInParameter): whether the downlevel emit of a parameter has to move it
+// into the function body, where the body's variables are in scope: temporaries of `?.` and `??` below ES2020, of an
+// object rest element below ES2017, the static fields of a class expression (unless class fields are standard).
+// Doesn't look into functions, nor into the values of object literal members and non-static class members
+static bool expr_requires_scope_change(Expr const* me);
+
+static bool exprs_require_scope_change(VecExpr const* exprs) {
+    for_each (i, vec_expr, exprs) {
+        if (expr_requires_scope_change(i)) return true;
+    }
+    return false;
+}
+
+static bool binding_requires_scope_change(Binding const* me, bool object_element) {
+    if (object_element && my rest && compiler_options()->target < SCRIPT_TARGET_ES2017) return true;
+    if (my default_value && expr_requires_scope_change(my default_value)) return true;
+    switch (my tag) {
+        case BINDING_NOOP:
+        case BINDING_IDENTIFIER:
+            return false;
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &my array) {
+                if (binding_requires_scope_change(i, false)) return true;
+            }
+            return false;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &my object) {
+                if (i->computed_key && expr_requires_scope_change(i->computed_key)) return true;
+                if (binding_requires_scope_change(&i->target, true)) return true;
+            }
+            return false;
+    }
+    return false;
+}
+
+static bool class_requires_scope_change(ClassDecl const* me) {
+    CompilerOptions const* options = compiler_options();
+    bool standard_fields = options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022;
+    if (exprs_require_scope_change(&my decorators) || expr_requires_scope_change(&my extends)) return true;
+    for_each (i, vec_class_item, &my items) {
+        if (exprs_require_scope_change(&i->decorators)) return true;
+        switch (i->tag) {
+            case CLASS_ITEM_FIELD:
+                if (i->field.is_static && !standard_fields) return true;
+                if (i->field.computed_key && expr_requires_scope_change(i->field.computed_key)) return true;
+                break;
+            case CLASS_ITEM_METHOD:
+                if (i->method.computed_key && expr_requires_scope_change(i->method.computed_key)) return true;
+                break;
+            default:
+                break;
+        }
+    }
+    return false;
+}
+
+static bool expr_requires_scope_change(Expr const* me) {
+    bool below_es2020 = compiler_options()->target < SCRIPT_TARGET_ES2020;
+    switch (my tag) {
+        case EXPR_IMPLICIT_ANY:
+        case EXPR_LITERAL:
+        case EXPR_IDENTIFIER:
+        case EXPR_REGEX:
+        case EXPR_PRIVATE_NAME:
+        case EXPR_FUNCTION:
+        // TODO: JSX isn't looked into
+        case EXPR_JSX_ELEMENT:
+        case EXPR_JSX_FRAGMENT:
+        case EXPR_JSX_ATTRIBUTES:
+            return false;
+        case EXPR_BINARY_OP:
+            if (my binary_op->op == BINARY_OP_EH_EH && below_es2020) return true;
+            return expr_requires_scope_change(&my binary_op->left) || expr_requires_scope_change(&my binary_op->right);
+        case EXPR_UNARY_OP:
+            return expr_requires_scope_change(&my unary_op->expr);
+        case EXPR_PROPERTY:
+            if (my property->optional_chain && below_es2020) return true;
+            return expr_requires_scope_change(&my property->expr) ||
+                (my property->form == PROPERTY_EXPR_BRACKET && expr_requires_scope_change(&my property->prop));
+        case EXPR_GENERIC_PARAMS:
+            return expr_requires_scope_change(&my generic_params->expr);
+        case EXPR_AS_TYPE:
+            return expr_requires_scope_change(&my as_type->expr);
+        case EXPR_TERNARY:
+            return expr_requires_scope_change(&my ternary->condition) || expr_requires_scope_change(&my ternary->yes) ||
+                expr_requires_scope_change(&my ternary->no);
+        case EXPR_CALL:
+            if (my call->optional_chain && below_es2020) return true;
+            return expr_requires_scope_change(&my call->callable) || exprs_require_scope_change(&my call->args);
+        case EXPR_OBJECT:
+            for_each (i, vec_object_expr_item, &my object) {
+                if (i->computed_key && expr_requires_scope_change(i->computed_key)) return true;
+                if (i->tag == OBJECT_ITEM_SPREAD && expr_requires_scope_change(&i->value)) return true;
+                if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default && expr_requires_scope_change(i->shorthand_default)) {
+                    return true;
+                }
+            }
+            return false;
+        case EXPR_ARRAY:
+            return exprs_require_scope_change(&my array);
+        case EXPR_CLASS_DECL:
+            return class_requires_scope_change(my class_decl);
+        case EXPR_SPREAD:
+            return expr_requires_scope_change(my spread);
+        case EXPR_TEMPLATE:
+            return (my template_->tag && expr_requires_scope_change(my template_->tag)) ||
+                exprs_require_scope_change(&my template_->substitutions);
+    }
+    return false;
+}
+
+// From ES2015 on the parameters don't see the body's variables, unless the emit moves them into the body
+static bool parameters_see_body(FunctionImpl const* me) {
+    if (compiler_options()->target < SCRIPT_TARGET_ES2015) return false; // (They see them anyway)
+    for_each (i, vec_function_arg, &my args) {
+        if (binding_requires_scope_change(&i->initializer.binding, false)) return true;
+        if (expr_requires_scope_change(&i->initializer.value)) return true;
+    }
+    return false;
 }
 
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
@@ -109,6 +231,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     function_scope->no_super = my is_constructor ? NO_SUPER_CONSTRUCTOR_ARGS : NO_SUPER_NONE;
     Scope* parameter_scope = scope_new(function_scope, SCOPE_BLOCK);
     parameter_scope->parameters = true;
+    parameter_scope->parameters_see_body = my has_body && parameters_see_body(me);
     TypeFlow const* saved_flow = type_flow_enter_parameter();
     for_each (i, vec_function_arg, &my args) {
         initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, errs);
