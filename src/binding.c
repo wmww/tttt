@@ -305,7 +305,11 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
             if (my symbol) {
                 check_subsequent_declaration(me, errs);
                 Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
-                if (type == ty_intrinsic(current_checker, TY_CIRCULAR) &&
+                // (tsc's reportCircularityError)
+                if (type == ty_intrinsic(current_checker, TY_CIRCULAR) && my has_explicit_type) {
+                    error_ctx_error_d(errs, my content_span, 2502,
+                        "'", my content_span, "' is referenced directly or indirectly in its own type annotation.");
+                } else if (type == ty_intrinsic(current_checker, TY_CIRCULAR) &&
                     compiler_options()->no_implicit_any && !my has_explicit_type
                 ) {
                     error_ctx_error_d(errs, my content_span, 7022,
