@@ -545,6 +545,7 @@ typedef struct SymbolLinks {
     LazyState declared_state;
     Ty const* declared_type;
     Ty const* static_type; // See ty_static_type_of()
+    bool circular; // A type alias whose resolution reached itself (TS2456 when it finishes, see ty_declared_type_of())
 } SymbolLinks;
 
 typedef enum TyRelation {
@@ -659,6 +660,10 @@ struct Checker {
     u32 instantiation_count;
     struct JsxElement const* jsx_element; // The JSX element being checked (relation errors about its attributes)
     Span current_node; // See ty_enter_node()
+    // The type aliases being resolved, innermost last (the aliases in tsc's resolutionTargets)
+    Symbol const** aliases_in_flight;
+    u32 aliases_in_flight_len;
+    u32 aliases_in_flight_cap;
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
     // The typecheck walk inside the true branches of conditional types: `A` is `A & X` in `A extends X ? A['k'] : ...`
     // where indexed access types are checked (tsc's substitution types, see ty_check_indexed_access_type())
@@ -944,6 +949,7 @@ Span ty_enter_node(Checker* me, Span span);
 static inline void ty_leave_node(Checker* me, Span saved) { me->current_node = saved; }
 // tsc's error(currentNode, ...): only while the program is being typechecked (not while a baseline prints types)
 void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message);
+void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message); // tsc's error(node, ...), likewise
 #define ty_error_at_current_node_d(me, ts_code, ...) ty_error_at_current_node(me, ts_code, cstr_d(__VA_ARGS__))
 // TS2589 at the current node, counted in instantiation_limit_hits: the instantiation limits ran out (the caller gives
 // the error type) or a relation got too deep

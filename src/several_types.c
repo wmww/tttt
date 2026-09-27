@@ -387,6 +387,8 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }
     identifier_type_check_arity(me, errs);
+    // tsc's getTypeFromTypeReference: a referenced alias is resolved (TS2456 if that is circular)
+    if (my target && (my target->flags & SYMBOL_TYPE_ALIAS) && !my target->is_placeholder) ty_declared_type_of(current_checker, my target);
     if (my target) {
         /*
         //This can be enabled once we're parsing the standard library

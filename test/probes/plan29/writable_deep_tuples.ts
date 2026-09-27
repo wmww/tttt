@@ -1,0 +1,9 @@
+// tsc: no errors. tttt: [string, ...unknown[]] (ReadonlyDeep keeps a rest element as `...readonly number[]`, see lower_tuple TODO)
+import type {WritableDeep, ReadonlyDeep} from '../../../thirdparty/corpora/type-fest/index';
+declare function expectType<T>(value: T): void;
+declare const r: ReadonlyDeep<{a: [string, ...number[]]}>;
+declare const t: WritableDeep<typeof r>;
+expectType<[string, ...number[]]>(t.a);
+declare const r2: ReadonlyDeep<[string, ...number[]]>;
+declare const t2: WritableDeep<typeof r2>;
+expectType<[string, ...number[]]>(t2);

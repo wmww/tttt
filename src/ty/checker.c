@@ -253,6 +253,7 @@ void checker_drop(Checker* me) {
     free(my intersection_props.entries);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) relation_cache_drop(&my relations[i]);
     free(my flow_loops);
+    free(my aliases_in_flight);
     free(my flow_shared);
     arena_drop(&my arena);
     free(me);
@@ -699,6 +700,24 @@ static bool prop_judgeable(Checker* me, Prop const* prop) {
     return !ty_node_reaches_alias_in_flight(me, prop->node);
 }
 
+// Whether resolving the members of a type literal would lower an index signature (they're lowered eagerly, see hacks.md)
+// or a mapped type's template that reaches an alias being resolved, or the arguments of a deferred reference that do
+static bool members_judgeable(Checker* me, Ty const* ty) {
+    // A deferred reference's arguments may need the alias being resolved (`type T = T[] & { x: string }`)
+    if (ty->kind == TY_REFERENCE && ty->reference.deferred && ty->reference.deferred->state != LAZY_STATE_DONE) {
+        return !ty_node_reaches_alias_in_flight(me, ty->reference.deferred->node);
+    }
+    Ty const* root = ty;
+    while (root->kind == TY_ANONYMOUS && root->anonymous.target && !root->anonymous.applies_type_args) root = root->anonymous.target;
+    if (root->kind != TY_ANONYMOUS || !root->anonymous.node || root->anonymous.node->tag != TYPE_INTERFACE) return true;
+    for_each (i, vec_interface_member, &root->anonymous.node->interface.members) {
+        // (A mapped type over non-literal keys is an index signature too)
+        bool index = i->key.tag == INTERFACE_KEY_INDEX || i->key.tag == INTERFACE_KEY_MAPPED;
+        if (index && ty_node_reaches_alias_in_flight(me, &i->type)) return false;
+    }
+    return true;
+}
+
 static Prop const* root_declaration(Prop const* prop) {
     while (prop->target) prop = prop->target;
     return prop;
@@ -709,7 +728,7 @@ static Prop const* root_declaration(Prop const* prop) {
 static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* const* types, u32 i, u32 len) {
     for (u32 j = i + 1; j < len; j++) {
         Ty const* b = types[j];
-        if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !members_judgeable(me, b)) continue;
         Prop const* other = ty_get_prop(me, b, prop->name);
         if (other && ((prop->flags | other->flags) & PROP_PRIVATE) && root_declaration(prop) != root_declaration(other)) {
             return true;
@@ -740,6 +759,10 @@ static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u
     for (u32 i = 0; i < len && !conflict; i++) {
         Ty const* a = types[i];
         if (!(a->flags & TYF_OBJECT) || (a->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        if (!members_judgeable(me, a)) {
+            skipped = true;
+            continue;
+        }
         Members const* members = ty_members(me, a);
         for (u32 p = 0; p < members->prop_count && !conflict; p++) {
             Prop const* prop = members->props[p];
@@ -753,6 +776,10 @@ static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u
             for (u32 j = i + 1; j < len && !conflict; j++) {
                 Ty const* b = types[j];
                 if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+                if (!members_judgeable(me, b)) {
+                    skipped = true;
+                    continue;
+                }
                 Prop const* other = ty_get_prop(me, b, prop->name);
                 if (!other || (other->flags & PROP_OPTIONAL)) continue;
                 if (!prop_judgeable(me, other)) {
@@ -794,6 +821,13 @@ static bool extract_redundant_templates(Checker* me, Ty const** types, u32* len,
 // tsc's isEmptyAnonymousObjectType: `{}` (a type literal or anonymous object without members)
 static bool is_empty_anonymous_object(Checker* me, Ty const* ty) {
     if (ty->kind != TY_ANONYMOUS) return false;
+    // A type literal goes by its syntax (tsc's isEmptyTypeLiteralSymbol): its members may not be resolvable yet, `type
+    // Foo = { x: string } & { [x: number]: Foo }` (the same for its instantiations)
+    Ty const* root = ty;
+    while (root->anonymous.target && !root->anonymous.applies_type_args) root = root->anonymous.target;
+    if (root->kind == TY_ANONYMOUS && root->anonymous.node && root->anonymous.node->tag == TYPE_INTERFACE) {
+        return !vec_interface_member_size(&root->anonymous.node->interface.members);
+    }
     Members const* members = ty_members(me, ty);
     return !members->prop_count && !members->call_count && !members->construct_count && !members->index_count &&
         !members->mapped;

@@ -161,7 +161,13 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
     SymbolLinks* links = symbol_links(me, symbol);
     switch (links->declared_state) {
         case LAZY_STATE_DONE: return links->declared_type;
-        case LAZY_STATE_IN_FLIGHT: return ty_intrinsic(me, TY_ERROR); // TODO: TS2456 circular alias
+        case LAZY_STATE_IN_FLIGHT:
+            // tsc's pushTypeResolution: every alias from this one on is part of the cycle, and fails when it finishes
+            for (u32 i = my aliases_in_flight_len; i-- > 0;) {
+                symbol_links(me, my aliases_in_flight[i])->circular = true;
+                if (my aliases_in_flight[i] == symbol) break;
+            }
+            return ty_intrinsic(me, TY_ERROR);
         case LAZY_STATE_NOT_STARTED: break;
     }
     links->declared_state = LAZY_STATE_IN_FLIGHT;
@@ -197,7 +203,18 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
                     compiler_options()->strict_builtin_iterator_return;
                 ret = ty_intrinsic(me, undefined ? TY_UNDEFINED : TY_ANY);
             } else {
+                if (my aliases_in_flight_len == my aliases_in_flight_cap) {
+                    my aliases_in_flight_cap = my aliases_in_flight_cap ? my aliases_in_flight_cap * 2 : 16;
+                    my aliases_in_flight = realloc(my aliases_in_flight, sizeof(Symbol const*) * my aliases_in_flight_cap);
+                    panic_if(!my aliases_in_flight, "out of memory");
+                }
+                my aliases_in_flight[my aliases_in_flight_len++] = symbol;
                 ret = lower(me, body, ctx, symbol, params);
+                my aliases_in_flight_len--;
+                if (links->circular) {
+                    ty_error_at(me, decl->name, 2456, cstr_d("Type alias '", symbol->name, "' circularly references itself."));
+                    ret = ty_intrinsic(me, TY_ERROR);
+                }
             }
         } else if (decl->kind == SYMBOL_DECL_BUILTIN) {
             // The `object` keyword is a builtin alias whose node is an empty interface

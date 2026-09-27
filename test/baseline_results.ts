@@ -6233,7 +6233,7 @@ const baselines = {
     'contextualTypeBasedOnIntersectionWithAnyInTheMix5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeCaching': {
         errors: true,
@@ -26996,7 +26996,7 @@ const baselines = {
         types: true,
     },
     'recursiveReverseMappedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49546,7 +49546,7 @@ const baselines = {
         types: true,
     },
     'circular2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49556,7 +49556,7 @@ const baselines = {
         types: true,
     },
     'circular4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63818,7 +63818,7 @@ const baselines = {
     'intersectionWithIndexSignatures': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionWithUnionConstraint': {
         errors: false,

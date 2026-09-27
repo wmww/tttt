@@ -249,7 +249,8 @@ Ty const* ty_conditional_resolve(
         inference_drop(&inf);
     }
     Ty const* inferred_extends = ty_instantiate(me, extends, mapper);
-    if (ty_is_generic_index(inferred_extends)) return nullptr;
+    // (tsc's isDeferredType of the extends type: `{} extends Mapped<T>` waits for T too)
+    if (ty_is_generic_index(inferred_extends) || is_generic_mapped(me, inferred_extends, 0)) return nullptr;
 
     if (check_type->flags & TYF_ANY) {
         Ty const* parts[2] = { ty_instantiate(me, branch_type(me, if_true), mapper), branch_type(me, if_false) };

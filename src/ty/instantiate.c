@@ -20,15 +20,19 @@ Span ty_enter_node(Checker* me, Span span) {
     return saved;
 }
 
-void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message) {
+void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message) {
     ErrorCtx* errs = program_errors(my program);
     if (errs->phase != ERROR_PHASE_TYPECHECK) {
         cstr_drop(&message);
-    } else if (span_valid(my current_node)) {
-        error_ctx_error_s(errs, my current_node, ts_code, message);
+    } else if (span_valid(span)) {
+        error_ctx_error_s(errs, span, ts_code, message);
     } else {
         error_ctx_global_error_s(errs, ts_code, message);
     }
+}
+
+void ty_error_at_current_node(Checker* me, unsigned ts_code, cstr message) {
+    ty_error_at(me, my current_node, ts_code, message);
 }
 
 void ty_instantiation_limit_reached(Checker* me) {
@@ -512,16 +516,10 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
 
         case TY_REFERENCE: {
             if (ty->reference.deferred) {
+                // Another deferred reference, whether or not this one's arguments are resolved by now (tsc's
+                // getObjectTypeInstantiation): making an ordinary one of it would instantiate the arguments, and a
+                // recursive alias through them, depending on who asked first
                 TyDeferredRef const* deferred = ty->reference.deferred;
-                if (deferred->state == LAZY_STATE_DONE && !ty->alias) {
-                    // Resolved by now, so it can become an ordinary reference
-                    TyList args = deferred->args;
-                    Ty const** buf = args.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * args.len);
-                    TyList mapped = instantiate_list(me, args, mapper, buf, args.len);
-                    Ty const* ret = mapped.data == args.data ? ty : ty_reference(me, ty->reference.target, mapped);
-                    if (buf != stack_buf) free(buf);
-                    return ret;
-                }
                 Ty const* alias_buf[16];
                 check(ty->alias_args.len <= c_arraylen(alias_buf));
                 TyList alias_args = instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf));
