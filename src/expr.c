@@ -219,12 +219,16 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
     }
     PortItem const* item = symbol_type_only_declaration(found);
     // (what the type-only declaration names has to be a value: a merge further down the chain may be what is)
-    if (!item || !item->symbol || !(symbol_resolved_flags(item->symbol) & SYMBOL_VALUE)) return;
+    // (An `export type *` has no symbol: what it brings is the name itself)
+    Symbol const* named = item && item->symbol ? item->symbol : found;
+    if (!item || !(symbol_resolved_flags(named) & SYMBOL_VALUE)) return;
     bool exported = port_item_is_export(item);
     Error* error = error_ctx_error_d(errs, my name, exported ? 1362 : 1361, "'", my name, "' cannot be used as a value "
         "because it was ", exported ? "exported using 'export type'." : "imported using 'import type'.");
     if (error) {
-        error_add_related_d(error, item->decl_name, exported ? 1377 : 1376, "'", my name, "' was ",
+        // (tsc's node: the whole `export type *` declaration, the `* as ns` of a namespace export)
+        Span at = item->tag == PORT_REEXPORT_SPLAT || item->tag == PORT_REEXPORT_GATHER ? item->full_span : item->decl_name;
+        error_add_related_d(error, at, exported ? 1377 : 1376, "'", my name, "' was ",
             exported ? "exported" : "imported", " here.");
     }
 }

@@ -1358,6 +1358,8 @@ Symbol* module_export_equals(Symbol* module) {
     return target ? target : module;
 }
 
+static i32 symbol_table_own_index(SymbolTable const* me, csview name, u64 hash);
+
 static bool module_visited(Symbol** visited, u32 count, Symbol const* module) {
     for (u32 i = 0; i < count; i++) {
         if (visited[i] == module) return true;
@@ -1365,32 +1367,67 @@ static bool module_visited(Symbol** visited, u32 count, Symbol const* module) {
     return false;
 }
 
+typedef struct ExportStarsCtx {
+    SymbolTable* target;
+    Arena* arena;
+    Symbol** visited;
+    u32 visited_count;
+    u32 visited_cap;
+    // tsc's typeOnlyExportStarMap: the names an `export type *` brought, with the outermost such star (the last one
+    // to see the name), and the modules reached through no type-only star, whose own names are not type-only
+    SymbolTable type_only; // Names only, the symbols are unused
+    PortItem const** type_only_star; // Parallel to type_only's entries (malloc'd)
+    u32 type_only_star_cap;
+    Symbol** value_modules; // malloc'd
+    u32 value_module_count;
+    u32 value_module_cap;
+} ExportStarsCtx;
+
 // tsc's extendExportStars(): own exports shadow what comes through `export *`, of two stars the first wins, `default`
-// doesn't go through a star
-static void extend_export_stars(
-    SymbolTable* target, Arena* arena, Symbol* module, Symbol*** visited, u32* visited_count, u32* visited_cap,
-    bool nested
-) {
-    if (*visited_count == *visited_cap) {
-        *visited_cap = *visited_cap ? *visited_cap * 2 : 16;
-        *visited = realloc(*visited, sizeof(Symbol*) * *visited_cap);
+// doesn't go through a star. type_only_star: the outermost `export type *` the module is reached through
+static void extend_export_stars(ExportStarsCtx* ctx, Symbol* module, bool nested, PortItem const* type_only_star) {
+    if (!type_only_star) {
+        // (Before the visited check, like tsc's nonTypeOnlyNames)
+        if (ctx->value_module_count == ctx->value_module_cap) {
+            ctx->value_module_cap = ctx->value_module_cap ? ctx->value_module_cap * 2 : 8;
+            ctx->value_modules = realloc(ctx->value_modules, sizeof(Symbol*) * ctx->value_module_cap);
+        }
+        ctx->value_modules[ctx->value_module_count++] = module;
     }
-    (*visited)[(*visited_count)++] = module;
+    if (module_visited(ctx->visited, ctx->visited_count, module)) return;
+    if (ctx->visited_count == ctx->visited_cap) {
+        ctx->visited_cap = ctx->visited_cap ? ctx->visited_cap * 2 : 16;
+        ctx->visited = realloc(ctx->visited, sizeof(Symbol*) * ctx->visited_cap);
+    }
+    ctx->visited[ctx->visited_count++] = module;
 
     u32 count;
     SymbolEntry* own = symbol_table_collect(module->exports, &count);
     for (u32 i = 0; i < count; i++) {
         if (nested && (csview_equals(own[i].name, "default") || csview_equals(own[i].name, "export="))) continue;
-        if (!symbol_table_get_own(target, own[i].name, own[i].hash)) {
-            symbol_table_insert(target, arena, own[i].name, own[i].hash, own[i].symbol);
+        if (!symbol_table_get_own(ctx->target, own[i].name, own[i].hash)) {
+            symbol_table_insert(ctx->target, ctx->arena, own[i].name, own[i].hash, own[i].symbol);
+        }
+        if (type_only_star) {
+            i32 at = symbol_table_own_index(&ctx->type_only, own[i].name, own[i].hash);
+            if (at < 0) {
+                symbol_table_insert(&ctx->type_only, ctx->arena, own[i].name, own[i].hash, own[i].symbol);
+                at = (i32)ctx->type_only.count - 1;
+                if (ctx->type_only.count > ctx->type_only_star_cap) {
+                    ctx->type_only_star_cap = ctx->type_only_star_cap ? ctx->type_only_star_cap * 2 : 16;
+                    ctx->type_only_star = realloc(ctx->type_only_star, sizeof(PortItem const*) * ctx->type_only_star_cap);
+                }
+            }
+            ctx->type_only_star[at] = type_only_star;
         }
     }
     free(own);
 
     for (u32 i = 0; i < module->module->export_star_count; i++) {
-        Symbol* next = binder_module_of_ref(module->binder, module->module->export_stars[i]->module_ref);
-        if (!next || module_visited(*visited, *visited_count, next)) continue;
-        extend_export_stars(target, arena, next, visited, visited_count, visited_cap, true);
+        PortItem const* star = module->module->export_stars[i];
+        Symbol* next = binder_module_of_ref(module->binder, star->module_ref);
+        if (!next) continue;
+        extend_export_stars(ctx, next, true, type_only_star ? type_only_star : star->type_only ? star : nullptr);
     }
 }
 
@@ -1511,14 +1548,43 @@ static SymbolTable const* module_resolved_exports(Symbol* me) {
     if (!my module->export_star_count) return my exports;
     if (my module->resolved_exports_state == ALIAS_DONE) return my module->resolved_exports;
     SymbolTable* table = arena_new(&my binder->arena, SymbolTable);
-    Symbol** visited = nullptr;
-    u32 visited_count = 0;
-    u32 visited_cap = 0;
-    extend_export_stars(table, &my binder->arena, me, &visited, &visited_count, &visited_cap, false);
-    free(visited);
+    ExportStarsCtx ctx = { .target = table, .arena = &my binder->arena };
+    extend_export_stars(&ctx, me, false, nullptr);
+    // What stays type-only: the names no module reached without a type-only star exports
+    for (u32 i = 0; i < ctx.type_only.count; i++) {
+        SymbolEntry const* entry = &ctx.type_only.entries[i];
+        bool value = false;
+        for (u32 m = 0; m < ctx.value_module_count && !value; m++) {
+            value = symbol_table_get_own(ctx.value_modules[m]->exports, entry->name, entry->hash);
+        }
+        if (value) continue;
+        if (!my module->type_only_exports) my module->type_only_exports = arena_new(&my binder->arena, SymbolTable);
+        SymbolTable* names = my module->type_only_exports;
+        symbol_table_insert(names, &my binder->arena, entry->name, entry->hash, entry->symbol);
+        if (names->count > my module->type_only_star_cap) {
+            u32 cap = my module->type_only_star_cap ? my module->type_only_star_cap * 2 : 8;
+            PortItem const** stars = arena_new_n(&my binder->arena, PortItem const*, cap);
+            if (names->count > 1) memcpy(stars, my module->type_only_stars, sizeof(PortItem const*) * (names->count - 1));
+            my module->type_only_stars = stars;
+            my module->type_only_star_cap = cap;
+        }
+        my module->type_only_stars[names->count - 1] = ctx.type_only_star[i];
+    }
+    free(ctx.visited);
+    free(ctx.type_only_star);
+    free(ctx.value_modules);
     my module->resolved_exports = table;
     my module->resolved_exports_state = ALIAS_DONE;
     return table;
+}
+
+PortItem const* module_type_only_star(Symbol* module, csview name) {
+    if (!module || !module->is_module || !module->module->export_star_count) return nullptr;
+    module_resolved_exports(module);
+    SymbolTable const* names = module->module->type_only_exports;
+    if (!names) return nullptr;
+    i32 at = symbol_table_own_index(names, name, symbol_name_hash(name));
+    return at < 0 ? nullptr : module->module->type_only_stars[at];
 }
 
 Symbol* symbol_get_export(Symbol const* me, csview name) {
@@ -1715,6 +1781,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 return nullptr;
             }
             item->source_symbol = found;
+            my alias->type_only_star = module_type_only_star(module, port_item_name(item->source_name));
             return resolve_if_pure_alias(found);
         }
 
@@ -1860,6 +1927,7 @@ PortItem const* symbol_type_only_declaration(Symbol const* me) {
         symbol_resolve_alias((Symbol*)me); // (what sets source_symbol)
         PortItem const* item = my alias->item;
         if (item->type_only) return item;
+        if (my alias->type_only_star) return my alias->type_only_star;
         me = item->source_symbol;
         if (me && me->flags & SYMBOL_VALUE) return nullptr; // Merged with a value along the way
     }

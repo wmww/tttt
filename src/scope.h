@@ -165,6 +165,8 @@ typedef struct SymbolAlias {
     // value meaning: the property `Request` of the value, which gives the import its value meaning (tsc's
     // combineValueAndTypeSymbols). Null otherwise
     Symbol* value_target;
+    // An import or re-export of a name its module only exports through `export type *`: that star
+    PortItem const* type_only_star;
 } SymbolAlias;
 
 // What only modules (files and ambient modules) have
@@ -178,6 +180,11 @@ typedef struct SymbolModule {
     // An ambient module (of a script) with an `export =` or `export default x`, where tsc checks its exports
     // (checkExportAssignment -> checkExternalModuleExports)
     bool has_export_assignment;
+    // Of the resolved exports, those only an `export type *` brings (tsc's typeOnlyExportStarMap), and that star,
+    // parallel to the table's entries. Null if there are none
+    SymbolTable* type_only_exports;
+    PortItem const** type_only_stars;
+    u32 type_only_star_cap;
 } SymbolModule;
 
 typedef struct Symbol {
@@ -265,6 +272,8 @@ Symbol* symbol_resolve_alias(Symbol* me);
 PortItem const* symbol_type_only_declaration(Symbol const* me);
 // Member of a namespace, enum or module (`export *` included), null if there is none
 Symbol* symbol_get_export(Symbol const* me, csview name);
+// The `export type *` that is the only way the module exports that name (tsc's typeOnlyExportStarMap), if any
+PortItem const* module_type_only_star(Symbol* module, csview name);
 // The table of them (null if there are none)
 SymbolTable const* symbol_exports_table(Symbol const* me);
 // All of them, malloc'd
