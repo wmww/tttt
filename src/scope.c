@@ -2326,8 +2326,8 @@ static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
             InitializedBinding* initialized = (InitializedBinding*)binding;
             Expr* init = expando_initializer(&initialized->value, binding->content_span, js);
             if (!init) return nullptr;
-            // An annotated variable has the type it says (its expandos are declarations, not members)
-            if (!binding->has_explicit_type) *init_ret = init;
+            // (An annotated variable has the type it says, but its initializer gets the members all the same)
+            *init_ret = init;
             return found;
         }
         case SYMBOL_DECL_ASSIGNMENT: {

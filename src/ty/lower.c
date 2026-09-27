@@ -850,9 +850,22 @@ static bool decl_contributes_value(Symbol const* symbol, u32 index) {
     return true;
 }
 
+// `const f: T = () => {}; f.x = v`: an expando of an annotated variable has the type the annotation gives its name
+// (tsc's getAnnotatedTypeForAssignmentDeclaration), null if the annotation doesn't have it
+static Ty const* annotated_expando_type(Checker* me, Symbol const* symbol) {
+    Symbol const* host = symbol->parent;
+    if (!host || host->is_module || !(host->flags & SYMBOL_VARIABLE)) return nullptr;
+    Binding const* binding = symbol_find_node(host, SYMBOL_DECL_VARIABLE);
+    if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER || !binding->has_explicit_type) return nullptr;
+    Ty const* annotation = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
+    return ty_prop_type_of(me, annotation, checker_atom(me, symbol->name));
+}
+
 // What a declaring assignment (`exports.x = v`, `f.x = v`) assigns, before widening object literals (tsc's
 // getInitializerTypeFromAssignmentDeclaration): an export keeps its literal type, an expando's is widened
 static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
+    Ty const* annotated = annotated_expando_type(me, symbol);
+    if (annotated) return annotated;
     Ty const* type = ty_expr_type(me, decl->node);
     return symbol->parent && !symbol->parent->is_module ? ty_widened_literal(me, type) : ty_regular(me, type);
 }
@@ -891,6 +904,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             if (is_js_container(symbol, decl->node, span_null)) return ty_namespace_type(me, symbol);
             // tsc's getInitializerTypeFromAssignmentDeclaration: `exports.x = 1` exports `1`, `module.exports = 1` number
             if (csview_equals(symbol->name, "export=")) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
+            if (annotated_expando_type(me, symbol)) return annotated_expando_type(me, symbol);
             return ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));
         case SYMBOL_DECL_COMMONJS_MODULE: return ty_commonjs_module_object(me, decl->node);
         case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
