@@ -315,8 +315,9 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   them: `./syntaxstats.py --list other:E`). `parse_class_item_inner()` still fails where tsc commits (nameless `*`,
   `get`/`set` members), and function types in type position still backtrack freely (tsc's
   isUnambiguouslyStartOfFunctionType).
-- No tokenizer + backtracking with fail cache: kept (plan 27 decided). `parse_fail`/`hop_start_if_ends_on_word_break`
-  are ~5% of the corpus profile; parse is 113 of react's 310 ms, the perf session should profile it.
+- No tokenizer + backtracking with fail cache: kept (plan 27 decided). The 2026-09-27 perf check-up profiled the
+  tsc corpus, not react (the corpus tsgo is closest on); parsing is ~20% of instructions there and 116 of react's
+  300 ms: see "Perf" below.
 
 ### Found by plan 15 session 1 (2026-09-24)
 - **TS2403 false positives = type-core bugs** (each test's errors fail on a spurious TS2403 because tttt computes two
@@ -438,22 +439,21 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   some pair tsc doesn't (`RequiredEntries` measures invariant+unreliable for TKeys, `InferObjectInput` covariant+
   unreliable). `TTTT_DEBUG_RELATE_NESTED=1` shows the pairs; suspects: no `Unmeasurable` (hacks.md, `get_variances`),
   or a marker reaching a type whose variance tsc reports as unmeasurable.
-- Cache call resolutions per `CallExpr` in the checker (each call resolves twice today).
+- Each call resolves twice (type pass and typecheck walk): 7.7% of the tsc corpus' instructions. `plans/28_resolve_calls_once.md`.
 - type-fest's check (0.6 s) is ~90% `test-d/opaque.ts` alone, which runs into TS2589 at line 68 (`Tagged`/
   `UnwrapTagged` over `TagContainer`) plus four TS7022 that tsc doesn't report: a correctness bug with a perf symptom.
 - type-fest `GreaterThan<2, 1>` is `false` (`test-d/greater-than-or-equal.ts:8`, and a probe importing
   `source/greater-than.d.ts`): the nested `[...] extends infer R extends [boolean, ...] ? ... : never` chain (two
   `infer R` in one declaration, the inner shadowing the outer) picks a wrong branch.
-- tsc corpus profile after the 2026-09-24 perf session (6.0 G Ir): parsing is ~19% of instructions (~6000 per
-  source line: backtracking sub-parsers, `hop_start` chains, `parse_fail` 1.5 M times from `parse_expr` alone;
-  `hop_start_if_ends_on_word_break` 1.6% self). A first-char dispatch (or a real token) in `parse_expr`,
-  `parse_type` and the keyword probes is the lever; the binary operator switch alone didn't move wall time.
-  Checker: `is_simple_related` 6.7% self (7.6 M calls: `assigned_is_assignable`, `first_unfit_argument`,
-  `ty_union_subtype_reduced`, `ty_is_comparable_either_way` from discriminant narrowing; tsc keys unions of 10+
-  members by discriminant, `narrow_by_discriminant()` asks every member), `ty_union` 5.8% self (flatten + dedupe +
-  intern of big enum unions like `SyntaxKind | undefined`, rebuilt by `ty_optional_param_type`, `with_undefined`,
-  `filter_type`: cache the "+ undefined" results?), `ty_declared_type_of` -> `intern_slot` 1.4% (cache the enum type
-  on the member literal).
+- tsc corpus profile after the 2026-09-27 perf check-up (5.91 G Ir, `measurements.md`): parsing ~20% of
+  instructions (backtracking sub-parsers: `parse_fail` ~7 M calls from `parse_type_compat_literal`,
+  `parse_expr_right_side`, `parse_type`, `parse_left_unary_op`...; `hop_start_if_ends_on_word_break` 1.4% self). A
+  first-char dispatch (or a real token) in `parse_expr`, `parse_type` and the keyword probes is the lever; the binary
+  operator switch alone didn't move wall time. Checker: `is_simple_related` 6.3% self, 3 M of 4.5 M calls go to the
+  enum branch (enum literal vs enum literal, mostly different values of one enum: a same-enum shortcut before the
+  generic checks would do); `ty_union` 4.5% self (small unions built over and over: `access`,
+  `identifier_flow_type`, `lower`); `infer_from` 5% self (1.3 M calls, per-call prologue/visited scans);
+  `ty_declared_type_of` -> `intern_slot` (cache the enum type on the member literal?).
 - Name resolution is 77 ms on the corpus (plan 04 wanted 40): cache misses more than work; every identifier walks the
   scope chain (locals + container exports per level, value then type meaning on failure), declare + resolve are two
   walks of the AST. Ideas: one table probe per scope for all meanings, skip empty block scopes, merge the walks.

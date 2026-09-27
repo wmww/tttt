@@ -2,6 +2,35 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, perf check-up (todo entry 9)
+**The machine is ~15% slower than when the 09-25/09-26 entries were taken**: 49760b2 (recorded 0.76 s on the tsc
+corpus) and 132f9ee (recorded 0.78 s) both run at 0.89-0.91 s today. Compare wall times only within one session;
+callgrind instruction counts (tsc corpus, `valgrind --tool=callgrind ./release/tttt -q --keep-going -p
+thirdparty/tsc/src/compiler`) are the stable measure: 49760b2 6.48 G, 132f9ee 6.56 G, session start (8ee3905)
+**6.92 G**, session end **5.91 G** (-14.6%). The code drift since 09-25 was +6.7%, spread thinly (typecheck and
+parse both +7%): the cost of the correctness work, no single regression.
+What went: enum literal checks in `is_simple_related` behind one flag test; filtered unions skip `ty_union()`'s
+reductions (`ty_union_filtered`); subtype reduction only tries structured members (tsc's removeSubtypes); key
+properties of big unions (tsc's getKeyPropertyName: `===`/`switch`/predicate narrowing and union targets go straight
+to the member, -3.9%); top-level reverse mapped types cached (tsc's createComputedCompilerOptions call alone was 5%);
+containsType binary searches in relations (-2.7%); `T | undefined` of optional parameters cached (-1.1%). Suite 8480
+-> 8481 (narrowingUnionWithBang), nothing lost, corpora unchanged.
+`./bench.sh --runs 5` at the end (best wall; tttt / tsc 5.8 / tsgo 7.0.2 / tsgo single-threaded):
+
+| corpus | tttt | tsc | tsgo | tsgo 1 thread |
+|---|---|---|---|---|
+| synthetic (962 tests x 200) | 5.90 s / 4582 MB | 39.6 s | 9.64 s / 5410 MB | 12.25 s |
+| tsc `src/compiler` | **0.87 s** / 405 MB (0.93 at the start) | 7.68 s | 1.27 s / 434 MB | 1.77 s |
+| type-fest | 0.48 s / 430 MB | 5.49 s | 1.93 s | 2.36 s |
+| valibot | 0.81 s / 541 MB | 9.24 s | 1.64 s / 827 MB | 2.46 s |
+| react | 0.30 s / 242 MB | 3.83 s | 1.06 s / 553 MB | 0.96 s / 317 MB |
+
+tsc corpus phases: parse 204 ms, resolve 105 ms, typecheck 634 -> **561 ms**. Synthetic phases: parse 1.59 s,
+resolve 0.79 s, typecheck 3.40 s (not comparable with older entries: the corpus grows with the passing tests).
+What's left in the profile (5.91 G): parsing ~20% (speculative sub-parsers: `parse_fail` 7 M calls, keyword
+probes), the typecheck walk re-resolving every call 7.7% (plan 28), `is_simple_related` 6.3% self (enum literal
+pairs from `SyntaxKind` comparisons), `ty_union` 4.5% self, `infer_from` 5%.
+
 ## 2026-09-27, suite checker bugs session (todo entry 8, at the session's last code commit)
 Suite 8408 -> **8480 / 13540** full (errors 10233 -> 10274, symbols 11977 -> 12032, types 10208 -> 10273); three
 tests lost one component each (mappedTypeGenericIndexedAccess, typeVariableConstraintIntersections: their errors had

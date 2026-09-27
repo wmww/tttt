@@ -17,10 +17,12 @@ types components) are the oracle, not the goal; real projects that are clean und
   1 after the second plan 19 session). Suite 8258 after that session (TS7053 & co., tuple inference/relation ported
   from tsc, tail-recursive conditionals). What blocks the rest of type-fest is structural: tttt lowers aliases and
   type references eagerly where tsc defers them (plan 19 R18/R19), and has no substitution types (R17).
-- **Perf** (`measurements.md`, 2026-09-26; tsgo = typescript 7.0.2 on 4 cores): tsc corpus 0.89 s vs tsgo 1.27
-  (single-threaded 1.73), type-fest 0.37 vs 1.96, valibot 0.82 s / 530 MB vs 1.62 s / 822 MB, react 0.31 s / 232 MB
-  vs 1.06 s / 545 MB (tsgo single-threaded 0.94). Ahead everywhere, single-threaded; react is parse-dominated
-  (1511 dependency files). The tsc corpus has drifted from 0.67 s (after the last perf session) to ~0.8-0.9 s.
+- **Perf** (`measurements.md`, 2026-09-27 perf check-up; tsgo = typescript 7.0.2 on 4 cores): tsc corpus 0.87 s vs
+  tsgo 1.27 (single-threaded 1.77), type-fest 0.48 vs 1.93, valibot 0.81 s / 541 MB vs 1.64 s / 827 MB, react 0.30 s /
+  242 MB vs 1.06 s / 553 MB (tsgo single-threaded 0.96). Ahead everywhere, single-threaded. The "drift" to 0.93 s was
+  mostly the machine (~15% slower than on 09-25); callgrind counts are the stable measure: 6.92 G -> 5.91 G that
+  session (tsc's key-property map, reverse mapped cache, containsType). Next levers: calls resolved twice (plan 28,
+  ~8%), the backtracking parser (~20% of instructions).
 - **Built and holding**: hand-written backtracking parser (JSX included), tsc-shaped binder with persistent symbols
   and merging, interned `Ty` core with id-keyed relations and tsc's identity relation, mapper instantiation, two-pass
   inference with priorities, contextual typing, conditional/mapped/indexed/template types, flow graph + narrowing,
@@ -104,9 +106,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 ## Risks / concerns
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order by
   type id, origins, truncation). The interned design can mimic creation order; keep it that way when adding types.
-- Perf: deep generic code is where tsc's caches and shortcuts matter; React is measured now (plan 25:
-  ahead of tsgo; now that it's checked nearly completely, the perf check-up should re-measure it).
-  Checks accumulate cost silently between perf sessions.
+- Perf: deep generic code is where tsc's caches and shortcuts matter (the 2026-09-27 check-up's wins were all tsc
+  caches tttt lacked: key-property maps, reverse mapped types, containsType). Checks accumulate cost silently between
+  perf sessions (+7% over 09-25..09-27). Wall times drift with the machine: compare callgrind counts across sessions.
 - JS/JSDoc is a second front end on top of the checker: the risk is a parallel type world for JSDoc. It must lower
   into the same `Ty` machinery.
 - Parser rewrites are tempting and expensive; plan 27 looked and found no case for one. Revisit only with a profile.

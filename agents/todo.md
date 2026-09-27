@@ -21,7 +21,7 @@ insights schedules one.)
 triage.md "From the suite checker bugs session". The `other` displaydiff bucket turned out to be one-offs; the
 single-code errors buckets and missing features (JSON modules, noUncheckedIndexedAccess, write types, async returns)
 moved more.)
-9. **Perf check-up**: `./bench.sh` with the React corpus; tsc corpus wall has drifted 0.67 -> ~0.8 s since the last
-   perf session. Profile the corpus tsgo is closest on, fix what's cheap, update `measurements.md`.
+(Entry 9, perf check-up, is done, 2026-09-27: tsc corpus 6.92 G -> 5.91 G instructions, 0.93 -> 0.87 s; most of the
+"drift" was the machine. Plan 28 (resolve calls once, ~8%) written for the insights to schedule.)
 10. **Triage.**
 11. **Insights.**

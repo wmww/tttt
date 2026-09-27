@@ -22973,7 +22973,7 @@ const baselines = {
     'narrowingUnionWithBang': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingWithNonNullExpression': {
         errors: true,

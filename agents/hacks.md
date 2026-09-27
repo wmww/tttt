@@ -843,7 +843,10 @@ Checker gaps marked in the code, by function:
 - `binding_add_names`: literal types on an exported binding aren't widened the way tsc does for
   `defaultNamedExportWithType1`.
 - `instantiate_anonymous` (ty/instantiate.c): instantiation expressions are never instantiated a second time.
-- `ty_union_subtype_reduced` (ty/expr.c): subtype reduction bails above 64 members (quadratic check).
+- `ty_union_subtype_reduced` (ty/expr.c): subtype reduction bails above 64 members (quadratic check). Since the
+  2026-09-27 perf check-up only structured members are tried (tsc's removeSubtypes), removing the cap changed
+  nothing in the suite or the corpora (tried then). tsc has no cap, but skips pairs whose unit-typed key property
+  differs (removeSubtypes' keyProperty); port that before dropping the cap.
 Parser: `is_identifier_char` is ASCII-only (no Unicode ID_Start/ID_Continue); `parse_identifier` excludes keywords
 by a chain of `span_equals`; `parse_binary_op` is an if/else chain; `parse_class_decl` gives a generic trailing-comma
 error for `extends B, C`; `parse_regex` fails instead of TS1161; numeric separators (`string_helpers.c`) never
