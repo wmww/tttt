@@ -66886,12 +66886,12 @@ const baselines = {
         types: true,
     },
     'subtypingWithObjectMembers2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'subtypingWithObjectMembers3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66906,12 +66906,12 @@ const baselines = {
         types: true,
     },
     'subtypingWithObjectMembersAccessibility': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'subtypingWithObjectMembersAccessibility2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66921,7 +66921,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithObjectMembersOptionality2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
