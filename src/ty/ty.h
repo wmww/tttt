@@ -1302,6 +1302,7 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
 // The same for a source that is `expr`'s type: a literal or arrow function is reported at what inside it doesn't fit
 // (tsc's elaborateError). Returns whether it was assignable
+void ty_check_enum_member_value(Checker* me, Ty const* source, Span span, ErrorCtx* errs);
 bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs);
 // A `using` (TS2850) or `await using` (TS2851) initializer: disposable, null or undefined
 void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Span span, ErrorCtx* errs);

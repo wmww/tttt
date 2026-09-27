@@ -641,7 +641,7 @@ const baselines = {
         types: true,
     },
     'ambientEnum1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5311,12 +5311,12 @@ const baselines = {
         types: true,
     },
     'computedEnumMemberSyntacticallyString(isolatedmodules=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedEnumMemberSyntacticallyString(isolatedmodules=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18778,7 +18778,7 @@ const baselines = {
     'isolatedDeclarationErrorsEnums': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationErrorsExpandoFunctions': {
         errors: false,
@@ -18903,7 +18903,7 @@ const baselines = {
     'isolatedModulesGlobalNamespacesAndEnums': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedModulesImportConstEnum': {
         errors: true,
@@ -23808,7 +23808,7 @@ const baselines = {
     'noUnusedLocals_selfReference': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'noUnusedLocals_selfReference_skipsBlockLocations': {
         errors: true,
@@ -37696,7 +37696,7 @@ const baselines = {
         types: true,
     },
     'constEnum2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39056,12 +39056,12 @@ const baselines = {
         types: true,
     },
     'enumConstantMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'enumErrorOnConstantBindingWithInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39086,7 +39086,7 @@ const baselines = {
         types: true,
     },
     'enumShadowedInfinityNaN': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

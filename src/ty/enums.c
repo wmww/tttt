@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "program.h"
 #include "enum_decl.h"
 #include "scope.h"
 #include "binding.h"
@@ -98,6 +99,17 @@ static EnumValue const_variable_value(Checker* me, Symbol const* symbol, Span us
     return evaluate(me, &initialized->value, depth);
 }
 
+// The symbol a name or a dotted name of namespaces refers to, null if it isn't one
+static Symbol const* entity_symbol(Expr const* expr) {
+    if (expr->tag == EXPR_IDENTIFIER) return expr->identifier.target;
+    if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return nullptr;
+    Expr const* prop = &expr->property->prop;
+    if (prop->tag != EXPR_LITERAL || prop->literal.tag != VALUE_STRING) return nullptr;
+    Symbol const* object = entity_symbol(&expr->property->expr);
+    if (!object || !(object->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE))) return nullptr;
+    return symbol_get_export(object, cstr_sv(&prop->literal.string));
+}
+
 // tsc's evaluator (enum initializers, template literal expressions)
 static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
     if (depth > 64) return enum_value_unknown;
@@ -129,8 +141,12 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
 
         case EXPR_IDENTIFIER:
             if (!expr->identifier.target || !(expr->identifier.target->flags & SYMBOL_ENUM_MEMBER)) {
-                if (csview_equals(expr->identifier.name.sv, "NaN")) return enum_value_number(NAN);
-                if (csview_equals(expr->identifier.name.sv, "Infinity")) return enum_value_number(INFINITY);
+                // (The global ones, not a local of that name)
+                Symbol const* target = expr->identifier.target;
+                csview name = expr->identifier.name.sv;
+                bool global = !target || target == program_get_global(my program, name, SYMBOL_VALUE);
+                if (global && csview_equals(name, "NaN")) return enum_value_number(NAN);
+                if (global && csview_equals(name, "Infinity")) return enum_value_number(INFINITY);
                 return const_variable_value(me, expr->identifier.target, expr->identifier.name, depth);
             }
             return member_value(me, expr->identifier.target);
@@ -158,22 +174,12 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
         }
 
         case EXPR_PROPERTY: {
-            // `E.A` and `E["A"]`
+            // `E.A`, `E["A"]` and `N.E.A`
             PropertyExpr const* property = expr->property;
-            if (property->expr.tag != EXPR_IDENTIFIER || !property->expr.identifier.target) return enum_value_unknown;
-            Symbol const* enum_decl = property->expr.identifier.target;
-            if (!(enum_decl->flags & SYMBOL_ENUM)) return enum_value_unknown;
-            Span name;
-            if (property->form == PROPERTY_EXPR_DOT && property->prop.tag == EXPR_IDENTIFIER) {
-                name = property->prop.identifier.name;
-            } else if (property->prop.tag == EXPR_LITERAL && property->prop.literal.tag == VALUE_STRING) {
-                name = property->prop.inner_span;
-                if (name.sv.size < 2) return enum_value_unknown;
-                name = span_make(name.source, span_start_ptr(name) + 1, span_end_ptr(name) - 1);
-            } else {
-                return enum_value_unknown;
-            }
-            return member_value(me, symbol_get_export(enum_decl, name.sv));
+            Symbol const* enum_decl = entity_symbol(&property->expr);
+            if (!enum_decl || !(enum_decl->flags & SYMBOL_ENUM)) return enum_value_unknown;
+            if (property->prop.tag != EXPR_LITERAL || property->prop.literal.tag != VALUE_STRING) return enum_value_unknown;
+            return member_value(me, symbol_get_export(enum_decl, cstr_sv(&property->prop.literal.string)));
         }
 
         default:

@@ -1,5 +1,7 @@
 #include "enum_decl.h"
+#include <math.h>
 #include "error.h"
+#include "source_file.h"
 #include "ty/ty.h"
 #include "scope.h"
 #include "several_types.h"
@@ -85,6 +87,30 @@ static void enum_decl_check_declarations(EnumDecl const* me, ErrorCtx* errs) {
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
     for_each (i, vec_enum_case, &my cases) {
         expr_typecheck(&i->value, errs);
+        // (tsc's computeEnumMemberValue)
+        if (i->value.tag == EXPR_IMPLICIT_ANY || !i->symbol) continue;
+        Ty const* member = ty_declared_type_of(current_checker, i->symbol);
+        Span at = i->value.outer_span;
+        if (member->flags & TYF_NUMBER_LITERAL) {
+            double value = member->literal.value.number;
+            if (my is_const && isnan(value)) {
+                error_ctx_error_d(errs, at, 2478, "'const' enum member initializer was evaluated to disallowed value 'NaN'.");
+            } else if (my is_const && !isfinite(value)) {
+                error_ctx_error_d(errs, at, 2477, "'const' enum member initializer was evaluated to a non-finite value.");
+            }
+            continue;
+        }
+        if (member->flags & TYF_STRING_LITERAL) continue;
+        // A computed member: an enum literal type of neither
+        bool ambient = i->symbol->is_ambient || (my symbol && my symbol->is_ambient) ||
+            (my name.source && my name.source->is_declaration);
+        if (my is_const) {
+            error_ctx_error_d(errs, at, 2474, "const enum member initializers must be constant expressions.");
+        } else if (ambient) {
+            error_ctx_error_d(errs, at, 1066, "In ambient enum declarations member initializer must be constant expression.");
+        } else {
+            ty_check_enum_member_value(current_checker, ty_expr_type(current_checker, &i->value), at, errs);
+        }
     }
     enum_decl_check_declarations(me, errs);
 }

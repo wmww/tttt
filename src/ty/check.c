@@ -679,6 +679,17 @@ void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span sp
     check_assignable(me, HEAD_SATISFIES, source, target, span, expr, errs);
 }
 
+// A computed enum member's value is a number (tsc's computeEnumMemberValue for what it can't evaluate)
+void ty_check_enum_member_value(Checker* me, Ty const* source, Span span, ErrorCtx* errs) {
+    Ty const* number = ty_intrinsic(me, TY_NUMBER);
+    if (ty_is_related(me, source, number, TY_RELATION_ASSIGNABLE)) return;
+    cstr source_str, target_str;
+    ty_report_pair_cstr(me, source, number, &source_str, &target_str);
+    report_unassignable_with_head(me, source, number, 18033, cstr_d("Type '", source_str, "' is not assignable to type '",
+        target_str, "' as required for computed enum member values."), false, span, errs);
+    c_drop(cstr, &source_str, &target_str);
+}
+
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
     check_assignable(me, HEAD_TYPE, source, target, span, nullptr, errs);
 }
