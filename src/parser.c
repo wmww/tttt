@@ -990,6 +990,8 @@ static const char* tok_scan_end(const char* c) {
         }
         return *c == quote ? c + 1 : c;
     }
+    // Only these start a punctuator of more than one character
+    if (!strchr(">.=!*<&|?+-/%^", *c)) return c + utf8_char_size(c);
     // Longest punctuator first
     static const char* const puncts[] = {
         ">>>=", "...", "===", "!==", "**=", "<<=", ">>=", ">>>", "&&=", "||=", "?\?=",
@@ -997,6 +999,7 @@ static const char* tok_scan_end(const char* c) {
         "**", "<<", ">>", nullptr,
     };
     for (const char* const* punct = puncts; *punct; punct++) {
+        if ((*punct)[0] != *c) continue;
         size_t n = strlen(*punct);
         if (strncmp(c, *punct, n) == 0) {
             // `?.5` is `?` then a number
@@ -3638,6 +3641,7 @@ static void heritage_take_invalid(HeritageClauses* h, VecExpr* ret, u32* checked
 // tsc's parseHeritageClauses (parseList(HeritageClauses, parseHeritageClause))
 static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
     hop_whitespace(p);
+    if (*p->pos != 'e' && *p->pos != 'i') return;
     Tok first = tok_peek(p);
     if (!tok_is(first, "extends") && !tok_is(first, "implements")) return;
     bool grammar_done = false;
@@ -8643,17 +8647,40 @@ static void jsdoc_drop_enum(Parser* p) {
     p->shared->jsdoc_enum = nullptr;
 }
 
-// list_start: where the list's own text starts (past the `{`), for the JSDoc comments it binds
 // Whether the statement at p could be one tsc's isStartOfStatement rejects but parse_statement() accepts (as an
-// expression statement with a missing semicolon: `private x = 1;`, `export x`, `import x`); anything else that isn't
-// a statement
-// fails to parse. Keeps the full predicate off the path of ordinary statements
+// expression statement with a missing semicolon: `private x = 1;`, `export extension class C`, `import x`); anything
+// else that isn't a statement (`const` without a declaration) fails to parse. Keeps the full predicate off the path of
+// ordinary statements
 static bool statement_start_needs_check(Parser* p) {
     switch (*p->pos) {
         case 'a': return starts_with_followed_by_word_break(p, "accessor");
-        case 'c': return starts_with_followed_by_word_break(p, "const");
-        case 'e': return starts_with_followed_by_word_break(p, "export");
-        case 'i': return starts_with_followed_by_word_break(p, "import");
+        case 'e': {
+            if (!starts_with_followed_by_word_break(p, "export")) return false;
+            // The usual `export <declaration>` needs no check (the predicate's lookahead is most of a .d.ts statement)
+            Parser next = parser(p);
+            next.pos += strlen("export");
+            hop_whitespace(&next);
+            static const char* const usual[] = {
+                "declare", "class", "function", "interface", "type", "const", "let", "var", "enum", "namespace",
+                "module", "default", "abstract", "async", "import", nullptr,
+            };
+            bool usual_start = strchr("{*=@", *next.pos) != nullptr;
+            for (int i = 0; !usual_start && usual[i]; i++) {
+                usual_start = starts_with_followed_by_word_break(&next, usual[i]);
+            }
+            parse_fail(&next);
+            return !usual_start;
+        }
+        case 'i': {
+            if (!starts_with_followed_by_word_break(p, "import")) return false;
+            // (tsc's isStartOfDeclaration and import calls/`import.meta`: nearly always a declaration)
+            Parser next = parser(p);
+            next.pos += strlen("import");
+            hop_whitespace(&next);
+            char c = *next.pos;
+            parse_fail(&next);
+            return !(is_identifier_start_char(c) || (c && strchr("\"'*{(<.", c)));
+        }
         case 'p':
             return starts_with_followed_by_word_break(p, "public") || starts_with_followed_by_word_break(p, "private") ||
                 starts_with_followed_by_word_break(p, "protected");
@@ -8663,6 +8690,7 @@ static bool statement_start_needs_check(Parser* p) {
     }
 }
 
+// list_start: where the list's own text starts (past the `{`), for the JSDoc comments it binds
 static bool parse_append_statement_sequence(Parser* parent, bool toplevel, ParsingContext ctx, const char* list_start, VecStatement* ret) {
     Parser p = parser(parent);
     const char* jsdoc_from = list_start;
