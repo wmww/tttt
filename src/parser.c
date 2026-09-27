@@ -1108,6 +1108,9 @@ typedef enum ParsingContext {
     PARSING_ENUM_MEMBERS,
     PARSING_OBJECT_LITERAL_MEMBERS,
     PARSING_PARAMETERS,
+    PARSING_ARGUMENT_EXPRESSIONS,
+    PARSING_ARRAY_LITERAL_MEMBERS,
+    PARSING_VARIABLE_DECLARATIONS,
     PARSING_CONTEXT_COUNT,
 } ParsingContext;
 
@@ -1151,6 +1154,13 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
                 tok_is_literal_property_name(t);
         case PARSING_PARAMETERS:
             return tok_is_start_of_parameter(t);
+        case PARSING_ARRAY_LITERAL_MEMBERS:
+            if (tok_is(t, ",") || tok_is(t, ".")) return true;
+            return tok_is(t, "...") || tok_is_start_of_expression(p, t);
+        case PARSING_ARGUMENT_EXPRESSIONS:
+            return tok_is(t, "...") || tok_is_start_of_expression(p, t);
+        case PARSING_VARIABLE_DECLARATIONS:
+            return tok_is(t, "{") || tok_is(t, "[") || (*t.start == '#' && tok_is_word(t)) || tok_is_identifier(t);
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1173,6 +1183,13 @@ static bool list_is_terminator(ParsingContext ctx, Tok t) {
             return tok_is(t, "}") || tok_is(t, "case") || tok_is(t, "default");
         case PARSING_PARAMETERS:
             return tok_is(t, ")") || tok_is(t, "]");
+        case PARSING_ARGUMENT_EXPRESSIONS:
+            return tok_is(t, ")") || tok_is(t, ";");
+        case PARSING_ARRAY_LITERAL_MEMBERS:
+            return tok_is(t, "]");
+        case PARSING_VARIABLE_DECLARATIONS:
+            // tsc's isVariableDeclaratorListTerminator
+            return tok_can_parse_semicolon(t) || tok_is(t, "in") || tok_is(t, "of") || tok_is(t, "=>");
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1215,6 +1232,19 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
                 parse_error(p, span, 1390, "'", span, "' is not allowed as a parameter name.");
             } else {
                 parse_error(p, span, 1138, "Parameter declaration expected.");
+            }
+            break;
+        case PARSING_ARGUMENT_EXPRESSIONS:
+            parse_error(p, span, 1135, "Argument expression expected.");
+            break;
+        case PARSING_ARRAY_LITERAL_MEMBERS:
+            parse_error(p, span, 1137, "Expression or comma expected.");
+            break;
+        case PARSING_VARIABLE_DECLARATIONS:
+            if (tok_is_keyword(t)) {
+                parse_error(p, span, 1389, "'", span, "' is not allowed as a variable declaration name.");
+            } else {
+                parse_error(p, span, 1134, "Variable declaration expected.");
             }
             break;
         case PARSING_CONTEXT_COUNT: impossible;
@@ -3773,20 +3803,32 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
     }
     hop_whitespace(&p);
 
+    // tsc's parseDelimitedList(ArrayLiteralMembers): an element at `,` is omitted
+    u32 saved_context = list_enter(&p, PARSING_ARRAY_LITERAL_MEMBERS);
     while (*p.pos && *p.pos != ']') {
-        Expr expr;
-        if (parse_expr_or_spread(&p, &expr)) {
-            vec_expr_push(ret, expr);
-        } else if (*p.pos == ',') {
-            vec_expr_push(ret, expr_undefined(span_from_pos(&p)));
-        } else {
-            break;
+        if (!list_is_element(&p, PARSING_ARRAY_LITERAL_MEMBERS, tok_peek(&p))) {
+            if (list_abort_or_skip(&p, PARSING_ARRAY_LITERAL_MEMBERS)) break;
+            continue;
         }
+        const char* start = p.pos;
+        Expr expr;
+        if (*p.pos == ',') {
+            expr = expr_undefined(span_from_pos(&p));
+        } else if (!parse_expr_or_spread(&p, &expr)) {
+            expect_expr(&p, expr_ctx_null, &expr);
+        }
+        vec_expr_push(ret, expr);
         hop_whitespace(&p);
-
-        ignore( *p.pos == ']' || expect_char(&p, ',') );
+        if (hop_char(&p, ',')) {
+            hop_whitespace(&p);
+            continue;
+        }
+        if (!*p.pos || *p.pos == ']') break;
+        expect_char(&p, ',');
+        if (p.pos == start) hop_token(&p);
         hop_whitespace(&p);
     }
+    list_leave(&p, saved_context);
 
     expect_closing(&p, ']', open);
 
@@ -4418,30 +4460,29 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
     }
     hop_whitespace(&p);
 
+    // tsc's parseDelimitedList(ArgumentExpressions)
     *args = vec_expr_init();
-    while (*p.pos && *p.pos != ')') {
+    u32 saved_context = list_enter(&p, PARSING_ARGUMENT_EXPRESSIONS);
+    while (*p.pos && *p.pos != ')' && *p.pos != ';') {
+        if (!list_is_element(&p, PARSING_ARGUMENT_EXPRESSIONS, tok_peek(&p))) {
+            if (list_abort_or_skip(&p, PARSING_ARGUMENT_EXPRESSIONS)) break;
+            continue;
+        }
+        const char* start = p.pos;
         Expr arg = {0};
-        if (parse_expr_or_spread(&p, &arg) || expect_expr(&p, expr_ctx_null, &arg)) {
-            vec_expr_push(args, arg);
-        } else {
-            while (*p.pos && *p.pos != ')' && *p.pos != ',') {
-                p.pos++;
-            }
-        }
+        if (!parse_expr_or_spread(&p, &arg)) expect_expr(&p, expr_ctx_null, &arg);
+        vec_expr_push(args, arg);
         hop_whitespace(&p);
-
-        ignore( *p.pos == ')' || (expect_char(&p, ',') && p.pos--) );
-
-        bool first_comma = true;
-        while (*p.pos == ',') {
-            p.pos++;
+        if (hop_char(&p, ',')) {
             hop_whitespace(&p);
-            if (!first_comma) {
-                parse_error(&p, span_from_token(&p), 1135, "Argument expression expected.");
-            }
-            first_comma = false;
+            continue;
         }
+        if (!*p.pos || *p.pos == ')' || *p.pos == ';') break;
+        expect_char(&p, ',');
+        if (p.pos == start) hop_token(&p);
+        hop_whitespace(&p);
     }
+    list_leave(&p, saved_context);
     expect_char(&p, ')');
 
     return parse_success(&p);
@@ -6954,6 +6995,8 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         parse_fail(&ahead);
     }
 
+    // The declarator loop isn't tsc's list yet, but the lists inside it abort at its terminators
+    u32 saved_context = list_enter(&p, PARSING_VARIABLE_DECLARATIONS);
     while (true) {
         if (empty_for_of || !parse_binding_content(&p, &initializer.binding)) {
             if (span_valid(comma_span)) {
@@ -6962,6 +7005,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
             } else if (vec_initialized_binding_is_empty(&ret->initializers)) {
                 if (ret->keyword == VAR_INIT_LET) {
                     // let can also be a variable name, fail so we then attempt to parse it as such
+                    list_leave(&p, saved_context);
                     variable_statement_drop(ret);
                     return parse_fail(&p);
                 } else {
@@ -7032,6 +7076,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         }
         hop_whitespace(&p);
     }
+    list_leave(&p, saved_context);
 
     ret->span = span_from(start);
     while (ret->span.sv.size && is_js_ascii_space(ret->span.sv.buf[ret->span.sv.size - 1])) ret->span.sv.size--;

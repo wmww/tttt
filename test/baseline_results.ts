@@ -13587,7 +13587,7 @@ const baselines = {
     },
     'fatarrowfunctionsErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'fatarrowfunctionsInFunctionParameterDefaults': {
@@ -21251,7 +21251,7 @@ const baselines = {
         types: true,
     },
     'missingArgument1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21266,7 +21266,7 @@ const baselines = {
         types: true,
     },
     'missingCloseBracketInArray': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24511,9 +24511,9 @@ const baselines = {
         types: true,
     },
     'objectLiteralWithSemicolons4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralWithSemicolons5': {
         errors: true,
@@ -25296,9 +25296,9 @@ const baselines = {
         types: true,
     },
     'parse2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseArrowFunctionWithFunctionReturnType': {
         errors: true,
@@ -56576,32 +56576,32 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ArgumentList1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserErrorRecovery_ArgumentList2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_ArgumentList3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserErrorRecovery_ArgumentList4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserErrorRecovery_ArgumentList6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserErrorRecovery_ArgumentList7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58146,7 +58146,7 @@ const baselines = {
         types: false,
     },
     'parser509630': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
