@@ -738,6 +738,7 @@ static int invalid_char_size(const char* c) {
     return 0;
 }
 
+static void hop_jsdoc_optional(Parser* parent, TypeNode* type);
 static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newlines);
 
 // Most calls are at a token already: whitespace is ASCII at most ' ', and the rest starts with `/` or a non-ASCII byte
@@ -1975,6 +1976,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
             vec_function_arg_drop(&function.args);
             return parse_fail(&p);
         }
+        if (!is_new) hop_jsdoc_optional(&p, &type);
         if (is_new) {
             // The type the construct signature makes
             function.is_constructor = true;
@@ -2061,14 +2063,25 @@ static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
     return parse_fail(&p);
 }
 
-// JSDoc's postfix type forms: `T?` (T | null), `T!` (T), `T=` (optional: T | undefined)
+// JSDoc's `T=` (optional: T | undefined), which only ends a whole JSDoc type or a parameter of `function()` (tsc's
+// parseJSDocType): `(a: A) => R=` is an optional function, not one returning `R | undefined`
+static void hop_jsdoc_optional(Parser* parent, TypeNode* type) {
+    Parser p = parser(parent);
+    hop_whitespace(&p);
+    if (p.pos[0] != '=' || p.pos[1] == '>' || p.pos[1] == '=') {
+        parse_fail(&p);
+        return;
+    }
+    p.pos++;
+    *type = type_composite_without_simplify(TYPE_UNION, *type, jsdoc_synthesized(type_undefined));
+    type->jsdoc_optional = true;
+    type->parsed = true;
+    parse_success(&p);
+}
+
+// JSDoc's postfix type forms: `T?` (T | null), `T!` (T)
 static bool parse_jsdoc_postfix_type(Parser* parent, TypeNode* left_and_ret) {
     Parser p = parser(parent);
-    if (hop_char(&p, '=')) {
-        *left_and_ret = type_composite_without_simplify(TYPE_UNION, *left_and_ret, jsdoc_synthesized(type_undefined));
-        left_and_ret->jsdoc_optional = true;
-        return parse_success(&p);
-    }
     if (hop_char(&p, '!')) {
         return parse_success(&p);
     }
@@ -2646,6 +2659,7 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
         tag->predicate->jsdoc = true;
     }
     if (tag->predicate || parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+        if (!tag->predicate) hop_jsdoc_optional(&p, &type);
         Span type_span = span_from(a);
         hop_whitespace(&p);
         if (p.pos < end) {
