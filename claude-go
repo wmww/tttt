@@ -29,6 +29,8 @@ unattended, so only point it at somewhere you are happy for it to act freely.
 
 With several runs (--runs N > 1 or --loop), the first Ctrl+C lets the current
 session finish and then stops; a second Ctrl+C kills the session right away.
+Creating a file named `claude-stop` in the session directory does the same as
+the first Ctrl+C (checked when each session ends; the file is removed then).
 
 Anything after `--` is passed straight through to `claude`.
 Exit status is the session's: 0 if it finished cleanly, non-zero otherwise.
@@ -340,6 +342,11 @@ for (( run = 1; loop || run <= runs; run++ )); do
   fi
   if [[ -n "$stopping" ]]; then
     note "stopped after run $run, as asked"
+    break
+  fi
+  if [[ -e "$cwd/claude-stop" ]]; then
+    rm -f -- "$cwd/claude-stop"
+    note "stopped after run $run: found claude-stop"
     break
   fi
   [[ -n "$multi" ]] && printf '\n'
