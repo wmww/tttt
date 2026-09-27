@@ -5197,6 +5197,14 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             if (p.whitespace != WHITESPACE_NEWLINE) {
                 switch (*p.pos) {
                     case ';': case ',': case '}': case '\0': break;
+                    case '@':
+                        // tsc's parseSemicolonAfterPropertyName: `public @dec m()` is a property `public`
+                        if (!is_type) {
+                            parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1436,
+                                "Decorators must precede the name and all keywords of property declarations.");
+                            break;
+                        }
+                        // fallthrough
                     default:
                         if (is_definitely_field) {
                             if (is_type) {
