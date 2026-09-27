@@ -392,10 +392,35 @@ static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* ar
     out_lit(d, ">");
 }
 
+// A JSDoc reference tsc prints as its type instead of reusing it (visitExistingNodeTreeSymbols): a name with a JSDoc
+// meaning (`String`, `Object`, `array`...), one that finds nothing, a generic type without enough type arguments
+static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* node) {
+    IdentifierType const* identifier = node->identifier;
+    if (identifier->jsdoc_intrinsic || !identifier->target) return false;
+    if (!vec_span_size(&identifier->namespaces)) {
+        static char const* const intended[] = { "Function", "function", "array", "promise", "Object" };
+        for (u32 i = 0; i < c_arraylen(intended); i++) {
+            if (csview_equals(identifier->name.sv, intended[i])) return false;
+        }
+    }
+    Ty const* type = node_type(me, d, node);
+    if (type->kind != TY_REFERENCE) return true;
+    TyList params = type->reference.target->declared.type_params;
+    u32 min = 0;
+    for (u32 i = 0; i < params.len; i++) {
+        if (!ty_param_default(me, params.data[i])) min = i + 1;
+    }
+    return (u32)vec_spanned_type_size(&identifier->generic_params) >= min;
+}
+
 static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     if (identifier->keyword) {
         out(d, identifier->name.sv);
+        return;
+    }
+    if (identifier->jsdoc && !jsdoc_reference_reusable(me, d, node)) {
+        display_node_fallback(me, d, node);
         return;
     }
     if (identifier->import_ref) {

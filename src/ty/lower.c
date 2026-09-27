@@ -328,6 +328,15 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         case JSDOC_INTRINSIC_UNDEFINED: return ty_intrinsic(me, TY_UNDEFINED);
         case JSDOC_INTRINSIC_NULL: return ty_intrinsic(me, TY_NULL);
         case JSDOC_INTRINSIC_ANY: return ty_intrinsic(me, TY_ANY);
+        case JSDOC_INTRINSIC_INDEX_SIGNATURE: {
+            TypeNode const* key = &vec_spanned_type_at(&identifier->generic_params, 0)->type;
+            IndexInfo info = {
+                .key = ty_intrinsic(me, key->tag == TYPE_STRING ? TY_STRING : TY_NUMBER),
+                .value = ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, 1)->type, ctx),
+                .param_name = checker_atom(me, c_sv("x")),
+            };
+            return ty_object_literal(me, nullptr, 0, &info, 1, OBJECT_SYNTHETIC);
+        }
     }
     Symbol const* decl = canonical(me, identifier->target);
     if (span_valid(identifier->import_span)) {

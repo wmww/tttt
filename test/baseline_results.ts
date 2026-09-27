@@ -19118,7 +19118,7 @@ const baselines = {
     'jsDeclarationEmitExportAssignedFunctionWithExtraTypedefsMembers': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'jsDeclarationEmitExportedClassWithExtends': {
         errors: true,
@@ -19448,7 +19448,7 @@ const baselines = {
     'jsFileCompilationRestParamJsDocFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsFileCompilationRestParameter': {
         errors: true,
@@ -19658,7 +19658,7 @@ const baselines = {
     'jsdocArrayObjectPromiseImplicitAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocArrayObjectPromiseNoImplicitAny': {
         errors: false,
@@ -19738,7 +19738,7 @@ const baselines = {
     'jsdocPropertyTagInvalid': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'jsdocReferenceGlobalTypeInCommonJs': {
         errors: false,
@@ -27718,7 +27718,7 @@ const baselines = {
     'returnConditionalExpressionJSDocCast': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'returnInConstructor1': {
         errors: false,
@@ -51288,7 +51288,7 @@ const baselines = {
     'checkJsdocTypeTag8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTagOnObjectProperty1': {
         errors: false,
@@ -51718,7 +51718,7 @@ const baselines = {
     'jsDeclarationsReusesExistingNodesMappingJSDocTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsReusesExistingTypeAnnotations': {
         errors: false,
@@ -51738,7 +51738,7 @@ const baselines = {
     'jsDeclarationsTypeAliases': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'jsDeclarationsTypeReassignmentFromDeclaration': {
         errors: true,
@@ -51888,7 +51888,7 @@ const baselines = {
     'importTag1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag10': {
         errors: false,
@@ -51918,17 +51918,17 @@ const baselines = {
     'importTag15(module=es2015)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag15(module=esnext)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag16': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag17': {
         errors: false,
@@ -51938,22 +51938,22 @@ const baselines = {
     'importTag18': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag19': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag20': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag21': {
         errors: true,
@@ -51973,37 +51973,37 @@ const baselines = {
     'importTag3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag9': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferThis': {
         errors: true,
@@ -52156,9 +52156,9 @@ const baselines = {
         types: false,
     },
     'jsdocIndexSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocLinkTag1': {
         errors: true,
@@ -52213,12 +52213,12 @@ const baselines = {
     'jsdocOuterTypeParameters1': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'jsdocOuterTypeParameters2': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'jsdocOuterTypeParameters3': {
         errors: false,

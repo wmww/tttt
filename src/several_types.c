@@ -150,7 +150,7 @@ static void check_static_type_parameter_reference(IdentifierType* me, Scope cons
 
 // tsc's getIntendedTypeFromJSDocTypeReference: what some names mean in JSDoc whatever is in scope. False for a name
 // that is looked up as usual
-static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names) {
+static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     static const struct { const char* name; JsDocIntrinsic intrinsic; } intrinsics[] = {
         {"String", JSDOC_INTRINSIC_STRING}, {"Number", JSDOC_INTRINSIC_NUMBER}, {"BigInt", JSDOC_INTRINSIC_BIGINT},
         {"Boolean", JSDOC_INTRINSIC_BOOLEAN}, {"Void", JSDOC_INTRINSIC_VOID}, {"Undefined", JSDOC_INTRINSIC_UNDEFINED},
@@ -172,9 +172,12 @@ static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names) {
         my target = scope_get_type(names, csview_from(global), &my symbol);
         return true;
     }
-    // TODO: `Object.<K, V>` is an index signature
     if (span_equals(my name, "Object") && (vec_spanned_type_size(&my generic_params) == 2 || (no_args && implicit_any))) {
-        my jsdoc_intrinsic = JSDOC_INTRINSIC_ANY;
+        // (tsc's isJSDocIndexSignature: a string or number key)
+        TypeNode const* key = no_args ? nullptr : &vec_spanned_type_at(&my generic_params, 0)->type;
+        bool index = key && (key->tag == TYPE_STRING || key->tag == TYPE_NUMBER);
+        my jsdoc_intrinsic = index ? JSDOC_INTRINSIC_INDEX_SIGNATURE : JSDOC_INTRINSIC_ANY;
+        if (index) type_lookup_names(&vec_spanned_type_at_mut(&my generic_params, 1)->type, names, errs);
         return true;
     }
     return false;
@@ -232,7 +235,7 @@ static void identifier_type_lookup_names_inner(IdentifierType* me, Scope* names,
         if (namespace) {
             my target = get_symbol_from_namespace(namespace, prev_name.sv, my name, SYMBOL_TYPE, &my symbol, errs);
         }
-    } else if (my jsdoc && jsdoc_lookup_intended(me, names)) {
+    } else if (my jsdoc && jsdoc_lookup_intended(me, names, errs)) {
     } else if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
             ThisRef this_ref = scope_get_this(names, true);
