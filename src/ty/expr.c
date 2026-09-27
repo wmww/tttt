@@ -2539,6 +2539,52 @@ static bool is_symbol_call(Checker* me, CallExpr const* call) {
     return global && binder_redirect(my binder, callee->identifier.target) == global;
 }
 
+// tsc's getContextuallyTypedParameterType of an immediately invoked function expression: its unannotated parameters
+// are the widened types of the arguments, a rest parameter the tuple of those left, a missing argument undefined
+// (widening to any without strictNullChecks) unless the parameter has an initializer
+static void assign_iife_parameter_types(Checker* me, FunctionImpl const* function, CallExpr const* call) {
+    u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
+    if (intern_get(&my links, done_key, 2)) return;
+    u32 arg_count = (u32)vec_expr_size(&call->args);
+    u32 index = 0;
+    for_each (i, vec_function_arg, &function->args) {
+        bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
+        if (is_this) continue;
+        u32 at = index++;
+        if (i->initializer.binding.has_explicit_type) continue;
+        LazyMemo* param_memo = lazy_type_state_peek((LazyType*)&i->initializer.lazy_type);
+        if (param_memo && param_memo->evaluation_started) continue;
+        // (From a spread argument on, what goes where isn't known)
+        bool spread = false;
+        for (u32 a = 0; a < arg_count && a <= at; a++) spread |= vec_expr_at(&call->args, a)->tag == EXPR_SPREAD;
+        if (spread) return;
+        Ty const* type = nullptr;
+        if (i->rest) {
+            u32 arity = arg_count > at ? arg_count - at : 0;
+            for (u32 a = at; a < arg_count; a++) {
+                if (vec_expr_at(&call->args, a)->tag == EXPR_SPREAD) return;
+            }
+            unsigned char* flags = calloc(arity ? arity : 1, 1);
+            Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
+            for (u32 a = 0; a < arity; a++) elements[a] = ty_widened_literal(me, ty_expr_type(me, vec_expr_at(&call->args, at + a)));
+            TupleShape shape = { .arity = arity, .flags = flags };
+            Ty const* target = ty_tuple_target(me, &shape);
+            type = arity ? ty_reference(me, target, (TyList){ .data = elements, .len = arity }) : target;
+            free(flags);
+            free(elements);
+        } else if (at < arg_count) {
+            // (then widened like a declaration's type: null is any without strictNullChecks)
+            type = ty_widened_for_declaration(me, ty_expr_type(me, vec_expr_at(&call->args, at)), true);
+        } else if (i->initializer.value.tag == EXPR_IMPLICIT_ANY) {
+            type = ty_intrinsic(me, compiler_options()->strict_null_checks ? TY_UNDEFINED : TY_ANY);
+        }
+        if (!type) continue;
+        u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)&i->initializer };
+        void const** slot = intern_slot(me, &my links, key, 2);
+        if (!*slot) *slot = type;
+    }
+}
+
 static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
@@ -2550,6 +2596,9 @@ static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
         u64 key[2] = { KEY_CONTEXT_IIFE_RETURN, (u64)(uintptr_t)callee->function };
         void const** slot = intern_slot(me, &my links, key, 2);
         if (!*slot) *slot = ctx.contextual;
+    }
+    if (callee->tag == EXPR_FUNCTION && callee->function->is_iife && !call->uses_new) {
+        assign_iife_parameter_types(me, callee->function, call);
     }
     bool optional = false;
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);

@@ -37868,7 +37868,7 @@ const baselines = {
     'controlFlowIIFE': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowIfStatement': {
         errors: true,
@@ -41483,12 +41483,12 @@ const baselines = {
     'emitDefaultParametersFunctionExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitDefaultParametersFunctionExpressionES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitDefaultParametersFunctionProperty': {
         errors: true,
@@ -41553,7 +41553,7 @@ const baselines = {
     'destructuringArrayBindingPatternAndAssignment3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringArrayBindingPatternAndAssignment4': {
         errors: true,
@@ -41568,7 +41568,7 @@ const baselines = {
     'destructuringAssignabilityCheck': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringCatch': {
         errors: true,
@@ -43043,12 +43043,12 @@ const baselines = {
     'emitRestParametersFunctionExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitRestParametersFunctionExpressionES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitRestParametersFunctionProperty': {
         errors: true,
@@ -47462,12 +47462,12 @@ const baselines = {
     },
     'contextuallyTypedIife': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextuallyTypedIifeStrict': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeOfThisInFunctionExpression': {
@@ -60788,7 +60788,7 @@ const baselines = {
     'typeFromPropertyAssignment20': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment21': {
         errors: false,
