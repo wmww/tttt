@@ -2257,6 +2257,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
 
     Anchor value_anchor = anchor(&p);
     char const* left_start = value_anchor.start;
+    *ret = (TypeNode){0}; // (Some branches only fill in what they're about)
     if (p.shared->in_jsdoc && parse_jsdoc_prefix_type(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "any")) {
         *ret = type_any;

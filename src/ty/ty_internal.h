@@ -22,6 +22,7 @@ enum {
     KEY_KEYOF,
     KEY_INDEXED,
     KEY_CONDITIONAL,
+    KEY_SUBSTITUTION,
     KEY_ANONYMOUS_INSTANCE,
     KEY_UNIQUE_SYMBOL,
     KEY_FRESH_LITERAL, // regular literal -> its fresh twin
@@ -46,6 +47,7 @@ enum {
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE/TYPE_IDENTIFIER node, the pairs of the mapper it mentions) -> Ty
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
     KEY_SIMPLIFIED, // (indexed access type id, writing) -> ty_simplified() of it; itself while in flight (relate.c)
+    KEY_IMPLIED_CONSTRAINT, // TernaryType -> TyImplied of its (unary tuple-unwrapped) check and extends types (lower.c)
     KEY_RESTRICTIVE_PARAM, // type parameter id -> its unconstrained stand-in (conditional.c)
     KEY_BASE_SIGNATURE, // Signature -> TyMapper of its type parameters to their base constraints (infer.c)
     KEY_VARIANCES,      // declared type id -> variance array
@@ -124,6 +126,7 @@ typedef struct InferParam {
 typedef enum InferPriority {
     INFER_PRIORITY_NORMAL = 0,
     INFER_PRIORITY_NAKED_TYPE_VARIABLE = 1 << 0, // to a naked type parameter in a union with other things
+    INFER_PRIORITY_SUBSTITUTE_SOURCE = 1 << 2, // from a substitution type as `base & constraint`
     INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE = 1 << 3, // T from a reverse mapped type (`{ [K in keyof T]: X<T[K]> }`)
     INFER_PRIORITY_PARTIAL_HOMOMORPHIC_MAPPED_TYPE = 1 << 4, // the same, from a source with a skipped function in it
     INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT = 1 << 5, // K from the keys of the source (`{ [P in K]: X }`)
@@ -261,3 +264,5 @@ bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c
 bool ty_is_tuple(Ty const* ty); // Not the empty tuple, which is its own target (TY_DECLARED)
 bool ty_is_generic_tuple(Checker* me, Ty const* ty); // checker.c, tsc's isGenericTupleType
 bool ty_tuple_node_has_variadic(TypeNode const* node); // lower.c: a rest element not written as an array
+// inner, then outer: what inner maps to gets instantiated by outer, and outer's own mappings are carried along
+TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper const* outer); // instantiate.c

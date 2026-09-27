@@ -109,9 +109,11 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     function_scope->no_super = my is_constructor ? NO_SUPER_CONSTRUCTOR_ARGS : NO_SUPER_NONE;
     Scope* parameter_scope = scope_new(function_scope, SCOPE_BLOCK);
     parameter_scope->parameters = true;
+    TypeFlow const* saved_flow = type_flow_enter_parameter();
     for_each (i, vec_function_arg, &my args) {
         initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, errs);
     }
+    type_flow_restore(saved_flow);
     function_scope->no_super = NO_SUPER_NONE;
     type_lookup_names(&my ret, function_scope, errs);
     if (my predicate) {
@@ -123,7 +125,9 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             if (i->initializer.binding.tag == BINDING_IDENTIFIER) predicate->symbol = i->initializer.binding.symbol;
         }
     }
+    saved_flow = type_flow_enter_statements();
     block_lookup_names_as(&my body, true, function_scope, errs);
+    type_flow_restore(saved_flow);
 
     my end_flow = nullptr;
     if (!flow_is_unreachable(flow.current) && my has_body) my end_flow = flow.current;

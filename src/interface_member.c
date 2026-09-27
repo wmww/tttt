@@ -37,7 +37,12 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
     }
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
-        case INTERFACE_KEY_INDEX: type_lookup_names(&my key.index.type, names, errs); break;
+        case INTERFACE_KEY_INDEX: {
+            // (The key is a parameter)
+            TypeFlow const* saved_flow = type_flow_enter_parameter();
+            type_lookup_names(&my key.index.type, names, errs);
+            type_flow_restore(saved_flow);
+        }   break;
         case INTERFACE_KEY_EXPR: expr_lookup_names(my key.expr.ref, names, errs); break;
 
         case INTERFACE_KEY_MAPPED:

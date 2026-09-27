@@ -1621,6 +1621,57 @@ Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
     return ret;
 }
 
+static Ty const* make_substitution(Checker* me, Ty const* base, Ty const* constraint) {
+    u64 key[3] = { KEY_SUBSTITUTION, base->id, constraint->id };
+    Ty* fresh;
+    Ty const* ret = intern_deferred(me, key, 3, TY_SUBSTITUTION, base->flags | constraint->flags, &fresh);
+    if (fresh) {
+        fresh->substitution.base = base;
+        fresh->substitution.constraint = constraint;
+    }
+    return ret;
+}
+
+Ty const* ty_substitution(Checker* me, Ty const* base, Ty const* constraint) {
+    if ((constraint->flags & (TYF_ANY | TYF_UNKNOWN)) || constraint == base || (base->flags & TYF_ANY)) return base;
+    return make_substitution(me, base, constraint);
+}
+
+// tsc's isNoInferTargetType: what could mention a type variable, without looking inside object types
+static bool is_no_infer_target(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (is_no_infer_target(me, ty->composite.types.data[i])) return true;
+        }
+        return false;
+    }
+    if (ty->kind == TY_SUBSTITUTION) return !ty_is_no_infer(ty) && is_no_infer_target(me, ty->substitution.base);
+    if (ty->flags & TYF_OBJECT) return !ty_is_empty_anonymous_object(me, ty);
+    if (ty->kind == TY_TYPE_PARAM || ty->kind == TY_KEYOF || ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL) return true;
+    if (ty->kind == TY_TEMPLATE_LITERAL || ty->kind == TY_STRING_MAPPING) return !ty_is_pattern_literal(ty);
+    return false;
+}
+
+Ty const* ty_no_infer(Checker* me, Ty const* ty) {
+    return is_no_infer_target(me, ty) ? make_substitution(me, ty, my intrinsics[TY_UNKNOWN_]) : ty;
+}
+
+Ty const* ty_substitution_intersection(Checker* me, Ty const* ty) {
+    if (ty_is_no_infer(ty)) return ty->substitution.base;
+    Ty const* both[2] = { ty->substitution.constraint, ty->substitution.base };
+    return ty_intersection(me, both, 2, nullptr, (TyList){0});
+}
+
+Ty const* ty_actual_type_variable(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_SUBSTITUTION) return ty_actual_type_variable(me, ty->substitution.base);
+    if (ty->kind == TY_INDEXED &&
+        (ty->indexed.object->kind == TY_SUBSTITUTION || ty->indexed.index->kind == TY_SUBSTITUTION)
+    ) {
+        return ty_indexed(me, ty_actual_type_variable(me, ty->indexed.object), ty_actual_type_variable(me, ty->indexed.index));
+    }
+    return ty;
+}
+
 // What an instantiation makes of `O[K]`: like ty_indexed(), but a non-generic access that finds nothing is unknown
 // (tsc's getIndexedAccessType without an access node; the error was the declaration's to report): falso's
 // `O['length'] extends number ? T[] : T` with `O = { withAccents: false }` takes the false branch
@@ -1705,7 +1756,7 @@ Ty const* ty_conditional(
     Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
     Ty const* root, TyMapper const* mapper, bool distributive, TyList infers
 ) {
-    Ty const* resolved = ty_conditional_resolve(me, check_type, extends, infers, if_true, if_false);
+    Ty const* resolved = ty_conditional_resolve(me, ty_actual_type_variable(me, check_type), extends, infers, if_true, if_false);
     if (resolved) return resolved;
     u64 stack_key[64];
     u32 key_len = 5 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);

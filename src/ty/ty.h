@@ -101,6 +101,11 @@ typedef enum TyKind {
     TY_KEYOF,       // The rest are deferred types: they only exist while an operand is generic (or, for now, while
     TY_INDEXED,     // the new core lacks the machinery to resolve them)
     TY_CONDITIONAL,
+    // tsc's substitution type: a type variable (or a type mentioning one) in the true branch of a conditional type whose
+    // check type it is, with what the extends type implies about it (`T` in `T extends string ? Lowercase<T> : never`).
+    // Relations read it as `base & constraint` on the source side and `base` on the target side. `NoInfer<T>` is one
+    // with an unknown constraint (ty_no_infer()). Prints as its base
+    TY_SUBSTITUTION,
     // String-like types (template.c). Not TYF_DEFERRED unless generic: a pattern like `a${string}` is as concrete as a
     // primitive
     TY_TEMPLATE_LITERAL,
@@ -332,6 +337,10 @@ struct Ty {
             Ty const* root;
             TyMapper const* mapper;
         } conditional;
+        struct {
+            Ty const* base;
+            Ty const* constraint;
+        } substitution;
         struct {
             Atom const* const* texts; // types.len + 1 of them, around the types
             TyList types; // Each a type variable or a pattern placeholder (string, number, bigint, any, a pattern...)
@@ -817,6 +826,16 @@ bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty 
 Ty const* ty_template_literal_for_constraint(Checker* me, Ty const* source, Ty const* constraint);
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index);
 Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index);
+// tsc's getSubstitutionType: `base` itself if the constraint says nothing about it
+Ty const* ty_substitution(Checker* me, Ty const* base, Ty const* constraint);
+Ty const* ty_no_infer(Checker* me, Ty const* ty); // tsc's getNoInferType
+static inline bool ty_is_no_infer(Ty const* ty) {
+    return ty->kind == TY_SUBSTITUTION && (ty->substitution.constraint->flags & TYF_UNKNOWN);
+}
+// tsc's getSubstitutionIntersection: what a substitution type is as a source
+Ty const* ty_substitution_intersection(Checker* me, Ty const* ty);
+// tsc's getActualTypeVariable: a substitution type's base, also inside an indexed access
+Ty const* ty_actual_type_variable(Checker* me, Ty const* ty);
 Ty const* ty_conditional(
     Checker* me, Ty const* check, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
     Ty const* root, TyMapper const* mapper, // null for a root
@@ -1035,6 +1054,8 @@ Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
     TyCondBranch const* if_false
 );
+// Assignable whatever the type parameters in either side turn out to be (tsc's check on their restrictive instantiations)
+bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target);
 
 // access.c
 // The type of `object[index]` (and `object.name`, the index being the name as a literal). Null if there's no such

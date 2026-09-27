@@ -155,6 +155,7 @@ typedef struct TernaryType {
     TypeNode maybe_super;
     TypeNode if_true;
     TypeNode if_false;
+    TypeFlow true_flow[2]; // What the true branch's nodes have as TypeNode.flow: [0] covariantly, [1] contravariantly
 } TernaryType;
 
 void ternary_type_drop(TernaryType* me);

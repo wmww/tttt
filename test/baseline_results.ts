@@ -2776,9 +2776,9 @@ const baselines = {
         types: true,
     },
     'callOfConditionalTypeWithConcreteBranches': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callOnClass': {
         errors: false,
@@ -17821,7 +17821,7 @@ const baselines = {
         types: true,
     },
     'inlineConditionalHasSimilarAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -23713,12 +23713,12 @@ const baselines = {
     'noInferCommonPropertyCheck1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noInferUnionExcessPropertyCheck1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noIterationTypeErrorsInCFA': {
         errors: true,
@@ -26481,12 +26481,12 @@ const baselines = {
         types: true,
     },
     'ramdaToolsNoInfinite': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'ramdaToolsNoInfinite2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -37862,7 +37862,7 @@ const baselines = {
     },
     'controlFlowGenericTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowIIFE': {
@@ -67448,7 +67448,7 @@ const baselines = {
     'noInferRedeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionAndIntersectionInference1': {
         errors: true,

@@ -510,7 +510,7 @@ static Ty const* apparent_type(Checker* me, Ty const* ty) {
         }
         if (ty->flags & (TYF_OBJECT | TYF_INTERSECTION)) return ty_with_this_arg(me, ty, param);
     }
-    if (ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL) {
+    if (ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || ty->kind == TY_SUBSTITUTION) {
         // (tsc's getApparentType: an instantiable type is its base constraint)
         Ty const* constraint = base_constraint(me, ty, 0);
         if (constraint && constraint != ty) return apparent_type(me, constraint);
@@ -1999,11 +1999,11 @@ static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
 // getConstraintOfDistributiveConditionalType): InstanceType<T> for `T extends typeof C` is C, `Extract<keyof T, string>`
 // is string. The root's check type parameter is what gets mapped, so an instantiated check type like `keyof T` has its
 // constraint distributed over. Null if that's no different
-static Ty const* distributive_constraint(Checker* me, Ty const* conditional) {
+static Ty const* distributive_constraint(Checker* me, Ty const* conditional, u32 depth) {
     if (!conditional->conditional.distributive) return nullptr;
     Ty const* check = conditional->conditional.check;
     Ty const* check_constraint = check->kind == TY_TYPE_PARAM ? ty_param_constraint(me, check) :
-        (check->flags & TYF_DEFERRED) ? ty_base_constraint(me, check) : nullptr;
+        (check->flags & TYF_DEFERRED) ? base_constraint(me, check, depth + 1) : nullptr;
     if (!check_constraint || check_constraint == check) return nullptr;
     Ty const* root = conditional->conditional.root ? conditional->conditional.root : conditional;
     Ty const* root_check = root->conditional.check;
@@ -2063,7 +2063,7 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             return ret->flags & TYF_DEFERRED ? base_constraint(me, ret, depth + 1) : ret;
         }
         case TY_CONDITIONAL: {
-            Ty const* distributive = distributive_constraint(me, ty);
+            Ty const* distributive = distributive_constraint(me, ty, depth);
             if (distributive) {
                 if (distributive->kind != TY_TYPE_PARAM && !(distributive->flags & TYF_DEFERRED)) return distributive;
                 Ty const* deeper = base_constraint(me, distributive, depth + 1);
@@ -2100,6 +2100,20 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             if (!ret) ret = ty_template_literal(me, ty->template_literal.texts, constraints, len);
             free(constraints);
             return ret == ty ? nullptr : ret;
+        }
+        case TY_SUBSTITUTION: {
+            // Of `base & constraint`: the intersection of what the parts are at least
+            Ty const* both = ty_substitution_intersection(me, ty);
+            TyList parts = both->kind == TY_INTERSECTION ? both->composite.types : (TyList){ .data = &both, .len = 1 };
+            TyBuf bases = {0};
+            for (u32 i = 0; i < parts.len; i++) {
+                Ty const* part = parts.data[i];
+                Ty const* base = part->kind == TY_TYPE_PARAM || (part->flags & TYF_DEFERRED) ? base_constraint(me, part, depth + 1) : part;
+                if (base) ty_buf_push(&bases, base);
+            }
+            Ty const* ret = bases.len ? ty_intersection(me, bases.data, bases.len, nullptr, (TyList){0}) : nullptr;
+            ty_buf_drop(&bases);
+            return ret;
         }
         case TY_STRING_MAPPING: {
             Ty const* inner = ty->string_mapping.type;
@@ -2789,7 +2803,7 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
             if (related) return related;
             // Through the distributive constraint (not to another conditional type, like in tsc)
             if (target->kind != TY_CONDITIONAL) {
-                Ty const* constraint = distributive_constraint(me, source);
+                Ty const* constraint = distributive_constraint(me, source, 0);
                 if (constraint) {
                     related = is_related_to(me, st, constraint, target, false);
                     if (related) return related;
@@ -3527,11 +3541,25 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
+    // A substitution type is `base & constraint` as a source, its base as a target (getNormalizedType)
+    while (source->kind == TY_SUBSTITUTION) source = ty_substitution_intersection(me, source);
+    while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
+    if (source == target) return TERNARY_TRUE;
     if (st->relation == TY_RELATION_IDENTITY) return identity_related(me, st, source, target);
     Ty const* original_target = target;
     // (And simplified indexed accesses: the target as written to)
-    if (source->kind == TY_INDEXED) source = ty_regular(me, ty_simplified(me, source, false));
-    if (target->kind == TY_INDEXED) target = ty_regular(me, ty_simplified(me, target, true));
+    while (source->kind == TY_INDEXED || source->kind == TY_SUBSTITUTION) {
+        Ty const* next = source->kind == TY_INDEXED ? ty_regular(me, ty_simplified(me, source, false)) :
+            ty_substitution_intersection(me, source);
+        if (next == source) break;
+        source = next;
+    }
+    while (target->kind == TY_INDEXED || target->kind == TY_SUBSTITUTION) {
+        Ty const* next = target->kind == TY_INDEXED ? ty_regular(me, ty_simplified(me, target, true)) :
+            target->substitution.base;
+        if (next == target) break;
+        target = next;
+    }
     if (source == target) return TERNARY_TRUE;
     target = ty_strip_nullable_target(me, source, target);
     if (source == target) return TERNARY_TRUE;

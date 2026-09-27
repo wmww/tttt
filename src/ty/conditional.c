@@ -220,6 +220,17 @@ static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {
     return ty_cond_branch_type(me, &copy);
 }
 
+// The branch instantiated with the `infer` results too: in one go with what the branch has been instantiated with so
+// far, like tsc's combinedMapper (a substitution type in it resolves differently in two steps)
+static Ty const* branch_type_with(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
+    if (mapper && (branch->node || branch->source) && branch->state != LAZY_STATE_DONE) {
+        TyCondBranch copy = *branch;
+        copy.mapper = ty_compose_mappers(me, branch->mapper, mapper);
+        return ty_cond_branch_type(me, &copy);
+    }
+    return ty_instantiate_tail(me, branch_type(me, branch), mapper);
+}
+
 // `[T] extends [X]`: tuples of the same arity (no optional or rest elements) where some element of the check type is
 // generic are deferred like a generic check type (tsc's isDeferredType with checkTuples)
 static bool is_deferred_tuple_check(Checker* me, Ty const* check_type, Ty const* extends) {
@@ -292,6 +303,11 @@ static bool definitely_related(Checker* me, Ty const* check_type, Ty const* exte
     return ret;
 }
 
+bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target) {
+    bool mentions = false;
+    return definitely_related(me, source, target, &mentions);
+}
+
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
     TyCondBranch const* if_false
@@ -332,13 +348,13 @@ Ty const* ty_conditional_resolve(
     if (ty_is_generic_index(inferred_extends) || is_generic_mapped(me, inferred_extends, 0)) return nullptr;
 
     if (check_type->flags & TYF_ANY) {
-        Ty const* parts[2] = { ty_instantiate(me, branch_type(me, if_true), mapper), branch_type(me, if_false) };
+        Ty const* parts[2] = { branch_type_with(me, if_true, mapper), branch_type(me, if_false) };
         return ty_union(me, parts, 2, nullptr, (TyList){0});
     }
-    if (inferred_extends->flags & (TYF_ANY | TYF_UNKNOWN)) return ty_instantiate_tail(me, branch_type(me, if_true), mapper);
+    if (inferred_extends->flags & (TYF_ANY | TYF_UNKNOWN)) return branch_type_with(me, if_true, mapper);
     bool mentions = false;
     if (definitely_related(me, check_type, inferred_extends, &mentions)) {
-        return ty_instantiate_tail(me, branch_type(me, if_true), mapper);
+        return branch_type_with(me, if_true, mapper);
     }
     // HACK: tsc picks the false branch only if the check fails even with every type variable replaced by `any`
     // (permissive instantiation), and defers otherwise. There's no such instantiation here yet: with a type variable

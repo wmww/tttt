@@ -70,6 +70,15 @@ typedef struct UniqueSymbolDecl {
     Span member; // The member's name, empty for a variable
 } UniqueSymbolDecl;
 
+// The true branches of conditional types a type node is in, innermost first, as tsc's getConditionalFlowTypeOfType
+// walks up to them from the node (up to the enclosing statement). Set by the resolve walk (type_lookup_names()), so a
+// node lowers to the same type whoever lowers it: see conditional_flow_type() (lower.c)
+typedef struct TypeFlow {
+    struct TernaryType const* ternary;
+    bool covariant; // An even number of parameter positions lie between the true branch and the node
+    struct TypeFlow const* outer;
+} TypeFlow;
+
 typedef struct TypeNode {
     enum {
         TYPE_ANY = 0,
@@ -104,6 +113,7 @@ typedef struct TypeNode {
     bool jsdoc_optional : 1;
     bool from_jsdoc : 1;
     bool synthesized : 1; // Not written: the `undefined` of JSDoc's `T=`, the `null` of `?T` (not reused when printed) // An annotation that a JSDoc tag gave (the root of its type): not part of the baselines' walk
+    TypeFlow const* flow; // Null outside true branches
     union {
         struct {
             bool self_referential_error;
@@ -251,6 +261,12 @@ static inline TypeNode type_move(TypeNode* me) {
 }
 
 void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs);
+// Parameter positions flip the variance of the true branches around them (TypeNode.flow): call around the walk of a
+// parameter's type, then restore with the result
+TypeFlow const* type_flow_enter_parameter(void);
+// Statements (a function body) end the walk up: none of the true branches around apply inside
+TypeFlow const* type_flow_enter_statements(void);
+void type_flow_restore(TypeFlow const* saved);
 // A type literal with index signatures whose members type_typecheck() checks against them (TS2411/TS2413)
 bool type_literal_has_index_constraints(TypeNode const* me);
 void type_typecheck(TypeNode const* me, ErrorCtx* errs);

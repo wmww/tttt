@@ -52,7 +52,7 @@ TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets) {
 }
 
 // inner, then outer: what inner maps to gets instantiated by outer, and outer's own mappings are carried along
-static TyMapper const* compose_mappers(Checker* me, TyMapper const* inner, TyMapper const* outer) {
+TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper const* outer) {
     if (!inner || !inner->len) return outer;
     u32 cap = inner->len + outer->len;
     Ty const** pairs = malloc(sizeof(Ty const*) * cap * 2);
@@ -133,7 +133,7 @@ static TyMapper const* mapper_with(Checker* me, TyMapper const* mapper, Ty const
 static TyCondBranch instantiate_branch(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
     TyCondBranch ret = *branch;
     if ((branch->node || branch->source) && branch->state != LAZY_STATE_DONE) {
-        ret.mapper = compose_mappers(me, branch->mapper, mapper);
+        ret.mapper = ty_compose_mappers(me, branch->mapper, mapper);
         ret.state = LAZY_STATE_NOT_STARTED;
     } else if (branch->type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
         ret = (TyCondBranch){ .source = branch->type, .mapper = mapper };
@@ -174,9 +174,12 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return nullptr;
 
     MappedInfo const* mapped = ty_members(me, ty)->mapped;
-    if (!mapped || !mapped->modifiers_type || mapped->modifiers_type->kind != TY_TYPE_PARAM) return nullptr;
-    Ty const* list = ty_instantiate(me, mapped->modifiers_type, mapper);
-    if (list == mapped->modifiers_type) return nullptr;
+    if (!mapped || !mapped->modifiers_type) return nullptr;
+    // (tsc's getHomomorphicTypeVariable: a type parameter substituted in a true branch is still the one)
+    Ty const* variable = ty_actual_type_variable(me, mapped->modifiers_type);
+    if (variable->kind != TY_TYPE_PARAM) return nullptr;
+    Ty const* list = ty_instantiate(me, variable, mapper);
+    if (list == variable) return nullptr;
     u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
     if (list->kind != TY_UNION && !(list->flags & (mappable | TYF_ERROR))) return list;
     if (list->kind == TY_UNION) {
@@ -187,7 +190,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         panic_if(!parts, "out of memory");
         for (u32 i = 0; i < len; i++) {
             Ty const* part = list->composite.types.data[i];
-            parts[i] = part->flags & mappable ? ty_instantiate(me, ty, mapper_with(me, mapper, mapped->modifiers_type, part)) : part;
+            parts[i] = part->flags & mappable ? ty_instantiate(me, ty, mapper_with(me, mapper, variable, part)) : part;
         }
         Ty const* alias_buf[16];
         TyList alias_args = ty->alias_args.len <= c_arraylen(alias_buf) ?
@@ -220,12 +223,12 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
             bool rest = (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
             flags[i] = shape->flags[i];
             if (rest && element->kind == TY_TYPE_PARAM) {
-                mapped_elements[i] = ty_instantiate(me, ty, mapper_with(me, mapper, mapped->modifiers_type, element));
+                mapped_elements[i] = ty_instantiate(me, ty, mapper_with(me, mapper, variable, element));
                 continue;
             }
             Ty const* array = rest ? element : ty_array(me, element, false);
             if (!ty_is_array(me, array)) return nullptr;
-            TyMapper const* element_mapper = mapper_with(me, mapper_with(me, mapper, mapped->modifiers_type, array),
+            TyMapper const* element_mapper = mapper_with(me, mapper_with(me, mapper, variable, array),
                 mapped->type_param, ty_intrinsic(me, TY_NUMBER));
             Ty const* mapped_element = ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper);
             mapped_elements[i] = rest ? ty_array(me, mapped_element, false) : mapped_element;
@@ -409,7 +412,7 @@ static Ty const* instantiate_alias(Checker* me, Ty const* ty, Ty const* result, 
 
 // Start over from the conditional type as written, with everything that has happened to it since
 static Ty const* resolve_conditional_instance(Checker* me, Ty const* root, TyMapper const* combined, bool* distributed) {
-    Ty const* check_type = ty_instantiate(me, root->conditional.check, combined);
+    Ty const* check_type = ty_instantiate(me, ty_actual_type_variable(me, root->conditional.check), combined);
     if (root->conditional.distributive && root->conditional.check->kind == TY_TYPE_PARAM &&
         check_type != root->conditional.check
     ) {
@@ -439,7 +442,7 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
     Ty const* root = ty->conditional.root;
     TyConditionalOuter const* outer = ty_conditional_outer(me, root);
     if (!outer || outer->unknown) {
-        TyMapper const* combined = without_own_infers(me, root, compose_mappers(me, ty->conditional.mapper, mapper));
+        TyMapper const* combined = without_own_infers(me, root, ty_compose_mappers(me, ty->conditional.mapper, mapper));
         return resolve_conditional_instance(me, root, combined, distributed);
     }
 
@@ -520,7 +523,7 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
                 check(ty->alias_args.len <= c_arraylen(alias_buf));
                 TyList alias_args = instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf));
                 return ty_deferred_reference(
-                    me, deferred->node, deferred->ctx, compose_mappers(me, deferred->mapper, mapper), ty->alias, alias_args
+                    me, deferred->node, deferred->ctx, ty_compose_mappers(me, deferred->mapper, mapper), ty->alias, alias_args
                 );
             }
             TyList args = ty->reference.args;
@@ -579,6 +582,22 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
                 ty_instantiate(me, ty->indexed.index, mapper)
             );
             return ret->kind == TY_INDEXED ? instantiate_alias(me, ty, ret, mapper) : ret;
+        }
+
+        case TY_SUBSTITUTION: {
+            // (tsc's instantiateType) It stays a substitution only while the base is a type variable: otherwise it is
+            // the base if that satisfies the constraint the same way the true branch was taken, else both
+            Ty const* base = ty_instantiate(me, ty->substitution.base, mapper);
+            if (ty_is_no_infer(ty)) return ty_no_infer(me, base);
+            Ty const* constraint = ty_instantiate(me, ty->substitution.constraint, mapper);
+            bool variable = base->kind == TY_TYPE_PARAM || base->kind == TY_INDEXED;
+            if (variable && (ty_is_generic_object(me, constraint) || ty_is_generic_index(constraint))) {
+                return ty_substitution(me, base, constraint);
+            }
+            if ((constraint->flags & (TYF_ANY | TYF_UNKNOWN)) || ty_definitely_assignable(me, base, constraint)) return base;
+            if (variable) return ty_substitution(me, base, constraint);
+            Ty const* both[2] = { constraint, base };
+            return ty_intersection(me, both, 2, nullptr, (TyList){0});
         }
 
         case TY_CONDITIONAL: {

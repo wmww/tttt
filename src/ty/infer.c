@@ -924,7 +924,7 @@ static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** s
 }
 
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
-    if (!(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+    if (!(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || ty_is_no_infer(target)) return;
     if (source->alias && source->alias == target->alias) {
         // Two instantiations of one type alias: by type argument, with the alias's variances (tsc). Without type
         // arguments the two are the same type, with nothing to infer
@@ -938,6 +938,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         return;
     }
     if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, inf, &source, &target)) return;
+    if (target->kind == TY_SUBSTITUTION || target->kind == TY_INDEXED) target = ty_actual_type_variable(me, target);
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
         if (!param || param->fixed || (source->flags & TYF_NON_INFERRABLE)) return;
@@ -979,7 +980,10 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     inf->visiting_sources[inf->depth] = source;
     inf->visiting_targets[inf->depth] = target;
     inf->depth++;
-    if (target->kind == TY_UNION) {
+    if (source->kind == TY_SUBSTITUTION) {
+        infer_from(me, inf, source->substitution.base, target);
+        infer_with_priority(me, inf, ty_substitution_intersection(me, source), target, INFER_PRIORITY_SUBSTITUTE_SOURCE);
+    } else if (target->kind == TY_UNION) {
         infer_to_union(me, inf, source, target);
     } else if (target->kind == TY_INTERSECTION) {
         // Members that aren't naked type parameters first; a single naked one (`T & {}`) is inferred to with the

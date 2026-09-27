@@ -326,8 +326,7 @@ static Ty const* intrinsic_alias_instance(Checker* me, Symbol const* decl, Ty co
     for (u32 i = 0; i < c_arraylen(mappings); i++) {
         if (csview_equals(decl->name, mappings[i])) return ty_string_mapping(me, (TyStringMapping)i, decl, arg);
     }
-    // HACK: NoInfer<T> is T (tsc: a substitution type that inference doesn't look into)
-    if (csview_equals(decl->name, "NoInfer")) return arg;
+    if (csview_equals(decl->name, "NoInfer")) return ty_no_infer(me, arg);
     return nullptr;
 }
 
@@ -483,6 +482,7 @@ typedef struct FreeParams {
     // Inside the extends type of a conditional being walked, which is what declares its `infer` type parameters.
     // Walking a node inside an extends type on its own (`(...args: any) => infer R`), R is free
     u32 in_extends;
+    TypeFlow const* flow_done; // The true branches (TypeNode.flow) whose check and extends types were walked last
 } FreeParams;
 
 static void free_params_bind(FreeParams* out, Ty const* param) {
@@ -517,6 +517,17 @@ static void collect_free_params_of_generic(Checker* me, Generic const* generic, 
 
 static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* out) {
     if (out->unknown) return;
+    if (node->flow && node->flow != out->flow_done) {
+        // What the node is in the true branches around it can mention their extends types (a substitution type, see
+        // conditional_flow_type()), which are outside the node (tsc's isTypeParameterPossiblyReferenced)
+        out->flow_done = node->flow;
+        u32 saved_extends = out->in_extends;
+        out->in_extends = 0;
+        for (TypeFlow const* flow = node->flow; flow; flow = flow->outer) {
+            collect_free_params(me, &flow->ternary->maybe_super, out);
+        }
+        out->in_extends = saved_extends;
+    }
     switch (node->tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -1920,7 +1931,77 @@ static TyCondBranch lower_branch(Checker* me, TypeNode const* node, LowerCtx ctx
     return (TyCondBranch){ .type = ty_from_node(me, node, ctx) };
 }
 
-static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args) {
+// The check and extends types of a conditional type as they imply a constraint on the types in its true branch (tsc's
+// getImpliedConstraint): `[A] extends [B]` implies what `A extends B` does
+typedef struct ImpliedConstraint {
+    TypeNode const* check_node;
+    TypeNode const* extends_node;
+    LazyState check_state;
+    Ty const* check; // ty_actual_type_variable() of it
+    Ty const* extends; // Lowered when first needed
+} ImpliedConstraint;
+
+static bool is_unary_tuple_node(TypeNode const* node) {
+    if (node->tag != TYPE_TUPLE || vec_tuple_element_size(&node->tuple.elements) != 1) return false;
+    TupleElement const* element = vec_tuple_element_at(&node->tuple.elements, 0);
+    return !element->rest && !element->optional;
+}
+
+static ImpliedConstraint* implied_constraint(Checker* me, TernaryType const* ternary) {
+    u64 key[2] = { KEY_IMPLIED_CONSTRAINT, (u64)(uintptr_t)ternary };
+    void const** slot = intern_slot(me, &my links, key, 2);
+    if (*slot) return (ImpliedConstraint*)*slot;
+    ImpliedConstraint* ret = arena_new(&my arena, ImpliedConstraint);
+    TypeNode const* check_node = &ternary->maybe_sub;
+    TypeNode const* extends_node = &ternary->maybe_super;
+    while (is_unary_tuple_node(check_node) && is_unary_tuple_node(extends_node)) {
+        check_node = &vec_tuple_element_at(&check_node->tuple.elements, 0)->type;
+        extends_node = &vec_tuple_element_at(&extends_node->tuple.elements, 0)->type;
+    }
+    ret->check_node = check_node;
+    ret->extends_node = extends_node;
+    *slot = ret;
+    return ret;
+}
+
+// tsc's getConditionalFlowTypeOfType: what the true branches around `node` imply about its type `ty`, as a
+// substitution type. Only type variables are substituted in parameter positions (where the constraint could be wrong)
+static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty const* ty) {
+    Ty const* actual = nullptr;
+    TyBuf constraints = {0};
+    bool type_variable = ty->kind == TY_TYPE_PARAM || ty->kind == TY_INDEXED;
+    for (TypeFlow const* flow = node->flow; flow; flow = flow->outer) {
+        if (!flow->covariant && !type_variable) continue;
+        ImpliedConstraint* implied = implied_constraint(me, flow->ternary);
+        if (implied->check_state == LAZY_STATE_IN_FLIGHT) continue;
+        if (implied->check_state == LAZY_STATE_NOT_STARTED) {
+            implied->check_state = LAZY_STATE_IN_FLIGHT;
+            Ty const* check = ty_from_node(me, implied->check_node, (LowerCtx){ .generic = true });
+            implied->check = ty_actual_type_variable(me, check);
+            implied->check_state = LAZY_STATE_DONE;
+        }
+        if (!actual) actual = ty_actual_type_variable(me, ty);
+        if (implied->check != actual) continue;
+        if (!implied->extends) implied->extends = ty_from_node(me, implied->extends_node, (LowerCtx){ .generic = true });
+        ty_buf_push(&constraints, implied->extends);
+    }
+    if (constraints.len) {
+        Ty const* constraint = constraints.len == 1 ? constraints.data[0] :
+            ty_intersection(me, constraints.data, constraints.len, nullptr, (TyList){0});
+        ty = ty_substitution(me, ty, constraint);
+    }
+    ty_buf_drop(&constraints);
+    return ty;
+}
+
+static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args);
+
+static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args) {
+    Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
+    return node->flow ? conditional_flow_type(me, node, ret) : ret;
+}
+
+static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args) {
     // What the operands of this node are lowered with
     LowerCtx ctx = outer_ctx;
     ctx.method = false;
@@ -2044,7 +2125,9 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             Ty const* extends = ty_from_node(me, &node->ternary->maybe_super, inner);
             TyCondBranch if_true = lower_branch(me, &node->ternary->if_true, inner);
             TyCondBranch if_false = lower_branch(me, &node->ternary->if_false, ctx);
-            bool distributive = is_naked_type_param_node(&node->ternary->maybe_sub);
+            // (tsc's isDistributive looks at the check type: a type parameter substituted by an outer true branch
+            // isn't one)
+            bool distributive = is_naked_type_param_node(&node->ternary->maybe_sub) && check_type->kind == TY_TYPE_PARAM;
             TyBuf infers = {0};
             collect_declared_infers(me, extends_node, &infers);
             Ty const* ret = ty_conditional(

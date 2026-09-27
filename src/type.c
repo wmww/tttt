@@ -250,7 +250,31 @@ bool type_literal_has_index_constraints(TypeNode const* me) {
     return index_count && (other_count || index_count > 1);
 }
 
+// The true branches around the node being walked (TypeNode.flow)
+static thread_local TypeFlow const* current_flow;
+
+static TypeFlow const* flow_flipped(TypeFlow const* flow) {
+    return flow ? &flow->ternary->true_flow[flow->covariant] : nullptr;
+}
+
+TypeFlow const* type_flow_enter_parameter(void) {
+    TypeFlow const* saved = current_flow;
+    current_flow = flow_flipped(current_flow);
+    return saved;
+}
+
+TypeFlow const* type_flow_enter_statements(void) {
+    TypeFlow const* saved = current_flow;
+    current_flow = nullptr;
+    return saved;
+}
+
+void type_flow_restore(TypeFlow const* saved) {
+    current_flow = saved;
+}
+
 void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
+    my flow = current_flow;
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -303,7 +327,12 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
 
             Scope* inferred_types_scope = scope_new(names, SCOPE_BLOCK);
             type_add_inferred_names_at(&my ternary->maybe_super, inferred_types_scope, INFER_POSITION_OTHER, nullptr, 0);
+            TypeFlow const* saved_flow = current_flow;
+            my ternary->true_flow[0] = (TypeFlow){ .ternary = my ternary, .covariant = true, .outer = current_flow };
+            my ternary->true_flow[1] = (TypeFlow){ .ternary = my ternary, .covariant = false, .outer = flow_flipped(current_flow) };
+            current_flow = &my ternary->true_flow[0];
             type_lookup_names(&my ternary->if_true, inferred_types_scope, errs);
+            current_flow = saved_flow;
 
             type_lookup_names(&my ternary->if_false, names, errs);
         }   break;

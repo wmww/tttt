@@ -1508,6 +1508,17 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
 }
 
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
+    if (ty->kind == TY_SUBSTITUTION) {
+        // Its base (tsc's typeToTypeNodeHelper)
+        if (!ty_is_no_infer(ty)) {
+            ty_display(me, d, ty->substitution.base);
+            return;
+        }
+        out_lit(d, "NoInfer<");
+        ty_display(me, d, ty->substitution.base);
+        out_lit(d, ">");
+        return;
+    }
     d.depth++;
     d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
     if (d.depth > MAX_DISPLAY_DEPTH * 4) {
@@ -1696,6 +1707,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             ty_display(me, d, ty->indexed.index);
             out_lit(d, "]");
             break;
+
+        case TY_SUBSTITUTION: impossible;
 
         case TY_CONDITIONAL:
             display_parenthesized_if(
