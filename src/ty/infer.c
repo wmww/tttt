@@ -128,9 +128,15 @@ static TyMapper const* base_signature_mapper(Checker* me, Signature const* sig) 
 
 // What an optional parameter holds: `undefined` too, under strictNullChecks (tsc's addOptionality)
 Ty const* ty_optional_param_type(Checker* me, Ty const* type) {
-    if (!compiler_options()->strict_null_checks) return type;
+    if (!compiler_options()->strict_null_checks || (type->flags & TYF_UNDEFINED)) return type;
+    // (Asked for every optional parameter of every signature relation and call)
+    u64 key[2] = { KEY_OPTIONAL_PARAM, type->id };
+    Ty const* cached = intern_get(&my links, key, 2);
+    if (cached) return cached;
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
-    return ty_union(me, parts, 2, nullptr, (TyList){0});
+    Ty const* ret = ty_union(me, parts, 2, nullptr, (TyList){0});
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
 }
 
 // The parameters of `sig` from `from` on, as the tuple a rest parameter in that position would receive (tsc's
