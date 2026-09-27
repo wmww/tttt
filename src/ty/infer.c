@@ -431,7 +431,22 @@ static Ty const* reverse_mapped_prop_type(Checker* me, Ty const* source, MappedI
 
 // The T for which `{ [K in keyof T]: Template }` would be `source` (tsc's createReverseMappedType), eagerly. Null if
 // the source isn't an object with properties or a string index
+static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand);
+
+// Cached like tsc's reverseHomomorphicMappedCache: `keyof T & ("a" | "b" | ...)` as the constraint asks for the same
+// one once per member (tsc's createComputedCompilerOptions, 135 of them). Only at the top level, where the depth
+// cutoff below doesn't depend on the caller
 static Ty const* reverse_mapped_type(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
+    if (my reverse_mapped_depth) return reverse_mapped_type_uncached(me, source, mapped, operand);
+    u64 key[4] = { KEY_REVERSE_MAPPED, source->id, (u64)(uintptr_t)mapped, operand->id };
+    void const* cached = intern_get(&my links, key, 4);
+    if (cached) return cached == mapped ? nullptr : cached;
+    Ty const* ret = reverse_mapped_type_uncached(me, source, mapped, operand);
+    *intern_slot(me, &my links, key, 4) = ret ? (void const*)ret : (void const*)mapped;
+    return ret;
+}
+
+static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
     if (!(source->flags & TYF_OBJECT) || ty_is_array(me, source) || ty_is_tuple(source)) return nullptr; // TODO: arrays, tuples
     Members const* members = ty_members(me, source);
     IndexInfo string_index = {0};

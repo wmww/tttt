@@ -69,6 +69,7 @@ enum {
     KEY_FLOW_EXPR,      // Expr -> Ty, see ty_flow_expr_type()
     KEY_FLOW_CALL,      // (call Expr, is a statement) -> CallEffects, see flow.c
     KEY_FLOW_DISCRIMINANT, // (type id, property name) -> 1 + whether the property discriminates the union
+    KEY_REVERSE_MAPPED, // (source id, MappedInfo, operand id) -> reverse_mapped_type() at the top level (infer.c)
     KEY_UNION_KEY_NAME, // Union type id -> its key property name atom, or the union itself if it has none (flow.c)
     KEY_UNION_KEY_MEMBER, // (union type id, regular literal id) -> the member whose key property is it (unknown: several)
     KEY_FLOW_NARROWED,  // (type id, candidate id, assume_true | check_derived << 1) -> narrowed_type()
