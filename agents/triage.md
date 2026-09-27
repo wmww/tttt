@@ -49,3 +49,11 @@ interfaceThatIndirectlyInheritsFromItself, reverseMappedUnionInference, the `W["
   optional property (exact on) whose stored type lacks undefined.
 - Padded properties (`a?: never` from widening) get symbol declarations only from the sibling that has the property;
   tsc lists both (`Symbol(a, Decl(..., 3, 18), Decl(..., 2, 18))`), probe `plan19/typefest/exact_missing_padding.ts`.
+- JSDoc attachment (webpack session): tsc only attaches a JSDoc comment on the same line as the previous token to
+  parameters, type parameters, function/arrow expressions, parenthesized expressions, variable declarations and export
+  specifiers (getJSDocCommentRanges: trailing + leading comments), not to statements; `jsdoc_before()` attaches any
+  comment that ends right before the host. `/** @type {T} */ const x = require("m")` isn't an alias to tsc (the JSDoc
+  type tag makes it a variable, bindVariableDeclarationOrBindingElement): tttt makes it one and skips the check.
+- Printing through the CommonJS export= clone: from another file tsc prints a typedef of a module whose `export=` got
+  merged as `Cbs`, tttt `w.Cbs` (test/probes/plan19/webpack/export_equals_merge.ts); a `const X = require()` alias in a
+  function prints its class as `typeof import("X")` (the printer's accessibility walk skips function locals).

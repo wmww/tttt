@@ -458,6 +458,9 @@ differently. Fixed the same day (probes in `test/probes/plan33/`):
 - TS2661 for `export { type X }` of a `global {}` name inside a script's `declare module`, TS1095 for a JSDoc
   `@returns` on a setter, TS2370 for `...args: Partial<TArgs>` (getResolvedApparentTypeOfMappedType).
 
+**2026-09-27 webpack session: 529 -> 169**, 9 root causes fixed (list and the rest by root cause in plan 26,
+"Stage 3 leftovers", webpack item). Wall time is ~70s for this corpus (377k lines): worth a perf look.
+
 What's left, by root cause (details and order in plan 26 stage 3): unresolved `@typedef` names are silently any, so
 every typed hook callback parameter is implicitly any (TS7006 2689, TS7031 375, and the keyof-any/TS2731/TS2502/
 TS2694/TS2749 tail); `@type` on `this.x =` and on object literal properties is ignored (TS2345 ~250 on tapable's

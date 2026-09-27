@@ -242,10 +242,25 @@ plus webpack's residue):
   JSDoc type literal is printed by tsc with its newlines dropped (`{    a: string;}`); aliases of JSDoc function types
   (`@enum {function(number): number}` prints `Fs`).
 - JSDoc parse errors (TS8032 `o.a.b` without `o.a`, TS1003...): dropped.
-- webpack 515: TS7006 115 (mostly contextual typing through `memoize(() => require(...))` and hooks of lazily required
-  modules; not reproduced by small probes yet), TS2322 113 / TS2345 106 (`string | Buffer` from fs overloads, `number |
-  undefined` narrowing), TS2578 26 (unused `@ts-expect-error` above `require()` calls tsc flags, microsoft/TypeScript
-  #41697), TS2314 16. Rank again with `./realworld.py --corpus webpack` before picking.
+- webpack 529 -> 169 (2026-09-27 webpack session, probes in `test/probes/plan19/webpack/`): done since then are
+  CommonJS `export=` merged with the module's other exports (module_export_equals()'s clone), JSDoc `T=` only at the
+  top of a JSDoc type, `@overload`, ambient `require` (@types/node) as a CommonJS require, `@extends {B<T>}` and
+  base constructors taking written type arguments, require aliases declared in the function (TS2300, #41697),
+  unique symbols as unit types, `@this`. What's left, by root cause (`./realworld.py --corpus webpack`):
+  - TS2589 12 (examples' `@type {import("webpack").Configuration}`): comparing a JS class (lib/dll/DllPlugin) with
+    its twin in the generated types.d.ts (Compiler vs Compiler...) runs out of relation depth. tsc does too when an
+    example is checked alone (TS2321 `tsc -p` with just that file); in the full project it is clean, apparently thanks
+    to relation results cached from an earlier check. Needs a look at which earlier comparison warms tsc's cache
+    (checking order: bin, lib, tooling, setup, examples) and whether tttt caches maybe-results the same way.
+  - TS2345/TS2322 ~60, scattered: `IterableCollection<T>` vs `Set<T>` (5), tuples with a trailing optional
+    `boolean | null` element from JSDoc (7: `[number, number]` to `[number, number, boolean | null]`), `number` to
+    NodeJS `Timeout` (setTimeout overloads, 3), LazyFunction/Promise unions (8), `Caches<H>` vs conditional (3).
+  - TS7006 26: contextual typing left over (FileSystemInfo's `path` callbacks 7, FileUriPlugin 4, identifier.js 3...).
+  - TS18048/TS2532/TS2533 ~25: narrowing (`watching`, `curDepth`, `chunk`...), unsampled.
+  - TS2349 11 (Compilation.js hooks `.call` on unions?), TS2352 6 (`T[keyof T]` conversions), TS2339 5.
+  - Also seen: `/** @type {T} */ const x = require()` is a plain variable to tsc (no alias with a JSDoc type tag),
+    tttt makes it an alias and doesn't check it; a JSDoc comment on the same line as the previous token isn't leading
+    trivia to tsc for statements (getJSDocCommentRanges), tttt attaches it.
 
 ### Stage 4: the rest of the tags and JS syntax diagnostics
 `@this`, `@extends`/`@augments` (type arguments for a JS class's base), `@implements`, `@overload`, `@satisfies`,
