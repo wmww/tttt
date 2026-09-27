@@ -1641,10 +1641,36 @@ static bool is_generic_operand(Checker* me, Ty const* ty, u32 depth) {
     return ty_is_generic_tuple(me, ty);
 }
 
+// Every number the index can be names one of the leading fixed elements of a tuple
+static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index) {
+    if (tuple->reference.deferred && tuple->reference.deferred->state != LAZY_STATE_DONE) return false;
+    TupleShape const* shape = ty_tuple_shape(tuple);
+    u32 fixed = 0;
+    while (fixed < shape->arity && !(shape->flags[fixed] & TUPLE_ELEMENT_REST)) fixed++;
+    Ty const* const* parts = &index;
+    u32 count = 1;
+    if (index->kind == TY_UNION) {
+        parts = index->composite.types.data;
+        count = index->composite.types.len;
+    }
+    for (u32 i = 0; i < count; i++) {
+        if (!(parts[i]->flags & TYF_NUMBER_LITERAL)) return false;
+        double n = parts[i]->literal.value.number;
+        if (!(n >= 0 && n < fixed && n == (u32)n)) return false;
+    }
+    (void)me;
+    return true;
+}
+
 // The access itself is ty_access() (access.c), the same lookup property access expressions get
 static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index) {
     if ((object->flags & TYF_ANY) || (index->flags & TYF_ERROR)) return object->flags & TYF_ANY ? object : index;
     if (index->flags & TYF_NEVER) return index;
+    // An element before the variadic part of a generic tuple is known (`[S, ...T][0]` is S, tsc's indexTypeLessThan
+    // the fixed elements)
+    if (ty_is_tuple(object) && ty_is_generic_tuple(me, object) && index_less_than_fixed(me, object, index)) {
+        return ty_access(me, object, index);
+    }
     if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return nullptr;
     return ty_access(me, object, index);
 }

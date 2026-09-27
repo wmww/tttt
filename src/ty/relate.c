@@ -1898,6 +1898,7 @@ static Ty const* simplified_or_constraint(Checker* me, Ty const* ty) {
         case TY_KEYOF:
         case TY_TEMPLATE_LITERAL:
         case TY_STRING_MAPPING:
+        case TY_REFERENCE: // (a generic tuple)
             return base_constraint(me, ty, 0);
         default:
             return nullptr;
@@ -2136,6 +2137,10 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             if (!object_constraint && !index_constraint) return nullptr;
             Ty const* ret = ty_indexed(me, object_constraint ? object_constraint : object, index_constraint ? index_constraint : index);
             if (ret == ty) return nullptr;
+            if (ret->kind == TY_UNION) {
+                Ty const* base = base_constraint(me, ret, depth + 1);
+                return base ? base : ret;
+            }
             return ret->flags & TYF_DEFERRED ? base_constraint(me, ret, depth + 1) : ret;
         }
         case TY_CONDITIONAL: {
@@ -2218,6 +2223,28 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             if (!constraint || constraint == inner) return ty_intrinsic(me, TY_STRING);
             Ty const* ret = ty_string_mapping(me, ty->string_mapping.mapping, ty->string_mapping.symbol, constraint);
             return ret == ty ? nullptr : ret;
+        }
+        case TY_REFERENCE: {
+            // A generic tuple: its variadic elements as the arrays they're constrained to (tsc's computeBaseConstraint),
+            // `[S, ...T]` with `T extends readonly X[]` is `[S, ...X[]]`
+            if (!is_tuple(ty) || !ty_is_generic_tuple(me, ty)) return nullptr;
+            TupleShape const* shape = ty_tuple_shape(ty);
+            TyList args = ty_reference_args(me, ty);
+            Ty const** elements = malloc(sizeof(Ty const*) * (args.len ? args.len : 1));
+            panic_if(!elements, "out of memory");
+            bool changed = false;
+            for (u32 i = 0; i < args.len; i++) {
+                elements[i] = args.data[i];
+                if (i >= shape->arity || !(shape->flags[i] & TUPLE_ELEMENT_REST) || args.data[i]->kind != TY_TYPE_PARAM) continue;
+                Ty const* constraint = base_constraint(me, args.data[i], depth + 1);
+                if (constraint && ty_is_array(me, constraint)) {
+                    elements[i] = constraint;
+                    changed = true;
+                }
+            }
+            Ty const* ret = changed ? ty_reference(me, ty->reference.target, (TyList){ .data = elements, .len = args.len }) : nullptr;
+            free(elements);
+            return ret;
         }
         default:
             return nullptr;

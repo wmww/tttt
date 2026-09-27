@@ -1294,17 +1294,19 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
 
 // What a generic key type is known to include at least (tsc's getLowerBoundOfKeyType): `keyof T` the keys of T's
 // constraint, a distributive conditional type over it (`Exclude<keyof T, K>`) that conditional type of those keys
-static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty) {
+static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 8) return ty;
     if (ty->kind == TY_KEYOF) {
         Ty const* apparent = ty_apparent_type(me, ty->keyof.operand);
-        // (TODO: tsc takes the known keys of a generic tuple)
-        return apparent == ty->keyof.operand ? ty : ty_keyof(me, apparent);
+        // (TODO: tsc takes the known keys of a generic tuple, getKnownKeysOfTupleType)
+        if (apparent == ty->keyof.operand || ty_is_generic_tuple(me, apparent)) return ty;
+        return ty_keyof(me, apparent);
     }
     if (ty->kind == TY_CONDITIONAL) {
         Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
         if (!ty->conditional.distributive || root->conditional.check->kind != TY_TYPE_PARAM) return ty;
         Ty const* check = ty->conditional.check;
-        Ty const* lower = lower_bound_of_key_type(me, check);
+        Ty const* lower = lower_bound_of_key_type(me, check, depth + 1);
         if (lower == check) return ty;
         Ty const* param = root->conditional.check;
         TyMapper const* mapper = ty->conditional.mapper ? ty_mapper_with(me, ty->conditional.mapper, param, lower) :
@@ -1321,7 +1323,7 @@ static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty) {
         TyBuf parts = {0};
         bool changed = false;
         for (u32 i = 0; i < types.len; i++) {
-            Ty const* part = lower_bound_of_key_type(me, types.data[i]);
+            Ty const* part = lower_bound_of_key_type(me, types.data[i], depth + 1);
             changed |= part != types.data[i];
             ty_buf_push(&parts, part);
         }
@@ -1346,7 +1348,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     bool generic = false;
     if (ty_is_generic_index(constraint)) {
         if (mapped->keyof_constraint) return expand_generic_homomorphic(me, members);
-        Ty const* lower = lower_bound_of_key_type(me, constraint);
+        Ty const* lower = lower_bound_of_key_type(me, constraint, 0);
         if (lower == constraint) return members;
         constraint = lower;
         generic = true;
