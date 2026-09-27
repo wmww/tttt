@@ -652,10 +652,13 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
             ty_instantiation_limit_reached(me);
             return ty_intrinsic(me, TY_ERROR);
         }
-        my instantiation_tail_count++;
+        // (Only conditional types with an alias count, like tsc's canTailRecurse: `A extends X ? (B extends Y ? Z :
+        // Alias<...>) : W` is one step per Alias)
+        u32 counts = ty->alias != nullptr;
+        my instantiation_tail_count += counts;
         my instantiation_count++;
         Ty const* ret = instantiate_inner(me, ty, mapper);
-        my instantiation_tail_count--;
+        my instantiation_tail_count -= counts;
         return ret;
     }
     if (my instantiation_depth >= MAX_INSTANTIATION_DEPTH || my instantiation_count >= MAX_INSTANTIATION_COUNT) {
