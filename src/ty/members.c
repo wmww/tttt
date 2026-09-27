@@ -1272,7 +1272,9 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
     }
     bool is_union = modifiers->kind == TY_UNION;
     Prop const* first = nullptr;
-    u32 optional = is_union ? 0 : PROP_OPTIONAL, readonly = 0;
+    // (Like tsc's createUnionOrIntersectionProperty: a union's property is optional or readonly if any constituent's is,
+    // an intersection's only if every one that has it is)
+    u32 optional = is_union ? 0 : PROP_OPTIONAL, readonly = is_union ? 0 : PROP_READONLY;
     for (u32 i = 0; i < modifiers->composite.types.len; i++) {
         Ty const* member = ty_apparent_type(me, modifiers->composite.types.data[i]);
         u32 member_flags = 0;
@@ -1284,7 +1286,7 @@ static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* 
         }
         if (!first) first = prop;
         if (is_union) optional |= member_flags & PROP_OPTIONAL; else optional &= member_flags;
-        readonly |= member_flags & PROP_READONLY;
+        if (is_union) readonly |= member_flags & PROP_READONLY; else readonly &= member_flags;
     }
     if (first) *flags = (optional & PROP_OPTIONAL) | readonly;
     return first;
