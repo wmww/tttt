@@ -10,6 +10,7 @@ typedef struct InterfaceDecl {
     Span name;
     Span full_span;
     Generic generic;
+    OuterGenerics const* outer_generics; // The type parameters it captures (set by the resolve walk)
     VecSpannedType extends; // The first `extends` clause's entity names (`A.B<T>`)
     // Heritage tsc parses but doesn't check (the parser reports checkGrammarInterfaceDeclaration's TS1172/TS1176 about
     // it): later `extends` clauses and `implements` clauses. Only resolved, silently, for the baselines

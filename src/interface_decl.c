@@ -31,7 +31,8 @@ void interface_decl_add_names(InterfaceDecl* me, Scope* scope, DeclExported expo
 
 void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs) {
     unused_register(names, UNUSED_INTERFACE, me, span_null);
-    names = scope_new_generic_merged(names, &my generic, my symbol, me, errs);
+    my outer_generics = names->generics;
+    names = scope_new_generic_merged(names, &my generic, my symbol, me, my name, errs);
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
     this_scope->this_ref = (ThisRef){ .kind = THIS_INTERFACE, .symbol = my symbol, .interface = me };
     names = this_scope;

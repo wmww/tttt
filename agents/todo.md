@@ -6,8 +6,8 @@ run (count the commits since this file was written), the next session is insight
 goes into plans or triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the corpus
 numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 
-1. **Plan 32 stage B** (execution): outer type parameters, local declarations in generic functions capture `T`.
-   Type-core work: check zod/valibot instruction counts before and after.
+1. ~~**Plan 32 stage B**~~ done: outer type parameters. Suite 9409 -> 9427, nothing lost, corpora unchanged,
+   callgrind neutral (zod 10.885 -> 10.858 G, valibot 5.247 -> 5.247, tsc 5.062 -> 5.063, type-fest 3.334 -> 3.341).
 2. **Plan 35 stage 1** (tool + first fixes): split displaydiff's `other`/`we-any` by mechanism, write the queue into
    plan 35, fix from the top.
 3. **Perf**: webpack first (the one corpus tsgo wins, even single-threaded: profile the JSDoc/JS checking path), then

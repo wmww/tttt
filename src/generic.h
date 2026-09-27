@@ -30,6 +30,16 @@ typedef struct Generic {
     VecGenericItem items;
 } Generic;
 
+// The type parameter lists around a declaration (tsc's getOuterTypeParameters), innermost first: what a local class,
+// interface or type alias captures. Made by the resolve walk (Scope.generics) in the binder's arena, shared by
+// everything declared in the same scope
+struct OuterGenerics {
+    struct OuterGenerics const* parent;
+    Generic const* generic;
+    Span owner; // The name of what declares them (a function, class, interface or alias), `f<number>.C` prints it
+    Span owner_class; // A method's class, which qualifies its name (`X.m<number>.C`). Invalid otherwise
+};
+
 static inline bool generic_empty(Generic const* me) {
     return !me || vec_generic_item_is_empty(&my items);
 }

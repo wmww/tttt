@@ -68,6 +68,10 @@ typedef struct TypeDecl {
     Generic generic;
     TypeNode type;
     Symbol* symbol;
+    OuterGenerics const* outer_generics; // The type parameters it captures (set by the resolve walk)
+    // Declared in a block or function body (set by the resolve walk): the types baseline can't name it (tsc's
+    // isTypeSymbolAccessible, a declaration there isn't visible) and prints its structure instead
+    bool local;
     // A JavaScript file's `@typedef`/`@callback` (jsdoc_typedef_statements()): not part of the baselines' walk, and
     // exported from a module's top level (tsc's jsdocTreatAsExported)
     bool jsdoc;

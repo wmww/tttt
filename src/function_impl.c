@@ -206,7 +206,13 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
 
     unused_register(names, UNUSED_FUNCTION, me, span_null);
     // Handle generics (includes adding names)
-    names = scope_new_generic(names, &my generic, errs);
+    if (!generic_empty(&my generic)) {
+        Span owner = span_valid(my name) ? my name :
+            span_valid(my member_name) ? my member_name : sv_make_span(c_sv("(Anonymous function)"));
+        // (A class method is named through its class, an object literal's isn't)
+        ClassDecl const* method_of = span_valid(my member_name) && !my is_expression ? scope_enclosing_class(names) : nullptr;
+        names = scope_new_generic(names, &my generic, owner, method_of ? class_decl_display_name(method_of) : span_null, errs);
+    }
 
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
     function_scope->flow = &flow;

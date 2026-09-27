@@ -24,6 +24,7 @@ typedef enum DeclExported : uint8_t {
 } DeclExported;
 
 typedef struct Generic Generic;
+typedef struct OuterGenerics OuterGenerics; // generic.h
 typedef struct CallExpr CallExpr;
 typedef struct Expr Expr;
 typedef struct LazyType LazyType;

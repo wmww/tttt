@@ -297,6 +297,7 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
     ret->flow = parent->flow;
     ret->file = parent->file;
     ret->strict = parent->strict;
+    ret->generics = parent->generics;
     if (kind == SCOPE_BLOCK) ret->function = parent->function;
     return ret;
 }
@@ -431,9 +432,17 @@ Scope* scope_new_file(Binder* binder, SourceFile* file) {
     return ret;
 }
 
-Scope* scope_new_generic(Scope* parent, Generic* generic, ErrorCtx* errs) {
+static OuterGenerics* push_generics(Scope* me, Generic const* generic, Span owner) {
+    OuterGenerics* outer = arena_new(&my binder->arena, OuterGenerics);
+    *outer = (OuterGenerics){ .parent = my generics, .generic = generic, .owner = owner, .owner_class = span_null };
+    my generics = outer;
+    return outer;
+}
+
+Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner_class, ErrorCtx* errs) {
     if (generic_empty(generic)) return parent;
     Scope* ret = scope_new(parent, SCOPE_BLOCK);
+    push_generics(ret, generic, owner)->owner_class = owner_class;
     generic_add_names(generic, ret);
     generic_lookup_names(generic, ret, errs);
     return ret;
@@ -453,9 +462,12 @@ static Generic const* earlier_generic(Symbol const* owner, void const* node, u32
     return nullptr;
 }
 
-Scope* scope_new_generic_merged(Scope* parent, Generic* generic, Symbol const* owner, void const* node, ErrorCtx* errs) {
+Scope* scope_new_generic_merged(
+    Scope* parent, Generic* generic, Symbol const* owner, void const* node, Span owner_name, ErrorCtx* errs
+) {
     if (generic_empty(generic)) return parent;
     Scope* ret = scope_new(parent, SCOPE_BLOCK);
+    push_generics(ret, generic, owner_name);
     // Like tsc, which declares them in the members of the merged symbol: a type parameter of the same name as one of
     // an earlier declaration is that one
     u32 index;
@@ -2644,6 +2656,20 @@ Generic const* symbol_type_generic(Symbol const* me) {
             default: continue;
         }
         return generic_empty(generic) ? nullptr : generic;
+    }
+    return nullptr;
+}
+
+// The type parameters a class, interface or type alias captures from around it (its first declaration's)
+OuterGenerics const* symbol_outer_generics(Symbol const* me) {
+    if (!me) return nullptr;
+    for (u32 i = 0; i < my decl_count; i++) {
+        switch (my decls[i].kind) {
+            case SYMBOL_DECL_CLASS: return ((ClassDecl const*)my decls[i].node)->outer_generics;
+            case SYMBOL_DECL_INTERFACE: return ((InterfaceDecl const*)my decls[i].node)->outer_generics;
+            case SYMBOL_DECL_TYPE_ALIAS: return ((TypeDecl const*)my decls[i].node)->outer_generics;
+            default: continue;
+        }
     }
     return nullptr;
 }

@@ -448,9 +448,12 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     }
     Ty const* args[32];
     if (params.len > c_arraylen(args)) return false;
+    u32 outer = base->declared.outer_count; // (A local base class: the same outer type parameters)
     for (u32 i = 0; i < params.len; i++) {
-        if (written_args && (isize_t)i < vec_spanned_type_size(written_args)) {
-            args[i] = ty_from_node(me, &vec_spanned_type_at(written_args, i)->type, ctx);
+        if (i < outer) {
+            args[i] = params.data[i];
+        } else if (written_args && (isize_t)(i - outer) < vec_spanned_type_size(written_args)) {
+            args[i] = ty_from_node(me, &vec_spanned_type_at(written_args, i - outer)->type, ctx);
         } else {
             Ty const* fallback = ty_param_default(me, params.data[i]);
             args[i] = fallback ? fallback : ty_intrinsic(me, TY_ANY);
@@ -748,11 +751,12 @@ static void builder_add_class_items(
 static Signature* class_construct_signature(Checker* me, ClassDecl const* class_decl, Ty const* instance_declared) {
     Signature* sig = arena_new(&my arena, Signature);
     sig->flags = SIGNATURE_CONSTRUCT | (class_decl->is_abstract ? SIGNATURE_ABSTRACT : 0);
-    sig->class_type_params = instance_declared->declared.type_params;
-    sig->class_instance = sig->class_type_params.len ?
-        ty_reference(me, instance_declared, sig->class_type_params) :
+    // (The outer type parameters of a local class aren't the signature's: the static side instantiates them)
+    sig->class_type_params = ty_local_type_params(instance_declared);
+    sig->class_instance = instance_declared->declared.type_params.len ?
+        ty_reference(me, instance_declared, instance_declared->declared.type_params) :
         instance_declared;
-    sig->ctx = (LowerCtx){ .generic = sig->class_type_params.len > 0 };
+    sig->ctx = (LowerCtx){ .generic = instance_declared->declared.type_params.len > 0 };
     return sig;
 }
 

@@ -1381,7 +1381,9 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
         case STATEMENT_DECL_TYPE: {
             Scope* self_scope = scope_new_self(names, my decl.type.symbol, my decl.props.declared);
             unused_register(self_scope, UNUSED_TYPE_ALIAS, &my decl.type, span_null);
-            Scope* generic_scope = scope_new_generic(self_scope, &my decl.type.generic, errs);
+            my decl.type.outer_generics = names->generics;
+            my decl.type.local = names->kind == SCOPE_BLOCK || names->kind == SCOPE_FUNCTION || names->kind == SCOPE_STATIC_BLOCK;
+            Scope* generic_scope = scope_new_generic(self_scope, &my decl.type.generic, my decl.type.name, span_null, errs);
             type_lookup_names(&my decl.type.type, generic_scope, errs);
         }   break;
 

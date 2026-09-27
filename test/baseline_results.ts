@@ -6933,7 +6933,7 @@ const baselines = {
     'controlFlowForIndexSignatures': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowForStatementContinueIntoIncrementor1': {
         errors: true,
@@ -8193,22 +8193,22 @@ const baselines = {
     'declarationEmitInferredTypeAlias1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitInferredTypeAlias2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitInferredTypeAlias3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitInferredTypeAlias4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitInferredTypeAlias5': {
         errors: true,
@@ -8218,7 +8218,7 @@ const baselines = {
     'declarationEmitInferredTypeAlias6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitInferredTypeAlias7': {
         errors: true,
@@ -8393,7 +8393,7 @@ const baselines = {
     'declarationEmitNestedAnonymousMappedType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitNestedGenerics': {
         errors: true,
@@ -8923,7 +8923,7 @@ const baselines = {
     'declarationNoDanglingGenerics': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationQuotedMembers': {
         errors: true,
@@ -17823,7 +17823,7 @@ const baselines = {
     'inlineConditionalHasSimilarAssignability': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inlineMappedTypeModifierDeclarationEmit': {
         errors: true,
@@ -28943,7 +28943,7 @@ const baselines = {
     'spreadParameterTupleType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadTupleAccessedByTypeParameter': {
         errors: true,
@@ -28986,9 +28986,9 @@ const baselines = {
         types: true,
     },
     'staticAnonymousTypeNotReferencingTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticAsIdentifier': {
         errors: true,
@@ -32568,7 +32568,7 @@ const baselines = {
     'unusedLocalsAndParametersTypeAliases2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedLocalsInMethod1': {
         errors: true,
@@ -40681,9 +40681,9 @@ const baselines = {
         types: true,
     },
     'typeArgumentInferenceWithClassExpression1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeArgumentInferenceWithClassExpression2': {
         errors: false,
@@ -40691,9 +40691,9 @@ const baselines = {
         types: true,
     },
     'typeArgumentInferenceWithClassExpression3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNames10_ES5': {
         errors: true,
@@ -52738,7 +52738,7 @@ const baselines = {
     'typedefOnStatements': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typedefScope1': {
         errors: true,
@@ -64093,7 +64093,7 @@ const baselines = {
     'localTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'localTypes2': {
         errors: true,
@@ -64103,7 +64103,7 @@ const baselines = {
     'localTypes3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'localTypes4': {
         errors: false,
@@ -64113,7 +64113,7 @@ const baselines = {
     'localTypes5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isomorphicMappedTypeInference': {
         errors: true,
@@ -65903,7 +65903,7 @@ const baselines = {
     'genericTypeAliases': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceDoesNotDependOnBaseTypes': {
         errors: true,

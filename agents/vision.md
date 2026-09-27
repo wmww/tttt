@@ -27,8 +27,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   references, flow graph + narrowing, module resolution + tsconfig, iteration protocol, generators, `this` types,
   elaboration, JSX, tsc's type printer and symbol chains, JSDoc (typedefs, templates, imports) + CommonJS + expandos.
   ~66k lines of C. `documentation.md` describes it, `hacks.md` lists what is approximated.
-- **Absent**: outer type parameters (a local class/interface/alias in a generic function doesn't capture its `T`;
-  plan 32 B), mixin classes (32 C), union origins, lazy reverse mapped types, decorator checking, `in`/`out` variance
+- **Absent**: mixin classes (32 C), union origins, lazy reverse mapped types, decorator checking, `in`/`out` variance
   annotations, regex literal checks (TS15xx), JSDoc stage 4 (the other tags, TS8xxx), declaration emit (out of scope),
   project references, parallelism.
 
@@ -108,7 +107,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    (28)~~ done.
 3. ~~Checkjs corpus (33), JS stage 3, error text tool (34), substitution fallout (30 stage 3), parser perf, permissive
    grammar (27 stage 2), zod corpus~~ done.
-4. **Now**: outer type parameters and mixins (32 B/C), silent type differences (35), parallelism planning (36),
+4. **Now**: mixins (32 C; outer type parameters, 32 B, done), silent type differences (35), parallelism planning (36),
    perf (webpack, zod), JS leftovers and stage 4, lexical diagnostics (27 stage 3), error text queue (34).
 5. Then: parallel parse (36's first stage), decorator checking, union origins, variance annotations, evolving arrays,
    a token cache / node arenas in the parser.

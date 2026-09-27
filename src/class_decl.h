@@ -109,6 +109,7 @@ typedef struct ClassDecl {
     bool has_typechecked;
     VecExpr decorators; // TODO: only checked as expressions, not as decorators of this class
     Generic generic;
+    OuterGenerics const* outer_generics; // The type parameters it captures (set by the resolve walk)
     Expr extends;
     Span extends_clause; // `extends A<T>`
     VecSpannedType implements; // The first `implements` clause's entity names (`A.B<T>`)

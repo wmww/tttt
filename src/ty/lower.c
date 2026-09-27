@@ -111,21 +111,46 @@ static bool interface_has_this(Symbol const* symbol, u32 depth) {
     return false;
 }
 
+// The type parameters of the scopes a declaration is in (tsc's getOuterTypeParameters), outermost first
+TyList ty_outer_type_params(Checker* me, OuterGenerics const* outer) {
+    if (!outer) return (TyList){0};
+    TyList parent = ty_outer_type_params(me, outer->parent);
+    TyList own = ty_type_params_of(me, outer->generic);
+    if (!parent.len) return own;
+    Ty const** data = arena_new_n(&my arena, Ty const*, parent.len + own.len);
+    memcpy(data, parent.data, parent.len * sizeof(*data));
+    memcpy(data + parent.len, own.data, own.len * sizeof(*data));
+    return (TyList){ .data = data, .len = parent.len + own.len };
+}
+
 static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind kind) {
     Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
     ret->declared.kind = kind;
     ret->declared.symbol = symbol;
     ret->declared.name = ty_qualified_name(me, symbol);
     ret->declared.state = arena_new(&my arena, TyObjectState);
+    if (kind == TY_DECLARED_INTERFACE || kind == TY_DECLARED_CLASS_INSTANCE || kind == TY_DECLARED_CLASS_STATIC) {
+        ret->declared.outer = symbol_outer_generics(symbol);
+        TyList outer = ty_outer_type_params(me, ret->declared.outer);
+        ret->declared.outer_count = outer.len;
+        ret->declared.type_params = outer;
+    }
     if (kind == TY_DECLARED_INTERFACE || kind == TY_DECLARED_CLASS_INSTANCE) {
         Generic const* first = symbol_type_generic(symbol);
-        ret->declared.type_params = ty_type_params_of(me, first);
+        TyList local = ty_type_params_of(me, first);
+        TyList outer = ret->declared.type_params;
+        if (!outer.len) {
+            ret->declared.type_params = local;
+        } else if (local.len) {
+            Ty const** data = arena_new_n(&my arena, Ty const*, outer.len + local.len);
+            memcpy(data, outer.data, outer.len * sizeof(*data));
+            memcpy(data + outer.len, local.data, local.len * sizeof(*data));
+            ret->declared.type_params = (TyList){ .data = data, .len = outer.len + local.len };
+        }
         for (u32 i = 0; i < symbol->decl_count; i++) {
             if (symbol->decls[i].kind != SYMBOL_DECL_INTERFACE) continue;
             InterfaceDecl const* interface_decl = symbol->decls[i].node;
-            if (&interface_decl->generic != first) {
-                unify_type_params(me, ret->declared.type_params, &interface_decl->generic);
-            }
+            if (&interface_decl->generic != first) unify_type_params(me, local, &interface_decl->generic);
         }
         if (kind == TY_DECLARED_CLASS_INSTANCE || interface_has_this(symbol, 0)) {
             ret->declared.this_param = ty_this_type_param(me, ret);
@@ -199,7 +224,8 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
         if (decl->kind == SYMBOL_DECL_TYPE_ALIAS) {
             TypeDecl const* type_decl = decl->node;
             TyList params = ty_type_params_of(me, &type_decl->generic);
-            LowerCtx ctx = { .generic = params.len > 0, .in_alias = true };
+            // (A local alias can mention the type parameters around it too)
+            LowerCtx ctx = { .generic = params.len > 0 || type_decl->outer_generics, .in_alias = true };
             TypeNode const* body = &type_decl->type;
             if (is_intrinsic_body(body)) {
                 // `type X = intrinsic`: what the checker makes of the name. The string mappings and NoInfer are made
@@ -250,16 +276,19 @@ Ty const* ty_static_type_of(Checker* me, Symbol const* symbol) {
     return links->static_type;
 }
 
-// Type arguments as written, padded with defaults (then `any`) and truncated to the parameter count
+// Type arguments as written, padded with defaults (then `any`) and truncated to the parameter count. The first `outer`
+// parameters are a local class or interface's outer ones, which are passed as themselves
 #define MAX_TYPE_ARGS 32
 static TyList lower_type_args(
-    Checker* me, TyList params, VecSpannedType const* written, LowerCtx ctx, Ty const* args[MAX_TYPE_ARGS]
+    Checker* me, TyList params, u32 outer, VecSpannedType const* written, LowerCtx ctx, Ty const* args[MAX_TYPE_ARGS]
 ) {
     panic_if(params.len > MAX_TYPE_ARGS, "too many type parameters");
-    u32 written_len = (u32)vec_spanned_type_size(written);
+    u32 written_len = (u32)vec_spanned_type_size(written) + outer;
     for (u32 i = 0; i < params.len; i++) {
-        if (i < written_len) {
-            args[i] = ty_from_node(me, &vec_spanned_type_at(written, i)->type, ctx);
+        if (i < outer) {
+            args[i] = params.data[i];
+        } else if (i < written_len) {
+            args[i] = ty_from_node(me, &vec_spanned_type_at(written, i - outer)->type, ctx);
         } else {
             Ty const* fallback = ty_param_default(me, params.data[i]);
             if (fallback) {
@@ -269,7 +298,7 @@ static TyList lower_type_args(
                 fallback = ty_instantiate(me, fallback, mapper);
             }
             // TODO: TS2314 when there's no default. tsc fills in the error type too
-            args[i] = fallback ? fallback : ty_intrinsic(me, written_len ? TY_ERROR : TY_ANY);
+            args[i] = fallback ? fallback : ty_intrinsic(me, written_len > outer ? TY_ERROR : TY_ANY);
         }
     }
     return (TyList){ .data = args, .len = params.len };
@@ -446,14 +475,16 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                 if (identifier->keyword) {
                     if (ctx.generic) return ty_reference(me, declared, declared->declared.type_params);
                 }
-                TyList args = lower_type_args(me, declared->declared.type_params, &identifier->generic_params, ctx, args_buf);
+                TyList args = lower_type_args(
+                    me, declared->declared.type_params, declared->declared.outer_count, &identifier->generic_params, ctx, args_buf
+                );
                 return ty_reference(me, declared, args);
             }
             return declared;
     }
     if (symbol_is_generic_alias(decl)) {
         TyList params = ty_type_params_of(me, symbol_type_generic(decl));
-        TyList args = lower_type_args(me, params, &identifier->generic_params, ctx, args_buf);
+        TyList args = lower_type_args(me, params, 0, &identifier->generic_params, ctx, args_buf);
         if (declared == ty_intrinsic(me, TY_ANY) && args.len == 1) {
             Ty const* intrinsic = intrinsic_alias_instance(me, decl, args.data[0]);
             if (intrinsic) return intrinsic;
@@ -483,19 +514,23 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
                 Symbol const* decl = canonical(me, reference->target);
                 if (!decl || span_valid(reference->import_span) || reference->keyword) break;
                 TyList params = {0};
+                u32 outer = 0;
                 if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
                     Ty const* declared = ty_declared_type_of(me, decl);
-                    if (declared->kind == TY_DECLARED) params = declared->declared.type_params;
+                    if (declared->kind == TY_DECLARED) {
+                        params = declared->declared.type_params;
+                        outer = declared->declared.outer_count;
+                    }
                 } else if (symbol_is_generic_alias(decl)) {
                     params = ty_type_params_of(me, symbol_type_generic(decl));
                 }
-                if (inferred->arg_index >= params.len) break;
-                Ty const* declared_constraint = ty_param_constraint(me, params.data[inferred->arg_index]);
+                if (outer + inferred->arg_index >= params.len) break;
+                Ty const* declared_constraint = ty_param_constraint(me, params.data[outer + inferred->arg_index]);
                 if (!declared_constraint) break;
                 // It can mention the other type parameters, which are what the reference passes (`Foo<infer X,
                 // infer X>` with `U extends T` gives X itself, which is no constraint)
                 Ty const* args_buf[MAX_TYPE_ARGS];
-                TyList args = lower_type_args(me, params, &reference->generic_params, (LowerCtx){ .generic = true }, args_buf);
+                TyList args = lower_type_args(me, params, outer, &reference->generic_params, (LowerCtx){ .generic = true }, args_buf);
                 constraint = ty_instantiate(me, declared_constraint, ty_mapper_new(me, params, args));
                 if (constraint == param) constraint = nullptr;
             }   break;
@@ -953,7 +988,13 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             return ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));
         case SYMBOL_DECL_COMMONJS_MODULE: return ty_commonjs_module_object(me, decl->node);
         case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
-        case SYMBOL_DECL_CLASS:
+        case SYMBOL_DECL_CLASS: {
+            // A local class in a generic scope: applied to the outer type parameters, so that instantiating it with
+            // the function's mapper instantiates its statics
+            Ty const* static_type = ty_static_type_of(me, symbol);
+            TyList outer = static_type->declared.type_params;
+            return outer.len ? ty_reference(me, static_type, outer) : static_type;
+        }
         case SYMBOL_DECL_ENUM:
             return ty_static_type_of(me, symbol);
         case SYMBOL_DECL_ENUM_MEMBER: return ty_declared_type_of(me, symbol);
@@ -1510,7 +1551,8 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     TypeNode const* node = deferred->node;
     if (node->tag == TYPE_IDENTIFIER) {
         Ty const* written_buf[MAX_TYPE_ARGS];
-        TyList written = lower_type_args(me, reference->reference.target->declared.type_params,
+        Ty const* target = reference->reference.target;
+        TyList written = lower_type_args(me, target->declared.type_params, target->declared.outer_count,
             &node->identifier->generic_params, deferred->ctx, written_buf);
         for (u32 i = 0; i < len; i++) args[i] = ty_instantiate(me, written.data[i], deferred->mapper);
     } else {
@@ -2114,7 +2156,7 @@ static Ty const* deferred_interface_reference(
     if (!decl || decl->is_placeholder || !(decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS))) return nullptr;
     Ty const* declared = ty_declared_type_of(me, decl);
     if (declared->kind != TY_DECLARED || !declared->declared.type_params.len) return nullptr;
-    TyList params = declared->declared.type_params;
+    TyList params = ty_local_type_params(declared);
     u32 written = (u32)vec_spanned_type_size(&identifier->generic_params);
     // A wrong number of type arguments is an error, not deferred
     if (written > params.len) return nullptr;
@@ -2302,7 +2344,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 if (!renames && ret->kind == TY_UNION && distributes_over) {
                     Ty const* args_buf[MAX_TYPE_ARGS];
                     TyList params = ty_type_params_of(me, symbol_type_generic(canonical(me, decl)));
-                    TyList args = lower_type_args(me, params, &node->identifier->generic_params, ctx, args_buf);
+                    TyList args = lower_type_args(me, params, 0, &node->identifier->generic_params, ctx, args_buf);
                     TyMapper const* mapper = ty_mapper_new(me, params, args);
                     renames = ty_instantiate(me, distributes_over, mapper)->kind == TY_UNION;
                 }

@@ -40,7 +40,16 @@ static TyDisplay reused_if(TyDisplay d, bool reused) {
     return d;
 }
 
-static bool is_function_like(Checker* me, Ty const* ty);
+static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty);
+
+// Whether a type prints by its alias name: not when printed for a place (the types baseline) that can't name a local
+// alias (tsc's isTypeSymbolAccessible: declarations in a block or function body aren't visible)
+static bool shows_alias(TyDisplay d, Ty const* ty) {
+    if (!ty->alias) return false;
+    if (!d.enclosing) return true;
+    TypeDecl const* type_decl = symbol_find_node(ty->alias, SYMBOL_DECL_TYPE_ALIAS);
+    return !type_decl || !type_decl->local;
+}
 
 // Type arguments. The first one is parenthesized if it's a generic function type (tsc's parenthesizeTypeArguments:
 // `X<<T>() => T>` would start with `<<`)
@@ -49,7 +58,7 @@ static void display_list(Checker* me, TyDisplay d, TyList list) {
         if (i) out_lit(d, ", ");
         Ty const* arg = list.data[i];
         bool parens = false;
-        if (!i && is_function_like(me, arg)) {
+        if (!i && is_function_like(me, d, arg)) {
             Members const* members = ty_members(me, arg);
             Signature const* sig = members->call_count ? members->call[0] : members->construct[0];
             signature_resolve(me, sig);
@@ -113,6 +122,29 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
 }
 
 // The name of a declared type: by its symbol when it has one
+// The outer type arguments of a local class or interface (tsc's typeReferenceToTypeNode): `f<number>.` for each
+// enclosing declaration whose type parameters aren't passed as themselves. `outer` is innermost first, the lists
+// outermost first; returns how many parameters it covered
+static u32 out_outer_type_args(Checker* me, TyDisplay d, OuterGenerics const* outer, TyList params, TyList args) {
+    if (!outer) return 0;
+    u32 start = out_outer_type_args(me, d, outer->parent, params, args);
+    u32 len = ty_type_params_of(me, outer->generic).len;
+    if (start + len > params.len) return start;
+    bool same = true;
+    for (u32 i = start; i < start + len; i++) same &= params.data[i] == args.data[i];
+    if (!same) {
+        if (span_valid(outer->owner_class)) {
+            out(d, outer->owner_class.sv);
+            out_lit(d, ".");
+        }
+        out(d, outer->owner.sv);
+        out_lit(d, "<");
+        display_list(me, d, (TyList){ .data = args.data + start, .len = len });
+        out_lit(d, ">.");
+    }
+    return start + len;
+}
+
 static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 meaning) {
     Symbol const* symbol = declared->declared.symbol;
     if (!symbol) symbol = declared->declared.merged_value;
@@ -1438,8 +1470,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     out_lit(d, "}");
 }
 
-static bool is_function_like(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_ANONYMOUS || ty->alias) return false;
+static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS || shows_alias(d, ty)) return false;
     Members const* members = ty_members(me, ty);
     return !members->prop_count && !members->index_count && !members->mapped &&
         members->call_count + members->construct_count == 1;
@@ -1464,8 +1496,8 @@ static bool is_whole_enum(Checker* me, Ty const* ty) {
     return true;
 }
 
-static bool needs_parens_in_array(Checker* me, Ty const* ty) {
-    if (ty->alias) return false;
+static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
+    if (shows_alias(d, ty)) return false;
     if ((ty->flags & TYF_BOOLEAN) || is_whole_enum(me, ty)) return false;
     // `(typeof C)[]`: a type query is parenthesized too
     bool type_query = ty->kind == TY_DECLARED &&
@@ -1475,7 +1507,7 @@ static bool needs_parens_in_array(Checker* me, Ty const* ty) {
     bool readonly = ty->kind == TY_REFERENCE && (ty->reference.target == my readonly_array_target ||
         (ty_is_tuple(ty) && ty->reference.target->declared.tuple->readonly));
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || ty->kind == TY_CONDITIONAL || ty->kind == TY_KEYOF ||
-        type_query || readonly || is_function_like(me, ty);
+        type_query || readonly || is_function_like(me, d, ty);
 }
 
 static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyList args) {
@@ -1492,7 +1524,7 @@ static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyL
             out_lit(d, ": ");
             ty_display(me, d, args.data[i]);
         } else {
-            display_parenthesized_if(me, d, args.data[i], optional && needs_parens_in_array(me, args.data[i]));
+            display_parenthesized_if(me, d, args.data[i], optional && needs_parens_in_array(me, d, args.data[i]));
             if (optional) out_lit(d, "?");
         }
     }
@@ -1533,7 +1565,7 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
                 }
             }
         }
-        bool parens = is_function_like(me, t) || (!t->alias && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION));
+        bool parens = is_function_like(me, d, t) || (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION));
         display_parenthesized_if(me, d, t, parens);
     }
     if (nullable & TYF_NULL) {
@@ -1577,7 +1609,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         out_symbol_name(me, d, ty->alias, SYMBOL_TYPE);
         return;
     }
-    if (ty->alias) {
+    if (shows_alias(d, ty)) {
         out_symbol_name(me, d, ty->alias, SYMBOL_TYPE);
         if (ty->alias_args.len) {
             out_lit(d, "<");
@@ -1673,9 +1705,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
                 default:
                     out_declared_name(me, d, ty, SYMBOL_TYPE);
-                    if (ty->declared.type_params.len) {
+                    if (ty_local_type_params(ty).len) {
                         out_lit(d, "<");
-                        display_list(me, d, ty->declared.type_params);
+                        display_list(me, d, ty_local_type_params(ty));
                         out_lit(d, ">");
                     }
                     break;
@@ -1685,14 +1717,18 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         case TY_REFERENCE: {
             Ty const* target = ty->reference.target;
             TyList args = ty_reference_args(me, ty);
-            if (target->declared.kind == TY_DECLARED_TUPLE_TARGET) {
+            if (target->declared.kind == TY_DECLARED_CLASS_STATIC) {
+                // The static side of a local class, applied to its outer type parameters (tsc: an anonymous type)
+                out_lit(d, "typeof ");
+                out_declared_name(me, d, target, SYMBOL_VALUE);
+            } else if (target->declared.kind == TY_DECLARED_TUPLE_TARGET) {
                 display_tuple(me, d, target->declared.tuple, args);
             } else if (target == my array_target || target == my readonly_array_target) {
                 if (target == my readonly_array_target) out_lit(d, "readonly ");
                 // (An `infer U` declared here is parenthesized too: `readonly (infer U)[]`)
                 bool infer_here = false;
                 for (u32 i = 0; i < d.infer_params.len; i++) infer_here |= d.infer_params.data[i] == args.data[0];
-                display_parenthesized_if(me, d, args.data[0], infer_here || needs_parens_in_array(me, args.data[0]));
+                display_parenthesized_if(me, d, args.data[0], infer_here || needs_parens_in_array(me, d, args.data[0]));
                 out_lit(d, "[]");
             } else {
                 if (ty_elides_default_type_args(me, target)) {
@@ -1702,6 +1738,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         if (fallback != args.data[args.len - 1]) break;
                         args.len--;
                     }
+                }
+                u32 outer = target->declared.outer_count;
+                if (outer) {
+                    out_outer_type_args(me, d, target->declared.outer,
+                        (TyList){ .data = target->declared.type_params.data, .len = outer }, (TyList){ .data = args.data, .len = outer });
+                    args.data += outer;
+                    args.len -= outer;
                 }
                 out_declared_name(me, d, target, SYMBOL_TYPE);
                 if (args.len) { // (None: a class or interface with only a this-argument)
@@ -1742,17 +1785,17 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             for (u32 i = 0; i < ty->composite.types.len; i++) {
                 Ty const* t = ty->composite.types.data[i];
                 if (i) out_lit(d, " & ");
-                display_parenthesized_if(me, d, t, !t->alias && (t->kind == TY_UNION || t->kind == TY_CONDITIONAL || is_function_like(me, t)));
+                display_parenthesized_if(me, d, t, !shows_alias(d, t) && (t->kind == TY_UNION || t->kind == TY_CONDITIONAL || is_function_like(me, d, t)));
             }
             break;
 
         case TY_KEYOF:
             out_lit(d, "keyof ");
-            display_parenthesized_if(me, d, ty->keyof.operand, needs_parens_in_array(me, ty->keyof.operand));
+            display_parenthesized_if(me, d, ty->keyof.operand, needs_parens_in_array(me, d, ty->keyof.operand));
             break;
 
         case TY_INDEXED:
-            display_parenthesized_if(me, d, ty->indexed.object, needs_parens_in_array(me, ty->indexed.object));
+            display_parenthesized_if(me, d, ty->indexed.object, needs_parens_in_array(me, d, ty->indexed.object));
             out_lit(d, "[");
             ty_display(me, d, ty->indexed.index);
             out_lit(d, "]");
@@ -1763,7 +1806,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         case TY_CONDITIONAL:
             display_parenthesized_if(
                 me, d, ty->conditional.check,
-                is_function_like(me, ty->conditional.check) || ty->conditional.check->kind == TY_CONDITIONAL
+                is_function_like(me, d, ty->conditional.check) || ty->conditional.check->kind == TY_CONDITIONAL
             );
             out_lit(d, " extends ");
             TyDisplay extends_d = d;

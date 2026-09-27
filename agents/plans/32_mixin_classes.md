@@ -65,30 +65,23 @@ intersection's properties from `source_props()`). mixinClassesMembers errors, mi
 symbols, declarationEmitClassMixinLocalClassDeclaration; webpack 3981 -> 3977; callgrind neutral (valibot 5.376 ->
 5.375 G, type-fest 3.354 -> 3.330 G). Not done: `source_props()` doesn't take the apparent type of type-variable parts.
 
-## Stage B: outer type parameters (one session, maybe two)
-The riskiest stage: it touches how every local class/interface/alias is lowered and printed. Prototype first on the
-probe, then measure.
-- Binder: record each class (declaration and expression), interface and type alias's outer type parameters (the
-  type parameter symbols of every enclosing function, method, class, interface, alias, mapped type and `infer`
-  scope, in tsc's order: outermost first). Only non-top-level declarations can have any; keep it a pointer to a shared
-  list so a file of top-level declarations pays nothing.
-- Declared types: `declared.type_params` becomes outer ++ local with a `local_offset` (tsc's localTypeParameters).
-  Everything that reads type_params for *written* arguments (lower_type_args, TS2314/TS2315 counts, `class_base()`'s
-  written args, display of `C<X>`) must use the local ones; the outer ones default to themselves. The reference a
-  bare name makes inside the scope is `C<outer..., local defaults>`, which carries `TYF_COULD_CONTAIN_TYPE_VARIABLES`,
-  so instantiation with the function's mapper does the rest.
-- Type aliases: tsc instantiates a local alias's body with the outer parameters like any type; tttt should just lower
-  the body with the right `LowerCtx.generic` (the alias case in `ty_declared_type_of()`) and make sure an alias with no
-  own parameters but outer ones isn't treated as closed (its aliased display is dropped on instantiation: tsc prints
-  `{ y: string; }`).
-- Class expressions / anonymous types: their instantiations must not be shared across different outer arguments
-  (check how `TY_ANONYMOUS` with `anonymous.mapper` handles this today; the leak says it doesn't get instantiated at all).
-- Display: `f<number>.I`, `Tagged<any>.C`, `h<boolean>.(Anonymous class)`. The symbol chain printer (symbol_chain.c,
-  ty_display.c) prints a local declaration's enclosing function with the outer arguments. tsc: typeToTypeNodeHelper's
-  outer type parameter handling in symbolToTypeNode (lookupTypeParameterNodes on the parent chain).
-- Validate: `probe_outer_type_params.ts` types clean vs tsc; the ~30 tests above (list them with the grep, compare
-  `./resultdiff.py`); localTypes1-5, genericClassExpressionInFunction; no lost components; corpora unchanged; callgrind on
-  the tsc corpus (it has no local generic declarations to speak of, so the cost must be ~0).
+## Stage B: outer type parameters: done
+The resolve walk keeps the type parameter lists a scope is inside of (`Scope.generics`, an `OuterGenerics` chain with
+the owner's name for display) and records them on every class, interface and type alias (`outer_generics`).
+`Ty.declared.type_params` is outer ++ local with `outer_count`/`outer` (`ty_local_type_params()` is what type
+arguments are written for: `lower_type_args()` passes the outer ones as themselves, and so do `class_base()` and the
+deferred reference path); a local class's static side has the outer ones only and its value is the reference applied
+to them (`ty_type_of_symbol()`), so the function's mapper instantiates statics and construct signatures (whose own
+type parameters are the local ones). A local alias's body is lowered generic. Display: `f<number>.I`, `X.m<B, C>.Y`
+(`out_outer_type_args()`, a method is qualified by its class), a static-side reference prints `typeof C`, and a type
+alias declared in a block isn't printed by name when printing for a place (`shows_alias()`: tsc's
+isTypeSymbolAccessible). Suite +18 (localTypes1/3/5, genericTypeAliases, declarationEmitInferredTypeAlias*,
+typeArgumentInferenceWithClassExpression1/3...), nothing lost. Probes `probe_outer_type_params*.ts` match tsc except:
+- tsc clones a generic method's type parameters whenever the signature is instantiated, so `new Outer<string>().m`
+  returns `Outer<string>.Outer.m<U>.In`; tttt only clones constrained/defaulted ones and prints `Outer<string>.In`.
+- Not done: tsc's extra outer parameters of a context-sensitive function expression (its contextual signature's type
+  parameters), JSDoc `@template`/`@typedef` scopes, prototype-assignment declarations.
+- The rest of the `name<args>.Local` tests are mixins (stage C).
 
 ## Stage C: mixin classes (one session)
 - The class value type (`ty_type_of_symbol` for a class, whatever returns `ty_static_type_of()` as a value) becomes

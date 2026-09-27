@@ -269,6 +269,7 @@ static inline void const* symbol_find_node(Symbol const* me, SymbolDeclKind kind
 }
 // The type parameters of the (first) class, interface or type alias declaration, null if it has none
 Generic const* symbol_type_generic(Symbol const* me);
+OuterGenerics const* symbol_outer_generics(Symbol const* me);
 // tsc's getLocalSymbolForExportDefault: the local name of a module's `default` export (that of its first named
 // declaration), empty if it has none
 csview symbol_default_export_local_name(Symbol const* me);
@@ -371,6 +372,8 @@ typedef struct Scope {
     struct ClassItem const* instance_field;
     Span const* constructor_locals;
     u32 constructor_local_count;
+    // The type parameter lists this scope is inside of (inherited by child scopes), null at the top level
+    OuterGenerics const* generics;
     // A static field of a class with legacy decorators: no `this` in its initializer (TS2816)
     bool decorated_static_field;
 } Scope;
@@ -469,10 +472,12 @@ void scope_check_strict_eval_or_arguments(Scope const* me, Span name);
 void scope_check_strict_block_function(Scope const* me, Span name);
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared);
 // Child scope holding the type parameters, names looked up. Returns parent itself for an empty generic
-Scope* scope_new_generic(Scope* parent, Generic* generic, ErrorCtx* errs);
+Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner_class, ErrorCtx* errs);
 // Of a declaration (`node`) of a class or interface `owner`: a type parameter named like one of an earlier declaration
 // of it is the same symbol (tsc declares them in the merged symbol's members)
-Scope* scope_new_generic_merged(Scope* parent, Generic* generic, Symbol const* owner, void const* node, ErrorCtx* errs);
+Scope* scope_new_generic_merged(
+    Scope* parent, Generic* generic, Symbol const* owner, void const* node, Span owner_name, ErrorCtx* errs
+);
 bool scope_has_function(Scope const* me);
 // Whether `var` and function declarations of nested blocks end up here
 static inline bool scope_is_var_container(Scope const* me) {

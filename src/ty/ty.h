@@ -267,7 +267,12 @@ struct Ty {
             // function, class or enum): the members are those of all of them, see ty_merged_value_type()
             Symbol const* merged_value;
             Atom const* name;
+            // tsc's typeParameters: the outer ones (tsc's outerTypeParameters: those of the functions, classes... a
+            // local class or interface is declared in, see OuterGenerics) and then its own (localTypeParameters),
+            // which are what type arguments are written for. The static side of a class has only the outer ones
             TyList type_params;
+            u32 outer_count;
+            OuterGenerics const* outer; // Where the outer ones come from (display: `f<number>.C`)
             // Classes, and interfaces that mention `this` (tsc's isThislessInterface): the polymorphic `this` type, a
             // type parameter constrained to the type itself. `state` has the members with `this` = the type itself,
             // `raw` the members as declared (mentioning this_param), what references instantiate. Null otherwise
@@ -1058,6 +1063,12 @@ Atom const* ty_qualified_name(Checker* me, Symbol const* decl); // `A.B.name`
 Span ty_symbol_display_name(Symbol const* symbol);
 void ty_set_declared_type(Checker* me, Symbol const* decl, Ty const* type);
 TyList ty_type_params_of(Checker* me, Generic const* generic);
+TyList ty_outer_type_params(Checker* me, OuterGenerics const* outer);
+// The type parameters of a class or interface that type arguments are written for (tsc's localTypeParameters)
+static inline TyList ty_local_type_params(Ty const* declared) {
+    TyList all = declared->declared.type_params;
+    return (TyList){ .data = all.data + declared->declared.outer_count, .len = all.len - declared->declared.outer_count };
+}
 Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
 
 // enums.c
