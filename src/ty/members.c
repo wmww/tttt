@@ -2343,6 +2343,18 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
         }
         ret = all_nullable ? ty_intrinsic(me, TY_ANY) : changed ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : ty;
         ty_buf_drop(&parts);
+    } else if (ty->kind == TY_INTERSECTION) {
+        // Member by member (`{ a: undefined } & T` from a spread of a generic)
+        TyList types = ty->composite.types;
+        bool changed = false;
+        TyBuf parts = {0};
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* widened = widen_nullable(me, types.data[i], depth + 1);
+            changed |= widened != types.data[i];
+            ty_buf_push(&parts, widened);
+        }
+        if (changed) ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+        ty_buf_drop(&parts);
     } else if (ty->kind == TY_REFERENCE && (ty_is_array(me, ty) || ty_is_tuple(ty))) {
         TyList args = ty_reference_args(me, ty);
         TyBuf parts = {0};
