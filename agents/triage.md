@@ -41,3 +41,11 @@ interfaceThatIndirectlyInheritsFromItself, reverseMappedUnionInference, the `W["
   `arguments`/`return` checks; castOfYield misses TS2318 (IterableIterator); privateNameBadDeclaration treats
   `A.prototype = {}` as an expando in a .ts file; TS1312 (`{ x = 1 }` outside a pattern) is missing;
   optionalPropertiesSyntax: `ty_check_duplicate_index_signatures` skips files with parse errors, tsc doesn't.
+
+## From the type-fest session (2026-09-27, R20/jsonify)
+- exactOptionalPropertyTypes: `'a' in x` should narrow `x.a` to non-undefined when the property's type contains
+  tsc's missingType (narrowTypeByBinaryExpression's containsMissingType case): `x: {a: number} | {a?: never}` gives
+  `number` in the true branch under tsc, `number | undefined` under tttt. In tttt's model "contains missing" is an
+  optional property (exact on) whose stored type lacks undefined.
+- Padded properties (`a?: never` from widening) get symbol declarations only from the sibling that has the property;
+  tsc lists both (`Symbol(a, Decl(..., 3, 18), Decl(..., 2, 18))`), probe `plan19/typefest/exact_missing_padding.ts`.

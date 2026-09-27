@@ -1,8 +1,7 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
 **Status 2026-09-27 (after plan 33)**: tsc 0, **valibot 0**, **react 0**, **nest 0**, **webpack 3981** (checkJs,
-nearly all JSDoc typedefs: plan 26 stage 3, section "webpack corpus" at the end), **type-fest 19** (shared-union-fields-deep 8 = R17, conditional-pick-deep 6 = R20, abstract-class 4 = plan 32,
-jsonify:57 1 = the missing type). The newest section is "Corpus session of 2026-09-27" at the end; the older ones are
+nearly all JSDoc typedefs: plan 26 stage 3, section "webpack corpus" at the end), **type-fest 4** (abstract-class 4 = plan 32's mixin classes; R17, R20 and jsonify:57 fixed). The newest section is "Corpus session of 2026-09-27" at the end; the older ones are
 history (their counts are stale).
 
 `./realworld.py --corpus valibot`, `--corpus type-fest` and `--corpus react` (tsc 5.8 reports 0 on all; tsgo only 2
@@ -330,10 +329,11 @@ its own, also for R19.
 it until the limits. Also: `report_instantiation_limit` reports at the *next* assignability check, which may be
 unrelated code (the probe's TS2589 lands on `const x: number = 1`). Probe `typefest/rd_2589_min.ts`. Same plan as R18.
 
-### R20. conditional-pick-deep (type-fest 6), found by plan 29's investigation
-Not re-entry and no limit (gdb): the nested `ConditionalPickDeep<{string: string}, string>` evaluates to something
-`ConditionalKeys` drops, and `Inner["object"]` prints `Inner`. Probe `test/probes/plan29/cpd_steps.ts` (tsc itself is
-order-dependent there: `sub: any`).
+### R20. conditional-pick-deep (type-fest 6): done 2026-09-27
+A mapped type instance substituted its own key parameter: the inner `X<Type>` reached through the alias in X's
+template got a mapper composed from the outer instance's, `Key -> "object"` included, so its template read
+`{string: string}["object"]` (unknown). tsc clones the key parameter per instance; `instantiate_mapped_info` now
+drops it from the mapper. Probe `test/probes/plan19/typefest/mapped_key_capture.ts`.
 
 ### R21. TS2589 from type-fest's `ArraySlice` (fixed by plan 29 stage 3; what it uncovered)
 Reported at the real site since plan 29 stage 3 (15 in array-slice, 8 in string-slice, 1 in int-range). Cause:
@@ -343,9 +343,7 @@ visible (they were behind the error type):
 - array-slice:24/25/34 (TS2322): `ArraySlice` of variable-length tuples (`[...string[], 1, 2]`) gives `string | 1 | 2`
   where tsc has the right element.
 - int-range:17 (TS2589): `IntRange<0, 999>`.
-- jsonify:57 (TS2345, `test/probes/plan29/jsonvalue_missing_type.ts`): no exactOptionalPropertyTypes *missing* type;
-  the widened `{}` gets `a?: undefined` where tsc's getUndefinedProperty gives the missing type, which index
-  signatures ignore. Was hidden by JsonObject's index signature being the error type (lowered while in flight).
+- jsonify:57: done 2026-09-27 (padding is `a?: never` under exactOptionalPropertyTypes, tsc's missingType).
 - writable-deep:93/94 (`test/probes/plan29/writable_deep_tuples.ts`): `lower_tuple` keeps a rest element's written
   array type, so `ReadonlyDeep<[string, ...number[]]>` is `readonly [string, ...readonly number[]]` and WritableDeep
   of that `[string, ...unknown[]]`. Order-dependent (direct `WritableDeep<readonly [string, ...number[]]>` is right).
@@ -427,15 +425,19 @@ ai-main (the commits say which). Probes in `test/probes/plan19/{valibot,typefest
   unknownEmptyObjectType).
 
 ### What is left
-- **R20** (conditional-pick-deep 6): `test/probes/plan29/cpd_steps.ts` was truncated and is restored; standalone it
-  agrees with tsc (bar alias display), so the corpus failure depends on what was evaluated first. Reduce with the
-  corpus' order kept (tsc runs directly on multi-file probes: `node thirdparty/tsc/lib/tsc.js --noEmit ...`).
-- **abstract-class** (4): mixin classes, `agents/plans/32_mixin_classes.md`.
-- **jsonify:57**: exactOptionalPropertyTypes' missing type (index signatures ignore it; tttt has none).
+- type-fest is at 4, all **abstract-class** (mixin classes, `agents/plans/32_mixin_classes.md`). R20 and jsonify:57
+  were fixed the same day by a follow-up session (see R20 and R21 above); R20 wasn't order-dependent, the standalone
+  probe just never recursed through an alias.
+- exactOptionalPropertyTypes' missingType: tttt stores optional properties without their optionality's undefined, so
+  tsc's missing is `never` in that view (the widening padding, the one place it mattered). The other tsc rule on it,
+  `'a' in x` narrowing `x.a` to non-undefined when its type contains missing, is in triage.
 - Now that expect-type mismatches are visible, a regression in identity shows up in valibot's test-d files: treat a
   jump there as real.
 
 ### Tooling notes
+- Reducing a corpus type bug: inline the library's types into one file (`/tmp/x/a.ts`), then delete and rename until
+  it flips; a `log_info` of check/extends/result in `ty_conditional` and of the operands when `ty_indexed_instantiated`
+  gives unknown found R20 in minutes.
 - Multi-file probes against a corpus: put them in `/tmp/x/` with relative imports into `thirdparty/corpora/...`, run
   `./release/tttt -q <options>` and `node thirdparty/tsc/lib/tsc.js --noEmit <options>` (filetest.sh copies the file
   away, so relative imports break).

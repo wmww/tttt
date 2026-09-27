@@ -271,8 +271,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   array elements), tttt has one null type (tsc only widens its widening null/undefined), spread properties are exempt.
   Real fix: tsc's nullWideningType/undefinedWideningType.
 - `contains_spread` (members.c HACK, tsc's ObjectFlags.ContainsSpread): "a property came from a spread" (`{ ...{} }`
-  doesn't count). Padded `x?: undefined` are `undefined`, not tsc's missingType, and the widened literal stays an
-  object literal type.
+  doesn't count). The widened literal stays an object literal type.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`, `ty/access.c`)
 - `ty_call_typecheck` / `KEY_CALL_RESOLUTION` (plan 28): the typecheck walk skips resolving a call again when the type
