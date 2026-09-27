@@ -273,10 +273,16 @@ static Ty const* context_map(Checker* me, Ty const* contextual, ContextGetter ge
         TyList members = contextual->composite.types;
         Ty const** parts = malloc(sizeof(Ty const*) * members.len);
         u32 len = 0;
+        bool unknown = false;
         for (u32 i = 0; i < members.len; i++) {
             Ty const* part = context_map(me, members.data[i], get, arg);
-            if (part) parts[len++] = part;
+            // tsc maps contextual types without reductions (mapType's noReductions), so an `unknown` from one member
+            // (an index signature) doesn't absorb what the others give. It contributes nothing itself: no members,
+            // signatures or literals
+            if (part && part->kind == TY_INTRINSIC && (part->flags & TYF_UNKNOWN)) unknown = true;
+            else if (part) parts[len++] = part;
         }
+        if (unknown && !len) parts[len++] = ty_intrinsic(me, TY_UNKNOWN_);
         Ty const* ret = len ? ty_union(me, parts, len, nullptr, (TyList){0}) : nullptr;
         free(parts);
         return ret;
