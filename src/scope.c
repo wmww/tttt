@@ -982,13 +982,13 @@ Span symbol_decl_error_span(SymbolDecl const* decl) {
     return span_valid(decl->name) ? decl->name : first_token(decl->full);
 }
 
-void scope_check_duplicate_exports(Scope* me) {
-    if (!my container || !my container->exports) return;
-    SymbolTable const* exports = my container->exports;
+static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
+    if (!container || !container->exports) return;
+    SymbolTable const* exports = container->exports;
     Symbol const* export_equals = symbol_table_get(exports, c_sv("export="));
     if (export_equals && exports->count > 1 && export_equals->decl_count) {
         // (tsc's checkExternalModuleExports)
-        error_ctx_error_d(my errs, export_equals->decls[0].full, 2309,
+        error_ctx_error_d(errs, export_equals->decls[0].full, 2309,
             "An export assignment cannot be used in a module with other exported elements.");
     }
     for (u32 i = 0; i < exports->count; i++) {
@@ -1006,9 +1006,20 @@ void scope_check_duplicate_exports(Scope* me) {
         for (u32 d = 0; d < symbol->decl_count; d++) {
             SymbolDecl const* decl = &symbol->decls[d];
             if (decl->kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)decl->node)->has_body) continue;
-            error_ctx_error_d(my errs, symbol_decl_error_span(decl), 2323, "Cannot redeclare exported variable '", exports->entries[i].name,
+            error_ctx_error_d(errs, symbol_decl_error_span(decl), 2323, "Cannot redeclare exported variable '", exports->entries[i].name,
                 "'.");
         }
+    }
+}
+
+void scope_check_duplicate_exports(Scope* me) {
+    check_module_exports(my container, my errs);
+}
+
+void binder_check_ambient_module_exports(Binder* me, ErrorCtx* errs) {
+    for (u32 i = 0; i < my ambient_modules.count; i++) {
+        Symbol const* module = my ambient_modules.entries[i].symbol;
+        if (module->module && module->module->has_export_assignment) check_module_exports(module, errs);
     }
 }
 
@@ -1151,6 +1162,10 @@ void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool expor
                 "Export assignment cannot be used when targeting ECMAScript modules. Consider using 'export default' or "
                 "another module format instead.");
         }
+    }
+    // (Not an augmentation: tsc skips those)
+    if (my kind == SCOPE_NAMESPACE && my file && !my file->is_module && my container->module) {
+        my container->module->has_export_assignment = true;
     }
     Span name = alias ? expr->outer_span : statement;
     Symbol* symbol = declare_symbol(

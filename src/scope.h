@@ -175,6 +175,9 @@ typedef struct SymbolModule {
     u32 export_star_cap;
     SymbolTable* resolved_exports; // Own exports + `export *`, see module_resolved_exports()
     AliasState resolved_exports_state;
+    // An ambient module (of a script) with an `export =` or `export default x`, where tsc checks its exports
+    // (checkExportAssignment -> checkExternalModuleExports)
+    bool has_export_assignment;
 } SymbolModule;
 
 typedef struct Symbol {
@@ -422,6 +425,8 @@ Scope* scope_new_file(Binder* binder, SourceFile* file);
 void scope_check_export_merges(Scope* me, Span block);
 // tsc's checkExternalModuleExports: a module can export a name only once (TS2323), except for merges
 void scope_check_duplicate_exports(Scope* me);
+// The same for the ambient modules that have an export assignment, once every file is declared
+void binder_check_ambient_module_exports(Binder* me, ErrorCtx* errs);
 // Whether a block starts with a "use strict" directive
 bool block_has_use_strict(struct Block const* block);
 // tsc's checkStrictModeIdentifier: in strict mode code the future reserved words aren't names (TS1212/TS1213/TS1214)
