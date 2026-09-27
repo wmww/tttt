@@ -377,7 +377,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 "in external modules or ambient module declarations.");
             // It augments nothing then: a namespace named `global` (tsc's binder declares a ValueModule for it)
             my is_global = false;
-            invalid_global = true;
+            my is_invalid_global = invalid_global = true;
         } else if (!my is_global && scope->kind == SCOPE_SCRIPT && my module_ref &&
             module_name_is_relative(cstr_sv(&my module_ref->path))
         ) {
@@ -896,6 +896,12 @@ void statement_add_names(Statement* me, Scope* scope) {
 bool namespace_decl_is_instantiated(NamespaceDecl const* me) {
     return block_is_instantiated(&my contents, compiler_options()->preserve_const_enums,
         my inner_scope ? my inner_scope->parent : nullptr, 0);
+}
+
+// tsc's getMeaningFromDeclaration: an ambient module or an instantiated namespace declares a value (const enums
+// alone don't count, whatever preserveConstEnums says)
+bool namespace_decl_declares_value(NamespaceDecl const* me) {
+    return my is_ambient_module || my is_invalid_global || block_is_instantiated(&my contents, false, my inner_scope ? my inner_scope->parent : nullptr, 0);
 }
 
 // Control flow (flow.h). These follow the functions of the same names in tsc's binder

@@ -1120,7 +1120,10 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
             .name = cstr_size(&file_name) ? sv_make_span(cstr_sv(&file_name)) : span_null,
         });
         cstr_drop(&file_name);
-        if (my symbol->flags & SYMBOL_VALUE) baseline_test_case_add_symbol_value(ctx, my name, my symbol);
+        // (Only if this declaration is a value: tsc's type writer asks getMeaningFromDeclaration)
+        if ((my symbol->flags & SYMBOL_VALUE) && namespace_decl_declares_value(me)) {
+            baseline_test_case_add_symbol_value(ctx, my name, my symbol);
+        }
     }
     block_compile_test_info(&my contents, ctx);
     ctx->enclosing = outer;

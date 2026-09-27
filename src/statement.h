@@ -88,6 +88,7 @@ typedef struct NamespaceDecl {
     Span name;
     Span full_span;
     bool is_global;
+    bool is_invalid_global; // `declare global` where it augments nothing: a namespace named global
     bool is_ambient_module; // `declare module "name" {}`, name is the string literal including quotes
     bool is_shorthand; // `declare module "name";`: everything imported from it is any
     ModuleRef* module_ref; // Of an ambient module
@@ -103,6 +104,7 @@ void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* err
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs);
 // tsc's getModuleInstanceState: the namespace has a value (it declares something other than types)
 bool namespace_decl_is_instantiated(NamespaceDecl const* me);
+bool namespace_decl_declares_value(NamespaceDecl const* me);
 
 // If statements
 
