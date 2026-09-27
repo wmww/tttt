@@ -1175,9 +1175,114 @@ static TypeNode jsdoc_synthesized(TypeNode node) {
     return node;
 }
 
-// JSDoc's type forms that come first: `*` (any), `?` alone (any), `?T` (T | null), `!T` (T)
+// The names tsc gives the parameters of a JSDoc function type (`arg0`...), which aren't written anywhere
+static Span jsdoc_parameter_name(SourceFile const* source, u32 index) {
+    static const char* const names[] = {
+        "arg0", "arg1", "arg2", "arg3", "arg4", "arg5", "arg6", "arg7", "arg8", "arg9", "arg10", "arg11", "arg12",
+        "arg13", "arg14", "arg15",
+    };
+    return (Span){ .source = source, .sv = csview_from(names[index < c_arraylen(names) ? index : c_arraylen(names) - 1]) };
+}
+
+// `function(string, number=, ...boolean): R`, `function(this: T, ...)`, `function(new: T, ...)` (tsc's
+// parseJSDocFunctionType): p is past `function`
+static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
+    Parser p = parser(parent);
+    hop_whitespace(&p);
+    if (!hop_char(&p, '(')) return parse_fail(&p);
+    FunctionImpl function = { .args = vec_function_arg_init(), .jsdoc_type = true };
+    Anchor args_start = { .parser = &p, .start = p.pos - 1 };
+    hop_whitespace(&p);
+    u32 index = 0;
+    while (*p.pos && *p.pos != ')') {
+        Anchor arg_start = anchor(&p);
+        FunctionArg arg = { .initializer.value = expr_implicit_any(span_from_pos(&p)) };
+        Span name = span_null;
+        bool is_new = false;
+        Parser word = parser(&p);
+        Anchor word_a = anchor(&word);
+        if ((hop_start_if_ends_on_word_break(&word, "this") || (is_new = hop_start_if_ends_on_word_break(&word, "new"))) &&
+            (hop_whitespace(&word), hop_char(&word, ':'))
+        ) {
+            name = span_make(p.shared->source, word_a.start, word_a.start + (is_new ? 3 : 4));
+            parse_success(&word);
+            hop_whitespace(&p);
+        } else {
+            parse_fail(&word);
+            is_new = false;
+        }
+        if (!span_valid(name) && hop_start(&p, "...")) {
+            arg.rest = true;
+            arg.initializer.is_rest_parameter = true;
+            hop_whitespace(&p);
+        }
+        TypeNode type;
+        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+            vec_function_arg_drop(&function.args);
+            return parse_fail(&p);
+        }
+        if (is_new) {
+            // The type the construct signature makes
+            function.is_constructor = true;
+            function.ret = type;
+            function.ret_explicit = true;
+        } else {
+            if (type.jsdoc_optional) arg.explicit_optional = true;
+            if (arg.rest) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
+            arg.initializer.binding = (Binding){
+                .tag = BINDING_IDENTIFIER,
+                .content_span = span_valid(name) ? name : jsdoc_parameter_name(p.shared->source, index),
+                .has_explicit_type = true,
+                .explicit_type = type,
+            };
+            arg.span = span_from(arg_start);
+            vec_function_arg_push(&function.args, arg);
+        }
+        index++;
+        hop_whitespace(&p);
+        if (!hop_char(&p, ',')) break;
+        hop_whitespace(&p);
+    }
+    if (!hop_char(&p, ')')) {
+        vec_function_arg_drop(&function.args);
+        return parse_fail(&p);
+    }
+    function.args_span = span_from(args_start);
+    Parser colon = parser(&p);
+    hop_whitespace(&colon);
+    if (hop_char(&colon, ':')) {
+        hop_whitespace(&colon);
+        Anchor ret_a = anchor(&colon);
+        TypeNode written;
+        if (parse_type(&colon, TYPE_PRECEDENCE_NULL, &written)) {
+            // (A construct signature's is what `new:` says, the written one is ignored)
+            if (function.is_constructor) {
+                type_drop(&written);
+            } else {
+                function.ret = written;
+                function.ret_span = span_from(ret_a);
+                function.ret_explicit = true;
+            }
+            parse_success(&colon);
+        } else {
+            parse_fail(&colon);
+        }
+    } else {
+        parse_fail(&colon);
+    }
+    function.full_span = span_from(a);
+    *ret = function_impl_into_type(function);
+    return parse_success(&p);
+}
+
+// JSDoc's type forms that come first: `*` (any), `?` alone (any), `?T` (T | null), `!T` (T), `function(...)`
 static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
     Parser p = parser(parent);
+    Anchor a = anchor(&p);
+    if (hop_start_if_ends_on_word_break(&p, "function") && parse_jsdoc_function_type(&p, a, ret)) {
+        return parse_success(&p);
+    }
+    p.pos = a.start;
     if (hop_char(&p, '*')) {
         *ret = type_any;
         return parse_success(&p);
@@ -1999,8 +2104,46 @@ static FunctionImpl* jsdoc_function_of(Expr* expr) {
     return expr->function;
 }
 
+// `@type {(a: A) => R}` (or `{{(a: A): R}}`) on a function declares its signature (tsc's getSignatureOfTypeTag): the
+// written signature's parameter and return types move into the function's slots
+static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function) {
+    JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
+    if (!tag) return;
+    FunctionImpl* signature = nullptr;
+    if (tag->type.tag == TYPE_CALLABLE) {
+        signature = tag->type.callable->function;
+    } else if (tag->type.tag == TYPE_INTERFACE && vec_interface_member_size(&tag->type.interface.members) == 1) {
+        InterfaceMember* member = vec_interface_member_at_mut(&tag->type.interface.members, 0);
+        if (member->key.tag == INTERFACE_KEY_CALLABLE && member->type.tag == TYPE_CALLABLE) signature = member->type.callable->function;
+    }
+    if (!signature || signature->is_constructor) return;
+    for_each (i, vec_function_arg, &function->args) {
+        if (i_index >= vec_function_arg_size(&signature->args)) break;
+        FunctionArg* from = vec_function_arg_at_mut(&signature->args, i_index);
+        Binding* binding = &i->initializer.binding;
+        if (binding->has_explicit_type || !from->initializer.binding.has_explicit_type || from->rest != i->rest) continue;
+        binding->explicit_type = from->initializer.binding.explicit_type;
+        binding->explicit_type.from_jsdoc = true;
+        i->jsdoc_span = from->span;
+        binding->explicit_type_span = tag->type_span;
+        binding->has_explicit_type = true;
+        from->initializer.binding.has_explicit_type = false;
+        from->initializer.binding.explicit_type = (TypeNode){0};
+        if (from->explicit_optional && i->initializer.value.tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
+    }
+    if (!function->ret_explicit && signature->ret_explicit && !function->is_constructor) {
+        function->ret = signature->ret;
+        function->ret.from_jsdoc = true;
+        function->ret_span = tag->type_span;
+        function->ret_explicit = true;
+        signature->ret_explicit = false;
+        signature->ret = (TypeNode){0};
+    }
+}
+
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
 static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
+    jsdoc_apply_type_signature(tags, function);
     for_each (i, vec_function_arg, &function->args) {
         Binding* binding = &i->initializer.binding;
         if (binding->has_explicit_type) continue;

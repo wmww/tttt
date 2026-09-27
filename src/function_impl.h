@@ -11,6 +11,8 @@
 
 typedef struct FunctionArg {
     Span span;
+    // Declared by a JSDoc `@type` signature of the function: that parameter (where messages point, like tsc's)
+    Span jsdoc_span;
     InitializedBinding initializer;
     bool explicit_optional;
     Span rest_span;
@@ -59,6 +61,7 @@ typedef struct FunctionImpl {
     Symbol const* constructed_class; // The constructor of a class: what it returns
     uint8_t constructor_access; // The constructor of a class: its AccessModifier (class_decl.h)
     bool is_type; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from
+    bool jsdoc_type; // A JSDoc `function(...)` type: its parameters are unnamed (`argN`)
     LazyType lazy_type;
     Symbol* symbol;
     Span arrow_span;

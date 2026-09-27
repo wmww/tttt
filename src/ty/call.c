@@ -982,13 +982,18 @@ static void report_arity(
             &closest->params[args->len] : nullptr;
         if (missing && missing->decl) {
             Binding const* binding = &missing->decl->initializer.binding;
+            Span at = span_valid(missing->decl->jsdoc_span) ? missing->decl->jsdoc_span : missing->decl->span;
             if (binding->tag != BINDING_IDENTIFIER) {
                 error_add_related_d(error, missing->decl->span, 6211, "An argument matching this binding pattern was not provided.");
             } else if (missing->rest) {
                 error_add_related_d(error, missing->decl->span, 6236, "Arguments for the rest parameter '",
                     binding->content_span, "' were not provided.");
+            } else if (!span_is_written(binding->content_span)) {
+                // An unnamed parameter of a JSDoc function type: tsc says its position
+                error_add_related_d(error, at, 6210, "An argument for '", (i32)args->len,
+                    "' was not provided.");
             } else {
-                error_add_related_d(error, missing->decl->span, 6210, "An argument for '", binding->content_span,
+                error_add_related_d(error, at, 6210, "An argument for '", binding->content_span,
                     "' was not provided.");
             }
         }

@@ -540,7 +540,8 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
             out(d, binding->content_span.sv);
         }
         if (i->explicit_optional) out_lit(d, "?");
-        out_lit(d, ": ");
+        // (tsc reprints a JSDoc function type's parameters as new declarations around the written names and types)
+        out(function->jsdoc_type ? reused_if(d, false) : d, c_sv(": "));
         if (binding->has_explicit_type) display_node(me, d, &binding->explicit_type);
         else out(reused_if(d, false), c_sv("any")); // tsc gives it a synthesized `any`
     }
@@ -1148,7 +1149,8 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             out(reused_if(d, true), cstr_sv(&pattern));
             cstr_drop(&pattern);
         } else {
-            out(reused_if(d, d.reused || param->decl), atom_sv(param->name));
+            bool written = name_binding && span_is_written(name_binding->content_span);
+            out(reused_if(d, (d.reused && (!name_binding || written)) || (param->decl && written)), atom_sv(param->name));
         }
         if (param->optional) out_lit(d, "?");
         out(reused_if(d, d.reused || (syntactic && param->decl)), c_sv(": "));

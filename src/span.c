@@ -89,3 +89,9 @@ int span_cmp(Span a, Span b) {
 void cstr_append_span(cstr* target, Span me) {
     cstr_append_sv(target, me.sv);
 }
+
+bool span_is_written(Span me) {
+    SourceFile const* file = me.source;
+    char const* start = file ? source_file_start(file) : nullptr;
+    return start && me.sv.buf >= start && me.sv.buf < start + cstr_size(&file->contents);
+}

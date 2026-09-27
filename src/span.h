@@ -39,6 +39,9 @@ static inline const char* span_end_ptr(Span me) {
     return me.sv.buf ? me.sv.buf + me.sv.size : nullptr;
 }
 
+// Whether the span is text of its file (not a name made up for something that isn't written: the `argN` parameters
+// of a JSDoc function type)
+bool span_is_written(Span me);
 unsigned span_line_index(Span me);
 unsigned span_col_index(Span me);
 const char* span_line_start(Span me);

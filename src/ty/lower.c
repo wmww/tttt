@@ -359,6 +359,12 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     }
     Ty const* args_buf[MAX_TYPE_ARGS];
 
+    // `object` in a JavaScript file is any without noImplicitAny (tsc's getTypeFromTypeNode of ObjectKeyword)
+    if (identifier->name.source && identifier->name.source->is_js && !compiler_options()->no_implicit_any &&
+        decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_BUILTIN && csview_equals(decl->name, "object")
+    ) {
+        return ty_intrinsic(me, TY_ANY);
+    }
     // A value in JSDoc means its type (tsc's getTypeFromJSDocValueReference)
     if (identifier->jsdoc && !(decl->flags & SYMBOL_TYPE) && (decl->flags & SYMBOL_VALUE)) return ty_type_of_symbol(me, decl);
 

@@ -1008,12 +1008,12 @@ const baselines = {
     'argumentsReferenceInConstructor1_Js': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor2_Js': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor3_Js': {
         errors: true,
@@ -1028,7 +1028,7 @@ const baselines = {
     'argumentsReferenceInConstructor5_Js': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor6_Js': {
         errors: true,
@@ -1048,17 +1048,17 @@ const baselines = {
     'argumentsReferenceInMethod1_Js': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod2_Js': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod3_Js': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod4_Js': {
         errors: false,
@@ -1068,7 +1068,7 @@ const baselines = {
     'argumentsReferenceInMethod5_Js': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod6_Js': {
         errors: true,
@@ -21856,7 +21856,7 @@ const baselines = {
         types: true,
     },
     'moduleExportsTypeNoExcessPropertyCheckFromContainedLiteral': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52083,7 +52083,7 @@ const baselines = {
     'jsdocFunction_missingReturn': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocImplementsTag': {
         errors: true,
@@ -52256,7 +52256,7 @@ const baselines = {
         types: false,
     },
     'jsdocParseHigherOrderFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52266,12 +52266,12 @@ const baselines = {
         types: false,
     },
     'jsdocParseParenthesizedJSDocParameter': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsdocParseStarEquals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52316,7 +52316,7 @@ const baselines = {
         types: true,
     },
     'jsdocSignatureOnReturnedFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52336,7 +52336,7 @@ const baselines = {
         types: false,
     },
     'jsdocTemplateTag': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52451,9 +52451,9 @@ const baselines = {
         types: true,
     },
     'jsdocTypeTag': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeTagCast': {
         errors: false,
@@ -52461,12 +52461,12 @@ const baselines = {
         types: false,
     },
     'jsdocTypeTagParameterType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'jsdocTypeTagRequiredParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52476,7 +52476,7 @@ const baselines = {
         types: false,
     },
     'jsdocVariadicType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52538,7 +52538,7 @@ const baselines = {
     'paramTagNestedWithoutTopLevelObject3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'paramTagNestedWithoutTopLevelObject4': {
         errors: false,
@@ -52686,7 +52686,7 @@ const baselines = {
         types: false,
     },
     'typeTagWithGenericSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -60703,7 +60703,7 @@ const baselines = {
     'typeFromJSInitializer2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromJSInitializer3': {
         errors: true,
