@@ -175,10 +175,9 @@ static bool mapped_variable_is_list(Checker* me, Ty const* variable) {
     return true;
 }
 
-// A homomorphic mapped type (`{ [P in keyof T]: X }`) instantiated with an array or tuple for T is an array or tuple of
-// the template, not an object with the array methods mapped, with a union for T a union, and with a primitive for T the
-// primitive (tsc's instantiateMappedType). Null if this isn't that
-static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMapper const* mapper) {
+// The type variable of a homomorphic mapped type (`T` of `{ [P in keyof T]: X }`, tsc's getHomomorphicTypeVariable)
+// or of an instance of one (of its root: the instance's modifiers type is it through the instance's mapper), else null
+static Ty const* homomorphic_variable(Checker* me, Ty const* ty, MappedInfo const** mapped_out) {
     // Asking for the members of every object type that gets instantiated would defeat their laziness, so look at the
     // syntax first
     Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
@@ -186,19 +185,58 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (!node || node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return nullptr;
     InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
     if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return nullptr;
+    MappedInfo const* mapped = ty_members(me, root)->mapped;
+    if (!mapped || !mapped->modifiers_type) return nullptr;
+    // (A type parameter substituted in a true branch is still the one)
+    Ty const* variable = ty_actual_type_variable(me, mapped->modifiers_type);
+    if (variable->kind != TY_TYPE_PARAM) return nullptr;
+    if (mapped_out) *mapped_out = mapped;
+    return variable;
+}
 
+// Whether `ty` instantiated with `mapper` may be something a homomorphic mapped type over it maps other than as an
+// object: a union, an array or tuple, a primitive. Doesn't instantiate object types to find out: an instance of a
+// homomorphic mapped type is one of those only if its own type variable becomes one
+static bool may_map_specially(Checker* me, Ty const* ty, TyMapper const* mapper, u32 depth) {
+    switch (ty->kind) {
+        case TY_DECLARED:
+            return ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
+        case TY_REFERENCE:
+            return ty_is_array(me, ty) || ty_is_tuple(ty);
+        case TY_ANONYMOUS: {
+            Ty const* variable = homomorphic_variable(me, ty, nullptr);
+            if (!variable) return false;
+            if (depth >= 8) return true;
+            Ty const* inner = ty->anonymous.target ? ty_instantiate(me, variable, ty->anonymous.mapper) : variable;
+            return may_map_specially(me, inner, mapper, depth + 1);
+        }
+        case TY_TYPE_PARAM: {
+            Ty const* instantiated = ty_instantiate(me, ty, mapper);
+            return instantiated == ty || may_map_specially(me, instantiated, nullptr, depth + 1);
+        }
+        default:
+            return true;
+    }
+}
+
+// A homomorphic mapped type (`{ [P in keyof T]: X }`) instantiated with an array or tuple for T is an array or tuple of
+// the template, not an object with the array methods mapped, with a union for T a union, and with a primitive for T the
+// primitive (tsc's instantiateMappedType). Null if this isn't that
+static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMapper const* mapper) {
+    Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+    MappedInfo const* mapped = nullptr;
+    Ty const* variable = homomorphic_variable(me, ty, &mapped);
+    if (!variable) return nullptr;
     // Like tsc (instantiateMappedType of the target with the combined mapper), an instance is looked at through its
     // root: in `type DP<T> = { [P in keyof T]?: DP<T[P]> }`, the inner `DP<T[P]>` is an instance whose modifiers type
     // is `T[P]`, and it still distributes once T[P] becomes `string | null`
-    MappedInfo const* mapped = ty_members(me, root)->mapped;
-    if (!mapped || !mapped->modifiers_type) return nullptr;
-    // (tsc's getHomomorphicTypeVariable: a type parameter substituted in a true branch is still the one)
-    Ty const* variable = ty_actual_type_variable(me, mapped->modifiers_type);
-    if (variable->kind != TY_TYPE_PARAM) return nullptr;
     // (The instance's mapper, then this one: composing them is only worth it when the result distributes, which is
     // rare, and composing eagerly was 40% of valibot)
     TyMapper const* outer = mapper;
-    Ty const* list = ty_instantiate(me, root != ty ? ty_instantiate(me, variable, ty->anonymous.mapper) : variable, mapper);
+    Ty const* inner = root != ty ? ty_instantiate(me, variable, ty->anonymous.mapper) : variable;
+    // Instantiating an object type eagerly only to find it stays one was a third of valibot
+    if (root != ty && !may_map_specially(me, inner, mapper, 0)) return nullptr;
+    Ty const* list = ty_instantiate(me, inner, mapper);
     if (list == variable) return nullptr;
     u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
     // (The empty tuple is its tuple target, not a reference)
