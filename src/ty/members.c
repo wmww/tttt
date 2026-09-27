@@ -220,6 +220,8 @@ static void builder_add_interface_member(
             }   break;
 
             case INTERFACE_KEY_INDEX: {
+                // (tsc's getIndexInfosOfIndexSymbol: only a signature with exactly one typed parameter)
+                if (!i->key.index.valid) break;
                 // TODO: index signature value types are lowered eagerly, unlike property types
                 IndexInfo info = {
                     .key = ty_from_node(me, &i->key.index.type, ctx),

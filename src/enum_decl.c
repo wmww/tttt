@@ -88,6 +88,10 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
     for_each (i, vec_enum_case, &my cases) {
         expr_typecheck(&i->value, errs);
         // (tsc's computeEnumMemberValue)
+        if (i->computed_name) {
+            error_ctx_error_d(errs, i->full_name, 1164, "Computed property names are not allowed in enums.");
+            continue;
+        }
         if (i->value.tag == EXPR_IMPLICIT_ANY || !i->symbol) continue;
         Ty const* member = ty_declared_type_of(current_checker, i->symbol);
         Span at = i->value.outer_span;

@@ -59,7 +59,7 @@ By mechanism (a heuristic on the first differing error's code and source line; `
 |---|---|---|---|
 | permissive: modifiers anywhere | 68 | 2 | `export public import a = x.c`, `declare export = x`, `{ public foo: 1 }`, `constructor(public ...rest)`, `public @dec m()` |
 | permissive: yield/await as identifiers | 28 | 2 | `yield foo;` outside a generator, `a = await => await` |
-| permissive: index signatures | 26 | 2 | `[...x]: T`, `[a, b]: T`, `[]: T`, `[public x: T]`, `[a: number = 1]` |
+| permissive: index signatures | 26 | 2 | done (2026-09-27, `parse_index_signature()`); left in the cluster: enum `[e]` types, class `[e] = x\n[e2]` ASI, `private [x]` in object literals |
 | permissive: heritage clauses | 22 | 2 | `class C extends A, B`, `extends A extends B`, `interface I implements J`, `extends A?.B` |
 | permissive: `with` | 17 | 2 | done: `STATEMENT_WITH` (all 17 pass their errors) |
 | permissive: private names | 17 | 2 | `#x` in object literals, enums, variable names (TS18016/TS18029) |
@@ -141,8 +141,8 @@ has parse errors: `hasParseDiagnostics`, see how `SourceFile.has_parse_errors` i
   the work is accepting it everywhere tsc does, including `export export`, `declare import`, `public` in object
   literals, `public ...rest`.
 - `yield`/`await` outside their functions are identifiers (with TS1212-family or TS1308 from the checker).
-- Index signatures: parsed as a parameter list (`[...x]`, `[a, b]`, `[]`, modifiers, initializers), checked in
-  `checkGrammarIndexSignatureParameters` (TS1017, TS1019, TS1021, TS1096...).
+- Index signatures: done (`parse_index_signature()`, TS1017/1018/1019/1020/1022/1025/1096 from the parser as grammar
+  codes, TS1337/1268/1021/2369 from `interface_member_typecheck()`). Enum computed names (TS1164) done too.
 - Heritage clauses: a list of `extends`/`implements` clauses in any order and count, each a list of expressions
   with type arguments (`checkGrammarClassDeclarationHeritageClauses`: TS1172-TS1176; interfaces TS1175/TS1176).
 - `with`: done (`STATEMENT_WITH`, `WithStatement`).
@@ -194,8 +194,8 @@ Parser items that were in triage.md; fold them into whichever stage they fit.
 - Permissive grammar (stage 2) shapes seen in other buckets: private names outside classes (object literals,
   interfaces, parameters, enums: TS18016/TS1451, `--syntax -f '^privateName.*'`; `{ #y: 1 }`: objectLiteralErrors);
   modifiers on object literal members (TS1042, modifiersInObjectLiterals); enum members named `1`/`[2]`/`"3"`
-  (TS2452/TS1164/TS1357: enumErrors, literalsInComputedProperties1, parserEnum5/7); `class void {}` / `type void = I`
-  (TS1005/TS2457); index signatures with two parameters (TS1096, giant); `import { as as as }` (importSpecifiers1);
+  (TS2452/TS1357: enumErrors, literalsInComputedProperties1, parserEnum5/7; TS1164 done); `class void {}` / `type void = I`
+  (TS1005/TS2457); `import { as as as }` (importSpecifiers1);
   `this is T` predicates in more positions (TS1228, typeGuardOfFormThisMember); a bare `super` (TS1034); `{ x = 1 }`
   outside patterns (TS1312); `let x!` misplaced (TS1263/1264); `const c;` in ambient files; malformed import types
   (nodeModulesImport*DeclarationEmitErrors); `bigintPropertyName` (a parse failure in a.ts line 12).

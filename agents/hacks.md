@@ -87,7 +87,14 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - Grammar vs parse errors (`error_ctx_grammar_error_d`, `SourceFile.has_parse_errors`, `is_grammar_code()`): tsc drops
   checker grammar errors in a file with parse errors. Newer checks use `error_ctx_grammar_error_d`; older ones
   (TS1254, some TS1155/TS1039, modifier checks) use `error_ctx_error_d` and always report. Parser-reported grammar
-  codes in `is_grammar_code()` don't count as parse errors; others (TS1308, TS2852, TS1491/1495, TS1019) still do.
+  codes in `is_grammar_code()` don't count as parse errors; others (TS1308, TS2852, TS1491/1495) still do.
+- `parse_index_signature()`: the parameter list isn't a real `FunctionArg` list: names are identifiers only (no
+  patterns, no `this`), initializers are parsed and dropped (tsc still checks them: TS2304 in `[a = b]` is lost), and
+  parameters after the first keep only name/type for the baselines. Parameter grammar errors are reported from the
+  parser as grammar codes; the type ones (TS1337/TS1268) and TS1021 from `interface_member_typecheck()`.
+- Enum members with computed non-literal names (`[e] = 1`, `EnumCase.computed_name`): the key expression is parsed
+  and dropped (tsc's types baseline shows `e : any`), and the member's type displays as `(typeof E)["[e]"]` where tsc
+  says `E`.
 - Parser anchors: a `span_from` on an anchor of the parent parser inside a child parser before `parse_success`
   truncates the span (was a bug in `parse_import_equals()`); the pattern may exist elsewhere.
 - `parse_import_type`/`add_module_ref`: a `ModuleRef` made in an abandoned parse attempt stays on the file's list

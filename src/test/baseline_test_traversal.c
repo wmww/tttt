@@ -446,9 +446,22 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
         }   break;
 
         case INTERFACE_KEY_INDEX:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.index.name });
-            baseline_test_case_add_type_node(ctx, my key.index.name, &my key.index.type);
+            if (span_valid(my key.index.name)) {
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .span = my key.index.name, .declarations = vec_span_single(my key.index.decl),
+                });
+                baseline_test_case_add_type_node(ctx, my key.index.name, &my key.index.type);
+            }
             type_compile_test_info(&my key.index.type, ctx);
+            for (u32 k = 0; k < vec_span_size(&my key.index.more_names); k++) {
+                Span name = *vec_span_at(&my key.index.more_names, k);
+                TypeNode const* type = vec_type_at(&my key.index.more_types, k);
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .span = name, .declarations = vec_span_single(*vec_span_at(&my key.index.more_decls, k)),
+                });
+                baseline_test_case_add_type_node(ctx, name, type);
+                type_compile_test_info(type, ctx);
+            }
             break;
 
         case INTERFACE_KEY_EXPR:

@@ -207,7 +207,9 @@ Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
         EnumValue previous = enum_value_number(-1);
         for_each (i, vec_enum_case, &enum_decl->cases) {
             EnumValue value;
-            if (i->value.tag == EXPR_IMPLICIT_ANY) {
+            if (i->computed_name) {
+                value = enum_value_unknown;
+            } else if (i->value.tag == EXPR_IMPLICIT_ANY) {
                 // TODO: members of an ambient non-const enum without initializer are computed
                 bool can_increment = previous.known && !previous.is_string;
                 value = can_increment ? enum_value_number(previous.number + 1) : enum_value_unknown;

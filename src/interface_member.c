@@ -14,7 +14,12 @@ void interface_member_drop(InterfaceMember* me) {
     vec_span_drop(&my declarations);
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: cstr_drop(&my key.name_string); break;
-        case INTERFACE_KEY_INDEX: type_drop(&my key.index.type); break;
+        case INTERFACE_KEY_INDEX:
+            type_drop(&my key.index.type);
+            vec_span_drop(&my key.index.more_names);
+            vec_span_drop(&my key.index.more_decls);
+            vec_type_drop(&my key.index.more_types);
+            break;
         case INTERFACE_KEY_EXPR:
             if (my key.expr.owned) {
                 expr_drop(my key.expr.owned);
@@ -43,6 +48,7 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
             // (The key is a parameter)
             TypeFlow const* saved_flow = type_flow_enter_parameter();
             type_lookup_names(&my key.index.type, names, errs);
+            for_each (i, vec_type, &my key.index.more_types) type_lookup_names(i, names, errs);
             type_flow_restore(saved_flow);
         }   break;
         case INTERFACE_KEY_EXPR: expr_lookup_names(my key.expr.ref, names, errs); break;
@@ -99,7 +105,13 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
 
         case INTERFACE_KEY_INDEX: {
             type_typecheck(&my key.index.type, errs);
-            // tsc's checkGrammarIndexSignatureParameters, the type part
+            for_each (i, vec_type, &my key.index.more_types) type_typecheck(i, errs);
+            if (span_valid(my key.index.parameter_property)) {
+                error_ctx_error_d(errs, my key.index.parameter_property, 2369,
+                    "A parameter property is only allowed in a constructor implementation.");
+            }
+            // tsc's checkGrammarIndexSignatureParameters after what the parser reported (the parameter list's shape)
+            if (my key.index.grammar_reported) break;
             Checker* checker = current_checker;
             Ty const* key = ty_of_node(&my key.index.type);
             TyList parts = key->kind == TY_UNION ? key->composite.types : (TyList){ .data = &key, .len = 1 };
@@ -114,6 +126,8 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             } else if (!valid) {
                 error_ctx_grammar_error_d(errs, my key.index.name, 1268,
                     "An index signature parameter type must be 'string', 'number', 'symbol', or a template literal type.");
+            } else if (!my key.index.has_value_type) {
+                error_ctx_grammar_error_d(errs, my key.index.node, 1021, "An index signature must have a type annotation.");
             }
         }   break;
 

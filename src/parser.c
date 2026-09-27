@@ -3598,6 +3598,30 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             enum_case.name_is_value = true;
         } else if (parse_identifier_or_keyword(&p, &enum_case.name)) {
             enum_case.full_name = enum_case.name;
+        } else if (*p.pos == '[') {
+            // A computed name (tsc's parsePropertyName): `['a']` names the member `a`, anything else is TS1164
+            p.pos++;
+            hop_whitespace(&p);
+            Anchor key_anchor = anchor(&p);
+            Expr key;
+            bool literal = false;
+            if (expect_expr(&p, expr_ctx_null, &key)) {
+                if (key.tag == EXPR_LITERAL && (key.literal.tag == VALUE_STRING || key.literal.tag == VALUE_NUMBER)) literal = true;
+                expr_drop(&key);
+            }
+            Span key_span = span_from(key_anchor);
+            hop_whitespace(&p);
+            expect_char(&p, ']');
+            enum_case.full_name = span_from(name_anchor);
+            if (literal && strchr("\"'`", *span_start_ptr(key_span))) {
+                enum_case.name = span_make(key_span.source, span_start_ptr(key_span) + 1, span_end_ptr(key_span) - 1);
+                enum_case.name_is_value = true;
+            } else if (literal) {
+                enum_case.name = key_span;
+            } else {
+                enum_case.name = enum_case.full_name;
+                enum_case.computed_name = true;
+            }
         } else {
             expect_identifier(&p, &enum_case.name);
             enum_case.full_name = enum_case.name;
@@ -4554,72 +4578,191 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     return parse_success(&p);
 }
 
-static bool parse_index_or_expr_interface_member(
-    Parser* parent,
-    bool is_type,
-    bool is_index,
-    FunctionFlags flags,
-    InterfaceMember* ret
-) {
+// tsc's isUnambiguouslyIndexSignature, at a `[`: `[x:`, `[x,`, `[x?:`, `[x?,`, `[x?]`, `[...`, `[]`, `[public x`
+static bool is_index_signature_start(Parser* p) {
+    if (*p->pos != '[') return false;
+    Tok t = tok_next(p, tok_peek(p));
+    if (tok_is(t, "...") || tok_is(t, "]")) return true;
+    if (tok_is_modifier(t)) {
+        t = tok_next(p, t);
+        if (tok_is_identifier(t)) return true;
+    } else if (!tok_is_identifier(t)) {
+        return false;
+    } else {
+        t = tok_next(p, t);
+    }
+    if (tok_is(t, ":") || tok_is(t, ",")) return true;
+    if (!tok_is(t, "?")) return false;
+    t = tok_next(p, t);
+    return tok_is(t, ":") || tok_is(t, ",") || tok_is(t, "]");
+}
+
+// An index signature (tsc's parseIndexSignatureDeclaration): once is_index_signature_start() says so, the brackets are
+// a parameter list whatever is in them. The parameter grammar errors of tsc's checkGrammarIndexSignatureParameters are
+// reported here (grammar codes, see is_grammar_code()); the type ones and TS1021 by interface_member_typecheck()
+static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
+    if (!is_index_signature_start(parent)) return false;
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+    *ret = (InterfaceMember){ .key.tag = INTERFACE_KEY_INDEX };
+    p.pos++;
+    hop_whitespace(&p);
+
+    u32 saved_context = list_enter(&p, PARSING_PARAMETERS);
+    u32 count = 0;
+    Span trailing_comma = span_null;
+    Span first_rest = span_null, first_modifier_name = span_null, first_question = span_null;
+    bool first_has_initializer = false, first_has_type = false;
+    while (*p.pos && *p.pos != ']') {
+        const char* before = p.pos;
+        Anchor param_start = anchor(&p);
+        VecExpr decorators = {0};
+        ignore parse_decorators(&p, &decorators);
+        vec_expr_drop(&decorators);
+        ModifierList modifiers;
+        parse_modifier_list(&p, true, &modifiers);
+        bool has_modifiers = vec_spanned_modifier_size(&modifiers.spanned) != 0;
+        bool is_property = modifiers.includes[MODIFIER_READONLY] || modifiers.includes[MODIFIER_PUBLIC] ||
+            modifiers.includes[MODIFIER_PROTECTED] || modifiers.includes[MODIFIER_PRIVATE] ||
+            modifiers.includes[MODIFIER_OVERRIDE];
+        modifier_list_drop(&modifiers);
+        hop_whitespace(&p);
+
+        Span rest = span_null;
+        if (hop_start(&p, "...")) {
+            rest = span_make(p.shared->source, p.pos - 3, p.pos);
+            hop_whitespace(&p);
+        }
+        Span name;
+        if (!parse_identifier(&p, &name)) {
+            if (p.pos == before) {
+                if (list_abort_or_skip(&p, PARSING_PARAMETERS)) break;
+                continue;
+            }
+            parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+            name = span_from_pos(&p);
+        }
+        hop_whitespace(&p);
+        Span question = span_null;
+        if (hop_char(&p, '?')) {
+            question = span_from_previous_char(&p);
+            hop_whitespace(&p);
+        }
+        TypeNode type = {0};
+        bool has_type = false;
+        if (hop_char(&p, ':')) {
+            hop_whitespace(&p);
+            expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
+            has_type = true;
+            hop_whitespace(&p);
+        } else if (span_valid(rest)) {
+            type = type_array(c_new(TypeNode, type_any), false);
+        }
+        Expr initializer;
+        bool has_initializer = parse_initialization(&p, expr_ctx_null, &initializer);
+        if (has_initializer) {
+            expr_drop(&initializer);
+            hop_whitespace(&p);
+        }
+
+        if (count == 0) {
+            ret->key.index.name = name;
+            ret->key.index.decl = span_make(p.shared->source, param_start.start, span_end_ptr(name));
+            ret->key.index.type = type;
+            first_rest = rest;
+            if (has_modifiers) first_modifier_name = name;
+            if (is_property) ret->key.index.parameter_property = span_from(param_start);
+            first_question = question;
+            first_has_initializer = has_initializer;
+            first_has_type = has_type;
+        } else {
+            vec_span_push(&ret->key.index.more_names, name);
+            vec_span_push(&ret->key.index.more_decls, span_make(p.shared->source, param_start.start, span_end_ptr(name)));
+            vec_type_push(&ret->key.index.more_types, type);
+        }
+        count++;
+
+        trailing_comma = span_null;
+        if (*p.pos == ']') break;
+        if (hop_char(&p, ',')) {
+            trailing_comma = span_from_previous_char(&p);
+            hop_whitespace(&p);
+        } else {
+            expect_char(&p, ',');
+            hop_whitespace(&p);
+        }
+    }
+    list_leave(&p, saved_context);
+    expect_char(&p, ']');
+    hop_whitespace(&p);
+
+    Span name = ret->key.index.name;
+    bool reported = true;
+    if (count != 1) {
+        // (At the whole signature for `[]`: the span is finished below)
+        if (count) parse_error(&p, name, 1096, "An index signature must have exactly one parameter.");
+    } else {
+        if (span_valid(trailing_comma)) {
+            parse_error(&p, trailing_comma, 1025, "An index signature cannot have a trailing comma.");
+        }
+        if (span_valid(first_rest)) {
+            parse_error(&p, first_rest, 1017, "An index signature cannot have a rest parameter.");
+        } else if (span_valid(first_modifier_name)) {
+            parse_error(&p, name, 1018, "An index signature parameter cannot have an accessibility modifier.");
+        } else if (span_valid(first_question)) {
+            parse_error(&p, first_question, 1019, "An index signature parameter cannot have a question mark.");
+        } else if (first_has_initializer) {
+            parse_error(&p, name, 1020, "An index signature parameter cannot have an initializer.");
+        } else if (!first_has_type) {
+            parse_error(&p, name, 1022, "An index signature parameter must have a type annotation.");
+        } else {
+            reported = false;
+        }
+    }
+    ret->key.index.valid = count == 1 && first_has_type;
+    ret->key.index.grammar_reported = reported;
+    ret->key.span = span_from(a);
+
+    if (hop_char(&p, ':')) {
+        hop_whitespace(&p);
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
+        ret->key.index.has_value_type = true;
+    }
+
+    // The node ends after the member's `;` or `,` (tsc's parseTypeMemberSemicolon)
+    Span node = span_from(a);
+    {
+        Parser q = parser(&p);
+        hop_whitespace(&q);
+        if (*q.pos == ';' || *q.pos == ',') node = span_make(q.shared->source, a.start, q.pos + 1);
+        parse_fail(&q);
+    }
+    ret->key.index.node = node;
+    if (count == 0) parse_error(&p, node, 1096, "An index signature must have exactly one parameter.");
+
+    return parse_success(&p);
+}
+
+static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFlags flags, InterfaceMember* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    *ret = (InterfaceMember){
-        .key.tag = is_index ? INTERFACE_KEY_INDEX : INTERFACE_KEY_EXPR,
-    };
+    *ret = (InterfaceMember){ .key.tag = INTERFACE_KEY_EXPR };
 
     if (!hop_char(&p, '[')) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
 
-    bool show_errors = true;
-    if (is_index) {
-        bool fail_if_no_colon = true;
-
-        if (!parse_identifier(&p, &ret->key.index.name)) {
-            return parse_fail(&p);
-        }
-        hop_whitespace(&p);
-        if (hop_char(&p, '?')) {
-            parse_error(
-                &p,
-                span_from_previous_char(&p),
-                1019,
-                "An index signature parameter cannot have a question mark."
-            );
-            hop_whitespace(&p);
-            fail_if_no_colon = false;
-            show_errors = false;
-        }
-
-        if (!hop_char(&p, ':')) {
-            if (fail_if_no_colon) {
-                return parse_fail(&p);
-            }
-        }
-        hop_whitespace(&p);
-
-        (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->key.index.type);
-        hop_whitespace(&p);
-        Expr initializer;
-        if (*p.pos == '=' && parse_initialization(&p, expr_ctx_null, &initializer)) {
-            // tsc parses index signature parameters as parameters and complains in the checker
-            // (checkGrammarIndexSignatureParameters; TS2371 is missing)
-            parse_error(&p, ret->key.index.name, 1020, "An index signature parameter cannot have an initializer.");
-            expr_drop(&initializer);
-        }
-    } else {
-        Expr expr;
-        if (!parse_expr(&p, expr_ctx_null, &expr)) {
-            return parse_fail(&p);
-        }
-        ret->key.expr.owned = c_new(Expr, expr);
-        ret->key.expr.ref = ret->key.expr.owned;
+    Expr expr;
+    if (!parse_expr(&p, expr_ctx_null, &expr)) {
+        return parse_fail(&p);
     }
+    ret->key.expr.owned = c_new(Expr, expr);
+    ret->key.expr.ref = ret->key.expr.owned;
     hop_whitespace(&p);
 
-    (show_errors ? expect_char : hop_char)(&p, ']');
+    expect_char(&p, ']');
     ret->key.span = span_from(a);
     hop_whitespace(&p);
 
@@ -4637,7 +4780,7 @@ static bool parse_index_or_expr_interface_member(
         ret->is_method = true;
     } else if (hop_char(&p, ':')) {
         hop_whitespace(&p);
-        (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->type);
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
     }
 
     return parse_success(&p);
@@ -4653,24 +4796,10 @@ static bool is_construct_signature_start(const char* pos) {
     return *pos == '(' || *pos == '<';
 }
 
-// tsc's isUnambiguouslyIndexSignature: `[x:`, `[x,`, `[x?:`, `[x?,`, `[x?]`
-static bool is_index_signature_start(const char* pos) {
-    if (*pos++ != '[') return false;
-    while (*pos == ' ' || *pos == '\t' || *pos == '\n' || *pos == '\r') pos++;
-    if (!is_identifier_start_char(*pos)) return false;
-    while (is_identifier_char(*pos)) pos++;
-    while (*pos == ' ' || *pos == '\t' || *pos == '\n' || *pos == '\r') pos++;
-    if (*pos == ':' || *pos == ',') return true;
-    if (*pos != '?') return false;
-    pos++;
-    while (*pos == ' ' || *pos == '\t' || *pos == '\n' || *pos == '\r') pos++;
-    return *pos == ':' || *pos == ',' || *pos == ']';
-}
-
 // The `[k]` of a class member
 static bool parse_class_computed_key(Parser* parent, Expr** ret) {
     Parser p = parser(parent);
-    if (*p.pos != '[' || is_index_signature_start(p.pos)) return parse_fail(&p);
+    if (*p.pos != '[' || is_index_signature_start(&p)) return parse_fail(&p);
     p.pos++;
     hop_whitespace(&p);
     Expr key;
@@ -4921,8 +5050,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     } else {
         FunctionImpl func;
         if (parse_mapped_interface_member(&p, &ret->interface_memeber) ||
-            parse_index_or_expr_interface_member(&p, is_type, true, function_flags, &ret->interface_memeber) ||
-            parse_index_or_expr_interface_member(&p, is_type, false, function_flags, &ret->interface_memeber)
+            parse_index_signature(&p, &ret->interface_memeber) ||
+            parse_expr_interface_member(&p, is_type, function_flags, &ret->interface_memeber)
         ) {
             if (ret->interface_memeber.key.tag != INTERFACE_KEY_MAPPED) {
                 check_modifiers(&p, &modifiers, (ModifiedNode){
@@ -9034,9 +9163,9 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
 
 static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
-        1024, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071, 1079, 1089, 1090, 1120, 1162, 1184,
-        1191, 1193, 1242, 1243, 1244, 1248, 1253, 1255, 1275, 1319, 1491, 1495, 18010, 18019,
-        1020,
+        1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071, 1079,
+        1089, 1090, 1096, 1120, 1162, 1184, 1191, 1193, 1242, 1243, 1244, 1248, 1253, 1255, 1275, 1319, 1491, 1495,
+        18010, 18019,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;

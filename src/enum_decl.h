@@ -11,6 +11,9 @@ typedef struct EnumCase {
     Span name; // Without the quotes if the name is a string literal
     Span full_name; // As written
     bool name_is_value;
+    // `[e] = 1`: a computed name that isn't a string or number literal (TS1164; the member is computed and the name
+    // expression isn't checked, tsc's isComputedNonLiteralName). `name` is the whole `[e]`
+    bool computed_name;
     Expr value;
     Symbol* symbol;
 } EnumCase;

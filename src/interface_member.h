@@ -24,9 +24,20 @@ typedef struct InterfaceMember {
                 bool name_is_value;
                 bool name_is_member_function;
             };
+            // tsc parses the brackets as a parameter list and checks it in checkGrammarIndexSignatureParameters.
+            // name/type are the first parameter (the key), `any` (`any[]` for a rest) where it has no annotation
             struct {
-                Span name;
+                Span name; // Null for `[]`
                 TypeNode type;
+                Span node; // The whole signature, its `;`/`,` included (TS1021)
+                Span parameter_property; // A first parameter with `public`/`readonly`... (TS2369)
+                Span decl; // The first parameter from its modifiers or `...` (its symbol's declaration)
+                VecSpan more_names; // The parameters after the first, for the baselines
+                VecSpan more_decls;
+                VecTypeNode more_types;
+                bool valid; // Exactly one parameter, with a type annotation: the signature makes an index info
+                bool grammar_reported; // The parser reported a parameter grammar error: tsc's check stops there
+                bool has_value_type;
             } index;
             struct {
                 Expr* ref;
