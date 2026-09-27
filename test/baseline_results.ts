@@ -13356,7 +13356,7 @@ const baselines = {
         types: true,
     },
     'extendConstructSignatureInInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13433,7 +13433,7 @@ const baselines = {
     'extendingSetWithCheckJs': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'extendsClauseAlreadySeen': {
         errors: false,
@@ -20981,9 +20981,9 @@ const baselines = {
         types: false,
     },
     'mappedTypeWithCombinedTypeMappers': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeWithNameClauseAppliedToArrayType': {
         errors: true,
@@ -27846,7 +27846,7 @@ const baselines = {
         types: true,
     },
     'reverseMappedTypeRecursiveInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31451,8 +31451,8 @@ const baselines = {
         types: true,
     },
     'typePredicateFreshLiteralWidening': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typePredicateInLoop': {
@@ -64193,7 +64193,7 @@ const baselines = {
     'mappedTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypes3': {
         errors: true,
@@ -64201,7 +64201,7 @@ const baselines = {
         types: true,
     },
     'mappedTypes4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

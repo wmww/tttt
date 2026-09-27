@@ -338,10 +338,27 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
 
 // Classes
 
+// A base constructor signature a class that writes no type arguments gets (tsc's getInstantiatedConstructorsForTypeArguments
+// and getDefaultConstructSignatures with none written): one without type parameters, or whose type parameters all have
+// defaults, which the mapper (null if there are no type parameters) fills in. False if the signature doesn't qualify
+static bool base_signature_without_type_args(Checker* me, Signature const* base_sig, TyMapper const** mapper) {
+    signature_resolve(me, base_sig);
+    TyList params = base_sig->type_params;
+    *mapper = nullptr;
+    if (!params.len) return true;
+    Ty const** defaults = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 j = 0; j < params.len; j++) {
+        defaults[j] = ty_param_default(me, params.data[j]);
+        if (!defaults[j]) return false;
+    }
+    *mapper = ty_mapper_new(me, params, (TyList){ .data = defaults, .len = params.len });
+    return true;
+}
+
 // The class a class extends: its instance type (with the written type arguments) and its declaration. False if
 // there's none. HACK: a class name (`extends Name`, `extends Name<Args>`, `extends A.B.Name`) is found syntactically;
-// any other expression is the return type of its *first* construct signature (tsc resolves the signatures that match
-// the written type arguments, hacks.md)
+// any other expression is the return type of its first construct signature that takes no type arguments (tsc
+// resolves the signatures that match the written type arguments; written ones aren't handled, hacks.md)
 static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, Ty const** instance, Symbol const** base_decl) {
     Expr const* extends = &class_decl->extends;
     VecSpannedType const* written_args = nullptr;
@@ -373,8 +390,14 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
         if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
         Members const* members = ty_members(me, constructor);
-        if (!members->construct_count) return false;
-        Ty const* constructed = signature_return_type(me, members->construct[0]);
+        Ty const* constructed = nullptr;
+        for (u32 i = 0; i < members->construct_count && !constructed; i++) {
+            TyMapper const* mapper;
+            if (!base_signature_without_type_args(me, members->construct[i], &mapper)) continue;
+            constructed = signature_return_type(me, members->construct[i]);
+            if (mapper) constructed = ty_instantiate(me, constructed, mapper);
+        }
+        if (!constructed) return false;
         if (!(constructed->flags & (TYF_OBJECT | TYF_INTERSECTION)) || (constructed->flags & TYF_ANY)) return false;
         *instance = constructed;
         *base_decl = nullptr;
@@ -711,9 +734,33 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     if (has_base && base_decl) base_static = ty_static_type_of(me, base_decl);
     if (base_static == ty || (base_static && base_static->kind != TY_DECLARED)) base_static = nullptr;
 
+    // The type of the extends expression, when the base isn't a class declaration (a variable of a constructor type, a
+    // mixin call...)
+    Ty const* base_expr_constructor = nullptr;
+    if (has_base && !base_static) {
+        Expr const* extends = &class_decl->extends;
+        if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+        Ty const* type = ty_apparent_type(me, ty_expr_type(me, extends));
+        if (type->flags & (TYF_OBJECT | TYF_INTERSECTION) && type != ty) base_expr_constructor = type;
+    }
+
     if (!has_constructor) {
         Members const* base_members = base_static ? ty_members(me, base_static) : nullptr;
-        if (base_members && base_members->construct_count) {
+        Members const* expr_members = base_expr_constructor ? ty_members(me, base_expr_constructor) : nullptr;
+        if (!base_members && expr_members && expr_members->construct_count) {
+            // tsc's getDefaultConstructSignatures: the base constructor's signatures that take no type arguments (none
+            // are written: class_base() gives up on those), returning this class
+            for (u32 i = 0; i < expr_members->construct_count; i++) {
+                Signature const* base_sig = expr_members->construct[i];
+                TyMapper const* mapper;
+                if (!base_signature_without_type_args(me, base_sig, &mapper)) continue;
+                Signature* sig = class_construct_signature(me, class_decl, instance);
+                sig->target = base_sig;
+                sig->mapper = mapper;
+                sig->drops_mapped_type_params = mapper != nullptr;
+                builder_push(builder, construct, sig);
+            }
+        } else if (base_members && base_members->construct_count) {
             TyMapper const* mapper = base_instance->kind == TY_REFERENCE ?
                 ty_mapper_new(me, base_instance->reference.target->declared.type_params, ty_reference_args(me, base_instance)) :
                 nullptr;

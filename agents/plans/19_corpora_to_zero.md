@@ -364,3 +364,17 @@ visible (they were behind the error type):
 R18/R19 are plan 29 and R17 is plan 30 stage 3 (both written 2026-09-27): run those as their own sessions. For plan
 19 sessions: R20, R21, sample valibot (unsampled since the R10 session) and the rest of type-fest; R15 (react's last,
 the permissive instantiation; plan 30 stage Q adds the restrictive half of the same machinery).
+
+## NestJS corpus (plan 31, 2026-09-27): 134 -> NEST_FINAL
+`./realworld.py --corpus nest`: brocoders/nestjs-boilerplate (NestJS 11, TypeORM + Mongoose, class-validator,
+passport, nestjs-i18n, aws-sdk v3, supertest/jest e2e tests; experimentalDecorators + emitDecoratorMetadata,
+CommonJS, node10 resolution, 2394 files / 259k lines with dependencies). Before the first run could happen: STC's
+quicksort crashed tttt at startup (`thirdparty/stc-sort-pivot-patch.txt`), and `export interface` inside `declare
+global {}` (@aws-sdk/types) was a parse error, which silently turns off checking without `--keep-going`. Fixed the
+same day (probes in `test/probes/plan31/`):
+- Named imports from an `export =` module take the property of the assigned value's type too (tsc's
+  getExternalModuleMember/combineValueAndTypeSymbols; `SymbolAlias.value_target`). superagent's `import { Request }`
+  is a type-only namespace interface plus `Request: typeof SARequest` on the value; supertest's `class Test extends
+  Request` extended the global fetch `Request` (~85 diagnostics, all the e2e tests). `exportEqualsPropertyBase.ts`.
+- `await` unwrapped only `Promise`/`PromiseLike` by name; now any thenable (tsc's getPromisedTypeOfPromise in
+  `awaited_type_in`). superagent's requests and every mongoose `Query` (~20). `awaitCustomThenable.ts`.

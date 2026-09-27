@@ -449,9 +449,10 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `expr_typecheck()` `EXPR_PROPERTY`: everything after the `?.` of a chain is checked against the non-nullable type
   of its object, because the `undefined` of the short circuit isn't told apart from one the property has itself
   (tsc: `optionalType` marker): `a?.b.c` with `b?: X` misses its TS18048.
-- `class_base()` (`ty/members.c`): an `extends` that isn't a class name is the return type of the *first* construct
-  signature of the expression's type; no written type arguments, no static side, no intersection with the base
-  constraint for mixins (hence the gate above).
+- `class_base()` (`ty/members.c`): an `extends` that isn't a class name is the return type of the first construct
+  signature of the expression's type that takes no type arguments (all defaulted), and the class inherits those
+  signatures (`builder_add_class_static_side`); written type arguments (`extends Mixin<T>`) aren't handled, no
+  static members inherited from it, no intersection with the base constraint for mixins (hence the gate above).
   A source that is `any` is let through to anything, even `never` (`check_assignable`).
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS`: what the operator checks in `expr.c`/`ty/expr.c` mean by "extends number"
   (null/undefined don't, whatever strictNullChecks says; HACK comment in ty.h). tsc checks operands differently.

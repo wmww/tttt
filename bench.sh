@@ -81,18 +81,22 @@ echo "tttt phases (one run):"
 # plenty there (./realworld.py --corpus NAME), so these times are of an incomplete check. tsgo 7 dropped
 # moduleResolution node10, so it gets bundler/esnext instead (valibot: 2 TS2554 of its own, a TS 7 change), and
 # removed baseUrl, so the React app (plan 25) gets a generated tsconfig.tsgo.json that unsets it (its paths are
-# relative to the tsconfig either way)
+# relative to the tsconfig either way). The NestJS app (plan 31) is `incremental`: without --incremental false tsc
+# writes a tsbuildinfo and later runs check nothing; tsgo 7 also defaults to strict, which its tsconfig doesn't unset
 thirdparty/ensure-corpora.sh
 REACT=bulletproof-react/apps/react-vite
+NEST=nestjs-boilerplate
 echo '{"extends": "./tsconfig.json", "compilerOptions": {"baseUrl": null}}' > thirdparty/corpora/$REACT/tsconfig.tsgo.json
-for CORPUS in type-fest valibot/library $REACT; do
+for CORPUS in type-fest valibot/library $REACT $NEST; do
     DIR=thirdparty/corpora/$CORPUS
     TSGO_ARGS="--moduleResolution bundler --module esnext -p $DIR"
+    TSC_EXTRA=""
     if test $CORPUS = $REACT; then TSGO_ARGS="-p $DIR/tsconfig.tsgo.json"; fi
+    if test $CORPUS = $NEST; then TSC_EXTRA="--incremental false"; TSGO_ARGS="$TSGO_ARGS --incremental false --strict false"; fi
     echo
-    echo "corpus $CORPUS: $(node thirdparty/tsc/lib/tsc.js -p $DIR --noEmit --listFilesOnly | grep -c .) files incl. dependencies and libs"
+    echo "corpus $CORPUS: $(node thirdparty/tsc/lib/tsc.js -p $DIR --noEmit $TSC_EXTRA --listFilesOnly | grep -c .) files incl. dependencies and libs"
     measure "tttt" ./release/tttt -q --keep-going -p $DIR
-    measure "tsc (node)" node thirdparty/tsc/lib/tsc.js --noEmit -p $DIR
+    measure "tsc (node)" node thirdparty/tsc/lib/tsc.js --noEmit $TSC_EXTRA -p $DIR
     if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
         measure "tsgo" tsc --noEmit $TSGO_ARGS
         measure "tsgo single-threaded" tsc --noEmit --singleThreaded $TSGO_ARGS

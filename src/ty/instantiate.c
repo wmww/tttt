@@ -173,11 +173,16 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
     if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return nullptr;
 
-    MappedInfo const* mapped = ty_members(me, ty)->mapped;
+    // Like tsc (instantiateMappedType of the target with the combined mapper), an instance is looked at through its
+    // root: in `type DP<T> = { [P in keyof T]?: DP<T[P]> }`, the inner `DP<T[P]>` is an instance whose modifiers type
+    // is `T[P]`, and it still distributes once T[P] becomes `string | null`
+    MappedInfo const* mapped = ty_members(me, root)->mapped;
     if (!mapped || !mapped->modifiers_type) return nullptr;
     // (tsc's getHomomorphicTypeVariable: a type parameter substituted in a true branch is still the one)
     Ty const* variable = ty_actual_type_variable(me, mapped->modifiers_type);
     if (variable->kind != TY_TYPE_PARAM) return nullptr;
+    TyMapper const* outer = mapper;
+    if (root != ty) mapper = ty_compose_mappers(me, ty->anonymous.mapper, mapper);
     Ty const* list = ty_instantiate(me, variable, mapper);
     if (list == variable) return nullptr;
     u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
@@ -190,11 +195,11 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         panic_if(!parts, "out of memory");
         for (u32 i = 0; i < len; i++) {
             Ty const* part = list->composite.types.data[i];
-            parts[i] = part->flags & mappable ? ty_instantiate(me, ty, mapper_with(me, mapper, variable, part)) : part;
+            parts[i] = part->flags & mappable ? ty_instantiate(me, root, mapper_with(me, mapper, variable, part)) : part;
         }
         Ty const* alias_buf[16];
         TyList alias_args = ty->alias_args.len <= c_arraylen(alias_buf) ?
-            instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf)) : (TyList){0};
+            instantiate_list(me, ty->alias_args, outer, alias_buf, c_arraylen(alias_buf)) : (TyList){0};
         Ty const* ret = ty_union(me, parts, len, alias_args.len == ty->alias_args.len ? ty->alias : nullptr, alias_args);
         free(parts);
         return ret;
@@ -223,7 +228,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
             bool rest = (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
             flags[i] = shape->flags[i];
             if (rest && element->kind == TY_TYPE_PARAM) {
-                mapped_elements[i] = ty_instantiate(me, ty, mapper_with(me, mapper, variable, element));
+                mapped_elements[i] = ty_instantiate(me, root, mapper_with(me, mapper, variable, element));
                 continue;
             }
             Ty const* array = rest ? element : ty_array(me, element, false);
