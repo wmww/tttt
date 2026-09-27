@@ -263,6 +263,7 @@ static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fa
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     for_each (i, vec_generic_item, &my items) {
+        if (i->jsdoc) continue;
         // (A type parameter of merged declarations is declared by all of them)
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .span = i->name,
@@ -653,6 +654,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
 
 // `x is T`: the symbols baseline has the parameter, the types baseline nothing
 static void type_predicate_compile_test_info(TypePredicateNode* me, BaselineTestCase* ctx) {
+    if (my jsdoc) return;
     if (my symbol) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = symbol_declaration_spans(my symbol),
@@ -705,6 +707,7 @@ static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx) {
 }
 
 void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase* ctx) {
+    if (my jsdoc) return;
     switch (my main.tag) {
         case PORT_IMPORT_DEFAULT:
         case PORT_IMPORT_GATHER:
@@ -991,6 +994,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
 }
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
+    if (my jsdoc) return;
     u32 saved_generic = baseline_test_case_enter_generic(ctx, &my generic);
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = declaration_get_spans(my symbol),

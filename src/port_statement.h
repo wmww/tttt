@@ -50,6 +50,7 @@ typedef struct PortItem {
     ModuleRef* module_ref; // The module to import from, null for forms that have none
     Symbol* symbol; // The alias symbol, set by scope_add_port(). Null for things that aren't aliases (`export *`)
     Symbol* source_symbol; // What source_name resolved to (which may be another alias), used by the tests
+    bool jsdoc; // Of an `@import` tag (PortStatement.jsdoc)
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {
@@ -96,6 +97,7 @@ typedef struct PortStatement {
     Span target_path_span; // Span of the path string
     ModuleRef* module_ref; // Made by the parser when there is a target path
     ImportAttributes* attributes; // Owned, null if there are none
+    bool jsdoc; // A JavaScript file's `@import` tag (type-only, not part of the baselines' walk, no module indicator)
 } PortStatement;
 
 void port_statement_drop(PortStatement* me);

@@ -2054,6 +2054,14 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 type = check_with(me, &i->value, member_ctx);
                 break;
             default:
+                if (i->jsdoc_type) {
+                    // The declared type, which the value is checked against (expr_typecheck())
+                    Ty const* declared = ty_of_node(i->jsdoc_type);
+                    member_ctx.contextual = declared;
+                    check_for_mutable_location(me, &i->value, member_ctx);
+                    type = declared;
+                    break;
+                }
                 type = check_for_mutable_location(me, &i->value, member_ctx);
                 break;
         }
@@ -2096,8 +2104,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             }
             continue;
         }
-        TypeNode const* asserted = nullptr;
-        if (i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_AS_TYPE && !i->value.as_type->is_satisfies &&
+        TypeNode const* asserted = i->jsdoc_type;
+        if (!asserted && i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_AS_TYPE && !i->value.as_type->is_satisfies &&
             !as_type_is_const(i->value.as_type) && type == ty_expr_type(me, &i->value)
         ) {
             asserted = &i->value.as_type->type;

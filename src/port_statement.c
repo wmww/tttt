@@ -67,7 +67,7 @@ ImportResolutionOverride import_attributes_resolution_mode(ImportAttributes cons
 }
 
 void port_statement_add_names(PortStatement* me, Scope* scope) {
-    if (my module_ref && !(scope->kind == SCOPE_MODULE || (scope->container && scope->container->is_module))) {
+    if (my module_ref && !my jsdoc && !(scope->kind == SCOPE_MODULE || (scope->container && scope->container->is_module))) {
         error_ctx_error_d(
             scope->errs,
             my keyword_span,

@@ -40,6 +40,7 @@ typedef struct TypePredicateNode {
     TypeNode type;
     Symbol const* symbol; // The parameter, set by the resolve walk (null: `this`, a pattern, or no such parameter)
     i32 param_index; // Among `args`, -1 if there is none of that name
+    bool jsdoc; // Written in a JSDoc `@returns`: not part of the baselines' walk
 } TypePredicateNode;
 
 typedef struct FunctionImpl {

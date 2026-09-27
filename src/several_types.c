@@ -78,6 +78,10 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             // `export = C`
             my target = symbol_for_meaning(container, SYMBOL_TYPE);
             my symbol = container;
+        } else if (my jsdoc && (container->flags & SYMBOL_VALUE || container == module)) {
+            // In JSDoc a module is a value or a type (tsc's getTypeFromImportTypeNode): a value means its type
+            my target = container;
+            my symbol = container;
         } else {
             error_ctx_error_d(errs, my import_span, 1340,
                 "Module '", my import_ref->path, "' does not refer to a type, but is used as a type here. Did you mean 'typeof import('",
@@ -115,6 +119,13 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
         return;
     }
 
+    if (container != module) {
+        // A CommonJS module's other exports (its `@typedef`s) merge into what `module.exports =` assigns (tsc's
+        // getCommonJsExportEquals)
+        bool qualified = vec_span_size(&my namespaces);
+        Symbol const* own = symbol_get_export(module, (qualified ? *my namespaces.data : my name).sv);
+        if (own && symbol_for_meaning(own, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) container = module;
+    }
     for_each (i, vec_span, &my namespaces) {
         Symbol const* found;
         container = get_symbol_from_namespace(container, *i, SYMBOL_NAMESPACE, &found, errs);
@@ -168,27 +179,12 @@ static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names, ErrorCtx* er
         TypeNode const* key = no_args ? nullptr : &vec_spanned_type_at(&my generic_params, 0)->type;
         bool index = key && (key->tag == TYPE_STRING || key->tag == TYPE_NUMBER);
         my jsdoc_intrinsic = index ? JSDOC_INTRINSIC_INDEX_SIGNATURE : JSDOC_INTRINSIC_ANY;
-        if (index) type_lookup_names(&vec_spanned_type_at_mut(&my generic_params, 1)->type, names, errs);
         return true;
     }
     return false;
 }
 
-static void identifier_type_lookup_names_inner(IdentifierType* me, Scope* names, ErrorCtx* errs);
-
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
-    if (!my jsdoc) {
-        identifier_type_lookup_names_inner(me, names, errs);
-        return;
-    }
-    // HACK: until @typedef, @callback, @template and @import declare names (plan 26 stage 3), what a JSDoc type can't
-    // find is any, silently
-    ErrorCtx dropped = error_ctx_init();
-    identifier_type_lookup_names_inner(me, names, &dropped);
-    error_ctx_drop(&dropped);
-}
-
-static void identifier_type_lookup_names_inner(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
 
     if (my import_ref || span_valid(my import_span)) {

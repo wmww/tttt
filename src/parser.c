@@ -26,6 +26,9 @@
 typedef struct JsDocRange {
     const char* start; // The `/**`
     const char* end; // Past the `*/`
+    // Its declaration tags (`@typedef`, `@callback`, `@import`) were bound by the innermost statement list containing
+    // it (jsdoc_bind_comments())
+    bool claimed;
 } JsDocRange;
 #define g_key JsDocRange, jsdoc_range
 #include <cleat/generic/vec.h>
@@ -2174,6 +2177,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         cstr_drop(&path);
     }
     identifier.import_span = span_from(a);
+    identifier.jsdoc = p.shared->in_jsdoc;
     *ret = type_identifier(c_new(IdentifierType, identifier));
     return parse_success(&p);
 }
@@ -2447,11 +2451,19 @@ typedef struct JsDocTag {
     bool bracketed; // `[name]`, `[name=default]`: optional
     // A `@param`/`@returns` of a `@callback`, a `@property` of a `@typedef`: part of that, not about the host
     bool nested;
+    // `@returns {x is T}`, `{asserts x}`: owned, `type` is then the return type the predicate goes with
+    TypePredicateNode* predicate;
 } JsDocTag;
 
 static void jsdoc_tag_drop(JsDocTag* me) {
     if (my has_type) type_drop(&my type);
+    if (my predicate) {
+        if (my predicate->has_type) type_drop(&my predicate->type);
+        free(my predicate);
+    }
 }
+
+static bool parse_type_predicate(Parser* parent, FunctionImpl* ret);
 
 #define g_class_key JsDocTag, jsdoc_tag
 #define g_no_clone
@@ -2491,7 +2503,17 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     bool variadic = hop_start(&p, "...");
     Anchor a = anchor(&p);
     TypeNode type;
-    if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+    FunctionImpl predicate = {0};
+    if (tag->kind == JSDOC_TAG_RETURNS && parse_type_predicate(&p, &predicate)) {
+        type = predicate.ret;
+        if (tag->predicate) {
+            if (tag->predicate->has_type) type_drop(&tag->predicate->type);
+            free(tag->predicate);
+        }
+        tag->predicate = predicate.predicate;
+        tag->predicate->jsdoc = true;
+    }
+    if (tag->predicate || parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
         Span type_span = span_from(a);
         hop_whitespace(&p);
         if (p.pos < end) {
@@ -2595,13 +2617,43 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
             break;
         case JSDOC_TAG_TYPEDEF:
         case JSDOC_TAG_CALLBACK:
-        case JSDOC_TAG_TEMPLATE:
             c = jsdoc_skip_space(c, end);
             if (tag.kind != JSDOC_TAG_CALLBACK && c < end && *c == '{') {
                 parse_jsdoc_type_expression(parent, &c, end, &tag);
                 c = jsdoc_skip_space(c, end);
             }
             c = jsdoc_parse_name(c, end, &tag.name, source);
+            break;
+        case JSDOC_TAG_TEMPLATE:
+            // `@template {C} T, U`, `@template [T=D]` (tsc's parseTemplateTag): a tag per name, the constraint is the
+            // first one's (getEffectiveConstraintOfTypeParameter). Defaults aren't read
+            c = jsdoc_skip_space(c, end);
+            if (c < end && *c == '{') {
+                parse_jsdoc_type_expression(parent, &c, end, &tag);
+                c = jsdoc_skip_space(c, end);
+            }
+            while (true) {
+                bool bracketed = c < end && *c == '[';
+                if (bracketed) c = jsdoc_skip_space(c + 1, end);
+                const char* name_start = c;
+                while (c < end && (is_identifier_char(*c) || (uint8_t)*c >= 0x80)) c++;
+                if (c == name_start) break;
+                if (span_valid(tag.name)) {
+                    vec_jsdoc_tag_push(tags, tag);
+                    tag = (JsDocTag){ .kind = JSDOC_TAG_TEMPLATE, .tag_name = tag.tag_name };
+                }
+                tag.name = span_make(source, name_start, c);
+                tag.bracketed = bracketed;
+                if (bracketed) {
+                    while (c < end && *c != ']' && *c != '\n') c++;
+                    if (c < end && *c == ']') c++;
+                }
+                const char* after = c;
+                while (after < end && (*after == ' ' || *after == '\t')) after++;
+                if (after >= end || *after != ',') break;
+                c = after + 1;
+                while (c < end && (*c == ' ' || *c == '\t')) c++;
+            }
             break;
         case JSDOC_TAG_TYPE:
         case JSDOC_TAG_RETURNS:
@@ -2753,6 +2805,11 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         if (member->key.tag == INTERFACE_KEY_CALLABLE && member->type.tag == TYPE_CALLABLE) signature = member->type.callable->function;
     }
     if (!signature || signature->is_constructor) return;
+    if (generic_empty(&function->generic) && !generic_empty(&signature->generic)) {
+        function->generic = signature->generic;
+        signature->generic = (Generic){0};
+        for_each (i, vec_generic_item, &function->generic.items) i->jsdoc = true;
+    }
     for_each (i, vec_function_arg, &function->args) {
         if (i_index >= vec_function_arg_size(&signature->args)) break;
         FunctionArg* from = vec_function_arg_at_mut(&signature->args, i_index);
@@ -2777,8 +2834,28 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
     }
 }
 
+// A declaration's `@template` tags as its type parameters, when it has none written (tsc's
+// getJSDocTypeParameterDeclarations: not the templates of a comment with a `@typedef`/`@callback`, those are its)
+static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
+    if (!generic_empty(generic)) return;
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind == JSDOC_TAG_TYPEDEF || i->kind == JSDOC_TAG_CALLBACK) return;
+    }
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
+        GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true };
+        if (i->has_type) {
+            item.extends = jsdoc_take_type(i, nullptr);
+            item.extends.from_jsdoc = false;
+            item.extends_explicit = true;
+        }
+        vec_generic_item_push(&generic->items, item);
+    }
+}
+
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
 static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
+    jsdoc_apply_template(tags, &function->generic);
     for_each (i, vec_jsdoc_tag, tags) function->jsdoc_typed |= i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE;
     jsdoc_apply_type_signature(tags, function);
     for_each (i, vec_function_arg, &function->args) {
@@ -2805,7 +2882,241 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
         if (tag) {
             function->ret = jsdoc_take_type(tag, &function->ret_span);
             function->ret_explicit = true;
+            if (tag->predicate && !function->predicate) {
+                function->predicate = tag->predicate;
+                tag->predicate = nullptr;
+            }
         }
+    }
+}
+
+// `@` to the end of the tag's name: where tsc's declarations made by tags are
+static Span jsdoc_tag_decl_span(JsDocTag const* tag) {
+    const char* end = span_valid(tag->name) ? tag->name.sv.buf + tag->name.sv.size : tag->tag_name.sv.buf + tag->tag_name.sv.size;
+    return span_make(tag->tag_name.source, tag->tag_name.sv.buf - 1, end);
+}
+
+// `{Object}`, `{object}`, `{Object[]}`: a type a tag's nested `@property`/`@param` tags replace with a literal (tsc's
+// isObjectOrObjectArrayTypeReference). array: whether it's the array form
+static bool jsdoc_is_object_type(JsDocTag const* tag, bool* array) {
+    *array = false;
+    if (!tag->has_type) return true;
+    TypeNode const* type = &tag->type;
+    if (type->tag == TYPE_ARRAY) {
+        *array = true;
+        type = type->array.element;
+    }
+    return type->tag == TYPE_IDENTIFIER && !vec_span_size(&type->identifier->namespaces) &&
+        !vec_spanned_type_size(&type->identifier->generic_params) &&
+        (span_equals(type->identifier->name, "Object") || span_equals(type->identifier->name, "object"));
+}
+
+static bool jsdoc_name_is_under(csview name, csview prefix) {
+    return name.size > prefix.size + 1 && !memcmp(name.buf, prefix.buf, (size_t)prefix.size) && name.buf[prefix.size] == '.';
+}
+
+// The type literal the `@property`/`@param` tags named `prefix.x` among `props` make (`x` when prefix is empty; tsc's
+// JSDocTypeLiteral, nested through `o.a` names under an `{Object}` one)
+static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, Span span) {
+    VecInterfaceMember members = {0};
+    for (isize i = 0; i < count; i++) {
+        JsDocTag* tag = &props[i];
+        if (!span_valid(tag->name)) continue;
+        csview name = tag->name.sv;
+        if (prefix.size) {
+            if (!jsdoc_name_is_under(name, prefix)) continue;
+            name = csview_from_range(name.buf + prefix.size + 1, name.buf + name.size);
+        }
+        if (memchr(name.buf, '.', (size_t)name.size) || memchr(name.buf, '[', (size_t)name.size)) continue;
+        bool has_children = false;
+        for (isize j = i + 1; j < count && !has_children; j++) {
+            has_children = span_valid(props[j].name) && jsdoc_name_is_under(props[j].name.sv, tag->name.sv);
+        }
+        bool array;
+        TypeNode type;
+        if (has_children && jsdoc_is_object_type(tag, &array)) {
+            type = jsdoc_type_literal(props + i + 1, count - i - 1, tag->name.sv, jsdoc_tag_decl_span(tag));
+            if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
+        } else if (tag->has_type) {
+            type = jsdoc_take_type(tag, nullptr);
+            type.from_jsdoc = false;
+        } else {
+            type = type_any;
+        }
+        bool optional = tag->bracketed || type.jsdoc_optional;
+        Span name_span = span_make(tag->name.source, name.buf, name.buf + name.size);
+        vec_interface_member_push(&members, interface_member_make(
+            jsdoc_tag_decl_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type
+        ));
+    }
+    TypeNode ret = type_interface((Interface){ .members = members, .parsed = true, .span = span });
+    ret.parsed = true;
+    return ret;
+}
+
+// The function type of a `@callback` tag and its `@param`/`@returns` tags (tsc's JSDocSignature)
+static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isize count) {
+    FunctionImpl function = { .args = vec_function_arg_init(), .jsdoc_type = true };
+    for (isize i = 0; i < count; i++) {
+        JsDocTag* tag = &children[i];
+        if (tag->kind == JSDOC_TAG_RETURNS) {
+            if (tag->has_type && !function.ret_explicit) {
+                function.ret = jsdoc_take_type(tag, &function.ret_span);
+                function.ret.from_jsdoc = false;
+                function.ret_explicit = true;
+            }
+            continue;
+        }
+        if (tag->kind != JSDOC_TAG_PARAM || !span_valid(tag->name) || memchr(tag->name.sv.buf, '.', (size_t)tag->name.sv.size)) continue;
+        FunctionArg arg = { .initializer.value = expr_implicit_any(tag->name), .span = jsdoc_tag_decl_span(tag) };
+        bool array;
+        TypeNode type;
+        bool has_children = false;
+        for (isize j = i + 1; j < count && !has_children; j++) {
+            has_children = children[j].kind == JSDOC_TAG_PARAM && span_valid(children[j].name) &&
+                jsdoc_name_is_under(children[j].name.sv, tag->name.sv);
+        }
+        if (has_children && jsdoc_is_object_type(tag, &array)) {
+            type = jsdoc_type_literal(children + i + 1, count - i - 1, tag->name.sv, jsdoc_tag_decl_span(tag));
+            if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
+        } else if (tag->has_type) {
+            type = jsdoc_take_type(tag, nullptr);
+            type.from_jsdoc = false;
+        } else {
+            type = type_any;
+        }
+        if (type.jsdoc_optional || tag->bracketed) arg.explicit_optional = true;
+        if (tag->variadic) {
+            arg.rest = true;
+            arg.initializer.is_rest_parameter = true;
+            type = type_array(c_new(TypeNode, type), false), type.parsed = true;
+        }
+        arg.initializer.binding = (Binding){
+            .tag = BINDING_IDENTIFIER,
+            .content_span = tag->name,
+            .has_explicit_type = true,
+            .explicit_type = type,
+        };
+        vec_function_arg_push(&function.args, arg);
+    }
+    Span span = jsdoc_tag_decl_span(callback);
+    function.args_span = span;
+    function.full_span = span;
+    return function_impl_into_type(function);
+}
+
+// The type parameters of the `@typedef`/`@callback` tags of a comment: every `@template` in it (tsc's
+// getEffectiveTypeParameterDeclarations of a JSDocTypeAlias)
+static Generic jsdoc_template_generic(VecJsDocTag* tags) {
+    Generic ret = {0};
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
+        GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true };
+        if (i->has_type) {
+            item.extends = jsdoc_take_type(i, nullptr);
+            item.extends.from_jsdoc = false;
+            item.extends_explicit = true;
+        }
+        vec_generic_item_push(&ret.items, item);
+    }
+    return ret;
+}
+
+static bool parse_import_export_statement(Parser* parent, Statement* ret);
+
+// `@import { A } from "m"` (TS 5.5): a type-only import declaration, parsed by the statement parser from the tag's
+// name on (tsc's JSDocImportTag). Parse errors are dropped
+static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const char* end, VecStatement* out) {
+    Parser p = parser(parent);
+    p.pos = tag->tag_name.sv.buf;
+    p.whitespace_end = nullptr;
+    bool outer_in_jsdoc = p.shared->in_jsdoc;
+    const char* outer_end = p.shared->jsdoc_end;
+    p.shared->in_jsdoc = true;
+    p.shared->jsdoc_end = end;
+    Statement statement;
+    if (parse_import_export_statement(&p, &statement)) {
+        if (statement.tag == STATEMENT_IMPORT_EXPORT && statement.import_export->requires_target &&
+            !port_item_is_export(&statement.import_export->main) && statement.import_export->main.tag != PORT_IMPORT_ALIAS
+        ) {
+            statement.import_export->main.type_only = true;
+            statement.import_export->jsdoc = true;
+            statement.import_export->main.jsdoc = true;
+            for_each (i, vec_port_item, &statement.import_export->items) i->jsdoc = true;
+            statement.span = span_make(p.shared->source, tag->tag_name.sv.buf - 1, p.pos);
+            statement.flow = nullptr;
+            statement.jump_label = span_null;
+            vec_statement_push(out, statement);
+        } else {
+            statement_drop(&statement);
+        }
+    }
+    p.shared->in_jsdoc = outer_in_jsdoc;
+    p.shared->jsdoc_end = outer_end;
+    parse_fail(&p);
+}
+
+// Binds the declaration tags (`@typedef`, `@callback`, `@import`) of the JSDoc comments from `from` to `to` that no
+// statement list inside claimed yet, as type alias and import declarations appended to `out`, and claims them. tsc
+// declares a typedef in the block scope of its host (delayedBindJSDocTypedefTag): the innermost statement list
+// containing the comment. bind: false only claims them (the comments before a block's `}` have no host)
+static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to, bool bind, bool toplevel, VecStatement* out) {
+    VecJsDocRange* comments = &parent->shared->jsdoc_comments;
+    isize lo = 0, hi = comments->size;
+    while (lo < hi) {
+        isize mid = (lo + hi) / 2;
+        if (comments->data[mid].start < from) lo = mid + 1;
+        else hi = mid;
+    }
+    for (isize c = lo; c < comments->size && comments->data[c].end <= to; c++) {
+        JsDocRange range = comments->data[c];
+        if (range.claimed) continue;
+        comments->data[c].claimed = true;
+        if (!bind) continue;
+        csview text = csview_from_range(range.start, range.end);
+        if (!csview_contains(text, "@typedef") && !csview_contains(text, "@callback") && !csview_contains(text, "@import")) continue;
+        VecJsDocTag tags = {0};
+        parse_jsdoc_comment(parent, range, &tags);
+        for_each (i, vec_jsdoc_tag, &tags) {
+            if (i->kind == JSDOC_TAG_IMPORT && toplevel) {
+                jsdoc_import_statement(parent, i, range.end - 2, out);
+                continue;
+            }
+            if (i->kind != JSDOC_TAG_TYPEDEF && i->kind != JSDOC_TAG_CALLBACK) continue;
+            if (!span_valid(i->name) || memchr(i->name.sv.buf, '.', (size_t)i->name.sv.size)) continue;
+            isize children = 0;
+            while (i + 1 + children < tags.data + tags.size && i[1 + children].nested) children++;
+            TypeNode type;
+            bool array;
+            if (i->kind == JSDOC_TAG_CALLBACK) {
+                type = jsdoc_callback_type(i, i + 1, children);
+            } else {
+                bool has_properties = false;
+                for (isize j = 0; j < children; j++) has_properties |= i[1 + j].kind == JSDOC_TAG_PROPERTY;
+                if (has_properties && jsdoc_is_object_type(i, &array)) {
+                    type = jsdoc_type_literal(i + 1, children, (csview){0}, jsdoc_tag_decl_span(i));
+                    if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
+                } else if (i->has_type) {
+                    type = jsdoc_take_type(i, nullptr);
+                    type.from_jsdoc = false;
+                } else {
+                    type = type_any;
+                }
+            }
+            Span span = jsdoc_tag_decl_span(i);
+            vec_statement_push(out, (Statement){
+                .tag = STATEMENT_DECL_TYPE,
+                .decl.type = {
+                    .name = i->name,
+                    .full_span = span,
+                    .generic = jsdoc_template_generic(&tags),
+                    .type = type,
+                    .jsdoc = true,
+                },
+                .span = span,
+            });
+        }
+        vec_jsdoc_tag_drop(&tags);
     }
 }
 
@@ -3879,7 +4190,14 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         // The tags of a method, or of a property whose value is a function, are the function's
         VecJsDocTag tags = {0};
         FunctionImpl* function = jsdoc_function_of(&item.value);
-        if (function && jsdoc_before(&p, a.start, &tags)) jsdoc_apply_function(&tags, function);
+        if ((function || item.tag == OBJECT_ITEM_PROPERTY) && jsdoc_before(&p, a.start, &tags)) {
+            if (function) {
+                jsdoc_apply_function(&tags, function);
+            } else {
+                JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
+                if (tag) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+            }
+        }
         vec_jsdoc_tag_drop(&tags);
     }
     *ret = item;
@@ -6799,6 +7117,8 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             }
             expr_drop(&path_expr);
             statement.attributes = parse_import_attributes(&p);
+        } else {
+            expr_drop(&path_expr); // (what expect_expr() made of a missing operand's binary expression)
         }
     }
 
@@ -7629,8 +7949,10 @@ static bool statement_takes_semicolon(Statement const* me) {
 }
 
 // ctx is the kind of list: source elements, block statements or a switch clause's statements
-static bool parse_append_statement_sequence(Parser* parent, bool toplevel, ParsingContext ctx, VecStatement* ret) {
+// list_start: where the list's own text starts (past the `{`), for the JSDoc comments it binds
+static bool parse_append_statement_sequence(Parser* parent, bool toplevel, ParsingContext ctx, const char* list_start, VecStatement* ret) {
     Parser p = parser(parent);
+    const char* jsdoc_from = list_start;
 
     u32 saved_context = list_enter(&p, ctx);
     while(
@@ -7650,6 +7972,10 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             p.pos++;
         } else if (parse_statement(&p, toplevel, &statement)) {
             vec_statement_push(ret, statement);
+            if (p.shared->source->is_js) {
+                jsdoc_bind_comments(&p, jsdoc_from, p.pos, true, toplevel, ret);
+                jsdoc_from = p.pos;
+            }
             bool ended_on_brace = p.pos > source_file_start(p.shared->source) && *(p.pos - 1) == '}';
             hop_whitespace(&p);
             if (*p.pos == ';' && statement_takes_semicolon(&statement)) {
@@ -7685,6 +8011,8 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
         hop_whitespace(&p); // TODO: is this needed?
     }
     list_leave(&p, saved_context);
+    // (the end of the file has JSDoc in tsc, a block's `}` doesn't)
+    if (p.shared->source->is_js) jsdoc_bind_comments(&p, jsdoc_from, p.pos, ctx == PARSING_SOURCE_ELEMENTS, toplevel, ret);
 
     return parse_success(&p);
 }
@@ -7721,9 +8049,10 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
     } else {
         return parse_fail(&p);
     }
+    const char* list_start = p.pos;
     hop_whitespace(&p);
 
-    if (!parse_append_statement_sequence(&p, false, PARSING_SWITCH_CLAUSE_STATEMENTS, &ret->statements)) {
+    if (!parse_append_statement_sequence(&p, false, PARSING_SWITCH_CLAUSE_STATEMENTS, list_start, &ret->statements)) {
         switch_case_drop(ret);
         return parse_fail(&p);
     }
@@ -8210,9 +8539,13 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
             FunctionImpl* function = jsdoc_function_of(&initializer->value);
             if (function) jsdoc_apply_function(&tags, function);
+            if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_template(&tags, &initializer->value.class_decl->generic);
         }   break;
         case STATEMENT_DECL_FUNCTION:
             jsdoc_apply_function(&tags, statement->decl.function.impl);
+            break;
+        case STATEMENT_DECL_CLASS:
+            jsdoc_apply_template(&tags, &statement->decl.class->generic);
             break;
         case STATEMENT_EXPR:
             if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
@@ -8325,7 +8658,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     hop_whitespace(&p);
 
     *ret = (Block){0};
-    if (!parse_append_statement_sequence(&p, toplevel, PARSING_BLOCK_STATEMENTS, &ret->statements)) {
+    if (!parse_append_statement_sequence(&p, toplevel, PARSING_BLOCK_STATEMENTS, open + 1, &ret->statements)) {
         *ret = (Block){0};
     }
     hop_whitespace(&p);
@@ -8376,7 +8709,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     } else {
         parse_source_directives(&p, &source->ast.statements);
         hop_whitespace(&p);
-        parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, &source->ast.statements);
+        parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, source_file_start(source), &source->ast.statements);
     }
 
     // Grammar errors tsc's checker reports (checkGrammarModifiers, checkGrammarIndexSignatureParameters,

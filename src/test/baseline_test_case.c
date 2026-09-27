@@ -1165,6 +1165,12 @@ static void append_decl(cstr* target, Span span) {
     const char* file_start = source_file_start(span.source);
     const char* start = span_start_ptr(span);
     bool keep_going = true;
+    // A JSDoc tag (`@typedef`, `@property`...) starts at its `@`: tsc's JSDoc nodes have no leading trivia
+    if (*start == '@') {
+        const char* c = start;
+        while (c > file_start && (c[-1] == ' ' || c[-1] == '\t')) c--;
+        if (c > file_start && c[-1] == '*') keep_going = false;
+    }
     // The space before the symbol is included in the span. Why? I have no idea.
     // Here we parse code backwards, which is an extremely silly thing to do
     while (keep_going && start > file_start) {

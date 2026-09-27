@@ -8,6 +8,7 @@
 #include "source_file.h"
 #include "callable_type.h"
 #include "symbol_chain.h"
+#include "port_statement.h"
 
 // Prints a Ty the way tsc's typeToString() does, in its order of preference: alias name, reference name + arguments
 // (array and tuple syntax for those targets), declared name, structure.
@@ -417,10 +418,18 @@ static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* ar
 }
 
 // A JSDoc reference tsc prints as its type instead of reusing it (visitExistingNodeTreeSymbols): a name with a JSDoc
-// meaning (`String`, `Object`, `array`...), one that finds nothing, a generic type without enough type arguments
+// meaning (`String`, `Object`, `array`...), one that finds nothing, a generic type without enough type arguments, a
+// name an `@import` declares (not a visible declaration to tsc)
 static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     if (identifier->jsdoc_intrinsic || !identifier->target) return false;
+    Symbol const* first = vec_span_size(&identifier->namespaces) ?
+        (vec_symbol_cptr_size(&identifier->namespace_symbols) ? *identifier->namespace_symbols.data : nullptr) : identifier->symbol;
+    if (first && first->flags & SYMBOL_ALIAS && first->decl_count && first->decls[0].kind == SYMBOL_DECL_ALIAS &&
+        ((PortItem const*)first->decls[0].node)->jsdoc
+    ) {
+        return false;
+    }
     if (!vec_span_size(&identifier->namespaces)) {
         static char const* const intended[] = { "Function", "function", "array", "promise", "Object" };
         for (u32 i = 0; i < c_arraylen(intended); i++) {

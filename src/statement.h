@@ -67,6 +67,9 @@ typedef struct TypeDecl {
     Generic generic;
     TypeNode type;
     Symbol* symbol;
+    // A JavaScript file's `@typedef`/`@callback` (jsdoc_typedef_statements()): not part of the baselines' walk, and
+    // exported from a module's top level (tsc's jsdocTreatAsExported)
+    bool jsdoc;
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);

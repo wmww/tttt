@@ -493,6 +493,9 @@ typedef struct ObjectExprItem {
     // Owned, `{ a = 1 }` (a destructuring assignment target): the default. Only its names are looked up (TODO: check it
     // and show it in the baselines)
     Expr* shorthand_default;
+    // Owned, a JavaScript property's JSDoc `@type` (`/** @type {T} */ a: v`): the property's declared type, which the
+    // value is contextually typed by and checked against (tsc's getTypeForDeclarationFromJSDocComment in checkObjectLiteral)
+    TypeNode* jsdoc_type;
 } ObjectExprItem;
 
 void object_expr_item_drop(ObjectExprItem* me);

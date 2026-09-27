@@ -398,6 +398,16 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     }
     // A value in JSDoc means its type (tsc's getTypeFromJSDocValueReference)
     if (identifier->jsdoc && !(decl->flags & SYMBOL_TYPE) && (decl->flags & SYMBOL_VALUE)) {
+        // A bare `import("./m")` whose `module.exports =` is a class expression or a constructor function is the
+        // class (tsc's resolveImportSymbolType: the declared type of the resolved symbol, which is a class)
+        if (span_valid(identifier->import_span) && !span_valid(identifier->name) && decl->decl_count &&
+            decl->decls[0].kind == SYMBOL_DECL_ASSIGNMENT
+        ) {
+            Expr const* value = decl->decls[0].node;
+            Symbol const* class_symbol = value->tag == EXPR_CLASS_DECL ? value->class_decl->symbol :
+                value->tag == EXPR_FUNCTION ? ty_js_constructor_class(value->function) : nullptr;
+            if (class_symbol) return ty_class_instance_type(me, class_symbol);
+        }
         for (u32 i = 0; i < my jsdoc_values_in_flight_count; i++) {
             if (my jsdoc_values_in_flight[i] == decl) return ty_intrinsic(me, TY_CIRCULAR);
         }

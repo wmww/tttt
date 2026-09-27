@@ -340,7 +340,7 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
 
         case STATEMENT_IMPORT_EXPORT: {
             PortStatement* port = statement->import_export;
-            if (port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) {
+            if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) && !port->jsdoc) {
                 source->is_module = true;
             }
         }   break;

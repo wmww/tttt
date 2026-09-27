@@ -14,6 +14,7 @@ typedef struct GenericItem {
     TypeNode fallback;
     Symbol* owned_symbol;
     Symbol const* symbol_ref;
+    bool jsdoc; // A JSDoc `@template`: not part of the baselines' walk
 } GenericItem;
 
 void generic_item_drop(GenericItem* me);

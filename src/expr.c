@@ -1413,6 +1413,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     }
                 }
                 flow->assignment_target = assignment_target; // A pattern: the values are the targets
+                if (i->jsdoc_type) type_lookup_names(i->jsdoc_type, names, errs);
                 expr_lookup_names(&i->value, names, errs);
                 if (i->shorthand_default) expr_lookup_names_initializer(i->shorthand_default, names, errs);
             }
@@ -2697,6 +2698,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     ty_check_computed_name(current_checker, i->computed_key, i->name_span, false, errs);
                 }
                 expr_typecheck(&i->value, errs);
+                if (i->jsdoc_type) {
+                    type_typecheck(i->jsdoc_type, errs);
+                    ty_check_assignable_expr(current_checker, expr_get_type(&i->value), ty_of_node(i->jsdoc_type),
+                        i->name_span, &i->value, errs);
+                }
                 if (i->tag == OBJECT_ITEM_SPREAD) {
                     // `{ ...o }` is emitted with __assign below ES2015, `({ ...x } = o)` with __rest below ES2018
                     ScriptTarget target = compiler_options()->target;
@@ -2963,6 +2969,10 @@ void object_expr_item_drop(ObjectExprItem* me) {
     if (my shorthand_default) {
         expr_drop(my shorthand_default);
         free(my shorthand_default);
+    }
+    if (my jsdoc_type) {
+        type_drop(my jsdoc_type);
+        free(my jsdoc_type);
     }
     expr_drop(&my value);
 }
