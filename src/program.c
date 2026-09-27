@@ -507,6 +507,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     source_file->unchecked = check_directive ? check_directive < 0 : source_file->is_js && !my options.check_js;
     // tsc's skipTypeChecking: declaration files aren't checked with skipLibCheck
     if (source_file->is_declaration && my options.skip_lib_check) source_file->unchecked = true;
+    if (my options.no_check) source_file->unchecked = true; // (tsc's skipTypeChecking: no semantic diagnostics at all)
 
     if (my loading_stdlib) {
         source_file->is_stdlib = true;

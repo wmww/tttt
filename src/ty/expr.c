@@ -2332,6 +2332,13 @@ static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* 
     return ret;
 }
 
+Ty const* ty_compound_assignee_type(Checker* me, Expr const* target, Ty const* read_type) {
+    if (target->tag != EXPR_PROPERTY || target->property->form != PROPERTY_EXPR_DOT) return read_type;
+    Ty const* object = ty_expr_type(me, &target->property->expr);
+    Ty const* write = ty_access_write_type(me, object, ty_access_key_type(me, target->property));
+    return write ? write : read_type;
+}
+
 // tsc's isStringIndexSignatureOnlyType: nothing but a string index signature
 static bool is_string_index_only(Checker* me, Ty const* ty) {
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
@@ -2362,6 +2369,20 @@ static Ty const* generic_element_access(Checker* me, PropertyExpr const* access,
         return access->assignment_target ? ty_access(me, object, string) : ty_access_reading(me, object, string);
     }
     return ty_indexed(me, object, key);
+}
+
+// A class expression's static fields without a type annotation have the contextual type of the property of the
+// same name of the class expression's contextual type (tsc's getContextualTypeForInitializerExpression)
+static void contextually_type_static_fields(Checker* me, ClassDecl const* class_decl, Ty const* contextual) {
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (i->tag != CLASS_ITEM_FIELD || !i->field.is_static || i->field.has_explicit_type) continue;
+        if (i->field.value.tag == EXPR_IMPLICIT_ANY || span_valid(class_item_private_name(i))) continue;
+        Ty const* key = i->field.computed_key ? ty_regular(me, ty_expr_type(me, i->field.computed_key)) :
+            ty_string_literal(me, cstr_sv(&i->field.name_string));
+        if (!(key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) continue;
+        Ty const* prop = ty_contextual_prop_type(me, contextual, key);
+        if (prop) ty_check_expr(me, &i->field.value, prop);
+    }
 }
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
@@ -2444,7 +2465,9 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_OBJECT: return check_object(me, expr, ctx);
         case EXPR_ARRAY: return check_array(me, expr, ctx);
-        case EXPR_CLASS_DECL: return ty_type_of_symbol(me, expr->class_decl->symbol);
+        case EXPR_CLASS_DECL:
+            if (ctx.contextual) contextually_type_static_fields(me, expr->class_decl, ctx.contextual);
+            return ty_type_of_symbol(me, expr->class_decl->symbol);
 
         case EXPR_REGEX: return ty_global_regexp_type(me);
         case EXPR_PRIVATE_NAME: return any_type(me);

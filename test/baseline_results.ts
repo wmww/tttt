@@ -9901,19 +9901,19 @@ const baselines = {
         types: true,
     },
     'divergentAccessorsTypes3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'divergentAccessorsTypes4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'divergentAccessorsTypes5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'divergentAccessorsTypes6': {
         errors: false,
@@ -15576,7 +15576,7 @@ const baselines = {
         types: true,
     },
     'getterSetterSubtypeAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23301,17 +23301,17 @@ const baselines = {
         types: true,
     },
     'noCheckDoesNotReportError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'noCheckNoEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'noCheckRequiresEmitDeclarationOnly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29006,9 +29006,9 @@ const baselines = {
         types: true,
     },
     'staticFieldWithInterfaceContext': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticGetter1': {
         errors: true,
@@ -63616,9 +63616,9 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedClassExpressionMethodDeclaration01': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'contextuallyTypedClassExpressionMethodDeclaration02': {
         errors: true,

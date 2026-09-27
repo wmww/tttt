@@ -1286,6 +1286,9 @@ void ty_check_property_access(
 );
 // `o[k]` under noImplicitAny that finds nothing: TS7053, TS7015, TS7052... (`span`: the whole access)
 void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
+// What a compound assignment (`o.x += 1`) to `target` is checked against: a divergent setter's type for a property
+// (tsc's checkAssignmentOperatorWorker), else the type it reads
+Ty const* ty_compound_assignee_type(Checker* me, struct Expr const* target, Ty const* read_type);
 // Around the typecheck walk of a conditional type's true branch
 void ty_enter_true_branch(Checker* me, TypeNode const* check_node, TypeNode const* extends_node);
 void ty_leave_true_branch(Checker* me);

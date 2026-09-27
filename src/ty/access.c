@@ -247,8 +247,43 @@ Ty const* ty_access(Checker* me, Ty const* object, Ty const* index) {
 Ty const* ty_access_write_type(Checker* me, Ty const* object, Ty const* index) {
     Atom const* name = ty_literal_name(me, ty_regular(me, index));
     if (!name) return nullptr;
+    if (object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
+        // The union of what each member takes, if one of them has a write type of its own (tsc's
+        // createUnionOrIntersectionProperty)
+        TyList members = object->composite.types;
+        Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+        u32 len = 0;
+        bool divergent = false, complete = true;
+        for (u32 i = 0; i < members.len && complete; i++) {
+            if (members.data[i]->flags & TYF_NULLABLE) continue;
+            Ty const* write = ty_access_write_type(me, members.data[i], index);
+            divergent |= write != nullptr;
+            if (!write) write = ty_access(me, members.data[i], index);
+            if (write) parts[len++] = write; else complete = false;
+        }
+        Ty const* ret = divergent && complete && len ? ty_union(me, parts, len, nullptr, (TyList){0}) : nullptr;
+        free(parts);
+        return ret;
+    }
     object = ty_apparent_type(me, object);
-    if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
+    if (object->kind == TY_INTERSECTION) {
+        // The intersection of what the members that have it take
+        TyList members = object->composite.types;
+        Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+        u32 len = 0;
+        bool divergent = false;
+        for (u32 i = 0; i < members.len; i++) {
+            Ty const* member = ty_apparent_type(me, members.data[i]);
+            if (!(member->flags & TYF_OBJECT) || !ty_find_prop(me, member, name).found) continue;
+            Ty const* write = ty_access_write_type(me, member, index);
+            divergent |= write != nullptr;
+            parts[len++] = write ? write : ty_access(me, member, index);
+        }
+        Ty const* ret = divergent && len ? ty_intersection(me, parts, len, nullptr, (TyList){0}) : nullptr;
+        free(parts);
+        return ret;
+    }
+    if (!(object->flags & TYF_OBJECT)) return nullptr;
     FoundProp prop = ty_find_prop(me, object, name);
     if (!prop.found || !prop.prop) return nullptr;
     Ty const* write = prop_write_type(me, prop.prop);

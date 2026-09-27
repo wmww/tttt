@@ -1493,9 +1493,14 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
             }
             return;
 
-        case EXPR_PROPERTY:
-            if (source) ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), target->outer_span, source_expr, errs);
-            return;
+        case EXPR_PROPERTY: {
+            if (!source) return;
+            Ty const* target_type = ty_expr_type(checker, target);
+            if (target->property->assignment_target == FLOW_TARGET_COMPOUND) {
+                target_type = ty_compound_assignee_type(checker, target, target_type);
+            }
+            ty_check_assignable_expr(checker, source, target_type, target->outer_span, source_expr, errs);
+        }   return;
 
         case EXPR_UNARY_OP:
             // `x! = 1`
