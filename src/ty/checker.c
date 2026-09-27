@@ -1224,11 +1224,17 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         return shape->readonly ? ty_array(me, ty_reference_args(me, args.data[0]).data[0], true) : args.data[0];
     }
     bool needed = false;
+    bool past_rest = false; // Past a (non-generic) rest element: an optional or rest element after it merges into it
     for (u32 i = 0; i < shape->arity && !needed; i++) {
+        if (past_rest && (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL)) needed = true;
         if (!(shape->flags[i] & TUPLE_ELEMENT_REST)) continue;
         Ty const* arg = args.data[i];
         needed = ty_is_tuple(arg) || (arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET) ||
             (arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) || (arg->flags & TYF_NEVER);
+        if (!is_generic_spread(me, arg)) {
+            needed |= past_rest;
+            past_rest = true;
+        }
     }
     if (!needed) return nullptr;
     for (u32 i = 0; i < shape->arity; i++) {
@@ -1294,6 +1300,14 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
             b.names[i] = b.names[i + removed];
         }
         b.len -= removed;
+    }
+    if (b.len == 1 && b.flags[0] == TUPLE_ELEMENT_REST && ty_is_array(me, b.types[0])) {
+        // What's left is a lone rest element: the array (tsc's getTupleTargetType)
+        Ty const* array = b.types[0];
+        free(b.types);
+        free(b.flags);
+        free(b.names);
+        return shape->readonly ? ty_array(me, ty_reference_args(me, array).data[0], true) : array;
     }
     TupleShape normalized = {
         .arity = b.len,
