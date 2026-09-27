@@ -1390,12 +1390,40 @@ Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref) {
     return ref->module;
 }
 
+// tsc's getCommonJsExportEquals: a module that has other exports next to its `export =` (a CommonJS
+// `module.exports = C; module.exports.x = 1`, its `@typedef`s) exports a clone of what `export =` assigns, with the
+// module's exports added to the clone's (what the assigned symbol has itself wins)
+static Symbol* merged_export_equals(Symbol* module, Symbol* target) {
+    if (module->module->merged_export_equals) return module->module->merged_export_equals;
+    Binder* binder = module->binder;
+    Symbol* ret = binder_new_symbol(binder, target->name, target->flags);
+    *ret = *target;
+    ret->binder = binder;
+    ret->merged_export_equals_of = target;
+    ret->flags |= SYMBOL_VALUE_MODULE; // (Something to look names up in)
+    ret->exports = arena_new(&binder->arena, SymbolTable);
+    ret->exports->parent = target->exports;
+    for (u32 i = 0; i < module->exports->count; i++) {
+        SymbolEntry const* entry = &module->exports->entries[i];
+        if (csview_equals(entry->name, "export=") || symbol_table_get(target->exports, entry->name)) continue;
+        symbol_table_insert(ret->exports, &binder->arena, entry->name, entry->hash, entry->symbol);
+    }
+    module->module->merged_export_equals = ret;
+    return ret;
+}
+
 Symbol* module_export_equals(Symbol* module) {
     if (!module || !module->is_module) return module;
     Symbol* assigned = symbol_table_get(module->exports, c_sv("export="));
     if (!assigned) return module;
     Symbol* target = assigned->flags & SYMBOL_ALIAS ? symbol_resolve_alias(assigned) : assigned;
-    return target ? target : module;
+    if (!target) return module;
+    if (target == module || target->is_placeholder || target->is_module || module->exports->parent ||
+        module->exports->count < 2 || !module->module
+    ) {
+        return target;
+    }
+    return merged_export_equals(module, target);
 }
 
 static i32 symbol_table_own_index(SymbolTable const* me, csview name, u64 hash);

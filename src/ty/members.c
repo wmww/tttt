@@ -834,6 +834,31 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     }
 }
 
+// The property a namespace's export makes of its value, null if it has no value
+static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
+    Symbol const* symbol = entry->symbol;
+    Symbol const* member = symbol_for_meaning(symbol, SYMBOL_VALUE);
+    if (!member || member->is_placeholder) return nullptr;
+    Prop* prop = arena_new(&my arena, Prop);
+    prop->name = checker_atom(me, entry->name);
+    prop->symbol = member;
+    if (member->is_const) prop->flags |= PROP_READONLY; // tsc's isReadonlySymbol: a `const` variable
+    // An expando assigned a function is a method (bindPotentiallyNewExpandoMemberToNamespace)
+    if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && member->parent &&
+        !member->parent->is_module && ((Expr const*)member->decls[0].node)->tag == EXPR_FUNCTION
+    ) {
+        prop->flags |= PROP_METHOD;
+    }
+    prop->ctx = (LowerCtx){ .generic = true };
+    prop->name_span = symbol->name_span;
+    // `N.p` in the symbols baseline
+    if (symbol->parent && !symbol->parent->is_module) prop->parent = symbol->parent;
+    VecSpan spans = symbol_declaration_spans(symbol);
+    prop_add_decl_spans(me, prop, spans.data, (u32)vec_span_size(&spans));
+    vec_span_drop(&spans);
+    return prop;
+}
+
 // The members of every value declaration of a merged declaration, see ty_merged_value_type()
 static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbol const* decl) {
     Ty const** entries;
@@ -859,6 +884,18 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
         for (u32 j = 0; j < members->index_count; j++) builder_push(builder, index, members->index[j]);
     }
     free(entries);
+    // What a module's `export =` assigns, with the module's other exports (module_export_equals())
+    if (decl->merged_export_equals_of) {
+        for (u32 i = 0; i < decl->exports->count; i++) {
+            SymbolEntry const* entry = &decl->exports->entries[i];
+            if (builder_find_prop(builder, checker_atom(me, entry->name))) continue;
+            Prop* prop = namespace_export_prop(me, entry);
+            if (!prop) continue;
+            // (`module.exports.f = f` of a `const f` is an alias, which isn't readonly: tsc's isReadonlySymbol)
+            if (entry->symbol->flags & SYMBOL_ALIAS) prop->flags &= ~PROP_READONLY;
+            builder_push(builder, props, prop);
+        }
+    }
 }
 
 static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDecl const* enum_decl) {
@@ -1113,29 +1150,10 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             u32 export_count;
             SymbolEntry* exports = symbol_collect_exports(ty->declared.namespace_symbol, &export_count);
             for (u32 i = 0; i < export_count; i++) {
-                Symbol const* symbol = exports[i].symbol;
-                Symbol const* member = symbol_for_meaning(symbol, SYMBOL_VALUE);
-                if (!member || member->is_placeholder) continue;
                 // `typeof globalThis` has the global `var`s and functions, not let, const, classes and enums
-                if (ty->declared.namespace_symbol->is_global_this && (symbol->flags & GLOBAL_BLOCK_SCOPED)) continue;
-                Prop* prop = arena_new(&my arena, Prop);
-                prop->name = checker_atom(me, exports[i].name);
-                prop->symbol = member;
-                if (member->is_const) prop->flags |= PROP_READONLY; // tsc's isReadonlySymbol: a `const` variable
-                // An expando assigned a function is a method (bindPotentiallyNewExpandoMemberToNamespace)
-                if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && member->parent &&
-                    !member->parent->is_module && ((Expr const*)member->decls[0].node)->tag == EXPR_FUNCTION
-                ) {
-                    prop->flags |= PROP_METHOD;
-                }
-                prop->ctx = (LowerCtx){ .generic = true };
-                prop->name_span = symbol->name_span;
-                // `N.p` in the symbols baseline
-                if (symbol->parent && !symbol->parent->is_module) prop->parent = symbol->parent;
-                VecSpan spans = symbol_declaration_spans(symbol);
-                prop_add_decl_spans(me, prop, spans.data, (u32)vec_span_size(&spans));
-                vec_span_drop(&spans);
-                builder_push(&builder, props, prop);
+                if (ty->declared.namespace_symbol->is_global_this && (exports[i].symbol->flags & GLOBAL_BLOCK_SCOPED)) continue;
+                Prop* prop = namespace_export_prop(me, &exports[i]);
+                if (prop) builder_push(&builder, props, prop);
             }
             free(exports);
             break;

@@ -408,6 +408,13 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                 value->tag == EXPR_FUNCTION ? ty_js_constructor_class(value->function) : nullptr;
             if (class_symbol) return ty_class_instance_type(me, class_symbol);
         }
+        // `exports.C = class {}` declares an alias of the class (tsc's isAliasableExpression), which is a type
+        if (decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && decl->parent && decl->parent->is_module &&
+            ((Expr const*)decl->decls[0].node)->tag == EXPR_CLASS_DECL
+        ) {
+            Symbol const* class_symbol = ((Expr const*)decl->decls[0].node)->class_decl->symbol;
+            if (class_symbol) return ty_class_instance_type(me, class_symbol);
+        }
         for (u32 i = 0; i < my jsdoc_values_in_flight_count; i++) {
             if (my jsdoc_values_in_flight[i] == decl) return ty_intrinsic(me, TY_CIRCULAR);
         }
@@ -415,6 +422,13 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         my jsdoc_values_in_flight[my jsdoc_values_in_flight_count++] = decl;
         Ty const* type = ty_type_of_symbol(me, decl);
         my jsdoc_values_in_flight_count--;
+        // `import("./m").C` of a value whose type is a class is the class (tsc's getTypeFromJSDocValueReference: the
+        // type reference of the value type's symbol)
+        if (span_valid(identifier->import_span) && span_valid(identifier->name) && type->kind == TY_DECLARED &&
+            type->declared.kind == TY_DECLARED_CLASS_STATIC && canonical(me, type->declared.symbol) != decl
+        ) {
+            return ty_class_instance_type(me, type->declared.symbol);
+        }
         return type;
     }
 
@@ -1100,6 +1114,8 @@ Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module) {
     return with_synthetic_default(me, type, structured);
 }
 
+static Ty const* merged_export_equals_type(Checker* me, Symbol const* clone);
+
 // The type of a symbol as a value. Give it the symbol a name found or the one that has the value meaning (`target`
 // of an identifier), aliases are seen through. Everything about a placeholder is any
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
@@ -1107,7 +1123,9 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         Ty const* namespace_import = namespace_import_type(me, symbol);
         if (namespace_import) return namespace_import;
     }
-    symbol = canonical(me, symbol_for_meaning(symbol, SYMBOL_VALUE));
+    symbol = symbol_for_meaning(symbol, SYMBOL_VALUE);
+    if (symbol && symbol->merged_export_equals_of) return merged_export_equals_type(me, symbol);
+    symbol = canonical(me, symbol);
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, symbol && symbol->is_unresolved ? TY_ERROR : TY_ANY);
     // `typeof import("./a")`, `import("./a")`, `globalThis`
     if (symbol->is_module || symbol->is_global_this) return ty_namespace_type(me, symbol);
@@ -1166,7 +1184,27 @@ Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol) {
 }
 
 u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
+    if (symbol->merged_export_equals_of) {
+        *out = malloc(sizeof(Ty const*));
+        panic_if(!*out, "out of memory");
+        (*out)[0] = ty_type_of_symbol(me, symbol->merged_export_equals_of);
+        return 1;
+    }
     return value_entries(me, symbol, out);
+}
+
+// What a module's `export =` assigns merged with its other exports (module_export_equals()): an object type gets them
+// as properties (tsc's getTypeOfFuncClassEnumModule of the merged symbol, or getInitializerTypeFromAssignmentDeclaration
+// of `module.exports =`), anything else is what is assigned
+static Ty const* merged_export_equals_type(Checker* me, Symbol const* clone) {
+    Ty const* original = ty_type_of_symbol(me, clone->merged_export_equals_of);
+    if (!(original->flags & TYF_OBJECT) || (original->kind != TY_DECLARED && original->kind != TY_ANONYMOUS)) return original;
+    bool any = false;
+    for (u32 i = 0; i < clone->exports->count && !any; i++) {
+        Symbol const* value = symbol_for_meaning(clone->exports->entries[i].symbol, SYMBOL_VALUE);
+        any = value && !value->is_placeholder;
+    }
+    return any ? ty_merged_value_type(me, clone) : original;
 }
 
 static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {

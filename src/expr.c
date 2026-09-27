@@ -2349,6 +2349,12 @@ static bool binary_op_typecheck(
 
         case BINARY_OP_EQUAL:
             if (is_container_declaration(expr->binary_op)) break;
+            // Nor is `module.exports = v` of an object type, which the module's other exports add to
+            if (right && (right->flags & TYF_OBJECT) &&
+                binary_commonjs_declaration(expr->binary_op, nullptr) == COMMONJS_TARGET_MODULE_EXPORTS
+            ) {
+                break;
+            }
             assignment_target_typecheck(&expr->binary_op->left, right, &expr->binary_op->right, errs);
             break;
 

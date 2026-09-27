@@ -188,6 +188,8 @@ typedef struct SymbolModule {
     SymbolTable* type_only_exports;
     PortItem const** type_only_stars;
     u32 type_only_star_cap;
+    // What `export =` assigns merged with the module's other exports, see module_export_equals()
+    struct Symbol* merged_export_equals;
 } SymbolModule;
 
 typedef struct Symbol {
@@ -223,6 +225,10 @@ typedef struct Symbol {
     // The local `A` of `export default class A`, which has no meaning of its own: the default export (tsc's
     // exportSymbol of a local symbol)
     Symbol* export_symbol;
+    // A clone of what a module's `export =` assigns, with the module's other exports added to its exports (tsc's
+    // getCommonJsExportEquals: `module.exports = C; module.exports.x = 1`): the original. The checker sees the clone
+    // as the original except for its value (ty_type_of_symbol()) and what is looked up in it
+    struct Symbol* merged_export_equals_of;
 
     // Local variables and parameters (symbols one file owns), written by that file's resolve walk: what narrowing
     // inside closures depends on. `function` is the function the variable belongs to (null: top level of a file,
@@ -432,7 +438,8 @@ void binder_add_module_declaration(Symbol* module, NamespaceDecl const* decl);
 // The module a string names: an ambient module, the file the program found for it if that is a module, a pattern
 // ambient module. Null if there is none (module_ref_is_missing() tells "not found" from "not a module")
 Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref);
-// What importing the module gives: the target of its `export =` if it has one, else itself
+// What importing the module gives: the target of its `export =` if it has one (merged with the module's other
+// exports), else itself
 Symbol* module_export_equals(Symbol* module);
 // How tsc names a module in a message: an ambient module by its declared name, a file by the specifier it was
 // imported with (TS2305, ref may be null otherwise) or by its path without the extension. With the quotes
@@ -472,9 +479,11 @@ static inline bool scope_is_var_container(Scope const* me) {
     return my kind != SCOPE_BLOCK && my kind != SCOPE_ENUM;
 }
 
-// The program's version of a symbol: the overlay if it added to a symbol of the shared lib program
+// The program's version of a symbol: the overlay if it added to a symbol of the shared lib program. The clone
+// module_export_equals() makes is its original
 Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol);
 static inline Symbol const* binder_redirect(Binder const* me, Symbol const* symbol) {
+    if (symbol && symbol->merged_export_equals_of) symbol = symbol->merged_export_equals_of;
     // Nothing is ever written to a symbol of the parent, so there's no flag to test: programs that add to lib
     // symbols are rare, and only those pay for the lookup
     if (!symbol || symbol->binder == me) return symbol;
