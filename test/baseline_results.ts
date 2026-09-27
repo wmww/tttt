@@ -1973,7 +1973,7 @@ const baselines = {
     'asyncYieldStarContextualType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentArray': {
         errors: true,
@@ -4158,7 +4158,7 @@ const baselines = {
     'collectionPatternNoError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionArgumentsArrowFunctions': {
         errors: true,
@@ -8398,12 +8398,12 @@ const baselines = {
     'declarationEmitNestedGenerics': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitNoNonRequiredParens': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitNonExportedBindingPattern': {
         errors: true,
@@ -9576,7 +9576,7 @@ const baselines = {
         types: false,
     },
     'destructuringAssignmentWithDefault': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9821,12 +9821,12 @@ const baselines = {
         types: true,
     },
     'discriminateWithOptionalProperty2(exactoptionalpropertytypes=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'discriminateWithOptionalProperty2(exactoptionalpropertytypes=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -9923,7 +9923,7 @@ const baselines = {
     'divergentAccessorsTypes7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'divergentAccessorsTypes8': {
         errors: false,
@@ -20773,7 +20773,7 @@ const baselines = {
     'localTypeParameterInferencePriority': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'localVariablesReturnedFromCatchBlocks': {
         errors: true,
@@ -28853,7 +28853,7 @@ const baselines = {
     'spellingSuggestionJSXAttribute': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spellingSuggestionLeadingUnderscores01': {
         errors: false,
@@ -37823,7 +37823,7 @@ const baselines = {
     'controlFlowDoWhileStatement': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowElementAccess': {
         errors: true,
@@ -37843,7 +37843,7 @@ const baselines = {
     'controlFlowForInStatement': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowForInStatement2': {
         errors: true,
@@ -37958,7 +37958,7 @@ const baselines = {
     'controlFlowWhileStatement': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowWithTemplateLiterals': {
         errors: true,
