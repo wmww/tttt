@@ -5,6 +5,34 @@
 // `symbol`), through apparent types like tsc's getPropertyOfType/getIndexedAccessType on non-generic operands. A type
 // parameter is accessed through its constraint.
 
+u32 ty_tuple_fixed_length(TupleShape const* shape) {
+    u32 fixed = 0;
+    while (fixed < shape->arity && !(shape->flags[fixed] & TUPLE_ELEMENT_REST)) fixed++;
+    return fixed;
+}
+
+Ty const* ty_tuple_slice_element_type(Checker* me, Ty const* tuple, u32 from, u32 end_skip) {
+    TupleShape const* shape = tuple->reference.target->declared.tuple;
+    if (from + end_skip >= shape->arity) return nullptr;
+    TyList elements = ty_reference_args(me, tuple);
+    u32 len = shape->arity - end_skip - from;
+    Ty const* stack[16];
+    Ty const** parts = len <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * len);
+    panic_if(!parts, "out of memory");
+    for (u32 i = 0; i < len; i++) {
+        Ty const* element = elements.data[from + i];
+        if (shape->flags[from + i] & TUPLE_ELEMENT_REST) {
+            // (A variadic `...T` is T[number])
+            element = element->kind == TY_TYPE_PARAM ? ty_indexed(me, element, ty_intrinsic(me, TY_NUMBER)) :
+                ty_rest_element_type(me, element);
+        }
+        parts[i] = element;
+    }
+    Ty const* ret = ty_union(me, parts, len, nullptr, (TyList){0});
+    if (parts != stack) free(parts);
+    return ret;
+}
+
 static Ty const* with_undefined(Checker* me, Ty const* type) {
     if (!compiler_options()->strict_null_checks) return type;
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
@@ -185,11 +213,14 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         TyList elements = ty_reference_args(me, object);
         if (n >= 0 && n == (u32)n) {
             u32 at = (u32)n;
-            if (at < shape->arity && !(shape->flags[at] & TUPLE_ELEMENT_REST)) {
+            u32 fixed = ty_tuple_fixed_length(shape);
+            if (at < fixed) {
                 return shape->flags[at] & TUPLE_ELEMENT_OPTIONAL ? with_undefined(me, elements.data[at]) : elements.data[at];
             }
-            if (shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST)) {
-                Ty const* rest = ty_rest_element_type(me, elements.data[shape->arity - 1]);
+            // Past the leading fixed elements of a tuple with a rest element: any of the elements from there on
+            // (tsc's getTupleElementTypeOutOfStartCount)
+            if (fixed < shape->arity) {
+                Ty const* rest = ty_tuple_slice_element_type(me, object, fixed, 0);
                 return include_undefined ? with_undefined(me, rest) : rest;
             }
             return nullptr;

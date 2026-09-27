@@ -173,6 +173,11 @@ typedef struct Inference {
 } Inference;
 
 void inference_init(Inference* inf, TyList params);
+// How many elements a tuple has before its first rest element (tsc's fixedLength)
+u32 ty_tuple_fixed_length(TupleShape const* shape);
+// The union of elements `from` to `arity - end_skip` of a tuple reference, rest elements by their element type, null
+// if that's none (tsc's getElementTypeOfSliceOfTupleType)
+Ty const* ty_tuple_slice_element_type(Checker* me, Ty const* tuple, u32 from, u32 end_skip);
 // Elements `from` to `arity - end_skip` of a tuple as a mutable tuple (tsc's sliceTupleType)
 bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty); // tsc's isEmptyAnonymousObjectType
 Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip);

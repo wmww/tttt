@@ -264,11 +264,20 @@ static Ty const* literal_type(Checker* me, Value const* value, Symbol const* enu
     u64 key[4] = { KEY_LITERAL, value->tag, 0, (u64)(uintptr_t)enum_decl };
     Atom const* string = nullptr;
     u32 flags = 0;
+    Value normalized;
     switch (value->tag) {
         case VALUE_UNDEFINED: return my intrinsics[TY_UNDEFINED];
         case VALUE_NULL: return my intrinsics[TY_NULL];
         case VALUE_BOOLEAN: key[2] = value->boolean; flags = TYF_BOOLEAN_LITERAL; break;
-        case VALUE_NUMBER: memcpy(&key[2], &value->number, sizeof(double)); flags = TYF_NUMBER_LITERAL; break;
+        case VALUE_NUMBER: {
+            // tsc keys number literal types by their string: -0 is 0, and every NaN is one type
+            double number = value->number == 0 ? 0.0 : isnan(value->number) ? NAN : value->number;
+            normalized = (Value){ .tag = VALUE_NUMBER, .number = number };
+            value = &normalized;
+            memcpy(&key[2], &number, sizeof(double));
+            flags = TYF_NUMBER_LITERAL;
+            break;
+        }
         case VALUE_BIGINT: memcpy(&key[2], &value->bigint, sizeof(double)); flags = TYF_BIGINT_LITERAL; break;
         case VALUE_STRING:
             string = checker_atom(me, cstr_sv(&value->string));

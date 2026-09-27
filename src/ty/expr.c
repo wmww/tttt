@@ -279,8 +279,42 @@ static Ty const* contextual_prop_type(Checker* me, Ty const* contextual, Ty cons
     return context_map(me, contextual, get_prop_context, key);
 }
 
+typedef struct ElementContextArg {
+    u32 index;
+    u32 length; // Of the array literal, UINT32_MAX if unknown
+    u32 first_spread, last_spread; // UINT32_MAX if none
+} ElementContextArg;
+
+// tsc's getContextualTypeForElementExpression for a tuple: the element at the index while the elements before it are
+// the tuple's leading fixed ones, the element from the end when the elements after it are its trailing fixed ones,
+// otherwise any of the elements in between
+static Ty const* tuple_element_context(Checker* me, Ty const* tuple, ElementContextArg const* a) {
+    TupleShape const* shape = tuple->reference.target->declared.tuple;
+    u32 fixed = ty_tuple_fixed_length(shape);
+    if ((a->first_spread == UINT32_MAX || a->index < a->first_spread) && a->index < fixed) {
+        // (tsc's optional elements hold undefined, tttt's don't)
+        Ty const* element = ty_reference_args(me, tuple).data[a->index];
+        return shape->flags[a->index] & TUPLE_ELEMENT_OPTIONAL ? ty_optional_param_type(me, element) : element;
+    }
+    u32 offset = a->length != UINT32_MAX && (a->last_spread == UINT32_MAX || a->index > a->last_spread) ?
+        a->length - a->index : 0;
+    u32 fixed_end = 0;
+    if (offset > 0 && fixed < shape->arity) {
+        while (fixed_end < shape->arity && !(shape->flags[shape->arity - 1 - fixed_end] & TUPLE_ELEMENT_REST)) fixed_end++;
+    }
+    if (offset > 0 && offset <= fixed_end) return ty_reference_args(me, tuple).data[shape->arity - offset];
+    u32 from = a->first_spread < fixed ? a->first_spread : fixed;
+    u32 end_skip = fixed_end;
+    if (a->length != UINT32_MAX && a->last_spread != UINT32_MAX && a->length - a->last_spread < end_skip) {
+        end_skip = a->length - a->last_spread;
+    }
+    return ty_tuple_slice_element_type(me, tuple, from, end_skip);
+}
+
 static Ty const* get_element_context(Checker* me, Ty const* object, void const* arg) {
-    u32 index = *(u32 const*)arg;
+    ElementContextArg const* a = arg;
+    u32 index = a->index;
+    if (ty_is_tuple(object) && object->kind == TY_REFERENCE) return tuple_element_context(me, object, a);
     if (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
         cstr name = cstr_d(index);
         Ty const* mapped = ty_generic_mapped_prop_context(me, object, ty_string_literal(me, cstr_sv(&name)));
@@ -299,7 +333,20 @@ static Ty const* get_element_context(Checker* me, Ty const* object, void const* 
 }
 
 static Ty const* contextual_element_type(Checker* me, Ty const* contextual, u32 index) {
-    return context_map(me, contextual, get_element_context, &index);
+    ElementContextArg arg = { index, UINT32_MAX, UINT32_MAX, UINT32_MAX };
+    return context_map(me, contextual, get_element_context, &arg);
+}
+
+// The contextual type of the element at `index` of an array literal
+static Ty const* contextual_array_element_type(Checker* me, Ty const* contextual, Expr const* array, u32 index) {
+    if (!contextual) return nullptr;
+    ElementContextArg arg = { index, (u32)vec_expr_size(&array->array), UINT32_MAX, UINT32_MAX };
+    for_each (i, vec_expr, &array->array) {
+        if (i->tag != EXPR_SPREAD) continue;
+        if (arg.first_spread == UINT32_MAX) arg.first_spread = (u32)i_index;
+        arg.last_spread = (u32)i_index;
+    }
+    return context_map(me, contextual, get_element_context, &arg);
 }
 
 Ty const* ty_contextual_prop_type(Checker* me, Ty const* contextual, Ty const* key) {
@@ -2020,7 +2067,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
     unsigned char* flags = calloc(len ? len : 1, 1);
     u32 count = 0;
     for_each (i, vec_expr, &expr->array) {
-        Ty const* element_context = contextual_element_type(me, ctx.contextual, (u32)i_index);
+        Ty const* element_context = contextual_array_element_type(me, ctx.contextual, expr, (u32)i_index);
         ExprCtx element_ctx = {
             .contextual = element_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
             .generic_mode = ctx.generic_mode,
@@ -2217,7 +2264,7 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
                 operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);
             continue;
         }
-        elements[i_index] = ty_mutable_location_type(me, i, contextual_element_type(me, contextual, (u32)i_index));
+        elements[i_index] = ty_mutable_location_type(me, i, contextual_array_element_type(me, contextual, expr, (u32)i_index));
     }
     ret = tuple_of(me, elements, flags, len, false);
     free(elements);
@@ -2429,6 +2476,7 @@ static bool is_string_index_only(Checker* me, Ty const* ty) {
 // JavaScript `this.x = v` in the constructor that declares x, when only such assignments do (tsc's
 // isThisPropertyAccessInConstructor with isConstructorDeclaredProperty): x is being inferred from them, any
 static bool is_constructor_declared_target(Checker* me, PropertyExpr const* access) {
+    (void)me;
     if (access->assignment_target != FLOW_TARGET_DEFINITE || access->form != PROPERTY_EXPR_DOT) return false;
     Expr const* object = &access->expr;
     if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) return false;
