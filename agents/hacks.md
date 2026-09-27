@@ -148,6 +148,13 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   namespace- or type-only name gets `symbol` but no `target` (`identifier_expr_lookup_names`), so the checker sees an
   untyped name there.
 
+- `statement_resolve_names_reachable` (`STATEMENT_WITH`): the body of a `with` is bound and resolved (scopes, flow,
+  hoisted `var`s) but with a null ErrorCtx, since tsc never checks it and tttt reports many checker errors (TS2304...)
+  from the resolve walk. Whatever resolve-time errors tsc reports from its binder (duplicate labels...) are lost in
+  there too; TS1101 and unreachable code go through `flow->errs` and survive. The real fix is the
+  resolve walk not reporting checker errors. The baseline walk prints the body with `BaselineTestCase.in_with` (every
+  type the error type, no symbols) but still evaluates the types it then throws away.
+
 ## Control flow graph (`flow.c`, builders in `expr.c`/`statement.c`/`function_impl.c`)
 - No array mutation flow nodes (`x.push()`, `x[i] = v`): only evolving arrays need them (see Narrowing).
 - Class *expression* methods are FUNCTION_IS_DECLARATION (tsc: narrowing continues outside); `export { x }` doesn't

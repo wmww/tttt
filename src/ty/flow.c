@@ -2411,6 +2411,7 @@ static bool find_single_return(Statement const* statement, Statement const** fou
                 find_single_return_in(&statement->try_catch->catch_block.statements, found) &&
                 find_single_return_in(&statement->try_catch->finally_block.statements, found);
         case STATEMENT_LABELED: return find_single_return(statement->labeled.body, found);
+        case STATEMENT_WITH: return find_single_return(&statement->with->body, found);
         case STATEMENT_RETURN_EXPR:
             if (*found || statement_is_bare_return(statement)) return false;
             *found = statement;

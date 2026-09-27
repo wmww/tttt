@@ -494,6 +494,10 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
 
         case STATEMENT_LABELED: return engine_run_statement(me, statement->labeled.body);
 
+        case STATEMENT_WITH:
+            log_error("Running with statements not yet implemented");
+            return result_ok_undefined;
+
         case STATEMENT_BREAK: return result_break();
         case STATEMENT_CONTINUE: return result_err(value_string(cstr_lit("Continue statements not yet implemented")));
 

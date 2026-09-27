@@ -576,6 +576,12 @@ void statement_drop(Statement* me) {
             free(my labeled.body);
             break;
 
+        case STATEMENT_WITH:
+            expr_drop(&my with->object);
+            statement_drop(&my with->body);
+            free(my with);
+            break;
+
         case STATEMENT_BREAK: break;
         case STATEMENT_CONTINUE: break;
 
@@ -729,6 +735,10 @@ void statement_hoist_names(Statement* me, Scope* scope) {
             statement_hoist_names(my labeled.body, scope);
             break;
 
+        case STATEMENT_WITH:
+            statement_hoist_names(&my with->body, scope);
+            break;
+
         case STATEMENT_DECL_VARIABLE:
             if (my decl.variable.keyword == VAR_INIT_VAR) {
                 variable_statement_add_names(&my decl.variable, scope, my decl.props.exported, my decl.props.declared);
@@ -781,6 +791,9 @@ void statement_collect_var_names(Statement const* me, VecSpan* out) {
             break;
         case STATEMENT_LABELED:
             statement_collect_var_names(my labeled.body, out);
+            break;
+        case STATEMENT_WITH:
+            statement_collect_var_names(&my with->body, out);
             break;
         case STATEMENT_DECL_VARIABLE:
             if (my decl.variable.keyword == VAR_INIT_VAR) variable_statement_collect_names(&my decl.variable, out);
@@ -871,6 +884,7 @@ void statement_add_names(Statement* me, Scope* scope) {
         case STATEMENT_FOR_EACH_LOOP:
         case STATEMENT_SWITCH:
         case STATEMENT_TRY_CATCH:
+        case STATEMENT_WITH:
         case STATEMENT_BREAK:
         case STATEMENT_CONTINUE:
         case STATEMENT_RETURN_EXPR:
@@ -1170,6 +1184,27 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if_else_resolve_names(&my if_else, 0, names, errs);
             break;
 
+        case STATEMENT_WITH: {
+            WithStatement* with = my with;
+            Span keyword = span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 4);
+            // A binder error in tsc (checkStrictModeWithStatement), reported in the body of another `with` too (errs is
+            // null there, flow->errs is not). The rest are the checker's
+            if (names->strict) {
+                error_ctx_error_d(names->flow->errs, keyword, 1101, "'with' statements are not allowed in strict mode.");
+            }
+            // (tsc's checkWithStatement, which a `with` in the body of another never gets to: nothing in there is
+            // reported, errs is null)
+            if (names->function && names->function->is_async) {
+                error_ctx_grammar_error_d(errs, keyword, 1300, "'with' statements are not allowed in an async function block.");
+            }
+            expr_lookup_names(&with->object, names, errs);
+            // tsc binds the body like any other statement but never checks it, so nothing the checker would say
+            // about it is said (not even names that aren't found)
+            Scope* body_scope = scope_new(names, SCOPE_BLOCK);
+            statement_add_names(&with->body, body_scope);
+            statement_resolve_names(&with->body, body_scope, nullptr);
+        }   break;
+
         case STATEMENT_FOR_LOOP: {
             ForLoopStatement* loop = my for_loop;
             Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
@@ -1401,6 +1436,7 @@ static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scop
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
         case STATEMENT_DECL_VARIABLE:
+        case STATEMENT_WITH:
             my flow = flow_builder_reference(flow, span_null);
             break;
         default:
@@ -1415,6 +1451,7 @@ static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scop
         case STATEMENT_FOR_EACH_LOOP:
         case STATEMENT_SWITCH:
         case STATEMENT_TRY_CATCH:
+        case STATEMENT_WITH:
         case STATEMENT_DECL_CLASS: {
             FlowStatementFrame frame = { flow->statements, my span };
             flow->statements = &frame;
@@ -1467,6 +1504,7 @@ void statement_collect_return_types(Statement const* me, TyBuf* out) {
             break;
 
         case STATEMENT_LABELED: statement_collect_return_types(my labeled.body, out); break;
+        case STATEMENT_WITH: statement_collect_return_types(&my with->body, out); break;
 
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
@@ -1504,6 +1542,7 @@ bool statement_any_return(Statement const* me, bool (*pred)(Expr const*)) {
                 statements_any_return(&my try_catch->catch_block.statements, pred) ||
                 statements_any_return(&my try_catch->finally_block.statements, pred);
         case STATEMENT_LABELED: return statement_any_return(my labeled.body, pred);
+        case STATEMENT_WITH: return statement_any_return(&my with->body, pred);
         case STATEMENT_RETURN_EXPR: return !statement_is_bare_return(me) && pred(&my expr);
         default: return false;
     }
@@ -1749,6 +1788,13 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
 
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
+            break;
+
+        case STATEMENT_WITH:
+            // tsc's checkWithStatement: not the body (TS1300 is reported by the resolve walk)
+            expr_typecheck(&my with->object, errs);
+            error_ctx_grammar_error_d(errs, my with->header, 2410,
+                "The 'with' statement is not supported. All symbols in a 'with' block will have type 'any'.");
             break;
 
         case STATEMENT_BLOCK:

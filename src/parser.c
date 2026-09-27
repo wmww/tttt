@@ -8022,6 +8022,45 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
     return parse_success(&p);
 }
 
+// `with (x) statement` (tsc's parseWithStatement)
+static bool parse_with_statement(Parser* parent, Statement* ret) {
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+
+    if (!hop_start_if_ends_on_word_break(&p, "with")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    const char* open = p.pos;
+    bool opened = expect_char(&p, '(');
+    hop_whitespace(&p);
+
+    Expr object = expr_implicit_any(span_from_pos(&p));
+    if (expect_expr(&p, expr_ctx_null, &object)) {
+        parse_comma_ops_right_side(&p, &object);
+    }
+    hop_whitespace(&p);
+
+    if (opened) expect_closing(&p, ')', open);
+    else expect_char(&p, ')');
+    Span header = span_from(a);
+    hop_whitespace(&p);
+
+    Statement body = statement_noop;
+    expect_statement(&p, false, &body);
+
+    *ret = (Statement){
+        .tag = STATEMENT_WITH,
+        .with = c_new(WithStatement, {
+            .object = object,
+            .body = body,
+            .header = header,
+        }),
+    };
+    return parse_success(&p);
+}
+
 static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
 
@@ -8858,6 +8897,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->tag = STATEMENT_IF_ELSE;
     } else if (c == 'f' && parse_for_loop_statement(&p, ret)) {
     } else if (c == 'w' && parse_while_loop_statement(&p, ret)) {
+    } else if (c == 'w' && parse_with_statement(&p, ret)) {
     } else if (c == 'd' && parse_do_while_loop_statement(&p, ret)) {
     } else if (c == 's' && parse_switch_statement(&p, ret)) {
     } else if (c == 't' && parse_try_catch_statement(&p, ret)) {

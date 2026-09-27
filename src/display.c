@@ -1310,6 +1310,13 @@ void display_statement(Display d, Statement const* me) {
             display_statement(d, my labeled.body);
             break;
 
+        case STATEMENT_WITH:
+            display_lit(d, "with (");
+            display_expr(d, &my with->object);
+            display_lit(d, ") ");
+            display_statement(d, &my with->body);
+            break;
+
         case STATEMENT_BREAK: display_lit(d, "break;"); break;
         case STATEMENT_CONTINUE: display_lit(d, "continue;"); break;
 

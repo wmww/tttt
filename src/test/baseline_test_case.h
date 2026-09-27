@@ -94,6 +94,9 @@ typedef struct BaselineTestCase {
     } symbol_overrides[8];
     u32 symbol_override_count;
     bool error_type; // The types line being added is the error type (see LineNumberedStr.error_type)
+    // In the body of a `with`: tsc's getTypeOfNode and getSymbolAtLocation answer nothing there, every types line is
+    // the error type and there are no symbols lines
+    bool in_with;
     cstr lib_list;
     cstr lib_files; // `@libFiles: react.d.ts,lib.d.ts`: files of tsc's tests/lib (at /.lib) that are roots too
     cstr last_unit; // The name of the test's last unit (the only one whose content ends where the test file does)

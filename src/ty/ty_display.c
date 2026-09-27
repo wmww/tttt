@@ -939,6 +939,9 @@ static bool statements_have_return(VecStatement const* statements) {
             case STATEMENT_FOR_EACH_LOOP:
                 if (statements_have_return(&(VecStatement){ .data = &i->for_each_loop->body, .size = 1 })) return true;
                 break;
+            case STATEMENT_WITH:
+                if (statements_have_return(&(VecStatement){ .data = &i->with->body, .size = 1 })) return true;
+                break;
             case STATEMENT_SWITCH:
                 for_each (c, vec_switch_case, &i->switch_->cases) {
                     if (statements_have_return(&c->statements)) return true;

@@ -369,6 +369,7 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
         case STATEMENT_SWITCH:
         case STATEMENT_TRY_CATCH:
         case STATEMENT_LABELED:
+        case STATEMENT_WITH:
         case STATEMENT_BREAK:
         case STATEMENT_CONTINUE:
         case STATEMENT_EXPR:

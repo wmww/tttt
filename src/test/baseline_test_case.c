@@ -1230,6 +1230,12 @@ static void append_decl(cstr* target, Span span) {
 }
 
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
+    if (my in_with) {
+        cstr_drop(&data.text);
+        vec_span_drop(&data.declarations);
+        vec_span_drop(&data.namespaces);
+        return;
+    }
     unsigned line_for_placement = span_line_index(data.span);
     for (u32 i = 0; i < my symbol_override_count; i++) {
         if (my symbol_overrides[i].span.sv.buf != data.span.sv.buf || my symbol_overrides[i].span.sv.size != data.span.sv.size) continue;
@@ -1384,6 +1390,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
 }
 
 void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type) {
+    if (my in_with) type = ty_intrinsic(current_checker, TY_ERROR);
     cstr rendered = cstr_null;
     cstr underline = cstr_null;
     TyParamNames param_names = { .in_scope = { .data = my scope_params, .len = my scope_params_len } };
@@ -1399,6 +1406,10 @@ void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span
 }
 
 void baseline_test_case_add_type_text(BaselineTestCase* me, Span span, csview text) {
+    if (my in_with) {
+        baseline_test_case_add_type(me, span, nullptr);
+        return;
+    }
     cstr underline = cstr_null;
     for (isize i = 0; i < text.size; i++) cstr_push(&underline, "^");
     add_type_rendered(me, span, span, text, &underline);

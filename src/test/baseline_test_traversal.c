@@ -1717,6 +1717,14 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_SOURCE_DIRECTIVE:
             break;
 
+        case STATEMENT_WITH: {
+            expr_compile_test_info(&my with->object, ctx);
+            bool saved = ctx->in_with;
+            ctx->in_with = true;
+            statement_compile_test_info(&my with->body, ctx);
+            ctx->in_with = saved;
+        }   break;
+
         case STATEMENT_BLOCK:
             block_compile_test_info(&my block, ctx);
             break;

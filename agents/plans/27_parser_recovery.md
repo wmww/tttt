@@ -61,7 +61,7 @@ By mechanism (a heuristic on the first differing error's code and source line; `
 | permissive: yield/await as identifiers | 28 | 2 | `yield foo;` outside a generator, `a = await => await` |
 | permissive: index signatures | 26 | 2 | `[...x]: T`, `[a, b]: T`, `[]: T`, `[public x: T]`, `[a: number = 1]` |
 | permissive: heritage clauses | 22 | 2 | `class C extends A, B`, `extends A extends B`, `interface I implements J`, `extends A?.B` |
-| permissive: `with` | 17 | 2 | not parsed at all (tsc: TS1101/TS2410 from the checker) |
+| permissive: `with` | 17 | 2 | done: `STATEMENT_WITH` (all 17 pass their errors) |
 | permissive: private names | 17 | 2 | `#x` in object literals, enums, variable names (TS18016/TS18029) |
 | permissive: decorators | 9 | 2 | `var F = @dec () => {}`, `@dec` before `import =` |
 | lexical: literals | 92 | 3 | unterminated templates (TS1160), `\u{...}` escapes (TS1198/1199/1125 positions), numeric separators (TS6188), `1.toString()` (TS1351), conflict markers (TS1185), binary files (TS1490), regex validation (TS1499...) |
@@ -145,8 +145,7 @@ has parse errors: `hasParseDiagnostics`, see how `SourceFile.has_parse_errors` i
   `checkGrammarIndexSignatureParameters` (TS1017, TS1019, TS1021, TS1096...).
 - Heritage clauses: a list of `extends`/`implements` clauses in any order and count, each a list of expressions
   with type arguments (`checkGrammarClassDeclarationHeritageClauses`: TS1172-TS1176; interfaces TS1175/TS1176).
-- `with`: a real statement (`STATEMENT_WITH`); the checker reports TS1101 in strict mode and TS2410 always, and tsc
-  doesn't check its body. Needs a binder/flow decision (tsc binds the body normally).
+- `with`: done (`STATEMENT_WITH`, `WithStatement`).
 - Private names are identifiers everywhere tsc's parser allows `#x` as a property name, with TS18016 et al.
 - Decorators before any expression/declaration tsc accepts them at (TS1206 from the checker).
 - The `other:M` checks that are real parser checks (TS1359 reserved word as a name, TS2754, TS1433, TS1146...).

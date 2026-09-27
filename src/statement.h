@@ -16,6 +16,7 @@ typedef struct TryCatchStatement TryCatchStatement;
 typedef struct ForEachLoopStatement ForEachLoopStatement;
 typedef struct SwitchStatement SwitchStatement;
 typedef struct PortStatement PortStatement;
+typedef struct WithStatement WithStatement;
 
 typedef struct DeclStatementProps {
     DeclExported exported;
@@ -120,6 +121,7 @@ typedef struct Statement {
         STATEMENT_SWITCH,
         STATEMENT_TRY_CATCH,
         STATEMENT_LABELED,
+        STATEMENT_WITH, // `with (x) body`: tsc binds the body but doesn't check it
         STATEMENT_BREAK,
         STATEMENT_CONTINUE,
         STATEMENT_EXPR,
@@ -144,6 +146,7 @@ typedef struct Statement {
         ForEachLoopStatement* for_each_loop;
         SwitchStatement* switch_;
         TryCatchStatement* try_catch;
+        WithStatement* with;
         Span keyword_span; // Used for continue and break
         struct {
             Span name;
@@ -306,6 +309,15 @@ typedef struct SwitchStatement {
     Expr needle;
     VecSwitchCase cases;
 } SwitchStatement;
+
+// With statement (tsc parses and binds it, the checker reports TS2410 and never looks into the body: every node in it
+// is `any` with no symbol in the baselines)
+
+typedef struct WithStatement {
+    Expr object;
+    Statement body;
+    Span header; // `with (x)`: where TS2410 goes
+} WithStatement;
 
 // Try-catch-finally statement
 
