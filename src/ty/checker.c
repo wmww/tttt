@@ -1217,11 +1217,16 @@ static void tuple_builder_add(Checker* me, TupleBuilder* b, Ty const* type, unsi
 // tsc's createNormalizedTupleType: spreads of tuples are spliced in, a spread of a union is a union of tuples, and
 // everything from the first rest element to the last optional or rest one is one rest element. Null if there's
 // nothing to do
+static bool is_readonly_array(Checker* me, Ty const* ty) {
+    return ty->kind == TY_REFERENCE && ty->reference.target == my readonly_array_target;
+}
+
 static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
     TupleShape const* shape = target->declared.tuple;
     // A lone rest element of an array is that array (tsc's getTupleTargetType): `[...xs]` in a tuple context
-    if (shape->arity == 1 && (shape->flags[0] & TUPLE_ELEMENT_REST) && ty_is_array(me, args.data[0])) {
-        return shape->readonly ? ty_array(me, ty_reference_args(me, args.data[0]).data[0], true) : args.data[0];
+    if (shape->arity == 1 && (shape->flags[0] & TUPLE_ELEMENT_REST) && (ty_is_array(me, args.data[0]) || is_readonly_array(me, args.data[0]))) {
+        Ty const* element = ty_reference_args(me, args.data[0]).data[0];
+        return ty_array(me, element, shape->readonly);
     }
     bool needed = false;
     bool past_rest = false; // Past a (non-generic) rest element: an optional or rest element after it merges into it
@@ -1229,8 +1234,9 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         if (past_rest && (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL)) needed = true;
         if (!(shape->flags[i] & TUPLE_ELEMENT_REST)) continue;
         Ty const* arg = args.data[i];
+        // (A rest element keeps only the element type of the array it spreads: `...readonly T[]` is `...T[]`)
         needed = ty_is_tuple(arg) || (arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET) ||
-            (arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) || (arg->flags & TYF_NEVER);
+            (arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) || (arg->flags & TYF_NEVER) || is_readonly_array(me, arg);
         if (!is_generic_spread(me, arg)) {
             needed |= past_rest;
             past_rest = true;
@@ -1276,6 +1282,8 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
             for (u32 j = 0; j < inner->arity; j++) {
                 tuple_builder_add(me, &b, elements.data[j], inner->flags[j], inner->names ? inner->names[j] : nullptr);
             }
+        } else if (is_readonly_array(me, arg)) {
+            tuple_builder_add(me, &b, ty_array(me, ty_reference_args(me, arg).data[0], false), TUPLE_ELEMENT_REST, name);
         } else if (!(arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET)) {
             tuple_builder_add(me, &b, arg, TUPLE_ELEMENT_REST, name);
         }

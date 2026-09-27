@@ -1,4 +1,4 @@
-// tsc: no errors. tttt: [string, ...unknown[]] (ReadonlyDeep keeps a rest element as `...readonly number[]`, see lower_tuple TODO)
+// tsc: no errors (run it through ./release/tttt with a path relative to this file; filetest.sh can't import).
 import type {WritableDeep, ReadonlyDeep} from '../../../thirdparty/corpora/type-fest/index';
 declare function expectType<T>(value: T): void;
 declare const r: ReadonlyDeep<{a: [string, ...number[]]}>;
