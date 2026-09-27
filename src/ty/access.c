@@ -61,7 +61,7 @@ bool ty_is_numeric_string_type(Checker* me, Ty const* ty) {
 // Whether a specific (not `string`) index signature applies to a key (tsc's isApplicableIndexType): a numeric one to
 // numbers and numeric strings, a symbol one to symbols, a pattern (`[k: `data-${string}`]`) to what it matches
 bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* index) {
-    if (index->flags & TYF_NEVER) return true; // (Assignable to any key type)
+    if (index->flags & (TYF_NEVER | TYF_ANY)) return true; // (Assignable to any key type)
     u32 key_flags = ty_key_flags(index);
     bool stringish = (key_flags & TYF_STRING_LIKE) != 0;
     bool numeric = (key_flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
@@ -98,7 +98,7 @@ static IndexInfo const* find_applicable_index_info(Checker* me, IndexInfo const*
     if (found) return found;
     u32 key_flags = ty_key_flags(index);
     bool stringish_or_numeric = (key_flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0 ||
-        (index->flags & TYF_NEVER);
+        (index->flags & (TYF_NEVER | TYF_ANY));
     for (u32 i = 0; i < count; i++) {
         IndexInfo const* info = &infos[i];
         if ((info->key->flags & TYF_STRING) && stringish_or_numeric) return info;

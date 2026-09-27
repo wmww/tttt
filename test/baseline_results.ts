@@ -23541,12 +23541,12 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyIndexing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'noImplicitAnyIndexingSuppressed': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

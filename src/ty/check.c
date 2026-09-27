@@ -1226,6 +1226,8 @@ static bool suggested_index_method(Checker* me, PropertyExpr const* access, Ty c
 // The first member of the index `object` has nothing for (tsc reports that one and suppresses the others), null if
 // there's none
 static Ty const* missing_index_member(Checker* me, Ty const* object, Ty const* index) {
+    // `any` fits any index signature (and finds no property)
+    if (index->flags & TYF_ANY) return ty_applicable_index_info(me, object, index) ? nullptr : index;
     if (index->kind != TY_UNION || (index->flags & TYF_BOOLEAN)) return ty_access(me, object, index) ? nullptr : index;
     for (u32 i = 0; i < index->composite.types.len; i++) {
         Ty const* member = index->composite.types.data[i];
@@ -1254,10 +1256,14 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
     if (index_span.source && index_span.source->is_js) return; // TODO: JS literal types (any)
     Ty const* full_index = ty_regular(me, ty_access_key_type(me, access));
     u32 key_like = TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
-    if (full_index->flags & (TYF_ANY | TYF_NEVER | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_NULLABLE | TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+    // (`any` is a key like any other: tsc's isTypeAssignableToKind)
+    if ((full_index->flags & TYF_ERROR) || (full_index->flags &
+        (TYF_NEVER | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_NULLABLE | TYF_COULD_CONTAIN_TYPE_VARIABLES))) {
         return;
     }
-    if (full_index->kind == TY_UNION && !(full_index->flags & TYF_BOOLEAN)) {
+    if (full_index->flags & TYF_ANY) {
+        // Found by any index signature
+    } else if (full_index->kind == TY_UNION && !(full_index->flags & TYF_BOOLEAN)) {
         for (u32 i = 0; i < full_index->composite.types.len; i++) {
             if (!(ty_key_flags(full_index->composite.types.data[i]) & key_like)) return; // TS2538's business
         }
