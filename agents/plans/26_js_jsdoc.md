@@ -6,8 +6,8 @@ Written 2026-09-26 (planning session, todo entry 4).
 **Stage 1 done** (2026-09-27, 8 commits "Plan 26 stage 1, part N"): JS tests passing 160 -> 247, suite 8258 -> 8345.
 Built as designed except: JSDoc is consumed at parse time rather than stored (fine for stage 1; stage 3's `@typedef`
 and `@template` need tags that outlive a host's parse: store them first), and `exports.x =` is only declared from a
-file's top-level statements. What was left out or approximated is in hacks.md "JavaScript" and triage.md "From plan 26
-stage 1"; the most valuable leftovers for later stages: `module.exports.x` merging into export= (stage 2),
+file's top-level statements. What was left out or approximated is in hacks.md "JavaScript" and "Leftovers collected
+by triage" below; the most valuable leftovers for later stages: `module.exports.x` merging into export= (stage 2),
 `@type` on declaring assignments (stage 3, with typedefs), JSDoc parse errors. Unresolved JSDoc names are silent
 until stage 3 (HACK). `documentation.md` "JSDoc" / "CommonJS" describe what exists.
 **Stage 2 done** (2026-09-27, 3 commits "Plan 26 stage 2, part N"): JS tests passing 260 -> 299, suite 8631 -> 8686.
@@ -151,7 +151,7 @@ Port that classification as one function over `Expr` and bind by kind:
   a CommonJS module from TS/ESM goes through the existing `export=` machinery (`module_export_equals()`); check
   `esModuleInterop`/synthetic default behaviour against the baselines rather than inventing it.
 - **Expandos** (JS and TS: tsc binds `f.x =` on function declarations and `const f = function/arrow` in TS too,
-  triage.md "TS function expandos"; JS adds `const o = {}` / class expressions / `var ns = ns || {}` namespaces):
+  done for TS; JS adds `const o = {}` / class expressions / `var ns = ns || {}` namespaces):
   `f.x = v` declares `x` in `f`'s `exports` (the function+namespace merge path already gives `typeof f` those members:
   `ty_merged_value_type()`), and a variable-declared expando host gets exports on the variable symbol, which the
   variable's type then includes (tsc: `getTypeOfFuncClassEnumModule` / the JS branch of
@@ -210,7 +210,7 @@ each.
 
 ### Stage 2: expandos and JS classes
 - Assignment declarations beyond CommonJS: `f.x =` expandos (JS and TS; TS function expandos fix
-  `tsxStatelessComponentDefaultProps` & co., triage.md), `this.x =` members of JS classes and constructor functions,
+  `tsxStatelessComponentDefaultProps` & co.), `this.x =` members of JS classes and constructor functions,
   `F.prototype.m =` / `F.prototype = {}`, `@class`/`@constructor`, `Object.defineProperty` exports and members.
 - Constructor functions: construct signature, `this` type inside, `typeof F` printing; TS7009/TS2683 gone.
 - JS leniency rules (design 4): optional parameters, `arguments` makes a rest parameter, JS widening of
@@ -267,3 +267,29 @@ bucket gets sampled into triage.md.
 - `esModuleInterop` / `allowSyntheticDefaultImports` when a TS file default-imports a CommonJS JS module.
 - Whether a file-scope `@typedef` in a script and one in a module both work with the current global/exports split
   without new cases in `scope_init_declaration()`.
+
+## Leftovers collected by triage (2026-09-27)
+JS items that were in triage.md (statuses checked then); most are stage 3 or the TS2339 gate session.
+- argumentsReferenceInMethod3_Js / 5_Js (types): `/** @type object */ this.x = v` needs `@type` without braces (tsc's
+  parseTypeTag with mayOmitBraces), `@type` on a declaring assignment as its declared type, and JSDoc `object` in a JS
+  file without noImplicitAny being any (getTypeFromTypeNodeWorker ObjectKeyword).
+- jsEnumCrossFileExport: `@param {!Host.UserMetrics.Action}` resolves to the expando value (its object type) where tsc
+  takes the `@enum` tag; `@typedef {string} Host.UserMetrics.Bargh` isn't declared.
+- The JS TS2339 gate: hacks.md "JavaScript" lists what removing it still breaks; each item is a small binder piece.
+  Worth one session after stage 3 (typedefs are part of it).
+- multipleDeclarations: `F.prototype.m = function` next to `this.m = v` is two symbols in tsc (Method excludes
+  Property), one member here.
+- `module.exports.x = v` after `module.exports = C` is a member of the export= type in tsc (members copied into a new
+  anonymous type, getInitializerTypeFromAssignmentDeclaration), symbols `wat.D` / `Symbol(C.x)`:
+  jsDeclarationsExportSubAssignments, moduleExportAlias4.
+- `@type` on declaring assignments (`/** @type {Foo} */ module.exports = {...}`, `exports.x = ...`) and on `export
+  default <expr>`: the declared type, context and assignability target (checkJsdocTypeTagOnExportAssignment1-8, which
+  also need @typedef).
+- TS6210 related info of an arrow function under a variable's `@type` points at the arrow's parameter; tsc points at
+  the JSDoc signature's (getSignatureOfTypeTag applies to the arrow). Same root: the arrow's return type is reused
+  from the `@type` in tsc's types baseline (jsdocTypeTagParameterType, jsdocTypeTagRequiredParameters).
+- `expandoFunctionSymbolProperty(Js)`: `f[symb] = ...` with a unique symbol key is a late-bound expando (tsc's
+  hasDynamicName -> addLateBoundAssignmentDeclarationToSymbol); only static names are expandos so far (spurious TS2741).
+- `requireOfJsonFileInJsFile` (JSON through `require` in JS); JS-only duplicate buckets (TS2323/TS2528/TS2451 in
+  `module.exports`/`@typedef` tests); TS8002/TS8006/TS8010 (stage 4); the displaydiff `tsc-typeof` bucket (expando
+  functions print `typeof f`).

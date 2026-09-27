@@ -57,12 +57,13 @@ types components) are the oracle, not the goal; real projects that are clean und
   with flat corpus counts is test-chasing.
 - **The suite's remaining errors are a long tail, not a category.** Work it in "suite checker bugs" sessions driven by
   failstats' single-code buckets (the last two such sessions moved +72 and +98) and the module/target-gated
-  diagnostics (TS1202/1203/2441/2725/1262..., triage.md "Target-gated"). Plan 27 stage 2 (permissive grammar, ~190
+  diagnostics (TS1202/1203/2441/2725/1262..., `bugs/missing_checks.md` "Target/module-gated"). Plan 27 stage 2 (permissive grammar, ~190
   tests, error-only code shapes) waits until after this window: real code rarely has syntax errors.
 - **JS stage 2 (expandos, JS classes) is scheduled**: it's the binder side (assignment declarations) that vision
   flagged as foundational; stages 3-4 later.
-- **hacks.md is 914 lines.** Still useful, but the triage at the end of this window should prune entries fixed by
-  plans 26-30 and consolidate, the way triage.md was pruned.
+- **hacks.md was pruned by the 2026-09-27 triage** (1025 -> 603 lines, by subsystem). Known bugs live in
+  `bugs/*.md` by area now; `bugs/missing_checks.md` is the queue for "suite checker bugs" sessions, and triage.md is
+  back to an inbox.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **Every todo window has corpus sessions** (the corpora were once left alone for ~30 sessions), and todo.md has a

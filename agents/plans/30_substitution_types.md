@@ -22,7 +22,7 @@ valibot 54 -> 50, tsc 0, type-fest 48, react 1; callgrind on the tsc corpus +0.5
   indexes into it); the argument error head names the base.
 - Not done / left: item 7's audit was done by test fallout only (62 `kind == TY_TYPE_PARAM` sites, the ones that
   mattered were homomorphism, distributivity, inference targets); the mapped-type half of getConditionalFlowTypeOfType;
-  noInfer's `mutate` case and conditionalTypes2's elaborations (triage.md).
+  noInfer's `mutate` case and conditionalTypes2's elaborations (`bugs/type_core.md`).
 Most of the triage cluster was **not** substitution types but tsc's *simplification* of indexed accesses
 (getSimplifiedIndexedAccessType), now `ty_simplified` (relate.c). Substitution types are the smaller-yield stage left.
 Probes: `test/probes/plan30/`.
@@ -44,7 +44,7 @@ Probes: `test/probes/plan30/`.
   controlFlowComputedPropertyNames loss and nonNullMappedType); `awaited_type_needed` treats a mapped type as its own
   base constraint (awaitedType regressed otherwise).
 - Not done: getSimplifiedConditionalType, generic tuple by number, NoIndexSignatures on the write side (hacks.md).
-  typeVariableConstraintIntersections still fails for another reason (triage.md).
+  typeVariableConstraintIntersections still fails for another reason (`bugs/type_core.md`, intersection reduction by constraint).
 
 ## Why
 Triage items sharing this root (`agents/triage.md` "From the suite checker bugs session" and "Substitution types";

@@ -1335,7 +1335,7 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
     }
     u32 given = (u32)vec_spanned_type_size(args);
     if (!params.len || given > params.len) return;
-    // (Nothing is lowered unless there's something to check: see triage.md, merged interfaces' type parameters)
+    // (Nothing is lowered unless there's something to check: merged interfaces' type parameters)
     bool constrained = false;
     for (u32 i = 0; i < given && !constrained; i++) constrained = ty_param_constraint(me, params.data[i]) != nullptr;
     if (!constrained) return;

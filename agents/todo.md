@@ -27,6 +27,9 @@ corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and
    now (TS2347), empty statements exist in the AST.
 9. Done: perf (plan 28: calls resolve once, tsc corpus callgrind 6.17 G -> 5.79 G; valibot's plan 31 regression
    was eager instantiation of mapped instances, fixed: 8.15 G -> 5.64 G, 0.81 s wall). Suite 8948, corpora unchanged.
-10. **Triage.** Drain triage.md; also prune hacks.md (914 lines: drop what plans 26-30 fixed, consolidate).
+10. Done: triage (suite 8948 -> 8952, corpora unchanged: type-fest 19, others 0). triage.md drained into new
+    `bugs/*.md` files (missing_checks, type_core, display, harness, perf_leads) and plans 26/27; hacks.md 1025 -> 603
+    lines. Fixed on the way: distributed conditionals no longer keep their alias (`Awaited<X | Y>`), homomorphic
+    `Prettify` instances print their structure, generic spreads are `{ a } & T & { b }` in tsc's order.
 11. **Insights.** Waiting to be scheduled: plan 27 stage 2 (permissive grammar), plan 30 stage 3, plan 26 stages 3-4,
     plan 32 (mixin classes, a draft needing a planning session), decorators (if the fourth corpus asks for them).

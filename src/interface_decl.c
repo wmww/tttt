@@ -217,7 +217,5 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         }
         if (index_count > 1) ty_check_duplicate_index_signatures(current_checker, indexes, index_count, errs);
     }
-    // TODO: off until checking `CallChainRoot extends CallChain` early stops making the corpus' aliases circular
-    // (triage.md, "TS2430"); TS2415/TS2416/TS2420 for classes are on
     interface_heritage_typecheck(me, errs);
 }

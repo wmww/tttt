@@ -25,7 +25,7 @@ classes. What tsc does instead:
   missing TS2515 on `class Wrong extends withBar(Bar) {}`, wrong `typeof ExtendedBar` everywhere).
 - Suite (`build/failstats/tests.tsv`, 2026-09-27): mixinClassesAnnotated, mixinClassesMembers, mixinPrivateAndProtected,
   mixinOverMappedTypeNoCrash fail all three components; mixinClassesAnonymous, declarationEmitMixinPrivateProtected,
-  mixingApparentTypeOverrides fail some. triage.md's mixinAccessModifiers / mixinPrivateAndProtected entry (mixin
+  mixingApparentTypeOverrides fail some. `bugs/type_core.md`'s mixinAccessModifiers / mixinPrivateAndProtected entry (mixin
   intersections aren't reduced) belongs here too.
 
 ## What the planning session should decide

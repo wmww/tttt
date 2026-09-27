@@ -185,3 +185,31 @@ it's paying off unusually well.
 - `./realworld.py` and `--corpus type-fest|valibot|react`: still zero parse diagnostics, counts not worse.
 - `./bench.sh`: parse time on react and the tsc corpus within noise (the list predicates run on every element).
 - binderBinaryExpressionStress still passes at the default stack (don't add frames per list element).
+
+## Leftovers collected by triage (2026-09-27)
+Parser items that were in triage.md; fold them into whichever stage they fit.
+- Stage 1 follow-ups: `other:E` grew 78 -> 81 and `other:D` barely moved (tests whose first error agrees now but
+  later recovery differs; sample `./syntaxstats.py --list other:E`). `parse_class_item_inner()` still fails where tsc
+  commits (nameless `*`, `get`/`set` members); function types in type position backtrack freely (tsc's
+  isUnambiguouslyStartOfFunctionType). The parser's `saw_jsx`/`saw_import_meta` are set by attempts that backtrack too.
+- Permissive grammar (stage 2) shapes seen in other buckets: private names outside classes (object literals,
+  interfaces, parameters, enums: TS18016/TS1451, `--syntax -f '^privateName.*'`; `{ #y: 1 }`: objectLiteralErrors);
+  modifiers on object literal members (TS1042, modifiersInObjectLiterals); enum members named `1`/`[2]`/`"3"`
+  (TS2452/TS1164/TS1357: enumErrors, literalsInComputedProperties1, parserEnum5/7); `class void {}` / `type void = I`
+  (TS1005/TS2457); index signatures with two parameters (TS1096, giant); `import { as as as }` (importSpecifiers1);
+  `this is T` predicates in more positions (TS1228, typeGuardOfFormThisMember); a bare `super` (TS1034); `{ x = 1 }`
+  outside patterns (TS1312); `let x!` misplaced (TS1263/1264); `const c;` in ambient files; malformed import types
+  (nodeModulesImport*DeclarationEmitErrors); `bigintPropertyName` (a parse failure in a.ts line 12).
+- Recovery fidelity where the harness typechecks next to parse errors: parserGreaterThanTokenAmbiguity12-14/17-19
+  (`1 >> = 2` parses as an assignment and gets TS2364); arrow functions in `?:` recovery (`(a?) => {} ? b : c`) give
+  TS1005 where tsc's tokens may differ; spurious TS2300/TS2304 after bad recovery (`with`, `await`, `yield`, `public`).
+- Lexical (stage 3): TS1161 for an unterminated regex (`parse_regex` just fails); `a` escapes in identifiers
+  (duplicateObjectLiteralProperty); non-ASCII identifiers (`is_identifier_char` is ASCII only: jsxEsprimaFbTestSuite);
+  merge conflict markers (TS1185, conflictMarkerTrivia3); unicode escape string errors
+  (unicodeExtendedEscapesInStrings24/25 TS1002); regex patterns (TS1487 etc., `missing_checks.md`).
+- JSX long tail (plan 22 left it; `./failstats.py --jsx --syntax`): jsxInvalidEsprimaTestSuite,
+  jsxNamespacePrefixInName(React) (`<:a>`, `<a:>`), tsxAttributeInvalidNames (`32data`: TS1351 and a number token), an
+  unclosed fragment's TS17014 span (tsc starts it at the previous token's end: tsxFragmentErrors), jsxAndTypeAssertion
+  (two errors at EOF where tsc's one-error-per-position rule should have dropped one: not understood).
+- Small: `parse_type` turns a leading `&`/`|` into an `any`/`never` operand that every consumer must skip (hacks.md).
+  Overloads of `*()`-style nameless members. `override`/TS4112+.

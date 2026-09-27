@@ -1,0 +1,31 @@
+# Harness, CLI and tools
+- **`@pretty: true`** (14 tests: prettyFileWithErrorsAndTabs, duplicateIdentifierRelatedSpans1-7,
+  manyCompilerErrorsInTheTwoFiles, multiLineContextDiagnosticWithPretty...): the errors baseline starts with tsc's
+  formatDiagnosticsWithColorAndContext output (ANSI colours, source line with gutter, `~` underline, related info,
+  "Found N errors") before the usual section. The CLI could use the same formatter.
+- `error.c` "Error added with invalid span": ~58 lines per suite run (TS2511 abstract class instantiation ~31, e.g.
+  classAbstract*, newAbstractInstance; TS2503 `Intl` ~13; TS2304/TS2552 `ArrayBufferLike`/`ArrayLike`/`Date` looked up
+  from lib files ~14). `grep "invalid span" build/failstats/stderr.txt`. A span computed from the wrong node or file.
+  Also one "Declaration B acquired multiple times" (scope.c).
+- `@baselineFile`, `@fullEmitPaths` are ignored; bad option values are ignored (tsc's harness throws).
+- `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration. A
+  multi-file probe shows the comment lines before the first `// @filename` as a file of their own in the errors
+  baseline, so the errors component fails although the diagnostics match.
+- The harness reruns a test when the first run leaves net allocations (lib cache fill), ~170 times per suite run.
+  `failstats.py` counts by test *name*; a few names exist in both `compiler/` and `conformance/`, so its counts can
+  differ from the harness by one or two (13540 vs 13542).
+- The CLI (`program.c`) loads the default lib even when a file says `/// <reference no-default-lib="true"/>`; only the
+  harness honours it.
+- Diagnostics without a file that depend on emit paths: TS5055 (38 baselines, "would overwrite input file"), TS5056,
+  TS6054, TS6082/TS5053/TS5069 (outFile/sourceMap/declaration combinations), TS5101/TS5107 under
+  `ignoreDeprecations`. With a tsconfig tsc puts option diagnostics on the option's json span; tttt skips them.
+- Module resolution leftovers: resolution-mode attributes (~20 tests), `tryLoadInputFileForPath` (outDir mapping back
+  to the input `.ts`, 8), Windows rooted paths (3), tsconfig `references`/`watchOptions`.
+- The stdlib checks clean: a cheap regression check for lib-related changes (`./bench.sh`'s `lib_closure` lists the
+  84 files to pass as roots; `--no-lib esnext.full.d.ts` alone ignores `/// <reference lib>`).
+- Dead-ish code: `display.c`'s syntax printer is only needed for `--print-ast` and written type names
+  (`DISPLAY_TYPE_MAX_DEPTH`, `BriefType` may be dead; `DisplayUnderlineTarget`/`underline_display()` is: delete it).
+  Nodes aren't cloned any more: collapse `owned_symbol`/`symbol_ref` (`GenericItem`, `InferredType`, mapped keys) and
+  `key.expr.owned`/`ref` into one pointer each; drop `LAZY_TYPE_FUNCTION`.
+- The git stash list holds a foreign entry ("WIP on (no branch): 2d0b590", relate.c); worktree agents share the
+  stash, don't use it.

@@ -17,7 +17,7 @@ are in git history.
   literals), conditional types defer on a generic mapped extends type. Suite 8599 -> 8603, both components stages
   1-2 lost are back (recursivelyExpandingUnionNoStackoverflow types, and awaitedType types on top), type-fest 46 ->
   48 (different: see plan 19 R21), valibot 54 (RSS 544 -> 525 MB), react 1, tsc 0, callgrind +0.42%.
-  Leftovers in triage.md ("Plan 29 stage 3 leftovers").
+  Leftovers in `bugs/type_core.md` ("Circularity").
 
 ## Stage 4 (optional, measure first): always-lazy conditional branches
 tsc resolves `trueType`/`falseType` on first use, always; tttt only when `node_reaches_alias_in_flight_deep()`

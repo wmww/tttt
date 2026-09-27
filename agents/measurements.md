@@ -2,6 +2,11 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, triage (todo entry 10)
+Suite 8948 -> **8952** (errors 10748, symbols 12174, types 10497); corpora identical (tsc 0, type-fest 19,
+valibot/react/nest 0). displaydiff: `other` 387+45 tests alone, `we-any` 121+43, `underlines/order only` 109+20,
+`line-extra` 113+6, `tsc-any` 99+16 (TS+JS tests fixed by one kind).
+
 ## 2026-09-27, perf: plan 28 + valibot regression + check-up (todo entry 9)
 Suite **8948** unchanged (no component moved); corpora identical (tsc 0, type-fest 19, valibot/react/nest 0).
 Callgrind (`valgrind --tool=callgrind ./release/tttt -q --keep-going -p DIR`):

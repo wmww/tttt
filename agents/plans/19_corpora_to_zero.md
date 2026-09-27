@@ -29,7 +29,7 @@ commit message and `measurements.md`.
 - type-fest `test-d/`: ~500 evaluation errors of utility types (`expectType<ArraySlice<[0,1,2,3],1>>([1,2,3])`: the
   utility evaluates to the wrong type). Most go through template literal arithmetic (plan 18). tsd's `expectType` /
   `expectError` are plain functions; `expectError` checks nothing at type level.
-- tttt only works when run from the repo root (lib path relative to cwd): triage.md.
+- ~~tttt only works when run from the repo root~~ fixed (`main.c` finds the lib).
 
 ## Ranking after plan 18 (2026-09-23)
 Totals: **type-fest 424** (TS2345 225, TS2339 75, TS2322 48, TS2578 35, TS2344 14, TS2589 13), **valibot 1965**
