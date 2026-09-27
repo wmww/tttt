@@ -1508,6 +1508,15 @@ static void report_misplaced_async(Parser* p, ModifierList const* modifiers) {
     }
 }
 
+// tsc's checkGrammarModifiers() on a parameter: the modifiers that are never allowed there (the first one)
+static void report_parameter_modifiers(Parser* p, ModifierList const* modifiers) {
+    for_each (i, vec_spanned_modifier, &modifiers->spanned) {
+        if (i->tag != MODIFIER_STATIC && i->tag != MODIFIER_EXPORT && i->tag != MODIFIER_DECLARE && i->tag != MODIFIER_ASYNC) continue;
+        parse_error(p, i->span, 1090, "'", i->span, "' modifier cannot appear on a parameter.");
+        return;
+    }
+}
+
 static void modifier_list_validate_during_parse(Parser* parent, ModifierList const* me, Span name, ModifierValidationFlags flags) {
     ErrorCtx errs = { .phase = ERROR_PHASE_PARSE };
     modifier_list_validate(me, name, flags, &errs);
@@ -3297,6 +3306,7 @@ static bool parse_function_args_inner(
                     modifier_list.includes[MODIFIER_OVERRIDE];
                 uint8_t access = modifier_list.includes[MODIFIER_PRIVATE] ? ACCESS_MODIFIER_PRIVATE :
                     modifier_list.includes[MODIFIER_PROTECTED] ? ACCESS_MODIFIER_PROTECTED : ACCESS_MODIFIER_PUBLIC;
+                report_parameter_modifiers(&p, &modifier_list);
                 modifier_list_drop(&modifier_list);
                 hop_whitespace(&p);
 
@@ -3325,8 +3335,10 @@ static bool parse_function_args_inner(
                 }
                 hop_whitespace(&p);
 
+                Span question_span = span_null;
                 if (hop_char(&p, '?')) {
                     explicit_optional = true;
+                    question_span = span_from_previous_char(&p);
                     hop_whitespace(&p);
                 }
 
@@ -3356,6 +3368,7 @@ static bool parse_function_args_inner(
                     .rest_span = rest_span,
                     .initializer = initializer,
                     .explicit_optional = explicit_optional,
+                    .question_span = question_span,
                     .rest = rest,
                     .decorators = decorators,
                     .is_parameter_property = is_parameter_property,
@@ -8287,7 +8300,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
 
 static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
-        1020, 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1162, 1184, 1248, 1253, 1255,
+        1020, 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1090, 1162, 1184, 1248, 1253, 1255,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;

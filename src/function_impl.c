@@ -197,12 +197,42 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl const* getter)
     }
 }
 
+// tsc's checkGrammarParameterList(): the first misplaced rest parameter, `?`, or required parameter after an optional one
+static void function_impl_check_grammar_parameters(FunctionImpl const* me, ErrorCtx* errs) {
+    bool seen_optional = false;
+    for_each (i, vec_function_arg, &my args) {
+        bool has_initializer = i->initializer.value.tag != EXPR_IMPLICIT_ANY;
+        Span name = i->initializer.binding.content_span;
+        if (i->rest) {
+            if (i_index != vec_function_arg_size(&my args) - 1) {
+                error_ctx_grammar_error_d(errs, i->rest_span, 1014, "A rest parameter must be last in a parameter list.");
+                return;
+            }
+            if (span_valid(i->question_span)) {
+                error_ctx_grammar_error_d(errs, i->question_span, 1047, "A rest parameter cannot be optional.");
+                return;
+            }
+            if (has_initializer) {
+                error_ctx_grammar_error_d(errs, name, 1048, "A rest parameter cannot have an initializer.");
+                return;
+            }
+        } else if (i->explicit_optional) {
+            seen_optional = true;
+            if (span_valid(i->question_span) && has_initializer) {
+                error_ctx_grammar_error_d(errs, name, 1015, "Parameter cannot have question mark and initializer.");
+                return;
+            }
+        } else if (seen_optional && !has_initializer) {
+            error_ctx_grammar_error_d(errs, name, 1016, "A required parameter cannot follow an optional parameter.");
+            return;
+        }
+    }
+}
+
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
+    function_impl_check_grammar_parameters(me, errs);
 
-    bool found_optional = false;
-    bool required_after_optional = false;
-    bool rest_not_last = false;
     for_each (i, vec_function_arg, &my args) {
         bool has_initializer = i->initializer.value.tag != EXPR_IMPLICIT_ANY;
         if (i->is_parameter_property && !(my is_constructor && my has_body)) {
@@ -218,24 +248,6 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
             );
         }
 
-        if (i->rest && i_index != vec_function_arg_size(&my args) - 1 && !rest_not_last) {
-            rest_not_last = true;
-            error_ctx_error_d(errs, i->rest_span, 1014, "A rest parameter must be last in a parameter list.");
-        }
-
-        if (i->rest) {
-        } else if (i->explicit_optional) {
-            found_optional = true;
-        } else if (found_optional && !has_initializer && !required_after_optional) {
-            required_after_optional = true;
-            error_ctx_error_d(
-                errs,
-                i->initializer.binding.content_span,
-                1016,
-                "A required parameter cannot follow an optional parameter."
-            );
-        }
-
         if (i->rest) {
             // `(...args: infer A) => any` is fine: the implied constraint of A is `unknown[]`
             Binding const* binding = &i->initializer.binding;
@@ -244,14 +256,6 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
             // (A pattern's type is what the pattern implies, tsc's checkParameter doesn't check it)
             if (binding->tag == BINDING_IDENTIFIER && !ty_extends_array(checker, rest_type)) {
                 error_ctx_error_d(errs, i->span, 2370, "A rest parameter must be of an array type.");
-            }
-            if (has_initializer) {
-                error_ctx_error_d(
-                    errs,
-                    i->initializer.binding.content_span,
-                    1048,
-                    "A rest parameter cannot have an initializer."
-                );
             }
         }
     }

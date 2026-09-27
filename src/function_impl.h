@@ -15,6 +15,7 @@ typedef struct FunctionArg {
     Span jsdoc_span;
     InitializedBinding initializer;
     bool explicit_optional;
+    Span question_span; // `?`, invalid when the parameter has none (explicit_optional can come from JSDoc)
     Span rest_span;
     bool rest;
     VecExpr decorators; // TODO: only checked as expressions
