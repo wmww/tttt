@@ -23,5 +23,14 @@ single-code errors buckets and missing features (JSON modules, noUncheckedIndexe
 moved more.)
 (Entry 9, perf check-up, is done, 2026-09-27: tsc corpus 6.92 G -> 5.91 G instructions, 0.93 -> 0.87 s; most of the
 "drift" was the machine. Plan 28 (resolve calls once, ~8%) written for the insights to schedule.)
-10. **Triage.**
-11. **Insights.**
+(Entry 10, triage, is done, 2026-09-27: suite 8481 -> 8579 from eight small fixes found while re-probing triage.md
+and in failstats' single-code buckets (measurements.md); triage.md re-probed and pruned; plans 29 and 30 written,
+both with measured prototypes. triage.md "Single-code error buckets" is a ready-made list for a "suite checker bugs
+2" session.)
+11. **Insights.** Ready to schedule:
+    - plan 29 (lazy mapped templates, deferred interface references, TS2589 at the right site; ~2-2.5 sessions;
+      prototype: suite +20, type-fest 53 -> 46, valibot 60 -> 54; no new architecture needed);
+    - plan 30 (tsc's indexed-access simplification, then substitution types; ~4 sessions; stage Q + stage 1 first,
+      stage 1 prototype +8; stage 2 must coordinate with plan 29's lazy lowering);
+    - plan 28 (resolve calls once, perf ~8%), plan 26 stage 2 (expandos, JS and TS), plan 27 stage 2 (permissive
+      grammar), plan 19 corpus sessions (R15, R20, R21, re-samples), suite checker bugs 2.

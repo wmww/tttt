@@ -309,6 +309,8 @@ medium (the narrow version: a mapped type whose `keyof X` constraint is the chec
 with an `infer` extends isn't homomorphic).
 
 ### R18. Re-lowering a type node that is in flight gives the error type (type-fest conditional-pick-deep 6)
+**-> plan 29 (2026-09-27), which found a different cause**: an eagerly lowered mapped type template, not alias
+re-entry; conditional-pick-deep is a separate evaluation bug (R20 below). The text below is the original diagnosis.
 `type Pk<K extends string> = {[P in K]: 1}; type P<T> = Pk<keyof M<T> & string>; type M<T> = { [K in keyof T]:
 P<T[K]> }`: `P<{o: 1}>` stays `P<T>`. Checking `Pk<...>` against Pk's constraint (only done for constrained
 parameters, `ty_check_type_reference_constraints`) lowers the argument node before P's declared type exists; that
@@ -321,10 +323,21 @@ when re-entered. Probes `typefest/alias_constraint_cycle.ts`, `pick_rec.ts`, `cp
 its own, also for R19.
 
 ### R19. Eager instantiation of recursive aliases: TS2589 where tsc has none (type-fest readonly-deep, writable-deep, ts41)
+**-> plan 29** (deferred generic interface references in alias bodies; ts41's TS2589 is R21 below).
 `type RD<T> = T extends ReadonlyArray<infer I> ? ReadonlyArray<RD<I>> : T; type J = string | J[]; RD<J>`: tsc defers
 `ReadonlyArray<RD<I>>` (a generic interface reference in an alias whose argument may resolve an alias), tttt expands
 it until the limits. Also: `report_instantiation_limit` reports at the *next* assignability check, which may be
 unrelated code (the probe's TS2589 lands on `const x: number = 1`). Probe `typefest/rd_2589_min.ts`. Same plan as R18.
+
+### R20. conditional-pick-deep (type-fest 6), found by plan 29's investigation
+Not re-entry and no limit (gdb): the nested `ConditionalPickDeep<{string: string}, string>` evaluates to something
+`ConditionalKeys` drops, and `Inner["object"]` prints `Inner`. Probe `test/probes/plan29/cpd_steps.ts` (tsc itself is
+order-dependent there: `sub: any`).
+
+### R21. TS2589 from type-fest's `ArraySlice` (ts41, async-return-type, invariant-of: one each)
+`MAX_TAIL_COUNT` reached while resolving `ArraySlice` for some call; reported on the first check of the next file
+(plan 29 stage 3 moves the report to the real site). Suspect: tttt's tail count spans more than tsc's
+per-`getConditionalType` loop.
 
 ### Also seen
 - Suite: spurious TS7053 where tttt lacks the rule, not the check: index signatures keyed by tagged strings
@@ -338,6 +351,6 @@ unrelated code (the probe's TS2589 lands on `const x: number = 1`). Probe `typef
   TS2578 10, TS2344 10.
 
 ### Suggested order
-R17 (medium, 8), then sample valibot (unsampled since the R10 session) and the rest of type-fest; R15 (react's last,
-the permissive instantiation). R18/R19 need a plan (deferred alias/type-reference resolution): write it rather than
-patching the memo.
+R18/R19 are plan 29 and R17 is plan 30 stage 3 (both written 2026-09-27): run those as their own sessions. For plan
+19 sessions: R20, R21, sample valibot (unsampled since the R10 session) and the rest of type-fest; R15 (react's last,
+the permissive instantiation; plan 30 stage Q adds the restrictive half of the same machinery).

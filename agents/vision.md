@@ -37,6 +37,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   inert), returns of async functions/generators (never checked), indexed access *types* (never checked). Worth a
   sweep for more parsed-but-inert options and TODO'd checks. The two things backed out both need tsc's constraint of
   `T[K]` (triage.md).
+- **Triage 2026-09-27**: suite 8579. Plans 29 and 30 turned "big architectural gaps" into ports of specific tsc
+  rules: plan 29 found tttt already has deferred references and alias caches (R18 is an eager mapped template, R19
+  a missing deferral kind); plan 30 found the `T[K]` cluster is mostly tsc's indexed-access simplification, which
+  tttt lacks entirely, with substitution types a smaller second stage. Cheap wins still exist in the suite: the
+  triage's eight fixes (+98) came from failstats' single-code buckets in minutes each.
 - **Absent**: substitution types, union origins, lazy reverse mapped types, decorator checking,
   declaration emit (out of scope: typechecker only, `--noEmit` semantics), project references, parallelism.
 

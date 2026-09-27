@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, triage after plans 26/27 (todo entry 10)
+Suite 8481 -> **8579 / 13540** full (errors 10274 -> 10388, symbols 12030 -> 12042, types 10273 -> 10319), no lost
+components. All from small fixes found while re-probing triage.md and in failstats' single-code buckets: call error
+spans (+15), string escape errors (+30), triple-slash reference spans (+11), untyped IIFE parameters optional (+15),
+a function's own `arguments` (+11), TS2371 (+8), TS2309 (+7), TS2303 (+1). Corpora: tsc 0, type-fest 53, valibot 60, react 1.
+
 ## 2026-09-27, perf check-up (todo entry 9)
 **The machine is ~15% slower than when the 09-25/09-26 entries were taken**: 49760b2 (recorded 0.76 s on the tsc
 corpus) and 132f9ee (recorded 0.78 s) both run at 0.89-0.91 s today. Compare wall times only within one session;

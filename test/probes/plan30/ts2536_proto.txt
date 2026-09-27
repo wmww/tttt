@@ -1,0 +1,23 @@
+Prototype of generic TS2536 (plan 30 stage 3), replacing the early return in ty_check_indexed_access_type (check.c):
+    if (ty_is_generic_index(index) || ty_is_generic_object(me, object)) return; // TODO: TS2536 against keyof O
+On HEAD it was 9 components gained, 15 lost (causes: plan 30 "Why" (a)).
+
+    if (ty_is_generic_index(index) || ty_is_generic_object(me, object)) {
+        Ty const* keys = ty_keyof(me, object);
+        Members const* m = ty_members(me, ty_apparent_type(me, object));
+        bool num = false;
+        for (u32 i = 0; i < m->index_count; i++) num |= (m->index[i].key->flags & (TYF_NUMBER | TYF_STRING)) != 0;
+        Ty const* const* parts = index->kind == TY_UNION ? index->composite.types.data : &index;
+        u32 n = index->kind == TY_UNION ? index->composite.types.len : 1;
+        bool fits = true;   // (not `ok`: cleat defines an `ok` macro)
+        for (u32 i = 0; i < n && fits; i++) {
+            fits = ty_is_related(me, parts[i], keys, TY_RELATION_ASSIGNABLE) ||
+                (num && ty_is_related(me, parts[i], ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE));
+        }
+        if (!fits) {
+            cstr a = ty_to_cstr(me, index), b = ty_to_cstr(me, object);
+            error_ctx_error_d(errs, index_span, 2536, "Type '", a, "' cannot be used to index type '", b, "'.");
+            cstr_drop(&a); cstr_drop(&b);
+        }
+        return;
+    }
