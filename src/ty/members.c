@@ -1007,6 +1007,12 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 prop->name = checker_atom(me, exports[i].name);
                 prop->symbol = member;
                 if (member->is_const) prop->flags |= PROP_READONLY; // tsc's isReadonlySymbol: a `const` variable
+                // An expando assigned a function is a method (bindPotentiallyNewExpandoMemberToNamespace)
+                if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && member->parent &&
+                    !member->parent->is_module && ((Expr const*)member->decls[0].node)->tag == EXPR_FUNCTION
+                ) {
+                    prop->flags |= PROP_METHOD;
+                }
                 prop->ctx = (LowerCtx){ .generic = true };
                 prop->name_span = symbol->name_span;
                 // `N.p` in the symbols baseline
@@ -1485,6 +1491,12 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                     builder_push(&builder, construct, sig);
                 } else {
                     builder_push(&builder, call, sig);
+                }
+                // `const f = () => {}; f.x = 1` (tsc merges the variable's exports into the function's symbol)
+                Symbol const* host = ty->anonymous.function->expando_host;
+                if (host) {
+                    Members const* expandos = ty_members(me, ty_namespace_type(me, host));
+                    for (u32 i = 0; i < expandos->prop_count; i++) builder_push(&builder, props, expandos->props[i]);
                 }
             } else if (ty->anonymous.overload_count) {
                 for (u32 i = 0; i < ty->anonymous.overload_count; i++) {

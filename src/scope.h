@@ -117,6 +117,9 @@ typedef enum SymbolDeclKind {
     SYMBOL_DECL_ALIAS,          // PortItem
     SYMBOL_DECL_EXPR,           // Expr: `export default <expr>`
     SYMBOL_DECL_ASSIGNMENT,     // Expr: the value of a JavaScript assignment that declares (`exports.x = <expr>`)
+    // Expr: the `f` of an assignment `f.x = v` that declares a member of f (an expando, see scope_add_expandos()). Only a
+    // value of a function, class, enum or namespace (the members, like a namespace's); a variable's initializer has them
+    SYMBOL_DECL_EXPANDO,
     SYMBOL_DECL_COMMONJS_MODULE, // SourceFile: the `module` of a CommonJS file, `{ exports: ... }`
     SYMBOL_DECL_BUILTIN,        // TypeNode const*: `number`, `globalThis`... (program_add_builtins())
     // Symbol const*: what `export =` names in a module a named import is from; the value is its property of the
@@ -438,6 +441,10 @@ void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool expor
 void scope_add_commonjs_export(Scope* me, Expr* assignment, Span statement);
 // The `module` of a CommonJS file that mentions `module.exports` (tsc declares it at the first such access)
 void scope_add_commonjs_module(Scope* me);
+// The expandos of the statements of a block (declared in `me`): `f.x = v` where f is a function declared in the block
+// or its function (or file), or a variable initialized with a function (JavaScript: also a class or `{}`), declares x
+// in f's exports (tsc's bindSpecialPropertyAssignment)
+void scope_add_expandos(Scope* me, struct Block const* block);
 // `require` in a `require("m")` of a JavaScript file that doesn't declare the name
 Symbol* binder_require_symbol(Binder* me);
 

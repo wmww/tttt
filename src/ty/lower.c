@@ -831,12 +831,30 @@ static bool decl_contributes_value(Symbol const* symbol, u32 index) {
             break;
         case SYMBOL_DECL_ENUM: once = SYMBOL_ENUM; break; // One object for every declaration of the enum
         case SYMBOL_DECL_NAMESPACE: once = SYMBOL_VALUE_MODULE; break; // And one for every block of a namespace
+        case SYMBOL_DECL_ASSIGNMENT:
+            // An expando of a namespace's variable (`namespace N { export var x }` and `N.x = 1`) is assigned to it
+            for (u32 i = 0; i < symbol->decl_count; i++) {
+                if (symbol->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && (symbol->decls[i].flags & SYMBOL_VALUE)) return false;
+            }
+            break;
+        case SYMBOL_DECL_EXPANDO:
+            // A variable's expandos are members of its initializer
+            if (symbol->flags & SYMBOL_VARIABLE) return false;
+            once = SYMBOL_VALUE_MODULE;
+            break;
         default: break;
     }
     for (u32 i = 0; i < index; i++) {
         if (symbol->decls[i].flags & once) return false;
     }
     return true;
+}
+
+// What a declaring assignment (`exports.x = v`, `f.x = v`) assigns, before widening object literals (tsc's
+// getInitializerTypeFromAssignmentDeclaration): an export keeps its literal type, an expando's is widened
+static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
+    Ty const* type = ty_expr_type(me, decl->node);
+    return symbol->parent && !symbol->parent->is_module ? ty_widened_literal(me, type) : ty_regular(me, type);
 }
 
 static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
@@ -857,7 +875,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         case SYMBOL_DECL_ASSIGNMENT:
             // tsc's getInitializerTypeFromAssignmentDeclaration: `exports.x = 1` exports `1`, `module.exports = 1` number
             if (csview_equals(symbol->name, "export=")) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
-            return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
+            return ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));
         case SYMBOL_DECL_COMMONJS_MODULE: return ty_commonjs_module_object(me, decl->node);
         case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
         case SYMBOL_DECL_CLASS:
@@ -865,6 +883,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             return ty_static_type_of(me, symbol);
         case SYMBOL_DECL_ENUM_MEMBER: return ty_declared_type_of(me, symbol);
         case SYMBOL_DECL_NAMESPACE:
+        case SYMBOL_DECL_EXPANDO:
         case SYMBOL_DECL_ALIAS: // `import * as ns`
             return ty_namespace_type(me, symbol);
         case SYMBOL_DECL_EXPORT_EQUALS_PROPERTY: {
@@ -953,9 +972,12 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
         u32 count = 0;
         for (u32 i = 0; i < symbol->decl_count; i++) {
-            if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT) types[count++] = value_entry_type(me, symbol, &symbol->decls[i]);
+            if (symbol->decls[i].kind != SYMBOL_DECL_ASSIGNMENT) continue;
+            types[count++] = csview_equals(symbol->name, "export=") ? value_entry_type(me, symbol, &symbol->decls[i]) :
+                assignment_declaration_type(me, symbol, &symbol->decls[i]);
         }
-        Ty const* ret = ty_union(me, types, count, nullptr, (TyList){0});
+        // (Object literals are widened together: the union has their properties as optional in each other)
+        Ty const* ret = ty_widened_objects(me, ty_union(me, types, count, nullptr, (TyList){0}));
         if (types != stack) free(types);
         return ret;
     }

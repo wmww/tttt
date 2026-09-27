@@ -93,6 +93,9 @@ typedef struct FunctionImpl {
     // it is a method (or function-valued property) of, or the object of the property it is assigned to (`o.m = function`)
     struct Expr const* this_literal;
     struct Expr const* this_assigned_object;
+    // A function expression or arrow function that initializes a variable with expandos (`const f = () => {}; f.x = 1`,
+    // scope_add_expandos()): the variable, whose exports are members of this function's type (tsc's getSymbolOfExpando)
+    Symbol const* expando_host;
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);

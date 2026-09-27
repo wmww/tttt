@@ -1252,8 +1252,8 @@ const baselines = {
     },
     'arrayFromAsync': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'arrayIndexWithArrayFails': {
         errors: true,
@@ -3707,8 +3707,8 @@ const baselines = {
     },
     'classFieldSuperAccessibleJs1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'classFieldSuperAccessibleJs2': {
         errors: true,
@@ -8037,13 +8037,13 @@ const baselines = {
     },
     'declarationEmitExpandoPropertyPrivateName': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitExpandoWithGenericConstraint': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitExportAliasVisibiilityMarking': {
         errors: true,
@@ -8142,13 +8142,13 @@ const baselines = {
     },
     'declarationEmitFunctionDuplicateNamespace': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitFunctionKeywordProp': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitGlobalThisPreserved': {
         errors: true,
@@ -12476,19 +12476,19 @@ const baselines = {
         types: true,
     },
     'expandoFunctionBlockShadowing': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'expandoFunctionContextualTypes': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionContextualTypesJSDocInTs': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'expandoFunctionContextualTypesJs': {
         errors: true,
@@ -12521,8 +12521,8 @@ const baselines = {
         types: false,
     },
     'expandoFunctionNullishProperty': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'expandoFunctionSymbolProperty': {
@@ -17018,7 +17018,7 @@ const baselines = {
     'indexTypeNoSubstitutionTemplateLiteral': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'indexWithUndefinedAndNull': {
         errors: true,
@@ -18752,8 +18752,8 @@ const baselines = {
     },
     'isolatedDeclarationErrors': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'isolatedDeclarationErrorsAugmentation': {
         errors: false,
@@ -18782,8 +18782,8 @@ const baselines = {
     },
     'isolatedDeclarationErrorsExpandoFunctions': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'isolatedDeclarationErrorsExpressions': {
         errors: false,
@@ -19883,7 +19883,7 @@ const baselines = {
     'jsxComponentTypeErrors': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxContainsOnlyTriviaWhiteSpacesNotCountedAsChild': {
         errors: true,
@@ -30511,7 +30511,7 @@ const baselines = {
         types: true,
     },
     'topLevelBlockExpando': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30771,9 +30771,9 @@ const baselines = {
         types: true,
     },
     'tsxStatelessComponentDefaultProps': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'tsxTypeArgumentPartialDefinitionStillErrors': {
         errors: true,
@@ -38061,9 +38061,9 @@ const baselines = {
         types: false,
     },
     'nullPropertyName': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'declarationEmitIdentifierPredicates01': {
         errors: true,
@@ -43022,8 +43022,8 @@ const baselines = {
     },
     'newTargetNarrowing': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'propertyAccessNumericLiterals.es6': {
         errors: true,
@@ -51372,7 +51372,7 @@ const baselines = {
     },
     'jsDeclarationsClassStatic': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsClassStatic2': {
@@ -51547,13 +51547,13 @@ const baselines = {
     },
     'jsDeclarationsFunctionKeywordProp': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsFunctionKeywordPropExhaustive': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsFunctionLikeClasses': {
         errors: true,
@@ -51568,16 +51568,16 @@ const baselines = {
     'jsDeclarationsFunctionPrototypeStatic': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsFunctionWithDefaultAssignedMember': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsFunctions': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsFunctionsCjs': {
@@ -51677,7 +51677,7 @@ const baselines = {
     },
     'jsDeclarationsParameterTagReusesInputNodeInEmit2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsPrivateFields01': {
@@ -52662,8 +52662,8 @@ const baselines = {
     },
     'typeTagCircularReferenceOnConstructorFunction': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeTagModuleExports': {
         errors: false,
@@ -52682,7 +52682,7 @@ const baselines = {
     },
     'typeTagPrototypeAssignment': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeTagWithGenericSignature': {
@@ -60592,18 +60592,18 @@ const baselines = {
     },
     'propertyAssignmentUseParentType1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'propertyAssignmentUseParentType2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'propertyAssignmentUseParentType3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'prototypePropertyAssignmentMergeAcrossFiles': {
         errors: true,
@@ -60766,7 +60766,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment17': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -60842,13 +60842,13 @@ const baselines = {
     },
     'typeFromPropertyAssignment30': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment31': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment32': {
         errors: false,
@@ -60872,7 +60872,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment36': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment37': {
@@ -60883,7 +60883,7 @@ const baselines = {
     'typeFromPropertyAssignment38': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment39': {
         errors: true,

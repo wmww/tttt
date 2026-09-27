@@ -26,6 +26,7 @@ void block_add_names(Block const* me, Scope* scope) {
         while (inner->tag == STATEMENT_LABELED) inner = inner->labeled.body;
         if (hoist && inner->tag != STATEMENT_DECL_VARIABLE) statement_hoist_names(i, scope);
     }
+    scope_add_expandos(scope, me);
 }
 
 bool block_has_export_declarations(Block const* me) {

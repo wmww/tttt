@@ -2890,7 +2890,7 @@ static bool expr_is_plain_identifier(Expr const* me, const char* name) {
 }
 
 // `a.b` or `a["b"]`: the name b, else an invalid span
-static Span static_property_name(Expr const* me) {
+Span expr_static_property_name(Expr const* me) {
     if (my tag != EXPR_PROPERTY || expr_is_perenthisized(me) || my property->optional_chain) return span_null;
     Expr const* prop = &my property->prop;
     if (prop->tag != EXPR_LITERAL || prop->literal.tag != VALUE_STRING) return span_null;
@@ -2904,13 +2904,13 @@ static Span static_property_name(Expr const* me) {
 }
 
 bool expr_is_module_exports(Expr const* me) {
-    Span name = static_property_name(me);
+    Span name = expr_static_property_name(me);
     return span_valid(name) && csview_equals(name.sv, "exports") && expr_is_plain_identifier(&my property->expr, "module");
 }
 
 CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret) {
     if (expr_is_module_exports(left)) return COMMONJS_TARGET_MODULE_EXPORTS;
-    Span name = static_property_name(left);
+    Span name = expr_static_property_name(left);
     if (!span_valid(name)) return COMMONJS_TARGET_NONE;
     Expr const* object = &left->property->expr;
     if (!expr_is_plain_identifier(object, "exports") && !expr_is_module_exports(object)) return COMMONJS_TARGET_NONE;
