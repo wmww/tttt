@@ -147,7 +147,19 @@ static void append_code_point(cstr* str, u32 code) {
 
 // The escape sequence after a backslash (p is on the character after it): appends its value and moves past it.
 // False for a malformed \x or \u escape (nothing consumed beyond the letter, the caller reports)
-static bool parse_string_escape(Parser* p, cstr* str) {
+// The errors of an invalid escape (tsc's scanEscapeSequence), which the caller reports unless it's in a tagged template
+typedef struct EscapeErrors {
+    u32 count;
+    struct { u32 code; const char* at; u32 len; } errors[2];
+} EscapeErrors;
+
+static void escape_error(EscapeErrors* errors, u32 code, const char* at, u32 len) {
+    if (errors->count < c_arraylen(errors->errors)) errors->errors[errors->count++] = (typeof(errors->errors[0])){ code, at, len };
+}
+
+// After the backslash. An invalid escape stands for its own text (`\u{` in "\u{-1}", like tsc's) and fills `errors`
+static bool parse_string_escape(Parser* p, cstr* str, EscapeErrors* errors) {
+    const char* start = p->pos - 1;
     char c = *p->pos;
     p->pos++;
     switch (c) {
@@ -169,7 +181,12 @@ static bool parse_string_escape(Parser* p, cstr* str) {
         case 'x': {
             int hi = hex_digit_value(p->pos[0]);
             int lo = hi < 0 ? -1 : hex_digit_value(p->pos[1]);
-            if (lo < 0) return false;
+            if (lo < 0) {
+                if (hi >= 0) p->pos++;
+                escape_error(errors, 1125, p->pos, 0);
+                cstr_append_n(str, start, p->pos - start);
+                return false;
+            }
             p->pos += 2;
             append_code_point(str, (u32)(hi * 16 + lo));
             return true;
@@ -177,15 +194,44 @@ static bool parse_string_escape(Parser* p, cstr* str) {
         case 'u': {
             u32 code = 0;
             if (*p->pos == '{') {
-                const char* q = p->pos + 1;
-                int digits = 0;
-                for (; hex_digit_value(*q) >= 0; q++, digits++) code = code * 16 + (u32)hex_digit_value(*q);
-                if (!digits || *q != '}' || code > 0x10FFFF) return false;
-                p->pos = q + 1;
+                const char* digits_start = p->pos + 1;
+                const char* q = digits_start;
+                bool too_big = false;
+                for (; hex_digit_value(*q) >= 0; q++) {
+                    code = code * 16 + (u32)hex_digit_value(*q);
+                    too_big |= code > 0x10FFFF;
+                }
+                bool valid = true;
+                if (q == digits_start) {
+                    escape_error(errors, 1125, q, 0);
+                    valid = false;
+                } else if (too_big) {
+                    escape_error(errors, 1198, digits_start, (u32)(q - digits_start));
+                    valid = false;
+                }
+                if (!*q) {
+                    escape_error(errors, 1126, q, 0);
+                    valid = false;
+                } else if (*q == '}') {
+                    q++;
+                } else {
+                    escape_error(errors, 1199, q, 0);
+                    valid = false;
+                }
+                p->pos = q;
+                if (!valid) {
+                    cstr_append_n(str, start, p->pos - start);
+                    return false;
+                }
             } else {
                 for (int i = 0; i < 4; i++) {
                     int v = hex_digit_value(p->pos[i]);
-                    if (v < 0) return false;
+                    if (v < 0) {
+                        p->pos += i;
+                        escape_error(errors, 1125, p->pos, 0);
+                        cstr_append_n(str, start, p->pos - start);
+                        return false;
+                    }
                     code = code * 16 + (u32)v;
                 }
                 p->pos += 4;
@@ -430,6 +476,21 @@ static inline Span span_from(Anchor spanner) {
 
 static inline Span span_from_pos(Parser* me) {
     return span_make(my shared->source, my pos, my pos);
+}
+
+static void report_escape_errors(Parser* me, EscapeErrors const* errors) {
+    for (u32 i = 0; i < errors->count; i++) {
+        Span at = span_make(my shared->source, errors->errors[i].at, errors->errors[i].at + errors->errors[i].len);
+        switch (errors->errors[i].code) {
+            case 1125: parse_error(me, at, 1125, "Hexadecimal digit expected."); break;
+            case 1126: parse_error(me, at, 1126, "Unexpected end of text."); break;
+            case 1198:
+                parse_error(me, at, 1198, "An extended Unicode escape value must be between 0x0 and 0x10FFFF inclusive.");
+                break;
+            case 1199: parse_error(me, at, 1199, "Unterminated Unicode escape sequence."); break;
+            default: impossible;
+        }
+    }
 }
 
 static inline Span span_from_previous_char(Parser* me) {
@@ -5017,7 +5078,8 @@ static bool parse_numeric_value(Parser* parent, Value* ret) {
     return true;
 }
 
-static bool parse_string(Parser* parent, cstr* ret) {
+// `report_escapes`: false in a tagged template, where invalid escapes are allowed
+static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escapes) {
     Parser p = parser(parent);
 
     char quote = *p.pos;
@@ -5034,9 +5096,8 @@ static bool parse_string(Parser* parent, cstr* ret) {
             break;
         } else if (*p.pos == '\\' && *(p.pos + 1)) {
             p.pos++;
-            if (!parse_string_escape(&p, &str)) {
-                parse_error(&p, span_from_pos(&p), 1125, "Hexadecimal digit expected.");
-            }
+            EscapeErrors errors = {0};
+            if (!parse_string_escape(&p, &str, &errors) && report_escapes) report_escape_errors(&p, &errors);
             continue;
         } else if (*p.pos == '\r') {
             // Ignore?
@@ -5053,6 +5114,10 @@ static bool parse_string(Parser* parent, cstr* ret) {
     }
 
     return parse_success(&p);
+}
+
+static bool parse_string(Parser* parent, cstr* ret) {
+    return parse_string_or_tagged(parent, ret, true);
 }
 
 // A regular expression literal. Only called where an expression may start, which is what makes the `/` not a division
@@ -5124,9 +5189,8 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
     while (*p.pos && *p.pos != '`') {
         if (*p.pos == '\\' && p.pos[1]) {
             p.pos++;
-            if (!parse_string_escape(&p, &text)) {
-                parse_error(&p, span_from_pos(&p), 1125, "Hexadecimal digit expected.");
-            }
+            EscapeErrors errors = {0};
+            if (!parse_string_escape(&p, &text, &errors)) report_escape_errors(&p, &errors);
         } else if (p.pos[0] == '$' && p.pos[1] == '{') {
             p.pos += 2;
             vec_cstr_push(&template.texts, text);
@@ -5229,7 +5293,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         cstr plain_string = cstr_null;
         if (!parse_template(&p, &parsed.args, nullptr)) {
             parsed.args = vec_expr_init();
-            parse_string(&p, &plain_string);
+            parse_string_or_tagged(&p, &plain_string, false);
         }
         *left_and_ret = expr_template(
             span_from(a),
@@ -5429,7 +5493,9 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
     while (*p.pos && *p.pos != '`') {
         if (*p.pos == '\\' && p.pos[1]) {
             p.pos++;
-            parse_string_escape(&p, &text); // (An invalid escape is fine in a tagged template, TODO: TS1125 otherwise)
+            EscapeErrors errors = {0};
+            // (An invalid escape is fine in a tagged template)
+            if (!parse_string_escape(&p, &text, &errors) && texts) report_escape_errors(&p, &errors);
         } else if (*p.pos == '\r') {
             p.pos++;
         } else if (p.pos[0] == '$' && p.pos[1] == '{') {

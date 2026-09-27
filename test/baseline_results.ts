@@ -29343,7 +29343,7 @@ const baselines = {
     'stringLiteralsErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringMappingAssignability': {
         errors: true,
@@ -30206,7 +30206,7 @@ const baselines = {
         types: true,
     },
     'templateLiteralEscapeSequence': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -39156,19 +39156,19 @@ const baselines = {
         types: false,
     },
     'invalidTaggedTemplateEscapeSequences(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidTaggedTemplateEscapeSequences(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidTaggedTemplateEscapeSequences(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'usePromiseFinally': {
         errors: true,
@@ -44416,14 +44416,14 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInStrings07(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings07(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings08(target=es5)': {
         errors: true,
@@ -44466,14 +44466,14 @@ const baselines = {
         types: false,
     },
     'unicodeExtendedEscapesInStrings12(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings12(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings13(target=es5)': {
         errors: true,
@@ -44486,14 +44486,14 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInStrings14(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings14(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings15(target=es5)': {
         errors: true,
@@ -44516,14 +44516,14 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInStrings17(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings17(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings18(target=es5)': {
         errors: true,
@@ -44536,44 +44536,44 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInStrings19(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings19(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings20(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings20(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings21(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings21(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings22(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings22(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings23(target=es5)': {
         errors: true,
@@ -44588,12 +44588,12 @@ const baselines = {
     'unicodeExtendedEscapesInStrings24(target=es5)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings24(target=es6)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings25(target=es5)': {
         errors: false,
@@ -44666,14 +44666,14 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInTemplates07(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates07(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates08(target=es5)': {
         errors: true,
@@ -44716,14 +44716,14 @@ const baselines = {
         types: false,
     },
     'unicodeExtendedEscapesInTemplates12(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates12(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates13(target=es5)': {
         errors: true,
@@ -44736,14 +44736,14 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInTemplates14(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates14(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates15(target=es5)': {
         errors: true,
@@ -44766,14 +44766,14 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInTemplates17(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates17(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates18(target=es5)': {
         errors: true,
@@ -44786,14 +44786,14 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInTemplates19(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates19(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates20(target=es5)': {
         errors: true,
@@ -55923,7 +55923,7 @@ const baselines = {
     'parser.numericSeparators.unicodeEscape': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserES3Accessors1': {
         errors: true,
@@ -61126,9 +61126,9 @@ const baselines = {
         types: true,
     },
     'scannerS7.8.4_A7.1_T4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerStringLiteralWithContainingNullCharacter1': {
         errors: false,
