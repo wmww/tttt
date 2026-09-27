@@ -225,11 +225,33 @@ each.
 classes and typedefs), nested `@param {T} o.a`, `@enum`, `@import`. Target ~+80 tests (`@typedef` alone blocks 71
 of the basic-JSDoc set).
 
+**Order, from the webpack corpus** (plan 33, 2026-09-27: 3981 diagnostics, essentially all JSDoc; tag counts over
+lib/tooling/bin/setup: @param 6800, @type 6611, @typedef 4555 (3429 of them `@typedef {import("./X")} X`), @returns
+2987, @property 1632, @template 546, @callback 33, @overload 29, @import 22, @extends 17, @this 9). Unresolved
+typedef names are silently `any` today (several_types.c HACK), so every hook callback, `compilation`, `chunk`...
+parameter is implicitly any: that alone is TS7006 2689 + TS7031 375. The order:
+1. **Store JSDoc tags** (the stage 1 note) so typedefs outlive the host's parse.
+2. **`@typedef {T} Name`** as a file-level type alias (a module's export in a module file, tsc's
+   JSDocTypedefTag binding), **`{import("./x")}` / `import("./x").Y`** as the type (`typeof` of an `export =` class
+   instance is its instance type: `@typedef {import("./Compiler")} Compiler` names the class), **`@typedef {object}`
+   + `@property`** (1632 sites). A typedef whose name is also a value in scope (`/** @typedef {object}
+   ImportPhaseUtils */ const ImportPhaseUtils = {...}`, 5 TS2502) must resolve to the typedef in type position.
+   JS typedefs are importable from .d.ts files (`import("../lib/X").Fn`: TS2694 77, TS2749 9 in declarations/).
+3. **`@type` on declaring assignments**: `/** @type {Set<X>} */ this.x = new Set()` (800 sites; today the member is
+   the initializer's type: TS18046 `unknown`, TS2339 on `never`, TS2488) and on **object literal properties**
+   (`Object.freeze({ /** @type {SyncHook<[Compilation]>} */ compilation: new SyncHook([...]) })`: contextual type
+   for the `new`, and the property's declared type; TS2345 `readonly string[] & { 0: string; length: 1 }` ~250,
+   TS2554 on hook `.call()` arity 127, TS2322 `unknown`).
+4. **`@template`** (546) on functions, classes and typedefs, then `@callback` (33).
+Probes: `/tmp`-style multi-file tests with `@filename`, like plan 33's (`td.ts`/`feat.ts` shapes are described
+above). Remeasure `./realworld.py --corpus webpack` after each piece: expect most of the 3981 to go with 2+3.
+
 ### Stage 4: the rest of the tags and JS syntax diagnostics
 `@this`, `@extends`/`@augments` (type arguments for a JS class's base), `@implements`, `@overload`, `@satisfies`,
 `@private`/`@protected`/`@public`/`@readonly`/`@override`; the TS8xxx syntactic walk (design 4, last item) and the
 JS-only grammar errors (TS1xxx that only apply to JS, e.g. TS18030 private names). Then `./jsstats.py`'s `0other`
-bucket gets sampled into triage.md.
+bucket gets sampled into triage.md. webpack uses `@overload` 29, `@extends` 17, `@this` 9, `@import` 22 (`@import`
+belongs with typedefs in stage 3 if cheap).
 
 ## Validation
 - Per stage: `./fasttest.sh --summary` shows no lost tests (a lost TS test is a bug in the shared paths: JSDoc must

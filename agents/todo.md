@@ -6,16 +6,16 @@ run (count the commits since this file was written), the next session is insight
 goes into plans or triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the corpus
 numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 
-1. **Plan 33: a fifth corpus, a checkJs project** (webpack / svelte / ...). Pin, first run, rank by root cause into
-   plan 19 and plan 26 (stages 3-4 get reordered by it), fix the cheap causes.
+1. ~~Plan 33~~ done: webpack pinned (checkJs, 1238 files), 6146 -> 3981; the rest is JSDoc (typedefs, `@type` on
+   assignments/properties, `@template`), ranked into plan 26 stage 3. No sixth corpus pinned (entry 9 has it).
 2. **Plan 30 stage 3** (the dependent fixes after substitution types). One session; what doesn't fit goes to
    `bugs/type_core.md`.
 3. **Plan 34: error text fidelity**, stage 1 (the tool) and as much of stage 2 as fits: the 431 tests with the right
    codes at the right places and the wrong text.
 4. **Plan 32 planning** (mixin classes, a draft): research tsc's mixin rules against tttt's `class_base()`, prototype,
    rewrite the plan. If it turns out to be one session of work, execute it in the same session.
-5. **Plan 26 stage 3** (`@typedef`/`@template`, in the order plan 33's corpus ranking gave; store JSDoc tags first,
-   as the stage 1 note says).
+5. **Plan 26 stage 3** (`@typedef`/`@template`, in the order plan 26's stage 3 section now gives from webpack; store
+   JSDoc tags first, as the stage 1 note says). Measure with `./realworld.py --corpus webpack` (3981 at the start).
 6. **Suite checker bugs 3** (`bugs/missing_checks.md`: single-code buckets, target/module-gated diagnostics).
 7. **Perf: the parser** (`bugs/perf_leads.md` "Parser": first-char dispatch in `parse_expr`/`parse_type`/keyword
    probes, the `parse_fail` count; nest is 170 of 300 ms parsing and the closest margin to tsgo) plus the

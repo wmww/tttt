@@ -28,7 +28,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   `documentation.md` describes it, `hacks.md` lists what is approximated.
 - **JS/JSDoc (plan 26)**: stages 1-2 done (JSDoc lowered into the annotation slots at parse time, CommonJS,
   expandos, JS classes and constructor functions): JS tests 160 -> 299. Stages 3-4 (typedef/template, the other tags,
-  TS8xxx) are next, ordered by the checkJs corpus (plan 33).
+  TS8xxx) are next, ordered by the webpack corpus (checkJs, pinned by plan 33: 3981 diagnostics, essentially all
+  unresolved `@typedef`s and ignored `@type` on assignments; plan 26 stage 3 has the order).
 - **Absent**: union origins, lazy reverse mapped types, decorator checking,
   declaration emit (out of scope: typechecker only, `--noEmit` semantics), project references, parallelism.
 
@@ -37,8 +38,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   type-core ports (plans 29, 30) landed as planned from measured prototypes. Keep prototyping in planning sessions.
 - **The corpora have done their job and are out of signal**: four of five at 0, type-fest's 19 all have named causes.
   Two gaps: **no corpus exercises JS/JSDoc** (plan 26's next stages would be ranked by test counts alone), and valibot
-  is the only inference-heavy library. **Plan 33 pins a checkJs project first** (webpack or svelte), and plan 26
-  stage 3 waits for its ranking. An inference-heavy application library (tRPC / zod v4 / drizzle) follows.
+  is the only inference-heavy library. **Plan 33 pinned webpack** (checkJs; done, its ranking is in plan 26 stage
+  3). An inference-heavy application library (tRPC / zod v4 / drizzle) follows.
 - **A new, unowned bucket: 431 tests fail only on error text** (same codes, same positions): elaboration chains
   (~180, which relation step reports), type printing in messages (~130: `typeof import("m")`, quoted numeric names,
   qualified namespace names), underlines (~60), related info (~40). No tool bucketed it, so no session worked it.

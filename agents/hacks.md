@@ -536,7 +536,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   root without allowJs (TS6504) while an import is refused by `program_load_module_ref` (`MODULE_REF_IS_JS`): two paths.
   JavaScript from packages is never loaded (maxNodeModuleJsDepth taken as 0, `program.c`).
 - `apply_realpath` loses the original path; no package ids (`name@version`), so no duplicate-package handling.
-- `/// <reference lib>` works only between lib files (the harness's shared lib program can't be added to).
+- `/// <reference lib>` in a program file loads the lib only in the CLI (`program_follow_lib_references()`); the
+  harness's shared lib program can't be added to (10 suite tests have one). An unknown lib name is silently ignored
+  (tsc: TS2726). A lib loaded that way comes after the program's files in load order (tsc puts libs first).
   `program_load_reference_path()` probes "", .ts, .tsx, .d.ts by hand; `no_resolve` skips it.
 - `tsconfig.c`: config errors are one `failable` message (no TS5xxx); `include` globs always skip dot-directories and
   the package directories (tsc: only under `**`); the allowJs gate in `include` depends on option read order.

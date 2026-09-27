@@ -1,7 +1,7 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-27 (after the corpus session, todo entry 7)**: tsc 0, **valibot 0**, **react 0**, **nest 0**,
-**type-fest 19** (shared-union-fields-deep 8 = R17, conditional-pick-deep 6 = R20, abstract-class 4 = plan 32,
+**Status 2026-09-27 (after plan 33)**: tsc 0, **valibot 0**, **react 0**, **nest 0**, **webpack 3981** (checkJs,
+nearly all JSDoc typedefs: plan 26 stage 3, section "webpack corpus" at the end), **type-fest 19** (shared-union-fields-deep 8 = R17, conditional-pick-deep 6 = R20, abstract-class 4 = plan 32,
 jsonify:57 1 = the missing type). The newest section is "Corpus session of 2026-09-27" at the end; the older ones are
 history (their counts are stale).
 
@@ -441,3 +441,26 @@ ai-main (the commits say which). Probes in `test/probes/plan19/{valibot,typefest
   `./release/tttt -q <options>` and `node thirdparty/tsc/lib/tsc.js --noEmit <options>` (filetest.sh copies the file
   away, so relative imports break).
 - `/tmp/realworld.txt` is shared: parallel agents overwrite each other's; copy it right after a run.
+
+## webpack corpus (plan 33, 2026-09-27): 6146 -> 3981, the rest is plan 26 stage 3
+`./realworld.py --corpus webpack`: webpack at 45a1bab (May 2026, the last commit on TypeScript 5.9), checked as its
+CI does (`tsc` with its tsconfig: allowJs + checkJs, strict, lib es2017, CommonJS; lib/, tooling/, setup/, bin/,
+examples' configs; 1238 files / 377k lines with dependencies). tsc 5.8 is clean with two pins in ensure-corpora.sh:
+watchpack 2.5.1 (yarn.lock's; 2.5.2's types fail tsc) and `node_modules/webpack -> ..` (the examples
+`require("webpack")`, which upstream gets from `yarn link`). tsgo 7 reports 3 TS1003 on JSDoc comments it parses
+differently. Fixed the same day (probes in `test/probes/plan33/`):
+- A stack overflow: `@param {Constructor} Constructor` where Constructor is an (unsupported) `@typedef` resolved the
+  type name to the parameter itself and recursed; now TS2502 like tsc (`jsdoc_values_in_flight`).
+- `const X = require("./x")` got esModuleInterop's synthetic default (`{ default: typeof X }`): 2000 TS2351/2349/2507.
+- `/// <reference lib>` in a program file (@types/node: es2020, esnext.disposable, esnext.float16) was ignored: ~150
+  TS2583/TS2304/TS2550 (the harness still ignores them, TODO in `program_handle_statement`).
+- TS2661 for `export { type X }` of a `global {}` name inside a script's `declare module`, TS1095 for a JSDoc
+  `@returns` on a setter, TS2370 for `...args: Partial<TArgs>` (getResolvedApparentTypeOfMappedType).
+
+What's left, by root cause (details and order in plan 26 stage 3): unresolved `@typedef` names are silently any, so
+every typed hook callback parameter is implicitly any (TS7006 2689, TS7031 375, and the keyof-any/TS2731/TS2502/
+TS2694/TS2749 tail); `@type` on `this.x =` and on object literal properties is ignored (TS2345 ~250 on tapable's
+constructor, TS2554 127 on hook arities, TS18046 104, TS2339 on `never`, TS2322 `unknown`, TS2488); `@template`
+546 sites. TS2578 33 (unused `@ts-expect-error`) are missing diagnostics behind the same gaps. No TypeScript-side
+cause is left that I could find; re-rank after each stage 3 piece.
+
