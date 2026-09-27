@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 29 stages 1+2
+Suite 8579 -> **8599 / 13540** (errors 10389, symbols 12043, types 10345), two components lost (stage 3's
+diagnostics). Corpora: tsc 0, type-fest 53 -> **46**, valibot 60 -> **54**, react 1. Callgrind on the tsc corpus
+5.917 G -> 5.920 G (+0.05%). valibot 0.87 s / 544 MB (realworld.py, same as before; 598 MB before deferred
+references were keyed by the node's outer type parameters).
+
 ## 2026-09-27, triage after plans 26/27 (todo entry 10)
 Suite 8481 -> **8579 / 13540** full (errors 10274 -> 10388, symbols 12030 -> 12042, types 10273 -> 10319), no lost
 components. All from small fixes found while re-probing triage.md and in failstats' single-code buckets: call error
