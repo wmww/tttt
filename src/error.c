@@ -237,6 +237,11 @@ Error* error_ctx_grammar_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr
 }
 
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
+    // A silent resolution (no context, and so no span either) reports nothing
+    if (!me) {
+        cstr_drop(&message);
+        return nullptr;
+    }
     if (!span_valid(span) || !span.source || span.source->is_stdlib) {
         log_error("Error added with invalid span: TS", ts_code, ": ", message);
         cstr_drop(&message);

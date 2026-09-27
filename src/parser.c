@@ -3852,6 +3852,12 @@ drop_and_fail:
     return parse_fail(&p);
 }
 
+// Where an `await` here is (the resolve walk reports what isn't allowed). A class `static {}` block is its own error
+static AwaitPlace parser_await_place(Parser const* p) {
+    if (p->shared->in_async || p->shared->in_static_block) return AWAIT_ALLOWED;
+    return p->shared->function_depth > 0 ? AWAIT_IN_FUNCTION : AWAIT_AT_TOP_LEVEL;
+}
+
 // Call before parsing a function's arguments and body, and function_ctx_leave() after (on success and failure)
 static FunctionCtx function_ctx_enter(Parser* p, FunctionFlags flags) {
     FunctionCtx saved = {
@@ -5401,9 +5407,14 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         parse_error(&p, op_span, 2523, "'yield' expressions cannot be used in a parameter initializer.");
     } else if (p.shared->in_parameters && op == UNARY_OP_AWAIT) {
         parse_error(&p, op_span, 2524, "'await' expressions cannot be used in a parameter initializer.");
-    } else if (op == UNARY_OP_AWAIT && !p.shared->in_async && p.shared->function_depth > 0) {
-        parse_error(&p, op_span, 1308,
-            "'await' expressions are only allowed within async functions and at the top levels of modules.");
+    }
+    AwaitPlace await_place = op == UNARY_OP_AWAIT && !p.shared->in_parameters ? parser_await_place(&p) : AWAIT_ALLOWED;
+    // tsc reads a top-level `await (x)` as a call of `await`, which a module reparses as an expression in an await
+    // context (reparseTopLevelAwait): no grammar errors. `await x` is an await expression from the start
+    char c = *p.pos;
+    if (await_place == AWAIT_AT_TOP_LEVEL && !(is_identifier_start_char(c) || is_number_start_char(c) || c == '"' ||
+        c == '\'' || c == '`')) {
+        await_place = AWAIT_ALLOWED;
     }
 
     Expr expr;
@@ -5443,6 +5454,7 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         op_span,
         c_new(UnaryOpExpr, {
             .op = op,
+            .await_place = (uint8_t)await_place,
             .expr = expr,
         })
     );
@@ -7743,7 +7755,8 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
-    // `for await (x of y)`. TODO: TS1103/TS1431/TS1432 where it isn't allowed
+    // `for await (x of y)`
+    Span await_span = { .source = p.shared->source, .sv = csview_from_n(p.pos, 5) };
     bool is_await = hop_start_if_ends_on_word_break(&p, "await");
     if (is_await) hop_whitespace(&p);
 
@@ -7799,6 +7812,12 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         (hop_start_if_ends_on_word_break(&p, "in") && (keyword_is_in = true)) // control flow is my passion
     )) {
         is_for_each = true;
+        if (is_await && keyword_is_in) {
+            // `for await (x in y)`: read as `of`
+            Span in = { .source = p.shared->source, .sv = csview_from_n(p.pos - 2, 2) };
+            parse_error(&p, in, 1005, "'of' expected.");
+            keyword_is_in = false;
+        }
 
         hop_whitespace(&p);
 
@@ -7827,6 +7846,8 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
             .for_each_loop = c_new(ForEachLoopStatement, {
                 .keyword = keyword_is_in ? FOR_EACH_LOOP_IN : FOR_EACH_LOOP_OF,
                 .is_await = is_await && !keyword_is_in,
+                .await_place = (uint8_t)(is_await && !keyword_is_in ? parser_await_place(&p) : AWAIT_ALLOWED),
+                .await_span = await_span,
                 .iterable = right_expr,
                 .body = body,
             })

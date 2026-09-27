@@ -505,10 +505,9 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
     }
 }
 
-// tsc's getErrorSpanForNode() of a function: its name, else an arrow function up to the end of its first line, else
-// its first token
-static Span function_error_span(FunctionImpl const* me) {
+Span function_error_span(FunctionImpl const* me) {
     if (span_valid(my name)) return my name;
+    if (span_valid(my member_name)) return my member_name;
     if (span_valid(my arrow_span)) {
         Span ret = my full_span;
         if (!my expression_body) {

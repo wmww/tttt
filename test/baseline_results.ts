@@ -2201,12 +2201,12 @@ const baselines = {
         types: true,
     },
     'awaitInNonAsyncFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'awaitLiteralValues': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10202,7 +10202,7 @@ const baselines = {
     },
     'dtsEmitTripleSlashAvoidUnnecessaryResolutionMode': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateAnonymousInners1': {
@@ -22021,7 +22021,7 @@ const baselines = {
         types: true,
     },
     'modulePreserveTopLevelAwait1(target=es2016)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49491,12 +49491,12 @@ const baselines = {
         types: true,
     },
     'topLevelAwaitNonModule(module=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'topLevelAwaitNonModule(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54546,17 +54546,17 @@ const baselines = {
         types: false,
     },
     'nodeModulesAllowJsImportMeta(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesAllowJsImportMeta(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesAllowJsImportMeta(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54651,17 +54651,17 @@ const baselines = {
         types: false,
     },
     'nodeModulesAllowJsTopLevelAwait(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesAllowJsTopLevelAwait(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesAllowJsTopLevelAwait(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55096,17 +55096,17 @@ const baselines = {
         types: false,
     },
     'nodeModulesImportMeta(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesImportMeta(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesImportMeta(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55341,17 +55341,17 @@ const baselines = {
         types: false,
     },
     'nodeModulesTopLevelAwait(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesTopLevelAwait(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesTopLevelAwait(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55866,9 +55866,9 @@ const baselines = {
         types: false,
     },
     'parser.forAwait.es2018': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'parser.numericSeparators.binary': {
         errors: true,

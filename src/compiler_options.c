@@ -256,7 +256,12 @@ void compiler_options_resolve(CompilerOptions* me) {
 #undef X
 #define DEFAULT(field, value) if (!my is_set[COMPILER_OPTION_##field]) my field = (value)
 
-    if (!my target_set) my target = SCRIPT_TARGET_ES5;
+    // (tsc's computed target: the node module kinds imply a newer one)
+    if (!my target_set) {
+        my target = !my module_set ? SCRIPT_TARGET_ES5 :
+            my module == MODULE_KIND_NODE16 || my module == MODULE_KIND_NODE18 ? SCRIPT_TARGET_ES2022 :
+            my module == MODULE_KIND_NODENEXT ? SCRIPT_TARGET_ESNEXT : SCRIPT_TARGET_ES5;
+    }
     if (!my module_set) my module = my target >= SCRIPT_TARGET_ES2015 ? MODULE_KIND_ES2015 : MODULE_KIND_COMMONJS;
     bool node_module = my module >= MODULE_KIND_NODE16 && my module <= MODULE_KIND_NODENEXT;
     if (!my module_resolution_set) {

@@ -56,27 +56,9 @@ static void variable_statement_check_using(VariableStatement* me, bool for_in, E
     if (is_await && my in_static_block) {
         error_ctx_error_d(errs, my span, 18054, // Regardless of parse errors, like tsc
             "'await using' statements cannot be used inside a class static block.");
-    } else if (is_await && my at_top_level) {
-        SourceFile const* file = my await_span.source;
-        CompilerOptions const* options = compiler_options();
-        if (!file->is_module) {
-            error_ctx_grammar_error_d(errs, my await_span, 2853,
-                "'await using' statements are only allowed at the top level of a file when that file is a module, but "
-                "this file has no imports or exports. Consider adding an empty 'export {}' to make this file a module.");
-        }
-        bool node = options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18 ||
-            options->module == MODULE_KIND_NODENEXT;
-        bool es = options->module == MODULE_KIND_ES2022 || options->module == MODULE_KIND_ESNEXT ||
-            options->module == MODULE_KIND_PRESERVE || options->module == MODULE_KIND_SYSTEM;
-        if (node && !file->is_esm) {
-            error_ctx_grammar_error_d(errs, my await_span, 1309,
-                "The current file is a CommonJS module and cannot use 'await' at the top level.");
-        } else if (!(node || es) || options->target < SCRIPT_TARGET_ES2017) {
-            error_ctx_grammar_error_d(errs, my await_span, 2854,
-                "Top-level 'await using' statements are only allowed when the 'module' option is set to 'es2022', "
-                "'esnext', 'system', 'node16', 'node18', 'nodenext', or 'preserve', and the 'target' option is set to "
-                "'es2017' or higher.");
-        }
+    } else if (is_await) {
+        // (In a function the parser reported it)
+        await_check_grammar(my at_top_level ? AWAIT_AT_TOP_LEVEL : AWAIT_ALLOWED, AWAIT_KIND_USING, my await_span, nullptr, errs);
     }
     for_each (i, vec_initialized_binding, &my initializers) {
         if (i->binding.tag == BINDING_IDENTIFIER) continue;
@@ -1191,6 +1173,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 
         case STATEMENT_FOR_EACH_LOOP: {
             ForEachLoopStatement* loop = my for_each_loop;
+            await_check_grammar(loop->await_place, AWAIT_KIND_FOR, loop->await_span, names->function, errs);
             lazy_type_bind(&loop->var_type, LAZY_TYPE_FOR_EACH_LOOP_VAR);
             Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
             bool is_declaration = loop->variable.tag == FOR_EACH_LOOP_STATEMENT;

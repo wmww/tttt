@@ -112,6 +112,9 @@ typedef struct FunctionImpl {
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);
+// tsc's getErrorSpanForNode() of a function: its name, else an arrow function up to the end of its first line, else
+// its first token
+Span function_error_span(FunctionImpl const* me);
 // tsc's checkFunctionOrMethodDeclarationDiagnostics under noImplicitAny: a declaration without a body or return type
 // (an overload, an ambient function, a method signature) returns an implicit any (TS7010 at `name`)
 void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, ErrorCtx* errs);

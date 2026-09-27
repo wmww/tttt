@@ -265,6 +265,8 @@ typedef struct ForEachLoopStatement {
         FOR_EACH_LOOP_OF,
     } keyword;
     bool is_await; // `for await (x of y)`
+    uint8_t await_place; // An AwaitPlace (expr.h)
+    Span await_span;
     struct {
         enum {
             FOR_EACH_LOOP_STATEMENT,

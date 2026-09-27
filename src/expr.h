@@ -384,8 +384,21 @@ typedef enum UnaryOp {
 int unary_op_get_precedence(UnaryOp op);
 zsview unary_op_get_zv(UnaryOp op);
 
+// Where an `await` (expression, `for await` or `await using`) is written, for its grammar (tsc's checkAwaitGrammar)
+typedef enum AwaitPlace {
+    AWAIT_ALLOWED, // In an async function, or somewhere the parser already reported
+    AWAIT_IN_FUNCTION, // In a function that isn't async: TS1308/TS1103
+    AWAIT_AT_TOP_LEVEL, // Outside of any function: needs a module and the right module and target options
+} AwaitPlace;
+
+typedef enum AwaitKind { AWAIT_KIND_EXPR, AWAIT_KIND_FOR, AWAIT_KIND_USING } AwaitKind;
+
+// The grammar errors of an `await` (`at`: its keyword) by where it is, `function` being the one it is in
+void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl const* function, ErrorCtx* errs);
+
 typedef struct UnaryOpExpr {
     UnaryOp op;
+    uint8_t await_place; // `await`: an AwaitPlace
     Expr expr;
     FunctionImpl const* generator; // `yield`: the generator it is in (set when resolving), null if there's none
 } UnaryOpExpr;

@@ -688,6 +688,37 @@ static void flow_add_nullish_conditions(FlowBuilder* flow, Expr const* me, FlowN
     }
 }
 
+void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl const* function, ErrorCtx* errs) {
+    static char const* const what[] = { "'await' expressions", "'for await' loops", "'await using' statements" };
+    if (place == AWAIT_IN_FUNCTION) {
+        Error* e = error_ctx_grammar_error_d(errs, at, kind == AWAIT_KIND_EXPR ? 1308 : kind == AWAIT_KIND_FOR ? 1103 : 2852,
+            what[kind], " are only allowed within async functions and at the top levels of modules.");
+        if (e && function && !function->is_constructor) {
+            error_add_related_d(e, function_error_span(function), 1356, "Did you mean to mark this function as 'async'?");
+        }
+        return;
+    }
+    if (place != AWAIT_AT_TOP_LEVEL) return;
+    SourceFile const* file = at.source;
+    CompilerOptions const* options = compiler_options();
+    if (!file->is_module) {
+        error_ctx_grammar_error_d(errs, at, kind == AWAIT_KIND_EXPR ? 1375 : kind == AWAIT_KIND_FOR ? 1431 : 2853,
+            what[kind], " are only allowed at the top level of a file when that file is a module, but this file has "
+            "no imports or exports. Consider adding an empty 'export {}' to make this file a module.");
+    }
+    bool node = options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18 ||
+        options->module == MODULE_KIND_NODENEXT;
+    bool es = options->module == MODULE_KIND_ES2022 || options->module == MODULE_KIND_ESNEXT ||
+        options->module == MODULE_KIND_PRESERVE || options->module == MODULE_KIND_SYSTEM;
+    if (node && source_file_implied_format_for_emit(file) == MODULE_KIND_COMMONJS) {
+        error_ctx_grammar_error_d(errs, at, 1309, "The current file is a CommonJS module and cannot use 'await' at the top level.");
+    } else if (!(node || es) || options->target < SCRIPT_TARGET_ES2017) {
+        error_ctx_grammar_error_d(errs, at, kind == AWAIT_KIND_EXPR ? 1378 : kind == AWAIT_KIND_FOR ? 1432 : 2854,
+            "Top-level ", what[kind], " are only allowed when the 'module' option is set to 'es2022', 'esnext', 'system', "
+            "'node16', 'node18', 'nodenext', or 'preserve', and the 'target' option is set to 'es2017' or higher.");
+    }
+}
+
 void expr_lookup_names_condition(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
     FlowBuilder* flow = names->flow;
     bool nullish = flow->nullish_condition;
@@ -1235,6 +1266,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         // `x!` says x was assigned, whatever control flow thinks
                         if (operand->tag == EXPR_IDENTIFIER) operand->identifier.assume_initialized = true;
                     }
+                    break;
+
+                case UNARY_OP_AWAIT:
+                    await_check_grammar(my unary_op->await_place, AWAIT_KIND_EXPR,
+                        (Span){ .source = my inner_span.source, .sv = csview_from_n(my inner_span.sv.buf, 5) }, names->function, errs);
+                    expr_lookup_names(operand, names, errs);
                     break;
 
                 case UNARY_OP_YIELD:
@@ -2536,6 +2573,20 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
     if (spine != local) free(spine);
 }
 
+// `import.meta` needs a module format that has it (tsc's checkImportMetaProperty)
+static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
+    ModuleKind module = compiler_options()->module;
+    if (module >= MODULE_KIND_NODE16 && module <= MODULE_KIND_NODENEXT) {
+        if (source_file_implied_format_for_emit(my inner_span.source) != MODULE_KIND_ESNEXT) {
+            error_ctx_error_d(errs, my inner_span, 1470,
+                "The 'import.meta' meta-property is not allowed in files which will build into CommonJS output.");
+        }
+    } else if (module < MODULE_KIND_ES2020 && module != MODULE_KIND_SYSTEM) {
+        error_ctx_error_d(errs, my inner_span, 1343, "The 'import.meta' meta-property is only allowed when the "
+            "'--module' option is 'es2020', 'es2022', 'esnext', 'system', 'node16', 'node18', or 'nodenext'.");
+    }
+}
+
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     // The expression's own type first: evaluating it is what gives the expressions inside it their contextual types
     // (whoever knows this expression's contextual type has done the same before getting here)
@@ -2600,6 +2651,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             break;
 
         case EXPR_PROPERTY: {
+            if (ty_is_import_meta(me)) import_meta_typecheck(me, errs);
             expr_typecheck(&my property->expr, errs);
             expr_typecheck(&my property->prop, errs);
             Ty const* expr_type = expr_get_type(&my property->expr);
