@@ -2422,7 +2422,7 @@ const baselines = {
     },
     'bind1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'bind2': {
@@ -3676,9 +3676,9 @@ const baselines = {
         types: true,
     },
     'classExtendsMultipleBaseClasses': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendsNull': {
         errors: false,
@@ -3796,7 +3796,7 @@ const baselines = {
         types: true,
     },
     'classImplementsPrimitive': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8248,7 +8248,7 @@ const baselines = {
     'declarationEmitInterfaceWithNonEntityNameExpressionHeritage': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitInvalidExport': {
         errors: false,
@@ -11286,7 +11286,7 @@ const baselines = {
         types: true,
     },
     'errorLocationForInterfaceExtension': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13436,14 +13436,14 @@ const baselines = {
         types: true,
     },
     'extendsClauseAlreadySeen': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'extendsClauseAlreadySeen2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'extendsJavaScript': {
         errors: true,
@@ -15786,9 +15786,9 @@ const baselines = {
         types: true,
     },
     'implementClausePrecedingExtends': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implementGenericWithMismatchedTypes': {
         errors: true,
@@ -15806,9 +15806,9 @@ const baselines = {
         types: true,
     },
     'implementsClauseAlreadySeen': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'implementsInClassExpression': {
         errors: true,
@@ -18171,9 +18171,9 @@ const baselines = {
         types: true,
     },
     'interfaceMayNotBeExtendedWitACall': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'interfaceMemberValidation': {
         errors: false,
@@ -18226,9 +18226,9 @@ const baselines = {
         types: true,
     },
     'interfaceWithImplements1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'interfaceWithMultipleDeclarations': {
         errors: true,
@@ -18246,7 +18246,7 @@ const baselines = {
         types: true,
     },
     'interfacedeclWithIndexerErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19372,7 +19372,7 @@ const baselines = {
     },
     'jsFileCompilationHeritageClauseSyntaxOfClass': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsFileCompilationImportEqualsSyntax': {
@@ -21426,9 +21426,9 @@ const baselines = {
         types: true,
     },
     'modifiersInObjectLiterals': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'modifiersOnInterfaceIndexSignature1': {
         errors: true,
@@ -21542,7 +21542,7 @@ const baselines = {
     },
     'moduleAsBaseType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAssignmentCompat1': {
@@ -22581,9 +22581,9 @@ const baselines = {
         types: true,
     },
     'multipleInheritance': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'multivar': {
         errors: true,
@@ -26367,7 +26367,7 @@ const baselines = {
     },
     'protoAssignment': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'protoInIndexer': {
@@ -29217,7 +29217,7 @@ const baselines = {
     },
     'strictModeReservedWordInClassDeclaration': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'strictModeReservedWordInDestructuring': {
@@ -32202,7 +32202,7 @@ const baselines = {
     },
     'unknownSymbols1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unknownSymbols2': {
@@ -34771,9 +34771,9 @@ const baselines = {
         types: true,
     },
     'classAbstractWithInterface': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classAndInterfaceMerge.d': {
         errors: true,
@@ -34841,9 +34841,9 @@ const baselines = {
         types: true,
     },
     'classExtendingOptionalChain': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classExtendingPrimitive': {
         errors: false,
@@ -34851,7 +34851,7 @@ const baselines = {
         types: true,
     },
     'classExtendingPrimitive2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37321,12 +37321,12 @@ const baselines = {
         types: true,
     },
     'autoAccessorDisallowedModifiers(target=es2017)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'autoAccessorDisallowedModifiers(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50541,9 +50541,9 @@ const baselines = {
         types: true,
     },
     'interfaceExtendingOptionalChain': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'interfaceExtendsObjectIntersection': {
         errors: true,
@@ -50571,9 +50571,9 @@ const baselines = {
         types: true,
     },
     'interfaceThatInheritsFromItself': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'interfaceWithAccessibilityModifiers': {
         errors: true,
@@ -51392,8 +51392,8 @@ const baselines = {
     },
     'jsDeclarationsClassesErr': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsDeclarationsCommonjsRelativePath': {
         errors: true,
@@ -56182,16 +56182,16 @@ const baselines = {
     },
     'parserClass1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserClass2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserClassDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56246,9 +56246,9 @@ const baselines = {
         types: true,
     },
     'parserClassDeclaration2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserClassDeclaration20': {
         errors: true,
@@ -56286,22 +56286,22 @@ const baselines = {
         types: true,
     },
     'parserClassDeclaration3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserClassDeclaration4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserClassDeclaration5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserClassDeclaration6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56686,9 +56686,9 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ExtendsOrImplementsClause1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_ExtendsOrImplementsClause2': {
         errors: true,
@@ -56696,22 +56696,22 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ExtendsOrImplementsClause3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_ExtendsOrImplementsClause4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserErrorRecovery_ExtendsOrImplementsClause5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'parserErrorRecovery_ExtendsOrImplementsClause6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57282,12 +57282,12 @@ const baselines = {
     },
     'parserGenericsInTypeContexts1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserGenericsInTypeContexts2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserGenericsInVariableDeclaration1': {
@@ -57516,14 +57516,14 @@ const baselines = {
         types: true,
     },
     'parserInterfaceDeclaration1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'parserInterfaceDeclaration2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserInterfaceDeclaration3': {
         errors: true,
@@ -58117,7 +58117,7 @@ const baselines = {
     },
     'parserindenter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parser509534': {
@@ -61037,7 +61037,7 @@ const baselines = {
     },
     'scannerClass2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'scannerEnum1': {
