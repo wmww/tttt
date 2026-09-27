@@ -516,7 +516,6 @@ code). Suite checker bugs 2 (todo entry 8) drained the small missing checks down
   (tsc's getAliasVariances). What's left of valibot's time is inference (`infer_from_signature_lists` ->
   `infer_from_returns` over schema objects' `~run`/`~standard` members) and `ty_conditional_resolve`'s `infer X` walks;
   re-profile before picking the next lever.
-- Each call resolves twice (type pass and typecheck walk): 7.7% of the tsc corpus' instructions. `plans/28_resolve_calls_once.md`.
 - type-fest's check (0.6 s) is ~90% `test-d/opaque.ts` alone, which runs into TS2589 at line 68 (`Tagged`/
   `UnwrapTagged` over `TagContainer`) plus four TS7022 that tsc doesn't report: a correctness bug with a perf symptom.
 - tsc corpus profile after the 2026-09-27 perf check-up (5.91 G Ir, `measurements.md`): parsing ~20% of

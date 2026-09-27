@@ -73,7 +73,13 @@ typedef struct CallInfo {
     Ty const* this_arg; // What `this` is in the call (the receiver of a method call, else void), see this_argument()
     Span this_span; // Where a `this` that doesn't fit is reported
     Span call_span; // The whole call expression
+    // Set when the resolution would report something given an ErrorCtx (see ty_call_typecheck()), may be null
+    bool* would_report;
 } CallInfo;
+
+static void mark_would_report(CallInfo const* info) {
+    if (info->would_report) *info->would_report = true;
+}
 
 static void args_push(Args* args, Arg arg) {
     args->data = realloc(args->data, sizeof(Arg) * (args->len + 1));
@@ -1341,9 +1347,14 @@ static Resolution resolve_with_signatures(
     }
 
     if (ret.chosen.sig) {
-        if (info->type_arg_nodes && ret.chosen.mapper) check_type_argument_constraints(me, ret.chosen.sig, ret.chosen.mapper, info, errs);
+        if (info->type_arg_nodes && ret.chosen.mapper &&
+            !check_type_argument_constraints(me, ret.chosen.sig, ret.chosen.mapper, info, errs)
+        ) {
+            mark_would_report(info);
+        }
         ret.ret = candidate_return_type(me, &ret.chosen);
     } else {
+        mark_would_report(info);
         if (errs) {
             if (!type_argument_arity_ok) {
                 report_type_argument_arity(me, signatures, count, info, errs);
@@ -1492,7 +1503,8 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     Ty const* apparent = callee->flags & TYF_ANY ? callee : ty_apparent_type(me, callee);
     if (apparent->flags & TYF_ANY) {
         // tsc's resolveCallExpression/resolveNewExpression: an untyped call can't take type arguments
-        if (errs && info->type_arg_nodes && !(callee->flags & TYF_ERROR) && !call->is_extends && !is_super_call(call)) {
+        if (info->type_arg_nodes && !(callee->flags & TYF_ERROR) && !call->is_extends && !is_super_call(call)) {
+            mark_would_report(info);
             error_ctx_error_d(errs, call_span, 2347, "Untyped function calls may not accept type arguments.");
         }
         return callee->flags & TYF_ERROR ? callee : any;
@@ -1511,6 +1523,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
             all_have = construct ? members->construct_count > 0 : members->call_count > 0;
         }
         if (all_have) {
+            mark_would_report(info);
             if (errs) {
                 cstr rendered = ty_to_cstr(me, callee);
                 Error* e = error_ctx_error_d(errs, call->callable.outer_span, construct ? 2351 : 2349,
@@ -1557,6 +1570,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
 
     Ty const* ret = any;
     if (!count) {
+        mark_would_report(info); // (Not always, but calling nothing is cheap to resolve again)
         if (!errs) {
             // Reported by the typecheck pass
         } else if (call->is_extends) {
@@ -1596,11 +1610,13 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
         bool all_abstract = true;
         for (u32 i = 0; i < count; i++) all_abstract &= (signatures[i]->flags & SIGNATURE_ABSTRACT) != 0;
         if (all_abstract) {
+            mark_would_report(info);
             error_ctx_error_d(errs, call_span, 2511, "Cannot create an instance of an abstract class.");
             free(signatures);
             return any;
         }
         if (!ty_constructor_accessible(me, call, signatures[0], call_span, errs)) {
+            mark_would_report(info);
             free(signatures);
             return any;
         }
@@ -1770,9 +1786,12 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
 }
 
 static Ty const* resolve_into(
-    Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs, Candidate* chosen_out
+    Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs,
+    Candidate* chosen_out, bool* would_report
 ) {
-    CallInfo info = { .call = call, .contextual = contextual, .chosen_out = chosen_out, .call_span = call_span };
+    CallInfo info = {
+        .call = call, .contextual = contextual, .chosen_out = chosen_out, .call_span = call_span, .would_report = would_report,
+    };
     Ty const* type_args[32];
     // `super(x)` in `class A extends B<T>`: B's constructors with the type arguments of the heritage clause (tsc's
     // getInstantiatedConstructorsForTypeArguments)
@@ -1795,9 +1814,7 @@ static Ty const* resolve_into(
     return resolve_call(me, callee, &info, call_span, errs);
 }
 
-static Ty const* resolve(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs) {
-    return resolve_into(me, callee, call, contextual, call_span, errs, nullptr);
-}
+
 
 static bool has_predicate_or_declared_never(Checker* me, Signature const* sig) {
     return signature_predicate(me, sig) || signature_declared_never(sig);
@@ -1822,7 +1839,7 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
         bool some = false;
         for (u32 i = 0; i < members->call_count && !some; i++) some = has_predicate_or_declared_never(me, members->call[i]);
         if (!some) return none;
-        resolve_into(me, callee, call, nullptr, span_null, nullptr, &chosen);
+        resolve_into(me, callee, call, nullptr, span_null, nullptr, &chosen, nullptr);
     }
     if (!chosen.sig || !has_predicate_or_declared_never(me, chosen.sig)) return none;
     CallEffects ret = { .returns_never = signature_declared_never(chosen.sig) };
@@ -1868,11 +1885,26 @@ Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* cal
     if (imported) return imported;
     Ty const* required = require_type(me, call);
     if (required) return required;
-    return resolve(me, callee, call, contextual, span_null, nullptr);
+    // Outside of inference and control flow, this is what the call's memo will say it is: the typecheck walk won't
+    // resolve it again if that would report nothing (tsc resolves once, getResolvedSignature)
+    bool settled = !my inferential_depth && !my outer_inference && !my flow_uncached;
+    bool would_report = false;
+    Ty const* ret = resolve_into(me, callee, call, contextual, span_null, nullptr, nullptr, settled ? &would_report : nullptr);
+    if (settled) {
+        u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
+        // The contextual type of a resolution that would report nothing (the checker itself for none), else null
+        *intern_slot(me, &my links, key, 2) = would_report ? nullptr : contextual ? (void const*)contextual : (void const*)me;
+    }
+    return ret;
 }
 
+// Resolves the call again with `errs`, unless its type came from a resolution under the same contextual type that
+// would report nothing (see ty_call_return_type()). `call` may be a temporary (`class A extends B`), never recorded
 void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs) {
-    resolve(me, callee, call, contextual, call_span, errs);
+    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
+    void const* clean = call->is_extends ? nullptr : intern_get(&my links, key, 2);
+    if (clean && clean == (contextual ? (void const*)contextual : (void const*)me)) return;
+    resolve_into(me, callee, call, contextual, call_span, errs, nullptr, nullptr);
 }
 
 static Symbol const* awaited_alias(Checker* me) {

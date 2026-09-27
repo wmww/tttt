@@ -24,8 +24,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   tsgo 1.27 (single-threaded 1.77), type-fest 0.48 vs 1.93, valibot 0.81 s / 541 MB vs 1.64 s / 827 MB, react 0.30 s /
   242 MB vs 1.06 s / 553 MB (tsgo single-threaded 0.96). Ahead everywhere, single-threaded. The "drift" to 0.93 s was
   mostly the machine (~15% slower than on 09-25); callgrind counts are the stable measure: 6.92 G -> 5.91 G that
-  session (tsc's key-property map, reverse mapped cache, containsType). Next levers: calls resolved twice (plan 28,
-  ~8%), the backtracking parser (~20% of instructions). nest: 0.30 s vs tsgo 0.40 s (parallel), the closest margin
+  session (tsc's key-property map, reverse mapped cache, containsType). Calls now resolve once (plan 28, -6%: 6.17 G ->
+  5.79 G). Next lever: the backtracking parser (~20% of instructions). nest: 0.30 s vs tsgo 0.40 s (parallel), the closest margin
   yet: with skipLibCheck an application is mostly parsing (170 ms of 300), so the parser matters there. valibot
   regressed to 0.95 s in plan 31 (mapped-type instantiation through the root; partly fixed, see measurements.md).
 - **Built and holding**: hand-written backtracking parser (JSX included), tsc-shaped binder with persistent symbols
