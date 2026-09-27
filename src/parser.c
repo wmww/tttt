@@ -4536,8 +4536,18 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
     if (!hop_char(&p, '[')) {
         return parse_fail(&p);
     }
+    const char* after_bracket = p.pos;
     hop_whitespace(&p);
 
+    if (*p.pos == ']') {
+        // `new T[]`: tsc's parseElementAccessExpressionRest, a missing argument reported where the `]` token's
+        // trivia starts
+        Span missing = span_make(p.shared->source, after_bracket, after_bracket);
+        parse_error(&p, missing, 1011, "An element access expression should take an argument.");
+        *ret = expr_implicit_any(missing);
+        p.pos++;
+        return parse_success(&p);
+    }
     if (!expect_expr(&p, expr_ctx_null, ret)) {
         return parse_success(&p);
     }

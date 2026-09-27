@@ -2241,14 +2241,14 @@ const baselines = {
         types: false,
     },
     'badArrayIndex': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'badArraySyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'badExternalModuleReference': {
         errors: true,
@@ -2856,9 +2856,9 @@ const baselines = {
         types: false,
     },
     'cannotInvokeNewOnErrorExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cannotInvokeNewOnIndexExpression': {
         errors: true,
@@ -7131,9 +7131,9 @@ const baselines = {
         types: false,
     },
     'createArray': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'crossFileOverloadModifierConsistency': {
         errors: true,
@@ -20631,9 +20631,9 @@ const baselines = {
         types: true,
     },
     'libMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'libReplacement(libreplacement=false)': {
         errors: true,
@@ -24351,9 +24351,9 @@ const baselines = {
         types: true,
     },
     'objectLitArrayDeclNoNew': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLitGetterSetter': {
         errors: true,
@@ -59331,9 +59331,9 @@ const baselines = {
         types: true,
     },
     'parserObjectCreationArrayLiteral1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserObjectCreationArrayLiteral2': {
         errors: true,
@@ -59341,9 +59341,9 @@ const baselines = {
         types: true,
     },
     'parserObjectCreationArrayLiteral3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserObjectCreationArrayLiteral4': {
         errors: true,
@@ -59378,7 +59378,7 @@ const baselines = {
     'parserRealSource10': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource11': {
         errors: false,
@@ -61701,7 +61701,7 @@ const baselines = {
         types: true,
     },
     'usingDeclarationsInForOf.2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
