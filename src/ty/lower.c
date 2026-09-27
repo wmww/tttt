@@ -2026,6 +2026,10 @@ static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* ou
                 if (i->initializer.binding.has_explicit_type) collect_declared_infers(me, &i->initializer.binding.explicit_type, out);
             }
             collect_declared_infers(me, &node->callable->function->ret, out);
+            // (`(arg: any) => arg is infer R`)
+            if (node->callable->function->predicate && node->callable->function->predicate->has_type) {
+                collect_declared_infers(me, &node->callable->function->predicate->type, out);
+            }
             break;
         case TYPE_INTERFACE:
             for_each (i, vec_interface_member, &node->interface.members) {
