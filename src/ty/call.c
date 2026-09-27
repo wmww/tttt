@@ -309,7 +309,23 @@ static TyMapper const* return_inference_mapper(Checker* me, Signature const* sig
         any |= results[i] != nullptr;
         if (!results[i]) results[i] = params.data[i];
     }
-    return any ? ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len }) : nullptr;
+    if (!any) return nullptr;
+    TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+    // An inference that doesn't satisfy the constraint is the constraint (tsc's getInferredType on the cloned context):
+    // an outer `Options extends readonly S[]` inferred for `Types extends readonly [S, ...S[]]` makes the tuple the
+    // contextual type of the argument, which is then typed as a tuple
+    bool changed = false;
+    for (u32 i = 0; i < params.len; i++) {
+        if (results[i] == params.data[i]) continue;
+        Ty const* constraint = ty_param_constraint(me, params.data[i]);
+        if (!constraint || constraint == params.data[i]) continue;
+        Ty const* instantiated = ty_instantiate(me, constraint, mapper);
+        if (!ty_is_related(me, results[i], instantiated, TY_RELATION_ASSIGNABLE)) {
+            results[i] = instantiated;
+            changed = true;
+        }
+    }
+    return changed ? ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len }) : mapper;
 }
 
 // tsc's instantiateInstantiableTypes: only type variables, at the top level or in unions and intersections
