@@ -641,8 +641,9 @@ bool ty_check_heritage(
         issued = true;
     }
     if (!issued) {
-        report_unassignable_with_head(me, derived, base, ts_code, cstr_d(what, " '", derived_str, "' ", relation, " '",
-            base_str, "'."), false, span, errs);
+        cstr head = cstr_d(what, " '", derived_str, "' ", relation, " '", base_str, "'.");
+        if (ts_code == 2720) cstr_append_d(&head, DEFAULT_DISPLAY, " Did you mean to extend '", base_str, "' and inherit its members as a subclass?");
+        report_unassignable_with_head(me, derived, base, ts_code, head, false, span, errs);
     }
     c_drop(cstr, &derived_str, &base_str);
     return false;

@@ -429,6 +429,7 @@ Symbol* module_export_equals(Symbol* module);
 // How tsc names a module in a message: an ambient module by its declared name, a file by the specifier it was
 // imported with (TS2305, ref may be null otherwise) or by its path without the extension. With the quotes
 cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier);
+cstr symbol_fully_qualified_name(Symbol const* symbol);
 
 Scope* scope_new(Scope* parent, ScopeKind kind);
 Scope* scope_new_file(Binder* binder, SourceFile* file);

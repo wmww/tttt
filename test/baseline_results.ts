@@ -381,7 +381,7 @@ const baselines = {
         types: true,
     },
     'aliasBug': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2601,7 +2601,7 @@ const baselines = {
         types: true,
     },
     'bluebirdStaticThis': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3756,7 +3756,7 @@ const baselines = {
         types: true,
     },
     'classImplementsClass2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3771,7 +3771,7 @@ const baselines = {
         types: true,
     },
     'classImplementsClass5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3781,7 +3781,7 @@ const baselines = {
         types: true,
     },
     'classImplementsClass7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12536,7 +12536,7 @@ const baselines = {
         types: false,
     },
     'experimentalDecoratorMetadataUnresolvedTypeObjectInEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13341,7 +13341,7 @@ const baselines = {
         types: true,
     },
     'extendAndImplementTheSameBaseType2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16041,7 +16041,7 @@ const baselines = {
         types: true,
     },
     'importAnImport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -18386,7 +18386,7 @@ const baselines = {
         types: true,
     },
     'internalAliasInterfaceInsideLocalModuleWithoutExportAccessError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18416,7 +18416,7 @@ const baselines = {
         types: true,
     },
     'internalAliasUninitializedModuleInsideLocalModuleWithoutExportAccessError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28371,7 +28371,7 @@ const baselines = {
         types: true,
     },
     'sourceMapSample': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34916,7 +34916,7 @@ const baselines = {
         types: true,
     },
     'classImplementsMergedClassInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -23,7 +23,6 @@ void identifier_type_drop(IdentifierType* me) {
 // Member of a namespace by meaning, TS2694 if there is none. *found is the member as declared (maybe an alias)
 static Symbol const* get_symbol_from_namespace(
     Symbol const* namespace,
-    csview namespace_name,
     Span item_name,
     u32 meaning,
     Symbol const** found,
@@ -35,8 +34,10 @@ static Symbol const* get_symbol_from_namespace(
     Symbol const* decl = symbol_for_meaning(member, meaning);
     if (!decl && meaning == SYMBOL_TYPE) decl = symbol_for_meaning(member, SYMBOL_ANY_MEANING); // TS2749 below
     if (!decl) {
+        cstr qualified = symbol_fully_qualified_name(namespace);
         error_ctx_error_d(errs, item_name, 2694,
-            "Namespace '", namespace_name, "' has no exported member '", item_name, "'.");
+            "Namespace '", qualified, "' has no exported member '", item_name, "'.");
+        cstr_drop(&qualified);
         return nullptr;
     }
     *found = member;
@@ -97,8 +98,7 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             Symbol const* value = symbol_for_meaning(member, last ? SYMBOL_VALUE : SYMBOL_VALUE | SYMBOL_NAMESPACE);
             if (!value) {
                 if (i == 0 || !(current->flags & SYMBOL_VALUE)) {
-                    cstr container_name = current == module ?
-                        module_name_for_error(module, nullptr, false) : cstr_from_sv(current->name);
+                    cstr container_name = symbol_fully_qualified_name(current);
                     error_ctx_error_d(errs, name, 2694,
                         "Namespace '", container_name, "' has no exported member '", name, "'.");
                     cstr_drop(&container_name);
@@ -115,22 +115,13 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
         return;
     }
 
-    cstr module_name = container == module ? module_name_for_error(module, nullptr, false) : cstr_from_sv(container->name);
-    csview prev_name = cstr_sv(&module_name);
     for_each (i, vec_span, &my namespaces) {
         Symbol const* found;
-        container = get_symbol_from_namespace(container, prev_name, *i, SYMBOL_NAMESPACE, &found, errs);
-        if (!container || container->is_placeholder) {
-            cstr_drop(&module_name);
-            return;
-        }
+        container = get_symbol_from_namespace(container, *i, SYMBOL_NAMESPACE, &found, errs);
+        if (!container || container->is_placeholder) return;
         vec_symbol_cptr_push(&my namespace_symbols, found);
-        prev_name = i->sv;
     }
-    my target = get_symbol_from_namespace(
-        container, prev_name, my name, my import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, &my symbol, errs
-    );
-    cstr_drop(&module_name);
+    my target = get_symbol_from_namespace(container, my name, my import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, &my symbol, errs);
 }
 
 // tsc's resolveNameHelper at a class: a static member can't see the class's type parameters (TS2302)
@@ -211,7 +202,6 @@ static void identifier_type_lookup_names_inner(IdentifierType* me, Scope* names,
 
     if (vec_span_size(&my namespaces)) {
         Symbol const* namespace = nullptr;
-        Span prev_name = span_null;
         for_each (i, vec_span, &my namespaces) {
             Symbol const* decl;
             Symbol const* found;
@@ -222,18 +212,17 @@ static void identifier_type_lookup_names_inner(IdentifierType* me, Scope* names,
                     error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
                 }
             } else /* Subsequent namespaces */ {
-                decl = get_symbol_from_namespace(namespace, prev_name.sv, *i, SYMBOL_NAMESPACE, &found, errs);
+                decl = get_symbol_from_namespace(namespace, *i, SYMBOL_NAMESPACE, &found, errs);
             }
             // Everything looked up in a placeholder is any
             namespace = decl && !decl->is_placeholder ? decl : nullptr;
-            prev_name = *i;
             if (!decl) {
                 break;
             }
             vec_symbol_cptr_push(&my namespace_symbols, found);
         }
         if (namespace) {
-            my target = get_symbol_from_namespace(namespace, prev_name.sv, my name, SYMBOL_TYPE, &my symbol, errs);
+            my target = get_symbol_from_namespace(namespace, my name, SYMBOL_TYPE, &my symbol, errs);
         }
     } else if (my jsdoc && jsdoc_lookup_intended(me, names, errs)) {
     } else if (my keyword) {

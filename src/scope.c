@@ -1674,14 +1674,15 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
     target = resolve_if_pure_alias(target);
     for (isize i = 1; target && i < vec_span_size(&item->alias_path); i++) {
         Span name = *vec_span_at(&item->alias_path, i);
-        Span prev = *vec_span_at(&item->alias_path, i - 1);
         bool last = i == vec_span_size(&item->alias_path) - 1;
         Symbol const* container = symbol_for_meaning(target, SYMBOL_NAMESPACE);
         if (!container || container->is_placeholder) return nullptr; // A placeholder: anything goes
         Symbol* found = symbol_get_export(container, name.sv);
         Symbol* next = resolve_if_pure_alias(found);
         if (!next || (!last && !(symbol_resolved_flags(next) & SYMBOL_NAMESPACE) && !next->is_placeholder)) {
-            error_ctx_error_d(errs, name, 2694, "Namespace '", prev, "' has no exported member '", name, "'.");
+            cstr qualified = symbol_fully_qualified_name(container);
+            error_ctx_error_d(errs, name, 2694, "Namespace '", qualified, "' has no exported member '", name, "'.");
+            cstr_drop(&qualified);
             return nullptr;
         }
         target = next;
@@ -1718,6 +1719,15 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
         }
     }
     return cstr_d("\"", path, "\"");
+}
+
+// tsc's getFullyQualifiedName: the containers too, a file module as its quoted name (`"file".A.B`)
+cstr symbol_fully_qualified_name(Symbol const* me) {
+    if (my is_module && my module) return module_name_for_error(me, nullptr, false);
+    if (!my parent || (my parent->is_module && !my parent->module)) return cstr_from_sv(my name);
+    cstr ret = symbol_fully_qualified_name(my parent);
+    cstr_append_d(&ret, DEFAULT_DISPLAY, ".", my name);
+    return ret;
 }
 
 // `export { string }`, `export { undefined }`: what tsc's resolveName finds no symbol for but still reports as
