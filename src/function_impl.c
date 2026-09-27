@@ -235,8 +235,16 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
 
     for_each (i, vec_function_arg, &my args) {
         bool has_initializer = i->initializer.value.tag != EXPR_IMPLICIT_ANY;
+        bool is_pattern = i->initializer.binding.tag == BINDING_ARRAY || i->initializer.binding.tag == BINDING_OBJECT;
+        if (i->is_parameter_property && is_pattern) {
+            // (tsc's checkGrammarModifiers)
+            error_ctx_grammar_error_d(errs, i->span, 1187, "A parameter property may not be declared using a binding pattern.");
+        }
         if (i->is_parameter_property && !(my is_constructor && my has_body)) {
             error_ctx_error_d(errs, i->span, 2369, "A parameter property is only allowed in a constructor implementation.");
+        }
+        if (!has_initializer && i->explicit_optional && is_pattern && my has_body) {
+            error_ctx_error_d(errs, i->span, 2463, "A binding pattern parameter cannot be optional in an implementation signature.");
         }
         if ((is_type || !my has_body) && has_initializer) {
             // (tsc's checkVariableLikeDeclaration: overloads and ambient functions too)
