@@ -200,6 +200,12 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     Ty const* list = ty_instantiate(me, root != ty ? ty_instantiate(me, variable, ty->anonymous.mapper) : variable, mapper);
     if (list == variable) return nullptr;
     u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
+    // (The empty tuple is its tuple target, not a reference)
+    TupleShape const* empty = list->kind == TY_DECLARED ? ty_tuple_shape(list) : nullptr;
+    if (empty && !mapped->name_type) {
+        TupleShape new_shape = { .readonly = mapped->readonly ? mapped->readonly > 0 : empty->readonly };
+        return ty_tuple_target(me, &new_shape);
+    }
     if (list->kind != TY_UNION && !(list->flags & (mappable | TYF_ERROR))) return list;
     // any for a T constrained to arrays or tuples maps to an array too: `{ [K in keyof T]: X }` with `T extends
     // readonly unknown[]` is `X[]` for any (tsc's instantiateConstituent)
