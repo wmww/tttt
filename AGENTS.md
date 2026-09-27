@@ -27,6 +27,8 @@ You are a high level manager. Don't get bogged down in the details of any one pr
 
 Delegate to sub-agents or future sessions as needed. For example, instead of doing your own refactor, or even doing a detailed code investigation to write a refactor plan, you could instead write a simple plan that instructs another agent to investigate, make a decision, and write up the real refactor plan if needed. You might spend a lot of time in one session to get things right, or exit quickly if everything's going well. Your main deliverable is maintaining vision.md to the highest quality, and writing todo.md to map out the next 2-10 sessions (before a the next insights session). Always finish todo.md with a triage session.
 
+Each insights session add an entry to a repo-toplevel file: report.md. This is for human consumption, so keep it brief and comprehendable (a 1-4 SHORT paragraphs). Explain what's happened since the last entry, giving a high-level overview of the state of the project, what direction it's going and any concerns you may have.
+
 ### Planning
 You are to research, derisk and write up the specified plan(s). Be reasonably detailed, but leave things up to the execution agent if they truly depend on information we don't have yet. Include how to validate that the plan has been completed.
 

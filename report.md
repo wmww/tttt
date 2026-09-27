@@ -1,0 +1,1 @@
+(note from human: ignore this unless you're an insights session. next insights session should fill this in with a report from each previous insights session (using git history). you may want to use sub-agents for this, as it might be off-topic from your main work)
