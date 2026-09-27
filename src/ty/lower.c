@@ -397,7 +397,16 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         return ty_intrinsic(me, TY_ANY);
     }
     // A value in JSDoc means its type (tsc's getTypeFromJSDocValueReference)
-    if (identifier->jsdoc && !(decl->flags & SYMBOL_TYPE) && (decl->flags & SYMBOL_VALUE)) return ty_type_of_symbol(me, decl);
+    if (identifier->jsdoc && !(decl->flags & SYMBOL_TYPE) && (decl->flags & SYMBOL_VALUE)) {
+        for (u32 i = 0; i < my jsdoc_values_in_flight_count; i++) {
+            if (my jsdoc_values_in_flight[i] == decl) return ty_intrinsic(me, TY_CIRCULAR);
+        }
+        if (my jsdoc_values_in_flight_count >= c_arraylen(my jsdoc_values_in_flight)) return ty_intrinsic(me, TY_ANY);
+        my jsdoc_values_in_flight[my jsdoc_values_in_flight_count++] = decl;
+        Ty const* type = ty_type_of_symbol(me, decl);
+        my jsdoc_values_in_flight_count--;
+        return type;
+    }
 
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_intrinsic(me, TY_ERROR); // TS2526: no `this` type in statics
 
@@ -962,7 +971,7 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
 static Ty const* namespace_import_type(Checker* me, Symbol const* symbol) {
     if (!symbol || !(symbol->flags & SYMBOL_ALIAS) || !symbol->alias || !symbol->alias->item) return nullptr;
     PortItem const* item = symbol->alias->item;
-    if (item->tag != PORT_IMPORT_GATHER || !item->module_ref) return nullptr;
+    if (item->tag != PORT_IMPORT_GATHER || item->is_require || !item->module_ref) return nullptr;
     Symbol* module = binder_module_of_ref(symbol->binder, item->module_ref);
     Symbol* assigned = module ? module_export_equals(module) : nullptr;
     if (!assigned || assigned == module || assigned->is_placeholder) return nullptr;

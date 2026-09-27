@@ -12,7 +12,9 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 RELOCK=0
 if test "${1:-}" = --relock; then RELOCK=1; fi
 
-# NAME URL COMMIT PROJECT_DIR (the directory with the tsconfig.json and package.json, relative to the checkout)
+# NAME URL COMMIT PROJECT_DIR [self-link] (PROJECT_DIR: the directory with the tsconfig.json and package.json, relative
+# to the checkout; self-link: node_modules/NAME is the checkout itself, as a project that imports its own package name
+# gets from `yarn link`)
 CORPORA=(
     # type-fest v4.26.1: type-level utilities (template literal types, key remapping, deep recursion) + tsd tests
     "type-fest https://github.com/sindresorhus/type-fest.git 2b98d9f2ac8921b79ed07ceeef278a5406edbe05 ."
@@ -26,11 +28,16 @@ CORPORA=(
     # passport, swagger; experimentalDecorators + emitDecoratorMetadata, CommonJS, @types/node) with jest e2e tests;
     # the lock is upstream's
     "nestjs-boilerplate https://github.com/brocoders/nestjs-boilerplate.git 9620f159eefe38f47747d02ab162852367c5472c ."
+    # webpack (May 2026, plan 33): the last commit before its move to TypeScript 6. JavaScript checked with checkJs and
+    # JSDoc types (lib/, tooling/, examples' configs), CommonJS, @types/node. Its examples require("webpack"). The lock
+    # is npm's resolution of its package.json with watchpack held at yarn.lock's 2.5.1 (2.5.2 fails tsc; --relock
+    # loses that, redo it by hand)
+    "webpack https://github.com/webpack/webpack.git 45a1bab632b09773938e5bde99b2614ee78f2284 . self-link"
 )
 
 mkdir -p corpora
 for ENTRY in "${CORPORA[@]}"; do
-    read -r NAME URL COMMIT DIR <<<"$ENTRY"
+    read -r NAME URL COMMIT DIR SELF_LINK <<<"$ENTRY"
     if test ! -e "corpora/$NAME"; then
         printf "\x1b[34mCloning corpus %s at %s...\x1b[0m\n" "$NAME" "$COMMIT"
         rm -rf "corpora/$NAME-tmp"
@@ -53,5 +60,6 @@ for ENTRY in "${CORPORA[@]}"; do
         printf "\x1b[34mInstalling the dependencies of corpus %s...\x1b[0m\n" "$NAME"
         cp "$LOCK" "$PROJECT/package-lock.json"
         (cd "$PROJECT" && npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund > /dev/null)
+        if test -n "$SELF_LINK"; then ln -s .. "$PROJECT/node_modules/$NAME"; fi
     fi
 done

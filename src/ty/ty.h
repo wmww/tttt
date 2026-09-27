@@ -706,6 +706,10 @@ struct Checker {
     // its own, the default's LazyType is what detects `[x = x]` (a contextual check doesn't go through it)
     struct Binding const* defaults_in_flight[16];
     u32 defaults_in_flight_count;
+    // The values whose types a JSDoc value reference (`@param {x} x`) is taking: the annotation has no memo of its own,
+    // this is what detects the cycle (TS2502)
+    struct Symbol const* jsdoc_values_in_flight[16];
+    u32 jsdoc_values_in_flight_count;
     u32 flow_incomplete_seen; // Counts incomplete loop types handed out
     u32 flow_key_count; // Reference keys made
     u32 flow_expr_generation; // Which cache ty_flow_expr_type() uses while a loop is in progress: one per back edge walk
