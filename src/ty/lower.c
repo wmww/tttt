@@ -14,7 +14,8 @@
 // Lowering: syntax (`TypeNode`) to semantic types (`Ty`), and what symbols are as types (ty_declared_type_of()) and as
 // values (ty_type_of_symbol()). Nodes are syntax only: what the parser made.
 
-static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
+static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args);
+static inline Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
 
 static SymbolLinks* symbol_links(Checker* me, Symbol const* symbol) {
     u64 key[2] = { KEY_SYMBOL_LINKS, (u64)(uintptr_t)symbol };
@@ -1996,7 +1997,9 @@ static Ty const* conditional_flow_type(Checker* me, TypeNode const* node, Ty con
 
 static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args);
 
-static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args) {
+static inline __attribute__((always_inline)) Ty const* lower(
+    Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args
+) {
     Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
     return node->flow ? conditional_flow_type(me, node, ret) : ret;
 }

@@ -90,7 +90,23 @@ is one code). The triage fixed the three "misplaced" span buckets (TS2554, TS605
   null/undefined, hacks.md `widen_nullable`); object literal padding in a union
   (`{ a: 1 } | { b: "" }` -> `b?: undefined`) only happens in widening, not in tsc's other normalizations
   (getNormalizedType for relations); `const {a} = null` (TS2339/TS2488, still in the plan 14 list above).
-- **Substitution types** (plan 19 R17, generic TS2536, NoInfer): `plans/30_substitution_types.md` stages 2-3.
+- **Plan 30 stage 3** (generic TS2536, R17 homomorphism from the lowered constraint): `plans/30_substitution_types.md`.
+- From plan 30 stage 2: `mutate((a, b) => b)` with `callback: (a: NoInfer<T>, b: number) => T` is `number`, tsc says
+  `unknown`: tsc fixes every type parameter a context-sensitive function's contextual parameters mention (the fixing
+  mapper), candidates or not; call.c's argument loop only fixes those with candidates. Dropping that gate lost 16
+  tests (bindingPatternCannotBeOnlyInferenceSource, objectFreeze, thisTypeInObjectLiterals2...): the gate stands in
+  for something else (probably what tsc's fixed parameter without candidates resolves to: its default/constraint via
+  getInferredType, not unknown). noInfer.ts types only needs this.
+- From plan 30 stage 2: conditionalTypes2's remaining errors are elaborations: variance-based `Type 'A' is not
+  assignable to type 'B'` for `Covariant<A>` vs `Covariant<B>` (alias variance of a conditional body), and an
+  intersection source with a bare `T` (`Foo & Bar & T`) reported whole where tsc reports its constraint (`Foo & Bar`,
+  getEffectiveConstraintOfIntersection); `Extract<T, Bar>` as the distributive constraint's display.
+- From plan 30 stage 2: `mentions_type_variables` (conditional.c) returns "unsure" for a substitution type (the default
+  case), so `definitely_related` falls back to real constraints for those. Precise (base || constraint) is tsc's
+  restrictive check, but on react-hook-form (bulletproof-react form.tsx:40) it made a variance measurement's relation
+  overflow into TS2589 (check_related's overflow HACK) and cost +30% RSS. Look at why the restrictive relation goes
+  that deep before making it precise; an overflow while measuring variances should probably just mark the
+  measurement unreliable rather than report.
 - typeVariableConstraintIntersections (from plan 30 stage 1): tsc reduces intersections of a type variable with
   literals/unions by its constraint (`K & "c"` is never for `K extends "a" | "b"`, `option.kind` of `Options & { kind:
   K }` is K, not `("one" & K) | ("two" & K)`): tsc's getReducedType/intersection-with-constraint rules. The test's

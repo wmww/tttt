@@ -3541,26 +3541,31 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
-    // A substitution type is `base & constraint` as a source, its base as a target (getNormalizedType)
-    while (source->kind == TY_SUBSTITUTION) source = ty_substitution_intersection(me, source);
-    while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
-    if (source == target) return TERNARY_TRUE;
+    bool deferred = ((source->flags | target->flags) & TYF_DEFERRED) != 0;
+    if (deferred) {
+        // A substitution type is `base & constraint` as a source, its base as a target (getNormalizedType)
+        while (source->kind == TY_SUBSTITUTION) source = ty_substitution_intersection(me, source);
+        while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
+        if (source == target) return TERNARY_TRUE;
+    }
     if (st->relation == TY_RELATION_IDENTITY) return identity_related(me, st, source, target);
     Ty const* original_target = target;
-    // (And simplified indexed accesses: the target as written to)
-    while (source->kind == TY_INDEXED || source->kind == TY_SUBSTITUTION) {
-        Ty const* next = source->kind == TY_INDEXED ? ty_regular(me, ty_simplified(me, source, false)) :
-            ty_substitution_intersection(me, source);
-        if (next == source) break;
-        source = next;
+    if (deferred) {
+        // (And simplified indexed accesses: the target as written to)
+        while (source->kind == TY_INDEXED || source->kind == TY_SUBSTITUTION) {
+            Ty const* next = source->kind == TY_INDEXED ? ty_regular(me, ty_simplified(me, source, false)) :
+                ty_substitution_intersection(me, source);
+            if (next == source) break;
+            source = next;
+        }
+        while (target->kind == TY_INDEXED || target->kind == TY_SUBSTITUTION) {
+            Ty const* next = target->kind == TY_INDEXED ? ty_regular(me, ty_simplified(me, target, true)) :
+                target->substitution.base;
+            if (next == target) break;
+            target = next;
+        }
+        if (source == target) return TERNARY_TRUE;
     }
-    while (target->kind == TY_INDEXED || target->kind == TY_SUBSTITUTION) {
-        Ty const* next = target->kind == TY_INDEXED ? ty_regular(me, ty_simplified(me, target, true)) :
-            target->substitution.base;
-        if (next == target) break;
-        target = next;
-    }
-    if (source == target) return TERNARY_TRUE;
     target = ty_strip_nullable_target(me, source, target);
     if (source == target) return TERNARY_TRUE;
     // (Errors name an alias as it was: tsc's reportErrorResults)

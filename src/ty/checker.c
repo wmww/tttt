@@ -1484,6 +1484,7 @@ Ty const* ty_unique_symbol_of_name(Checker* me, Atom const* name) {
 }
 
 Ty const* ty_keyof(Checker* me, Ty const* operand) {
+    if (ty_is_no_infer(operand)) return ty_no_infer(me, ty_keyof(me, operand->substitution.base));
     if (operand->flags & TYF_ANY) {
         Ty const* all[3] = { my intrinsics[TY_STRING], my intrinsics[TY_NUMBER], my intrinsics[TY_ES_SYMBOL] };
         return ty_union(me, all, 3, nullptr, (TyList){0});
@@ -1586,6 +1587,9 @@ bool ty_is_generic_tuple(Checker* me, Ty const* ty) {
 // Generic as far as deferring an indexed access goes: a type variable at the top level (tsc's isGenericObjectType /
 // isGenericIndexType). `{ a: T }["a"]` isn't, it's `T`
 static bool is_generic_operand(Checker* me, Ty const* ty, u32 depth) {
+    if (ty->kind == TY_SUBSTITUTION) {
+        return is_generic_operand(me, ty->substitution.base, depth + 1) || is_generic_operand(me, ty->substitution.constraint, depth + 1);
+    }
     if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return true;
     if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || depth > 8) return false;
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {

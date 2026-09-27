@@ -22888,7 +22888,7 @@ const baselines = {
     'narrowingNoInfer1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingOfDottedNames': {
         errors: false,
@@ -67441,7 +67441,7 @@ const baselines = {
         types: true,
     },
     'noInfer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

@@ -11,6 +11,7 @@
 enum { MAX_CROSS_PRODUCT = 100000 };
 
 bool ty_is_generic_index(Ty const* ty) {
+    if (ty->kind == TY_SUBSTITUTION) return ty_is_generic_index(ty->substitution.base) || ty_is_generic_index(ty->substitution.constraint);
     if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return true;
     if ((ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) && (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {

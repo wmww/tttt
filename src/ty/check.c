@@ -126,6 +126,9 @@ static bool is_or_has_generic_conditional(Ty const* ty) {
 
 // tsc's isGenericObjectType, roughly: what an indexed access stays deferred on
 bool ty_is_generic_object(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_SUBSTITUTION) {
+        return ty_is_generic_object(me, ty->substitution.base) || ty_is_generic_object(me, ty->substitution.constraint);
+    }
     if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) return true;
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {
@@ -540,6 +543,8 @@ static bool check_assignable(
     // (What ran into the instantiation limits has been reported as that, TS2589)
     if (my instantiation_limit_hits != limit_hits) return false;
     if (errs && elaborate_error(me, head, expr, source, target, errs)) return false;
+    // (The head is about the target as relations see it: a substitution type's base, getNormalizedType)
+    while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
     report_unassignable(me, head, source, target, span, errs);
     return false;
 }
@@ -1106,32 +1111,9 @@ Ty const* ty_instance_type_of_class(Checker* me, Symbol const* class_symbol) {
     return declared;
 }
 
-void ty_enter_true_branch(Checker* me, TypeNode const* check_node, TypeNode const* extends_node) {
-    u32 depth = my true_branch_depth++;
-    if (depth >= c_arraylen(my true_branch_check)) return;
-    my true_branch_check[depth] = ty_of_node(check_node);
-    my true_branch_extends[depth] = ty_of_node(extends_node);
-}
-
-void ty_leave_true_branch(Checker* me) {
-    my true_branch_depth--;
-}
-
-// What `ty` is known to be in the true branches around (tsc's getSubstitutionType with getImpliedConstraint)
-static Ty const* substituted(Checker* me, Ty const* ty) {
-    u32 depth = my true_branch_depth < c_arraylen(my true_branch_check) ? my true_branch_depth : c_arraylen(my true_branch_check);
-    for (u32 i = 0; i < depth; i++) {
-        if (my true_branch_check[i] != ty) continue;
-        Ty const* both[2] = { ty, my true_branch_extends[i] };
-        ty = ty_intersection(me, both, 2, nullptr, (TyList){0});
-    }
-    return ty;
-}
-
 void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs) {
     (void)span;
-    object = substituted(me, object);
-    index = substituted(me, ty_regular(me, index));
+    index = ty_regular(me, index);
     if ((object->flags | index->flags) & TYF_ERROR) return;
     if (ty_is_generic_index(index) || ty_is_generic_object(me, object)) return; // TODO: TS2536 against keyof O
     if (object->flags & (TYF_ANY | TYF_NEVER)) return;

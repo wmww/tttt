@@ -1,7 +1,28 @@
 # Plan 30: constraints of indexed accesses, then substitution types
 
-Written by a planning session on 2026-09-27. **Status: stages Q and 1 done** (2026-09-27: suite 8603 -> 8613, valibot
-54 -> 50, tsc 0, type-fest 48, react 1; callgrind on the tsc corpus +0.5%). Stages 2-3 open.
+Written by a planning session on 2026-09-27. **Status: stages Q, 1 and 2 done** (2026-09-27: suite 8603 -> 8613 -> 8616,
+valibot 54 -> 50, tsc 0, type-fest 48, react 1; callgrind on the tsc corpus +0.5%, +0.2%). Stage 3 open.
+
+### What stage 2 did (for stage 3's author)
+- TY_SUBSTITUTION (base, constraint), `ty_substitution()`/`ty_no_infer()`/`ty_substitution_intersection()`/
+  `ty_actual_type_variable()` (checker.c). Made at the end of `lower()` by `conditional_flow_type()` (lower.c) from
+  `TypeNode.flow`: the chain went into the *syntax* after all (the plan's fallback idea, but as pointers rather than
+  spans): `type_lookup_names()` gives every node the chain of `TernaryType.true_flow` entries around it (two per
+  conditional, one per parity; parameters flip, function bodies cut). So the determinism audit wasn't needed: any
+  lowering of a node sees the same chain. Check/extends types per conditional are cached (KEY_IMPLIED_CONSTRAINT).
+- The checker's true-branch stack (`substituted()`) is gone. Conditional types resolve on the actual type variable
+  of the check type; a substituted check type isn't distributive (tsc's isDistributive is `checkType.flags &
+  TypeParameter`).
+- What it took besides the plan: free params of anonymous types and conditional outer params include the type
+  parameters of the extends types of the true branches around a node (isTypeParameterPossiblyReferenced: *not* the
+  check types, which made type-fest's PartialOnUndefinedDeep 300x slower); a true branch is instantiated with the
+  infer mapper composed into its own in one go (`branch_type_with`, conditional.c); homomorphic mapped types find
+  their variable through the substitution (`instantiate_mapped_over_list`); `distributive_constraint` keeps
+  base_constraint's depth; genericity of a substitution is its parts' (`NoInfer<{x: "foo"}>` isn't generic: elaboration
+  indexes into it); the argument error head names the base.
+- Not done / left: item 7's audit was done by test fallout only (62 `kind == TY_TYPE_PARAM` sites, the ones that
+  mattered were homomorphism, distributivity, inference targets); the mapped-type half of getConditionalFlowTypeOfType;
+  noInfer's `mutate` case and conditionalTypes2's elaborations (triage.md).
 Most of the triage cluster was **not** substitution types but tsc's *simplification* of indexed accesses
 (getSimplifiedIndexedAccessType), now `ty_simplified` (relate.c). Substitution types are the smaller-yield stage left.
 Probes: `test/probes/plan30/`.
@@ -121,7 +142,7 @@ call.c's signature lookup on a TY_INDEXED callee). Expected with the full stage:
 mappedTypeGenericIndexedAccess (errors), correlatedUnions, indexedAccessNormalization, keyofAndForIn,
 typeGuardsTypeParameters, asyncFunctionReturnType, deeplyNestedConstraints...
 
-### Stage 2 (1-2 sessions): substitution types
+### Stage 2 (done, see above): substitution types
 1. **Representation**: `TY_SUBSTITUTION` (base, constraint), interned by (base id, constraint id), flags
    TYF_DEFERRED | base flags' generic bits. `ty_substitution(base, constraint)` = getSubstitutionType: returns base if
    constraint is any/unknown or equals base, or base is any. NoInfer: `constraint = unknown` marks it (tsc's

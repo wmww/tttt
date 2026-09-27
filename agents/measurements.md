@@ -2,6 +2,11 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 30 stage 2
+Suite 8613 -> **8616 / 13540** (errors 10403, symbols 12055, types 10366), no lost components. Corpora unchanged: tsc 0,
+type-fest 48, valibot 50 (0.81 s / 502 MB), react 1. Callgrind on the tsc corpus 5.974 G -> **5.986 G** (+0.2%; +0.8%
+before `lower()` was inlined into its callers and `is_related_to` skipped the normalisation loops for non-deferred pairs).
+
 ## 2026-09-27, plan 30 stages Q + 1
 Suite 8603 -> **8613 / 13540** (errors 10398, symbols 12054, types 10361), no lost components. Corpora: tsc 0,
 type-fest 48, valibot 54 -> **50**, react 1. Callgrind on the tsc corpus 5.945 G -> 5.947 G (stage Q) -> **5.974 G**

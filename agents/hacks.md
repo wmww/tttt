@@ -637,10 +637,13 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   too and relates it to T through the default constraint of the conditional type (structuredTypeRelatedTo on a
   conditional source), which tttt's relation can't; once it can, use ty_awaited() everywhere and drop both.
   `ty_awaited` still only unwraps `Promise`/`PromiseLike` by name, not any thenable.
-- Substitution types (`ty_enter_true_branch`, check.c): only the indexed access *type* check knows that `A` is
-  `A & X` in the true branch of `A extends X ? ... : ...`, from a stack the typecheck walk keeps in the Checker
-  (`true_branch_check`, 16 deep). Lowering itself has no substitution types (tsc's getSubstitutionType), so a
-  constraint implied by a conditional is invisible everywhere else.
+- Substitution types (TY_SUBSTITUTION, plan 30 stage 2): the chain of true branches around a node is TypeNode.flow,
+  set by the resolve walk; tsc walks parents up to the enclosing statement, the walk here flips at function parameters
+  and index signature keys and stops at function bodies only (a setter's write type, `typeof` operands and
+  arrow functions inside type queries aren't treated specially). The homomorphic mapped type rule of the same tsc
+  function (`number | ${number}` for the key over an array-constrained T) isn't done. The mention walk
+  (`mentions_type_variables`, conditional.c) treats a substitution as "unsure": making it precise sent restrictive
+  checks of react-hook-form into relation overflows (TS2589 from a variance measurement, RSS +30%), see triage.md.
 - Divergent accessors (members.c, access.c): `Prop.write_node` is a class or interface setter's annotated parameter;
   object literal accessors have none (tsc gives them one too). The symbols baseline of an interface's second accessor
   and its setter parameter come from `InterfaceMember.second_name`/`setter_param`, spans the parser keeps for that.
@@ -654,8 +657,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   one-character placeholder match steps one UTF-8 code point (JS: one UTF-16 unit). The cross-product cap (100k,
   `ty_template_literal`) and the tuple cap (10k, `normalized_tuple`) return the error type without reporting
   TS2590/TS2799/TS2800. `checkTemplateLiteralType` (TS2322 for a placeholder type that isn't string | number | bigint
-  | boolean | null | undefined, e.g. `${symbol}`) doesn't exist: such a template is silently `string`. `NoInfer<T>` is
-  plain `T` (tsc: a substitution type that inference skips), made in `intrinsic_alias_instance` (lower.c).
+  | boolean | null | undefined, e.g. `${symbol}`) doesn't exist: such a template is silently `string`.
 - Alias renaming of a generic alias instance (`renames` in `lower`, TYPE_IDENTIFIER): tsc's rule depends on how the
   alias body instantiates, approximated syntactically: never for `keyof` and intrinsic bodies, a conditional body only
   if the result still carries the alias (deferred, or distributed over a union), a homomorphic mapped body only if the

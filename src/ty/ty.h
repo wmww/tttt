@@ -685,9 +685,6 @@ struct Checker {
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
     // The typecheck walk inside the true branches of conditional types: `A` is `A & X` in `A extends X ? A['k'] : ...`
     // where indexed access types are checked (tsc's substitution types, see ty_check_indexed_access_type())
-    Ty const* true_branch_check[16];
-    Ty const* true_branch_extends[16];
-    u32 true_branch_depth;
     RelationCache relations[TY_RELATION_COUNT];
     struct RelationState* relating; // The relation check in progress, if any (relate.c)
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
@@ -1372,8 +1369,6 @@ Ty const* ty_instance_type_of_class(Checker* me, struct Symbol const* class_symb
 // (tsc's checkAssignmentOperatorWorker), else the type it reads
 Ty const* ty_compound_assignee_type(Checker* me, struct Expr const* target, Ty const* read_type);
 // Around the typecheck walk of a conditional type's true branch
-void ty_enter_true_branch(Checker* me, TypeNode const* check_node, TypeNode const* extends_node);
-void ty_leave_true_branch(Checker* me);
 // `O[K]` written as a type: the property, element or index signature it reads is there (tsc's checkIndexedAccessType)
 void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs);
 bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index);

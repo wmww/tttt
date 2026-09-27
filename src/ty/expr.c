@@ -789,6 +789,7 @@ static bool pattern_type_has_rest(Checker* me, Ty const* pattern) {
 // type with a union constraint is narrowed as its constraint (`c && c.flags` with `c: T extends Ctx | undefined` reads
 // `flags` of Ctx; `isA(x) ? takesA(x) : takesB(x)` with `x: T extends A | B`)
 static Ty const* narrowable_type(Checker* me, bool constraint_position, Ty const* type, Ty const* contextual) {
+    if (ty_is_no_infer(type)) type = type->substitution.base;
     // HACK: tsc types the initializer of a pattern with a rest element again for the rest (CheckMode.RestBindingElement),
     // without the pattern as contextual type, so that the rest of a `T` stays generic. tttt has one type per
     // expression: a pattern with a rest element isn't a contextual type here

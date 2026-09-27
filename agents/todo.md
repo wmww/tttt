@@ -11,8 +11,8 @@ corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and
    rewritten with what the moved TS2589s uncovered). Stage 4 not done (optional; plan 29). The type-fest/valibot
    re-sample for plan 19's ranking wasn't done: fold it into entry 7.
 3. Done: plan 30 stages Q + 1 (suite 8613, valibot 50, type-fest 48, react 1, tsc 0; callgrind +0.5%).
-4. **Plan 30 stage 2**: substitution types (coordinate with plan 29's lazy lowering, which is in by now). Stage 3
-   goes after the insights unless stage 2 finishes early.
+4. Done: plan 30 stage 2 (suite 8616, type-fest 48, valibot 50, react 1, tsc 0; callgrind +0.2%). Stage 3 waits
+   for the insights.
 5. **Plan 31: the fourth corpus** (`plans/31_fourth_corpus.md`): a Node/server application, decorators if possible;
    first run, ranked root causes into plan 19, cheap fixes the same day.
 6. **Plan 26 stage 2**: expandos and JS classes (the binder's assignment declarations). `./jsstats.py` before/after.
