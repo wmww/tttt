@@ -145,8 +145,8 @@ static bool is_ambient_disallowed(Statement const* me) {
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             return true;
-        case STATEMENT_NOOP: // (`;`, not what the parser made of an error)
-            return span_valid(my span) && my span.sv.size && my span.sv.buf[0] == ';';
+        case STATEMENT_NOOP: // (`;` or `debugger`, not what the parser made of an error)
+            return span_valid(my span) && my span.sv.size && (my span.sv.buf[0] == ';' || my span.sv.buf[0] == 'd');
         default:
             return false;
     }

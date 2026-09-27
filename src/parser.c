@@ -7604,6 +7604,22 @@ static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
     }
 }
 
+// Whether tsc ends the statement with parseSemicolon(), so that a `;` after it is part of it rather than an empty
+// statement (`interface I {};` is two statements)
+static bool statement_takes_semicolon(Statement const* me) {
+    switch (my tag) {
+        case STATEMENT_EXPR: case STATEMENT_EXPORT_DEFAULT_EXPR: case STATEMENT_RETURN_EXPR: case STATEMENT_THROW_EXPR:
+        case STATEMENT_BREAK: case STATEMENT_CONTINUE: case STATEMENT_IMPORT_EXPORT: case STATEMENT_DECL_VARIABLE:
+        case STATEMENT_DECL_TYPE:
+            return true;
+        case STATEMENT_NOOP: return span_valid(my span) && my span.sv.size && my span.sv.buf[0] == 'd'; // `debugger`
+        case STATEMENT_DECL_FUNCTION: return !my decl.function.impl->has_body;
+        case STATEMENT_DECL_NAMESPACE: return my decl.namespace.is_shorthand;
+        case STATEMENT_FOR_LOOP: return my for_loop->is_do_while;
+        default: return false;
+    }
+}
+
 // ctx is the kind of list: source elements, block statements or a switch clause's statements
 static bool parse_append_statement_sequence(Parser* parent, bool toplevel, ParsingContext ctx, VecStatement* ret) {
     Parser p = parser(parent);
@@ -7619,12 +7635,21 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
     ) {
         Statement statement = {0};
         if (*p.pos == ';') {
+            // tsc's EmptyStatement
+            statement = statement_noop;
+            statement.span = span_make(p.shared->source, p.pos, p.pos + 1);
+            vec_statement_push(ret, statement);
             p.pos++;
         } else if (parse_statement(&p, toplevel, &statement)) {
             vec_statement_push(ret, statement);
             bool ended_on_brace = p.pos > source_file_start(p.shared->source) && *(p.pos - 1) == '}';
             hop_whitespace(&p);
-            if (p.whitespace == WHITESPACE_NEWLINE ||
+            if (*p.pos == ';' && statement_takes_semicolon(&statement)) {
+                // tsc's parseSemicolon(): also after a newline or a brace (`x = {}\n;`), which is no empty statement
+                p.pos++;
+                Statement* pushed = vec_statement_back_mut(ret);
+                pushed->span = span_make(p.shared->source, span_start_ptr(pushed->span), p.pos);
+            } else if (p.whitespace == WHITESPACE_NEWLINE ||
                 statement.tag == STATEMENT_NOOP ||
                 !*p.pos ||
                 ended_on_brace ||
