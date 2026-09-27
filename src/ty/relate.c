@@ -728,6 +728,18 @@ u32 ty_signature_param_count(Signature const* sig) {
     return sig->param_count - 1 + rest->reference.target->declared.tuple->arity;
 }
 
+// The arguments a signature needs, the required elements of a rest tuple included (tsc's getMinArgumentCount, less
+// its trailing void parameters)
+static u32 signature_min_args(Signature const* sig) {
+    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return sig->min_args;
+    Ty const* rest = sig->params[sig->param_count - 1].type;
+    if (!ty_is_tuple(rest)) return sig->min_args;
+    TupleShape const* shape = rest->reference.target->declared.tuple;
+    u32 required = 0;
+    while (required < shape->arity && !(shape->flags[required] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) required++;
+    return required ? sig->param_count - 1 + required : sig->min_args;
+}
+
 // Takes any number of arguments: a rest parameter that isn't a tuple of fixed length
 bool ty_signature_has_rest(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return false;
@@ -3865,9 +3877,10 @@ static Ternary signatures_identical_in(
     if (source == target) return TERNARY_TRUE;
     signature_resolve(me, source);
     signature_resolve(me, target);
-    bool same_shape = ty_signature_param_count(source) == ty_signature_param_count(target) && source->min_args == target->min_args &&
+    u32 source_min = signature_min_args(source), target_min = signature_min_args(target);
+    bool same_shape = ty_signature_param_count(source) == ty_signature_param_count(target) && source_min == target_min &&
         ty_signature_has_rest(source) == ty_signature_has_rest(target);
-    if (!same_shape && !(partial && source->min_args <= target->min_args)) return TERNARY_FALSE;
+    if (!same_shape && !(partial && source_min <= target_min)) return TERNARY_FALSE;
     if (source->type_params.len != target->type_params.len) return TERNARY_FALSE;
     if (target->type_params.len && source->type_params.data != target->type_params.data) {
         TyMapper const* mapper = ty_mapper_new(me, source->type_params, target->type_params);
