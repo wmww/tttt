@@ -1,15 +1,20 @@
 # Perf leads
 Numbers are in `measurements.md`; this is what to try next. Profile with callgrind (`valgrind --tool=callgrind
-./release/tttt -q files...`, then `callgrind_annotate [--inclusive=yes]`; no `perf` on the dev box). Compare
+./release/tttt -q files...`, then `callgrind_annotate [--inclusive=yes]`; no `perf` on the dev box). The release build
+has no debug info: for line-level annotation (`callgrind_annotate --auto=yes`) build a copy with
+`meson setup /tmp/relg --buildtype release -Dc_args=-g` (same code, same instruction counts). Compare
 instruction counts across sessions, not wall times.
-- **Parser** (~20% of instructions on the tsc corpus, 116 of react's 300 ms, most of nest's time): backtracking
-  sub-parsers (`parse_fail` ~7 M calls from `parse_type_compat_literal`, `parse_expr_right_side`, `parse_type`,
-  `parse_left_unary_op`...; `hop_start_if_ends_on_word_break` 1.4% self). A first-char dispatch (or a real token) in
-  `parse_expr`, `parse_type` and the keyword probes is the lever; the binary operator switch alone didn't move wall time.
-- **Checker hot spots** (tsc corpus, 2026-09-27): `is_simple_related` 6.3% self, 3 M of 4.5 M calls in the enum branch
-  (literal vs literal of one enum: a same-enum shortcut before the generic checks); `ty_union` 4.5% self (small unions
-  rebuilt over and over: `access`, `identifier_flow_type`, `lower`); `infer_from` 5% self (1.3 M calls, per-call
-  prologue/visited scans); `ty_declared_type_of` -> `intern_slot` (cache the enum type on the member literal?).
+- **Parser** (after the first-char dispatch session, 2026-09-27: parse is 13% of the tsc corpus, 43% of nest, 20% of
+  webpack): no single parser function is above ~2.5% self any more. What's left is structural: every attempt makes a
+  `Parser` (the `parser()` copy is the top line), identifiers are scanned again by each alternative that fails, and
+  AST nodes are separate mallocs (`_int_malloc` is 5% of nest). Next levers: a real token (scan the identifier or
+  punctuator once per position, reuse it across alternatives), arenas for AST nodes. nest's remaining parse time is
+  .d.ts member lists (`parse_class_item_inner` -> `parse_type`).
+- **Checker hot spots** (tsc corpus, 2026-09-27, after the same-enum shortcuts): `type_at_flow_node` 4.6% self,
+  `check_related` 3.8% (2.3 M calls, 1.5 M of them now answered by the same-enum test before the RelationState setup),
+  `ty_union` 3.1% (small unions rebuilt over and over: `access`, `identifier_flow_type`, `lower`), `intern_slot` 3%,
+  `is_simple_related` 2.7% (flag tests only now); `infer_from` (1.3 M calls, per-call prologue/visited scans);
+  `ty_declared_type_of` -> `intern_slot` (cache the enum type on the member literal?).
 - valibot: inference (`infer_from_signature_lists` -> `infer_from_returns` over schema objects' `~run`/`~standard`
   members) and `ty_conditional_resolve`'s `infer X` walks. type-fest: `test-d/opaque.ts` (`type_core.md`, circularity).
 - **Name resolution** 77 ms on the tsc corpus (plan 04 wanted 40): every identifier walks the scope chain (locals +

@@ -2,6 +2,20 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, parser perf (todo entry 7, at 67f6c83)
+Suite **9210** unchanged; corpus diagnostics and file counts unchanged. Callgrind (instructions, session start 7cf7633
+-> end): tsc corpus 5.844 -> **5.052 G**, nest 1.364 -> **0.988**, webpack 4.213 -> **3.398**, react 2.212 -> 1.918,
+valibot 5.374 -> 5.127, type-fest 3.327 -> 3.272. `./bench.sh` (best of 5 wall / peak RSS):
+
+| corpus | tttt | tsc 5.8 | tsgo | tsgo 1 thread |
+|---|---|---|---|---|
+| react (1511 files) | 0.29 s / 263 MB | 3.71 s / 503 MB | 1.02 s / 549 MB | 0.92 s / 323 MB |
+| nest (2394 files) | 0.25 s / 271 MB | 2.56 s / 401 MB | 0.40 s / 249 MB | 0.51 s / 213 MB |
+| webpack (1188 files) | 0.70 s / 451 MB | 8.76 s / 713 MB | 0.67 s / 484 MB | 0.60 s / 307 MB |
+
+Phases: react parse 90 / resolve 54 / check 131 ms; nest 130 / 69 / 33; webpack 179 / 101 / 388. webpack is the one
+corpus where tsgo (even single-threaded) beats tttt, now on typecheck (JSDoc is checked since plan 26 stage 3) and RSS.
+
 ## 2026-09-27, suite checker bugs 3 (todo entry 6)
 Suite 9156 -> **9210** (errors 10963, symbols 12250, types 10596), no lost components. Checker log_error output 89
 lines in 31 tests -> 28 in 2 (the silent call resolutions' "invalid span" noise). Corpora unchanged: tsc 0, type-fest

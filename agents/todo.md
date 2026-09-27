@@ -23,9 +23,8 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    module gating, TS1216, TS2816, eager TS2318, TS2839, TS2842, enum member value checks, TS7005 ambients, `any` keys
    and index signatures; node module kinds imply their target; suite 9156 -> 9210, corpora unchanged. TS2705 (lazy in
    tsc) tried and reverted, notes in missing_checks.md.
-7. **Perf: the parser** (`bugs/perf_leads.md` "Parser": first-char dispatch in `parse_expr`/`parse_type`/keyword
-   probes, the `parse_fail` count; nest is 170 of 300 ms parsing and the closest margin to tsgo) plus the
-   `is_simple_related` same-enum shortcut. Callgrind before/after on every corpus, `./bench.sh`, `measurements.md`.
+7. ~~Perf: the parser~~ done: first-char dispatch, keyword probes in place, whitespace fast path, tsconfig pruning,
+   resolution cache; callgrind tsc corpus 5.84 -> 5.05 G, nest -28%, webpack -19%. Next levers in `perf_leads.md`.
 8. **Plan 27 stage 2** (permissive grammar; ~190 tests, 476 with a spurious TS1xxx).
 9. **Corpus session** (plan 19): the fifth corpus' remaining causes, type-fest's 11 (R20,
    exactOptional; mixins are plan 32 stage C), and if plan 33 pinned no second new corpus, pin an inference-heavy one
