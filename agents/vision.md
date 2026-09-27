@@ -27,7 +27,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   module resolution + tsconfig, iteration protocol, generators, `this` types, elaboration, JSX (namespaces,
   components, runtimes), tsc's type printer and symbol chains for the baselines. ~54k lines of C.
   `documentation.md` describes it, `hacks.md` lists what is approximated.
-- **Absent**: JS/JSDoc semantics, substitution types, union origins, lazy reverse mapped types, decorator checking,
+- **JS/JSDoc (plan 26)**: stage 1 done 2026-09-27 (JSDoc `@type`/`@param`/`@returns`/casts lowered into the
+  annotation slots at parse time, CommonJS modules, `require` aliases): JS tests 160 -> 247, suite 8345. Stages 2-4
+  (expandos and JS classes, typedef/template declarations, the other tags and TS8xxx) are unscheduled.
+- **Absent**: substitution types, union origins, lazy reverse mapped types, decorator checking,
   declaration emit (out of scope: typechecker only, `--noEmit` semantics), project references, parallelism.
 
 ## Course correction (insights after plan 23, 2026-09-26)
