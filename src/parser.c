@@ -1476,8 +1476,15 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
                     }
                     break;
 
+                case '.': // `constructor(public ...rest)`
+                    if (p.pos[1] != '.' || p.pos[2] != '.') goto loop_end;
+                    break;
+
+                case '{': // `constructor(public { x })`, `export {}`; `static {` is a static block
+                    if (is_member && span_equals(mod.span, "static")) goto loop_end;
+                    break;
+
                 case '(':
-                case '{':
                 case '<': // `export default <div />`
                     if (is_member) {
                         goto loop_end;

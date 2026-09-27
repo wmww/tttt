@@ -450,6 +450,8 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
         if (i->is_parameter_property && is_pattern) {
             // (tsc's checkGrammarModifiers)
             error_ctx_grammar_error_d(errs, i->span, 1187, "A parameter property may not be declared using a binding pattern.");
+        } else if (i->is_parameter_property && i->rest) {
+            error_ctx_grammar_error_d(errs, i->span, 1317, "A parameter property cannot be declared using a rest parameter.");
         }
         if (i->is_parameter_property && !(my is_constructor && my has_body)) {
             error_ctx_error_d(errs, i->span, 2369, "A parameter property is only allowed in a constructor implementation.");
