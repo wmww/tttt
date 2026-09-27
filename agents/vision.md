@@ -5,18 +5,16 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-09-26, insights after plan 23)
-- **Suite 8202 / 13540** fully pass (errors 9980, symbols 11830, types 9989). Split: **TS tests 8045 / 12491 (64%)**,
-  JS tests (`@allowJs`/`.js` units) 157 / 1049. Since the insights after plan 13 (5125 / 13163): plans 15 (missing
-  checks), 21 (display fidelity), 22 (JSX: 313 of 457 JSX tests pass), 24 (binding patterns), 23 (symbol merging).
-  History per plan is in `measurements.md` and git.
-- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **53**, valibot **61**, react
-  **1** (bulletproof-react's Vite app, added by plan 25: React 18 + react-query/router, radix, react-hook-form + zod,
-  Storybook, vitest; 362 at first run, 80 after plan 25, 3 after plan 19's R10-R14 session: tsc's skip-context-
-  sensitive first pass and intra-expression inference, `this` of intersection members, and a few evaluation rules;
-  1 after the second plan 19 session). Suite 8258 after that session (TS7053 & co., tuple inference/relation ported
-  from tsc, tail-recursive conditionals). What blocks the rest of type-fest is structural: tttt lowers aliases and
-  type references eagerly where tsc defers them (plan 19 R18/R19), and has no substitution types (R17).
+## State (2026-09-27, insights after plans 26-30 were written)
+- **Suite 8579 / 13540** fully pass (errors 10388, symbols 12044, types 10320); JS tests ~250 / 1049. +377 in the ten
+  sessions since the last insights (8202): plan 26 stage 1 (JSDoc core + CommonJS), plan 27 stage 1 (parser list
+  recovery), two corpus sessions, a suite checker bugs session, a perf check-up, a triage. Nothing lost on the way.
+  Of the 4961 failing tests, 1488 fail errors only by *missing* diagnostics, spread over hundreds of codes (the top,
+  TS2339/TS2322, are in <90 tests each): small missing checks, module/target-gated diagnostics, JS. Spurious errors
+  concentrate in the parser (472 tests have a spurious TS1xxx; most of the 924 spurious TS2304 follow bad recovery).
+- **Corpora** (all clean under tsc 5.8): tsc's `src/compiler` **0**, type-fest **53**, valibot **60**, react
+  **1** (bulletproof-react's Vite app, plan 25: 362 at first run). Flat since 2026-09-26 on type-fest/valibot: the
+  rest is structural (plans 29 and 30, see the course correction).
 - **Perf** (`measurements.md`, 2026-09-27 perf check-up; tsgo = typescript 7.0.2 on 4 cores): tsc corpus 0.87 s vs
   tsgo 1.27 (single-threaded 1.77), type-fest 0.48 vs 1.93, valibot 0.81 s / 541 MB vs 1.64 s / 827 MB, react 0.30 s /
   242 MB vs 1.06 s / 553 MB (tsgo single-threaded 0.96). Ahead everywhere, single-threaded. The "drift" to 0.93 s was
@@ -27,56 +25,41 @@ types components) are the oracle, not the goal; real projects that are clean und
   and merging, interned `Ty` core with id-keyed relations and tsc's identity relation, mapper instantiation, two-pass
   inference with priorities, contextual typing, conditional/mapped/indexed/template types, flow graph + narrowing,
   module resolution + tsconfig, iteration protocol, generators, `this` types, elaboration, JSX (namespaces,
-  components, runtimes), tsc's type printer and symbol chains for the baselines. ~54k lines of C.
+  components, runtimes), tsc's type printer and symbol chains for the baselines, JSDoc + CommonJS. ~64k lines of C.
   `documentation.md` describes it, `hacks.md` lists what is approximated.
 - **JS/JSDoc (plan 26)**: stage 1 done 2026-09-27 (JSDoc `@type`/`@param`/`@returns`/casts lowered into the
   annotation slots at parse time, CommonJS modules, `require` aliases): JS tests 160 -> 247, suite 8345. Stages 2-4
-  (expandos and JS classes, typedef/template declarations, the other tags and TS8xxx) are unscheduled.
-- **Suite checker bugs (todo entry 8, 2026-09-27)**: suite 8408 -> 8480 from features that were simply missing
-  rather than subtle rules: JSON modules (were any), divergent accessor write types, noUncheckedIndexedAccess (parsed,
-  inert), returns of async functions/generators (never checked), indexed access *types* (never checked). Worth a
-  sweep for more parsed-but-inert options and TODO'd checks. The two things backed out both need tsc's constraint of
-  `T[K]` (triage.md).
-- **Triage 2026-09-27**: suite 8579. Plans 29 and 30 turned "big architectural gaps" into ports of specific tsc
-  rules: plan 29 found tttt already has deferred references and alias caches (R18 is an eager mapped template, R19
-  a missing deferral kind); plan 30 found the `T[K]` cluster is mostly tsc's indexed-access simplification, which
-  tttt lacks entirely, with substitution types a smaller second stage. Cheap wins still exist in the suite: the
-  triage's eight fixes (+98) came from failstats' single-code buckets in minutes each.
+  (expandos and JS classes, typedef/template declarations, the other tags and TS8xxx) are next; stage 2 is scheduled.
 - **Absent**: substitution types, union origins, lazy reverse mapped types, decorator checking,
   declaration emit (out of scope: typechecker only, `--noEmit` semantics), project references, parallelism.
 
-## Course correction (insights after plan 23, 2026-09-26)
-- **The corpora were left alone for ~30 sessions** while the suite went 6912 -> 8202. The suite work was real
-  (symbols, JSX, binding patterns, merging are language features, not test-chasing), but this is exactly the pattern
-  the corpus rule exists to catch: nobody was scheduled on them. **Every todo window from now on has corpus
-  sessions**, and plan 19 is renamed "corpora to zero" and covers every corpus.
-- **A React corpus is the next oracle (plan 25, done: `--corpus react`).** It answers plan 22's open question: the suite's JSX tests
-  are hand-written namespaces, real React is `@types/react` overloads, `LibraryManagedAttributes`, HOCs and hooks'
-  inference, and it's the benchmark where tsgo is weakest. Its root causes join plan 19.
-- **JS/JSDoc starts now: planned (plan 26, `./jsstats.py`), first stage right after.** 892 of the 5338 failing tests (17%)
-  are JS, and they are the source of most spurious TS2304/TS2580. It's a real part of what tsc checks
-  (`checkJs` projects, mixed code bases), and its binder side (CommonJS exports, expando assignments as
-  declarations) is foundational, so it must be designed rather than trickled in.
-- **Parser recovery: decided, no rewrite (plan 27).** Stage 1 (the framework) mostly done 2026-09-27: the mask,
-  skip-or-abort lists and commit points fit the backtracking parser as predicted, at no measurable parse cost once
-  the lookahead stays off valid code's path; 687 -> 583 differing tests, suite +63. 639 TS tests' parse errors differed from tsc's, but only ~1/3
-  is recovery; the rest is permissive grammar (tsc parses `with`, modifiers anywhere, odd index signatures and
-  heritage clauses, then complains from the checker: ~190) and lexical diagnostics (escapes, numbers, templates,
-  unicode identifiers: ~130). A scanner fixes neither. Recovery gets one framework (tsc's parsingContext mask, list
-  terminators, skip-or-abort, commit points instead of backtracking past them), then patching. Parser perf is the
-  perf session's question, not a rewrite's.
-- **The rest of the suite is the type core's long tail.** Missing and spurious TS2322/TS2339 (~200 tests with a
-  single-code diff), `./displaydiff.py`'s `other` (378 TS tests): mostly checker bugs that the types baseline shows
-  first. Work them like a corpus (sample, reduce, fix the tsc rule), not as display polish. Union origins stay
-  deferred (~25 tests, a type-core feature: revisit when a real project's messages need it). Members as symbols: not
-  needed for any diagnostic so far; the check-time replays of tsc's member tables are in hacks.md.
-- **Process.** Two failure modes, both fixed in `CLAUDE.md`: (1) the insights cadence drifted (10 planned sessions
-  became ~15 as plans extended and triage queued new plans ahead of insights); todo.md now has a fixed budget that
-  overruns come out of. (2) Four sessions ended without committing, the two with transcripts because they ended their
-  turn waiting on a background job; ending the turn ends the session. Otherwise health is good: every plan since
-  plan 08 finished without a redesign, nothing lost in the suite.
+## Course correction (insights of 2026-09-27)
+- **Health is good; no redesign needed anywhere.** Every plan since plan 08 finished without one; the last window ran
+  exactly its ten sessions and committed each. The planning sessions now prototype before writing (plans 29 and 30
+  come with measured prototypes): keep doing that, it's why execution sessions stopped overrunning.
+- **The corpora stalled for five sessions (type-fest 53, valibot 60-61)**, but for a known reason: what's left is two
+  type-core ports (plan 29: lazy mapped templates and tsc's deferred interface references, R18/R19; plan 30: tsc's
+  indexed-access simplification and constraints, then substitution types, R17). Both are ports of named tsc
+  functions, not new architecture. They go first in this window, back to back.
+- **The corpora are running out of signal.** tsc 0 and react 1 no longer find bugs; type-fest/valibot are
+  type-level libraries. Nothing checks server-side code (`@types/node`, ORMs, DI containers, decorators, CommonJS
+  output settings). **Plan 31 adds a fourth corpus** (a Node application, decorator-heavy if possible) and ranks its
+  root causes into plan 19, like plan 25 did for React (362 diagnostics, five type-core rules). Then one corpus
+  session works its top causes. The rule stands: a rising pass count with flat corpus counts is test-chasing.
+- **The suite's remaining errors are a long tail, not a category.** Work it in "suite checker bugs" sessions driven by
+  failstats' single-code buckets (the last two such sessions moved +72 and +98) and the module/target-gated
+  diagnostics (TS1202/1203/2441/2725/1262..., triage.md "Target-gated"). Plan 27 stage 2 (permissive grammar, ~190
+  tests, error-only code shapes) waits until after this window: real code rarely has syntax errors.
+- **JS stage 2 (expandos, JS classes) is scheduled**: it's the binder side (assignment declarations) that vision
+  flagged as foundational; stages 3-4 later.
+- **hacks.md is 914 lines.** Still useful, but the triage at the end of this window should prune entries fixed by
+  plans 26-30 and consolidate, the way triage.md was pruned.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
+- **Every todo window has corpus sessions** (the corpora were once left alone for ~30 sessions), and todo.md has a
+  fixed session budget that overruns come out of; ending a turn ends the session, so commit before long jobs.
+- **Parser: no rewrite** (plan 27 looked; recovery is one list/commit-point framework plus patching). Revisit only
+  with a profile. **JS must lower into the same `Ty` machinery**, no parallel JSDoc type world.
 - **Real projects are the second oracle.** A rising pass count with flat corpus counts means we're test-chasing.
   Rank corpus diagnostics by root cause, not by code (one mapped type with an `as` clause was 810 TS7006). Every
   insights session looks at the corpus numbers next to the pass count. Corpus root causes that are type-core rules go
@@ -121,8 +104,8 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 ## Where this is going (rough order)
 1. ~~Tooling, type core, first corpus, binder, flow, modules, underlines, corpus to zero, second corpora, plan 19
    R1-R9, suite plans 13-16, 21-24, JSX~~ done.
-2. **Now**: React corpus (25), corpora to zero (19), JS/JSDoc (26), parser recovery (27), the type core's long tail
-   on the suite.
-3. Then: decorators, substitution types, union origins, `in`/`out` variance annotations, evolving arrays,
-   target-gated diagnostics (triage.md "Category-sized").
+2. **Now**: deferred references (29), indexed-access constraints and substitution types (30), a fourth corpus (31),
+   corpora to zero (19), JS/JSDoc (26 stage 2), the suite's long tail, resolve calls once (28).
+3. Then: JS stages 3-4, parser permissive grammar (27 stage 2), decorators (as the fourth corpus asks), union
+   origins, `in`/`out` variance annotations, evolving arrays.
 4. Parallelism and perf tuning against the corpora: parallel parse/bind, sharded checking.
