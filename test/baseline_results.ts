@@ -3048,7 +3048,7 @@ const baselines = {
     'castOfYield': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'castParentheses': {
         errors: true,
@@ -9301,7 +9301,7 @@ const baselines = {
         types: false,
     },
     'defaultKeywordWithoutExport1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25466,7 +25466,7 @@ const baselines = {
         types: false,
     },
     'parserUnparsedTokenCrash2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -29616,7 +29616,7 @@ const baselines = {
         types: true,
     },
     'superErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -29636,7 +29636,7 @@ const baselines = {
         types: true,
     },
     'superInLambdas': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33506,9 +33506,9 @@ const baselines = {
         types: true,
     },
     'yieldStringLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5SymbolProperty1': {
         errors: true,
@@ -33873,7 +33873,7 @@ const baselines = {
     'await_unaryExpression_es2017_3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration10_es2017': {
         errors: true,
@@ -34513,7 +34513,7 @@ const baselines = {
     'await_unaryExpression_es6_3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration10_es6': {
         errors: true,
@@ -35388,7 +35388,7 @@ const baselines = {
     'classStaticBlock7': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlock8': {
         errors: true,
@@ -36261,9 +36261,9 @@ const baselines = {
         types: false,
     },
     'privateNameAndPropertySignature': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameAndStaticInitializer(target=es2015)': {
         errors: true,
@@ -36286,7 +36286,7 @@ const baselines = {
         types: true,
     },
     'privateNameBadDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36411,9 +36411,9 @@ const baselines = {
         types: true,
     },
     'privateNameEnum': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameField': {
         errors: true,
@@ -36486,9 +36486,9 @@ const baselines = {
         types: true,
     },
     'privateNameHashCharName': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameImplicitDeclaration': {
         errors: false,
@@ -36506,17 +36506,17 @@ const baselines = {
         types: false,
     },
     'privateNameInInExpressionTransform(target=es2020)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'privateNameInInExpressionTransform(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'privateNameInInExpressionTransform(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36536,19 +36536,19 @@ const baselines = {
         types: true,
     },
     'privateNameInObjectLiteral-1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameInObjectLiteral-2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameInObjectLiteral-3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameJsBadAssignment': {
         errors: false,
@@ -36557,8 +36557,8 @@ const baselines = {
     },
     'privateNameJsBadDeclaration': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameLateSuper': {
         errors: true,
@@ -36646,9 +36646,9 @@ const baselines = {
         types: true,
     },
     'privateNameNotAllowedOutsideClass': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameReadonly': {
         errors: true,
@@ -36857,7 +36857,7 @@ const baselines = {
     },
     'privateNamesAndIndexedAccess': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'privateNamesAndMethods(target=es2022)': {
@@ -36946,14 +36946,14 @@ const baselines = {
         types: true,
     },
     'privateNamesNotAllowedAsParameters': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesNotAllowedInVariableDeclarations': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesUnique-1': {
         errors: false,
@@ -38141,7 +38141,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassAccessor3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38156,7 +38156,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassAccessor6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38336,7 +38336,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethod17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38366,7 +38366,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethod3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38456,7 +38456,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassProperty3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44881,9 +44881,9 @@ const baselines = {
         types: true,
     },
     'YieldExpression12_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression13_es6': {
         errors: true,
@@ -44891,24 +44891,24 @@ const baselines = {
         types: true,
     },
     'YieldExpression14_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression15_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression16_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression17_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression18_es6': {
         errors: true,
@@ -44926,9 +44926,9 @@ const baselines = {
         types: true,
     },
     'YieldExpression2_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression3_es6': {
         errors: true,
@@ -45171,9 +45171,9 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck32': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'generatorTypeCheck33': {
         errors: true,
@@ -45206,7 +45206,7 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck39': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -45306,12 +45306,12 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck57': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'generatorTypeCheck58': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53107,7 +53107,7 @@ const baselines = {
     },
     'tsxAttributeInvalidNames': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'tsxAttributeResolution': {
@@ -57311,19 +57311,19 @@ const baselines = {
         types: true,
     },
     'parserGreaterThanTokenAmbiguity12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity14': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity15': {
         errors: true,
@@ -57336,19 +57336,19 @@ const baselines = {
         types: true,
     },
     'parserGreaterThanTokenAmbiguity17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity19': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity2': {
         errors: true,
@@ -59468,7 +59468,7 @@ const baselines = {
     'parserS7.9_A5.7_T1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserSbp_7.9_A9_T3': {
         errors: false,
@@ -61296,7 +61296,7 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarations.4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
