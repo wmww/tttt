@@ -1156,6 +1156,11 @@ static MappedInfo const* instantiate_mapped_info(Checker* me, MappedInfo const* 
     MappedInfo* mapped = arena_new(&my arena, MappedInfo);
     *mapped = *source;
     mapped->constraint = ty_instantiate(me, mapped->constraint, mapper);
+    // The template and the `as` clause see the mapped type's own key parameter, not a mapping of it that the mapper
+    // carries from an enclosing instance of the same mapped type: in `type X<T> = { [K in keyof T]: F<T[K]> }` where
+    // F's body mentions X again, the inner X's mapper is composed from the outer one's, K included (tsc's
+    // instantiateMappedType maps K to a fresh type parameter first, which shadows it)
+    mapper = ty_mapper_without(me, mapper, (TyList){ .data = &source->type_param, .len = 1 });
     if (mapped->name_type) mapped->name_type = ty_instantiate(me, mapped->name_type, mapper);
     mapped->template_ = nullptr;
     mapped->template_node = nullptr;

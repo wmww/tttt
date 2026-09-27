@@ -276,3 +276,5 @@ bool ty_tuple_node_has_variadic(TypeNode const* node); // lower.c: a rest elemen
 // inner, then outer: what inner maps to gets instantiated by outer, and outer's own mappings are carried along
 TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper const* outer); // instantiate.c
 TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* source, Ty const* target); // instantiate.c
+// The mapper without the mappings of params (which the instantiated type binds itself)
+TyMapper const* ty_mapper_without(Checker* me, TyMapper const* mapper, TyList params); // instantiate.c

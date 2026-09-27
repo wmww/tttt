@@ -85,13 +85,11 @@ TyList ty_conditional_own_infers(Checker* me, Ty const* root) {
     return infers ? *infers : (TyList){0};
 }
 
-static TyMapper const* without_own_infers(Checker* me, Ty const* root, TyMapper const* mapper) {
-    TyList own = ty_conditional_own_infers(me, root);
-    TyList const* infers = &own;
-    if (!infers->len || !mapper) return mapper;
+TyMapper const* ty_mapper_without(Checker* me, TyMapper const* mapper, TyList params) {
+    if (!params.len || !mapper) return mapper;
     u32 dropped = 0;
     for (u32 i = 0; i < mapper->len; i++) {
-        for (u32 j = 0; j < infers->len; j++) dropped += mapper->sources[i] == infers->data[j];
+        for (u32 j = 0; j < params.len; j++) dropped += mapper->sources[i] == params.data[j];
     }
     if (!dropped) return mapper;
     Ty const** pairs = malloc(sizeof(Ty const*) * mapper->len * 2);
@@ -101,7 +99,7 @@ static TyMapper const* without_own_infers(Checker* me, Ty const* root, TyMapper 
     u32 len = 0;
     for (u32 i = 0; i < mapper->len; i++) {
         bool own = false;
-        for (u32 j = 0; j < infers->len; j++) own |= mapper->sources[i] == infers->data[j];
+        for (u32 j = 0; j < params.len; j++) own |= mapper->sources[i] == params.data[j];
         if (own) continue;
         sources[len] = mapper->sources[i];
         targets[len++] = mapper->targets[i];
@@ -109,6 +107,10 @@ static TyMapper const* without_own_infers(Checker* me, Ty const* root, TyMapper 
     TyMapper const* ret = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
     free(pairs);
     return ret;
+}
+
+static TyMapper const* without_own_infers(Checker* me, Ty const* root, TyMapper const* mapper) {
+    return ty_mapper_without(me, mapper, ty_conditional_own_infers(me, root));
 }
 
 // The mapper with one more (or one replaced) mapping
