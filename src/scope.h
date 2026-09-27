@@ -135,6 +135,7 @@ typedef struct SymbolDecl {
 typedef enum AliasState {
     ALIAS_UNRESOLVED = 0,
     ALIAS_IN_FLIGHT,
+    ALIAS_CIRCULAR, // In flight, and its resolution reached it again (TS2303)
     ALIAS_DONE,
 } AliasState;
 

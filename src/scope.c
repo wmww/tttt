@@ -1551,11 +1551,20 @@ Symbol* symbol_resolve_alias(Symbol* me) {
     if (!me || !(my flags & SYMBOL_ALIAS)) return me;
     switch (my alias->state) {
         case ALIAS_DONE: return my alias->target;
-        case ALIAS_IN_FLIGHT: return nullptr; // TODO: TS2303 circular definition of import alias
+        case ALIAS_IN_FLIGHT:
+        case ALIAS_CIRCULAR:
+            // (tsc's resolveAlias: the inner visit makes the target unknown, the outer one reports)
+            my alias->state = ALIAS_CIRCULAR;
+            return nullptr;
         case ALIAS_UNRESOLVED: break;
     }
     my alias->state = ALIAS_IN_FLIGHT;
     Symbol* target = resolve_alias_target(me);
+    // (`export default x` looks its name up in a scope that has it)
+    if (my alias->state == ALIAS_CIRCULAR && my alias->item) {
+        Span at = my alias->item->tag == PORT_IMPORT_ALIAS ? my alias->item->full_span : my alias->item->decl_name;
+        error_ctx_error_d(my alias->scope->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
+    }
     if (!target) {
         target = my alias->item ?
             binder_new_placeholder(my binder, my alias->item->decl_name, my alias->item->full_span) :

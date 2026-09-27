@@ -49541,7 +49541,7 @@ const baselines = {
         types: false,
     },
     'circular1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
