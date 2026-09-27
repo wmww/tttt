@@ -404,6 +404,20 @@ static void function_check_emit_helpers(FunctionImpl const* me, ErrorCtx* errs) 
     if (target < SCRIPT_TARGET_ES2015) ty_check_emit_helpers(current_checker, at, EMIT_HELPER_GENERATOR, errs);
 }
 
+// tsc's checkCollisionWithArgumentsInGeneratedCode(): below ES2015 a rest parameter is made from `arguments`
+static void function_check_arguments_collision(FunctionImpl const* me, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    if (options->target >= SCRIPT_TARGET_ES2015 || options->no_emit || my ambient || !my has_body) return;
+    if (vec_function_arg_is_empty(&my args) || !vec_function_arg_back(&my args)->rest) return;
+    for_each (i, vec_function_arg, &my args) {
+        Binding const* binding = &i->initializer.binding;
+        if (binding->tag == BINDING_IDENTIFIER && csview_equals(binding->content_span.sv, "arguments")) {
+            error_ctx_error_d(errs, i->span, 2396,
+                "Duplicate identifier 'arguments'. Compiler uses 'arguments' to initialize rest parameters.");
+        }
+    }
+}
+
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_check_emit_helpers(me, errs);
     for_each (i, vec_function_arg, &my args) {
@@ -435,6 +449,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
 
     function_impl_typecheck_signature(me, false, errs);
     if (my ret_explicit) type_typecheck(&my ret, errs);
+    function_check_arguments_collision(me, errs);
 
     if (my newline_before_arrow) {
         error_ctx_error_d(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
