@@ -1473,6 +1473,20 @@ static bool list_abort_or_skip(Parser* p, ParsingContext ctx) {
     return false;
 }
 
+// tsc's nextTokenCanFollowDefaultKeyword, at the token after `default`
+static bool can_follow_default_keyword(Parser* p) {
+    if (*p->pos == '@') return true;
+    if (starts_with_followed_by_word_break(p, "class") || starts_with_followed_by_word_break(p, "function") ||
+        starts_with_followed_by_word_break(p, "interface")
+    ) {
+        return true;
+    }
+    Tok t = tok_peek(p);
+    if (tok_is(t, "abstract")) return tok_is(tok_next(p, t), "class") && !tok_next(p, t).newline_before;
+    if (tok_is(t, "async")) return tok_is(tok_next(p, t), "function") && !tok_next(p, t).newline_before;
+    return false;
+}
+
 static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* ret) {
     Parser p = parser(parent);
     const char* end_pos = p.pos;
@@ -1556,7 +1570,7 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
             // tsc's canFollowExportModifier: `export {`, `export *`, `export as namespace` are export declarations
             if (!is_member && (*p.pos == '{' || *p.pos == '*' || starts_with_followed_by_word_break(&p, "as"))) break;
             mod.tag = MODIFIER_EXPORT;
-        } else if (prev_was_export && span_equals(mod.span, "default")) {
+        } else if (span_equals(mod.span, "default") && (prev_was_export || (!is_member && can_follow_default_keyword(&p)))) {
             mod.tag = MODIFIER_EXPORT_DEFAULT;
         } else if (span_equals(mod.span, "async")) {
             mod.tag = MODIFIER_ASYNC;
@@ -9088,7 +9102,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .namespace = ret->decl.namespace,
             },
         };
-    } else if (!vec_spanned_modifier_is_empty(&modifiers.spanned) &&
+    } else if (!vec_spanned_modifier_is_empty(&modifiers.spanned) && vec_expr_is_empty(&decorators) &&
         (*p.pos == 'i' || *p.pos == 'e') &&
         parse_import_export_statement(&p, ret)
     ) {
@@ -9117,6 +9131,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             }
         }
         p.shared->in_ambient = outer_ambient;
+        // (Decorators would be TS1206, but the statement has nowhere to keep them for the baselines' walk yet)
         Span first = vec_spanned_modifier_front(&modifiers.spanned)->span;
         if (!check_modifiers(&p, &modifiers, modified)) {
             if (code == 1120) parse_error(&p, first, 1120, "An export assignment cannot have modifiers.");
@@ -9124,7 +9139,6 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             if (code == 1193) parse_error(&p, first, 1193, "An export declaration cannot have modifiers.");
         }
         modifier_list_drop(&modifiers);
-        if (!vec_expr_is_empty(&decorators)) parse_error(&p, decorators_span, 1206, "Decorators are not valid here.");
         vec_expr_drop(&decorators);
         return parse_success(&p);
     } else {
@@ -9330,7 +9344,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
 static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
-        1079, 1089, 1090, 1096, 1097, 1120, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1242, 1243, 1244,
+        1079, 1089, 1090, 1096, 1097, 1120, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
         1248, 1253, 1255, 1275, 1276, 1319, 1491, 1495, 18010, 18019,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
