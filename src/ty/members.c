@@ -2373,11 +2373,15 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
         bool has = false;
         for (u32 j = 0; j < members->prop_count && !has; j++) has = members->props[j]->name == prop->name;
         if (has) continue;
-        // (tsc's getUndefinedProperty)
+        // (tsc's getUndefinedProperty.) Under exactOptionalPropertyTypes tsc's type is missingType rather than
+        // undefined: an absent value, which the property's declared-type view (getNonMissingTypeOfSymbol, what tttt
+        // stores for an optional property) drops, so `x?: never` (also how tsc prints it). Index signatures and
+        // optional targets accept it; reading it still gives undefined
+        bool exact = compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks;
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
             .flags = PROP_OPTIONAL,
-            .type = ty_intrinsic(me, TY_UNDEFINED), // TODO: tsc's missingType under exactOptionalPropertyTypes,
+            .type = ty_intrinsic(me, exact ? TY_NEVER : TY_UNDEFINED),
             .name_span = prop->name_span,
             .decl_spans = prop->decl_spans,
             .decl_span_count = prop->decl_span_count,
