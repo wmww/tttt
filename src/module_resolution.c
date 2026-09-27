@@ -40,6 +40,11 @@ static void package_json_drop(PackageJson* me) {
 #define g_no_clone
 #include <cleat/generic/hmap.h>
 
+#define g_pro_key SvStr, svstr
+#define g_class_val ResolvedModule, resolved_module
+#define g_no_clone
+#include <cleat/generic/hmap.h>
+
 typedef struct ModuleResolver {
     Fs const* fs;
     CompilerOptions const* options;
@@ -47,6 +52,9 @@ typedef struct ModuleResolver {
     RealpathFn realpath;
     void* realpath_ctx;
     HMapPackageJson package_jsons; // By directory. The map never moves its values' json, only the PackageJson structs
+    // module_resolver_resolve()'s results by containing directory, mode and specifier (resolution_key()): the files of
+    // a directory import the same packages, each a walk up the node_modules directories
+    HMapResolvedModule resolutions;
 } ModuleResolver;
 
 // One resolution in progress
@@ -67,6 +75,14 @@ void resolved_module_drop(ResolvedModule* me) {
     cstr_drop(&my suggested_extension);
     cstr_drop(&my package_id);
     *me = (ResolvedModule){0};
+}
+
+static ResolvedModule resolved_module_clone(ResolvedModule const* me) {
+    ResolvedModule ret = *me;
+    ret.path = cstr_clone(my path);
+    ret.suggested_extension = cstr_clone(my suggested_extension);
+    ret.package_id = cstr_clone(my package_id);
+    return ret;
 }
 
 ModuleResolver* module_resolver_new(Fs const* fs, CompilerOptions const* options) {
@@ -92,6 +108,7 @@ void module_resolver_destroy(ModuleResolver* me) {
     if (!me) return;
     cstr_drop(&my cwd);
     hmap_package_json_drop(&my package_jsons);
+    hmap_resolved_module_drop(&my resolutions);
     free(me);
 }
 
@@ -1181,11 +1198,15 @@ static void add_condition(State* me, const char* condition) {
     if (my condition_count < (isize)c_arraylen(my conditions)) my conditions[my condition_count++] = condition;
 }
 
-static State state_make(ModuleResolver* resolver, ResolutionMode mode) {
-    // The working directory as of the first resolution: whoever made the resolver may still have been setting up
+// The working directory as of the first resolution: whoever made the resolver may still have been setting up
+static void resolver_init_cwd(ModuleResolver* resolver) {
     if (!cstr_size(&resolver->cwd)) {
         try (fs_get_cwd(resolver->fs, &resolver->cwd)) or_panic;
     }
+}
+
+static State state_make(ModuleResolver* resolver, ResolutionMode mode) {
+    resolver_init_cwd(resolver);
     CompilerOptions const* options = resolver->options;
     State state = { .resolver = resolver, .kind = options->module_resolution };
     bool node_next = state.kind == MODULE_RESOLUTION_NODE16 || state.kind == MODULE_RESOLUTION_NODENEXT;
@@ -1211,17 +1232,10 @@ static cstr absolute_containing_dir(ModuleResolver* me, csview containing_file) 
     return ret;
 }
 
-ResolvedModule module_resolver_resolve(
-    ModuleResolver* me,
-    csview specifier,
-    csview containing_file,
-    ResolutionMode mode
-) {
+static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csview containing_dir, ResolutionMode mode) {
     ResolvedModule ret = {0};
-    if (!specifier.size) return ret;
     State state = state_make(me, mode);
-    cstr containing_dir = absolute_containing_dir(me, containing_file);
-    state.containing_dir = cstr_sv(&containing_dir);
+    state.containing_dir = containing_dir;
 
     Found found = {0};
     bool external = false;
@@ -1275,7 +1289,30 @@ ResolvedModule module_resolver_resolve(
             cstr_drop(&stem);
         }
     }
-    cstr_drop(&containing_dir);
+    return ret;
+}
+
+ResolvedModule module_resolver_resolve(
+    ModuleResolver* me,
+    csview specifier,
+    csview containing_file,
+    ResolutionMode mode
+) {
+    if (!specifier.size) return (ResolvedModule){0};
+    resolver_init_cwd(me);
+    cstr dir = absolute_containing_dir(me, containing_file);
+    // (Paths are C strings further down: the directory is its own string, and no path has a line break)
+    cstr key = cstr_d(dir, "\n", (char)('0' + mode), specifier);
+    auto cached = hmap_resolved_module_get(&my resolutions, cstr_sv(&key));
+    ResolvedModule ret;
+    if (cached) {
+        cstr_drop(&key);
+        ret = resolved_module_clone(&cached->second);
+    } else {
+        ret = resolve_uncached(me, specifier, cstr_sv(&dir), mode);
+        hmap_resolved_module_insert(&my resolutions, key, resolved_module_clone(&ret));
+    }
+    cstr_drop(&dir);
     return ret;
 }
 

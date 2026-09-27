@@ -718,10 +718,23 @@ static int invalid_char_size(const char* c) {
     return 0;
 }
 
+static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newlines);
+
+// Most calls are at a token already: whitespace is ASCII at most ' ', and the rest starts with `/` or a non-ASCII byte
 static inline void hop_whitespace_full(Parser* parent, bool hop_comments, bool hop_newlines) {
     if (parent->pos == parent->whitespace_end) {
         return;
     }
+    char c = *parent->pos;
+    if ((unsigned char)c > ' ' && (unsigned char)c < 0x80 && c != '/') {
+        parent->whitespace = WHITESPACE_NONE;
+        parent->whitespace_end = parent->pos;
+        return;
+    }
+    hop_whitespace_slow(parent, hop_comments, hop_newlines);
+}
+
+static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newlines) {
     parent->whitespace = WHITESPACE_NONE;
     while (true) {
         switch (*parent->pos) {
@@ -3687,6 +3700,8 @@ static bool parse_function_args_inner(
     bool commit_on_paren,
     FunctionImpl* ret
 ) {
+    // Without `abstract`/`new` a parameter list starts at its `(` or type parameters (member names come here first)
+    if (!parse_abstract_and_new && *parent->pos != '(' && *parent->pos != '<') return false;
     Parser p = parser(parent);
     bool is_definitely_function = false;
 

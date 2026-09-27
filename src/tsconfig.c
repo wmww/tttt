@@ -300,6 +300,27 @@ static bool glob_matches(csview pattern, csview path, bool prefix) {
     return glob_matches(pattern_rest, path_rest, prefix);
 }
 
+// Whether a path inside the directory `dir` can match the pattern (tsc's directory patterns: don't walk what no
+// include can match)
+static bool glob_may_match_inside(csview pattern, csview dir) {
+    if (!dir.size) return pattern.size > 0;
+    if (!pattern.size) return false;
+    csview pattern_rest = pattern;
+    csview segment = next_segment(&pattern_rest);
+    csview dir_rest = dir;
+    if (csview_equals(segment, "**")) {
+        if (glob_may_match_inside(pattern_rest, dir)) return true;
+        csview name = next_segment(&dir_rest);
+        if (is_implicitly_excluded(name) || (name.size && name.buf[0] == '.')) return false;
+        return glob_may_match_inside(pattern, dir_rest);
+    }
+    csview name = next_segment(&dir_rest);
+    bool has_wildcard = csview_find_sv(segment, c_sv("*")) != c_NPOS || csview_find_sv(segment, c_sv("?")) != c_NPOS;
+    if (has_wildcard && name.size && name.buf[0] == '.' && segment.buf[0] != '.') return false;
+    if (!segment_matches(segment, name)) return false;
+    return glob_may_match_inside(pattern_rest, dir_rest);
+}
+
 // "src" means "src/**/*": a last segment without wildcard or extension is a directory
 static cstr include_pattern(ConfigLoad* me, csview dir, csview written) {
     cstr absolute = config_path(me, dir, written);
@@ -342,7 +363,13 @@ static void collect_files(ConfigLoad* me, Patterns const* patterns, csview dir, 
     for_each (item, fs_listdir_sorted, my fs, dir) {
         cstr path = path_join(dir, item.name);
         if (fs_is_directory(my fs, cstr_sv(&path))) {
-            if (!is_implicitly_excluded(item.name) && item.name.buf[0] != '.' && !is_excluded(patterns, cstr_sv(&path))) {
+            bool wanted = false;
+            for (isize i = 0; i < patterns->include.count && !wanted; i++) {
+                wanted = glob_may_match_inside(cstr_sv(&patterns->include.items[i]), cstr_sv(&path));
+            }
+            if (wanted && !is_implicitly_excluded(item.name) && item.name.buf[0] != '.' &&
+                !is_excluded(patterns, cstr_sv(&path))
+            ) {
                 str_list_push(&subdirs, cstr_sv(&path));
             }
         } else if (has_source_extension(me, item.name) && !is_excluded(patterns, cstr_sv(&path))) {
