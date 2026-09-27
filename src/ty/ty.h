@@ -903,6 +903,13 @@ void ty_check_overloads_compatible(
 Signature const* ty_union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count);
 bool ty_type_params_identical(Checker* me, TyList source, TyList target);
 bool ty_is_discriminant_property(Checker* me, Ty const* type, Atom const* name); // flow.c
+// tsc's getKeyPropertyName: of a union of 10+ object types, the unit-typed property (`kind`) that tells most of them
+// apart, else null. ty_union_member_for_key() is the member whose key property is `key` (tsc's
+// getConstituentTypeForKeyType), null if none or several are
+Atom const* ty_union_key_property(Checker* me, Ty const* ty);
+Ty const* ty_union_member_for_key(Checker* me, Ty const* ty, Ty const* key);
+// The type of the property `name` of `ty` (tsc's getTypeOfPropertyOfType, of an object, intersection or type variable)
+Ty const* ty_prop_type_of(Checker* me, Ty const* ty, Atom const* name);
 Signature* const* ty_union_signatures(Checker* me, TyList members, bool construct, u32* count_out);
 Signature* const* ty_union_signature_lists(Checker* me, Signature* const* const* lists, u32 const* lens, u32 member_count, u32* count_out);
 typedef struct CallEffects {

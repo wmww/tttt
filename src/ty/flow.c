@@ -942,9 +942,14 @@ static bool is_subtype(Checker* me, Ty const* source, Ty const* target) {
 // One member of the candidate of getNarrowedType(): the members of `type` that are it, or that it is
 static Ty const* narrowed_by_candidate_member(Checker* me, Ty const* type, Ty const* c, bool check_derived) {
     TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+    // Only the member with the candidate's key, if the union has a key property (tsc's getNarrowedTypeWorker)
+    Atom const* key = ty_union_key_property(me, type);
+    Ty const* discriminant = key ? ty_prop_type_of(me, c, key) : nullptr;
+    Ty const* matching = discriminant ? ty_union_member_for_key(me, type, discriminant) : nullptr;
+    TyList direct = matching ? (TyList){ .data = &matching, .len = 1 } : members;
     TyBuf parts = {0};
-    for (u32 i = 0; i < members.len; i++) {
-        Ty const* t = members.data[i];
+    for (u32 i = 0; i < direct.len; i++) {
+        Ty const* t = direct.data[i];
         if (check_derived ? is_type_derived_from(me, t, c) : is_strict_subtype(me, t, c)) ty_buf_push(&parts, t);
         else if (check_derived ? is_type_derived_from(me, c, t) : is_strict_subtype(me, c, t)) ty_buf_push(&parts, c);
         else if (!check_derived && is_subtype(me, t, c)) ty_buf_push(&parts, t);
@@ -1060,6 +1065,129 @@ static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* na
     return ret;
 }
 
+// Key properties (tsc's getKeyPropertyName and mapTypesByKeyProperty): a big union of objects told apart by a unit
+// property maps the property's values to its members, which narrowing and relations look up instead of trying every
+// member. Stored in the links table per union: KEY_UNION_KEY_NAME and KEY_UNION_KEY_MEMBER
+
+Ty const* ty_prop_type_of(Checker* me, Ty const* ty, Atom const* name) {
+    Ty const* holder = ty->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty : ty_apparent_type(me, ty);
+    Prop const* prop = ty_get_prop(me, holder, name);
+    return prop ? prop_type(me, prop) : nullptr;
+}
+
+// tsc's isUnitType (unlike is_unit_type(), with computed enum members)
+static bool is_key_unit(Ty const* ty) {
+    return ty->kind != TY_UNION && (ty->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE));
+}
+
+static bool is_key_holder(Ty const* ty) {
+    return ty->flags & (TYF_OBJECT | TYF_TYPE_PARAM | TYF_DEFERRED);
+}
+
+typedef struct KeyEntry {
+    Ty const* literal;
+    u32 member;
+} KeyEntry;
+
+static int key_entry_cmp(void const* a, void const* b) {
+    KeyEntry const* x = a;
+    KeyEntry const* y = b;
+    if (x->literal->id != y->literal->id) return x->literal->id < y->literal->id ? -1 : 1;
+    return x->member < y->member ? -1 : x->member > y->member;
+}
+
+// Maps the values of `name` to members, if enough members have values of their own (tsc's mapTypesByKeyProperty)
+static bool map_by_key_property(Checker* me, Ty const* ty, Atom const* name) {
+    TyList members = ty->composite.types;
+    KeyEntry* entries = nullptr;
+    u32 len = 0, cap = 0;
+    bool mapped = true;
+    for (u32 i = 0; i < members.len && mapped; i++) {
+        Ty const* member = members.data[i];
+        if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED))) continue;
+        Ty const* discriminant = ty_prop_type_of(me, member, name);
+        if (!discriminant) continue;
+        if (!is_literal_type(discriminant)) {
+            mapped = false;
+            break;
+        }
+        TyList values = discriminant->kind == TY_UNION ? discriminant->composite.types : (TyList){ .data = &discriminant, .len = 1 };
+        for (u32 j = 0; j < values.len; j++) {
+            if (len == cap) {
+                cap = cap ? cap * 2 : 32;
+                entries = realloc(entries, sizeof(KeyEntry) * cap);
+                panic_if(!entries, "out of memory");
+            }
+            entries[len++] = (KeyEntry){ ty_regular(me, values.data[j]), i };
+        }
+    }
+    if (!mapped) {
+        free(entries);
+        return false;
+    }
+    qsort(entries, len, sizeof(KeyEntry), key_entry_cmp);
+    // A member whose value an earlier member has too doesn't count, and that value maps to no member
+    bool* duplicate = calloc(members.len, sizeof(bool));
+    panic_if(!duplicate, "out of memory");
+    for (u32 i = 1; i < len; i++) {
+        if (entries[i].literal == entries[i - 1].literal) duplicate[entries[i].member] = true;
+    }
+    u32 count = 0;
+    bool* has_value = calloc(members.len, sizeof(bool));
+    panic_if(!has_value, "out of memory");
+    for (u32 i = 0; i < len; i++) has_value[entries[i].member] = true;
+    for (u32 i = 0; i < members.len; i++) count += has_value[i] && !duplicate[i];
+    mapped = count >= 10 && count * 2 >= members.len;
+    for (u32 i = 0; i < len && mapped; i++) {
+        bool shared = (i > 0 && entries[i - 1].literal == entries[i].literal) ||
+            (i + 1 < len && entries[i + 1].literal == entries[i].literal);
+        if (i > 0 && entries[i - 1].literal == entries[i].literal) continue;
+        u64 key[3] = { KEY_UNION_KEY_MEMBER, ty->id, entries[i].literal->id };
+        *intern_slot(me, &my links, key, 3) = shared ? ty_intrinsic(me, TY_UNKNOWN_) : members.data[entries[i].member];
+    }
+    free(has_value);
+    free(duplicate);
+    free(entries);
+    return mapped;
+}
+
+static Atom const* key_property_uncached(Checker* me, Ty const* ty) {
+    TyList members = ty->composite.types;
+    if (members.len < 10) return nullptr;
+    u32 holders = 0;
+    for (u32 i = 0; i < members.len; i++) holders += is_key_holder(members.data[i]);
+    if (holders < 10) return nullptr;
+    // The first property of a unit type in one of the members
+    Atom const* name = nullptr;
+    for (u32 i = 0; i < members.len && !name; i++) {
+        Ty const* member = members.data[i];
+        if (!is_key_holder(member)) continue;
+        Members const* props = ty_members(me, member->flags & TYF_OBJECT ? member : ty_apparent_type(me, member));
+        for (u32 j = 0; j < props->prop_count && !name; j++) {
+            if (is_key_unit(prop_type(me, props->props[j]))) name = props->props[j]->name;
+        }
+    }
+    return name && map_by_key_property(me, ty, name) ? name : nullptr;
+}
+
+Atom const* ty_union_key_property(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_UNION || ty->composite.types.len < 10) return nullptr;
+    u64 key[2] = { KEY_UNION_KEY_NAME, ty->id };
+    void const* cached = intern_get(&my links, key, 2);
+    if (cached) return cached == ty ? nullptr : cached;
+    // (While it is worked out, the union has none)
+    *intern_slot(me, &my links, key, 2) = ty;
+    Atom const* name = key_property_uncached(me, ty);
+    if (name) *intern_slot(me, &my links, key, 2) = name;
+    return name;
+}
+
+Ty const* ty_union_member_for_key(Checker* me, Ty const* ty, Ty const* key) {
+    u64 slot_key[3] = { KEY_UNION_KEY_MEMBER, ty->id, ty_regular(me, key)->id };
+    Ty const* ret = intern_get(&my links, slot_key, 3);
+    return ret && !(ret->flags & TYF_UNKNOWN) ? ret : nullptr;
+}
+
 // `const k = x.kind`: the initializer of a const variable without a type annotation, if it is an access (tsc's
 // getCandidateDiscriminantPropertyAccess)
 static Expr const* aliased_access(Expr const* expr) {
@@ -1122,6 +1250,27 @@ static Ty const* narrow_by_discriminant(FlowQuery* q, Ty const* type, PropertyEx
     if (remove_nullable && optional_chain) prop = union_of(me, prop, ty_intrinsic(me, TY_UNDEFINED));
     DiscriminantFilter filter = { name, narrow(q, prop, arg) };
     return filter_type(me, type, keep_by_discriminant, &filter);
+}
+
+static bool is_not_type(Checker* me, Ty const* member, void const* arg) {
+    (void)me;
+    return member != arg;
+}
+
+// `x.kind === k` with kind the key property of x's union: the member for k (tsc's narrowTypeByDiscriminantProperty).
+// Null if that doesn't decide it
+static Ty const* narrow_by_key_equality(
+    FlowQuery* q, Ty const* type, PropertyExpr const* access, BinaryOp op, Expr const* value, bool assume_true
+) {
+    Checker* me = q->me;
+    if (op != BINARY_OP_TRIPLE_EQUAL && op != BINARY_OP_TRIPLE_NOT_EQUAL) return nullptr;
+    Atom const* key = ty_union_key_property(me, type);
+    if (!key || key != access_name(me, access)) return nullptr;
+    Ty const* candidate = ty_union_member_for_key(me, type, ty_flow_expr_type(me, value));
+    if (!candidate) return nullptr;
+    if ((op == BINARY_OP_TRIPLE_EQUAL) == assume_true) return candidate;
+    Ty const* candidate_key = ty_prop_type_of(me, candidate, key);
+    return candidate_key && is_key_unit(candidate_key) ? filter_type(me, type, is_not_type, candidate) : type;
 }
 
 static Ty const* narrow_prop_by_facts(FlowQuery* q, Ty const* prop_type, void const* arg) {
@@ -1503,7 +1652,10 @@ static Ty const* narrow_by_binary(FlowQuery* q, Ty const* type, Expr const* expr
             PropertyExpr const* right_access = left_access ? nullptr : discriminant_access(q, right, type);
             if (left_access || right_access) {
                 EqualityPropArg arg = { binary->op, left_access ? right : left, assume_true };
-                return narrow_by_discriminant(q, type, left_access ? left_access : right_access, narrow_prop_by_equality, &arg);
+                PropertyExpr const* access = left_access ? left_access : right_access;
+                Ty const* by_key = narrow_by_key_equality(q, type, access, binary->op, arg.value, assume_true);
+                if (by_key) return by_key;
+                return narrow_by_discriminant(q, type, access, narrow_prop_by_equality, &arg);
             }
             // TODO: `x.constructor === C`
             // `isFoo(x) === true`
@@ -1761,6 +1913,28 @@ static Ty const* narrow_by_switch_on_discriminant(FlowQuery* q, Ty const* type, 
     return ret;
 }
 
+// `switch (x.kind)` with kind the key property of x's union: the members for the clause's cases (tsc's
+// narrowTypeBySwitchOnDiscriminantProperty). Null if some case has no member of its own
+static Ty const* narrow_by_key_switch(FlowQuery* q, Ty const* type, PropertyExpr const* access, FlowSwitchClause const* clause) {
+    Checker* me = q->me;
+    if (clause->clause_start >= clause->clause_end) return nullptr;
+    Atom const* key = ty_union_key_property(me, type);
+    if (!key || key != access_name(me, access)) return nullptr;
+    TyBuf switch_types = {0};
+    switch_clause_types(me, clause->switch_, &switch_types);
+    TyBuf candidates = {0};
+    bool all = true;
+    for (u32 i = clause->clause_start; i < clause->clause_end && all; i++) {
+        Ty const* candidate = ty_union_member_for_key(me, type, switch_types.data[i]);
+        if (candidate) ty_buf_push(&candidates, candidate);
+        else all = false;
+    }
+    Ty const* ret = all ? ty_union(me, candidates.data, candidates.len, nullptr, (TyList){0}) : nullptr;
+    ty_buf_drop(&candidates);
+    ty_buf_drop(&switch_types);
+    return ret;
+}
+
 static Ty const* narrow_prop_by_switch(FlowQuery* q, Ty const* prop_type, void const* arg) {
     return narrow_by_switch_on_discriminant(q, prop_type, arg);
 }
@@ -1863,7 +2037,9 @@ static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
             if (every) type = type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
         }
         PropertyExpr const* access = discriminant_access(q, needle, type);
-        if (access) type = narrow_by_discriminant(q, type, access, narrow_prop_by_switch, clause);
+        Ty const* by_key = access ? narrow_by_key_switch(q, type, access, clause) : nullptr;
+        if (by_key) type = by_key;
+        else if (access) type = narrow_by_discriminant(q, type, access, narrow_prop_by_switch, clause);
     }
     return (FlowType){ type, before.incomplete };
 }

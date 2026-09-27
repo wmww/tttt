@@ -1625,6 +1625,14 @@ static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source,
     for (u32 i = 0; i < targets.len; i++) {
         if (targets.data[i] == source) return TERNARY_TRUE;
     }
+    // The member with the source's key first (tsc's getMatchingUnionConstituentForType)
+    Atom const* key = source->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_union_key_property(me, target) : nullptr;
+    Ty const* key_type = key ? ty_prop_type_of(me, source, key) : nullptr;
+    Ty const* match = key_type ? ty_union_member_for_key(me, target, key_type) : nullptr;
+    if (match) {
+        Ternary related = is_related_to(me, st, source, match, false);
+        if (related) return related;
+    }
     // A unit type is only ever related to a union member by identity (above) or through a non-unit member
     bool source_is_unit = (source->kind == TY_LITERAL && !source->literal.enum_decl) ||
         (source->kind == TY_INTRINSIC && (source->flags & TYF_NULLABLE));
