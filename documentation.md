@@ -224,13 +224,38 @@ Unlike other typescript/javascript parsers, tttt doesn't tokenize before parsing
 ### Anchors
 Anchors are helpful for making spans. They are created with `anchor(&p)`. `span_from(a)` creates a span from the parser's position when the anchor was created to the parser's current position.
 
+### Error recovery
+Recovery follows tsc's parser rules without its tokens (plan 27):
+- `parse_error()` drops an error that starts where the previous one does (tsc's parseErrorAtPosition), and an error at
+  a character no token starts with (`invalid_char_size()`) becomes TS1127, which tsc's scanner would have reported
+  first. `ParserShared.errors_attempted` counts the calls, dropped ones too, for code that asks "did that parse with
+  errors".
+- Lists. `ParserShared.parsing_context` is tsc's ParsingContext mask, a bit per list being parsed (`list_enter()` /
+  `list_leave()`; statements, class/type/enum/object literal members, switch clauses, parameters, arguments, array
+  literals, variable declarations so far). When a list's element can't be parsed, `list_abort_or_skip()` reports the
+  list's error (tsc's parsingContextErrors) and ends the list if the token terminates it or starts an element or
+  terminator of any enclosing list, else skips one token. One deviation: a token that starts an element of the list
+  itself is skipped, since tsc's element parser would have consumed it. Delimited lists report a missing `,` and go
+  on. The mask only matters when recovering, so the fail cache ignores it (a position that failed under one mask is
+  only replayed under another in invalid code).
+- The element and terminator predicates are tsc's `isStartOf*` lookaheads over `Tok`s (`tok_peek()`, `tok_next()`,
+  `tok_scan_end()`: a cheap scanner, no values). They run only once an element parser failed or parsed with errors
+  (`parse_list_member()`), never on valid code's path.
+- Commit points: where tsc stops speculating, the tttt function succeeds with errors instead of failing:
+  `arrow_function_tristate()` (tsc's isParenthesizedArrowFunctionExpression) in front of arrow functions, parameter
+  lists after their `(` (`commit_on_paren`), property names after a `.`, `[]` (TS1011), object literal members
+  after their name or `*`, parenthesized expressions, a binary operator where an expression should start (a missing
+  left operand). A missing name is an empty span, which the symbols baseline prints as `(Missing)`.
+- Grammar errors the parser reports for tsc's checker (`is_grammar_code()`: modifiers, TS1162...) don't count as parse
+  errors and are dropped in a file that has parse errors, like tsc's grammarErrorOnNode.
+
 ### Whitespace
 `hop_whitespace(&p)` needs to be called anywhere whitespace may appear.
 
 Newlines are generally ignored but change how js/ts are parsed in some cases. For this reason parsers keep track of if the last whitespace they hopped contained a newline. This gets propagated to the parent on success.
 
 ### JSX
-In a JSX file (`SourceFile.is_jsx`: `.tsx` and JavaScript files, tsc's `LanguageVariant.JSX`) a `<` where an expression starts, followed by a name or `>`, is an element (`parse_jsx_element()`, tsc's parseJsxElementOrSelfClosingElementOrFragment), never a type assertion, and a generic arrow function has to be written `<T,>` or `<T extends X>` (`jsx_generic_arrow_start()`). There's no scanner mode: text between tags is read straight from the source, where `//` isn't a comment and `'` isn't a string. The AST is one `JsxElement` for `EXPR_JSX_ELEMENT` and `EXPR_JSX_FRAGMENT` (tag name as an identifier / `this` / property access expression, type arguments, attributes as one `EXPR_JSX_ATTRIBUTES` expression, children, the closing tag's name). Error recovery follows tsc's: a child that swallowed its parent's closing tag gives it back, `<a/><b/>` where one element is expected is a comma expression with TS2657, and tsc only reports the first error at a position (`parse_error_once()`, which the JSX code uses for its errors). Value tags (`<Comp>`, `<this.x>`) are references in the resolve walk; intrinsic ones (`<div>`, `<my-elem>`, `<a:b>`, `jsx_element_is_intrinsic()`) aren't.
+In a JSX file (`SourceFile.is_jsx`: `.tsx` and JavaScript files, tsc's `LanguageVariant.JSX`) a `<` where an expression starts, followed by a name or `>`, is an element (`parse_jsx_element()`, tsc's parseJsxElementOrSelfClosingElementOrFragment), never a type assertion, and a generic arrow function has to be written `<T,>` or `<T extends X>` (`jsx_generic_arrow_start()`). There's no scanner mode: text between tags is read straight from the source, where `//` isn't a comment and `'` isn't a string. The AST is one `JsxElement` for `EXPR_JSX_ELEMENT` and `EXPR_JSX_FRAGMENT` (tag name as an identifier / `this` / property access expression, type arguments, attributes as one `EXPR_JSX_ATTRIBUTES` expression, children, the closing tag's name). Error recovery follows tsc's: a child that swallowed its parent's closing tag gives it back, `<a/><b/>` where one element is expected is a comma expression with TS2657, and only the first error at a position counts (see Error recovery). Value tags (`<Comp>`, `<this.x>`) are references in the resolve walk; intrinsic ones (`<div>`, `<my-elem>`, `<a:b>`, `jsx_element_is_intrinsic()`) aren't.
 
 The factory is resolved in the resolve walk (`jsx_lookup_factory()` in expr.c). A file whose JSX imports its factory implicitly (react-jsx/react-jsxdev, `jsxImportSource`, `@jsxImportSource`/`@jsxRuntime` pragmas: `source_file_jsx_runtime_import()`) has a synthetic `SourceFile.jsx_runtime_ref` (`react/jsx-runtime`), loaded like an import in modules and JS files and `ambient_only` in scripts, like tsc's synthesized import. When that module exists it is `JsxElement.runtime_module`, whose `JSX` is the JSX namespace (`ty_jsx_namespace()`), and nothing else is referenced; when it doesn't, the file's first element gets TS2875 (TS2792 under classic resolution). Otherwise every element references the factory's first name (`React` of `React.createElement`: TS2874, or TS2552 for a misspelling, under `jsx: react`), fragments the fragment factory too (TS2879 once per file, TS17016/TS17017 without one). The factory options and pragmas are validated like tsc's (`compiler_option_is_entity_name()`): an invalid one counts as not given.
 

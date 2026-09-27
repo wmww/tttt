@@ -14,8 +14,9 @@ scanner; one list/commit-point framework (tsc's parsingContext rules) as stage 1
 diagnostics as independent patching stages. `./syntaxstats.py` measures it: 639 TS tests, only ~1/3 are recovery.)
 (Entry 6, plan 26 stage 1, is done, 2026-09-27: JS tests 160 -> 247, suite 8258 -> 8345; the plan's Status says
 what's left and what stage 3 needs first.)
-7. **Execution: plan 27** stage 1 (ParsingContext mask, `parse_list`, class members / statements / object literals
-   first, arrow-function tri-state). Stage 2 (permissive grammar) is the cheapest per test if stage 1 finishes early.
+(Entry 7, plan 27 stage 1, is mostly done, 2026-09-27: parser-differing tests 687 -> 583, suite 8345 -> 8408; the
+plan's Status lists what's left of stage 1. Stage 2, permissive grammar, is the next parser session whenever the
+insights schedules one.)
 8. **Execution: suite checker bugs**, one session, plan-19 style but on the suite: sample `./displaydiff.py`'s
    `other` bucket (378 TS tests, mostly checker bugs the types baseline shows first) and failstats' single-code
    buckets (missing TS2322 74 tests, spurious TS2322 71, missing TS2339 56), reduce, fix the tsc rule. Not display

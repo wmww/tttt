@@ -2,6 +2,15 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 27 stage 1 (parser list recovery and commit points)
+Suite 8345 -> **8408 / 13540** full (errors 10157 -> 10233, symbols 11930 -> 11977, types 10151 -> 10208), no
+component lost. `./syntaxstats.py`: **687 -> 583** tests whose parser diagnostics differ (48 JS). TS tests: A 183 ->
+175, B 111 -> 64, C 103 -> 58, D 67 -> 61, E 78 -> 81, M 97 -> 96. Clusters: recovery list-context 56 -> 25, object
+literal 18 -> 6, TS1011 15 -> 0; other:B 23 -> 8, other:C 21 -> 8; lexical and permissive about unchanged (permissive
+modifiers 68 -> 60, index signatures 26 -> 24). Corpora unchanged (tsc 0, type-fest 53, valibot 61, react 1, zero
+syntax errors). Parse time (`--time`, 6 runs, vs the session's start): tsc corpus load+parse 199 -> 201 ms, react
+115 -> 116 ms (noise; the first version of the lookahead cost +10% / +7%, see the part 10 commit).
+
 ## 2026-09-27, plan 26 stage 1 (JSDoc core + CommonJS, at the stage's last commit)
 Suite 8258 -> **8345 / 13540** full (errors 10029 -> 10157, symbols 11851 -> 11930, types 10035 -> 10151); 5 types
 components lost (typedef tests, hacks.md "JavaScript"). JS tests (`./jsstats.py`): **160 -> 247 pass**, 802 fail;

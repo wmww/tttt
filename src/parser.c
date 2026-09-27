@@ -5506,11 +5506,6 @@ static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
 // JSX (tsc's parseJsxElementOrSelfClosingElementOrFragment and friends). There is no JSX scanner mode: text between
 // tags is read straight from the source, where `//` isn't a comment and `'` isn't a string
 
-// Like parse_error(), except that it is dropped when the last error starts at the same position (tsc's
-// parseErrorAtPosition only reports the first error at a position; the JSX recovery relies on that)
-#define parse_error_once(me, span, ts_code, ...) \
-    (last_error_starts_at(me, span) ? nullptr : parse_error(me, span, ts_code, __VA_ARGS__))
-
 static bool last_error_starts_at(Parser* me, Span span) {
     if (!vec_error_size(&my shared->errors)) return false;
     Error const* last = vec_error_back(&my shared->errors);
@@ -5570,7 +5565,7 @@ static bool parse_jsx_namespace_rest(Parser* parent) {
     hop_whitespace(&p);
     Span local;
     if (!parse_jsx_identifier(&p, &local)) {
-        parse_error_once(&p, span_from_token(&p), 1003, "Identifier expected.");
+        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
     }
     return parse_success(&p);
 }
@@ -5589,7 +5584,7 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
     *namespaced = false;
     Span name;
     if (!parse_jsx_identifier(p, &name)) {
-        parse_error_once(p, jsx_span_from_token(p), 1003, "Identifier expected.");
+        parse_error(p, jsx_span_from_token(p), 1003, "Identifier expected.");
         *ret = expr_identifier((IdentifierExpr){ .name = span_from_pos(p) });
         return;
     }
@@ -5618,9 +5613,9 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
             if (*dot.pos == '#' && is_identifier_start_char(dot.pos[1])) {
                 dot.pos++;
                 parse_identifier_or_keyword(&dot, nullptr);
-                parse_error_once(&dot, span_from_pos(&dot), 1003, "Identifier expected.");
+                parse_error(&dot, span_from_pos(&dot), 1003, "Identifier expected.");
             } else {
-                parse_error_once(&dot, span_from_token(&dot), 1003, "Identifier expected.");
+                parse_error(&dot, span_from_token(&dot), 1003, "Identifier expected.");
             }
             parse_success(&dot);
             break;
@@ -5687,7 +5682,7 @@ static bool parse_jsx_braced_expr(Parser* p, bool allow_spread, bool* spread, Ex
         if (!allow_spread && !strncmp(p->pos, "...", 3)) {
             // `x={...a}`: no spread in an attribute value, the `...` is left for the attribute list to skip
             parse_error(p, span_make(p->shared->source, p->pos, p->pos + 3), 1109, "Expression expected.");
-            parse_error_once(p, span_from_pos(p), 1005, "'}' expected.");
+            parse_error(p, span_from_pos(p), 1005, "'}' expected.");
             return false;
         }
         if (allow_spread && hop_start(p, "...")) {
@@ -5700,7 +5695,7 @@ static bool parse_jsx_braced_expr(Parser* p, bool allow_spread, bool* spread, Ex
         hop_whitespace(p);
     }
     if (!hop_char(p, '}')) {
-        parse_error_once(p, span_from_token(p), 1005, "'}' expected.");
+        parse_error(p, span_from_token(p), 1005, "'}' expected.");
     }
     return has_expr;
 }
@@ -5721,11 +5716,11 @@ static void parse_jsx_attributes(Parser* p, VecJsxAttribute* ret) {
             p->pos++;
             hop_whitespace(p);
             attr.tag = JSX_ATTRIBUTE_SPREAD;
-            if (!hop_start(p, "...")) parse_error_once(p, span_from_token(p), 1005, "'...' expected.");
+            if (!hop_start(p, "...")) parse_error(p, span_from_token(p), 1005, "'...' expected.");
             hop_whitespace(p);
             if (expect_expr(p, expr_ctx_null, &attr.value)) parse_comma_ops_right_side(p, &attr.value);
             hop_whitespace(p);
-            if (!hop_char(p, '}')) parse_error_once(p, span_from_token(p), 1005, "'}' expected.");
+            if (!hop_char(p, '}')) parse_error(p, span_from_token(p), 1005, "'}' expected.");
             attr.span = span_from(a);
             vec_jsx_attribute_push(ret, attr);
             continue;
@@ -5735,7 +5730,7 @@ static void parse_jsx_attributes(Parser* p, VecJsxAttribute* ret) {
             // tsc's parseList: skips what can't start an attribute, unless something around could use it
             // (isInSomeParsingContext: anything is a JSX child; elsewhere, roughly, whatever starts a statement ends
             // the tag: `<C<T> />` in a JS file)
-            parse_error_once(p, jsx_span_from_token(p), 1003, "Identifier expected.");
+            parse_error(p, jsx_span_from_token(p), 1003, "Identifier expected.");
             if (p->shared->jsx_children_depth || strchr("<([\"'`!-+~@#", c) || (c >= '0' && c <= '9')) break;
             if (!hop_start(p, "...")) hop_token(p);
             continue;
@@ -5770,7 +5765,7 @@ static void parse_jsx_attributes(Parser* p, VecJsxAttribute* ret) {
                 attr.tag = JSX_ATTRIBUTE_ELEMENT;
                 parse_jsx_element(p, true, nullptr, false, nullptr, &attr.value);
             } else {
-                parse_error_once(p, span_from_token(p), 1145, "'{' or JSX element expected.");
+                parse_error(p, span_from_token(p), 1145, "'{' or JSX element expected.");
             }
         }
         attr.span = span_from(a);
@@ -5798,9 +5793,9 @@ static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment
         if (!c) {
             // At the tag that lacks the closing element rather than at the end of the file
             if (is_fragment) {
-                parse_error_once(p, el->opening_span, 17014, "JSX fragment has no corresponding closing tag.");
+                parse_error(p, el->opening_span, 17014, "JSX fragment has no corresponding closing tag.");
             } else {
-                parse_error_once(p, el->tag_name.outer_span, 17008, "JSX element '", el->tag_name.outer_span,
+                parse_error(p, el->tag_name.outer_span, 17008, "JSX element '", el->tag_name.outer_span,
                     "' has no corresponding closing tag.");
             }
             return;
@@ -5893,14 +5888,14 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                 Anchor type_a = anchor(&p);
                 TypeNode t;
                 if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-                    parse_error_once(&p, jsx_span_from_token(&p), 1110, "Type expected.");
+                    parse_error(&p, jsx_span_from_token(&p), 1110, "Type expected.");
                     break;
                 }
                 vec_spanned_type_push(&el->type_args, spanned_type(span_from(type_a), t));
                 hop_whitespace(&p);
                 Anchor comma_a = anchor(&p);
                 if (!hop_char(&p, ',')) {
-                    if (!hop_char(&p, '>')) parse_error_once(&p, jsx_span_from_token(&p), 1005, "'>' expected.");
+                    if (!hop_char(&p, '>')) parse_error(&p, jsx_span_from_token(&p), 1005, "'>' expected.");
                     break;
                 }
                 el->type_args_trailing_comma = span_from(comma_a);
@@ -5913,9 +5908,9 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         }
         parse_jsx_attributes(&p, &attributes);
         if (!hop_char(&p, '>')) {
-            if (!hop_char(&p, '/')) parse_error_once(&p, span_from_token(&p), 1005, "'/' expected.");
+            if (!hop_char(&p, '/')) parse_error(&p, span_from_token(&p), 1005, "'/' expected.");
             hop_whitespace(&p);
-            if (!hop_char(&p, '>')) parse_error_once(&p, span_from_token(&p), 1005, "'>' expected.");
+            if (!hop_char(&p, '>')) parse_error(&p, span_from_token(&p), 1005, "'>' expected.");
             el->self_closing = true;
         }
     }
@@ -5944,11 +5939,11 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         } else {
             Anchor closing_a = anchor(&p);
             if (!hop_start(&p, "</")) {
-                parse_error_once(&p, span_from_pos(&p), 1005, "'</' expected.");
+                parse_error(&p, span_from_pos(&p), 1005, "'</' expected.");
             } else if (is_fragment) {
                 hop_whitespace(&p);
                 if (!hop_char(&p, '>')) {
-                    parse_error_once(&p, span_from_token(&p), 17015, "Expected corresponding closing tag for JSX fragment.");
+                    parse_error(&p, span_from_token(&p), 17015, "Expected corresponding closing tag for JSX fragment.");
                 }
                 el->closing_span = span_from(closing_a);
             } else {
@@ -5956,15 +5951,15 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                 bool namespaced, broken = false;
                 parse_jsx_tag_name(&p, &el->closing_name, &namespaced, &broken);
                 hop_whitespace(&p);
-                if (!hop_char(&p, '>')) parse_error_once(&p, span_from_token(&p), 1005, "'>' expected.");
+                if (!hop_char(&p, '>')) parse_error(&p, span_from_token(&p), 1005, "'>' expected.");
                 el->closing_span = span_from(closing_a);
                 if (!jsx_tag_names_equal(&el->tag_name, &el->closing_name)) {
                     if (enclosing && jsx_tag_names_equal(&el->closing_name, &enclosing->tag_name)) {
                         // Our parent's closing tag: the error is ours
-                        parse_error_once(&p, el->tag_name.outer_span, 17008, "JSX element '", el->tag_name.outer_span,
+                        parse_error(&p, el->tag_name.outer_span, 17008, "JSX element '", el->tag_name.outer_span,
                             "' has no corresponding closing tag.");
                     } else {
-                        parse_error_once(&p, el->closing_name.outer_span, 17002,
+                        parse_error(&p, el->closing_name.outer_span, 17002,
                             "Expected corresponding JSX closing tag for '", el->tag_name.outer_span, "'.");
                     }
                 }
@@ -5992,7 +5987,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             hop_whitespace(&p);
             Expr invalid;
             parse_jsx_element(&p, true, nullptr, false, top, &invalid);
-            parse_error_once(&p, span_make(p.shared->source, top, span_end_ptr(invalid.outer_span)), 2657,
+            parse_error(&p, span_make(p.shared->source, top, span_end_ptr(invalid.outer_span)), 2657,
                 "JSX expressions must have one parent element.");
             *ret = expr_binary_op(span_from(a), c_new(BinaryOpExpr, {
                 .op = BINARY_OP_COMMA,

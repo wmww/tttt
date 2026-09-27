@@ -41,8 +41,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   time.
 - JSX parsing (`parser.c`, plan 22): `parse_jsx_attributes` approximates tsc's `isInSomeParsingContext` (whether a
   token that can't start an attribute aborts the tag or is skipped) as "inside JSX children, always; elsewhere, when
-  it could start a statement" (`jsx_children_depth` + a character list). `parse_error_once` (tsc's one error per
-  position) is only used by the JSX code: the rest of the parser doesn't dedupe. JSX names with unicode escapes
+  it could start a statement" (`jsx_children_depth` + a character list), predating the ParsingContext mask (plan 27):
+  JSX attributes/children should become lists of it. JSX names with unicode escapes
   (`<\u0061>`, TS17021) are compared and classified by their value (`jsx_name_value`, an inline decode in
   `jsx_element_is_intrinsic`) but *resolved* by their raw text, like every other escaped identifier in tttt.
 - `SourceFile.unchecked` + `error_ctx_remove_unchecked`: the JS gate is a *filter* run after name resolution and
@@ -167,6 +167,24 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined); its only user is the harness
   reading `test/baseline_results.ts` (see the comment catalogue).
 
+
+## Parser error recovery (plan 27 stage 1, documentation.md "Error recovery")
+- `list_abort_or_skip()`: a token that starts an element of the list itself is skipped, never ends the list (tsc's
+  isInSomeParsingContext includes the current list, but tsc's element parser would have consumed that token). Right
+  while tttt element parsers fail where tsc's commit; wrong for the element that genuinely can't be parsed.
+- The fail cache ignores `ParserShared.parsing_context` (plan 27 stage 1 step 1 asked to verify this): a failure
+  recorded under one mask can replay under another, which only changes recovery in invalid code. No test was seen to
+  depend on it.
+- `invalid_char_size()` treats every non-ASCII, non-whitespace character as invalid (TS1127 for any parse error that
+  starts there), because identifiers are ASCII-only (plan 27 stage 3 makes them unicode aware and must narrow this).
+- `tok_scan_end()` is a second, cheap notion of a token next to `hop_token()` (which parses literals): templates are
+  one backtick, `>` sequences are scanned greedily like tsc's scanner before rescanning.
+- `parse_list_member()` asks the member-start predicate only when the member parsed with errors
+  (`errors_attempted`): a member tsc wouldn't start that tttt parses *cleanly* is still taken.
+- The variable declarator loop (`parse_variable_statement`) sets the VariableDeclarations bit but isn't tsc's list;
+  `parse_binding_content()`'s object/array patterns still break out at the first bad element.
+- Committed arrow functions (`arrow_function_tristate()` TRUE) whose parameter list *still* fails fall back to the
+  parenthesized expression like before; tsc never backtracks there.
 
 ## Baselines (plan 21)
 - `symbol_chain.c` (tsc's getSymbolChain, used by both baselines) approximations:
@@ -821,8 +839,9 @@ property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant 
 - Grammar errors vs parse errors (`error_ctx_grammar_error_d`, `SourceFile.has_parse_errors`): tsc drops checker grammar
   errors in a file with parse errors. The newer grammar checks go through it (~40 sites: labels, decorators, regex
   flags, import attributes, `using`...); older ones reported with `error_ctx_error_d` (TS1254, some of TS1155/TS1039,
-  modifier checks...) still report regardless. Conversely tttt's *parser* reports some
-  of tsc's grammar errors (TS1308, TS2852, TS1491/1495), and those count as parse errors for `has_parse_errors`.
+  modifier checks...) still report regardless. Conversely tttt's *parser* reports some of tsc's grammar errors: the
+  ones in `is_grammar_code()` (modifiers, TS1020, TS1162, TS1255) don't count as parse errors and are dropped in a
+  file with parse errors, others (TS1308, TS2852, TS1491/1495, TS1019...) still count as parse errors.
 - Error elaboration (plan 16, `elaborate_error` & co in ty/check.c): tsc re-checks the elaborated expressions
   (checkExpressionForMutableLocationWithContextualType, checkArrayLiteral with forceTuple); tttt reads the memos instead
   (`ty_mutable_location_type`, `ty_array_literal_as_tuple`), so an expression whose memo was typed under a different

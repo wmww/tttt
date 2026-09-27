@@ -281,6 +281,11 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
   smaller stacks still.
 - `parse_label` should refuse reserved words (`default:`/`case x:` are fine today only because of parse order).
 - A leading `&`/`|` in a type becomes an `any`/`never` operand (`parse_type`), which every consumer has to know to skip.
+- Plan 27 stage 1 leftovers worth a look before stage 2 (2026-09-27): `other:E` grew 78 -> 81 and `other:D` barely
+  moved (tests whose first error now agrees but later recovery differs: expected as more lists commit, but sample
+  them: `./syntaxstats.py --list other:E`). `parse_class_item_inner()` still fails where tsc commits (nameless `*`,
+  `get`/`set` members), and function types in type position still backtrack freely (tsc's
+  isUnambiguouslyStartOfFunctionType).
 - No tokenizer + backtracking with fail cache: kept (plan 27 decided). `parse_fail`/`hop_start_if_ends_on_word_break`
   are ~5% of the corpus profile; parse is 113 of react's 310 ms, the perf session should profile it.
 

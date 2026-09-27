@@ -1,6 +1,26 @@
 # Plan 27: parser fidelity (recovery, permissive grammar, lexical diagnostics)
 
-Written 2026-09-26 (planning session, todo entry 5). Nothing of it is built yet.
+Written 2026-09-26 (planning session, todo entry 5).
+
+## Status
+**Stage 1 mostly done (2026-09-27, one session, 11 commits)**: 687 -> 583 tests whose parser diagnostics differ
+(`recovery:*` 89 -> 31: list-context 56 -> 25, object literal 18 -> 6, TS1011 15 -> 0; `other:B` 23 -> 8), suite 8345 ->
+8408, parse time within noise, corpora unchanged. The framework is described in documentation.md "Error recovery".
+Built: the mask and `list_abort_or_skip()`, the one-error-per-position rule for every error, TS1127 at invalid
+characters, lists for statements (all three kinds), class/type/enum/object literal members, switch clauses,
+parameters, arguments, array literals (and the VariableDeclarations bit); commit points for arrows (tri-state),
+parameter lists, `.name`, `[]`, object literal members, parenthesized expressions, missing left operands;
+parseErrorForMissingSemicolonAfter; parser-reported grammar errors dropped in files with parse errors.
+**Left of stage 1** (a second session if the numbers still justify it; `other:D`/`other:E` barely moved, 61 and 81):
+- Lists not converted yet: import/export specifiers, heritage clauses (overlaps stage 2), type arguments/parameters,
+  tuple element types, object/array binding patterns (`parse_binding_content()` breaks out of both at the first bad
+  element), JSX attributes, import attributes; the variable declarator loop is only a mask bit, not tsc's list.
+- Commit points: function types in type position (tsc's isStartOfFunctionTypeOrConstructorType /
+  isUnambiguouslyStartOfFunctionType; today the type parser's `(` still backtracks freely), a committed arrow's
+  return type (`(a): => {}`), `parse_class_item_inner()`'s own fallbacks (it still fails where tsc commits, e.g. a
+  `get`/`set` or `*` class member without a name: MemberFunctionDeclaration5_es6, `async * get x()`).
+- Step 6 (missing nodes in the checker): only names so far. Missing expressions are `expr_implicit_any()`, missing
+  types the default; nothing checker-side had to change yet.
 
 ## Verdict: no rewrite, no scanner. One recovery framework, then three kinds of patching.
 The question was whether tsc's list recovery fits the backtracking no-tokenizer parser or needs a tsc-shaped scanner.
