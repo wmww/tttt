@@ -263,7 +263,7 @@ const baselines = {
     'acceptableAlias1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'accessInstanceMemberFromStaticMethod01': {
         errors: true,
@@ -398,7 +398,7 @@ const baselines = {
     'aliasInaccessibleModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'aliasInaccessibleModule2': {
         errors: true,
@@ -8383,7 +8383,7 @@ const baselines = {
     'declarationEmitNameConflictsWithAlias': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitNamespaceMergedWithInterfaceNestedFunction': {
         errors: true,
@@ -10498,7 +10498,7 @@ const baselines = {
     'duplicateVarAndImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicateVarAndImport2': {
         errors: true,
@@ -13068,7 +13068,7 @@ const baselines = {
     'exportImportNonInstantiatedModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportImportNonInstantiatedModule2': {
         errors: true,
@@ -16768,7 +16768,7 @@ const baselines = {
     'importedModuleClassNameClash': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importsInAmbientModules1': {
         errors: true,
@@ -18493,7 +18493,7 @@ const baselines = {
     'internalImportUnInstantiatedModuleNotReferencingInstanceNoConflict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionApparentTypeCaching': {
         errors: true,
@@ -22493,7 +22493,7 @@ const baselines = {
     'moduledecl': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'multiCallOverloads': {
         errors: true,
@@ -27528,7 +27528,7 @@ const baselines = {
     'reservedNameOnModuleImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reservedNameOnModuleImportWithInterface': {
         errors: true,

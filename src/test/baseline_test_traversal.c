@@ -755,7 +755,8 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                 port_item_add_alias(&my main, ctx, false);
             }
             for_each (i, vec_span, &my main.alias_path) {
-                ctx->any_keeps_underline = true; // Part of a qualified name
+                // Part of a qualified name: any is written like any other type, else it's the intrinsic name
+                ctx->any_keeps_underline = vec_span_size(&my main.alias_path) > 1;
                 if (i_index >= vec_symbol_cptr_size(&my main.alias_path_symbols)) {
                     baseline_test_case_add_type_node(ctx, *i, &type_any);
                     continue;
@@ -775,6 +776,9 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     }));
                     baseline_test_case_add_type_node(ctx, *i, &t);
                     type_drop(&t);
+                } else if (!decl->is_placeholder && !symbol_for_meaning(decl, SYMBOL_VALUE)) {
+                    // Neither a type nor a value (an uninstantiated namespace): errorType (isInRightSideOfImportOrExportAssignment)
+                    baseline_test_case_add_type(ctx, *i, ty_intrinsic(current_checker, TY_ERROR));
                 } else {
                     baseline_test_case_add_symbol_value(ctx, *i, decl);
                 }
