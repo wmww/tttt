@@ -752,6 +752,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   (`symbol_overrides`, `commonjs_symbol_overrides()`), keyed by span; `module.exports` is overridden to tsc's synthetic
   `module.exports` property the same way.
 - `readonly_assignment()` never reports a declaring `exports.x =` (an alias export's target may be a const).
+- `identifier_type_check_arity()`: TS2315 ("not generic") on a class/function declared in a JavaScript file is skipped
+  (HACK until `@template` makes them generic, stage 3).
 - Gates still in place (plan 26 asks to list them): `check_access()` / `ty_check_element_implicit_any()` skip JS files
   (no TS2339/TS7053: expandos, stage 2), `binary_op_typecheck` skips TS2358 in JS, `scope_add_port()` has no
   `export as namespace` alias in JS, `expr.c` (a JS value module in `check_declared_before_use`-like code) and

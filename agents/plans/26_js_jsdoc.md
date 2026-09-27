@@ -1,6 +1,19 @@
 # Plan 26: JavaScript files and JSDoc
 
-Written 2026-09-26 (planning session, todo entry 4). Nothing of it is built yet.
+Written 2026-09-26 (planning session, todo entry 4).
+
+## Status
+**Stage 1 done** (2026-09-27, 8 commits "Plan 26 stage 1, part N"): JS tests passing 160 -> 247, suite 8258 -> 8345.
+Built as designed except: JSDoc is consumed at parse time rather than stored (fine for stage 1; stage 3's `@typedef`
+and `@template` need tags that outlive a host's parse: store them first), and `exports.x =` is only declared from a
+file's top-level statements. What was left out or approximated is in hacks.md "JavaScript" and triage.md "From plan 26
+stage 1"; the most valuable leftovers for later stages: `module.exports.x` merging into export= (stage 2),
+`@type` on declaring assignments (stage 3, with typedefs), JSDoc parse errors. Unresolved JSDoc names are silent
+until stage 3 (HACK). `documentation.md` "JSDoc" / "CommonJS" describe what exists.
+Stage 2 notes: `Object.defineProperty(exports, ...)` is the rest of spurious TS2580; the symbols baseline already has
+an override hook for tsc's getSpecialPropertyAssignmentSymbol shapes (`commonjs_symbol_overrides()`), `this.x =` and
+expandos will need the same kinds of lines; `binary_commonjs_declaration()` is where assignment declaration kinds
+start (tsc's getAssignmentDeclarationKind), extend it rather than adding a second classifier.
 
 ## Why
 1049 of the suite's tests are JS tests (a `.js`/`.jsx`/`.cjs`/`.mjs` unit, `@allowJs` or `@checkJs`); 160 pass,

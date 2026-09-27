@@ -12,7 +12,8 @@ Stage 1 is JSDoc core + CommonJS; expandos and JS classes are stage 2, so "binde
 (Entry 5, planning parser recovery, is done, 2026-09-26: `plans/27_parser_recovery.md`. Verdict: no rewrite, no
 scanner; one list/commit-point framework (tsc's parsingContext rules) as stage 1, then permissive grammar and lexical
 diagnostics as independent patching stages. `./syntaxstats.py` measures it: 639 TS tests, only ~1/3 are recovery.)
-6. **Execution: plan 26** stage 1.
+(Entry 6, plan 26 stage 1, is done, 2026-09-27: JS tests 160 -> 247, suite 8258 -> 8345; the plan's Status says
+what's left and what stage 3 needs first.)
 7. **Execution: plan 27** stage 1 (ParsingContext mask, `parse_list`, class members / statements / object literals
    first, arrow-function tri-state). Stage 2 (permissive grammar) is the cheapest per test if stage 1 finishes early.
 8. **Execution: suite checker bugs**, one session, plan-19 style but on the suite: sample `./displaydiff.py`'s

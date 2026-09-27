@@ -5,6 +5,23 @@ tests that pass now were dropped, binding patterns became plan 24 and the merge/
 Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the codes `src/` never mentions, and
 "Missing checks after plan 15" below has the tail worth knowing about.
 
+## From plan 26 stage 1 (2026-09-27)
+- **`import("…")` specifiers in the types baseline**: tsc prints some module specifiers as absolute paths that the
+  harness then strips (`/.src/a` -> `a`), so the text matches but the `^^^` underline is 6 longer (742 baseline lines,
+  e.g. `exports` inside its own CommonJS file, intersectionsAndEmptyObjects). It's moduleSpecifiers'
+  getModuleSpecifiers falling back to the file name (no specifier from a file to itself?). Find the rule, then print the
+  path the harness strips.
+- **`module.exports.x = v` after `module.exports = C`** is a member of the export= type in tsc (members copied into a
+  new anonymous type, getInitializerTypeFromAssignmentDeclaration), symbols `wat.D` / `Symbol(C.x)`:
+  jsDeclarationsExportSubAssignments, moduleExportAlias4. Probably stage 2 with expandos (same machinery).
+- **`@type` on declaring assignments** (`/** @type {Foo} */ module.exports = {...}`, `exports.x = ...`): the JSDoc
+  type is the declared type, the context and the assignability target (checkJsdocTypeTagOnExportAssignment1-8, all
+  also need @typedef).
+- **JSDoc on `export default <expr>`**: `@type` there (same tests).
+- **TS6210 related info** of an arrow function under a variable's `@type` points at the arrow's parameter; tsc points
+  at the JSDoc signature's (getSignatureOfTypeTag applies to the arrow too). Same root: the arrow's return type is
+  "reused" from the `@type` in tsc's types baseline (jsdocTypeTagParameterType, jsdocTypeTagRequiredParameters).
+
 ## Category-sized (worth a plan or a whole session)
 - **Deferred alias instantiation and type references** (plan 19 R18/R19, 2026-09-26). tttt lowers a type node once
   into a memo and gets the error type when the same node is lowered again while in flight; tsc resolves aliases and

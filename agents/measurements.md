@@ -2,6 +2,16 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, plan 26 stage 1 (JSDoc core + CommonJS, at the stage's last commit)
+Suite 8258 -> **8345 / 13540** full (errors 10029 -> 10157, symbols 11851 -> 11930, types 10035 -> 10151); 5 types
+components lost (typedef tests, hacks.md "JavaScript"). JS tests (`./jsstats.py`): **160 -> 247 pass**, 802 fail;
+by category (only / involved): CommonJS 63 / 177, expandos & JS classes 72 / 254, basic JSDoc 98 / 365, other tags
+13 / 128, leniency 5 / 43, syntax 42 / 158, emit 16 / 39, `.ts`-only 27 / 41, unclassified 90. Cumulative bounds:
+CommonJS + expandos 153, + basic JSDoc 370, + leniency 396, + syntax 504, + other tags 632. Spurious TS2580 255 (139
+tests) -> ~30 (4 tests, `Object.defineProperty(exports, ...)`). Corpora unchanged (tsc 0, type-fest 53, valibot 61,
+react 1). tttt alone vs the session's start: tsc corpus 0.93 s both, RSS 408 -> 412 MB; react 0.30 s both, 238 ->
+241 MB (new AST fields).
+
 ## 2026-09-26, parser baseline for plan 27 (`./syntaxstats.py`, at 2b74f47)
 687 tests' parser diagnostics differ from tsc's (48 JS). TS tests by divergence: A (tsc's parser silent) 183, B (ours
 first) 111, C (same position, other code) 103, D (tsc's first) 67, E (recovery diverges later) 78, M (only tsc) 97.
