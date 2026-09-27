@@ -39,6 +39,7 @@ typedef struct Block {
 void block_drop(Block* me);
 // The token that starts at `at` (tsc's getSpanOfTokenAtPosition, roughly), invalid if `at` is
 Span block_first_token(Span at);
+void block_check_required_declare(Block const* me, ErrorCtx* errs); // In a declaration file: TS1046
 Span block_span(Block const* me); // From its first statement to its last, invalid if it has none
 void block_add_names(Block const* me, Scope* scope);
 // `export {}`, `export * from`, `export default x`: an ambient module with none of them exports everything

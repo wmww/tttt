@@ -20,6 +20,7 @@ typedef struct PortStatement PortStatement;
 typedef struct DeclStatementProps {
     DeclExported exported;
     bool declared;
+    Span declare_keyword; // An explicit `declare` (declared is also true in declaration files and some ambient contexts)
 } DeclStatementProps;
 
 // Variable initialization

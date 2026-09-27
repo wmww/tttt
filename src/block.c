@@ -152,6 +152,18 @@ static bool is_ambient_disallowed(Statement const* me) {
     }
 }
 
+// tsc's checkGrammarTopLevelElementsForRequiredDeclareModifier(): the first top-level declaration of a declaration file
+// without `declare`, `export` or `default` (interfaces, type aliases, imports and exports need none)
+void block_check_required_declare(Block const* me, ErrorCtx* errs) {
+    for_each (i, vec_statement, &my statements) {
+        if (!statement_declares_name(i->tag) || i->tag == STATEMENT_DECL_INTERFACE || i->tag == STATEMENT_DECL_TYPE) continue;
+        if (span_valid(i->decl.props.declare_keyword) || i->decl.props.exported != DECL_EXPORTED_NO) continue;
+        error_ctx_grammar_error_d(errs, block_first_token(i->span), 1046,
+            "Top-level declarations in .d.ts files must start with either a 'declare' or 'export' modifier.");
+        return;
+    }
+}
+
 void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     if (ctx.ambient && !ctx.ambient_reported) {
         for_each (i, vec_statement, &my statements) {

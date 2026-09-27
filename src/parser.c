@@ -8048,6 +8048,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             ),
         .declared = modifiers.includes[MODIFIER_DECLARE] || p.shared->source->is_declaration,
     };
+    for_each (i, vec_spanned_modifier, &modifiers.spanned) {
+        if (i->tag == MODIFIER_DECLARE) decl_props.declare_keyword = i->span;
+    }
 
     modifier_list_validate_during_parse(
         &p,

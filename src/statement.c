@@ -1771,6 +1771,14 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_DECL_NAMESPACE:
+            if (my decl.props.declared || ctx.ambient) {
+                // tsc's checkGrammarModifiers(): `declare` in a module block that is already ambient
+                for_each (i, vec_statement, &my decl.namespace.contents.statements) {
+                    if (!statement_declares_name(i->tag) || !span_valid(i->decl.props.declare_keyword)) continue;
+                    error_ctx_grammar_error_d(errs, i->decl.props.declare_keyword, 1038,
+                        "A 'declare' modifier cannot be used in an already ambient context.");
+                }
+            }
             namespace_decl_typecheck(&my decl.namespace, my decl.props.declared || ctx.ambient, errs);
             break;
     }
