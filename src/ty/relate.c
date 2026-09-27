@@ -2799,10 +2799,11 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
             Ty const* constraint = ty_param_constraint(me, source);
             if (!constraint || constraint == source || (constraint->flags & TYF_ANY)) {
                 if (target->kind == TY_TYPE_PARAM || (target->flags & TYF_DEFERRED)) return TERNARY_FALSE;
-                // Comparable: as `unknown` (tsc's getConstraintOfType(source) || unknownType), which is comparable to
-                // anything
-                if (st->relation == TY_RELATION_COMPARABLE) return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
-                // An unconstrained type parameter is related to `{}`, but not to `object`
+                // As `unknown` (tsc's getConstraintOfType(source) || unknownType): comparable to anything, and without
+                // strictNullChecks its apparent type `{}` against object types (not `object`, not `{ [k: string]: X }`)
+                if (st->relation == TY_RELATION_COMPARABLE || compiler_options()->strict_null_checks) {
+                    return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
+                }
                 if (target->flags & TYF_NON_PRIMITIVE) return TERNARY_FALSE;
                 return is_related_to(me, st, global_type(me, GLOBAL_EMPTY_OBJECT), target, false);
             }
@@ -2816,7 +2817,20 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
 
         case TY_INDEXED: {
             Ty const* constraint = constraint_of_indexed(me, source);
-            return constraint ? is_related_to(me, st, constraint, target, report) : TERNARY_FALSE;
+            if (!constraint) return TERNARY_FALSE;
+            // `{ [P in K]: E }[X]` was E with X for P; `{ [P in K]: E }[C]`, with C the constraint of X, may be related
+            // where that isn't (tsc's isMappedTypeGenericIndexedAccess branch)
+            if (!mapped_generic_indexed_access(me, source)) return is_related_to(me, st, constraint, target, report);
+            Ternary related = is_related_to(me, st, constraint, target, false);
+            if (related) return related;
+            Ty const* index_constraint = simplified_or_constraint(me, source->indexed.index);
+            Ty const* whole = index_constraint && index_constraint != source->indexed.index ?
+                indexed_or_null(me, source->indexed.object, index_constraint) : nullptr;
+            if (whole && whole != source) {
+                related = is_related_to(me, st, whole, target, false);
+                if (related) return related;
+            }
+            return is_related_to(me, st, constraint, target, report);
         }
 
         case TY_CONDITIONAL: {
