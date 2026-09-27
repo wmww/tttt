@@ -1805,6 +1805,15 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             // (A bare `return;` returns an implicit undefined literal, a written `undefined` is an expression)
+            // A number or string literal is no expression to tsc's type writer under an export assignment
+            // (isInExpressionContext), a template or `-1` is
+            if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR && my expr.tag == EXPR_LITERAL &&
+                (my expr.literal.tag == VALUE_NUMBER || my expr.literal.tag == VALUE_STRING ||
+                    my expr.literal.tag == VALUE_BIGINT) &&
+                csview_size(my expr.inner_span.sv) && !strchr("-+", my expr.inner_span.sv.buf[0])
+            ) {
+                break;
+            }
             if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED ||
                 csview_equals(my expr.inner_span.sv, "undefined")
             ) {

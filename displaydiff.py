@@ -18,6 +18,8 @@ ap.add_argument('-k')
 ap.add_argument('-f')
 ap.add_argument('--symbols', action='store_true')
 ap.add_argument('--names', action='store_true')
+ap.add_argument('--fine', action='store_true')
+ap.add_argument('--shape', action='store_true')
 args = ap.parse_args()
 REF = 'thirdparty/tsc/tests/baselines/reference/'
 DUMP = 'build/failstats/dump/'
@@ -25,8 +27,14 @@ UNDERLINE = re.compile(r'^>\s*:\s*[\^\s]*$')
 EXT = '.symbols' if args.symbols else '.types'
 COMPONENT = 'symbols' if args.symbols else 'types'
 
-def lines(path):
-    return [l for l in open(path, errors='replace').read().split('\n') if l.startswith('>') and not UNDERLINE.match(l)]
+def lines(path, sources=None):
+    out, source = [], ''
+    for l in open(path, errors='replace').read().split('\n'):
+        if not l.startswith('>'): source = l
+        elif not UNDERLINE.match(l):
+            out.append(l)
+            if sources is not None: sources.setdefault(l, source)
+    return out
 
 def source_of(name):
     base = name.split('(')[0]
@@ -43,7 +51,7 @@ def is_js(name):
         _sources[name] = bool(path and JS.search(open(path, errors='replace').read()))
     return _sources[name]
 
-from displaykinds import IDENT, type_kinds
+from displaykinds import IDENT, type_kinds, fine_kind
 
 SYMBOL = re.compile(r'Symbol\((.*?), (Decl\(.*\))?\)$')
 def symbol_kinds(tsc, ours):
@@ -75,7 +83,12 @@ for r in rows:
     if r[COMPONENT] == '1' or r['errors'] != '1' or (args.f and not re.fullmatch(args.f, name)): continue
     exp, got = REF + name + EXT, DUMP + name + EXT
     if not (os.path.exists(exp) and os.path.exists(got)): continue
-    E, O = collections.Counter(lines(exp)), collections.Counter(lines(got))
+    src = {}
+    E, O = collections.Counter(lines(exp, src)), collections.Counter(lines(got, src))
+    def refine(ks, lhs, x, y):
+        if not (args.fine or args.shape) or args.symbols: return ks
+        ks = [fine_kind(k, lhs, src.get(x or y, ''), x.rsplit(split, 1)[-1], y) for k in ks]
+        return [k.split('/')[0] if args.shape else k for k in ks]
     missing, extra = list((E - O).elements()), list((O - E).elements())
     n = max(len(missing), len(extra))
     by_lines['underlines/order only' if n == 0 else str(n) if n < 5 else '5-9' if n < 10 else '10+'] += 1
@@ -92,13 +105,15 @@ for r in rows:
             ks = symbol_kinds(x, y) if args.symbols else type_kinds(x.rsplit(split, 1)[-1], y)
         else:
             y, ks = '', ['line-missing']
+        ks = refine(ks, lhs, x, y)
         for k in ks:
             lines_of[k] += 1; tests_of[k].add(name); examples[k].append((name, x, y))
         test_kinds.add(tuple(ks) if len(ks) > 1 else ks[0])
     for rest in ours_by_lhs.values():
         for y in rest:
-            lines_of['line-extra'] += 1; tests_of['line-extra'].add(name); examples['line-extra'].append((name, '', y))
-            test_kinds.add('line-extra')
+            k = refine(['line-extra'], y.rsplit(split, 1)[0], '', y)[0]
+            lines_of[k] += 1; tests_of[k].add(name); examples[k].append((name, '', y))
+            test_kinds.add(k)
     if n == 0:
         test_kinds = {'underlines/order only'}
     if len(test_kinds) == 1:

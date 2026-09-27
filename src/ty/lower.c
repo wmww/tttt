@@ -1168,7 +1168,8 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (symbol && symbol->merged_export_equals_of) return merged_export_equals_type(me, symbol);
     symbol = canonical(me, symbol);
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, symbol && symbol->is_unresolved ? TY_ERROR : TY_ANY);
-    // `typeof import("./a")`, `import("./a")`, `globalThis`
+    // `typeof import("./a")`, `import("./a")`, `globalThis`. A shorthand ambient module is any
+    if (symbol->is_module && symbol->is_shorthand_module) return ty_intrinsic(me, TY_ANY);
     if (symbol->is_module || symbol->is_global_this) return ty_namespace_type(me, symbol);
     bool assignments = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT;
     if (assignments && (symbol->decl_count > 1 || symbol->decls[0].assignment != ASSIGNMENT_DECL_PROPERTY ||
