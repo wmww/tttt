@@ -4211,6 +4211,27 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     ObjectExprItem item = { .tag = OBJECT_ITEM_PROPERTY };
     bool must_be_method = false;
     FunctionFlags flags = {0};
+    // tsc parses modifiers in front of any member and reports them from the checker (a grammar error)
+    ModifierList modifiers;
+    parse_modifier_list(&p, false, &modifiers);
+    hop_whitespace(&p);
+    if (modifiers.includes[MODIFIER_ASYNC]) {
+        must_be_method = true;
+        flags.is_async = true;
+    }
+
+    // tsc's checkGrammarObjectLiteralExpression: every modifier but `async` (TS1184 on a method is checkGrammarMethod)
+    bool report_modifiers_cannot_appear = false;
+    for_each (i, vec_spanned_modifier, &modifiers.spanned) {
+        if (i->tag == MODIFIER_ASYNC) continue;
+        parse_error(&p, i->span, 1042, "'", i->span, "' modifier cannot be used here.");
+        report_modifiers_cannot_appear = true;
+    }
+    Span first_modifier = vec_spanned_modifier_is_empty(&modifiers.spanned) ?
+        span_null :
+        vec_spanned_modifier_front(&modifiers.spanned)->span;
+    modifier_list_drop(&modifiers);
+
     if (hop_member_keyword(&p, "async", false)) {
         must_be_method = true;
         flags.is_async = true;
@@ -4286,6 +4307,9 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
 
     FunctionImpl func;
     if ((*p.pos == '(' || *p.pos == '<') && parse_non_arrow_function(&p, flags, &func)) {
+        if (report_modifiers_cannot_appear && item.tag == OBJECT_ITEM_PROPERTY) {
+            parse_error(&p, first_modifier, 1184, "Modifiers cannot appear here.");
+        }
         if (item.tag == OBJECT_ITEM_PROPERTY) {
             item.tag = OBJECT_ITEM_METHOD;
         }
@@ -8903,7 +8927,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
 
 static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
-        1020, 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1090, 1162, 1184, 1248, 1253, 1255,
+        1020, 1024, 1028, 1029, 1030, 1031, 1042, 1044, 1070, 1090, 1162, 1184, 1248, 1253, 1255,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;
