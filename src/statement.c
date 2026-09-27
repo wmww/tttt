@@ -84,6 +84,33 @@ static void variable_statement_check_using(VariableStatement* me, bool for_in, E
     }
 }
 
+// tsc's checkGrammarNameInLetOrConstDeclarations(): `let` can't be a name a let/const/using declaration binds
+static void binding_check_let_name(Binding const* me, ErrorCtx* errs) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+        case BINDING_IDENTIFIER:
+            if (csview_equals(my content_span.sv, "let")) {
+                error_ctx_grammar_error_d(errs, my content_span, 2480,
+                    "'let' is not allowed to be used as a name in 'let' or 'const' declarations.");
+            }
+            break;
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &my array) binding_check_let_name(i, errs);
+            break;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &my object) binding_check_let_name(&i->target, errs);
+            break;
+    }
+}
+
+// The last part of tsc's checkGrammarVariableDeclaration(), which the earlier grammar errors of the declaration skip
+static void variable_statement_check_let_names(VariableStatement const* me, InitializedBinding const* i, ErrorCtx* errs) {
+    if (my keyword == VAR_INIT_VAR) return;
+    // `using` patterns got TS1492
+    if ((my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING) && i->binding.tag != BINDING_IDENTIFIER) return;
+    binding_check_let_name(&i->binding, errs);
+}
+
 void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs) {
     variable_statement_check_using(me, false, errs);
     for_each (i, vec_initialized_binding, &my initializers) {
@@ -100,6 +127,7 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
                 error_ctx_error_d(errs, i->value.outer_span, 1039,
                     "Initializers are not allowed in ambient contexts.");
             } else {
+                bool valid = true;
                 switch (i->value.tag) {
                     case EXPR_LITERAL:
                         switch (i->value.literal.tag) {
@@ -119,8 +147,13 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
                     default: bad_initializer:
                         error_ctx_error_d(errs, i->value.outer_span, 1254,
                             "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
+                        valid = false;
+                        break;
                 }
+                if (valid) variable_statement_check_let_names(me, i, errs);
             }
+        } else {
+            variable_statement_check_let_names(me, i, errs);
         }
         initialized_binding_typecheck(i, errs);
         if ((my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING) && i->value.tag != EXPR_IMPLICIT_ANY) {
@@ -1625,6 +1658,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
                     for_each (i, vec_initialized_binding, &my for_each_loop->variable.statement.initializers) {
+                        variable_statement_check_let_names(&my for_each_loop->variable.statement, i, errs);
                         binding_typecheck(&i->binding, nullptr, errs);
                     }
                     break;
