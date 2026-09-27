@@ -3046,7 +3046,7 @@ const baselines = {
         types: true,
     },
     'castOfYield': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35386,7 +35386,7 @@ const baselines = {
         types: false,
     },
     'classStaticBlock7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37351,7 +37351,7 @@ const baselines = {
         types: false,
     },
     'canFollowGetSetKeyword': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50191,7 +50191,7 @@ const baselines = {
         types: true,
     },
     'generatorReturnTypeFallback.2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63656,7 +63656,7 @@ const baselines = {
         types: true,
     },
     'types.forAwait.es2018.3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

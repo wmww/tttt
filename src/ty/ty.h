@@ -732,6 +732,7 @@ struct Checker {
     // using` initializer must be (ty_check_using_initializer()), made on first use. Null: not yet
     Ty const* disposable_targets[2];
     bool disposable_looked_up[2];
+    bool iterable_iterator_reported[2]; // TS2318 for a missing IterableIterator / AsyncIterableIterator (sync, async)
 };
 
 // checker.c

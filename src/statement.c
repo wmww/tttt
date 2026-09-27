@@ -1310,8 +1310,16 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             flow->has_flow_effects = true;
             break;
 
-        case STATEMENT_RETURN_EXPR:
-            if (!scope_has_function(names)) {
+        case STATEMENT_RETURN_EXPR: {
+            // tsc's checkReturnStatement: the containing function or class static block
+            Scope const* container = names;
+            while (container && container->kind != SCOPE_FUNCTION && container->kind != SCOPE_STATIC_BLOCK) {
+                container = container->parent;
+            }
+            if (container && container->kind == SCOPE_STATIC_BLOCK) {
+                error_ctx_grammar_error_d(errs, block_first_token(my span), 18041,
+                    "A 'return' statement cannot be used inside a class static block.");
+            } else if (!container) {
                 error_ctx_error_d(
                     errs,
                     my expr.outer_span,
@@ -1327,7 +1335,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 flow->current = &flow_unreachable;
                 flow->has_flow_effects = true;
             }
-            break;
+        }   break;
 
         case STATEMENT_BREAK:
         case STATEMENT_CONTINUE: {

@@ -646,7 +646,15 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
     Ty const* args[3] = { yield_type, return_type, next_type };
     Ty const* target = state->globals[async ? IG_ASYNC_GENERATOR : IG_GENERATOR];
     if (!target || target->declared.type_params.len != 3) target = state->globals[async ? IG_ASYNC_ITERABLE_ITERATOR : IG_ITERABLE_ITERATOR];
-    if (!target) return ty_empty_object_type(me);
+    if (!target) {
+        // (Reported once, without a position: tsc's getGlobalIterableIteratorType(/*reportErrors*/ true))
+        if (!my iterable_iterator_reported[async]) {
+            my iterable_iterator_reported[async] = true;
+            error_ctx_global_error_d(program_errors(my program), 2318, "Cannot find global type '",
+                async ? "AsyncIterableIterator" : "IterableIterator", "'.");
+        }
+        return ty_empty_object_type(me);
+    }
     u32 count = target->declared.type_params.len < 3 ? target->declared.type_params.len : 3;
     return ty_reference(me, target, (TyList){ .data = args, .len = count });
 }
