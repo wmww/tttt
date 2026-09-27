@@ -41,14 +41,54 @@ static ModifierList modifier_list_clone(ModifierList me) {
     return me;
 }
 
-typedef enum {
-    MODIFIER_VALIDATION_FLAG_MODIFIERS_NOT_ALLOWED  = 1 << 0,
-    MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER           = 1 << 1,
-    MODIFIER_VALIDATION_FLAG_ABSTRACT               = 1 << 2,
-    MODIFIER_VALIDATION_FLAG_FIELD                  = 1 << 3,
-    MODIFIER_VALIDATION_FLAG_METHOD                 = 1 << 4,
-    MODIFIER_VALIDATION_FLAG_CLASS_STATIC_BLOCK     = 1 << 5,
-    MODIFIER_VALIDATION_FLAG_TOPLEVEL_STATEMENT     = 1 << 6,
-} ModifierValidationFlags;
 
-void modifier_list_validate(ModifierList const* me, Span name, ModifierValidationFlags flags, ErrorCtx* errs);
+// The kind of node a modifier list is on (tsc's node.kind as checkGrammarModifiers() looks at it)
+typedef enum ModifiedKind {
+    MODIFIED_PROPERTY,
+    MODIFIED_PROPERTY_SIGNATURE,
+    MODIFIED_METHOD,
+    MODIFIED_METHOD_SIGNATURE,
+    MODIFIED_GET_ACCESSOR,
+    MODIFIED_SET_ACCESSOR,
+    MODIFIED_CONSTRUCTOR,
+    MODIFIED_INDEX_SIGNATURE,
+    MODIFIED_CLASS_STATIC_BLOCK,
+    MODIFIED_PARAMETER,
+    MODIFIED_VARIABLE_STATEMENT,
+    MODIFIED_FUNCTION,
+    MODIFIED_CLASS,
+    MODIFIED_INTERFACE,
+    MODIFIED_TYPE_ALIAS,
+    MODIFIED_ENUM,
+    MODIFIED_MODULE,
+    MODIFIED_IMPORT,
+    MODIFIED_IMPORT_EQUALS,
+    MODIFIED_EXPORT_DECLARATION,
+    MODIFIED_EXPORT_ASSIGNMENT,
+    MODIFIED_NAMESPACE_EXPORT,
+    MODIFIED_MISSING_DECLARATION,
+} ModifiedKind;
+
+// What contains the modified node (tsc's node.parent.kind)
+typedef enum ModifiedParent {
+    MODIFIED_IN_SOURCE_FILE,
+    MODIFIED_IN_MODULE_BLOCK,
+    MODIFIED_IN_CLASS,
+    MODIFIED_IN_TYPE, // An interface or a type literal
+    MODIFIED_IN_OTHER, // A block, a function's parameters...
+} ModifiedParent;
+
+typedef struct ModifiedNode {
+    ModifiedKind kind;
+    ModifiedParent parent;
+    bool parent_ambient; // The parent is in an ambient context (a `declare` namespace, a declaration file)
+    bool parent_is_namespace; // In a `namespace N {}` that isn't an ambient module (`default` isn't allowed)
+    bool in_abstract_class; // The parent is a class declaration with `abstract`
+    bool private_name;
+    uint8_t using_kind; // 1 `using`, 2 `await using`
+    Span name; // Where errors on the node itself go (tsc's getErrorSpanForNode)
+} ModifiedNode;
+
+// tsc's checkGrammarModifiers() (with findFirstIllegalModifier() and checkGrammarAsyncModifier()): the first
+// problem with the modifiers of a node, as a grammar error. Returns whether it reported one
+bool modifier_list_check_grammar(ModifierList const* me, ModifiedNode const* node, ErrorCtx* errs);

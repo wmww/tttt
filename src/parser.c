@@ -68,6 +68,10 @@ typedef struct ParserShared {
     // The type alias an `@enum` on the statement just parsed declares, for the statement list to append after it
     Statement* jsdoc_enum;
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
+    // Where the statements being parsed are, for the modifier checks (modifier_list_check_grammar())
+    bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
+    ModifiedParent statement_parent;
+    bool in_namespace_body; // The module block is a `namespace N {}`'s, not an ambient module's
     u32 errors_attempted; // Every parse_error() call, the ones dropped too (a position that already has one)
 } ParserShared;
 
@@ -1560,32 +1564,17 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
     return parse_success(&p);
 }
 
-// tsc's checkGrammarAsyncModifier(): `async` on what isn't a function or a method
-static void report_misplaced_async(Parser* p, ModifierList const* modifiers) {
-    for_each (i, vec_spanned_modifier, &modifiers->spanned) {
-        if (i->tag != MODIFIER_ASYNC) continue;
-        parse_error(p, i->span, 1042, "'async' modifier cannot be used here.");
-        return;
-    }
-}
-
-// tsc's checkGrammarModifiers() on a parameter: the modifiers that are never allowed there (the first one)
-static void report_parameter_modifiers(Parser* p, ModifierList const* modifiers) {
-    for_each (i, vec_spanned_modifier, &modifiers->spanned) {
-        if (i->tag != MODIFIER_STATIC && i->tag != MODIFIER_EXPORT && i->tag != MODIFIER_DECLARE && i->tag != MODIFIER_ASYNC) continue;
-        parse_error(p, i->span, 1090, "'", i->span, "' modifier cannot appear on a parameter.");
-        return;
-    }
-}
-
-static void modifier_list_validate_during_parse(Parser* parent, ModifierList const* me, Span name, ModifierValidationFlags flags) {
+static bool check_modifiers(Parser* parent, ModifierList const* me, ModifiedNode node) {
+    if (vec_spanned_modifier_is_empty(&me->spanned)) return false;
+    node.parent_ambient |= parent->shared->in_ambient;
     ErrorCtx errs = { .phase = ERROR_PHASE_PARSE };
-    modifier_list_validate(me, name, flags, &errs);
+    bool reported = modifier_list_check_grammar(me, &node, &errs);
     for_each (i, vec_error, &errs.errors) {
         add_error_to_parser(parent, *i);
         *i = (Error){0};
     }
     error_ctx_drop(&errs);
+    return reported;
 }
 
 static inline bool expect_binary_op(Parser* parent, BinaryOp expected) {
@@ -3768,7 +3757,7 @@ static bool parse_function_args_inner(
                     modifier_list.includes[MODIFIER_OVERRIDE];
                 uint8_t access = modifier_list.includes[MODIFIER_PRIVATE] ? ACCESS_MODIFIER_PRIVATE :
                     modifier_list.includes[MODIFIER_PROTECTED] ? ACCESS_MODIFIER_PROTECTED : ACCESS_MODIFIER_PUBLIC;
-                report_parameter_modifiers(&p, &modifier_list);
+                check_modifiers(&p, &modifier_list, (ModifiedNode){ .kind = MODIFIED_PARAMETER, .parent = MODIFIED_IN_OTHER });
                 modifier_list_drop(&modifier_list);
                 hop_whitespace(&p);
 
@@ -4797,7 +4786,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         parse_block(&p, false, &ret->static_block);
     p.shared->in_static_block = outer_static_block;
     if (static_block) {
-        modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_MODIFIERS_NOT_ALLOWED);
+        check_modifiers(&p, &modifiers, (ModifiedNode){ .kind = MODIFIED_CLASS_STATIC_BLOCK, .parent = MODIFIED_IN_CLASS });
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
     } else if (span_valid(name_span)) {
         if (span_valid(name_span) && cstr_is_empty(&name_string)) {
@@ -4815,11 +4804,15 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         }
 
         FunctionImpl func;
-        ModifierValidationFlags flags =
-            (is_type ? MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER : 0) |
-            (is_abstract ? MODIFIER_VALIDATION_FLAG_ABSTRACT : 0);
+        ModifiedNode modified = {
+            .parent = is_type ? MODIFIED_IN_TYPE : MODIFIED_IN_CLASS,
+            .in_abstract_class = is_abstract,
+            .private_name = *span_start_ptr(name_span) == '#',
+            .name = name_span,
+        };
         if (!is_type && !name_is_value && span_equals(name_span, "constructor")) {
-            modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_METHOD | flags);
+            modified.kind = MODIFIED_CONSTRUCTOR;
+            check_modifiers(&p, &modifiers, modified);
             name_span = span_from(a);
             if (!parse_function_fn(&p, function_flags_null, &func)) {
                 parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
@@ -4835,8 +4828,11 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 }
             };
         } else if (parse_function_fn(&p, function_flags, &func)) {
-            modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_METHOD | flags);
-            if (is_getter || is_setter) report_misplaced_async(&p, &modifiers);
+            modified.kind = is_getter ? MODIFIED_GET_ACCESSOR :
+                is_setter ? MODIFIED_SET_ACCESSOR :
+                is_type ? MODIFIED_METHOD_SIGNATURE :
+                MODIFIED_METHOD;
+            check_modifiers(&p, &modifiers, modified);
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_METHOD,
                 .method = {
@@ -4854,8 +4850,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         } else {
             bool is_definitely_field = false;
 
-            modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_FIELD | flags);
-            report_misplaced_async(&p, &modifiers);
+            modified.kind = is_type ? MODIFIED_PROPERTY_SIGNATURE : MODIFIED_PROPERTY;
+            check_modifiers(&p, &modifiers, modified);
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_FIELD,
                 .field = {
@@ -4928,7 +4924,14 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             parse_index_or_expr_interface_member(&p, is_type, true, function_flags, &ret->interface_memeber) ||
             parse_index_or_expr_interface_member(&p, is_type, false, function_flags, &ret->interface_memeber)
         ) {
-            modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER | MODIFIER_VALIDATION_FLAG_FIELD);
+            if (ret->interface_memeber.key.tag != INTERFACE_KEY_MAPPED) {
+                check_modifiers(&p, &modifiers, (ModifiedNode){
+                    .kind = ret->interface_memeber.key.tag == INTERFACE_KEY_INDEX ? MODIFIED_INDEX_SIGNATURE :
+                        ret->interface_memeber.key.tag == INTERFACE_KEY_CALLABLE ? MODIFIED_METHOD_SIGNATURE :
+                        MODIFIED_PROPERTY_SIGNATURE,
+                    .parent = is_type ? MODIFIED_IN_TYPE : MODIFIED_IN_CLASS,
+                });
+            }
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.declarations = vec_span_single(span_from(a));
             ret->interface_memeber.readonly = modifiers.includes[MODIFIER_READONLY];
@@ -4939,7 +4942,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 member->key.mapped.readonly = 1;
             }
         } else if (parse_function_args(&p, true, false, true, false, &func)) {
-            modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER | MODIFIER_VALIDATION_FLAG_METHOD);
+            check_modifiers(&p, &modifiers, (ModifiedNode){
+                .kind = MODIFIED_METHOD_SIGNATURE,
+                .parent = is_type ? MODIFIED_IN_TYPE : MODIFIED_IN_CLASS,
+            });
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
                 .declarations = vec_span_single(span_from(a)),
@@ -8220,6 +8226,10 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
     const char* jsdoc_from = list_start;
 
     u32 saved_context = list_enter(&p, ctx);
+    ModifiedParent outer_parent = p.shared->statement_parent;
+    p.shared->statement_parent = !toplevel ? MODIFIED_IN_OTHER :
+        ctx == PARSING_SOURCE_ELEMENTS ? MODIFIED_IN_SOURCE_FILE :
+        MODIFIED_IN_MODULE_BLOCK;
     while(
         *p.pos &&
         (ctx == PARSING_SOURCE_ELEMENTS || *p.pos != '}') &&
@@ -8284,6 +8294,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
         hop_whitespace(&p); // TODO: is this needed?
     }
     list_leave(&p, saved_context);
+    p.shared->statement_parent = outer_parent;
     // (the end of the file has JSDoc in tsc, a block's `}` doesn't)
     if (p.shared->source->is_js) jsdoc_bind_comments(&p, jsdoc_from, p.pos, ctx == PARSING_SOURCE_ELEMENTS, toplevel, ret);
 
@@ -8541,7 +8552,11 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
                 ret->module_ref->is_declaration = true;
                 value_drop(&val);
                 hop_whitespace(&p);
-                if (!parse_block(&p, true, &ret->contents)) {
+                bool outer_in_namespace = p.shared->in_namespace_body;
+                p.shared->in_namespace_body = false;
+                bool has_block = parse_block(&p, true, &ret->contents);
+                p.shared->in_namespace_body = outer_in_namespace;
+                if (!has_block) {
                     // `declare module "a";` is a shorthand ambient module
                     ret->contents = (Block){0};
                     ret->is_shorthand = true;
@@ -8563,7 +8578,11 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     hop_whitespace(&p);
 
     Block contents;
-    if (!parse_block(&p, true, &contents)) {
+    bool outer_in_namespace = p.shared->in_namespace_body;
+    p.shared->in_namespace_body = true;
+    bool has_block = parse_block(&p, true, &contents);
+    p.shared->in_namespace_body = outer_in_namespace;
+    if (!has_block) {
         if (is_module_keyword && vec_span_size(&names) == 1 && *p.pos != '.') {
             // `module` is only a contextual keyword, this is probably an expression such as `module = 5`
             vec_span_drop(&names);
@@ -8614,7 +8633,11 @@ static bool parse_global_block(Parser* parent, NamespaceDecl* ret) {
     };
 
     hop_whitespace(&p);
-    if (!parse_block(&p, true, &ret->contents)) {
+    bool outer_in_namespace = p.shared->in_namespace_body;
+    p.shared->in_namespace_body = false;
+    bool has_block = parse_block(&p, true, &ret->contents);
+    p.shared->in_namespace_body = outer_in_namespace;
+    if (!has_block) {
         return parse_fail(&p);
     }
 
@@ -8662,27 +8685,22 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         if (i->tag == MODIFIER_DECLARE) decl_props.declare_keyword = i->span;
     }
 
-    modifier_list_validate_during_parse(
-        &p,
-        &modifiers,
-        span_from(a),
-        toplevel ? MODIFIER_VALIDATION_FLAG_TOPLEVEL_STATEMENT : MODIFIER_VALIDATION_FLAG_MODIFIERS_NOT_ALLOWED
-    );
+    // tsc's checkGrammarModifiers() once the kind of declaration is known. What's inside a `declare` is ambient
+    ModifiedNode modified = {
+        .parent = toplevel ? p.shared->statement_parent : MODIFIED_IN_OTHER,
+        .parent_ambient = p.shared->in_ambient,
+        .parent_is_namespace = p.shared->in_namespace_body,
+    };
+    bool outer_ambient = p.shared->in_ambient;
+    p.shared->in_ambient |= modifiers.includes[MODIFIER_DECLARE];
 
     if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
         parse_variable_statement(&p, expr_ctx_null, false, &parsed.variable)
     ) {
-        bool is_using = parsed.variable.keyword == VAR_INIT_USING || parsed.variable.keyword == VAR_INIT_AWAIT_USING;
-        for_each (i, vec_spanned_modifier, &modifiers.spanned) {
-            if (!is_using || (i->tag != MODIFIER_EXPORT && i->tag != MODIFIER_DECLARE)) continue;
-            // tsc's checkGrammarModifiers(): the first one
-            if (parsed.variable.keyword == VAR_INIT_USING) {
-                parse_error(&p, i->span, 1491, "'", i->span, "' modifier cannot appear on a 'using' declaration.");
-            } else {
-                parse_error(&p, i->span, 1495, "'", i->span, "' modifier cannot appear on an 'await using' declaration.");
-            }
-            break;
-        }
+        modified.kind = MODIFIED_VARIABLE_STATEMENT;
+        modified.using_kind = parsed.variable.keyword == VAR_INIT_USING ? 1 :
+            parsed.variable.keyword == VAR_INIT_AWAIT_USING ? 2 :
+            0;
         *ret = (Statement) {
             .tag = STATEMENT_DECL_VARIABLE,
             .decl = {
@@ -8691,6 +8709,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_function_keyword_function(&p, modifiers.includes[MODIFIER_ASYNC], &parsed.function)) {
+        modified.kind = MODIFIED_FUNCTION;
         parsed.function.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_FUNCTION,
@@ -8702,7 +8721,8 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_class_decl(&p, &parsed.class)) {
-        report_misplaced_async(&p, &modifiers);
+        modified.kind = MODIFIED_CLASS;
+        parsed.class.is_abstract |= modifiers.includes[MODIFIER_ABSTRACT];
         parsed.class.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_CLASS,
@@ -8712,7 +8732,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_type_decl(&p, &parsed.type_decl)) {
-        report_misplaced_async(&p, &modifiers);
+        modified.kind = MODIFIED_TYPE_ALIAS;
         parsed.type_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_TYPE,
@@ -8722,7 +8742,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_interface_decl(&p, &parsed.interface_decl)) {
-        report_misplaced_async(&p, &modifiers);
+        modified.kind = MODIFIED_INTERFACE;
         parsed.interface_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_INTERFACE,
@@ -8732,7 +8752,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_enum_decl(&p, &parsed.enum_decl)) {
-        report_misplaced_async(&p, &modifiers);
+        modified.kind = MODIFIED_ENUM;
         parsed.enum_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_ENUM,
@@ -8742,6 +8762,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_global_block(&p, &ret->decl.namespace)) {
+        modified.kind = MODIFIED_MODULE;
         if (decl_props.declared) {
             for_each (i, vec_statement, &ret->decl.namespace.contents.statements) {
                 if (statement_tag_is_decl(i->tag)) {
@@ -8758,13 +8779,14 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (decl_props.exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {
+        modified.kind = MODIFIED_EXPORT_ASSIGNMENT;
         mark_named_evaluation(&parsed.expr, false);
         *ret = (Statement){
             .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
             .expr = parsed.expr,
         };
     } else if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT && parse_namespace(&p, &ret->decl.namespace)) {
-        report_misplaced_async(&p, &modifiers);
+        modified.kind = MODIFIED_MODULE;
         ret->decl.namespace.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_NAMESPACE,
@@ -8773,11 +8795,51 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .namespace = ret->decl.namespace,
             },
         };
+    } else if (!vec_spanned_modifier_is_empty(&modifiers.spanned) &&
+        (*p.pos == 'i' || *p.pos == 'e') &&
+        parse_import_export_statement(&p, ret)
+    ) {
+        // `export public import a = b`, `export export = x`, `declare import x from "m"`: tsc parses modifiers in front
+        // of any declaration and complains in the checker
+        unsigned code = 0;
+        if (ret->tag == STATEMENT_EXPORT_DEFAULT_EXPR) {
+            modified.kind = MODIFIED_EXPORT_ASSIGNMENT;
+            code = 1120;
+        } else {
+            PortItem* main = &ret->import_export->main;
+            bool is_import = span_equals(ret->import_export->keyword_span, "import");
+            if (main->tag == PORT_IMPORT_ALIAS || main->is_require) {
+                modified.kind = MODIFIED_IMPORT_EQUALS;
+                main->export_import |= modifiers.includes[MODIFIER_EXPORT];
+            } else if (is_import) {
+                modified.kind = MODIFIED_IMPORT;
+                code = 1191;
+            } else if (main->tag == PORT_EXPORT_AS_NAMESPACE) {
+                modified.kind = MODIFIED_NAMESPACE_EXPORT;
+            } else {
+                modified.kind = MODIFIED_EXPORT_DECLARATION;
+                code = 1193;
+            }
+        }
+        p.shared->in_ambient = outer_ambient;
+        Span first = vec_spanned_modifier_front(&modifiers.spanned)->span;
+        if (!check_modifiers(&p, &modifiers, modified)) {
+            if (code == 1120) parse_error(&p, first, 1120, "An export assignment cannot have modifiers.");
+            if (code == 1191) parse_error(&p, first, 1191, "An import declaration cannot have modifiers.");
+            if (code == 1193) parse_error(&p, first, 1193, "An export declaration cannot have modifiers.");
+        }
+        modifier_list_drop(&modifiers);
+        if (!vec_expr_is_empty(&decorators)) parse_error(&p, decorators_span, 1206, "Decorators are not valid here.");
+        vec_expr_drop(&decorators);
+        return parse_success(&p);
     } else {
+        p.shared->in_ambient = outer_ambient;
         modifier_list_drop(&modifiers);
         vec_expr_drop(&decorators);
         return parse_fail(&p);
     }
+    p.shared->in_ambient = outer_ambient;
+    check_modifiers(&p, &modifiers, modified);
 
     if (!vec_expr_is_empty(&decorators)) {
         if (ret->tag == STATEMENT_DECL_CLASS) {
@@ -8972,7 +9034,9 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
 
 static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
-        1020, 1024, 1028, 1029, 1030, 1031, 1042, 1044, 1070, 1090, 1162, 1184, 1248, 1253, 1255,
+        1024, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071, 1079, 1089, 1090, 1120, 1162, 1184,
+        1191, 1193, 1242, 1243, 1244, 1248, 1253, 1255, 1275, 1319, 1491, 1495, 18010, 18019,
+        1020,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;
@@ -8985,6 +9049,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         .source = source,
         .fail_cache_start = source_file_start(source),
         .errors = vec_error_init(),
+        .in_ambient = source->is_declaration,
     };
 
     Parser p = {
