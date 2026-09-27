@@ -1263,6 +1263,14 @@ static bool is_index_key_intersection(Ty const* ty) {
 // The property of a mapped type's modifiers type that a key names, and its optional/readonly flags. Of a union or
 // intersection like tsc's createUnionOrIntersectionProperty: a union's is optional if it is in any member (none if a
 // member lacks it), an intersection's only if it is in every member that has it; readonly if any is
+// Whether the modifiers type's index signature for a key type is readonly (tsc's getApplicableIndexInfo(modifiersType,
+// propNameType)?.isReadonly)
+static bool modifiers_index_readonly(Checker* me, Ty const* modifiers, Ty const* key) {
+    if (modifiers->kind == TY_UNION) return false;
+    IndexInfo const* info = ty_applicable_index_info(me, modifiers, key);
+    return info && info->readonly;
+}
+
 static Prop const* modifiers_prop(Checker* me, Ty const* modifiers, Atom const* name, u32* flags) {
     *flags = 0;
     if (modifiers->kind != TY_UNION && modifiers->kind != TY_INTERSECTION) {
@@ -1498,7 +1506,8 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     .key = prop_name,
                     .value = value,
                     .param_name = checker_atom(me, c_sv("x")),
-                    .readonly = mapped->readonly > 0,
+                    // (Without a modifier, as readonly as the index signature the modifiers type has for the key)
+                    .readonly = mapped->readonly > 0 || (!mapped->readonly && modifiers && modifiers_index_readonly(me, modifiers, prop_name)),
                 };
                 builder_push(&builder, index, info);
             }

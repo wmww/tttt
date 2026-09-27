@@ -30,6 +30,8 @@ type ConditionalPickDeep<Type, Condition, Options = {}> = ConditionalSimplifyDee
 		? Type[Key]
 		: IsPlainObject<Type[Key]> extends true
 			? ConditionalPickDeep<Type[Key], Condition, Options>
+			: typeof conditionalPickDeepSymbol;
+}, (typeof conditionalPickDeepSymbol | undefined) | EmptyObject>, never, UnknownRecord>;
 type Example = { n: number; string: string; object: { string: string; }; };
 type Inner = {
 	[Key in keyof Example]: AssertCondition<Example[Key], string> extends true
