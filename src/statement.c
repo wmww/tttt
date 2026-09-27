@@ -968,6 +968,11 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
     }
     switch (my tag) {
         case STATEMENT_LABELED: {
+            for (FlowActiveLabel* i = flow->active_labels; i; i = i->next) {
+                if (!csview_equals_sv(i->name.sv, my labeled.name.sv)) continue;
+                error_ctx_grammar_error_d(errs, my labeled.name, 1114, "Duplicate label '", my labeled.name.sv, "'.");
+                break;
+            }
             FlowNode* post = flow_new_branch_label(flow);
             FlowActiveLabel label = { .next = flow->active_labels, .name = my labeled.name, .break_target = post };
             flow->active_labels = &label;
