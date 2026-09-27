@@ -1407,18 +1407,6 @@ static Ternary props_related(
             return TERNARY_FALSE;
         }
         if (!modifiers_related(me, st, source, target, &source_prop, target_prop, report)) return TERNARY_FALSE;
-        if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop->flags & PROP_OPTIONAL) && !comparable) {
-            if (report) {
-                cstr source_str = display_for_report(me, source, true);
-                cstr target_str = display_for_report(me, target, false);
-                cstr name = ty_prop_name_cstr(me, target_prop->name);
-                report_line(st, 2327, cstr_d(
-                    "Property '", name, "' is optional in type '", source_str, "' but required in type '", target_str, "'."
-                ));
-                c_drop(cstr, &source_str, &target_str, &name);
-            }
-            return TERNARY_FALSE;
-        }
         Ty const* source_type = source_prop.type;
         Ty const* target_type = prop_type(me, target_prop);
         if ((target_prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
@@ -1436,6 +1424,19 @@ static Ternary props_related(
                 cstr name = ty_prop_name_cstr(me, target_prop->name);
                 report_incompatible(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
                 cstr_drop(&name);
+            }
+            return TERNARY_FALSE;
+        }
+        // (the types first: their failure explains better)
+        if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop->flags & PROP_OPTIONAL) && !comparable) {
+            if (report) {
+                cstr source_str = display_for_report(me, source, true);
+                cstr target_str = display_for_report(me, target, false);
+                cstr name = ty_prop_name_cstr(me, target_prop->name);
+                report_line(st, 2327, cstr_d(
+                    "Property '", name, "' is optional in type '", source_str, "' but required in type '", target_str, "'."
+                ));
+                c_drop(cstr, &source_str, &target_str, &name);
             }
             return TERNARY_FALSE;
         }
@@ -2907,7 +2908,18 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
 
 static bool is_empty_object_type(Checker* me, Ty const* ty);
 
+static Ternary structured_related_impl(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
+);
+
 static Ternary structured_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    return structured_related_impl(me, st, source, target, report, true);
+}
+
+// `use_variances` false: two instantiations of the same generic are compared by their members, as for an explanation
+static Ternary structured_related_impl(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
+) {
     if (st->relation == TY_RELATION_IDENTITY) return identity_structured(me, st, source, target);
     bool comparable = st->relation == TY_RELATION_COMPARABLE;
 
@@ -3269,7 +3281,7 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     if ((source->kind == TY_REFERENCE || source_self) && (target->kind == TY_REFERENCE || target_self)) {
         Ty const* source_target = source_self ? source : source->reference.target;
         Ty const* target_target = target_self ? target : target->reference.target;
-        if (source_target == target_target) {
+        if (source_target == target_target && use_variances) {
             Variances const* variances = get_variances(me, source_target);
             // A recursive measurement of the same variances: tsc assumes related (Ternary.Unknown), which measures
             // variance only from occurrences that aren't nested in recursive instantiations of the type
@@ -3299,6 +3311,28 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
                 if (!related && report && !unreliable) {
                     report_truncate(st, args_saved);
                     related = type_args_related(me, st, variances, source_args, target_args, true, &unreliable);
+                    bool invariant = false;
+                    for (u32 i = 0; i < variances->len; i++) {
+                        invariant |= (variances->data[i] & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT)) == VARIANCE_INVARIANT;
+                    }
+                    if (!related && invariant) {
+                        // An invariant type argument is explained by the members that use it, if they do differ (tsc's
+                        // structuredTypeRelatedToWorker: the variance error is kept only if they don't)
+                        VecTyReportLine variance_lines = {0};
+                        while (vec_ty_report_line_size(&st->lines) > args_saved) {
+                            vec_ty_report_line_push(&variance_lines, vec_ty_report_line_pull(&st->lines));
+                        }
+                        u32 override_saved = st->override_next_head;
+                        if (structured_related_impl(me, st, source, target, true, false)) {
+                            report_truncate(st, args_saved);
+                            st->override_next_head = override_saved;
+                            while (vec_ty_report_line_size(&variance_lines)) {
+                                vec_ty_report_line_push(&st->lines, vec_ty_report_line_pull(&variance_lines));
+                            }
+                        }
+                        vec_ty_report_line_drop(&variance_lines);
+                        return TERNARY_FALSE;
+                    }
                 }
                 // The this-argument is one more covariant type argument (a reference without one is its own)
                 Ty const* source_this = source->kind == TY_REFERENCE ? source->reference.this_arg : nullptr;

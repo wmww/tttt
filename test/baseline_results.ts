@@ -1601,7 +1601,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1621,7 +1621,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1631,7 +1631,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1641,7 +1641,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability19': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1656,7 +1656,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability21': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1666,7 +1666,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability23': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1676,7 +1676,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatability25': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24676,7 +24676,7 @@ const baselines = {
         types: true,
     },
     'optionalParameterProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39861,7 +39861,7 @@ const baselines = {
         types: false,
     },
     'symbolProperty10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
