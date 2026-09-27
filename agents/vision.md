@@ -45,7 +45,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   are JS, and they are the source of most spurious TS2304/TS2580. It's a real part of what tsc checks
   (`checkJs` projects, mixed code bases), and its binder side (CommonJS exports, expando assignments as
   declarations) is foundational, so it must be designed rather than trickled in.
-- **Parser recovery: decided, no rewrite (plan 27).** 639 TS tests' parse errors differ from tsc's, but only ~1/3
+- **Parser recovery: decided, no rewrite (plan 27).** Stage 1 (the framework) mostly done 2026-09-27: the mask,
+  skip-or-abort lists and commit points fit the backtracking parser as predicted, at no measurable parse cost once
+  the lookahead stays off valid code's path; 687 -> 583 differing tests, suite +63. 639 TS tests' parse errors differed from tsc's, but only ~1/3
   is recovery; the rest is permissive grammar (tsc parses `with`, modifiers anywhere, odd index signatures and
   heritage clauses, then complains from the checker: ~190) and lexical diagnostics (escapes, numbers, templates,
   unicode identifiers: ~130). A scanner fixes neither. Recovery gets one framework (tsc's parsingContext mask, list
