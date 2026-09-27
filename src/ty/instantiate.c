@@ -215,7 +215,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (list->kind != TY_UNION && !any_as_array && (list->kind != TY_REFERENCE || mapped->name_type)) return nullptr;
     if (root != ty) mapper = ty_compose_mappers(me, ty->anonymous.mapper, mapper);
     if (any_as_array) {
-        TyMapper const* element_mapper = mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
+        TyMapper const* element_mapper = ty_mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
         return ty_array(me, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), mapped->readonly > 0);
     }
     if (list->kind == TY_UNION) {
