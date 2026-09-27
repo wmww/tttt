@@ -863,7 +863,26 @@ static bool is_generic_with_union_constraint(Checker* me, Ty const* ty) {
     return constraint && constraint != ty && ((constraint->flags & TYF_NULLABLE) || constraint->kind == TY_UNION);
 }
 
+static bool is_generic_type(Ty const* ty);
+
 static Ty const* base_constraint_or_type(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_INTERSECTION && is_generic_type(ty)) {
+        // The intersection of its members' base constraints, without the members that have none (tsc's
+        // computeBaseConstraint)
+        TyList members = ty->composite.types;
+        Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+        panic_if(!parts, "out of memory");
+        u32 len = 0;
+        for (u32 i = 0; i < members.len; i++) {
+            Ty const* member = members.data[i];
+            bool instantiable = member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED);
+            Ty const* constraint = instantiable ? ty_base_constraint(me, member) : member;
+            if (constraint) parts[len++] = constraint;
+        }
+        Ty const* ret = len ? ty_intersection(me, parts, len, nullptr, (TyList){0}) : ty;
+        free(parts);
+        return ret;
+    }
     Ty const* constraint = ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED) ? ty_base_constraint(me, ty) : nullptr;
     return constraint ? constraint : ty;
 }

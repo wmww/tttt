@@ -561,6 +561,9 @@ static Ty const* tuple_as_array(Checker* me, Ty const* tuple) {
         if ((shape->flags[i] & TUPLE_ELEMENT_REST) && element->kind == TY_REFERENCE && !is_tuple(element)) {
             TyList rest_args = ty_reference_args(me, element);
             if (rest_args.len == 1) element = rest_args.data[0];
+        } else if (shape->flags[i] & TUPLE_ELEMENT_REST) {
+            // A variadic element `...T` contributes T[number] (tsc's getTupleBaseType)
+            element = ty_indexed(me, element, ty_intrinsic(me, TY_NUMBER));
         }
         elements[len++] = element;
         if (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL) elements[len - 1] = element;
@@ -627,6 +630,32 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         FoundProp* memo = arena_new(&my arena, FoundProp);
         *memo = ret;
         *intern_slot(me, &my intersection_props, key, 2) = memo;
+        return ret;
+    }
+    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
+        // A member of an intersection whose apparent type is a union (`T & X` with `T extends A | B`): every member
+        // has to have it (tsc's createUnionOrIntersectionProperty, reached through getPropertyOfType of the union)
+        TyList members = ty->composite.types;
+        Ty const* stack_buf[16];
+        Ty const** types = members.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * members.len);
+        u32 flags = 0;
+        bool missing = false;
+        for (u32 i = 0; i < members.len && !missing; i++) {
+            FoundProp part = find_prop(me, apparent_type(me, members.data[i]), name, depth + 1);
+            missing = !part.found;
+            if (missing) break;
+            if (!ret.prop) ret.prop = part.prop;
+            types[i] = part.type;
+            flags |= part.flags;
+        }
+        if (!missing && members.len) {
+            ret.found = true;
+            ret.type = ty_union(me, types, members.len, nullptr, (TyList){0});
+            ret.flags = flags;
+        } else {
+            ret.prop = nullptr;
+        }
+        if (types != stack_buf) free(types);
         return ret;
     }
     if (!(ty->flags & TYF_OBJECT)) return ret;
@@ -4070,7 +4099,27 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
     u32* lens = malloc(sizeof(u32) * members.len);
     panic_if(!lists || !lens, "out of memory");
     for (u32 i = 0; i < members.len; i++) {
-        Members const* m = ty_members(me, ty_apparent_type(me, members.data[i]));
+        Ty const* member = ty_apparent_type(me, members.data[i]);
+        if (member->kind == TY_INTERSECTION) {
+            // An intersection has the signatures of all of its members (tsc's resolveIntersectionTypeMembers)
+            TyList parts = member->composite.types;
+            u32 total = 0;
+            for (u32 j = 0; j < parts.len; j++) {
+                Members const* m = ty_members(me, ty_apparent_type(me, parts.data[j]));
+                total += construct ? m->construct_count : m->call_count;
+            }
+            Signature** all = total ? arena_new_n(&my arena, Signature*, total) : nullptr;
+            u32 len = 0;
+            for (u32 j = 0; j < parts.len; j++) {
+                Members const* m = ty_members(me, ty_apparent_type(me, parts.data[j]));
+                u32 count = construct ? m->construct_count : m->call_count;
+                for (u32 k = 0; k < count; k++) all[len++] = (construct ? m->construct : m->call)[k];
+            }
+            lists[i] = all;
+            lens[i] = len;
+            continue;
+        }
+        Members const* m = ty_members(me, member);
         lists[i] = construct ? m->construct : m->call;
         lens[i] = construct ? m->construct_count : m->call_count;
     }
