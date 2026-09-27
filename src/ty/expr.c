@@ -706,6 +706,13 @@ Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function) {
     return intern_get(&my links, key, 2);
 }
 
+Ty const* ty_return_expressions_context(Checker* me, FunctionImpl const* function) {
+    Ty const* ret = ty_contextual_return_type(me, function);
+    if (ret || !function->is_iife) return ret;
+    u64 key[2] = { KEY_CONTEXT_IIFE_RETURN, (u64)(uintptr_t)function };
+    return intern_get(&my links, key, 2);
+}
+
 // A function expression meets a contextual type. Its unannotated parameters take their types from the contextual
 // signature, once: the first contextual signature decides (tsc's ContextChecked)
 Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual) {
@@ -2513,6 +2520,15 @@ static bool is_symbol_call(Checker* me, CallExpr const* call) {
 static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
+    // An immediately invoked function returns into the call's contextual type (tsc's getContextualReturnType), which
+    // only its return expressions see: the return type isn't widened against it (getReturnTypeFromBody)
+    if (callee->tag == EXPR_FUNCTION && callee->function->is_iife && !callee->function->ret_explicit && ctx.contextual &&
+        !(ctx.contextual->flags & (TYF_ANY | TYF_VOID))
+    ) {
+        u64 key[2] = { KEY_CONTEXT_IIFE_RETURN, (u64)(uintptr_t)callee->function };
+        void const** slot = intern_slot(me, &my links, key, 2);
+        if (!*slot) *slot = ctx.contextual;
+    }
     bool optional = false;
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
     Ty const* ret = ty_call_return_type(me, callee_type, call, ctx.contextual);

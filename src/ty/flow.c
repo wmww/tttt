@@ -407,7 +407,7 @@ static Ty const* base_type_of_literal(Checker* me, Ty const* ty) { return ty_bas
 
 static bool is_unit_type(Ty const* ty) {
     if (ty->flags & TYF_ENUM) return false;
-    return (ty->flags & (TYF_LITERAL | TYF_UNDEFINED | TYF_NULL)) && ty->kind != TY_UNION;
+    return (ty->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_UNDEFINED | TYF_NULL)) && ty->kind != TY_UNION;
 }
 
 // References
@@ -600,9 +600,16 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
     if (call->uses_new || call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS || in_optional_chain(expr)) {
         return nullptr;
     }
-    if (call->callable.tag == EXPR_IDENTIFIER) {
-        csview name = call->callable.identifier.name.sv;
-        if (csview_equals(name, "Symbol") || csview_equals(name, "require")) return nullptr;
+    // (tsc's isSymbolOrSymbolForCall and isRequireCall: `Symbol()`, `Symbol.for()` and `require()`)
+    Expr const* name_expr = &call->callable;
+    if (name_expr->tag == EXPR_PROPERTY && span_equals(name_expr->property->prop.inner_span, "for")) {
+        name_expr = &name_expr->property->expr;
+    }
+    if (name_expr->tag == EXPR_IDENTIFIER) {
+        csview name = name_expr->identifier.name.sv;
+        if (csview_equals(name, "Symbol") || (name_expr == &call->callable && csview_equals(name, "require"))) {
+            return nullptr;
+        }
     }
     Ty const* callee = in_flow ? ty_flow_expr_type(me, &call->callable) : ty_expr_type(me, &call->callable);
     if (!(callee->flags & TYF_OBJECT)) return nullptr;

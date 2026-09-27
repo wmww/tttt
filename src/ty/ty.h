@@ -1122,6 +1122,8 @@ void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function);
 Ty const* ty_contextual_prop_type(Checker* me, Ty const* contextual, Ty const* key);
 Ty const* ty_contextual_element_type(Checker* me, Ty const* contextual, u32 index);
 Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function); // null if none
+// What its return expressions are contextually typed by: the contextual return type, or an IIFE's call's contextual type
+Ty const* ty_return_expressions_context(Checker* me, FunctionImpl const* function);
 // `import.meta` (the property access on the `import` keyword) and its type
 bool ty_is_import_meta(struct Expr const* expr);
 Ty const* ty_import_meta_type(Checker* me);

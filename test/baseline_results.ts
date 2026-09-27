@@ -6111,9 +6111,9 @@ const baselines = {
         types: true,
     },
     'contextualReturnTypeOfIIFE': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualReturnTypeOfIIFE2': {
         errors: true,
@@ -6121,9 +6121,9 @@ const baselines = {
         types: true,
     },
     'contextualReturnTypeOfIIFE3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualSigInstantiationRestParams': {
         errors: true,
@@ -14396,7 +14396,7 @@ const baselines = {
         types: true,
     },
     'functionType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24066,7 +24066,7 @@ const baselines = {
         types: false,
     },
     'nonNullableReductionNonStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24473,7 +24473,7 @@ const baselines = {
     'objectLiteralPropertyImplicitlyAny': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralReferencingInternalProperties': {
         errors: true,
@@ -32071,7 +32071,7 @@ const baselines = {
         types: true,
     },
     'unionOfFunctionAndSignatureIsCallable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -37981,7 +37981,7 @@ const baselines = {
         types: false,
     },
     'dependentDestructuredVariablesFromNestedPatterns': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47341,7 +47341,7 @@ const baselines = {
         types: true,
     },
     'callWithSpread': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47366,7 +47366,7 @@ const baselines = {
         types: true,
     },
     'callWithSpreadES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47376,7 +47376,7 @@ const baselines = {
         types: true,
     },
     'functionCalls': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67641,7 +67641,7 @@ const baselines = {
         types: false,
     },
     'uniqueSymbolsPropertyNames': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

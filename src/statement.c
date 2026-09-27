@@ -1875,11 +1875,13 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                             break;
                     }
 
-                    // TODO: type parameters are fine too, the apparent type is what counts
-                    if (!for_in_accepts(current_checker, iterable_type)) {
+                    // tsc's checkForInStatement: null and undefined are removed first (getNonNullableTypeIfNeeded)
+                    Ty const* right_type = compiler_options()->strict_null_checks ?
+                        ty_non_nullable(current_checker, iterable_type) : iterable_type;
+                    if ((right_type->flags & TYF_NEVER) || !for_in_accepts(current_checker, right_type)) {
                         error_ctx_error_d(errs, my for_each_loop->iterable.outer_span, 2407,
                             "The right-hand side of a 'for...in' statement must be of type 'any', an object type "
-                            "or a type parameter, but here has type '", iterable_type, "'.");
+                            "or a type parameter, but here has type '", right_type, "'.");
                     }
                     break;
 

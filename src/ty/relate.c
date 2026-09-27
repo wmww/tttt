@@ -3241,8 +3241,9 @@ static Ternary structured_related_impl(
         }
 
         case TY_INDEXED: {
+            // (tsc: `getConstraintOfType(source) || unknownType`, which is comparable to anything; not elaborated)
             Ty const* constraint = constraint_of_indexed(me, source);
-            if (!constraint) return TERNARY_FALSE;
+            if (!constraint) return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
             // `{ [P in K]: E }[X]` was E with X for P; `{ [P in K]: E }[C]`, with C the constraint of X, may be related
             // where that isn't (tsc's isMappedTypeGenericIndexedAccess branch)
             if (!mapped_generic_indexed_access(me, source)) return is_related_to(me, st, constraint, target, report);

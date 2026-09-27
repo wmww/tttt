@@ -1569,6 +1569,18 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     }
 
     Ty const* ret = any;
+    // tsc's isUntypedFunctionCall: something assignable to Function without signatures (`Function` itself) is called
+    // like any
+    if (!count && !other_count && !construct && apparent->kind != TY_UNION && !(apparent->flags & TYF_NEVER)) {
+        Ty const* function_type = ty_global_function_type(me);
+        if (function_type && ty_is_related(me, callee, function_type, TY_RELATION_ASSIGNABLE)) {
+            if (info->type_arg_nodes) {
+                mark_would_report(info);
+                error_ctx_error_d(errs, call_span, 2347, "Untyped function calls may not accept type arguments.");
+            }
+            return any;
+        }
+    }
     if (!count) {
         mark_would_report(info); // (Not always, but calling nothing is cheap to resolve again)
         if (!errs) {
