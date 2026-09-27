@@ -4925,7 +4925,9 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         }
 
         bool optional = false;
+        Span question = span_null;
         if (hop_char(&p, '?')) {
+            question = span_from_previous_char(&p);
             hop_whitespace(&p);
             optional = true;
         } else if (!is_type && *p.pos == '!' && p.pos[1] != '=') {
@@ -4982,7 +4984,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             bool is_definitely_field = false;
 
             modified.kind = is_type ? MODIFIED_PROPERTY_SIGNATURE : MODIFIED_PROPERTY;
-            check_modifiers(&p, &modifiers, modified);
+            if (!check_modifiers(&p, &modifiers, modified) && modifiers.includes[MODIFIER_ACCESSOR] && optional) {
+                // (tsc's checkGrammarProperty)
+                parse_error(&p, question, 1276, "An 'accessor' property cannot be declared optional.");
+            }
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_FIELD,
                 .field = {
@@ -7409,6 +7414,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         hop_whitespace(&p);
         expect_identifier(&p, &statement.main.decl_name);
         statement.main.tag = PORT_EXPORT_AS_NAMESPACE;
+        statement.main.not_top_level = p.shared->statement_parent != MODIFIED_IN_SOURCE_FILE;
         a = statement_start; // (the statement declares the alias, `export` included)
     } else if (!is_export && parse_identifier(&p, &statement.main.decl_name)) {
         hop_whitespace(&p);
@@ -8947,6 +8953,8 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 code = 1191;
             } else if (main->tag == PORT_EXPORT_AS_NAMESPACE) {
                 modified.kind = MODIFIED_NAMESPACE_EXPORT;
+                main->full_span = span_from(a);
+                main->modifiers = main->full_span;
             } else {
                 modified.kind = MODIFIED_EXPORT_DECLARATION;
                 code = 1193;
@@ -9166,7 +9174,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
 static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071, 1079,
-        1089, 1090, 1096, 1120, 1162, 1184, 1191, 1193, 1242, 1243, 1244, 1248, 1253, 1255, 1275, 1319, 1491, 1495,
+        1089, 1090, 1096, 1120, 1162, 1184, 1191, 1193, 1242, 1243, 1244, 1248, 1253, 1255, 1275, 1276, 1319, 1491, 1495,
         18010, 18019,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {

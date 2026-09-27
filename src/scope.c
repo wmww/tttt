@@ -1060,8 +1060,20 @@ void scope_add_port(Scope* me, PortItem* item) {
             return;
 
         case PORT_EXPORT_AS_NAMESPACE: {
-            // A global alias of the module (UMD). TODO: TS2686 when a module uses it
-            if (my kind != SCOPE_MODULE || !my container) return;
+            // A global alias of the module (UMD). TODO: TS2686 when a module uses it. The checks are tsc's
+            // bindNamespaceExportDeclaration()
+            if (span_valid(item->modifiers)) error_ctx_error_d(my errs, item->modifiers, 1184, "Modifiers cannot appear here.");
+            if (item->not_top_level) {
+                error_ctx_error_d(my errs, item->full_span, 1316, "Global module exports may only appear at top level.");
+                return;
+            } else if (my kind != SCOPE_MODULE) {
+                error_ctx_error_d(my errs, item->full_span, 1314, "Global module exports may only appear in module files.");
+                return;
+            } else if (my file && !my file->is_declaration) {
+                error_ctx_error_d(my errs, item->full_span, 1315, "Global module exports may only appear in declaration files.");
+                return;
+            }
+            if (!my container) return;
             if (my file && my file->is_js) return; // TypeScript only (TS8xxx): tsc's symbols baseline has no alias there
             // Of two UMD globals of the same name the first one wins, silently (tsc's initializeTypeChecker): the
             // other is a symbol of its own that isn't global
