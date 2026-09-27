@@ -651,6 +651,19 @@ static void check_type_name_is_reserved(ErrorCtx* errs, Span name, SymbolDeclKin
     }
 }
 
+// tsc's checkCollisionWithRequireExportsInGeneratedCode: a declaration at the top level of a module that is emitted as
+// CommonJS, AMD, UMD or System can't be named `require` or `exports`
+static void check_require_exports_collision(Scope* me, Span name) {
+    if (my kind != SCOPE_MODULE || my ambient || !my file || my file->unchecked || !span_valid(name)) return;
+    if (!csview_equals(name.sv, "require") && !csview_equals(name.sv, "exports")) return;
+    // (tsc's errorSkippedOn("noEmit"))
+    if (compiler_options()->no_emit || source_file_emit_module_kind(my file) >= MODULE_KIND_ES2015) return;
+    error_ctx_error_d(
+        my errs, name, 2441, "Duplicate identifier '", name, "'. Compiler reserves name '", name,
+        "' in top level scope of a module."
+    );
+}
+
 // tsc's declareSymbol(). *merged is whether the symbol existed already. default_export: a declaration of the `default`
 // export of a module, which conflicts with the others as TS2528
 static Symbol* declare_symbol(
@@ -803,6 +816,13 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     }
 
     check_type_name_is_reserved(me->errs, props.name, props.kind);
+    if (!props.is_ambient && (
+        (props.kind == SYMBOL_DECL_VARIABLE && !props.is_parameter) || props.kind == SYMBOL_DECL_FUNCTION ||
+        props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM ||
+        (props.kind == SYMBOL_DECL_NAMESPACE && props.is_instantiated)
+    )) {
+        check_require_exports_collision(me, props.name);
+    }
     u32 includes, excludes;
     symbol_flags_of_props(&props, &includes, &excludes);
     if (props.default_export && !(scope->container && scope->container->is_module)) {
@@ -1068,6 +1088,7 @@ void scope_add_port(Scope* me, PortItem* item) {
             break;
     }
 
+    if (!port_item_is_export(item) && !item->type_only) check_require_exports_collision(me, item->decl_name);
     bool exported = port_item_declares_export(item);
     if (port_item_is_export(item) && !(my container && my kind != SCOPE_ENUM)) {
         return; // TODO: TS1194 export declarations are not permitted in a namespace... and nowhere else either

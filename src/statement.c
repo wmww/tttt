@@ -360,6 +360,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 .kind = SYMBOL_DECL_NAMESPACE,
                 .node = me,
                 .is_instantiated = has_value,
+                .is_ambient = props.declared,
             });
             my inner_scope->container = my symbol;
         }
@@ -622,7 +623,7 @@ static void block_hoist_names(Block* me, Scope* scope) {
 void statement_hoist_names(Statement* me, Scope* scope) {
     switch (my tag) {
         case STATEMENT_DECL_FUNCTION:
-            if (!scope->strict) function_impl_add_names(my decl.function.impl, scope, DECL_EXPORTED_NO, true);
+            if (!scope->strict) function_impl_add_names(my decl.function.impl, scope, DECL_EXPORTED_NO, true, my decl.props.declared);
             break;
 
         case STATEMENT_BLOCK:
@@ -774,7 +775,7 @@ void statement_add_names(Statement* me, Scope* scope) {
         case STATEMENT_DECL_FUNCTION:
             scope_check_strict_block_function(scope, my decl.function.impl->name);
             function_impl_add_names(my decl.function.impl, scope, my decl.props.exported,
-                scope->kind == SCOPE_BLOCK && !scope->strict);
+                scope->kind == SCOPE_BLOCK && !scope->strict, my decl.props.declared);
             break;
 
         case STATEMENT_DECL_ENUM:

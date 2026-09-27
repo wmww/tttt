@@ -2,6 +2,7 @@
 
 #include "block.h"
 #include "scope.h"
+#include "compiler_options.h"
 
 typedef struct SourceFile SourceFile;
 
@@ -128,6 +129,9 @@ typedef struct SourceFile {
 } SourceFile;
 
 SourceFile source_file_make(cstr canonical_path, cstr contents);
+// The module format the file is emitted in (tsc's getEmitModuleFormatOfFile): with node16/nodenext its implied format,
+// else a .cts/.mts extension or an explicit package.json `type` decide, else the `module` option
+ModuleKind source_file_emit_module_kind(SourceFile const* me);
 void source_file_drop(SourceFile* me);
 // Takes path
 ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span);

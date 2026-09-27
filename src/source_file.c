@@ -3,6 +3,20 @@
 #include "string_helpers.h"
 #include "compiler_options.h"
 
+ModuleKind source_file_emit_module_kind(SourceFile const* me) {
+    CompilerOptions const* o = compiler_options();
+    if (my is_json) return o->module; // (No implied format)
+    if (o->module >= MODULE_KIND_NODE16 && o->module <= MODULE_KIND_NODENEXT) {
+        return my is_esm ? MODULE_KIND_ESNEXT : MODULE_KIND_COMMONJS;
+    }
+    csview path = cstr_sv(&my canonical_path);
+    if (csview_ends_with(path, ".cts") || csview_ends_with(path, ".cjs")) return MODULE_KIND_COMMONJS;
+    if (csview_ends_with(path, ".mts") || csview_ends_with(path, ".mjs")) return MODULE_KIND_ESNEXT;
+    // (is_esm and package_has_type are only known with node16/nodenext resolution, where tsc looks at package.json)
+    if (my package_has_type) return my is_esm ? MODULE_KIND_ESNEXT : MODULE_KIND_COMMONJS;
+    return o->module;
+}
+
 SourceFile source_file_make(cstr canonical_path, cstr contents) {
     check(cstr_size(&canonical_path));
     const char* start = cstr_str(&contents);

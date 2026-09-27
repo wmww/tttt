@@ -28,7 +28,7 @@ void function_impl_drop(FunctionImpl* me) {
     free(my yields);
 }
 
-void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted) {
+void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted, bool declared) {
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
@@ -37,6 +37,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported export
         .kind = SYMBOL_DECL_FUNCTION,
         .node = me,
         .function_scoped = hoisted,
+        .is_ambient = declared,
     });
 }
 
