@@ -1583,7 +1583,11 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
                     "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.");
             }
         } else if (call->uses_new) {
-            error_ctx_error_d(errs, call->callable.outer_span, 2351, "This expression is not constructable.");
+            Error* e = error_ctx_error_d(errs, call->callable.outer_span, 2351, "This expression is not constructable.");
+            // (tsc's invocationErrorDetails: about the apparent type)
+            cstr rendered = ty_to_cstr(me, apparent);
+            error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no construct signatures.");
+            cstr_drop(&rendered);
         } else if (other_count) {
             cstr rendered = ty_to_cstr(me, callee);
             error_ctx_error_d(errs, call->callable.outer_span, 2348,
@@ -1591,12 +1595,10 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
             cstr_drop(&rendered);
         } else {
             Error* e = error_ctx_error_d(errs, call->callable.outer_span, 2349, "This expression is not callable.");
-            // (The apparent type of unknown is `{}`)
-            if (apparent->flags & TYF_OBJECT || callee->flags & TYF_UNKNOWN) {
-                cstr rendered = ty_to_cstr(me, callee->flags & TYF_UNKNOWN ? ty_empty_object_type(me) : callee);
-                error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no call signatures.");
-                cstr_drop(&rendered);
-            }
+            // (tsc's invocationErrorDetails: about the apparent type, `{}` for unknown)
+            cstr rendered = ty_to_cstr(me, callee->flags & TYF_UNKNOWN ? ty_empty_object_type(me) : apparent);
+            error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no call signatures.");
+            cstr_drop(&rendered);
         }
         return ret;
     }

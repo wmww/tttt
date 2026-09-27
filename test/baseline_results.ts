@@ -3191,7 +3191,7 @@ const baselines = {
         types: true,
     },
     'checkJsFiles_skipDiagnostics': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14051,7 +14051,7 @@ const baselines = {
         types: true,
     },
     'functionExpressionShadowedByParams': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23206,7 +23206,7 @@ const baselines = {
         types: true,
     },
     'newAbstractInstance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23276,7 +23276,7 @@ const baselines = {
         types: true,
     },
     'newOnInstanceSymbol': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29076,7 +29076,7 @@ const baselines = {
         types: true,
     },
     'staticMemberExportAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43501,12 +43501,12 @@ const baselines = {
         types: true,
     },
     'templateStringInCallExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInCallExpressionES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43626,22 +43626,22 @@ const baselines = {
         types: true,
     },
     'templateStringInNewExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInNewExpressionES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInNewOperator': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInNewOperatorES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45531,7 +45531,7 @@ const baselines = {
         types: true,
     },
     'exponentiationOperatorWithNew': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64446,7 +64446,7 @@ const baselines = {
         types: true,
     },
     'neverIntersectionNotCallable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64461,7 +64461,7 @@ const baselines = {
         types: false,
     },
     'neverTypeErrors2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
