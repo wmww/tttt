@@ -82,6 +82,10 @@ typedef struct FunctionImpl {
     Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
     bool is_expression; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)
+    // The callee of a call (tsc's getImmediatelyInvokedFunctionExpression), set by the resolve walk: its unannotated
+    // parameters past the call's argument count are optional
+    bool is_iife;
+    u32 iife_arg_count;
     // Inside a call expression or an annotated declaration's initializer (FlowBuilder.contextual_depth): the types
     // baseline doesn't type its single returned expression syntactically
     bool syntactically_contextual;

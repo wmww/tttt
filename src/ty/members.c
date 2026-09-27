@@ -1635,6 +1635,9 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             param->optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY;
             param->type = ty_binding_type(me, &i->initializer.binding, ctx);
             if (param->optional || param->rest) counting_required = false;
+            if (function->is_iife && !i->initializer.binding.has_explicit_type && i_index >= function->iife_arg_count) {
+                counting_required = false;
+            }
             if (counting_required) sig->min_args++;
         }
         if (count && params[0].name == checker_atom(me, c_sv("this"))) {
