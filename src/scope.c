@@ -1737,6 +1737,8 @@ static bool is_global_declaration(Binder const* binder, Symbol const* symbol) {
     if (!symbol->decl_count || symbol->parent) return false;
     Symbol const* global = symbol_table_get(&binder->globals, symbol->name);
     if (!global || (global != symbol && global != binder_redirect(binder, symbol))) return false;
+    // (`global {}` can also be in a script's `declare module "m" {}`: @types/node's buffer.buffer.d.ts)
+    if (symbol->decls[0].block) return symbol->decls[0].block->kind == SCOPE_SCRIPT;
     SourceFile const* file = symbol->decls[0].full.source ? symbol->decls[0].full.source : symbol->decls[0].name.source;
     return file && !file->is_module;
 }

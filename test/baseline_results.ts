@@ -3393,7 +3393,7 @@ const baselines = {
     'circularInlineMappedGenericTupleTypeNoCrash': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularInstantiationExpression': {
         errors: true,
@@ -17241,7 +17241,7 @@ const baselines = {
         types: true,
     },
     'inferRestArgumentsMappedTuple': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37982,7 +37982,7 @@ const baselines = {
     },
     'dependentDestructuredVariablesFromNestedPatterns': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exhaustiveSwitchStatements1': {
@@ -64222,7 +64222,7 @@ const baselines = {
     },
     'mappedTypesArraysTuples': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypesGenericTuples': {

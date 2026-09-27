@@ -509,7 +509,30 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
 
 // Apparent types and property lookup
 
+static MappedInfo const* mapped_info_of(Checker* me, Ty const* ty, bool* generic);
+
+// tsc's getResolvedApparentTypeOfMappedType: a homomorphic mapped type over a type parameter whose constraint is arrays
+// and tuples is that mapped type applied to the constraint (`Partial<T>` with `T extends any[]` is an array)
+static Ty const* apparent_type_of_mapped(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty;
+    bool generic = false;
+    MappedInfo const* mapped = mapped_info_of(me, ty, &generic);
+    if (!mapped || !generic || !mapped->keyof_constraint || mapped->name_type || !mapped->modifiers_type) return ty;
+    Ty const* variable = mapped->modifiers_type;
+    if (variable->kind != TY_TYPE_PARAM) return ty;
+    Ty const* constraint = base_constraint(me, variable, 0);
+    if (!constraint || constraint == variable || (constraint->flags & TYF_NEVER)) return ty;
+    TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* part = parts.data[i];
+        if (!is_tuple(part) && !(part->kind == TY_REFERENCE && is_array_target(me, part->reference.target))) return ty;
+    }
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &variable, .len = 1 }, (TyList){ .data = &constraint, .len = 1 });
+    return ty_instantiate(me, ty, mapper);
+}
+
 static Ty const* apparent_type(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_ANONYMOUS) return apparent_type_of_mapped(me, ty);
     if (ty->kind == TY_TYPE_PARAM) {
         // Through the constraint, which sees the type parameter as its `this` (`this.x` inside a class is `this`'s
         // x, and so is `t.x` for `t: T` with `T extends C`: tsc's getApparentType + getTypeWithThisArgument)

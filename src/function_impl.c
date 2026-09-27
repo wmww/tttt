@@ -373,7 +373,7 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
         return true;
     }
     if (is_getter) return false;
-    if (my ret_explicit) {
+    if (my ret_explicit && !my ret.from_jsdoc) { // (a JSDoc `@returns {void}` is fine)
         error_ctx_grammar_error_d(errs, my member_name, 1095, "A 'set' accessor cannot have a return type annotation.");
         return true;
     }
