@@ -1106,9 +1106,9 @@ const baselines = {
         types: true,
     },
     'arithAssignTyping': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arithmeticOnInvalidTypes': {
         errors: true,
@@ -1503,12 +1503,12 @@ const baselines = {
     'assignToEnum': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignToExistingClass': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignToFn': {
         errors: true,
@@ -1873,7 +1873,7 @@ const baselines = {
     'assignmentToFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentToInstantiationExpression': {
         errors: false,
@@ -1898,7 +1898,7 @@ const baselines = {
     'assignmentToReferenceTypes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncArrowInClassES5': {
         errors: true,
@@ -5393,7 +5393,7 @@ const baselines = {
     'concatClassAndString': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'concatError': {
         errors: true,
@@ -5648,12 +5648,12 @@ const baselines = {
     'constDeclarations-access': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constDeclarations-access2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constDeclarations-access3': {
         errors: true,
@@ -5683,7 +5683,7 @@ const baselines = {
     'constDeclarations-errors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constDeclarations-es5': {
         errors: true,
@@ -5853,7 +5853,7 @@ const baselines = {
     'constWithNonNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constantEnumAssert': {
         errors: false,
@@ -31831,9 +31831,9 @@ const baselines = {
         types: true,
     },
     'unaryOperatorsInStrictMode': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unaryPlus': {
         errors: true,
@@ -48476,9 +48476,9 @@ const baselines = {
         types: false,
     },
     'decrementOperatorWithEnumTypeInvalidOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decrementOperatorWithNumberType': {
         errors: true,
@@ -48723,12 +48723,12 @@ const baselines = {
     'assignmentToParenthesizedIdentifiers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'amdImportAsPrimaryExpression': {
         errors: true,
@@ -49118,7 +49118,7 @@ const baselines = {
     'importsImplicitlyReadonly': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'initializersInDeclarations': {
         errors: false,
@@ -58988,12 +58988,12 @@ const baselines = {
     'parserStrictMode3-negative': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode4': {
         errors: true,
@@ -59001,24 +59001,24 @@ const baselines = {
         types: true,
     },
     'parserStrictMode5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode6-negative': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode7': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode8': {
         errors: true,
@@ -63468,7 +63468,7 @@ const baselines = {
     'assignAnyToEveryType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignEveryTypeToAny': {
         errors: true,
@@ -64863,7 +64863,7 @@ const baselines = {
     'invalidBooleanAssignments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'validBooleanAssignments': {
         errors: true,
@@ -64888,7 +64888,7 @@ const baselines = {
     'validNullAssignments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignFromNumberInterface': {
         errors: true,
@@ -64908,7 +64908,7 @@ const baselines = {
     'invalidNumberAssignments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numberPropertyAccess': {
         errors: true,
@@ -64938,7 +64938,7 @@ const baselines = {
     'invalidStringAssignments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringPropertyAccess': {
         errors: true,
@@ -64968,7 +64968,7 @@ const baselines = {
     'invalidUndefinedAssignments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidUndefinedValues': {
         errors: true,
@@ -64993,7 +64993,7 @@ const baselines = {
     'invalidVoidAssignments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidVoidValues': {
         errors: true,

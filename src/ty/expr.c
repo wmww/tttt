@@ -898,6 +898,13 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
         // (A name that wasn't found is tsc's errorType)
         return identifier->keyword == KEYWORD_IDENTIFIER_THIS ? ty_intrinsic(me, TY_UNDEFINED) : ty_intrinsic(me, TY_ERROR);
     }
+    // tsc's checkIdentifier: assigning to what isn't a variable, or to a constant, is an error of type errorType
+    // (A JavaScript file's `exports = ...` is no error)
+    if (identifier_is_invalid_assignment_target(identifier) &&
+        !(identifier->name.source && identifier->name.source->is_js && (identifier->symbol->flags & SYMBOL_VALUE_MODULE))
+    ) {
+        return ty_intrinsic(me, TY_ERROR);
+    }
     return ty_type_of_symbol(me, decl);
 }
 
