@@ -113,9 +113,40 @@ static void variable_check_jsdoc_enum(InitializedBinding const* me, ErrorCtx* er
     }
 }
 
-void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs) {
+// tsc's checkESModuleMarker: the first name a binding declares
+static void binding_check_es_module_marker(Binding const* me, ErrorCtx* errs) {
+    switch (my tag) {
+        case BINDING_IDENTIFIER:
+            if (csview_equals(my content_span.sv, "__esModule")) {
+                error_ctx_grammar_error_d(errs, my content_span, 1216,
+                    "Identifier expected. '__esModule' is reserved as an exported marker when transforming ECMAScript modules.");
+            }
+            break;
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &my array) {
+                if (i->tag == BINDING_NOOP) continue;
+                binding_check_es_module_marker(i, errs);
+                return;
+            }
+            break;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &my object) {
+                binding_check_es_module_marker(&i->target, errs);
+                return;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+void variable_statement_typecheck(VariableStatement* me, bool declared, bool exported, ErrorCtx* errs) {
     variable_statement_check_using(me, false, errs);
+    // An export of a module emitted as CommonJS (or AMD, UMD) can't be named like the marker the emit adds
+    bool check_marker = exported && !declared && !compiler_options()->no_emit && !vec_initialized_binding_is_empty(&my initializers) &&
+        source_file_emit_module_kind(my initializers.data[0].binding.content_span.source) < MODULE_KIND_SYSTEM;
     for_each (i, vec_initialized_binding, &my initializers) {
+        if (check_marker) binding_check_es_module_marker(&i->binding, errs);
         if (variable_statement_is_const(me) &&
             i->value.tag == EXPR_IMPLICIT_ANY &&
             !declared
@@ -1931,7 +1962,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 error_ctx_grammar_error_d(errs, my span, 1156,
                     "'", variable_statement_keyword_str(&my decl.variable), "' declarations can only be declared inside a block.");
             }
-            variable_statement_typecheck(&my decl.variable, my decl.props.declared || ctx.ambient, errs);
+            variable_statement_typecheck(&my decl.variable, my decl.props.declared || ctx.ambient, my decl.props.exported, errs);
             break;
 
         case STATEMENT_DECL_FUNCTION:

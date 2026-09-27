@@ -854,11 +854,17 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (!my is_ambient && span_valid(my name) && csview_equals(my name.sv, "Object") && my name.source &&
         source_file_emit_module_kind(my name.source) < MODULE_KIND_ES2015
     ) {
-        static char const* const module_names[] = { "None", "CommonJS", "AMD", "UMD", "System" };
+        static char const* const module_names[] = {
+            [MODULE_KIND_NONE] = "None", [MODULE_KIND_COMMONJS] = "CommonJS", [MODULE_KIND_AMD] = "AMD",
+            [MODULE_KIND_UMD] = "UMD", [MODULE_KIND_SYSTEM] = "System", [MODULE_KIND_ES2015] = "ES2015",
+            [MODULE_KIND_ES2020] = "ES2020", [MODULE_KIND_ES2022] = "ES2022", [MODULE_KIND_ESNEXT] = "ESNext",
+            [MODULE_KIND_NODE16] = "Node16", [MODULE_KIND_NODE18] = "Node18", [MODULE_KIND_NODENEXT] = "NodeNext",
+            [MODULE_KIND_PRESERVE] = "Preserve",
+        };
         ModuleKind module = compiler_options()->module;
         error_ctx_error_d(
             errs, my name, 2725, "Class name cannot be 'Object' when targeting ES5 with module ",
-            module < MODULE_KIND_ES2015 ? module_names[module] : "ES2015", "."
+            module < c_arraylen(module_names) && module_names[module] ? module_names[module] : "ES2015", "."
         );
     }
 

@@ -7813,10 +7813,9 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     )) {
         is_for_each = true;
         if (is_await && keyword_is_in) {
-            // `for await (x in y)`: read as `of`
+            // `for await (x in y)`: still a for-in loop
             Span in = { .source = p.shared->source, .sv = csview_from_n(p.pos - 2, 2) };
             parse_error(&p, in, 1005, "'of' expected.");
-            keyword_is_in = false;
         }
 
         hop_whitespace(&p);

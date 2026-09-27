@@ -11556,12 +11556,12 @@ const baselines = {
         types: false,
     },
     'es5-commonjs3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'es5-commonjs4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54471,17 +54471,17 @@ const baselines = {
         types: true,
     },
     'nodeModulesAllowJsGeneratedNameCollisions(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesAllowJsGeneratedNameCollisions(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesAllowJsGeneratedNameCollisions(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54916,17 +54916,17 @@ const baselines = {
         types: true,
     },
     'nodeModulesGeneratedNameCollisions(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesGeneratedNameCollisions(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesGeneratedNameCollisions(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55868,7 +55868,7 @@ const baselines = {
     'parser.forAwait.es2018': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.binary': {
         errors: true,
