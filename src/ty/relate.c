@@ -1610,6 +1610,18 @@ static Ternary each_related(Checker* me, RelationState* st, TyList sources, Ty c
     return result;
 }
 
+// Whether `t` is a member of the union `u`, whose members are sorted by id (tsc's containsType)
+static bool union_has_member(Ty const* u, Ty const* t) {
+    TyList members = u->composite.types;
+    u32 lo = 0, hi = members.len;
+    while (lo < hi) {
+        u32 mid = lo + (hi - lo) / 2;
+        if (members.data[mid] == t) return true;
+        if (members.data[mid]->id < t->id) lo = mid + 1; else hi = mid;
+    }
+    return false;
+}
+
 static Ternary some_related(Checker* me, RelationState* st, TyList sources, Ty const* target) {
     for (u32 i = 0; i < sources.len; i++) {
         Ternary related = is_related_to(me, st, sources.data[i], target, false);
@@ -1622,9 +1634,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
 
 static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     TyList targets = target->composite.types;
-    for (u32 i = 0; i < targets.len; i++) {
-        if (targets.data[i] == source) return TERNARY_TRUE;
-    }
+    if (union_has_member(target, source)) return TERNARY_TRUE;
     // The member with the source's key first (tsc's getMatchingUnionConstituentForType)
     Atom const* key = source->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_union_key_property(me, target) : nullptr;
     Ty const* key_type = key ? ty_prop_type_of(me, source, key) : nullptr;
@@ -2350,7 +2360,10 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
 
     // Unions and intersections
     if (source->kind == TY_UNION) {
-        if (comparable) return some_related(me, st, source->composite.types, target);
+        if (comparable) {
+            if (union_has_member(source, target)) return TERNARY_TRUE; // (tsc's someTypeRelatedToType)
+            return some_related(me, st, source->composite.types, target);
+        }
         return each_related(me, st, source->composite.types, target, report);
     }
     bool source_is_generic = source->kind == TY_TYPE_PARAM || (source->flags & TYF_DEFERRED) != 0;
@@ -2877,13 +2890,6 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
 }
 
 // Excess property checks (tsc's hasExcessProperties and friends)
-
-static bool union_has_member(Ty const* u, Ty const* t) {
-    for (u32 i = 0; i < u->composite.types.len; i++) {
-        if (u->composite.types.data[i] == t) return true;
-    }
-    return false;
-}
 
 static bool is_excess_property_check_target(Ty const* ty) {
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
