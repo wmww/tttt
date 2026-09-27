@@ -45,6 +45,7 @@ enum {
     KEY_DEFERRED_OUTER, // TypeNode of a deferred reference -> TyConditionalOuter
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE/TYPE_IDENTIFIER node, the pairs of the mapper it mentions) -> Ty
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
+    KEY_RESTRICTIVE_PARAM, // type parameter id -> its unconstrained stand-in (conditional.c)
     KEY_BASE_SIGNATURE, // Signature -> TyMapper of its type parameters to their base constraints (infer.c)
     KEY_VARIANCES,      // declared type id -> variance array
     KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation

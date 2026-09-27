@@ -13,6 +13,7 @@ typedef struct MentionWalk {
     u32 visited_cap;
     u32 visited_len;
     Ty const* only; // Non-null: the one type parameter that counts
+    TyBuf* collect; // Non-null: every free type parameter goes here and the walk goes on (true only when unsure)
 } MentionWalk;
 
 #define MENTION_MAX_VISITED 8192
@@ -54,7 +55,43 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
         for (u32 i = 0; i < walk->bound_len; i++) {
             if (walk->bound[i] == ty) return false;
         }
+        if (walk->collect) {
+            for (u32 i = 0; i < walk->collect->len; i++) {
+                if (walk->collect->data[i] == ty) return false;
+            }
+            ty_buf_push(walk->collect, ty);
+            return false;
+        }
         return !walk->only || walk->only == ty;
+    }
+    if (walk->collect) {
+        // What a type is known to mention without looking inside it (which would lower lazy parts: a conditional
+        // type's branches can be the alias being declared)
+        if (ty->kind == TY_ANONYMOUS) {
+            Ty const* target = ty->anonymous.target ? ty->anonymous.target : ty;
+            TyMapper const* mapper = ty->anonymous.target ? ty->anonymous.mapper : nullptr;
+            if (target->kind == TY_ANONYMOUS && target->anonymous.node && !target->anonymous.free_params_unknown &&
+                !ty->anonymous.applies_type_args
+            ) {
+                TyList params = target->anonymous.free_params;
+                for (u32 i = 0; i < params.len; i++) {
+                    Ty const* param = params.data[i];
+                    for (u32 j = 0; mapper && j < mapper->len; j++) {
+                        if (mapper->sources[j] == param) {
+                            param = mapper->targets[j];
+                            break;
+                        }
+                    }
+                    if (mentions_type_variables(me, param, walk, depth + 1)) return true;
+                }
+                return false;
+            }
+        } else if (ty->kind == TY_CONDITIONAL && !ty->conditional.mapper) {
+            TyConditionalOuter const* outer = ty_conditional_outer(me, ty->conditional.root ? ty->conditional.root : ty);
+            if (!outer || outer->unknown) return true;
+            for (u32 i = 0; i < outer->params.len; i++) mentions_type_variables(me, outer->params.data[i], walk, depth + 1);
+            return false;
+        }
     }
     if (depth > MENTION_MAX_DEPTH || walk->visited_len >= MENTION_MAX_VISITED) return true;
     if (!mention_visit(walk, ty->id + 1)) return false;
@@ -213,6 +250,48 @@ static bool is_generic_mapped(Checker* me, Ty const* ty, u32 depth) {
     return ty->kind == TY_ANONYMOUS && ty_members(me, ty)->mapped != nullptr;
 }
 
+// A type parameter without a constraint standing in for `param` (tsc's getRestrictiveTypeParameter)
+static Ty const* restrictive_type_param(Checker* me, Ty const* param) {
+    u64 key[2] = { KEY_RESTRICTIVE_PARAM, param->id };
+    void const** slot = intern_slot(me, &my links, key, 2);
+    if (!*slot) {
+        Ty const* ret = ty_synthetic_type_param(me, atom_sv(param->param.name));
+        ret->param.state->constraint_state = LAZY_STATE_DONE;
+        *slot = ret;
+    }
+    return *slot;
+}
+
+// Whether the check type is assignable to the extends type whatever the type variables in them turn out to be: with
+// every type parameter replaced by one without a constraint (tsc's getRestrictiveInstantiation in getConditionalType).
+// `Extract<CL, Pick<T, "kind">>` with `T extends CL` isn't its true branch for any member of CL. *mentions: whether
+// either side has type variables (or might: when the walk gives up, the constraints stay)
+static bool definitely_related(Checker* me, Ty const* check_type, Ty const* extends, bool* mentions) {
+    if (!((check_type->flags | extends->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        return ty_is_related(me, check_type, extends, TY_RELATION_ASSIGNABLE);
+    }
+    TyBuf params = {0};
+    MentionWalk walk = { .collect = &params };
+    bool unsure = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, extends, &walk, 0);
+    free(walk.visited);
+    *mentions = unsure || params.len;
+    bool ret;
+    if (unsure || !params.len) {
+        ret = ty_is_related(me, check_type, extends, TY_RELATION_ASSIGNABLE);
+    } else {
+        Ty const** restrictive = malloc(sizeof(Ty const*) * params.len);
+        panic_if(!restrictive, "out of memory");
+        for (u32 i = 0; i < params.len; i++) restrictive[i] = restrictive_type_param(me, params.data[i]);
+        TyMapper const* mapper = ty_mapper_new(
+            me, (TyList){ .data = params.data, .len = params.len }, (TyList){ .data = restrictive, .len = params.len }
+        );
+        free(restrictive);
+        ret = ty_is_related(me, ty_instantiate(me, check_type, mapper), ty_instantiate(me, extends, mapper), TY_RELATION_ASSIGNABLE);
+    }
+    ty_buf_drop(&params);
+    return ret;
+}
+
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
     TyCondBranch const* if_false
@@ -256,14 +335,13 @@ Ty const* ty_conditional_resolve(
         Ty const* parts[2] = { ty_instantiate(me, branch_type(me, if_true), mapper), branch_type(me, if_false) };
         return ty_union(me, parts, 2, nullptr, (TyList){0});
     }
-    bool related = (inferred_extends->flags & (TYF_ANY | TYF_UNKNOWN)) ||
-        ty_is_related(me, check_type, inferred_extends, TY_RELATION_ASSIGNABLE);
-    if (related) return ty_instantiate_tail(me, branch_type(me, if_true), mapper);
+    if (inferred_extends->flags & (TYF_ANY | TYF_UNKNOWN)) return ty_instantiate_tail(me, branch_type(me, if_true), mapper);
+    bool mentions = false;
+    if (definitely_related(me, check_type, inferred_extends, &mentions)) {
+        return ty_instantiate_tail(me, branch_type(me, if_true), mapper);
+    }
     // HACK: tsc picks the false branch only if the check fails even with every type variable replaced by `any`
     // (permissive instantiation), and defers otherwise. There's no such instantiation here yet: with a type variable
     // nested in either side, a failed check defers
-    MentionWalk walk = {0};
-    bool mentions = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, inferred_extends, &walk, 0);
-    free(walk.visited);
     return mentions ? nullptr : branch_type(me, if_false);
 }

@@ -14011,7 +14011,7 @@ const baselines = {
         types: true,
     },
     'functionCallOnConstrainedTypeVariable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

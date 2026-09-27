@@ -1790,20 +1790,21 @@ static Ternary generic_mapped_target_related(
 }
 
 // What can be written to `T[K]` whatever T and K turn out to be (tsc's AccessFlags.Writing): through a union
-// constraint of T, a value has to fit every member's property, so it's the intersection
+// constraint of K, a value has to fit every key's property, so it's the intersection. A union constraint of T is read
+// like any union (its property is the union of the members')
 static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
-    Ty const* object = indexed->indexed.object;
-    Ty const* object_constraint = object->kind == TY_TYPE_PARAM ? ty_param_constraint(me, object) : nullptr;
-    if (object_constraint && object_constraint->kind == TY_UNION) {
-        Ty const* index = indexed->indexed.index;
-        Ty const* index_constraint = index->kind == TY_TYPE_PARAM ? ty_param_constraint(me, index) : nullptr;
-        if (index_constraint) index = index_constraint;
-        TyList members = object_constraint->composite.types;
+    Ty const* index = indexed->indexed.index;
+    Ty const* index_constraint = index->kind == TY_TYPE_PARAM ? ty_param_constraint(me, index) : nullptr;
+    if (index_constraint && index_constraint->kind == TY_UNION) {
+        Ty const* object = indexed->indexed.object;
+        Ty const* object_constraint = object->kind == TY_TYPE_PARAM ? ty_param_constraint(me, object) : nullptr;
+        if (object_constraint) object = object_constraint;
+        TyList members = index_constraint->composite.types;
         Ty const** parts = malloc(sizeof(Ty const*) * members.len);
         panic_if(!parts, "out of memory");
         bool resolved = true;
         for (u32 i = 0; i < members.len && resolved; i++) {
-            parts[i] = ty_indexed(me, members.data[i], index);
+            parts[i] = ty_indexed(me, object, members.data[i]);
             resolved = !(parts[i]->flags & TYF_DEFERRED) && parts[i]->kind != TY_TYPE_PARAM;
         }
         Ty const* ret = resolved ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : nullptr;
