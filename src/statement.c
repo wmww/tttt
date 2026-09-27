@@ -662,6 +662,7 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
+            scope_check_strict_block_function(scope, my decl.function.impl->name);
             function_impl_add_names(my decl.function.impl, scope, my decl.props.exported,
                 scope->kind == SCOPE_BLOCK && !scope->strict);
             break;

@@ -369,6 +369,24 @@ void scope_check_strict_eval_or_arguments(Scope const* me, Span name) {
     }
 }
 
+void scope_check_strict_block_function(Scope const* me, Span name) {
+    if (!my strict || my ambient || my kind != SCOPE_BLOCK || !span_valid(name)) return;
+    if (compiler_options()->target >= SCRIPT_TARGET_ES2015) return;
+    switch (strict_reason(me)) {
+        case 2:
+            error_ctx_error_d(my errs, name, 1251, "Function declarations are not allowed inside blocks in strict mode when "
+                "targeting 'ES5'. Class definitions are automatically in strict mode.");
+            break;
+        case 1:
+            error_ctx_error_d(my errs, name, 1252, "Function declarations are not allowed inside blocks in strict mode when "
+                "targeting 'ES5'. Modules are automatically in strict mode.");
+            break;
+        default:
+            error_ctx_error_d(my errs, name, 1250,
+                "Function declarations are not allowed inside blocks in strict mode when targeting 'ES5'.");
+    }
+}
+
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared) {
     if (!declared && (!unused_enabled() || !self)) return parent;
     Scope* ret = scope_new(parent, SCOPE_BLOCK);
