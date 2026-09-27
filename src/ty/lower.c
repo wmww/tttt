@@ -8,6 +8,7 @@
 #include "interface_decl.h"
 #include "statement.h"
 #include "binding.h"
+#include "port_statement.h"
 #include <math.h>
 
 // Lowering: syntax (`TypeNode`) to semantic types (`Ty`), and what symbols are as types (ty_declared_type_of()) and as
@@ -837,9 +838,61 @@ static u32 value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
     return count;
 }
 
+// `{ default: T }`, with T's own properties too if `spread` (tsc's createDefaultPropertyWrapperForModule, and
+// getSpreadType of the type with it in getTypeWithSyntheticDefaultImportType)
+static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread) {
+    Members const* members = spread && (type->flags & TYF_OBJECT) ? ty_members(me, type) : nullptr;
+    u32 count = 1 + (members ? members->prop_count : 0);
+    ObjectLiteralProp* props = arena_new_n(&my arena, ObjectLiteralProp, count);
+    Atom const* default_name = checker_atom(me, c_sv("default"));
+    props[0] = (ObjectLiteralProp){ .name = default_name, .type = type };
+    u32 n = 1;
+    for (u32 i = 0; members && i < members->prop_count; i++) {
+        if (members->props[i]->name != default_name) props[n++] = (ObjectLiteralProp){ .reuse = members->props[i] };
+    }
+    return ty_object_literal(me, props, n, members ? members->index : nullptr, members ? members->index_count : 0,
+        OBJECT_SYNTHETIC);
+}
+
+// `import * as ns` of a module with `export =` (tsc's resolveESModuleSymbol): what it assigns, with a synthetic
+// `default` under esModuleInterop when that is something to import by default; an ES module's import of a JSON
+// module has nothing but the default (isOnlyImportableAsDefault). Null if it is the assigned value as it is
+static Ty const* namespace_import_type(Checker* me, Symbol const* symbol) {
+    if (!symbol || !(symbol->flags & SYMBOL_ALIAS) || !symbol->alias || !symbol->alias->item) return nullptr;
+    PortItem const* item = symbol->alias->item;
+    if (item->tag != PORT_IMPORT_GATHER || !item->module_ref) return nullptr;
+    Symbol* module = binder_module_of_ref(symbol->binder, item->module_ref);
+    Symbol* assigned = module ? module_export_equals(module) : nullptr;
+    if (!assigned || assigned == module || assigned->is_placeholder) return nullptr;
+    CompilerOptions const* options = compiler_options();
+    SourceFile const* importer = item->decl_name.source;
+    SourceFile const* target = item->module_ref->file;
+    bool node = options->module >= MODULE_KIND_NODE16 && options->module <= MODULE_KIND_NODENEXT;
+    bool esm_usage = node && importer && importer->is_esm;
+    Ty const* type = ty_type_of_symbol(me, assigned);
+    if (type->flags & TYF_ERROR) return nullptr;
+    if (esm_usage && target && target->is_json) return with_synthetic_default(me, type, false);
+    bool esm_cjs = esm_usage && target && !target->is_esm && !target->is_json;
+    if (!options->es_module_interop && !esm_cjs) return nullptr;
+    Ty const* apparent = ty_apparent_type(me, type);
+    Members const* members = (apparent->flags & TYF_OBJECT) ? ty_members(me, apparent) : nullptr;
+    bool callable = members && (members->call_count || members->construct_count);
+    bool has_default = members && ty_get_prop(me, apparent, checker_atom(me, c_sv("default")));
+    if (!callable && !has_default && !esm_cjs) return nullptr;
+    // A module that says it's an ES module has no synthetic default (tsc's canHaveSyntheticDefault)
+    bool synthetic = !symbol_get_export(module, c_sv("__esModule"));
+    bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
+    if (!structured) return with_synthetic_default(me, type, false);
+    return synthetic ? with_synthetic_default(me, type, true) : nullptr;
+}
+
 // The type of a symbol as a value. Give it the symbol a name found or the one that has the value meaning (`target`
 // of an identifier), aliases are seen through. Everything about a placeholder is any
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
+    if (symbol && (symbol->flags & SYMBOL_ALIAS)) {
+        Ty const* namespace_import = namespace_import_type(me, symbol);
+        if (namespace_import) return namespace_import;
+    }
     symbol = canonical(me, symbol_for_meaning(symbol, SYMBOL_VALUE));
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, symbol && symbol->is_unresolved ? TY_ERROR : TY_ANY);
     // `typeof import("./a")`, `import("./a")`, `globalThis`
