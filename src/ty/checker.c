@@ -1547,7 +1547,10 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
                 if (ty_private_name_class(me, members->props[i]->name)) continue; // Not a key (tsc's getLiteralTypeFromProperty)
                 ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
             }
-            for (u32 i = 0; i < members->index_count; i++) {
+            // (An enum object's reverse mapping `[x: number]: string` is not a key: tsc's getLiteralTypeFromProperties
+            // skips enumNumberIndexInfo)
+            bool enum_object = operand->kind == TY_DECLARED && operand->declared.kind == TY_DECLARED_ENUM_OBJECT;
+            for (u32 i = 0; i < members->index_count && !enum_object; i++) {
                 ty_buf_push(&parts, members->index[i].key);
                 if (members->index[i].key->flags & TYF_STRING) {
                     // Anything indexable by string is indexable by number
