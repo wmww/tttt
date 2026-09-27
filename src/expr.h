@@ -390,6 +390,7 @@ typedef enum AwaitPlace {
     AWAIT_ALLOWED, // In an async function, or somewhere the parser already reported
     AWAIT_IN_FUNCTION, // In a function that isn't async: TS1308/TS1103
     AWAIT_AT_TOP_LEVEL, // Outside of any function: needs a module and the right module and target options
+    AWAIT_IN_STATIC_BLOCK, // In a class `static {}` block (not in a function inside it): TS18037 on an expression
 } AwaitPlace;
 
 typedef enum AwaitKind { AWAIT_KIND_EXPR, AWAIT_KIND_FOR, AWAIT_KIND_USING } AwaitKind;
@@ -400,6 +401,9 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
 typedef struct UnaryOpExpr {
     UnaryOp op;
     uint8_t await_place; // `await`: an AwaitPlace
+    // `yield x` outside a generator (tsc parses one where an operand follows on the line, isYieldExpression): TS1163,
+    // the operand is neither checked nor reports unresolved names
+    bool outside_generator;
     Expr expr;
     FunctionImpl const* generator; // `yield`: the generator it is in (set when resolving), null if there's none
 } UnaryOpExpr;
@@ -515,6 +519,11 @@ typedef struct ObjectExprItem {
 } ObjectExprItem;
 
 void object_expr_item_drop(ObjectExprItem* me);
+
+// `{ #x: 1 }`: TS18016, and no member of the literal's type (tsc's binder gives it no name outside a class)
+static inline bool object_item_is_private_name(ObjectExprItem const* me) {
+    return !my computed_key && my tag != OBJECT_ITEM_SPREAD && my name_span.sv.size && my name_span.sv.buf[0] == '#';
+}
 
 #define g_class_key ObjectExprItem, object_expr_item
 #define g_opt (c_no_atomic)

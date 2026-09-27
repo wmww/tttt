@@ -88,10 +88,12 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             if (my implicit_any && compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js) {
                 error_ctx_error_d(errs, my key.span, 7008, "Member '", my key.span, "' implicitly has an 'any' type.");
             }
-            if (my key.name_is_member_function && my type.tag == TYPE_CALLABLE) {
-                // (At the whole method signature, its `;` or `,` included: tsc's getErrorSpanForNode has no case for it)
+            // (A method signature's errors are at the whole signature, its `;` or `,` included: tsc's
+            // getErrorSpanForNode has no case for it)
+            Span at = my key.span;
+            bool method = my key.name_is_member_function && my type.tag == TYPE_CALLABLE;
+            if (method) {
                 FunctionImpl const* function = my type.callable->function;
-                Span at = my key.span;
                 if (span_valid(function->full_span) && function->full_span.source == at.source) {
                     const char* end = span_end_ptr(function->full_span);
                     const char* after = end;
@@ -99,8 +101,12 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                     if (*after == ';' || *after == ',') end = after + 1;
                     if (end > span_start_ptr(at)) at = span_make(at.source, span_start_ptr(at), end);
                 }
-                function_impl_check_implicit_any_return(function, my key.span, at, errs);
             }
+            // tsc's checkPropertySignature, checkMethodDeclaration
+            if (!is_in_class && interface_member_is_private_name(me)) {
+                error_ctx_error_d(errs, at, 18016, "Private identifiers are not allowed outside class bodies.");
+            }
+            if (method) function_impl_check_implicit_any_return(my type.callable->function, my key.span, at, errs);
             break;
 
         case INTERFACE_KEY_INDEX: {
@@ -141,14 +147,14 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                     ) {
                         // Only overload signatures are restricted, a method with a body can have any key
                     } else if (my is_method) {
-                        error_ctx_error_d(errs, my key.span, 1168,
+                        error_ctx_grammar_error_d(errs, my key.span, 1168,
                             "A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                     } else {
-                        error_ctx_error_d(errs, my key.span, 1166,
+                        error_ctx_grammar_error_d(errs, my key.span, 1166,
                             "A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.");
                     }
                 } else {
-                    error_ctx_error_d(errs, my key.span, 1169,
+                    error_ctx_grammar_error_d(errs, my key.span, 1169,
                         "A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                 }
             }

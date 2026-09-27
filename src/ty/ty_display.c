@@ -1624,7 +1624,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 out_symbol_name(me, d, ty->literal.enum_decl, SYMBOL_TYPE);
                 if (member) {
                     out_lit(d, ".");
-                    out(d, member_name);
+                    // `enum E { #x }`: tsc's binder names a private name outside a class InternalSymbolName.Missing
+                    out(d, member_name.size && member_name.buf[0] == '#' ? c_sv("__missing") : member_name);
                 }
             } else if (ty->literal.string) {
                 display_string_literal(d, atom_sv(ty->literal.string));

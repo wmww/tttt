@@ -172,6 +172,7 @@ static void builder_add_interface_member(
             case INTERFACE_KEY_NAME:
             case INTERFACE_KEY_EXPR: {
                 Atom const* name = nullptr;
+                if (interface_member_is_private_name(i)) break;
                 if (i->key.tag == INTERFACE_KEY_NAME) {
                     name = checker_atom(me, cstr_sv(&i->key.name_string));
                 } else {

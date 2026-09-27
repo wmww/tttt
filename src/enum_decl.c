@@ -86,6 +86,9 @@ static void enum_decl_check_declarations(EnumDecl const* me, ErrorCtx* errs) {
 
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
     for_each (i, vec_enum_case, &my cases) {
+        if (!i->name_is_value && i->name.sv.size && i->name.sv.buf[0] == '#') { // tsc's checkEnumMember
+            error_ctx_error_d(errs, i->name, 18024, "An enum member cannot be named with a private identifier.");
+        }
         expr_typecheck(&i->value, errs);
         // (tsc's computeEnumMemberValue)
         if (i->computed_name) {

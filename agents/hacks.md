@@ -78,8 +78,15 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   processed).
 - `EXPR_REGEX` carries only its span: flags are validated (`regex_check_flags`, in the checker's expression walk), the
   pattern isn't; `parse_regex` fails where tsc reports TS1161.
-- `await_is_operator`: keyword-vs-identifier from `ParserShared.in_async`/`function_depth` plus a peek at the next
-  character; class field initialisers and parameter defaults inherit the enclosing function's context.
+- `await_is_operator`, `yield_is_operator_outside_generator`, `yield_await_is_keyword_here`: tsc's
+  isAwaitExpression/isYieldExpression/isIdentifier from `ParserShared.in_async`/`in_generator`/`in_static_block`/
+  `function_depth` plus a character peek (not a token). Parameter defaults inherit the enclosing function's context;
+  class field initialisers save/restore the three flags inline in `parse_class_item_inner` (a `FunctionCtx` helper for
+  "outside yield/await context" would be cleaner).
+- Private names outside classes (`{ #x: 1 }`, `interface I { #x: T }`, `enum E { #x }`, `const #x`) have no AST flag:
+  `object_item_is_private_name`, `interface_member_is_private_name` and `enum_decl_typecheck` look at the first
+  character of the name span, and `ty_display` prints an enum member named `#...` as `__missing` (tsc's binder names it
+  InternalSymbolName.Missing and puts it in no table; tttt still declares it as a member of E).
 - `mark_named_evaluation()`: anonymous class expressions that get a name are marked by the parser at each construction
   site (`ClassDecl.named_evaluation`); a new place that assigns an expression to a name needs a call.
 - `report_misplaced_async()` (TS1042) is a parse error (tsc: checker grammar error), so it suppresses later grammar
@@ -169,6 +176,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   there too; TS1101 and unreachable code go through `flow->errs` and survive. The real fix is the
   resolve walk not reporting checker errors. The baseline walk prints the body with `BaselineTestCase.in_with` (every
   type the error type, no symbols) but still evaluates the types it then throws away.
+- `UnaryOpExpr.outside_generator` (`yield x` outside a generator: TS1163): the operand is resolved with a null ErrorCtx
+  and not typechecked, the same trick as `with` (tsc's checkYieldExpression returns before checking it).
 
 ## Control flow graph (`flow.c`, builders in `expr.c`/`statement.c`/`function_impl.c`)
 - No array mutation flow nodes (`x.push()`, `x[i] = v`): only evolving arrays need them (see Narrowing).

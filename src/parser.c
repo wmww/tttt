@@ -307,6 +307,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool jsx_generic_arrow_start(Parser* parent);
 static bool parse_binding_content(Parser* parent, Binding* ret);
+static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, u32 code, char const* message);
 static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
 static bool parse_binding_element(Parser* parent, Binding* ret);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
@@ -592,6 +593,18 @@ static bool parse_identifier(Parser* parent, Span* ret) {
     return true;
 }
 
+// A private name `#x` (its span is the name), or a lone `#`: tsc's scanner makes that a PrivateIdentifier `#` too,
+// reporting TS1127 (not `#!`)
+static bool hop_private_name(Parser* parent) {
+    if (parent->pos[0] != '#' || parent->pos[1] == '!') return false;
+    Anchor a = anchor(parent);
+    parent->pos++;
+    if (!parse_identifier_or_keyword(parent, nullptr)) {
+        parse_error(parent, span_from(a), 1127, "Invalid character.");
+    }
+    return true;
+}
+
 static inline bool expect_identifier(Parser* parent, Span* ret) {
     if (parse_identifier(parent, ret)) {
         return true;
@@ -719,6 +732,9 @@ static int invalid_char_size(const char* c) {
     if (b >= 0x80) return unicode_whitespace_size(c) ? 0 : utf8_char_size(c);
     if (b == '\\') return identifier_escape_size(c) ? 0 : 1;
     if (b && b < 0x20 && !is_js_ascii_space((char)b)) return 1;
+    // A `#` that starts no private name (tsc's scanner still makes it a PrivateIdentifier token, with this error).
+    // `#!` is TS18026
+    if (b == '#' && c[1] != '!' && !is_identifier_start_char(c[1]) && !identifier_escape_size(c + 1)) return 1;
     return 0;
 }
 
@@ -870,6 +886,14 @@ static inline bool starts_with_followed_by_word_break(Parser* parent, const char
     return ret;
 }
 
+// tsc's isIdentifier: `yield` in a generator and `await` in an async function or a class static block aren't
+// identifiers (where they aren't operators either, as the operand of a `++` or a type assertion, the expression is
+// missing)
+static bool yield_await_is_keyword_here(Parser* parent) {
+    return (parent->shared->in_generator && starts_with_followed_by_word_break(parent, "yield")) ||
+        ((parent->shared->in_async || parent->shared->in_static_block) && starts_with_followed_by_word_break(parent, "await"));
+}
+
 static bool hop_token(Parser* parent) {
     switch (*parent->pos) {
         case '\0':
@@ -1014,7 +1038,8 @@ static bool tok_is_eof(Tok t) {
 
 // tsc's tokenIsIdentifierOrKeyword, which private names (`#x`) pass too
 static bool tok_is_word(Tok t) {
-    return is_identifier_start_char(*t.start) || (*t.start == '#' && is_identifier_start_char(t.start[1]));
+    // (A lone `#` is a private name too, with TS1127: see hop_private_name())
+    return is_identifier_start_char(*t.start) || (*t.start == '#' && t.start[1] != '!');
 }
 
 static bool tok_is_one_of(Tok t, const char* const* words) {
@@ -3813,6 +3838,11 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
                 enum_case.name = enum_case.full_name;
                 enum_case.computed_name = true;
             }
+        } else if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+            // A private name (tsc's parsePropertyName): TS18024 from the checker
+            p.pos++;
+            parse_identifier_or_keyword(&p, nullptr);
+            enum_case.name = enum_case.full_name = span_from(name_anchor);
         } else {
             expect_identifier(&p, &enum_case.name);
             enum_case.full_name = enum_case.name;
@@ -3982,7 +4012,8 @@ static bool parse_function_args_inner(
                     rest_span = span_from(arg_start);
                 }
 
-                if (parse_binding_content(&p, &initializer.binding)) {
+                if (parse_binding_content_or_private_name(&p, &initializer.binding, 18009,
+                        "Private identifiers cannot be used as parameters.")) {
                 } else if (hop_start_if_ends_on_word_break(&p, "this")) {
                     initializer.binding.tag = BINDING_IDENTIFIER;
                     initializer.binding.content_span = span_make(p.shared->source, p.pos - 4, p.pos);
@@ -4118,7 +4149,8 @@ drop_and_fail:
 
 // Where an `await` here is (the resolve walk reports what isn't allowed). A class `static {}` block is its own error
 static AwaitPlace parser_await_place(Parser const* p) {
-    if (p->shared->in_async || p->shared->in_static_block) return AWAIT_ALLOWED;
+    if (p->shared->in_static_block) return AWAIT_IN_STATIC_BLOCK;
+    if (p->shared->in_async) return AWAIT_ALLOWED;
     return p->shared->function_depth > 0 ? AWAIT_IN_FUNCTION : AWAIT_AT_TOP_LEVEL;
 }
 
@@ -4478,6 +4510,13 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         }
         item.computed_key = c_new(Expr, key);
         item.name_span = span_from(key_anchor);
+    } else if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+        // A private name (tsc's parsePropertyName), the checker reports it (not a shorthand: `{ #x }` misses a `:`)
+        Anchor name_anchor = anchor(&p);
+        p.pos++;
+        parse_identifier_or_keyword(&p, nullptr);
+        item.name_span = span_from(name_anchor);
+        item.name_string = cstr_from_span(item.name_span);
     } else {
         const char* name_start = p.pos;
         if (!parse_name_or_value(&p, &item.name_span, &item.name_string, &name_is_value)) {
@@ -4494,7 +4533,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             Parser probe = parser(&p);
             probe.pos = name_start;
             Span ignored;
-            name_is_identifier = parse_identifier(&probe, &ignored);
+            name_is_identifier = !yield_await_is_keyword_here(&probe) && parse_identifier(&probe, &ignored);
             parse_fail(&probe);
         }
     }
@@ -5072,11 +5111,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     bool name_is_value;
     Expr* computed_key = nullptr;
     Anchor name_anchor = anchor(&p);
-    if (!is_type && *p.pos == '#' && is_identifier_start_char(p.pos[1])) {
-        // Private name, the `#` is part of the name
-        p.pos++;
-        Span ignored;
-        parse_identifier_or_keyword(&p, &ignored);
+    if (hop_private_name(&p)) {
+        // Private name, the `#` is part of the name (in a type too, TS18016 from the checker)
         name_span = span_from(name_anchor);
         name_string = cstr_from_span(name_span);
         name_is_value = false;
@@ -5100,11 +5136,14 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     bool (*parse_function_fn)(Parser* parent, FunctionFlags flags, FunctionImpl* ret) =
         is_type ? parse_function_header : parse_non_arrow_function;
 
-    bool outer_static_block = p.shared->in_static_block;
+    // A static block is no yield context (tsc's parseClassStaticBlockBody)
+    bool outer_static_block = p.shared->in_static_block, outer_generator = p.shared->in_generator;
     p.shared->in_static_block = true;
+    p.shared->in_generator = false;
     bool static_block = !is_type && !name_is_value && span_equals(name_span, "static") &&
         parse_block(&p, false, &ret->static_block);
     p.shared->in_static_block = outer_static_block;
+    p.shared->in_generator = outer_generator;
     if (static_block) {
         check_modifiers(&p, &modifiers, (ModifiedNode){ .kind = MODIFIED_CLASS_STATIC_BLOCK, .parent = MODIFIED_IN_CLASS });
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
@@ -5202,7 +5241,15 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 hop_whitespace(&p);
             }
 
-            if (parse_initialization_or_set_to_default(&p, expr_ctx_null, &ret->field.value)) {
+            // An initializer is outside the yield and await contexts, a static block's too (tsc's parsePropertyDeclaration)
+            FunctionCtx outer = { .in_async = p.shared->in_async, .in_generator = p.shared->in_generator,
+                .in_static_block = p.shared->in_static_block, .in_parameters = p.shared->in_parameters };
+            p.shared->in_async = p.shared->in_generator = p.shared->in_static_block = false;
+            bool initialized = parse_initialization_or_set_to_default(&p, expr_ctx_null, &ret->field.value);
+            p.shared->in_async = outer.in_async;
+            p.shared->in_generator = outer.in_generator;
+            p.shared->in_static_block = outer.in_static_block;
+            if (initialized) {
                 mark_named_evaluation(&ret->field.value, ret->field.computed_key);
                 is_definitely_field = true;
                 hop_whitespace(&p);
@@ -5502,11 +5549,10 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
     if (t.newline_before && tok_is_word(t) && tok_is_word(tok_next(&p, t)) && !tok_next(&p, t).newline_before) {
         prop = span_make(p.shared->source, after_dot, after_dot);
         parse_error(&p, prop, 1003, "Identifier expected.");
-    } else if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+    } else if (*p.pos == '#' && p.pos[1] != '!') {
         // Private name, the `#` is part of the member's name
         Anchor name_anchor = anchor(&p);
-        p.pos++;
-        parse_identifier_or_keyword(&p, &prop);
+        hop_private_name(&p);
         prop = span_from(name_anchor);
     } else if (!parse_identifier_or_keyword(&p, &prop)) {
         parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
@@ -5699,6 +5745,14 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     if (precedence <= ctx.min_precedence || (ctx.reject_in_operator && op == BINARY_OP_IN)) {
         return parse_fail(&p);
     }
+    // Only a left-hand side expression is assigned to (tsc's parseAssignmentExpressionOrHigher: isLeftHandSideExpression);
+    // `await x = 1`, `a + b = c`, `x as T = y` end before the `=`
+    if (precedence == binary_op_get_precedence(BINARY_OP_EQUAL) &&
+        left_and_ret->outer_span.sv.size == left_and_ret->inner_span.sv.size &&
+        ((left_and_ret->tag == EXPR_UNARY_OP && left_and_ret->unary_op->op != UNARY_OP_RIGHT_BANG) ||
+            left_and_ret->tag == EXPR_BINARY_OP || left_and_ret->tag == EXPR_AS_TYPE)) {
+        return parse_fail(&p);
+    }
     hop_whitespace(&p);
 
     Expr right;
@@ -5737,8 +5791,8 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
 static bool await_is_operator(Parser* parent) {
     if (!starts_with_followed_by_word_break(parent, "await")) {
         return false;
-    } else if (parent->shared->in_async) {
-        return true;
+    } else if (parent->shared->in_async || parent->shared->in_static_block) {
+        return true; // (A static block is an await context: tsc's parseClassStaticBlockBody)
     }
     const char* c = parent->pos + strlen("await");
     while (*c == ' ' || *c == '\t') {
@@ -5752,6 +5806,17 @@ static bool await_is_operator(Parser* parent) {
     return parent->shared->function_depth == 0 && (*c == '(' || *c == '[' || *c == '{' || *c == '!' || *c == '~');
 }
 
+// tsc's isYieldExpression outside a yield context: `yield` followed by an identifier, keyword or literal on the same line
+// is a yield expression (TS1163 from the checker), anything else makes it an identifier
+static bool yield_is_operator_outside_generator(Parser* parent) {
+    if (!starts_with_followed_by_word_break(parent, "yield")) return false;
+    const char* c = parent->pos + strlen("yield");
+    while (*c == ' ' || *c == '\t') c++;
+    if (c[0] == '/' && (c[1] == '/' || c[1] == '*')) return false; // (a comment: be conservative)
+    return is_identifier_start_char(*c) || is_number_start_char(*c) || (unsigned char)*c >= 0x80 || *c == '"' ||
+        *c == '\'' || *c == '`';
+}
+
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
     if (hop_start(parent, "!")) {
         *op = UNARY_OP_LEFT_BANG;
@@ -5759,7 +5824,8 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
         *op = UNARY_OP_DELETE;
     } else if (await_is_operator(parent) && hop_start_if_ends_on_word_break(parent, "await")) {
         *op = UNARY_OP_AWAIT;
-    } else if (parent->shared->in_generator && hop_start_if_ends_on_word_break(parent, "yield")) {
+    } else if ((parent->shared->in_generator || yield_is_operator_outside_generator(parent)) &&
+        hop_start_if_ends_on_word_break(parent, "yield")) {
         *op = UNARY_OP_YIELD;
         const char* after_yield = parent->pos;
         hop_whitespace_full(parent, true, false);
@@ -5816,6 +5882,9 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
     Expr expr;
     ctx.min_precedence = unary_op_get_precedence(op);
+    // The operand of a prefix `++`/`--` is a left-hand side expression, no unary one (tsc's parseUpdateExpression):
+    // `++-x`, `++await x` are missing it
+    if (op == UNARY_OP_LEFT_PLUS_PLUS || op == UNARY_OP_LEFT_MINUS_MINUS) ctx.min_precedence++;
     bool bare_yield = false;
     if (op == UNARY_OP_YIELD) {
         // tsc's parseYieldExpression(): an operand if one starts on the same line (isStartOfExpression)
@@ -5852,6 +5921,7 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         c_new(UnaryOpExpr, {
             .op = op,
             .await_place = (uint8_t)await_place,
+            .outside_generator = (op == UNARY_OP_YIELD || op == UNARY_OP_YIELD_STAR) && !p.shared->in_generator,
             .expr = expr,
         })
     );
@@ -7095,7 +7165,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         }
     } else if (c == 'i' && parse_import_keyword_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
-    } else if (word && parse_identifier_expr(&p, &ret->identifier)) {
+    } else if (word && !yield_await_is_keyword_here(&p) && parse_identifier_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
         inner_span_set = true;
     } else if ((*p.pos == '(' || *p.pos == '<') && (arrow_tristate = arrow_function_tristate(&p)) != TRISTATE_FALSE &&
@@ -7125,13 +7195,16 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         hop_whitespace(&p);
 
         expect_char(&p, '>');
+        const char* after_gt = p.pos;
         hop_whitespace(&p);
 
         // The operand is a unary expression: `<T>a || b` is `(<T>a) || b`
         Expr e;
         ExprCtx operand_ctx = ctx;
         operand_ctx.min_precedence = unary_op_get_precedence(UNARY_OP_LEFT_BANG);
-        expect_expr(&p, operand_ctx, &e);
+        if (!expect_expr(&p, operand_ctx, &e) && e.outer_span.sv.size == 0 && p.pos == span_start_ptr(e.outer_span)) {
+            p.pos = after_gt; // A missing operand ends the assertion at its `>` (tsc's missing node)
+        }
         *ret = expr_as_type(span_from(a), c_new(AsTypeExpr, {
             .expr = e,
             .type = t,
@@ -7842,6 +7915,18 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
     return parse_success(&p);
 }
 
+// A variable's, parameter's or catch variable's binding: tsc's parseIdentifierOrPattern also takes a private name as an
+// identifier, reporting code (TS18029 variables, TS18009 parameters)
+static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, u32 code, char const* message) {
+    if (*parent->pos != '#' || !is_identifier_start_char(parent->pos[1])) return parse_binding_content(parent, ret);
+    Anchor a = anchor(parent);
+    parent->pos++;
+    parse_identifier_or_keyword(parent, nullptr);
+    *ret = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_from(a) };
+    parse_error(parent, ret->content_span, code, message);
+    return true;
+}
+
 static bool parse_binding_type(Parser* parent, Binding* ret) {
     if (!hop_char(parent, ':')) {
         return false;
@@ -8032,7 +8117,8 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
     // The declarator loop isn't tsc's list yet, but the lists inside it abort at its terminators
     u32 saved_context = list_enter(&p, PARSING_VARIABLE_DECLARATIONS);
     while (true) {
-        if (empty_for_of || !parse_binding_content(&p, &initializer.binding)) {
+        if (empty_for_of || !parse_binding_content_or_private_name(&p, &initializer.binding, 18029,
+                "Private identifiers are not allowed in variable declarations.")) {
             if (span_valid(comma_span)) {
                 parse_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(comma_span);
@@ -8448,7 +8534,7 @@ static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
 static bool parse_label(Parser* parent, Span* ret) {
     Parser p = parser(parent);
     Span label;
-    if (!parse_identifier(&p, &label)) {
+    if (yield_await_is_keyword_here(&p) || !parse_identifier(&p, &label)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -8464,7 +8550,10 @@ static void parse_jump_target(Parser* parent, Span* ret) {
     Parser p = parser(parent);
     hop_whitespace_full(&p, true, false);
     Span label;
-    if (parse_identifier(&p, &label)) {
+    if (yield_await_is_keyword_here(&p)) {
+        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+        parse_success(&p);
+    } else if (parse_identifier(&p, &label)) {
         *ret = label;
         parse_success(&p);
     } else {
@@ -8758,7 +8847,8 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
             if (hop_char(&p, '(')) {
                 hop_whitespace(&p);
 
-                if (!parse_binding_content(&p, &try_catch.catch_var)) {
+                if (!parse_binding_content_or_private_name(&p, &try_catch.catch_var, 18029,
+                        "Private identifiers are not allowed in variable declarations.")) {
                     parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
                     try_catch.catch_var = (Binding){0};
                 }

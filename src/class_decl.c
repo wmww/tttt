@@ -366,10 +366,10 @@ static void class_computed_key_typecheck(ClassItem* item, ErrorCtx* errs) {
     if (!expr_is_non_bindable_dynamic_name(key)) return;
     Span span = field ? item->field.name_span : item->method.name_span;
     if (field) {
-        error_ctx_error_d(errs, span, 1166,
+        error_ctx_grammar_error_d(errs, span, 1166,
             "A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.");
     } else {
-        error_ctx_error_d(errs, span, 1168,
+        error_ctx_grammar_error_d(errs, span, 1168,
             "A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.");
     }
 }

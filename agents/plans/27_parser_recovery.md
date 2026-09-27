@@ -140,15 +140,21 @@ has parse errors: `hasParseDiagnostics`, see how `SourceFile.has_parse_errors` i
   parameter, and `checkGrammarModifiers` sorts it out (TS1044, TS1042, TS1029...). `parse_modifier_list()` exists;
   the work is accepting it everywhere tsc does, including `export export`, `declare import`, `public` in object
   literals, `public ...rest`.
-- `yield`/`await` outside their functions are identifiers (with TS1212-family or TS1308 from the checker).
+- `yield`/`await`: mostly done (`yield x` outside generators is TS1163, `await` in static blocks TS18037, `yield`/`await`
+  as missing expressions/labels where they're keywords, assignments need a left-hand side). Left:
+  asyncArrowFunction9_* (`async (a = await => await)`: tsc's async arrow reparse), topLevelAwaitErrors.1 (reparsed
+  top-level await calls), templateStringWithEmbeddedYieldKeyword (`function* gen {`: parse_function_keyword_function's
+  TS0 "Expected function" should be tsc's '(' expected and a parsed body), classStaticBlock26 line 25
+  (`(await) => {}` in a static block: arrow_function_tristate should refuse `await` there).
 - Index signatures: done (`parse_index_signature()`, TS1017/1018/1019/1020/1022/1025/1096 from the parser as grammar
   codes, TS1337/1268/1021/2369 from `interface_member_typecheck()`). Enum computed names (TS1164) done too.
 - ~~Heritage clauses~~ done (2026-09-27, `parse_heritage_clauses()`; the cluster went 22 -> 0). Left: TS2552's
   `Did you mean 'undefined'?` (scope_suggest() doesn't offer `undefined`; classExtendingPrimitive), tsc's
   checkGrammarExpressionWithTypeArguments (`import<T>` in heritage, empty `<>`).
-- `with`: a real statement (`STATEMENT_WITH`); the checker reports TS1101 in strict mode and TS2410 always, and tsc
 - `with`: done (`STATEMENT_WITH`, `WithStatement`).
-- Private names are identifiers everywhere tsc's parser allows `#x` as a property name, with TS18016 et al.
+- Private names: done for object literals, type members, enums, variables/parameters/catch, a lone `#` (TS1127). Left:
+  privateNamesAndIndexedAccess (`C[#bar]` recovery in a variable declaration list), `[#x]` nested binding elements
+  (TS18016), manyCompilerErrorsInTheTwoFiles/`#!` mid-file (TS18026, lexical).
 - Decorators before any expression/declaration tsc accepts them at (TS1206 from the checker).
 - The `other:M` checks that are real parser checks (TS1359 reserved word as a name, TS2754, TS1433, TS1146...).
 

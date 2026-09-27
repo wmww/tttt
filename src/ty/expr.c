@@ -2077,6 +2077,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 break;
         }
 
+        if (object_item_is_private_name(i)) continue;
+
         // What the member adds to index signatures (tsc's isSymbolWithNumericName, isSymbolWithSymbolName: the
         // computed name's type is assignable to number or symbol)
         bool numeric_name = name ? ty_is_numeric_name(name) : (key_type->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL)) ||
@@ -2531,7 +2533,7 @@ static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx)
     FunctionImpl const* generator = yield->generator;
     Expr const* operand = &yield->expr;
     if (!generator) {
-        if (operand->tag != EXPR_IMPLICIT_ANY) ty_expr_type(me, operand);
+        if (operand->tag != EXPR_IMPLICIT_ANY && !yield->outside_generator) ty_expr_type(me, operand);
         return any_type(me);
     }
     bool async = generator->is_async;

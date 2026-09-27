@@ -1279,6 +1279,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     break;
 
                 case UNARY_OP_AWAIT:
+                    // tsc's checkAwaitGrammar: reported whether or not the file has parse errors
+                    if (my unary_op->await_place == AWAIT_IN_STATIC_BLOCK) {
+                        error_ctx_error_d(errs, my inner_span, 18037, "'await' expression cannot be used inside a class static block.");
+                    }
                     await_check_grammar(my unary_op->await_place, AWAIT_KIND_EXPR,
                         (Span){ .source = my inner_span.source, .sv = csview_from_n(my inner_span.sv.buf, 5) }, names->function, errs);
                     expr_lookup_names(operand, names, errs);
@@ -1286,6 +1290,13 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
                 case UNARY_OP_YIELD:
                 case UNARY_OP_YIELD_STAR:
+                    if (my unary_op->outside_generator) {
+                        // tsc's checkYieldExpressionGrammar; checkYieldExpression returns any before the operand
+                        Span keyword = { .source = my inner_span.source, .sv = csview_from_n(my inner_span.sv.buf, 5) };
+                        error_ctx_grammar_error_d(errs, keyword, 1163, "A 'yield' expression is only allowed in a generator body.");
+                        expr_lookup_names(operand, names, nullptr);
+                        break;
+                    }
                     expr_lookup_names(operand, names, errs);
                     if (flow->function && flow->function->is_generator) {
                         my unary_op->generator = flow->function;
@@ -2631,6 +2642,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_BINARY_OP: binary_expr_typecheck(me, errs); break;
 
         case EXPR_UNARY_OP:
+            if (my unary_op->outside_generator) break; // Only TS1163 (from the resolve walk)
             expr_typecheck(&my unary_op->expr, errs);
             switch (my unary_op->op) {
                 case UNARY_OP_LEFT_BANG:
@@ -2785,6 +2797,20 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
                     ty_check_computed_name(current_checker, i->computed_key, i->name_span, false, errs);
+                }
+                if (object_item_is_private_name(i)) {
+                    // tsc's checkGrammarObjectLiteralExpression; a method's is checkMethodDeclaration's (at its name, no
+                    // grammar error), an accessor's TS18028 checkGrammarAccessor's
+                    char const* message = "Private identifiers are not allowed outside class bodies.";
+                    if (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) {
+                        error_ctx_grammar_error_d(errs, i->name_span, 18016, message);
+                    } else {
+                        error_ctx_error_d(errs, i->name_span, 18016, message);
+                    }
+                    if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) && compiler_options()->target < SCRIPT_TARGET_ES2015) {
+                        error_ctx_grammar_error_d(errs, i->name_span, 18028,
+                            "Private identifiers are only available when targeting ECMAScript 2015 and higher.");
+                    }
                 }
                 expr_typecheck(&i->value, errs);
                 if (i->jsdoc_type) {
