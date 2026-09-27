@@ -403,7 +403,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   collapse templates, keyof, template literals. An `infer` constraint mentioning type variables isn't checked against
   the inference. `ty_implied_infer_constraint` lacks the mapped-extends-type rule.
 - `TyCondBranch` (`lower_branch`): branches are lazy only when the node reaches the alias being resolved
-  (`node_reaches_alias_in_flight_deep`); tsc always resolves on first use (plan 29 stage 4, undone: type-fest
+  (`node_reaches_alias_in_flight_deep`); tsc always resolves on first use (plan 29 stage 4, `bugs/type_core.md` "Circularity", undone: type-fest
   regressions not understood).
 - `Ty.conditional.root` + `.mapper` (`instantiate_conditional`): outer parameters from `collect_free_params`; when it
   gives up (`TyConditionalOuter.unknown`) instantiation falls back to the uncached path with the full mapper.

@@ -1,35 +1,28 @@
 # Todo
-Written by the insights of 2026-09-27 (after plans 26-30 were written); `vision.md` "Course correction (insights of
-2026-09-27)" says why. **Ten sessions, then insights.** Delete entries as they complete (leave a one-line "done"
-note with the numbers). A plan that overruns its entry takes its extra sessions out of this budget: when 10 sessions
-have run (count the commits since this file was written), the next session is insights, whatever is left here. New
-work goes into plans or triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the
-corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and a commit.
+Written by the insights of 2026-09-27 (second of the day, after the window of plans 29-31); `vision.md` "Course
+correction" says why. **Ten sessions, then insights.** Delete entries as they complete (leave a one-line "done" note
+with the numbers). A plan that overruns its entry takes its extra sessions out of this budget: when 10 sessions have
+run (count the commits since this file was written), the next session is insights, whatever is left here. New work
+goes into plans or triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the corpus
+numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 
-1. Done: plan 29 stages 1+2 (suite 8599, type-fest 46, valibot 54, react 1, tsc 0).
-2. Done: plan 29 stage 3 (suite 8603, type-fest 48 with different content, valibot 54, react 1, tsc 0; plan 19 R21
-   rewritten with what the moved TS2589s uncovered). Stage 4 not done (optional; plan 29). The type-fest/valibot
-   re-sample for plan 19's ranking wasn't done: fold it into entry 7.
-3. Done: plan 30 stages Q + 1 (suite 8613, valibot 50, type-fest 48, react 1, tsc 0; callgrind +0.5%).
-4. Done: plan 30 stage 2 (suite 8616, type-fest 48, valibot 50, react 1, tsc 0; callgrind +0.2%). Stage 3 waits
-   for the insights.
-5. Done: plan 31 (nestjs-boilerplate pinned as `--corpus nest`: 134 -> 0 over five commits, all tsc rules; suite
-   8631, type-fest 47, valibot 49, react 1, tsc 0). Decorators showed nothing: a clean corpus only finds spurious
-   diagnostics (plan 19's NestJS section). Plan file deleted.
-6. Done: plan 26 stage 2 (JS tests 260 -> 299, suite 8686, corpora unchanged). The JS TS2339 gate stays (hacks.md
-   "Assignment declarations"; triage.md "From plan 26 stage 2").
-7. Done: plan 19 corpus session (valibot 49 -> **0**, react 1 -> **0**, type-fest 47 -> 19, nest 0, tsc 0; suite
-   8686 -> 8703). Three worktree sub-agents plus the session; expect-type mismatches are visible now (arity of
-   generic rest types). Left: R17 (plan 30 stage 3), R20, mixins (new plan 32, draft), exactOptional missing type.
-8. Done: suite checker bugs 2 (suite 8703 -> **8948**, corpora unchanged: type-fest 19, others 0). ~45 commits of
-   small missing checks, two thirds by two worktree sub-agents (module/export codes; declaration/scoping codes).
-   Leftovers in triage.md "Single-code error buckets". Also: unresolved names and missing properties are error-typed
-   now (TS2347), empty statements exist in the AST.
-9. Done: perf (plan 28: calls resolve once, tsc corpus callgrind 6.17 G -> 5.79 G; valibot's plan 31 regression
-   was eager instantiation of mapped instances, fixed: 8.15 G -> 5.64 G, 0.81 s wall). Suite 8948, corpora unchanged.
-10. Done: triage (suite 8948 -> 8952, corpora unchanged: type-fest 19, others 0). triage.md drained into new
-    `bugs/*.md` files (missing_checks, type_core, display, harness, perf_leads) and plans 26/27; hacks.md 1025 -> 603
-    lines. Fixed on the way: distributed conditionals no longer keep their alias (`Awaited<X | Y>`), homomorphic
-    `Prettify` instances print their structure, generic spreads are `{ a } & T & { b }` in tsc's order.
-11. **Insights.** Waiting to be scheduled: plan 27 stage 2 (permissive grammar), plan 30 stage 3, plan 26 stages 3-4,
-    plan 32 (mixin classes, a draft needing a planning session), decorators (if the fourth corpus asks for them).
+1. **Plan 33: a fifth corpus, a checkJs project** (webpack / svelte / ...). Pin, first run, rank by root cause into
+   plan 19 and plan 26 (stages 3-4 get reordered by it), fix the cheap causes.
+2. **Plan 30 stage 3** (the dependent fixes after substitution types). One session; what doesn't fit goes to
+   `bugs/type_core.md`.
+3. **Plan 34: error text fidelity**, stage 1 (the tool) and as much of stage 2 as fits: the 431 tests with the right
+   codes at the right places and the wrong text.
+4. **Plan 32 planning** (mixin classes, a draft): research tsc's mixin rules against tttt's `class_base()`, prototype,
+   rewrite the plan. If it turns out to be one session of work, execute it in the same session.
+5. **Plan 26 stage 3** (`@typedef`/`@template`, in the order plan 33's corpus ranking gave; store JSDoc tags first,
+   as the stage 1 note says).
+6. **Suite checker bugs 3** (`bugs/missing_checks.md`: single-code buckets, target/module-gated diagnostics).
+7. **Perf: the parser** (`bugs/perf_leads.md` "Parser": first-char dispatch in `parse_expr`/`parse_type`/keyword
+   probes, the `parse_fail` count; nest is 170 of 300 ms parsing and the closest margin to tsgo) plus the
+   `is_simple_related` same-enum shortcut. Callgrind before/after on every corpus, `./bench.sh`, `measurements.md`.
+8. **Plan 27 stage 2** (permissive grammar; ~190 tests, 476 with a spurious TS1xxx).
+9. **Corpus session** (plan 19): the fifth corpus' remaining causes, type-fest's 19 (R20, exactOptional, mixins if
+   plan 32 is in), and if plan 33 pinned no second new corpus, pin an inference-heavy one (tRPC / zod v4 / drizzle).
+10. **Triage**: drain triage.md; also shrink plan 19 (443 lines, mostly done R-items: keep the live ones and the
+    lessons, history is in git) and measurements.md (551 lines: keep the latest of each kind).
+11. **Insights.**
