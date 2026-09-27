@@ -16861,9 +16861,9 @@ const baselines = {
         types: false,
     },
     'incompleteObjectLiteral1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incorrectClassOverloadChain': {
         errors: true,
@@ -17982,7 +17982,7 @@ const baselines = {
     },
     'instantiateTypeParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'instantiatedBaseTypeConstraints': {
@@ -21261,7 +21261,7 @@ const baselines = {
         types: true,
     },
     'missingCloseBraceInObjectLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24352,7 +24352,7 @@ const baselines = {
     },
     'objectLitArrayDeclNoNew': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLitGetterSetter': {
@@ -24496,23 +24496,23 @@ const baselines = {
         types: true,
     },
     'objectLiteralWithSemicolons1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'objectLiteralWithSemicolons2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'objectLiteralWithSemicolons3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'objectLiteralWithSemicolons4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteralWithSemicolons5': {
@@ -25307,7 +25307,7 @@ const baselines = {
     },
     'parseAssertEntriesError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parseBigInt': {
@@ -25357,7 +25357,7 @@ const baselines = {
     },
     'parseImportAttributesError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parseInvalidNames': {
@@ -37972,7 +37972,7 @@ const baselines = {
     },
     'definiteAssignmentAssertionsWithObjectShortHand': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'dependentDestructuredVariables': {
@@ -38512,8 +38512,8 @@ const baselines = {
     },
     'decoratorOnEnum2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'decoratorOnFunctionDeclaration': {
         errors: false,
@@ -43116,7 +43116,7 @@ const baselines = {
         types: false,
     },
     'objectLiteralShorthandPropertiesErrorWithModule': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56456,9 +56456,9 @@ const baselines = {
         types: true,
     },
     'parserEnum4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEnum5': {
         errors: false,
@@ -56776,24 +56776,24 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ObjectLiteral2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ObjectLiteral3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ObjectLiteral4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ObjectLiteral5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ParameterList1': {
         errors: false,
@@ -57033,7 +57033,7 @@ const baselines = {
     'parseIncompleteBinaryExpression1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserAssignmentExpression1': {
         errors: true,
@@ -58186,9 +58186,9 @@ const baselines = {
         types: true,
     },
     'parser512097': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser512325': {
         errors: false,
@@ -59526,9 +59526,9 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName10': {
         errors: true,
@@ -59857,8 +59857,8 @@ const baselines = {
     },
     'parserShorthandPropertyAssignment1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserShorthandPropertyAssignment2': {
         errors: false,
@@ -59866,19 +59866,19 @@ const baselines = {
         types: false,
     },
     'parserShorthandPropertyAssignment3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserShorthandPropertyAssignment4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserShorthandPropertyAssignment5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserSymbolIndexer1': {
         errors: true,
@@ -64793,7 +64793,7 @@ const baselines = {
     'objectTypesWithOptionalProperties2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'objectTypeLiteralSyntax': {
         errors: true,
@@ -65271,7 +65271,7 @@ const baselines = {
         types: false,
     },
     'objectSpreadNegativeParse': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

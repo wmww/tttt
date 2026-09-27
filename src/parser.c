@@ -2636,6 +2636,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
     VecInterfaceMember members = {0};
     const char* prev_s = nullptr;
 
+    u32 saved_context = list_enter(&p, PARSING_TYPE_MEMBERS);
     while (*p.pos && *p.pos != '}' && p.pos != prev_s) {
         prev_s = p.pos;
         hop_whitespace(&p);
@@ -2725,7 +2726,8 @@ static bool parse_interface(Parser* parent, Interface* ret) {
             }
             class_item_drop(&item);
         } else {
-            parse_error(&p, hop_token_get_span(&p), 1131, "Property or signature expected.");
+            if (list_abort_or_skip(&p, PARSING_TYPE_MEMBERS)) break;
+            continue;
         }
         hop_whitespace(&p);
 
@@ -2738,6 +2740,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         }
         hop_whitespace(&p);
     }
+    list_leave(&p, saved_context);
 
     expect_char(&p, '}');
 
@@ -2907,7 +2910,13 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     hop_whitespace(&p);
 
     VecEnumCase cases = vec_enum_case_init();
+    u32 saved_context = list_enter(&p, PARSING_ENUM_MEMBERS);
     while (*p.pos && *p.pos != '}') {
+        Tok t = tok_peek(&p);
+        if (!list_is_element(&p, PARSING_ENUM_MEMBERS, t)) {
+            if (list_abort_or_skip(&p, PARSING_ENUM_MEMBERS)) break;
+            continue;
+        }
         EnumCase enum_case = {0};
         cstr string_name;
         Anchor name_anchor = anchor(&p);
@@ -2936,10 +2945,15 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
         } else {
             enum_case.value = expr_implicit_any_no_span;
         }
-        ignore( *p.pos == '}' || hop_char(&p, ';') || expect_char(&p, ',') );
-        hop_whitespace(&p);
         vec_enum_case_push(&cases, enum_case);
+        // tsc's parseDelimitedList: a missing comma is reported, and the list goes on
+        if (!hop_char(&p, ',') && *p.pos && *p.pos != '}') {
+            expect_char(&p, ',');
+            if (p.pos == t.start) hop_token(&p);
+        }
+        hop_whitespace(&p);
     }
+    list_leave(&p, saved_context);
 
     expect_char(&p, '}');
 
@@ -3517,7 +3531,9 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             mark_named_evaluation(&item.value, item.computed_key);
         }
         mark_assigned_name(&item.value, item.name_span);
-    } else if (name_is_identifier && !item.computed_key && (*p.pos == ',' || *p.pos == '}' || *p.pos == '=')) {
+    } else if (name_is_identifier && !item.computed_key) {
+        // tsc's parseObjectLiteralElement: an identifier not followed by `:` is a shorthand property, whatever comes
+        // next (`{ a; b }`, `{ a b }`: the list reports the missing comma)
         item.tag = OBJECT_ITEM_SHORTHAND;
         item.value = expr_identifier((IdentifierExpr){ .name = item.name_span, .shorthand = true });
         if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
@@ -3533,8 +3549,10 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             }
         }
     } else {
-        object_expr_item_drop(&item);
-        return parse_fail(&p);
+        // Committed: `{ "" }`, `{ [e] }`, `{ this }` are `':' expected` and a missing value
+        expect_char(&p, ':');
+        hop_whitespace(&p);
+        expect_expr(&p, expr_ctx_null, &item.value);
     }
 
     item.span = span_from(a);
@@ -3559,20 +3577,27 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
     }
     hop_whitespace(&p);
 
+    // tsc's parseDelimitedList with considerSemicolonAsDelimiter
+    u32 saved_context = list_enter(&p, PARSING_OBJECT_LITERAL_MEMBERS);
     while (*p.pos && *p.pos != '}') {
         ObjectExprItem item;
-        if (parse_object_item(&p, &item)) {
-            vec_object_expr_item_push(ret, item);
-        } else if (*p.pos == ',' || *p.pos == ';') {
-            parse_error(&p, span_from_token(&p), 1136, "Property assignment expected.");
-        } else {
-            break;
+        const char* start = p.pos;
+        if (!parse_object_item(&p, &item)) {
+            if (list_abort_or_skip(&p, PARSING_OBJECT_LITERAL_MEMBERS)) break;
+            continue;
         }
+        vec_object_expr_item_push(ret, item);
         hop_whitespace(&p);
-
-        ignore( *p.pos == '}' || expect_char(&p, ',') || hop_char(&p, ';') );
+        if (hop_char(&p, ',') || !*p.pos || *p.pos == '}') {
+            hop_whitespace(&p);
+            continue;
+        }
+        expect_char(&p, ',');
+        if (*p.pos == ';' && p.whitespace != WHITESPACE_NEWLINE) p.pos++;
+        if (p.pos == start) hop_token(&p);
         hop_whitespace(&p);
     }
+    list_leave(&p, saved_context);
 
     expect_closing(&p, '}', open);
 
@@ -5899,11 +5924,16 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     if (parse_expr(parent, ctx, ret)) {
         return true;
-    } else {
-        expected_expression_error(parent);
-        *ret = expr_implicit_any(span_from_pos(parent));
-        return false;
     }
+    expected_expression_error(parent);
+    *ret = expr_implicit_any(span_from_pos(parent));
+    // tsc's isStartOfExpression takes a binary operator for a missing left operand and goes on with the binary
+    // expression (`{ ...*o }`, `x = * y`). Not `<` (a type assertion) or `/` (a regex)
+    Tok t = tok_peek(parent);
+    if (tok_is_binary_operator(t) && !tok_is(t, "<") && !tok_is(t, "/")) {
+        while (parse_expr_right_side(parent, ctx, ret)) {}
+    }
+    return false;
 }
 
 static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret) {
