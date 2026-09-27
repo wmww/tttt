@@ -304,8 +304,14 @@ static Generic const* declared_type_params(Symbol const* symbol, u32* min) {
 // arguments has to fit the type parameters (TS2314, TS2707), and a type without any takes none (TS2315)
 static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs) {
     Symbol const* symbol = my target;
-    if (!symbol || symbol->is_placeholder || my keyword || my import_ref || !span_valid(my name)) return;
-    if (!my name.source || my name.source->is_js) return;
+    // JSDoc's own names take no type arguments (tsc's checkNoTypeArguments in getIntendedTypeFromJSDocTypeReference)
+    bool jsdoc_named = my jsdoc_intrinsic && my jsdoc_intrinsic != JSDOC_INTRINSIC_INDEX_SIGNATURE &&
+        !(my jsdoc_intrinsic == JSDOC_INTRINSIC_ANY && vec_spanned_type_size(&my generic_params) == 2);
+    if (my jsdoc && !vec_span_size(&my namespaces) && (span_equals(my name, "Function") || span_equals(my name, "function"))) {
+        jsdoc_named = true;
+    }
+    if (!jsdoc_named && (!symbol || symbol->is_placeholder)) return;
+    if (my keyword || my import_ref || !span_valid(my name) || !my name.source) return;
     // The reference as written: from its first name to its closing `>`
     char const* start = span_start_ptr(vec_span_is_empty(&my namespaces) ? my name : *vec_span_front(&my namespaces));
     char const* end = span_end_ptr(my name);
@@ -317,17 +323,26 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         if (end < limit) end++;
     }
     Span span = span_make(my name.source, start, end);
+    if (jsdoc_named) {
+        if (arg_count) error_ctx_error_d(errs, span, 2315, "Type '", my name, "' is not generic.");
+        return;
+    }
     bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
     u32 min = 0;
     Generic const* params = generic_kind ? declared_type_params(symbol, &min) : nullptr;
     if (!params) {
-        if (arg_count && (symbol->flags & SYMBOL_TYPE)) {
+        // HACK: a class or function of a JavaScript file may be generic through `@template` (plan 26 stage 3)
+        bool maybe_template = symbol->decl_count && symbol->decls[0].name.source && symbol->decls[0].name.source->is_js;
+        if (arg_count && (symbol->flags & SYMBOL_TYPE) && !maybe_template) {
             error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
         }
         return;
     }
     u32 count = (u32)vec_generic_item_size(&params->items);
-    if (arg_count >= min && arg_count <= count) {
+    // In JavaScript without noImplicitAny any number of type arguments goes (tsc's isJsImplicitAny: the missing ones
+    // are any)
+    bool js_implicit_any = my name.source->is_js && !compiler_options()->no_implicit_any;
+    if ((arg_count >= min && arg_count <= count) || js_implicit_any) {
         if (arg_count) ty_check_type_reference_constraints(current_checker, symbol, &my generic_params, errs);
         return;
     }

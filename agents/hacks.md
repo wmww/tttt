@@ -720,12 +720,49 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `ty_union`: no subtype reduction (that's `ty_union_subtype_reduced`, asked for explicitly), doesn't drop
   `null`/`undefined` without strictNullChecks. TS2456 (circular alias) is only a TODO in `lower.c`.
 
+## JavaScript: JSDoc and CommonJS (plan 26 stage 1)
+- **Unresolved JSDoc names are silent** (`identifier_type_lookup_names()`, HACK): a JSDoc type's lookup errors go to a
+  dropped ErrorCtx, so `@typedef`/`@callback`/`@template`/`@import` names (stage 3) don't give TS2304/TS2503. tsc does
+  report a genuinely unknown JSDoc name (jsdocResolveNameFailureInTypedef, jsdocPropertyTagInvalid). Remove when
+  stage 3 declares those names. The types printer already doesn't reuse such names (tsc's rule), which costs the
+  typedef tests their types component until then.
+- **JSDoc is consumed at parse time, not stored**: `jsdoc_before()` re-parses a host's comment into transient
+  `JsDocTag`s and moves types into the host's slots; unused tags are dropped. Stage 3 (typedef, template) needs tags
+  that outlive the host's parse: store them (per host, or a per-file list) instead of re-deriving them.
+- Only the *last* JSDoc comment before a host is read (tsc: all of them, the last one's tags plus earlier `@overload`s),
+  and only a comment that ends right before the host's first token (a `//` comment in between hides it).
+- JSDoc parse errors are dropped (tsc reports them for checkJs files as jsDocDiagnostics).
+- The `argN` names of JSDoc function type parameters are spans pointing at static strings, not into the file
+  (`jsdoc_parameter_name()`); `span_is_written()` tells them apart (display, TS6210). Anything that computes a
+  position from a parameter's name span would read garbage.
+- `@type {F}` on a function *moves* the signature's parameter/return TypeNodes into the function
+  (`jsdoc_apply_type_signature()`), only for a written function type or `{(...): R}` literal, not a type reference;
+  an arrow function under a variable's `@type` gets it contextually instead (tsc applies getSignatureOfTypeTag to it
+  too: only the types baseline's reuse marks differ).
+- The CommonJS module indicator is syntactic (parser, `saw_commonjs`, also set by failed attempts); tsc's binder sees
+  only bound nodes. `module`/`exports`/`require` declared as locals of the file are respected, a global `exports`
+  isn't (like tsc), but `exports.x =` in nested functions/blocks isn't declared (only the file's top-level statements,
+  `statement_add_names()`): tsc binds them anywhere.
+- `module.exports.x = v` after `module.exports = v0` declares an export of the file next to `export=`; tsc merges it
+  into the export= type (getInitializerTypeFromAssignmentDeclaration's member copy). `Object.defineProperty(exports,
+  ...)` isn't a declaration yet (stage 2).
+- `require()` declarations are aliases through `PortItem`s the parser synthesizes on the `InitializedBinding`; only
+  flat object patterns (no defaults, rest, nesting) qualify, anything else stays a variable of the module's type.
+- The symbols baseline's `getSpecialPropertyAssignmentSymbol` shapes are an override hook in the baseline case
+  (`symbol_overrides`, `commonjs_symbol_overrides()`), keyed by span; `module.exports` is overridden to tsc's synthetic
+  `module.exports` property the same way.
+- `readonly_assignment()` never reports a declaring `exports.x =` (an alias export's target may be a const).
+- Gates still in place (plan 26 asks to list them): `check_access()` / `ty_check_element_implicit_any()` skip JS files
+  (no TS2339/TS7053: expandos, stage 2), `binary_op_typecheck` skips TS2358 in JS, `scope_add_port()` has no
+  `export as namespace` alias in JS, `expr.c` (a JS value module in `check_declared_before_use`-like code) and
+  `several_types.c:257` (JS skip in a type check). None was removed by stage 1: they're about expandos and TS-only
+  syntax.
+
 ## Module resolution (`src/module_resolution.c`, `src/tsconfig.c`, plan 06)
 - A resolved `.json` module is `any` (`MODULE_REF_IS_JSON`): the file isn't parsed into a type, `path_is_script` keeps
   it out of the harness' program too. `requireOfJson*`, `jsonFileImport*` (~35 tests).
-- A `.js` file that resolves with `allowJs` is loaded and parsed **as TypeScript**; without `checkJs` its semantic
-  diagnostics are dropped (`SourceFile.unchecked`), but its *shape* is still wrong: CommonJS `exports.x =` files
-  are not modules (TS2306 in the importer, 27 tests), JSDoc types are comments. See `triage.md`.
+- A `.js` file that resolves with `allowJs` is loaded and parsed **as TypeScript** (plus JSDoc and CommonJS, plan 26);
+  without `checkJs` its semantic diagnostics are dropped (`SourceFile.unchecked`). See "JavaScript" below.
 - JavaScript from a package is never part of the program (`maxNodeModuleJsDepth` is taken as 0, the option isn't read).
 - `apply_realpath` only runs for node_modules results, like tsc, but tsc also keeps the *original* path
   (`originalPath`) for declaration emit and for "is this the same package" checks (TS2300-style duplicate package

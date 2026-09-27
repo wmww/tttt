@@ -19661,7 +19661,7 @@ const baselines = {
         types: true,
     },
     'jsdocArrayObjectPromiseNoImplicitAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
