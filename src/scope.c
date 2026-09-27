@@ -1516,6 +1516,31 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
     return cstr_d("\"", path, "\"");
 }
 
+// `export { string }`, `export { undefined }`: what tsc's resolveName finds no symbol for but still reports as
+// global (checkAndReportErrorForExportingPrimitiveType, undefinedSymbol)
+static bool export_names_global_primitive(csview name) {
+    static char const* const names[] = { "undefined", "any", "string", "number", "boolean", "never", "unknown" };
+    for (u32 i = 0; i < c_arraylen(names); i++) {
+        if (csview_equals(name, names[i])) return true;
+    }
+    return false;
+}
+
+// tsc's checkExportSpecifier: globalThis or a symbol first declared at the top level of a script (a global that isn't
+// from a `declare global` block)
+static bool is_global_declaration(Binder const* binder, Symbol const* symbol) {
+    if (symbol == binder->global_this || binder_redirect(binder, symbol) == binder->global_this) return true;
+    if (!symbol->decl_count || symbol->parent) return false;
+    Symbol const* global = symbol_table_get(&binder->globals, symbol->name);
+    if (!global || (global != symbol && global != binder_redirect(binder, symbol))) return false;
+    SourceFile const* file = symbol->decls[0].full.source ? symbol->decls[0].full.source : symbol->decls[0].name.source;
+    return file && !file->is_module;
+}
+
+static void report_non_local_export(ErrorCtx* errs, Span name) {
+    error_ctx_error_d(errs, name, 2661, "Cannot export '", name, "'. Only local declarations can be exported from a module.");
+}
+
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = my alias->scope->errs;
@@ -1609,10 +1634,17 @@ static Symbol* resolve_alias_target(Symbol* me) {
 
         case PORT_EXPORT_SPECIFIC: {
             Symbol* found = scope_resolve(my alias->scope, item->source_name.sv, SYMBOL_ANY_MEANING);
+            // (tsc's primitive types and `undefined` aren't symbols its resolveName finds)
+            if (symbol_is_builtin_type(found)) found = nullptr;
             if (!found || found == me) {
-                error_ctx_error_d(errs, item->source_name, 2304, "Cannot find name '", item->source_name, "'.");
+                if (export_names_global_primitive(item->source_name.sv)) {
+                    report_non_local_export(errs, item->source_name);
+                } else {
+                    error_ctx_error_d(errs, item->source_name, 2304, "Cannot find name '", item->source_name, "'.");
+                }
                 return nullptr;
             }
+            if (is_global_declaration(my binder, found)) report_non_local_export(errs, item->source_name);
             unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
             item->source_symbol = found;
             return resolve_if_pure_alias(found);
