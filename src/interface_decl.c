@@ -120,6 +120,7 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     Checker* checker = current_checker;
     Ty const* declared = ty_declared_type_of(checker, symbol);
     if (declared->kind != TY_DECLARED) return;
+    if (ty_interface_in_base_cycle(checker, symbol)) return; // It has no bases (TS2310)
     Ty const* this_param = declared->declared.this_param;
     Ty const* type_with_this = this_param ? ty_with_this_arg(checker, declared, this_param) :
         declared->declared.type_params.len ? ty_reference(checker, declared, declared->declared.type_params) : declared;
@@ -159,6 +160,14 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
+    // tsc's getBaseTypes() reports every declaration of an interface whose bases lead back to it
+    if (my symbol && span_valid(my name) && !my name.source->is_stdlib && ty_interface_in_base_cycle(current_checker, my symbol)) {
+        Ty const* declared = ty_declared_type_of(current_checker, my symbol);
+        if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
+            declared = ty_reference(current_checker, declared, declared->declared.type_params);
+        }
+        error_ctx_error_d(errs, my name, 2310, "Type '", declared, "' recursively references itself as a base type.");
+    }
 
     check(my type.tag == TYPE_INTERFACE);
     for_each (extends, vec_spanned_type, &my extends) {

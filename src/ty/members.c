@@ -921,6 +921,72 @@ bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target) {
     return has_base_type(me, source, target, 0);
 }
 
+enum { BASE_CYCLE_KNOWN = 1, BASE_CYCLE_IN_CYCLE = 2 };
+
+typedef struct BaseWalk {
+    Symbol const* target;
+    Symbol const* visited[256];
+    u32 visited_count;
+} BaseWalk;
+
+// The interface an `extends` of an interface names, null if it isn't one
+static Symbol const* interface_base_symbol(Checker* me, TypeNode const* node, LowerCtx ctx) {
+    Ty const* base = ty_from_node(me, node, ctx);
+    if (base->kind == TY_REFERENCE) base = base->reference.target;
+    if (base->kind != TY_DECLARED || base->declared.kind != TY_DECLARED_INTERFACE) return nullptr;
+    return base->declared.symbol;
+}
+
+// Whether the interface `symbol` is or (transitively) extends walk->target, each interface visited once
+static bool interface_reaches(Checker* me, Symbol const* symbol, BaseWalk* walk) {
+    if (symbol == walk->target) return true;
+    for (u32 i = 0; i < walk->visited_count; i++) {
+        if (walk->visited[i] == symbol) return false;
+    }
+    if (walk->visited_count == c_arraylen(walk->visited)) return false; // (Bigger than anything real)
+    walk->visited[walk->visited_count++] = symbol;
+    Ty const* declared = ty_declared_type_of(me, symbol);
+    LowerCtx ctx = { .generic = declared->kind == TY_DECLARED && declared->declared.type_params.len > 0 };
+    for (SymbolDecl const* node = symbol->decls; node < symbol->decls + symbol->decl_count; node++) {
+        if (node->kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = node->node;
+        for_each (extends, vec_spanned_type, &interface_decl->extends) {
+            Symbol const* base = interface_base_symbol(me, &extends->type, ctx);
+            if (base && interface_reaches(me, base, walk)) return true;
+        }
+    }
+    return false;
+}
+
+bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol) {
+    SymbolLinks* links = ty_symbol_links(me, symbol);
+    if (!(links->base_cycle & BASE_CYCLE_KNOWN)) {
+        links->base_cycle |= BASE_CYCLE_KNOWN;
+        BaseWalk* walk = malloc(sizeof(BaseWalk));
+        panic_if(!walk, "out of memory");
+        walk->target = symbol;
+        walk->visited_count = 1;
+        walk->visited[0] = symbol; // (The walk starts at its bases)
+        Ty const* declared = ty_declared_type_of(me, symbol);
+        LowerCtx ctx = { .generic = declared->kind == TY_DECLARED && declared->declared.type_params.len > 0 };
+        bool found = false;
+        for (SymbolDecl const* node = symbol->decls; node < symbol->decls + symbol->decl_count && !found; node++) {
+            if (node->kind != SYMBOL_DECL_INTERFACE) continue;
+            InterfaceDecl const* interface_decl = node->node;
+            for_each (extends, vec_spanned_type, &interface_decl->extends) {
+                Symbol const* base = interface_base_symbol(me, &extends->type, ctx);
+                if (base && interface_reaches(me, base, walk)) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        free(walk);
+        if (found) links->base_cycle |= BASE_CYCLE_IN_CYCLE;
+    }
+    return links->base_cycle & BASE_CYCLE_IN_CYCLE;
+}
+
 // Whether a class (instance or static side) has a base that class_base() can't see all the members of: an `extends`
 // expression it can't resolve, or one whose type involves a type parameter (a mixin: tsc intersects the constructed
 // type with the base constraint's). Members can be missing from such a class

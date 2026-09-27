@@ -17,11 +17,15 @@
 static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args);
 static inline Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
 
-static SymbolLinks* symbol_links(Checker* me, Symbol const* symbol) {
+SymbolLinks* ty_symbol_links(Checker* me, Symbol const* symbol) {
     u64 key[2] = { KEY_SYMBOL_LINKS, (u64)(uintptr_t)symbol };
     void const** slot = intern_slot(me, &my links, key, 2);
     if (!*slot) *slot = arena_new(&my arena, SymbolLinks);
     return (SymbolLinks*)*slot;
+}
+
+static inline SymbolLinks* symbol_links(Checker* me, Symbol const* symbol) {
+    return ty_symbol_links(me, symbol);
 }
 
 // The program's version of a symbol. A symbol that comes from inside the AST of the shared lib program (`Array` in

@@ -559,6 +559,7 @@ typedef struct SymbolLinks {
     Ty const* declared_type;
     Ty const* static_type; // See ty_static_type_of()
     bool circular; // A type alias whose resolution reached itself (TS2456 when it finishes, see ty_declared_type_of())
+    uint8_t base_cycle; // BASE_CYCLE_* flags, see ty_interface_in_base_cycle()
 } SymbolLinks;
 
 typedef enum TyRelation {
@@ -1024,6 +1025,7 @@ Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pa
 // The type of the default of an element of a pattern (`x = 1` in `{ x = 1 }`), checked with its contextual type
 Ty const* ty_binding_default_type(Checker* me, Binding const* element);
 Ty const* ty_declared_type_of(Checker* me, Symbol const* decl);
+SymbolLinks* ty_symbol_links(Checker* me, Symbol const* symbol);
 Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);
 Ty const* ty_static_type_of(Checker* me, Symbol const* symbol);
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol);
@@ -1301,7 +1303,10 @@ typedef struct HeritageMember {
     Span span;
 } HeritageMember;
 Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl); // What it extends, null if nothing
-bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target); // `source` is, extends or inherits from `target`
+bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target);
+// Whether the interface is on a cycle of `extends` (tsc reports TS2310 on each declaration of the interfaces in a
+// cycle of base types, not on those that merely extend one)
+bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol); // `source` is, extends or inherits from `target`
 Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* computed_key); // Null: not a known name
 // Whether it fits (false: reported)
 bool ty_check_heritage(
