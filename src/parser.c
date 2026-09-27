@@ -1509,7 +1509,7 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
 
         if (span_equals(mod.span, "readonly")) {
             mod.tag = MODIFIER_READONLY;
-        } else if (is_member && span_equals(mod.span, "abstract")) {
+        } else if (span_equals(mod.span, "abstract")) {
             mod.tag = MODIFIER_ABSTRACT;
         } else if (span_equals(mod.span, "static")) {
             mod.tag = MODIFIER_STATIC;
@@ -1521,6 +1521,8 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
         } else if (span_equals(mod.span, "accessor")) {
             mod.tag = MODIFIER_ACCESSOR;
         } else if (span_equals(mod.span, "export")) {
+            // tsc's canFollowExportModifier: `export {`, `export *`, `export as namespace` are export declarations
+            if (!is_member && (*p.pos == '{' || *p.pos == '*' || starts_with_followed_by_word_break(&p, "as"))) break;
             mod.tag = MODIFIER_EXPORT;
         } else if (prev_was_export && span_equals(mod.span, "default")) {
             mod.tag = MODIFIER_EXPORT_DEFAULT;
@@ -5114,14 +5116,15 @@ static bool parse_list_member(Parser* parent, ParsingContext ctx, bool is_type, 
     return parse_success(&p);
 }
 
-static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
+// abstract: the statement's modifiers had `abstract` (an expression's `abstract class` is taken here)
+static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
     VecExpr decorators = {0};
     ignore parse_decorators(&p, &decorators);
 
-    bool is_abstract = false;
+    bool is_abstract = abstract;
     if (hop_start_if_ends_on_word_break(&p, "abstract")) {
         hop_whitespace(&p);
         is_abstract = true;
@@ -6859,7 +6862,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ret->tag = EXPR_OBJECT;
     } else if (c == '[' && parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
-    } else if ((c == '@' || c == 'a' || c == 'c') && parse_class_decl(&p, &parsed.class_decl)) {
+    } else if ((c == '@' || c == 'a' || c == 'c') && parse_class_decl(&p, false, &parsed.class_decl)) {
         parsed.class_decl.is_expression = true;
         *ret = expr_class_decl(span_from(a), c_new(ClassDecl, parsed.class_decl));
     } else if (c == 'n' && parse_new_target(&p, ret)) {
@@ -8849,9 +8852,8 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 },
             },
         };
-    } else if (parse_class_decl(&p, &parsed.class)) {
+    } else if (parse_class_decl(&p, modifiers.includes[MODIFIER_ABSTRACT], &parsed.class)) {
         modified.kind = MODIFIED_CLASS;
-        parsed.class.is_abstract |= modifiers.includes[MODIFIER_ABSTRACT];
         parsed.class.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_CLASS,
