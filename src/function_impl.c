@@ -194,10 +194,11 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
         if (i->is_parameter_property && !(my is_constructor && my has_body)) {
             error_ctx_error_d(errs, i->span, 2369, "A parameter property is only allowed in a constructor implementation.");
         }
-        if (is_type && has_initializer) {
+        if ((is_type || !my has_body) && has_initializer) {
+            // (tsc's checkVariableLikeDeclaration: overloads and ambient functions too)
             error_ctx_error_d(
                 errs,
-                i->initializer.value.outer_span,
+                i->span,
                 2371,
                 "A parameter initializer is only allowed in a function or constructor implementation."
             );

@@ -9261,7 +9261,7 @@ const baselines = {
         types: false,
     },
     'defaultArgsInOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -9351,12 +9351,12 @@ const baselines = {
         types: false,
     },
     'defaultValueInConstructorOverload1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'defaultValueInFunctionOverload1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33196,7 +33196,7 @@ const baselines = {
         types: true,
     },
     'varBlock': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35536,7 +35536,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloadsWithDefaultValues': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57926,22 +57926,22 @@ const baselines = {
         types: true,
     },
     'parserParameterList14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserParameterList15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserParameterList16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserParameterList17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64601,7 +64601,7 @@ const baselines = {
         types: true,
     },
     'callSignaturesWithParameterInitializers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
