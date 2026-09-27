@@ -3625,8 +3625,16 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     }
     hop_whitespace(&p);
 
-    // Tolerated here, the checker doesn't report TS1162 (object member cannot be declared optional) yet
-    if ((*p.pos == '?' || *p.pos == '!') && (p.pos[1] == '(' || p.pos[1] == ':' || p.pos[1] == '<')) {
+    // tsc's parser takes a `?` and a `!` after any member name, its checker reports them (grammar errors, see
+    // parse_file())
+    if (*p.pos == '?' && p.pos[1] != '?' && p.pos[1] != '.') {
+        parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1162, "An object member cannot be declared optional.");
+        p.pos++;
+        hop_whitespace(&p);
+    }
+    if (*p.pos == '!' && p.pos[1] != '=') {
+        parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1255,
+            "A definite assignment assertion '!' is not permitted in this context.");
         p.pos++;
         hop_whitespace(&p);
     }
@@ -8006,6 +8014,16 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     return parse_success(&p);
 }
 
+static bool is_grammar_code(unsigned code) {
+    static unsigned const grammar_codes[] = {
+        1020, 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1162, 1184, 1248, 1253, 1255,
+    };
+    for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
+        if (code == grammar_codes[c]) return true;
+    }
+    return false;
+}
+
 void parse_file(SourceFile* source, ErrorCtx* errs) {
     ParserShared shared = {
         .source = source,
@@ -8030,21 +8048,23 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
 
     parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, &source->ast.statements);
 
-    // tsc checks modifiers in the checker (checkGrammarModifiers): those don't count as parse errors, which quiet the
-    // checker's grammar errors
-    static unsigned const modifier_codes[] = { 1020, 1024, 1028, 1029, 1030, 1031, 1044, 1070, 1184, 1248, 1253 };
+    // Grammar errors tsc's checker reports (checkGrammarModifiers, checkGrammarIndexSignatureParameters,
+    // checkGrammarForInvalidQuestionMark...) that the parser is in a better place to report. They don't count as
+    // parse errors, and like all grammar errors they aren't reported in a file with parse errors (hasParseDiagnostics)
     source->has_import_meta = shared.saw_import_meta;
     source->has_commonjs = shared.saw_commonjs;
     source->module_exports_span = shared.module_exports_span;
     source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;
     for_each (i, vec_error, &shared.errors) {
-        bool modifier = false;
-        for (u32 c = 0; c < c_arraylen(modifier_codes); c++) modifier |= i->ts_code == modifier_codes[c];
-        source->has_parse_errors |= !modifier;
+        source->has_parse_errors |= !is_grammar_code(i->ts_code);
     }
     for_each (i, vec_error, &shared.errors) {
-        error_ctx_append_error(errs, *i);
+        if (source->has_parse_errors && is_grammar_code(i->ts_code)) {
+            error_drop(i);
+        } else {
+            error_ctx_append_error(errs, *i);
+        }
         *i = (Error){0};
     }
 

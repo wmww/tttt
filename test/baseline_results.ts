@@ -22556,7 +22556,7 @@ const baselines = {
         types: true,
     },
     'multipleClassPropertyModifiersErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24456,7 +24456,7 @@ const baselines = {
         types: false,
     },
     'objectLiteralMemberWithQuestionMark1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24551,7 +24551,7 @@ const baselines = {
         types: true,
     },
     'objectTypeWithOptionalProperty1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28766,7 +28766,7 @@ const baselines = {
         types: true,
     },
     'spaceBeforeQuestionMarkInPropertyAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33931,7 +33931,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration7_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34246,7 +34246,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration7_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34576,7 +34576,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration7_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37971,7 +37971,7 @@ const baselines = {
         types: false,
     },
     'definiteAssignmentAssertionsWithObjectShortHand': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -59856,7 +59856,7 @@ const baselines = {
         types: true,
     },
     'parserShorthandPropertyAssignment1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59876,7 +59876,7 @@ const baselines = {
         types: true,
     },
     'parserShorthandPropertyAssignment5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64786,7 +64786,7 @@ const baselines = {
         types: true,
     },
     'objectTypesWithOptionalProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
