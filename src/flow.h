@@ -254,5 +254,8 @@ bool expr_is_narrowing(Expr const* me); // isNarrowingExpression
 bool expr_is_narrowable_reference(Expr const* me);
 bool expr_is_dotted_name(Expr const* me);
 bool expr_is_entity_name(Expr const* me); // isEntityNameExpression: `a.b.c`, no keywords
+// tsc's checkGrammarForInvalidDynamicName: a computed key that is neither syntactically a literal nor an entity name
+// (which is bound late by its literal type, or else is an implied index signature). Its type doesn't matter
+bool expr_is_non_bindable_dynamic_name(Expr const* key);
 
 FlowList* flow_list_concat(FlowBuilder* me, FlowList const* a, FlowList const* b, FlowList const* c);

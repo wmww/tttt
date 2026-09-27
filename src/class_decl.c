@@ -309,9 +309,7 @@ static void class_computed_key_typecheck(ClassItem* item, ErrorCtx* errs) {
     bool accessor = !field && item->method.accessor;
     ty_check_computed_name(current_checker, key, field ? item->field.name_span : item->method.name_span, !accessor, errs);
     if (!field && item->method.func.has_body) return; // Only overload signatures are restricted
-    Ty const* key_type = expr_get_type(key);
-    // tsc's checkGrammarForInvalidDynamicName: an entity name that isn't a literal is a late bound index signature
-    if (key_type->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_ANY) || expr_is_entity_name(key)) return;
+    if (!expr_is_non_bindable_dynamic_name(key)) return;
     Span span = field ? item->field.name_span : item->method.name_span;
     if (field) {
         error_ctx_error_d(errs, span, 1166,

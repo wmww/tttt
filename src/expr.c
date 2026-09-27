@@ -1774,6 +1774,22 @@ static bool is_destructuring_target(Expr const* me) {
     }
 }
 
+bool expr_is_non_bindable_dynamic_name(Expr const* key) {
+    if (!expr_is_perenthisized(key)) {
+        Expr const* literal = key;
+        if (key->tag == EXPR_UNARY_OP && (key->unary_op->op == UNARY_OP_PLUS || key->unary_op->op == UNARY_OP_MINUS) &&
+            key->unary_op->expr.tag == EXPR_LITERAL && key->unary_op->expr.literal.tag == VALUE_NUMBER &&
+            !expr_is_perenthisized(&key->unary_op->expr)
+        ) {
+            literal = &key->unary_op->expr;
+        }
+        if (literal->tag == EXPR_LITERAL && (literal->literal.tag == VALUE_STRING || literal->literal.tag == VALUE_NUMBER)) {
+            return false;
+        }
+    }
+    return !expr_is_entity_name(key);
+}
+
 // tsc's getEffectivePropertyNameForPropertyNameNode: a computed key is named by its literal or unique symbol type, and
 // `[+1]` by its operand. Null: no name the grammar check can compare
 static Atom const* object_item_effective_name(ObjectExprItem const* item) {
