@@ -2112,6 +2112,8 @@ csview symbol_default_export_local_name(Symbol const* me) {
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     u64 hash = symbol_name_hash(name);
     bool from_parameters = false;
+    bool arguments = (meaning & SYMBOL_VARIABLE) && csview_equals(name, "arguments");
+    bool arrows_have_arguments = compiler_options()->target < SCRIPT_TARGET_ES2015;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : &scope->locals;
         if (table->count || table->parent) {
@@ -2119,6 +2121,13 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
             bool body_variable = from_parameters && found && (found->flags & SYMBOL_VARIABLE) && !found->is_parameter &&
                 compiler_options()->target >= SCRIPT_TARGET_ES2015;
             if (found && !body_variable && symbol_has_meaning(found, meaning)) return found;
+        }
+        if (arguments && scope->kind == SCOPE_FUNCTION && scope->function &&
+            (arrows_have_arguments || !span_valid(scope->function->arrow_span))
+        ) {
+            // A function's own `arguments` hides outer declarations (tsc's resolveNameHelper returns argumentsSymbol):
+            // no symbol, see IdentifierExpr.is_arguments
+            return nullptr;
         }
         from_parameters = scope->parameters;
         if (scope->container && scope->container->is_module && scope->container->exports) {

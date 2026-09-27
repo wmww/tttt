@@ -957,8 +957,8 @@ const baselines = {
     },
     'argumentsBindsToFunctionScopeArgumentList': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'argumentsObjectCreatesRestForJs': {
         errors: false,
@@ -40316,9 +40316,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments03': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments03_ES6': {
         errors: true,
@@ -40326,9 +40326,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments04': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments04_ES6': {
         errors: true,
@@ -40336,9 +40336,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments05': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments05_ES6': {
         errors: true,
@@ -40346,9 +40346,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments06': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments06_ES6': {
         errors: true,
@@ -40356,9 +40356,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments07': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments07_ES6': {
         errors: true,
@@ -40396,9 +40396,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments11': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments11_ES6': {
         errors: true,
@@ -40406,9 +40406,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments12': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments12_ES6': {
         errors: true,
@@ -40426,9 +40426,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments14': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments14_ES6': {
         errors: true,
@@ -40436,9 +40436,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments15': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments15_ES6': {
         errors: true,
@@ -40446,9 +40446,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments16': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments16_ES6': {
         errors: true,
@@ -40456,9 +40456,9 @@ const baselines = {
         types: true,
     },
     'emitArrowFunctionWhenUsingArguments17': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitArrowFunctionWhenUsingArguments17_ES6': {
         errors: true,
