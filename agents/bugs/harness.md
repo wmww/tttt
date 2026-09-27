@@ -8,9 +8,7 @@
   from lib files ~14). `grep "invalid span" build/failstats/stderr.txt`. A span computed from the wrong node or file.
   Also one "Declaration B acquired multiple times" (scope.c).
 - `@baselineFile`, `@fullEmitPaths` are ignored; bad option values are ignored (tsc's harness throws).
-- `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration. A
-  multi-file probe shows the comment lines before the first `// @filename` as a file of their own in the errors
-  baseline, so the errors component fails although the diagnostics match.
+- `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration.
 - The harness reruns a test when the first run leaves net allocations (lib cache fill), ~170 times per suite run.
   `failstats.py` counts by test *name*; a few names exist in both `compiler/` and `conformance/`, so its counts can
   differ from the harness by one or two (13540 vs 13542).
