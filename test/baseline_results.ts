@@ -15231,7 +15231,7 @@ const baselines = {
         types: true,
     },
     'genericRecursiveImplicitConstructorErrors1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15376,7 +15376,7 @@ const baselines = {
         types: false,
     },
     'genericTypeUsedWithoutTypeArguments1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29546,7 +29546,7 @@ const baselines = {
         types: false,
     },
     'superCallFromClassThatDerivesFromGenericTypeButWithNoTypeArguments1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33886,7 +33886,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration12_es2017': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34191,7 +34191,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration12_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34526,7 +34526,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration12_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35251,12 +35251,12 @@ const baselines = {
         types: true,
     },
     'classStaticBlock22(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'classStaticBlock22(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42591,7 +42591,7 @@ const baselines = {
         types: true,
     },
     'FunctionDeclaration12_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65186,12 +65186,12 @@ const baselines = {
         types: true,
     },
     'typeofANonExportedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeofAnExportedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65226,7 +65226,7 @@ const baselines = {
         types: true,
     },
     'genericTypeReferenceWithoutTypeArgument.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -65241,7 +65241,7 @@ const baselines = {
         types: false,
     },
     'genericTypeReferenceWithoutTypeArgument3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

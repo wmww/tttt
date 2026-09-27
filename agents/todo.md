@@ -21,9 +21,10 @@ corpus numbers (`./realworld.py --corpus X` for all four once plan 31 is in) and
 7. Done: plan 19 corpus session (valibot 49 -> **0**, react 1 -> **0**, type-fest 47 -> 19, nest 0, tsc 0; suite
    8686 -> 8703). Three worktree sub-agents plus the session; expect-type mismatches are visible now (arity of
    generic rest types). Left: R17 (plan 30 stage 3), R20, mixins (new plan 32, draft), exactOptional missing type.
-8. **Suite checker bugs 2**: failstats' single-code buckets (triage.md "Single-code error buckets") and the
-   module/target-gated diagnostics (triage.md "Target-gated diagnostics"; missing TS1202/TS1203/TS2441/TS2725/TS1262
-   in tests where tttt reports nothing). Like entry 8 of the last window: many small missing checks, commit each.
+8. Done: suite checker bugs 2 (suite 8703 -> **8948**, corpora unchanged: type-fest 19, others 0). ~45 commits of
+   small missing checks, two thirds by two worktree sub-agents (module/export codes; declaration/scoping codes).
+   Leftovers in triage.md "Single-code error buckets". Also: unresolved names and missing properties are error-typed
+   now (TS2347), empty statements exist in the AST.
 9. **Perf: plan 28** (resolve calls once), then a check-up with callgrind counts on the tsc corpus (the stable
    measure) and `./bench.sh` including the fourth corpus; update `measurements.md`. First: valibot is still ~19%
    slower than before plan 31 part 3 (measurements.md "plan 31": callgrind 5.41 G -> 8.19 G, instantiation);

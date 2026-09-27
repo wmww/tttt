@@ -2,6 +2,11 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-27, suite checker bugs 2 (todo entry 8)
+Suite 8703 -> **8948 / 13540** (errors 10746, symbols 12174, types 10491), no lost components. Corpora unchanged:
+tsc 0 (0.92 s / 423 MB, was 0.89 s / 413 MB), valibot 0 (0.94 s / 468 MB), type-fest 19 (0.41 s), react 0 (0.34 s),
+nest 0 (0.31 s): within noise of entry 7 (wall times from `realworld.py`, best of 2, no callgrind).
+
 ## 2026-09-27, plan 19 corpus session (todo entry 7)
 Suite 8686 -> **8703 / 13540** (errors 10463, symbols 12168, types 10455), no lost components. Corpora: tsc **0**
 (0.89 s / 413 MB), valibot 49 -> **0** (0.91 s / 464 MB, was 0.95 s / 514 MB), react 1 -> **0** (0.33 s), nest **0**

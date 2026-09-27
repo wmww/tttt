@@ -271,6 +271,28 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   the flags in the checker's expression walk, `async` in the parser next to the other modifier checks (as parse
   errors, which suppress later grammar errors in the file; tsc's is a checker grammar error).
 
+## Suite checker bugs 2 (2026-09-27, todo entry 8)
+- `function_collect_local_value_names()` / `statement_collect_var_names()` (statement.c) are a read-only copy of
+  `statement_hoist_names()` for TS2301 (the constructor's scope doesn't exist yet when the fields before it resolve):
+  keep them in sync. Its marker scopes add `Scope.instance_field`, `constructor_locals`, `constructor_local_count`;
+  `IdentifierExpr.invalid_initializer_reference` exists only so the symbols baseline still shows the target.
+- `expr_requires_scope_change()` (function_impl.c, TS2373) is a hand-written expression walk (no JSX). tttt has no
+  generic expression visitor; TS2774 would want one too (triage.md).
+- `ClassItem.field.ts_assigned` (set by `scope_note_ts_this_assignment()`): a TS field the constructor/static block
+  assigns only skips TS7008; its type isn't taken from that flow (getFlowTypeInConstructor).
+- `FunctionImpl.private_ambient` is set by `class_decl_typecheck` right before checking the member (AST mutation in the
+  typecheck walk) because FunctionImpl doesn't know its member's access modifier.
+- `Scope.expression_name_of`: the name scope of a function expression, only for the await/yield context of its name.
+- `statement_takes_semicolon()` (parser.c): which statements end with tsc's parseSemicolon(), so a following `;` is
+  theirs rather than an EmptyStatement; a list by statement tag rather than what each statement parser consumes.
+- TS2441, TS1203, TS2308, TS2661, TS2669 are reported from the binder/link step (tsc: checker); same ErrorCtx, so
+  unchecked files and parse errors behave the same. TS2308 re-walks the `export *` graph separately from
+  `module_resolved_exports()` (scratch arena). `ty_emits_commonjs_like()` predates `source_file_emit_module_kind()`
+  and could be rebuilt on it.
+- Parser anchors: `parse_import_equals()` built a span with `span_from` on an anchor of the parent parser inside a
+  child parser before `parse_success` (truncated to `import `). Fixed there; the pattern may exist elsewhere.
+- Missing-property accesses are error-typed only through `missing_property_type()` (see "Expressions").
+
 ## The binder (`scope.c`, plan 04 done)
 - Identifiers keep two symbol pointers, `symbol` (what the name found, maybe an alias) and `target` (the one with the
   meaning the name is used with, aliases resolved). The plan wanted one pointer plus an accessor; `target` is that

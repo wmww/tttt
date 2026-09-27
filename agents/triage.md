@@ -51,20 +51,47 @@ Plan 15 (missing checks) is retired: `./unimplemented_codes.sh` still lists the 
 - The same test: a circular `import self = require(...)` / `export = self` chain types `self` as `Window & typeof
   globalThis` (tsc: any). The unresolved placeholder target resolves to the global scope somewhere.
 
-## Single-code error buckets (2026-09-27, after the triage's fixes; suite 8564)
-Tests whose errors component fails on one code alone (from `build/failstats/tests.tsv`: errors=0 and missing ∪ spurious
-is one code). The triage fixed the three "misplaced" span buckets (TS2554, TS6053, TS1125: +56 tests) and TS2496
-(+11) in minutes each; the rest are mostly small missing checks, good material for a "suite checker bugs 2" session like todo entry 8:
-- missing TS2309 11 (`export =` with other exports: ExportAssignment7/8, es5ExportEquals), TS1262 11 (topLevelAwaitErrors.10-12), TS2433 10 (namespace
-  merged across files with a class/function: cloduleSplitAcrossFiles), TS2301 9 (class member initializers referencing
-  constructor parameters: classMemberInitializerScoping), TS2371 9 (initializers in overloads / index signatures),
-  TS2318 12 (missing global types under noLib), TS2373 10 (the requiresScopeChange item below), TS2742 10
-  (declaration emit, probably out of scope).
-- spurious TS2349 16 (betterErrorForUnionCall, callOfConditionalTypeWithConcreteBranches, classExtendsNull,
-  functionType), TS2307 14 (APISample_*/APILibCheck: resolving `typescript` from the harness), TS2554 11 (mostly JS:
-  arguments-as-rest, JSDoc-optional parameters), TS7006 13, TS2741 10 (expandos, plan 26 stage 2).
-- The big ones (spurious/missing TS2322 ~55 each, missing TS2339 53, spurious TS2304 39, spurious TS2339 28) are
-  mixed bags: sample, don't assume one cause.
+## Single-code error buckets (2026-09-27, after suite checker bugs 2; suite 8948)
+Tests whose errors component fails on one code alone (`build/failstats/tests.tsv`: errors=0, missing ∪ spurious is one
+code). Suite checker bugs 2 (todo entry 8) drained the small missing checks down to buckets of ~5; what's left:
+- Mixed bags (sample, don't assume one cause): missing/spurious TS2322 ~50 each, missing TS2339 49, spurious TS2304
+  39, spurious TS2339 30, missing TS2304 16, spurious TS2345 14.
+- Module resolution / emit: missing TS2303 15 (package pattern exports), TS8002 9, TS2209 6, TS1470 6, TS1309 6,
+  TS5055 11, TS5069 6, TS2742 10 (declaration emit, probably out of scope); spurious TS2307 14 (APISample_*: resolving
+  `typescript` from the harness).
+- Checker, small: missing TS2318 12 (noLib global types), TS2353 12, TS1216 8, TS7053 8, TS2816 8
+  (typeOfThisInStaticMembers10/11), TS7005 6 (ambient `declare var x;` without a type), TS2449 6, TS7023 5, TS2352 5,
+  TS1259 5 (esModuleInterop default import, a TODO in scope.c), TS18033 5; spurious TS2349 13 (betterErrorForUnionCall,
+  classExtendsNull, functionType), TS2403 12, TS7006 11, TS2300 10 (duplicateIdentifierRelatedSpans: `@pretty`).
+- Left over by suite checker bugs 2:
+  - TS2774/TS2801 (uncalled function / promise in a condition, 5 tests): tsc's
+    checkTestingKnownTruthyCallableOrAwaitableOrEnumMemberType, a heuristic that looks for uses of the tested symbol in
+    the condition body. Needs a symbol-use walk over expressions (tttt has no generic expression visitor).
+  - TS2467 (computed name referencing the containing class/interface's type parameter, 4 tests): tsc does it in
+    resolveNameHelper at a ComputedPropertyName; interface members have no computed-name scope marker to find it by.
+  - TS2502 for accessors, class properties and parameters (`get foo(): typeof this.foo`: circularAccessorAnnotations,
+    circularGetAccessor, circularOptionalityRemoval); variables are done.
+  - TS7010 from widening (`function f() { return null; }` without strictNullChecks: implicitAnyFunctionReturnNullOrUndefined),
+    TS7051 (a parameter named like a type in a signature), TS1094 (accessor type parameters).
+  - `this` in a class member's computed name: tsc types it as the class instance, tttt any (computedPropertyNames21-23 types).
+  - TypeScript fields assigned in the constructor get their type from it (getFlowTypeInConstructor): tttt only skips
+    TS7008 for them (ClassItem.field.ts_assigned); classAttributeInferenceTemplate, classStaticBlockUseBeforeDef1-5,
+    controlFlowPrivateClassField types.
+  - TS2310 for cycles tsc finds while resolving the types (circularBaseTypes, circularConstraintYieldsAppropriateError),
+    interfaceThatInheritsFromItself (TS1176, `implements` on an interface). A cyclic interface still gets its bases'
+    members (tsc: none).
+  - TS2383 (overloads exported vs not), TS2385/TS2512/TS2386 (overload access/abstract/optional agreement); TS2687
+    skips statics and method/accessor pairs. Duplicate class/interface members show as separate symbols (tsc: one
+    merged symbol): the symbols of the TS2687 tests.
+  - duplicateIdentifiersAcrossFileBoundaries: TS2300 for a static member duplicated by a namespace export lacks tsc's
+    related TS6203.
+  - Modules: exports in non-module containers are dropped silently (`scope_add_port()`, TODO TS1194); `import { type
+    require }` isn't type-only for TS2441; typeOnlyMerge3 (TS1362 through an import merged with a namespace after
+    TS2440, getTypeOnlyAliasDeclaration on merged aliases); duplicatePackage_globalMerge prints TS2306 paths as
+    `/node_modules/...` (tsc: `/tests/node_modules/...`); a nested `declare module "m"` gets TS2435 but is still bound
+    as a global ambient module (tsc: a local namespace).
+  - The git stash list holds a foreign entry ("WIP on (no branch): 2d0b590", relate.c) from some earlier session;
+    worktree agents share the stash, don't use it.
 
 ## From plan 26 stage 2 (2026-09-27)
 - argumentsReferenceInMethod3_Js / argumentsReferenceInMethod5_Js lost their types component: `/** @type object */
