@@ -1,7 +1,7 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-27 (after todo entry 9)**: tsc 0, valibot 0, react 0, nest 0, **webpack 135** (checkJs; causes in
-plan 26 "Stage 3 leftovers"), **type-fest 4** (all abstract-class: plan 32's mixin classes), **zod 15** (below).
+**Status 2026-09-28 (after the perf session)**: tsc 0, valibot 0, react 0, nest 0, **webpack 118** (checkJs; causes
+in plan 26 "Stage 3 leftovers"), **type-fest 4** (all abstract-class: plan 32's mixin classes), **zod 13** (below).
 The history of R1-R21 (identity relation, homomorphic mapped modifiers, const type parameters, skip-sensitive
 inference, the permissive instantiation, ...) is in git (this file before the 2026-09-27 triage) and in the commits.
 
@@ -21,10 +21,11 @@ Corpus notes worth keeping:
   wall for tttt at the time of pinning, worth a perf look. `/// <reference lib>` works in program files, the harness
   still ignores it (TODO in `program_handle_statement`).
 - zod: a pnpm workspace, root devDependencies from `corpora-locks/zod.package.json`; `tsconfig.test.json` (not
-  tsconfig.json, whose noUnusedLocals only biome satisfies upstream). The heaviest corpus (11.6 G instructions).
+  tsconfig.json, whose noUnusedLocals only biome satisfies upstream). The heaviest corpus (9.1 G instructions, 1.3 GB:
+  deep-partial.test.ts alone is 745 MB, `bugs/perf_leads.md`).
 
 ## What is left
-### zod (15)
+### zod (13)
 - **exactOptionalPropertyTypes' missing type** (recursive-types.test.ts 17, 35; probe `zod/exact_optional_mapped.ts`):
   a homomorphic `{ [K in keyof T]: T[K] }` over an optional property reads `X | undefined` in tttt, `X | missing` in
   tsc, and the missing is dropped against an index signature (getNonMissingTypeOfSymbol). tttt has no missing type
@@ -43,8 +44,6 @@ Corpus notes worth keeping:
   type uninstantiated and instantiates contextual *signatures* with the fixing mapper as parameters are assigned;
   tttt instantiates the whole contextual type with T -> unknown. Fix both together: `context_mapper` in
   `infer_type_arguments` (`ty/call.c`) and the parameter assignment in `assign_contextual_signature`.
-- deep-partial.test.ts 111/113 (2 TS2589): `DeepPartial` over a getter-recursive schema; tsc stops after one unfold.
-  Probably also why the corpus costs 11.6 G instructions.
 - detached-methods.test.ts (3): vitest's `MockReturnType` of a method picked by key from an overloaded interface.
 - v3 generics.test.ts:20: inside a generic function, `keyof` of a generic intersection of mapped types
   (`addQuestionMarks<baseObjectOutputType<{ nested: TData }>, any>`) is expanded into a union of conditionals where
@@ -55,7 +54,7 @@ Corpus notes worth keeping:
 ### type-fest (4)
 All abstract-class: plan 32 stage C (mixin classes).
 
-### webpack (135)
+### webpack (118)
 JSDoc; plan 26 "Stage 3 leftovers".
 
 ### Seen on the way, not corpus-visible now

@@ -3,38 +3,49 @@ Numbers are in `measurements.md`; this is what to try next. Profile with callgri
 ./release/tttt -q files...`, then `callgrind_annotate [--inclusive=yes]`; no `perf` on the dev box). The release build
 has no debug info: for line-level annotation (`callgrind_annotate --auto=yes`) build a copy with
 `meson setup /tmp/relg --buildtype release -Dc_args=-g` (same code, same instruction counts). Compare
-instruction counts across sessions, not wall times.
-- **zod** (pinned 2026-09-27) is the heaviest corpus: ~11.7 G instructions (perf stat, user+kernel) for 522 files,
-  twice the tsc corpus; tsgo takes 3.0 s on 4 threads, tttt ~1.4 s. Callgrind (10.85 G): instantiation is ~45% self
-  (`instantiate_inner` 21%, `intern_get`/`intern_slot` 16%, `ty_instantiate`, `instantiate_list`,
-  `ty_reference_with_this` 4%), and `infer_from_returns` is 92% inclusive: inference from signature return types walks
-  zod's big classes (ZodType's ~50 fluent methods returning `this`-typed schemas) member by member, instantiating each.
-  tsc infers between two references to the same class/interface by type arguments (inferFromTypeArguments with
-  variances) and caches `this`-instantiations; find which relation or inference pairs tttt walks structurally there
-  (`TTTT_DEBUG_RELATE_NESTED`, a counter in `infer_from_objects`). Other suspects: deep-partial.test.ts's `DeepPartial`
-  over a getter-recursive schema (TS2589 where tsc stops after one unfold), the eager reverse mapped types. The zod session's inference
-  changes cost valibot +2.3% and type-fest +1.8% instructions (union-target inference no longer skips used-up sources).
-- **Parser** (after the first-char dispatch session, 2026-09-27: parse is 13% of the tsc corpus, 43% of nest, 20% of
-  webpack): no single parser function is above ~2.5% self any more. What's left is structural: every attempt makes a
-  `Parser` (the `parser()` copy is the top line), identifiers are scanned again by each alternative that fails, and
-  AST nodes are separate mallocs (`_int_malloc` is 5% of nest). Next levers: a real token (scan the identifier or
-  punctuator once per position, reuse it across alternatives), arenas for AST nodes. nest's remaining parse time is
-  .d.ts member lists (`parse_class_item_inner` -> `parse_type`).
-- **Checker hot spots** (tsc corpus, 2026-09-27, after the same-enum shortcuts): `type_at_flow_node` 4.6% self,
-  `check_related` 3.8% (2.3 M calls, 1.5 M of them now answered by the same-enum test before the RelationState setup),
-  `ty_union` 3.1% (small unions rebuilt over and over: `access`, `identifier_flow_type`, `lower`), `intern_slot` 3%,
-  `is_simple_related` 2.7% (flag tests only now); `infer_from` (1.3 M calls, per-call prologue/visited scans);
-  `ty_declared_type_of` -> `intern_slot` (cache the enum type on the member literal?).
-- valibot: inference (`infer_from_signature_lists` -> `infer_from_returns` over schema objects' `~run`/`~standard`
-  members) and `ty_conditional_resolve`'s `infer X` walks. type-fest: `test-d/opaque.ts` (`type_core.md`, circularity).
-- **Name resolution** 77 ms on the tsc corpus (plan 04 wanted 40): every identifier walks the scope chain (locals +
-  container exports per level, value then type meaning on failure); declare + resolve are two AST walks. Ideas: one
-  table probe per scope for all meanings, skip empty block scopes, merge the walks.
-- **Memory**: peak RSS ~120 bytes per source byte. Suspects: AST node size, per-node allocations, `DEBUG_ALLOCATOR`
-  (always defined in `prelude.h`, even in release: measure with it off). Long term, arenas.
+instruction counts across sessions, not wall times. `--time` prints the resident set after each phase and the
+checker's arena size and type count. Memory: `valgrind --tool=massif` sees malloc only; the checker arena is mmap'd
+(to attribute arena bytes, count `__builtin_return_address(0)` per call site in `arena_alloc` and `addr2line` the
+`/tmp/relg` binary run under `setarch -R`, as the 09-28 perf session did).
+
+## Memory (the weak side now: every corpus is faster than single-threaded tsgo, several use more memory)
+- **Instantiated `Prop`s are 200 bytes** and most of that is the declaration source (node, lazy, function,
+  overloads, ctx, write_node, spans, asserted...), which an instantiation never uses (it follows `target`). zod's
+  deep-partial.test.ts makes 1.56 M of them (297 MB of its 607 MB arena). Split `Prop` into the core (name, flags,
+  parent, target, mapper, type state, type) and a `PropDecl const*` for declared ones: ~200 references to the
+  declaration fields, mostly `ty/members.c`. Then `Signature` the same way (`instantiate_members`' second site).
+- **tttt makes 3.5x the types tsc does** on deep-partial.test.ts (587k vs 168k) and type-fest has 575k for 0.3 s of
+  work: find which kinds (a histogram of `ty_alloc` by kind and caller) and which tsc doesn't create (tsc's
+  instantiations of anonymous types are cached by the outer type parameters they mention; members resolve lazily).
+- **The AST**: after the parser's shrink_to_fit (09-28), webpack's parse heap is ~198 MB live plus ~100 MB of malloc
+  per-block overhead: millions of small `c_new` nodes. Node arenas (per file) would take the overhead and most of the
+  malloc time (`_int_malloc` is ~9% of parsing), but every `*_drop` of the AST and every backtracking path frees
+  nodes: the parser would need to stop freeing (failed attempts leak into the arena, bounded by the fail cache).
+  Struct sizes: `Expr` 144 (two 24-byte `Span`s), `PropertyExpr` 368 (7 checker/binder pointers), `BinaryOpExpr`
+  312, `Statement` 272, `FunctionArg` 568, `InterfaceMember` 536. A `Span` could be 12 bytes (u32 file-relative
+  offset + length, the source from the file being checked).
+- Name resolution adds ~60 MB on webpack (scopes 248 B, symbols 192 B).
+
+## Time
+- **Parser** (13% of the tsc corpus, ~25% of webpack, half of nest): no single function stands out. What's left is
+  structural: a `Parser` copy per attempt, identifiers scanned again by each alternative that fails, one malloc per
+  node. A real token (scan the identifier or punctuator once per position) and node arenas.
+- **Name resolution** 78 ms on webpack, 89 ms on the tsc corpus, ~1 IPC (cache misses walking the AST): every
+  identifier walks the scope chain (locals + container exports per level, value then type meaning on failure),
+  `scope_check_strict_identifier` compares each name with 9 reserved words, `scope_declares_symbol` rehashes the name
+  per scope in the loops of `unused_mark_referenced`/`check_static_type_parameter_reference`/`expr.c` (hash once, or
+  keep the hash in `Symbol`). Declare + resolve are two AST walks.
+- **Flow** (~12% of webpack): `type_at_flow_node` follows tsc; each variable read asks once now (TS2454's check
+  reused the walk until 09-28).
+- **Checker hot spots** (tsc corpus): `check_related` setup, `ty_union` rebuilding small unions (`access`,
+  `identifier_flow_type`), `intern_slot`, `checker_atom` (`ty_member_name` atomizes every member name of every
+  resolved declaration: ~3% of webpack; atomize at bind time instead).
+- **zod** (9.1 G): with deep-partial fixed, re-profile. valibot: `infer_from_returns` over schema objects' `~run`/
+  `~standard` members and `ty_conditional_resolve`'s `infer X` walks.
 - `find_prop`'s intersection memo caches whatever depth it was computed at (`depth > 8` gives "not found").
   `ty_intersection` distributes over non-primitive unions with no size limit (tsc: TS2590 at 100k).
 - **Stack depth**: the parser and checker recurse once per nesting level; binderBinaryExpressionStress needs 4-8 MB
-  with GCC 15 -O3 (passes at the default 8 MB). tsc walks binary chains iteratively; logical chains (`&&`, `??`,
-  `||`) still recurse per operand in `expr_lookup_names_logical`, the checker, `expr_compile_test_info_inner` and
-  `expr_drop` (tsc overflows at ~5k `&&` too). Threads get smaller stacks: matters for parallelism.
+  with GCC 15 -O3 (passes at the default 8 MB). Logical chains (`&&`, `??`, `||`) still recurse per operand in
+  `expr_lookup_names_logical`, the checker, `expr_compile_test_info_inner` and `expr_drop`. Threads get smaller
+  stacks: matters for parallelism.
+- The suite: the slowest tests left are the React-typings JSX ones (~1 s each: react16.d.ts per test).

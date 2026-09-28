@@ -18,9 +18,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   **4** (mixins, plan 32 C), webpack **135** (checkJs; JSDoc leftovers, plan 26), zod **15** (plan 19: the missing
   type, ProtoOf inference, keyof deferral).
 - **Perf** (`measurements.md`; tsgo 7.0.2 on 4 cores): tsc corpus 0.80 s vs 1.24 s, type-fest 0.41 vs 1.94, valibot
-  0.74 vs 1.61, react 0.29 vs 1.04, nest 0.26 vs 0.40, zod 1.43 vs 2.95, **webpack 0.69 vs 0.61 (tsgo single-threaded
-  0.60): the first corpus tttt loses**. Callgrind on the tsc corpus 5.79 -> 5.05 G (parser dispatch). zod is the
-  heaviest (11 G; inference walks fluent classes member by member where tsc infers by type arguments).
+  0.74 vs 1.61, react 0.29 vs 1.04, nest 0.26 vs 0.40, zod 1.43 vs 2.95, webpack 0.69 vs 0.61. *Update 09-28 (perf
+  session)*: webpack 0.56 vs 0.60 single-threaded, every corpus ahead again (huge pages, inference depth 2); memory is
+  now the weak side (zod 1.3 GB, 3.5x tsc's type count on its worst file; `Prop` is 200 bytes).
 - **Built and holding**: hand-written backtracking parser (JSX included), tsc-shaped binder with persistent symbols
   and merging, interned `Ty` core with id-keyed relations and tsc's identity relation, mapper instantiation, two-pass
   inference with priorities, contextual typing, conditional/mapped/indexed/template/substitution types, deferred

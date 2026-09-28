@@ -11,7 +11,9 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 there than a clean run.
 
 ## Suite (2026-09-27, plan 35 stage 1, bef38cb)
-**9666 / 13540** full pass (errors 11180, symbols 12356, types 11049). `./failstats.py`: errors component fails in
+**9666 / 13540** full pass (errors 11180, symbols 12356, types 11049); 9667 after the 09-28 perf session
+(errors 11182, symbols 12354, types 11050), whose other numbers below weren't re-measured. A suite run takes ~23 s
+(was 50: relationComplexityError alone took 27). `./failstats.py`: errors component fails in
 2360 tests: tsc reports errors and tttt nothing 654, both missing and spurious 585, only missing 389, **same
 codes+positions, other text 311**, tttt errors where tsc has none 254, only spurious 137, column differs 30. 323 tests
 have a spurious TS1xxx (42 of them expect no errors). Checker log_error output: 27 lines, all in one test (invalid
@@ -30,34 +32,35 @@ spans of the silent call resolutions). The lines below the displaydiff ones are 
   M 78. Clusters: other:M 70, lexical:literals 60, other:A 42, other:E 34, lexical:identifiers 32, other:D 30,
   recovery:list-context 23, permissive:modifiers 21, other:B 9, permissive:decorators 9, other:C 8, yield-await 7.
 
-## Corpora (2026-09-27, same commit)
+## Corpora (2026-09-28, perf session, todo entry 3)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**4** (mixin classes, plan 32 stage C), webpack **130** (JSDoc, plan 26; 135 -> 130 at plan 35 stage 1, IIFE
-parameters), zod **15** (plan 19).
+**4** (mixin classes, plan 32 stage C), webpack **118** (JSDoc, plan 26; 130 -> 118 at the perf session: union
+inference with circularity), zod **13** (plan 19; its 2 TS2589s went with the inference depth fix).
 
-## Perf (2026-09-27, `./bench.sh --runs 2`, quiet machine)
-Best wall / peak RSS:
+## Perf (2026-09-28, perf session, `./bench.sh --runs 2`)
+Best wall / peak RSS. tttt now re-executes itself with glibc's malloc on transparent huge pages and madvises its
+arena (`TTTT_NO_REEXEC=1` to measure without: 5-20% slower, same RSS):
 
 | corpus | tttt | tsc 5.8 | tsgo | tsgo 1 thread |
 |---|---|---|---|---|
-| synthetic (976 tests x 200, 2.66 M lines) | 5.93 s / 5088 MB | 42.8 s / 4292 MB | 9.71 s / 5456 MB | 12.74 s / 3708 MB |
-| tsc `src/compiler` (193k lines) | **0.80 s** / 432 MB | 7.46 s | 1.24 s / 430 MB | 1.72 s |
-| type-fest | 0.41 s / 476 MB | 5.34 s | 1.94 s / 800 MB | 2.31 s |
-| valibot | 0.74 s / 484 MB | 8.94 s | 1.61 s / 835 MB | 2.42 s |
-| react (1511 files) | 0.29 s / 265 MB | 3.74 s | 1.04 s / 538 MB | 0.93 s / 317 MB |
-| nest (2394 files) | 0.26 s / 274 MB | 2.57 s | 0.40 s / 249 MB | 0.51 s / 213 MB |
-| webpack (1188 files, checkJs) | 0.69 s / 455 MB | 8.75 s | 0.61 s / 496 MB | **0.60 s** / 307 MB |
-| zod (621 files) | 1.43 s / 923 MB | 10.87 s | 2.95 s / 1362 MB | 3.64 s / 1017 MB |
+| synthetic (987 tests x 200, 2.70 M lines) | 4.61 s / 3984 MB | 51.2 s / 4309 MB | 10.30 s / 5719 MB | 12.40 s / 3782 MB |
+| tsc `src/compiler` (193k lines) | **0.65 s** / 351 MB | 7.36 s | 1.27 s / 406 MB | 1.72 s |
+| type-fest | 0.32 s / 476 MB | 5.33 s | 1.90 s / 800 MB | 2.34 s |
+| valibot | 0.62 s / 453 MB | 8.97 s | 1.60 s / 832 MB | 2.40 s |
+| react (1511 files) | 0.24 s / 228 MB | 3.74 s | 1.04 s / 539 MB | 0.94 s / 295 MB |
+| nest (2394 files) | 0.19 s / 225 MB | 2.57 s | 0.43 s / 240 MB | 0.51 s / 212 MB |
+| webpack (1188 files, checkJs) | **0.56 s** / 375 MB | 8.75 s | 0.67 s / 450 MB | 0.60 s / 307 MB |
+| zod (621 files) | 1.31 s / 1302 MB | 10.75 s | 2.89 s / 1367 MB | 3.71 s / 971 MB |
 
-tttt phases (parse files / resolve / typecheck, ms): synthetic 1315 / 880 / 3533; tsc corpus 148 / 119 / 523;
-type-fest 20 / 13 / 371; valibot 66 / 48 / 598; react 90 / 56 / 130; nest 130 / 69 / 34; webpack 180 / 103 / 383;
-zod 106 / 79 / 1209; the stdlib alone (esnext.full, 42k lines) 20 / 10 / 37. Libs load+parse ~17 ms.
-- **webpack is the one corpus where tsgo, even single-threaded, beats tttt** (0.60 vs 0.69 s: JSDoc checking and
-  RSS). nest is the closest TS corpus (0.26 vs 0.40): parsing is half of tttt's time there (skipLibCheck).
-- zod is the heaviest (typecheck 1.2 s; profile in `bugs/perf_leads.md`; DeepPartial's TS2589 may be part of it).
+tttt phases (parse files / resolve / typecheck, ms; checker arena, types): synthetic 760 / 709 / 3173 (970 MB, 2.1 M);
+tsc corpus 104 / 89 / 455 (60 MB, 94k); type-fest 15 / 7 / 293 (413 MB, 575k); valibot 48 / 37 / 518 (291 MB, 374k);
+react 65 / 42 / 118; nest 101 / 54 / 30; webpack 131 / 78 / 335 (93 MB); zod 72 / 62 / 1159 (1026 MB, 943k); the
+stdlib alone (esnext.full, 42k lines) 13 / 5 / 33. `--time` prints the resident set per phase and the arena/types.
+- **tttt beats single-threaded tsgo on every corpus now**, webpack included (0.56 vs 0.60; was 0.69).
+- Memory is the weak side: zod 1.3 GB (deep-partial.test.ts alone is 745 MB, 587k types where tsc makes 168k),
+  type-fest 476 MB for 575k types. `perf_leads.md`.
 
-## Instructions (2026-09-27, from the entries of that day)
-`perf stat` (user+kernel, higher than callgrind's count) at the zod pinning session: tsc corpus 5.43 G, valibot 5.74 G,
-type-fest 3.87 G, react 2.25 G, nest 1.46 G, webpack 3.87 G, zod 11.74 G (callgrind 10.85 G). Callgrind history: tsc corpus 6.92 G at the 09-27 perf
-check-up start -> 5.91 G (that session) -> 5.79 G (plan 28, calls resolve once) -> 5.05 G (parser perf: first-char
-dispatch, keyword probes). Re-measure all with callgrind at the next perf session and replace this section.
+## Instructions (2026-09-28, perf session, callgrind `-q --keep-going -p DIR`)
+At the session's start (028246a) -> end: tsc corpus 5.100 -> 4.661 G, type-fest 3.348 -> 3.276, valibot 5.262 -> 5.012,
+react 1.929 -> 1.934, nest 1.008 -> 1.022 (the parser's shrink_to_fit reallocs), webpack 3.383 -> 3.282,
+zod 10.889 -> 9.057. (valgrind runs don't re-exec, so huge pages aren't in these.)

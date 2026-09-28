@@ -3,6 +3,13 @@ Suboptimal-but-working code, by subsystem. Each entry: where (function names), w
 fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md or a plan, not here.
 
 ## Global state, memory, parallelism
+- `reexec_with_huge_pages` (`main.c`): glibc only reads `GLIBC_TUNABLES` at startup, so tttt execs
+  `/proc/self/exe` once with `glibc.malloc.hugetlb=1` (skipped when the variable is set, under valgrind, or with
+  `TTTT_NO_REEXEC`). 5-20% of wall time on every corpus. A malloc of our own (or arenas for the AST, see
+  `bugs/perf_leads.md`) that madvises its memory like the checker arena does would make it unnecessary.
+- Parser lists `shrink_list()` (`parser.c`) when done, because STC's first push reserves 4 elements and the AST's
+  list elements are big (a parameter is 568 bytes): one realloc per list (nest +1.5% instructions) for -20% RSS. The
+  real fix is smaller nodes.
 - `current_checker` / `current_lazy_slots` (thread locals, `checker_make_current`): how the AST-side walk
   (`*_typecheck`, `*_evaluate_type`, `ty_of_node`, the `Ty const*` displayable) finds its checker. Stays set after
   `program_typecheck` because the test traversal and debug display evaluate types afterwards. The type core takes a
@@ -274,6 +281,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   doesn't count). The widened literal stays an object literal type.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`, `ty/access.c`)
+- `Inference.circularity` (`infer_from`): tsc's InferencePriority.Circularity comes from invokeOnce, both for a pair
+  that is deeply nested on both sides and for a pair visited before whose recorded priority was a circularity. tttt's
+  `visited` set records no priorities: a pair met again counts as circular only while it is still on the object stack.
 - `props_related` (`ty/relate.c`): tsc skips a property whose source and target are the same symbol; tttt's props are
   per type, so only object literal accessors of the same function are recognized as "the same" (what the recursive
   getter idiom needs). Other shared symbols are related (and typed) as usual.
@@ -402,6 +412,10 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   properties of a renaming `as` clause lose their declarations.
 
 ## Type core (`src/ty/`)
+- Relation budget (`recursive_related`, `check_related`): tsc's relationCount, but without union origins tttt spends
+  it where tsc takes a shortcut: `T1 & T2` (distributed into a 20k-member union) against `T1` is true at once in tsc
+  (the union's origin is an intersection containing T1) and TS2859 in tttt (relationComplexityError's f1). Union
+  origins are the fix; so far only that test is known to reach the budget.
 - Relation error reporting (`relate.c`, plan 34): `flush_incompatible()` reads a property's name back out of its
   pending "Types of property 'NAME' are incompatible." message (fixed prefix length) instead of storing it. tsc's
   `headMessage` is approximated by `RelationState.at_top` (the first `is_related_to()` call): a suppressed top-level
