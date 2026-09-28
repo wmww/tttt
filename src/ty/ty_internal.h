@@ -146,6 +146,7 @@ typedef enum InferPriority {
     INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT = 1 << 5, // K from the keys of the source (`{ [P in K]: X }`)
     INFER_PRIORITY_CONTRAVARIANT_CONDITIONAL = 1 << 6, // to the branches of a conditional type in a contravariant position
     INFER_PRIORITY_RETURN_TYPE = 1 << 7,
+    INFER_PRIORITY_LITERAL_KEYOF = 1 << 8, // T from a string literal to `keyof T`
 } InferPriority;
 
 #define INFER_MAX_DEPTH 24

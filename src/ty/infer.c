@@ -1037,6 +1037,38 @@ static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** s
     return left;
 }
 
+// tsc's isLiteralType (a unit type or a union of them) or `string`
+static bool is_literal_or_string(Ty const* ty) {
+    if (ty->flags & TYF_STRING) return true;
+    TyList parts = ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* part = parts.data[i];
+        if (part->kind != TY_LITERAL && !(part->kind == TY_INTRINSIC && (part->flags & TYF_NULLABLE))) return false;
+    }
+    return true;
+}
+
+// tsc's createEmptyObjectTypeFromStringLiteral: a property of type any per string literal, a string index signature
+// for `string`
+static Ty const* empty_object_from_string_literals(Checker* me, Ty const* ty) {
+    TyList parts = ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
+    ObjectLiteralProp* props = calloc(parts.len ? parts.len : 1, sizeof(ObjectLiteralProp));
+    panic_if(!props, "out of memory");
+    u32 count = 0;
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* part = parts.data[i];
+        if (!(part->flags & TYF_STRING_LITERAL) || part->kind != TY_LITERAL) continue;
+        Atom const* name = ty_literal_name(me, part);
+        if (!name) continue;
+        props[count++] = (ObjectLiteralProp){ .name = name, .type = ty_intrinsic(me, TY_ANY) };
+    }
+    IndexInfo index = { .key = ty_intrinsic(me, TY_STRING), .value = ty_empty_object_type(me), .param_name = checker_atom(me, c_sv("x")) };
+    bool string = (ty->flags & TYF_STRING) != 0;
+    Ty const* ret = ty_object_literal(me, props, count, string ? &index : nullptr, string ? 1 : 0, OBJECT_SYNTHETIC);
+    free(props);
+    return ret;
+}
+
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if (!(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || ty_is_no_infer(target)) return;
     if (source->alias && source->alias == target->alias) {
@@ -1114,6 +1146,12 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             }
         }
         if (naked_count == 1) infer_with_priority(me, inf, source, naked, INFER_PRIORITY_NAKED_TYPE_VARIABLE);
+    } else if (target->kind == TY_KEYOF && is_literal_or_string(source)) {
+        // A string literal to `keyof T`: T has that property (tsc's createEmptyObjectTypeFromStringLiteral), what
+        // several positions say combined
+        inf->contravariant = !inf->contravariant;
+        infer_with_priority(me, inf, empty_object_from_string_literals(me, source), target->keyof.operand, INFER_PRIORITY_LITERAL_KEYOF);
+        inf->contravariant = !inf->contravariant;
     } else if (source->kind == TY_UNION) {
         for (u32 i = 0; i < source->composite.types.len; i++) {
             infer_from(me, inf, source->composite.types.data[i], target);
@@ -1408,7 +1446,9 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
         co = ty_widened_nullable(me, ty_widened_objects(me, co)); // (tsc's getWidenedType of the inference)
         free(candidates);
     }
-    Ty const* contra = param->contra_len ? common_subtype(me, param->contra, param->contra_len) : nullptr;
+    // (Candidates of a priority that implies combining them are intersected: tsc's PriorityImpliesCombination)
+    Ty const* contra = !param->contra_len ? nullptr : (param->priority & INFER_PRIORITY_LITERAL_KEYOF) ?
+        ty_intersection(me, param->contra, param->contra_len, nullptr, (TyList){0}) : common_subtype(me, param->contra, param->contra_len);
     if (co && contra) {
         // The covariant inference wins if it fits what the contravariant positions ask for
         // ... and neither its own candidates (it isn't one of a conflicting set) nor those of a type parameter constrained

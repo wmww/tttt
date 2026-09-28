@@ -17226,9 +17226,9 @@ const baselines = {
         types: true,
     },
     'inferObjectTypeFromStringLiteralToKeyof': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferParameterWithMethodCallInitializer': {
         errors: true,
@@ -67431,9 +67431,9 @@ const baselines = {
         types: false,
     },
     'keyofInferenceIntersectsResults': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'keyofInferenceLowerPriorityThanReturn': {
         errors: true,
