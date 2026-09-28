@@ -1,18 +1,22 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-28 (after the corpus session, todo entry 6)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
-zod 0, zod-root = tsc's own 55, **webpack 32** (was 107; checkJs). The history of R1-R21 (identity relation,
+**Status 2026-09-28 (sixth window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
+zod 0, zod-root = tsc's own 55, **webpack 18** (was 107; checkJs), **xstate** (new, see below). The history of R1-R21 (identity relation,
 homomorphic mapped modifiers, const type parameters, skip-sensitive inference, the permissive instantiation, ...) and
 of the zod and type-fest items is in git (this file before the corpus sessions) and in the commits.
 
 ## The loop
 `./realworld.py` (tsc's `src/compiler`, must stay 0) and `./realworld.py --corpus X` for valibot, type-fest, react,
-nest, webpack, zod (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
+nest, webpack, zod, xstate (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
 tttt bug. Rank by root cause, not by code: sample the biggest groups, reduce each to a probe in
 `test/probes/plan19/<corpus>/`, fix the tsc rule behind it. Record the counts in the commit message and
 `measurements.md`; the suite and the other corpora are the regression checks.
 
 Corpus notes worth keeping:
+- `./tsctypeat.js TSCONFIG FILE LINE|* NAME` prints what tsc says an identifier's type is inside the corpus, where a
+  reduction doesn't reproduce (webpack's `any`s from JSDoc fixing were found that way).
+- Grep `./filetest.sh` output for diffs only with `-d` (`FAST=1 ./filetest.sh f.ts -d`): without it no diff is
+  printed and "no `^[-+]` lines" means nothing.
 - expect-type's `toEqualTypeOf` (valibot, zod test-d files) checks tttt's identity relation: a jump there is real.
 - nest: nestjs-i18n's shipped `.d.ts` imports `Path`/`PathValue`/`IfAnyOrNever` from a module that doesn't export
   them (hidden by skipLibCheck), so those are error types; a regression there would look like an i18n bug. A clean
@@ -25,26 +29,28 @@ Corpus notes worth keeping:
   deep-partial.test.ts alone is 745 MB, `bugs/perf_leads.md`).
 
 ## What is left
-### webpack (32)
+### webpack (18)
 Fixed 2026-09-28 (probes in `test/probes/plan19/webpack/`, one commit each): JSDoc `[T?]` optional tuple elements,
 overload groups of merged global functions (node's setTimeout before DOM's), parameter defaults removing undefined
 (contextual/JSDoc-typed parameters, closures), JSDoc casts as narrowable references, a declaration's `@type` tag
 signature, lazy conditional branches (TS2456), `require("m").X` value-only aliases, generic array-like spreads,
 conditional-vs-conditional with `infer`, inference from optional parameters, getter `@type`, JSDoc through comments.
-Left, by cause (sampled, not all reduced):
+Sixth window's corpus session (30 -> 18): unique symbols kept in declaration unions, any/unknown defaults removing
+undefined, `{}` initializers with expandos unchecked, keyof `keyof T`, string-index-only element access, the whole base
+constraint for TS2731, description backticks, constructor-declared JS members by flow type, `@this` types unchecked.
+Left, every one reduced:
 - **Defaulted type parameters leaking into context-sensitive callbacks** (~9: PackFileCacheStrategy's LazyFunction and
   `Promise<PackContainer | Pack>` chains, IdleFileCachePlugin:121, maxAge TS2339): bugs/type_core.md "Inference" first
-  bullet, probe `contextual_return_default_leak.ts`. A tried port lost 8 tests; needs the timing of return-type
-  evaluation vs `my outer_inference` understood first.
+  bullet, probe `contextual_return_default_leak.ts`. Plan 38.
+- **A JSDoc `@template` fixed by a nested JSDoc function type** (MultiCompiler:645 x2 + 649, FileSystemInfo:3859): tsc
+  infers `any` there. Plan 38 "JS: a JSDoc @template is fixed by any nested JSDoc function type".
 - `@template` on a variable statement (`@template T` + `@type {Record<string, (items: T[]) => X<T>>}`,
   DefaultStatsFactoryPlugin:2733, TS2304 x2): plan 26 "Stage 3 leftovers".
-- A `var f = function` JSDoc resolves its names from the variable statement, outside the function: semver.js's
-  `@param {str} str` (a webpack typo) is the outer parameter's type in tsc, TS2502 + TS7006 here. Plan 26.
-- Unsampled: TS18048 `watching` (MultiCompiler:645, see triage 2026-09-28 note in git: the JS-inferred SetupResult),
-  cli.js `Schema | undefined` x3, buildChunkGraph `false | symbol` vs ConnectionState x2, cleverMerge x3 (TS2536 `keyof
-  (keyof T)`, TS2731, DynamicFunction), `{}` vs intersection/ManifestObject (object literal expandos?), TS2540
-  matchPart, TS2344 `Parser` vs `abstract new`, TS7006 x2 (HttpUriPlugin:216, CommonJsRequireContextDependency:54),
-  FileSystemInfo:3859, module-federation example TS2322.
+- The module-federation example's TS2322: the arrow's return type comes from its variable's `@type` in tsc (plan 26
+  leftovers, "TS6210 related info").
+- cleverMerge.js:355 `newFn[DYNAMIC_INFO] = ...`: late-bound expandos (plan 26 leftovers).
+- ModuleFilenameHelpers.js:353 TS2540 `matchPart` read-only: only in the whole program (a copy of the file with
+  another requiring it is clean), so some other file's view of the CommonJS export comes first. Not reduced.
 
 ### zod-root (tsc 55, tttt 55: the same set)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is

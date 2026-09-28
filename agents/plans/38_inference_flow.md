@@ -33,6 +33,15 @@ the pieces only work together, so this is a port, not a fix.
 - Measure with the suite (`37_prototypes/fixing_gate_lost.txt` is the loss list to beat), webpack, zod, valibot and the
   inference-heavy corpus the window's first session pins; `perf stat` on zod/valibot.
 
+## JS: a JSDoc `@template` is fixed by any nested JSDoc function type
+`38_prototypes/jsdoc_template_fixed_by_nested_function_type.ts` (todo entry 1 of the sixth window): in JS, tsc's
+isTypeParameterPossiblyReferenced walks up from a JSDoc type node and never meets the `@template` tag, so R counts as
+referenced by `s: () => void` in `@param {(i: number, s: () => void) => R} setup`. Checking the context-sensitive
+setup arrow instantiates that parameter type with the fixing mapper, which fixes R before it has candidates: the JS
+default `any`. webpack depends on it: MultiCompiler.js `_runGraph` (SetupResult is any: TS18048 x2, TS2345) and
+FileSystemInfo.js `_readContext` (T is any: TS2345 at 3859). Lazy fixing (stage 4 above) plus this quirk in the "mentions
+P" walk (stage 1) reproduce it; without the quirk those four stay.
+
 ## Validation (of the whole plan)
 The HACK entries above deleted from hacks.md, the five type_core.md bullets fixed or rewritten with a named reason,
 webpack's `.then` TS2322s gone, zod/valibot/the new corpus unchanged or better, 0 suite tests lost per stage.

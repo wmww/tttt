@@ -313,9 +313,17 @@ JS items that were in triage.md (statuses checked then); stage 4, the "Stage 3 l
 - `@type` on `export default <expr>` (checkJsdocTypeTagOnExportAssignment1-8); on declaring assignments it's done.
 - TS6210 related info of an arrow function under a variable's `@type` points at the arrow's parameter; tsc points at
   the JSDoc signature's (getSignatureOfTypeTag applies to the arrow). Same root: the arrow's return type is reused
-  from the `@type` in tsc's types baseline (jsdocTypeTagParameterType, jsdocTypeTagRequiredParameters).
+  from the `@type` in tsc's types baseline (jsdocTypeTagParameterType, jsdocTypeTagRequiredParameters). webpack's
+  examples/module-federation/webpack.config.js (TS2322): the returned array literal is checked elementwise against the
+  annotated `Configuration[]` in tsc, where tttt infers and widens the arrow's return type (normalized `{ app?:
+  undefined }`) and compares that; getReturnTypeFromAnnotation falls back to getReturnTypeOfTypeTag, and
+  getJSDocTypeTag of a variable's function initializer finds the variable statement's tag.
 - `expandoFunctionSymbolProperty(Js)`: `f[symb] = ...` with a unique symbol key is a late-bound expando (tsc's
   hasDynamicName -> addLateBoundAssignmentDeclarationToSymbol); only static names are expandos so far (spurious TS2741).
+  webpack's cleverMerge.js `newFn[DYNAMIC_INFO] = [fn, second]` on a local arrow (TS2322 against DynamicFunction).
+- JS constructor functions (`function F() { this.x = v }`) have no return flow node (function_impl.c makes one for
+  class constructors only, tsc's binder for every JS function), so their `this.x` members are still the union of the
+  constructor's assignments (lower.c's flow_type_in_constructor covers class constructors).
 - JSDoc attachment: tsc attaches a comment on the same line as the previous token only to parameters, type
   parameters, function/arrow expressions, parenthesized expressions, variable declarations and export specifiers
   (getJSDocCommentRanges: trailing + leading comments), not to statements; `jsdoc_before()` attaches any comment that
