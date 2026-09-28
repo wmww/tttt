@@ -1336,6 +1336,7 @@ Ty const* ty_return_expressions_context(Checker* me, FunctionImpl const* functio
 // `import.meta` (the property access on the `import` keyword) and its type
 bool ty_is_import_meta(struct Expr const* expr);
 Ty const* ty_import_meta_type(Checker* me);
+Ty const* ty_import_meta_expr_type(Checker* me, Expr const* expr);
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function); // null if nothing says what `this` is
 // The contextual signature a function expression's parameters were typed by, if any (after it was checked)
 Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function);

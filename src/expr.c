@@ -656,6 +656,17 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
             error_ctx_error_d(errs, my name, 7005, "Variable '", my name, "' implicitly has an '", t, "' type.");
         }   break;
     }
+    if (my keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
+        // tsc's checkGrammarMetaProperty: the name after `new.`
+        char const* end = span_end_ptr(my name);
+        char const* start = end;
+        while (start > span_start_ptr(my name) && start[-1] != '.' && !isspace((unsigned char)start[-1])) start--;
+        Span property = span_make(my name.source, start, end);
+        if (!csview_equals(property.sv, "target")) {
+            error_ctx_grammar_error_d(errs, property, 17012, "'", property,
+                "' is not a valid meta-property for keyword 'new'. Did you mean 'target'?");
+        }
+    }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_NAMESPACE) {
         error_ctx_error_d(errs, my name, 2331, "'this' cannot be referenced in a module or namespace body.");
         // (Nor does it have a type: tsc's tryGetThisTypeAt of a namespace)
@@ -1931,6 +1942,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
             return;
 
         case EXPR_PROPERTY: {
+            if (ty_is_import_meta(target)) break; // A meta-property is no reference (TS2364)
             if (!source) return;
             Ty const* target_type = ty_expr_type(checker, target);
             if (target->property->assignment_target == FLOW_TARGET_COMPOUND) {
@@ -2715,7 +2727,9 @@ static void increment_typecheck(Expr const* operand, ErrorCtx* errs) {
     while (reference->tag == EXPR_AS_TYPE || (reference->tag == EXPR_UNARY_OP && reference->unary_op->op == UNARY_OP_RIGHT_BANG)) {
         reference = reference->tag == EXPR_AS_TYPE ? &reference->as_type->expr : &reference->unary_op->expr;
     }
-    if ((reference->tag != EXPR_IDENTIFIER || reference->identifier.keyword) && reference->tag != EXPR_PROPERTY) {
+    if (((reference->tag != EXPR_IDENTIFIER || reference->identifier.keyword) && reference->tag != EXPR_PROPERTY) ||
+        ty_is_import_meta(reference)
+    ) {
         error_ctx_error_d(errs, operand->outer_span, 2357,
             "The operand of an increment or decrement operator must be a variable or a property access.");
     } else if (expr_is_optional_chain(reference)) {
@@ -3284,6 +3298,10 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
 // `import.meta` needs a module format that has it (tsc's checkImportMetaProperty)
 static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
+    Span name = my property->prop.inner_span;
+    if (!csview_equals(name.sv, "meta")) { // (tsc's checkGrammarMetaProperty)
+        error_ctx_grammar_error_d(errs, name, 17012, "'", name, "' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?");
+    }
     ModuleKind module = compiler_options()->module;
     if (module >= MODULE_KIND_NODE16 && module <= MODULE_KIND_NODENEXT) {
         if (source_file_implied_format_for_emit(my inner_span.source) != MODULE_KIND_ESNEXT) {

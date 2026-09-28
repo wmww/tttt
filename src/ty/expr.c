@@ -1518,6 +1518,11 @@ bool ty_is_import_meta(Expr const* expr) {
     return object->tag == EXPR_IDENTIFIER && object->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT;
 }
 
+// The type of `import.x`: ImportMeta for `import.meta`, else the error type (TS17012, tsc's checkImportMetaProperty)
+Ty const* ty_import_meta_expr_type(Checker* me, Expr const* expr) {
+    return csview_equals(expr->property->prop.inner_span.sv, "meta") ? ty_import_meta_type(me) : ty_intrinsic(me, TY_ERROR);
+}
+
 // `import.meta`: the global ImportMeta interface (tsc's getGlobalImportMetaType, `{}` without one)
 Ty const* ty_import_meta_type(Checker* me) {
     Symbol const* symbol = program_get_global(my program, c_sv("ImportMeta"), SYMBOL_TYPE);
@@ -3593,7 +3598,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             return check_unary(me, expr->unary_op);
 
         case EXPR_PROPERTY: {
-            if (ty_is_import_meta(expr)) return ty_import_meta_type(me);
+            if (ty_is_import_meta(expr)) return ty_import_meta_expr_type(me, expr);
             if (is_constructor_declared_target(me, expr->property)) return any_type(me);
             Ty const* in_constructor = constructor_declared_read(me, expr);
             if (in_constructor) return in_constructor;

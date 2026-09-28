@@ -2661,7 +2661,8 @@ static bool parse_new_target(Parser* parent, Expr* ret) {
     hop_whitespace(&p);
     if (!hop_char(&p, '.')) return parse_fail(&p);
     hop_whitespace(&p);
-    if (!hop_start_if_ends_on_word_break(&p, "target")) return parse_fail(&p);
+    // (Any name: tsc's checkGrammarMetaProperty says TS17012 for another one)
+    if (!parse_identifier_or_keyword(&p, nullptr)) return parse_fail(&p);
     *ret = expr_identifier((IdentifierExpr){ .name = span_from(a), .keyword = KEYWORD_IDENTIFIER_NEW_TARGET });
     return parse_success(&p);
 }

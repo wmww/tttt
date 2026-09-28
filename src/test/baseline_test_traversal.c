@@ -1445,6 +1445,11 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
 }
 
 static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    if (ty_is_import_meta(me) && !csview_equals(my property->prop.inner_span.sv, "meta")) {
+        // `import.metal` (TS17012) is the error type, and has no symbols
+        baseline_test_case_add_type(ctx, my property->prop.outer_span, ty_intrinsic(current_checker, TY_ERROR));
+        return;
+    }
     if (ty_is_import_meta(me)) {
         // The symbol of ImportMeta's type, and `meta` as the property of tsc's synthetic ImportMetaExpression
         Ty const* type = ty_import_meta_type(current_checker);
@@ -1565,8 +1570,11 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             if (my identifier.keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
                 // tsc shows the `target` of `new.target` too, like the name of a property access
                 Span target = my identifier.name;
-                target.sv = csview_from_n(span_end_ptr(target) - 6, 6);
-                if (my identifier.target) {
+                char const* start = span_end_ptr(target);
+                while (start > span_start_ptr(target) && start[-1] != '.' && !isspace((unsigned char)start[-1])) start--;
+                target.sv = csview_from_range(start, span_end_ptr(target));
+                // (A misspelled one, TS17012, has no symbol)
+                if (my identifier.target && csview_equals(target.sv, "target")) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = symbol_declaration_spans(my identifier.target),
                         .span = target,

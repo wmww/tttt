@@ -1077,7 +1077,7 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
         return ty_identifier_reference_type(me, &expr->identifier);
     }
     if (expr->tag != EXPR_PROPERTY) return nullptr;
-    if (ty_is_import_meta(expr)) return ty_import_meta_type(me);
+    if (ty_is_import_meta(expr)) return ty_import_meta_expr_type(me, expr);
     Ty const* object = type_of_dotted_name(me, &expr->property->expr);
     Atom const* name = object ? access_name(me, expr->property) : nullptr;
     if (!name) return nullptr;
@@ -2179,7 +2179,7 @@ static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32
         return ty_identifier_reference_type(me, &reference->identifier);
     }
     if (reference->tag != EXPR_PROPERTY) return nullptr;
-    if (ty_is_import_meta(reference)) return ty_import_meta_type(me);
+    if (ty_is_import_meta(reference)) return ty_import_meta_expr_type(me, reference);
     Ty const* object = constant_reference_type(me, &reference->property->expr, depth + 1);
     Atom const* name = object ? access_name(me, reference->property) : nullptr;
     if (!name) return nullptr;
