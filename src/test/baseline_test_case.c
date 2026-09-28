@@ -462,6 +462,20 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         }
     }
 
+    // tsc's harness has its built compiler at /.ts (vfs.ts builtFolder), which the API samples import through a
+    // package.json. That build's API is tests/baselines/reference/api/typescript.d.ts
+    if (csview_find_sv(contents_sv, c_sv("/.ts/typescript.d.ts")) != c_NPOS) {
+        isize cases = csview_find_sv(my source_path, c_sv("/tests/cases/"));
+        if (cases != c_NPOS) {
+            cstr api = cstr_d(csview_slice(my source_path, 0, cases), "/tests/baselines/reference/api/typescript.d.ts");
+            cstr contents = cstr_null;
+            try (fs_mkdir(mock_fs_get_fs(my fs), c_sv("/.ts"))) or_log(info);
+            try (fs_read_file(fs, cstr_sv(&api), &contents)) or_log(info);
+            try (mock_fs_create_file(my fs, c_sv("/.ts/typescript.d.ts"), contents)) or_log(info);
+            cstr_drop(&api);
+        }
+    }
+
     // A file that says `/// <reference no-default-lib="true"/>` is the default library (tsc's hasNoDefaultLib)
     bool no_default_lib = csview_find_sv(contents_sv, c_sv("no-default-lib=\"true\"")) != c_NPOS;
     for (csview list = cstr_sv(&my lib_files); list.size && !no_default_lib;) {
