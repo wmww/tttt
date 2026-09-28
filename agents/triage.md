@@ -106,3 +106,29 @@ smaller leftovers to `bugs/*.md` and hacks.md.
   in its exports the static `B` and a merged namespace's `interface B` are one symbol. Spurious TS2749 in
   exportEqualsProperty(2), exportDefaultProperty2, commonJsImportClassExpression. Needs a dotted SymbolAlias whose
   value half is the expression (value_target) and type half the namespace walk.
+- TS2705/TS2468 (async function in ES5 without a global `Promise` value, tsc's createPromiseReturnType): tsc reports it only when the return type of an async function *without* `return x` is computed from its body (noImplicitReturns, a call, a contextual signature...), not for every such function; checking every one of them breaks 9 tests (asyncFunctionWithForStatementNoInitializer, classStaticBlock7...). Needs the error at the lazy return-type computation (asyncFunctionNoReturnType, operationsAvailableOnPromisedType, destructuringControlFlowNoCrash). TS2712 (the same for `import()`) is unconditional in checkImportCallExpression.
+- Relations bucket leftovers (sub-agent A, suite-checker-bugs session):
+  - compareSignaturesRelated's restIndex (getRestOrAnyTypeAtPosition when either side has a non-array rest) isn't
+    ported: `(a, b) => void` against `(...args: readonly [1, "1"] | readonly [2, "2"]) => any` compares per position
+    (contextualTupleTypeParameterReadonly). A straight port (`rest_or_any_type_at` in compare_signatures) broke 5 tests
+    (genericFunctionInference1, restTuplesFromContextualTypes, ...): generic rest `T` against a params tuple needs care.
+  - noUncheckedIndexedAccess on a generic index (`myRecord2[key]`, Key extends keyof with an index signature): tsc's
+    IndexedAccess type carries AccessFlags.IncludeUndefined (persistent), whose constraint adds undefined; TY_INDEXED has
+    no such flag (noUncheckedIndexedAccess line 99).
+  - varianceReferences: an alias with `in out` whose body isn't an object type (TS2637) still uses the annotation, but
+    tsc's reportErrors=true first pass falls back to a structural check for an invariant failure (relateVariances);
+    tttt's first pass never reports, so `vs12 = vs1` errors.
+  - inferConditionalConstraintMappedMember: `{ [K in keyof T]: X } extends { [_ in keyof T]: infer U } ? U : never` has
+    constraint X in tsc (K4 variant with template `1` gives number), tttt unknown; why tsc infers there despite the
+    generic mapped check type is unclear. Kept out of TS2344 by the deferred-conditional HACK.
+  - unionTypeWithIndexAndTuple: `f(["a"])` for `["a"] | I` (I with a number index of any) keeps "a" in tsc; the element
+    context is `"a" | any` = any there too, so the mechanism is elsewhere.
+  - usingDeclarationsWithIteratorObject (and await variant): `Iterator.from(i)` in lib.esnext.iterator's
+    `declare global` resolves `Iterator<T, unknown, undefined>` to the module-local class (with map, filter...) in tttt;
+    tsc accepts a global Iterator there. Check how names inside `declare global` of a lib module resolve.
+  - mappedTypes6 / mappedTypeErrors2: `-?` template elaboration (tsc's NonNullable<T[P]> display and chain).
+  - classExtendsNull2 (TS2417 against static side 'null' with a merged interface), thisConditionalOnMethodReturnOfGenericInstance
+    (tsc's circular `method` makes it any), signatureCombiningRestParameters1 (union signature with rest tuples should
+    intersect to never).
+  - derivedClassSuperProperties fails ERR on ai-main already (TS2376 at `(() => this)()` before super()) though the
+    saved baseline had it passing.
