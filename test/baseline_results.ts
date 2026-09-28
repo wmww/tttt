@@ -37771,9 +37771,9 @@ const baselines = {
         types: true,
     },
     'controlFlowAssignmentPatternOrder': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowBinaryAndExpression': {
         errors: true,
@@ -37791,9 +37791,9 @@ const baselines = {
         types: true,
     },
     'controlFlowBindingPatternOrder': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowCommaOperator': {
         errors: true,

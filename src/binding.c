@@ -105,6 +105,18 @@ static void binding_check_var_not_shadowed(Binding const* me, Scope const* names
 void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     Binding const* outer_root = names->flow ? names->flow->binding_root : nullptr;
     if (names->flow && !my parent) names->flow->binding_root = me;
+    // The type, then the default, then the pattern: a default is evaluated before the elements it is destructured
+    // into (tsc's bindParameterFlow / bindBindingElementFlow)
+    if (my has_explicit_type) {
+        type_lookup_names(&my explicit_type, names, errs);
+    }
+    if (my default_value) {
+        // In a parameter's pattern the default is the element's own (tsc's associatedDeclarationForContainingInitializer)
+        Binding const* saved = names->flow ? names->flow->parameter_initializing : nullptr;
+        if (saved) names->flow->parameter_initializing = me;
+        expr_lookup_names_initializer(my default_value, names, errs);
+        if (saved) names->flow->parameter_initializing = saved;
+    }
     switch (my tag) {
         case BINDING_NOOP: break;
 
@@ -130,16 +142,6 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
             break;
     }
 
-    if (my default_value) {
-        // In a parameter's pattern the default is the element's own (tsc's associatedDeclarationForContainingInitializer)
-        Binding const* saved = names->flow ? names->flow->parameter_initializing : nullptr;
-        if (saved) names->flow->parameter_initializing = me;
-        expr_lookup_names_initializer(my default_value, names, errs);
-        if (saved) names->flow->parameter_initializing = saved;
-    }
-    if (my has_explicit_type) {
-        type_lookup_names(&my explicit_type, names, errs);
-    }
     if (names->flow && !my parent) names->flow->binding_root = outer_root;
 }
 
