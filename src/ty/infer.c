@@ -599,6 +599,17 @@ static bool infer_to_mapped(Checker* me, Inference* inf, Ty const* source, Mappe
 
 // tsc's isObjectTypeWithInferableIndex, as far as tttt can tell: anonymous object types (object and type literals,
 // mapped types) without signatures, and intersections of them
+// tsc's isApplicableIndexType: whether an index signature keyed by `target` applies to keys of type `source`
+static bool index_key_applies(Checker* me, Ty const* source, Ty const* target) {
+    if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return true;
+    if (target == ty_intrinsic(me, TY_STRING)) return ty_is_related(me, source, ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE);
+    if (target == ty_intrinsic(me, TY_NUMBER)) {
+        return ty_is_numeric_string_type(me, source) ||
+            ((source->flags & TYF_STRING_LITERAL) && source->literal.string && ty_is_numeric_name(source->literal.string));
+    }
+    return false;
+}
+
 static bool inferable_index(Checker* me, Ty const* ty, u32 depth) {
     if (ty->kind == TY_INTERSECTION && depth < 4) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {
@@ -827,47 +838,52 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         me, inf, source_members->construct, source_members->construct_count,
         target_members->construct, target_members->construct_count
     );
+    // (tsc's inferFromIndexTypes)
+    bool inferable = inferable_index(me, source, 0);
+    for (u32 i = 0; i < target_members->index_count && inferable; i++) {
+        IndexInfo const* target_info = &target_members->index[i];
+        // An object literal or type literal (or an intersection of them) against `{ [key: string]: T }`: the
+        // union of the types of its properties whose keys fit, an optional one's without undefined (tsc's
+        // isObjectTypeWithInferableIndex, inferFromIndexTypes)
+        TyBuf types = {0};
+        TyBuf seen = {0};
+        TyList parts = source->kind == TY_INTERSECTION ? source->composite.types : (TyList){ .data = &source, .len = 1 };
+        for (u32 p = 0; p < parts.len; p++) {
+            Members const* part_members = ty_members(me, parts.data[p]);
+            for (u32 j = 0; j < part_members->prop_count; j++) {
+                Prop const* prop = part_members->props[j];
+                Ty const* key = ty_prop_name_literal(me, prop->name);
+                bool applies = target_info->key->flags & TYF_STRING ? !(key->flags & TYF_ES_SYMBOL_LIKE) :
+                    ty_specific_index_applies(me, target_info, key);
+                bool again = false;
+                for (u32 k = 0; k < seen.len && !again; k++) again = seen.data[k] == key;
+                if (!applies || again) continue;
+                ty_buf_push(&seen, key);
+                FoundProp found_prop = parts.len > 1 ? ty_find_prop(me, source, prop->name) :
+                    (FoundProp){ .found = true, .type = prop_type(me, prop), .flags = prop->flags };
+                if (!found_prop.found) continue;
+                Ty const* type = found_prop.type;
+                if ((found_prop.flags & PROP_OPTIONAL) && !compiler_options()->exact_optional_property_types) {
+                    type = ty_without_undefined(me, type);
+                }
+                ty_buf_push(&types, type);
+            }
+        }
+        // and those of its index signatures that apply to the key
+        for (u32 j = 0; j < source_members->index_count; j++) {
+            if (index_key_applies(me, source_members->index[j].key, target_info->key)) {
+                ty_buf_push(&types, source_members->index[j].value);
+            }
+        }
+        if (types.len) infer_from(me, inf, ty_union(me, types.data, types.len, nullptr, (TyList){0}), target_info->value);
+        ty_buf_drop(&types);
+        ty_buf_drop(&seen);
+    }
+    // The source's index signature that applies to each of the target's keys: a string one to a number key too
     for (u32 i = 0; i < target_members->index_count; i++) {
         IndexInfo const* target_info = &target_members->index[i];
-        bool found = false;
-        for (u32 j = 0; j < source_members->index_count; j++) {
-            if (source_members->index[j].key == target_info->key) {
-                infer_from(me, inf, source_members->index[j].value, target_info->value);
-                found = true;
-            }
-        }
-        if (!found && inferable_index(me, source, 0)) {
-            // An object literal or type literal (or an intersection of them) against `{ [key: string]: T }`: the
-            // union of the types of its properties whose keys fit, an optional one's without undefined (tsc's
-            // isObjectTypeWithInferableIndex, inferFromIndexTypes)
-            TyBuf types = {0};
-            TyBuf seen = {0};
-            TyList parts = source->kind == TY_INTERSECTION ? source->composite.types : (TyList){ .data = &source, .len = 1 };
-            for (u32 p = 0; p < parts.len; p++) {
-                Members const* part_members = ty_members(me, parts.data[p]);
-                for (u32 j = 0; j < part_members->prop_count; j++) {
-                    Prop const* prop = part_members->props[j];
-                    Ty const* key = ty_prop_name_literal(me, prop->name);
-                    bool applies = target_info->key->flags & TYF_STRING ? !(key->flags & TYF_ES_SYMBOL_LIKE) :
-                        ty_specific_index_applies(me, target_info, key);
-                    bool again = false;
-                    for (u32 k = 0; k < seen.len && !again; k++) again = seen.data[k] == key;
-                    if (!applies || again) continue;
-                    ty_buf_push(&seen, key);
-                    FoundProp found_prop = parts.len > 1 ? ty_find_prop(me, source, prop->name) :
-                        (FoundProp){ .found = true, .type = prop_type(me, prop), .flags = prop->flags };
-                    if (!found_prop.found) continue;
-                    Ty const* type = found_prop.type;
-                    if ((found_prop.flags & PROP_OPTIONAL) && !compiler_options()->exact_optional_property_types) {
-                        type = ty_without_undefined(me, type);
-                    }
-                    ty_buf_push(&types, type);
-                }
-            }
-            if (types.len) infer_from(me, inf, ty_union(me, types.data, types.len, nullptr, (TyList){0}), target_info->value);
-            ty_buf_drop(&types);
-            ty_buf_drop(&seen);
-        }
+        IndexInfo const* source_info = ty_applicable_index_info(me, source, target_info->key);
+        if (source_info) infer_from(me, inf, source_info->value, target_info->value);
     }
 }
 

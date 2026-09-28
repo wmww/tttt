@@ -67416,9 +67416,9 @@ const baselines = {
         types: false,
     },
     'indexSignatureTypeInference': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intraExpressionInferences': {
         errors: false,
