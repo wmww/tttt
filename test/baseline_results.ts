@@ -541,9 +541,9 @@ const baselines = {
         types: true,
     },
     'allowSyntheticDefaultImports6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'allowSyntheticDefaultImports7': {
         errors: false,
@@ -11898,7 +11898,7 @@ const baselines = {
     'es6ExportEqualsInterop': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'es6ImportDefaultBinding': {
         errors: true,
@@ -11996,9 +11996,9 @@ const baselines = {
         types: true,
     },
     'es6ImportDefaultBindingInEs5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportDefaultBindingMergeErrors': {
         errors: true,
@@ -12676,9 +12676,9 @@ const baselines = {
         types: true,
     },
     'exportAssignmentWithoutAllowSyntheticDefaultImportsError': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentWithoutIdentifier1': {
         errors: true,
@@ -19086,9 +19086,9 @@ const baselines = {
         types: false,
     },
     'javascriptImportDefaultBadExport': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'javascriptThisAssignmentInStaticBlock': {
         errors: true,
@@ -50041,9 +50041,9 @@ const baselines = {
         types: false,
     },
     'verbatimModuleSyntaxRestrictionsESM(esmoduleinterop=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'verbatimModuleSyntaxRestrictionsESM(esmoduleinterop=true)': {
         errors: true,

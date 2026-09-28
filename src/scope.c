@@ -1919,6 +1919,15 @@ static bool esm_imports_esm(PortItem const* item, SourceFile const* target) {
     return esm && source_file_implied_format_for_emit(target) == MODULE_KIND_ESNEXT;
 }
 
+// An ES module's import of a CommonJS module under node16/nodenext: always a synthetic default
+static bool esm_imports_cjs(PortItem const* item, SourceFile const* target) {
+    SourceFile const* importer = item->decl_name.source;
+    if (!importer || item->is_require) return false;
+    ModuleKind usage = source_file_emit_module_kind(importer);
+    bool esm = usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
+    return esm && source_file_implied_format_for_emit(target) == MODULE_KIND_COMMONJS;
+}
+
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = my alias->scope->errs;
@@ -1987,8 +1996,24 @@ static Symbol* resolve_alias_target(Symbol* me) {
         case PORT_IMPORT_DEFAULT: {
             Symbol* found = symbol_get_export(module, c_sv("default"));
             if (!found && assigned) {
-                // esModuleInterop / allowSyntheticDefaultImports: the default import is what `export =` names.
-                // TODO: TS1259 without them
+                // The default import is what `export =` names, with allowSyntheticDefaultImports or where an ES module
+                // imports a CommonJS one (tsc's getTargetofModuleDefault, canHaveSyntheticDefault)
+                SourceFile const* file = item->module_ref->file;
+                if (!compiler_options()->allow_synthetic_default_imports && !(file && esm_imports_cjs(item, file))) {
+                    const char* option = compiler_options()->module >= MODULE_KIND_ES2015 ?
+                        "allowSyntheticDefaultImports" : "esModuleInterop";
+                    cstr module_name = module_name_for_error(module, item->module_ref, false);
+                    Error* error = error_ctx_error_d(errs, item->decl_name, 1259, "Module '", module_name,
+                        "' can only be default-imported using the '", option, "' flag");
+                    Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
+                    if (error && export_equals && export_equals->decl_count) {
+                        error_add_related_d(error, export_equals->decls[0].full, 2594,
+                            "This module is declared with 'export =', and can only be used with a default import when "
+                            "using the '", option, "' flag.");
+                    }
+                    cstr_drop(&module_name);
+                    return nullptr; // (tsc's exportDefaultSymbol, which there is none of)
+                }
                 return assigned;
             }
             if (!found) {
