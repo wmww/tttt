@@ -159,7 +159,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             // (tsc's getPromisedTypeOfPromise of the contextual return type)
             Ty const* contextual = ty_contextual_return_type(me, function);
             if (function->is_async) {
-                for (u32 i = 0; i < returned.len; i++) returned.data[i] = ty_awaited(me, returned.data[i]);
+                for (u32 i = 0; i < returned.len; i++) returned.data[i] = ty_awaited_returned(me, returned.data[i]);
                 contextual = contextual ? promised_context(me, contextual) : nullptr;
             }
             if (compiler_options()->strict_null_checks && returns_nothing_somewhere) {

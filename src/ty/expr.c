@@ -171,7 +171,7 @@ static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty 
     TyBuf types = {0};
     for (u32 i = 0; i < count; i++) {
         Ty const* type = check_with(me, returned[i], (ExprCtx){ .contextual = context, .skip_sensitive = true });
-        ty_buf_push(&types, function->is_async ? ty_awaited(me, type) : type);
+        ty_buf_push(&types, function->is_async ? ty_awaited_returned(me, type) : type);
     }
     FlowReachability end = ty_function_end_reachability(me, function);
     if (compiler_options()->strict_null_checks && (function->has_bare_return || end == FLOW_REACH_YES)) {

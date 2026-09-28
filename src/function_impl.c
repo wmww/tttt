@@ -312,9 +312,13 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         TyIterationTypes const* context = ty_generator_context(checker, me);
         checker->return_context = context && !(context->return_type->flags & (TYF_ANY | TYF_VOID)) ? context->return_type : nullptr;
     } else if (my is_async) {
-        // The awaited annotation (tsc's getContextualTypeForReturnExpression also has a PromiseLike of it)
+        // The awaited annotation, or a PromiseLike of it (tsc's getContextualTypeForReturnExpression)
         Ty const* annotated = my ret_explicit ? ty_unwrapped_return_type(checker, me) : nullptr;
-        checker->return_context = annotated && !(annotated->flags & (TYF_ANY | TYF_VOID)) ? annotated : nullptr;
+        checker->return_context = nullptr;
+        if (annotated && !(annotated->flags & (TYF_ANY | TYF_VOID))) {
+            Ty const* both[2] = { annotated, ty_promise_like_of(checker, annotated) };
+            checker->return_context = ty_union(checker, both, 2, nullptr, (TyList){0});
+        }
         if (!my ret_explicit) {
             // The contextual return type's awaited type, or a PromiseLike of it (tsc's getContextualReturnType for
             // async functions)
