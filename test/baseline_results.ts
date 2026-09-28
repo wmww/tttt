@@ -37331,17 +37331,17 @@ const baselines = {
         types: true,
     },
     'autoAccessorExperimentalDecorators(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'autoAccessorExperimentalDecorators(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'autoAccessorExperimentalDecorators(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

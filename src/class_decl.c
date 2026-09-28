@@ -1253,6 +1253,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 default:
                     break;
             }
+            // (Legacy decorators can't decorate a private name)
+            if (legacy && span_valid(class_item_private_name(i))) {
+                valid = false;
+                code = 1206;
+            }
             if (!valid) {
                 decorator_error = true;
                 Span at = i->span;
