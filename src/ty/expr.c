@@ -1617,9 +1617,29 @@ static Ty const* arithmetic_result(Checker* me, Ty const* left, Ty const* right)
     return any_type(me); // Mixed: an error (tsc's errorType)
 }
 
+// What tsc's checkNonNullType leaves of an operand under strictNullChecks: the error type for unknown or if nothing is
+// left
+static Ty const* non_null_operand(Checker* me, Ty const* type) {
+    if (type->flags & TYF_UNKNOWN) return ty_intrinsic(me, TY_ERROR);
+    if (!ty_can_be_null(me, type) && !ty_can_be_undefined(me, type)) return type;
+    Ty const* non_null = ty_non_nullable(me, type);
+    return non_null->flags & (TYF_NULLABLE | TYF_NEVER) ? ty_intrinsic(me, TY_ERROR) : non_null;
+}
+
 static Ty const* binary_result(Checker* me, Ty const* left, BinaryOp op, Ty const* right) {
     switch (op) {
         case BINARY_OP_PLUS: {
+            // Unless one side is a string, both are checked non-null first (tsc's checkNonNullType of the operands,
+            // the error type if nothing is left)
+            if (compiler_options()->strict_null_checks) {
+                Ty const* string = ty_intrinsic(me, TY_STRING);
+                if (!ty_is_related(me, left, string, TY_RELATION_ASSIGNABLE) &&
+                    !ty_is_related(me, right, string, TY_RELATION_ASSIGNABLE)
+                ) {
+                    left = non_null_operand(me, left);
+                    right = non_null_operand(me, right);
+                }
+            }
             // (tsc's strict isTypeAssignableToKind: never is a number first)
             u32 loose = TYF_ANY | TYF_UNKNOWN | TYF_VOID | TYF_NULLABLE;
             if (!((left->flags | right->flags) & loose)) {
@@ -1752,6 +1772,17 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             // The target contextually types what is assigned to it (tsc's getContextualTypeForBinaryOperand)
             left = ty_expr_type(me, &binary->left);
             right = ty_check_expr(me, &binary->right, left->flags & TYF_ANY ? nullptr : left);
+            // `{} = v` is v without null and undefined, the error type if nothing is left (tsc's
+            // checkObjectLiteralAssignment returns checkNonNullType's)
+            if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && !expr_is_perenthisized(&binary->left) &&
+                !vec_object_expr_item_size(&binary->left.object) && compiler_options()->strict_null_checks
+            ) {
+                if (right->flags & TYF_UNKNOWN) return ty_intrinsic(me, TY_ERROR);
+                if (ty_can_be_null(me, right) || ty_can_be_undefined(me, right)) {
+                    Ty const* non_null = ty_non_nullable(me, right);
+                    return non_null->flags & (TYF_NULLABLE | TYF_NEVER) ? ty_intrinsic(me, TY_ERROR) : non_null;
+                }
+            }
             break;
         case BINARY_OP_OR_OR:
         case BINARY_OP_EH_EH:
@@ -3400,7 +3431,8 @@ static Ty const* generic_element_access(Checker* me, PropertyExpr const* access,
         ty_is_related(me, key, string_or_number, TY_RELATION_ASSIGNABLE)
     ) {
         Ty const* string = ty_intrinsic(me, TY_STRING);
-        return access->assignment_target ? ty_access(me, object, string) : ty_access_reading(me, object, string);
+        // (A compound assignment reads it too: tsc's AccessFlags.ExpressionPosition unless Definite)
+        return access->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, string) : ty_access_reading(me, object, string);
     }
     Ty const* ret = ty_indexed(me, object, key);
     // (What tsc's checkIndexedAccessIndexType rejects is the error type, reported as TS2536 by the typecheck pass)
@@ -3493,7 +3525,9 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
             Ty const* key = ty_access_key_type(me, expr->property);
             if (expr->property->form == PROPERTY_EXPR_BRACKET) key = ty_string_index_only_key(me, object, key);
-            Ty const* ret = expr->property->assignment_target ? ty_access(me, object, key) : ty_access_reading(me, object, key);
+            // (A compound assignment reads it too: tsc's AccessFlags.ExpressionPosition unless Definite)
+            Ty const* ret = expr->property->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, key) :
+                ty_access_reading(me, object, key);
             if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target) ret = object_literal_access(me, object, key);
             if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET) ret = generic_element_access(me, expr->property, object, key);
             if (!ret && expr->property->qualified_name && (key->flags & TYF_STRING_LITERAL)) {

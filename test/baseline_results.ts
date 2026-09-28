@@ -23791,9 +23791,9 @@ const baselines = {
         types: false,
     },
     'noUncheckedIndexedAccessCompoundAssignments': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noUnusedLocals_destructuringAssignment': {
         errors: false,
@@ -27218,7 +27218,7 @@ const baselines = {
     'regexpExecAndMatchTypeUsages(strict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'regularExpressionAnnexB': {
         errors: true,
@@ -29253,7 +29253,7 @@ const baselines = {
     'strictNullEmptyDestructuring': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictNullLogicalAndOr': {
         errors: true,
