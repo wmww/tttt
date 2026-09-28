@@ -17286,7 +17286,7 @@ const baselines = {
         types: false,
     },
     'inferTypePredicates': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26041,7 +26041,7 @@ const baselines = {
         types: true,
     },
     'privateFieldAssignabilityFromUnknown': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64496,7 +64496,7 @@ const baselines = {
         types: true,
     },
     'nonPrimitiveAssignError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

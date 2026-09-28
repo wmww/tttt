@@ -4132,7 +4132,11 @@ static Ternary structured_related_members(
         if (result) result &= index_signatures_related(me, st, apparent, target, false, report);
         return result;
     }
-    return object_related(me, st, source, apparent, target, report, apparent != source);
+    // Only a primitive's apparent type is kept quiet about (tsc's sourceIsPrimitive): `object` and `unknown` relate and
+    // report as `{}`, a type parameter as its constraint
+    u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
+        TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ENUM_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_NULLABLE;
+    return object_related(me, st, source, apparent, target, report, apparent != source && (source->flags & primitive));
 }
 
 // Deep nesting (tsc's isDeeplyNestedType)
