@@ -940,6 +940,48 @@ static void program_validate_options(Program* me) {
             option_error_d(me, "ignoreDeprecations", nullptr, false, 5103, "Invalid value for '--ignoreDeprecations'.");
         }
     }
+    // The top of tsc's verifyCompilerOptions
+    // (As written: the strict family's defaults don't count)
+    if (o->is_set[COMPILER_OPTION_strict_property_initialization] && o->strict_property_initialization &&
+        !o->strict_null_checks
+    ) {
+        option_error_d(me, "strictPropertyInitialization", "strictNullChecks", true, 5052,
+            "Option 'strictPropertyInitialization' cannot be specified without specifying option 'strictNullChecks'.");
+    }
+    if (o->exact_optional_property_types && !o->strict_null_checks) {
+        option_error_d(me, "exactOptionalPropertyTypes", "strictNullChecks", true, 5052,
+            "Option 'exactOptionalPropertyTypes' cannot be specified without specifying option 'strictNullChecks'.");
+    }
+    if ((o->isolated_modules || o->verbatim_module_syntax) && cstr_size(&o->out_file)) {
+        const char* with = o->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
+        option_error_d(me, "outFile", with, true, 5053, "Option 'outFile' cannot be specified with option '", with, "'.");
+    }
+    if (o->isolated_declarations && o->allow_js) {
+        option_error_d(me, "allowJs", "isolatedDeclarations", true, 5053,
+            "Option 'allowJs' cannot be specified with option 'isolatedDeclarations'.");
+    }
+    if (o->inline_source_map) {
+        if (o->source_map) {
+            option_error_d(me, "sourceMap", "inlineSourceMap", true, 5053,
+                "Option 'sourceMap' cannot be specified with option 'inlineSourceMap'.");
+        }
+        if (cstr_size(&o->map_root)) {
+            option_error_d(me, "mapRoot", "inlineSourceMap", true, 5053,
+                "Option 'mapRoot' cannot be specified with option 'inlineSourceMap'.");
+        }
+    }
+    if (o->composite) {
+        if (o->is_set[COMPILER_OPTION_declaration] && !o->declaration) {
+            option_error_d(me, "declaration", nullptr, true, 6304, "Composite projects may not disable declaration emit.");
+        }
+        if (o->is_set[COMPILER_OPTION_incremental] && !o->incremental) {
+            option_error_d(me, "declaration", nullptr, true, 6379, "Composite projects may not disable incremental compilation.");
+        }
+    }
+    if (!cstr_size(&o->ts_build_info_file) && o->incremental && !cstr_size(&o->out_file) && !my config_source) {
+        error_ctx_global_error_d(my errs, 5074, "Option '--incremental' can only be specified using tsconfig, emitting to ",
+            "single file or when option '--tsBuildInfoFile' is specified.");
+    }
     program_validate_paths(me);
     bool removed = version >= parse_major_minor(c_sv("5.5"));
     bool deprecated = !removed && ignore_version < parse_major_minor(c_sv("5.0"));
@@ -965,6 +1007,36 @@ static void program_validate_options(Program* me) {
                     "TypeScript 5.5. Specify compilerOption '\"ignoreDeprecations\": \"5.0\"' to silence this error.");
             if (instead) error_sub_error_d(error, span_null, TS_CODE_NONE, "Use '", instead, "' instead.");
         }
+    }
+    if (!o->source_map && !o->inline_source_map) {
+        if (o->inline_sources) {
+            option_error_d(me, "inlineSources", nullptr, true, 5051, "Option 'inlineSources can only be used when either ",
+                "option '--inlineSourceMap' or option '--sourceMap' is provided.");
+        }
+        if (cstr_size(&o->source_root)) {
+            option_error_d(me, "sourceRoot", nullptr, true, 5051, "Option 'sourceRoot can only be used when either ",
+                "option '--inlineSourceMap' or option '--sourceMap' is provided.");
+        }
+    }
+    if (cstr_size(&o->map_root) && !o->source_map && !o->declaration_map) {
+        option_error_d(me, "mapRoot", "sourceMap", true, 5069, "Option 'mapRoot' cannot be specified without specifying ",
+            "option 'sourceMap' or option 'declarationMap'.");
+    }
+    if (o->is_set[COMPILER_OPTION_no_lib] && o->no_lib && cstr_size(&o->lib)) {
+        option_error_d(me, "lib", "noLib", true, 5053, "Option 'lib' cannot be specified with option 'noLib'.");
+    }
+    if ((o->isolated_modules || o->verbatim_module_syntax) && o->is_set[COMPILER_OPTION_preserve_const_enums] &&
+        !o->preserve_const_enums
+    ) {
+        const char* with = o->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
+        option_error_d(me, with, "preserveConstEnums", true, 5091, "Option 'preserveConstEnums' cannot be disabled when '",
+            with, "' is enabled.");
+    }
+    if (o->verbatim_module_syntax &&
+        (o->module == MODULE_KIND_AMD || o->module == MODULE_KIND_UMD || o->module == MODULE_KIND_SYSTEM)
+    ) {
+        option_error_d(me, "verbatimModuleSyntax", nullptr, true, 5105,
+            "Option 'verbatimModuleSyntax' cannot be used when 'module' is set to 'UMD', 'AMD', or 'System'.");
     }
     if (o->resolve_json_module) {
         if (o->module_resolution == MODULE_RESOLUTION_CLASSIC) {

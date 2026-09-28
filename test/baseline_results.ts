@@ -16896,7 +16896,7 @@ const baselines = {
         types: true,
     },
     'incrementalInvalid': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17836,7 +17836,7 @@ const baselines = {
         types: true,
     },
     'inlineSourceMap2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18981,7 +18981,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesRequiresPreserveConstEnum': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24721,12 +24721,12 @@ const baselines = {
         types: true,
     },
     'optionsCompositeWithIncrementalFalse': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'optionsInlineSourceMapMapRoot': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24736,7 +24736,7 @@ const baselines = {
         types: true,
     },
     'optionsInlineSourceMapSourcemap': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24766,7 +24766,7 @@ const baselines = {
         types: true,
     },
     'optionsStrictPropertyInitializationStrictNullChecks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27211,7 +27211,7 @@ const baselines = {
         types: true,
     },
     'regexpExecAndMatchTypeUsages(strict=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49986,7 +49986,7 @@ const baselines = {
         types: true,
     },
     'verbatimModuleSyntaxCompat': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

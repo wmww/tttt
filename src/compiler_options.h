@@ -90,6 +90,9 @@ typedef enum ModuleDetectionKind {
     X(exact_optional_property_types, "exactoptionalpropertytypes", false) \
     X(experimental_decorators, "experimentaldecorators", false) \
     X(import_helpers, "importhelpers", false) \
+    X(incremental, "incremental", false) \
+    X(inline_source_map, "inlinesourcemap", false) \
+    X(inline_sources, "inlinesources", false) \
     X(isolated_declarations, "isolateddeclarations", false) \
     X(isolated_modules, "isolatedmodules", false) \
     X(keyof_strings_only, "keyofstringsonly", false) \
@@ -164,6 +167,9 @@ typedef struct CompilerOptions {
     cstr jsx_fragment_factory;
     cstr jsx_import_source;
     cstr react_namespace;
+    cstr map_root; // Emit options only validated (verifyCompilerOptions), as written
+    cstr source_root;
+    cstr ts_build_info_file;
     cstr ignore_deprecations; // "5.0" silences the 5.0 deprecations (anything else is TS5103)
     cstr typescript_version; // The harness's `@typeScriptVersion`: the version deprecations are judged by, "" for ours
     // Emit paths, only for tsc's output path checks (TS5055/TS5056): tttt doesn't emit. Relative to config_dir like
