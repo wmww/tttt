@@ -743,6 +743,7 @@ struct Checker {
     Arena arena;
     u32 next_type_id;
     Ty const* intrinsics[TY_INTRINSIC_COUNT];
+    Ty const* typeof_type; // tsc's typeofType: made with the intrinsics, so its literals get tsc's low ids
     InternTable atoms;
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()

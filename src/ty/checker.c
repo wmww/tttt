@@ -287,6 +287,13 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_IMPLICIT_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_UNREACHABLE_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_NON_PRIMITIVE] = make_intrinsic(me, "object", TYF_NON_PRIMITIVE);
+    {
+        // tsc's typeofType (createTypeofType) is made with the checker's global types, before any written literal
+        static char const* const names[] = { "string", "number", "bigint", "boolean", "symbol", "undefined", "object", "function" };
+        Ty const* types[c_arraylen(names)];
+        for (u32 i = 0; i < c_arraylen(names); i++) types[i] = ty_string_literal(me, csview_from(names[i]));
+        my typeof_type = ty_union(me, types, c_arraylen(names), nullptr, (TyList){0});
+    }
     // tsc's initializeTypeChecker makes the global Array type and autoArrayType next: the lowest ids of the arrays
     Checker* saved = current_checker;
     checker_make_current(me);

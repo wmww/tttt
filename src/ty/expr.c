@@ -1911,10 +1911,7 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
         }
         case UNARY_OP_TYPEOF: {
             ty_expr_type(me, operand); // Evaluated like any operand: a circular reference through it is one
-            static char const* const names[] = { "string", "number", "bigint", "boolean", "symbol", "undefined", "object", "function" };
-            Ty const* types[c_arraylen(names)];
-            for (u32 i = 0; i < c_arraylen(names); i++) types[i] = ty_string_literal(me, csview_from(names[i]));
-            return ty_union(me, types, c_arraylen(names), nullptr, (TyList){0});
+            return my typeof_type;
         }
         case UNARY_OP_VOID: return ty_intrinsic(me, TY_UNDEFINED_WIDENING);
         case UNARY_OP_TILDE: return unary_result_type(me, ty_expr_type(me, operand));
