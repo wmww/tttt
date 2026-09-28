@@ -8680,6 +8680,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     } else if (parse_expr(&p, (ExprCtx){.reject_in_operator = true}, &statement.expr)) {
         parse_comma_ops_right_side(&p, &statement.expr);
         statement.tag = STATEMENT_EXPR;
+        statement.expr_jsdoc_type = nullptr;
     } else if (*p.pos == ';') {
         statement = statement_noop;
     } else {
@@ -9786,6 +9787,10 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             jsdoc_apply_class(&tags, statement->decl.class);
             break;
         case STATEMENT_EXPR:
+            if (statement->expr.tag == EXPR_PROPERTY && !expr_is_perenthisized(&statement->expr)) {
+                JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
+                if (tag) statement->expr_jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+            }
             if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
                 BinaryOpExpr* assignment = statement->expr.binary_op;
                 FunctionImpl* function = jsdoc_function_of(&assignment->right);
@@ -9860,10 +9865,13 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         parse_jump_target(&p, &label);
     } else if (c == 'r' && parse_return(&p, &ret->expr)) {
         ret->tag = STATEMENT_RETURN_EXPR;
+        ret->expr_jsdoc_type = nullptr;
     } else if (c == 't' && parse_throw(&p, &ret->expr)) {
         ret->tag = STATEMENT_THROW_EXPR;
+        ret->expr_jsdoc_type = nullptr;
     } else if (parse_expr(&p, expr_ctx_null, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
+        ret->expr_jsdoc_type = nullptr;
         parse_comma_ops_right_side(&p, &ret->expr);
         if (ret->tag == STATEMENT_EXPR &&
             ret->expr.tag == EXPR_IDENTIFIER &&

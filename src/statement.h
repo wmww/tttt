@@ -146,7 +146,12 @@ typedef struct Statement {
     union {
         SourceDirectiveStatement* source_directive;
         Block block;
-        Expr expr; // also used for return and export default expressions
+        struct {
+            Expr expr; // also used for return and export default expressions
+            // Owned, JavaScript `/** @type {T} */ a.b;` or `this.x;`: a declaration of the property with that type
+            // (tsc's isSpecialPropertyDeclaration)
+            TypeNode* expr_jsdoc_type;
+        };
         IfStatement if_else;
         ForLoopStatement* for_loop;
         ForEachLoopStatement* for_each_loop;

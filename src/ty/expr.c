@@ -2174,7 +2174,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     free(accessor_spans);
     literal_members_flush(me, &members, builder.index, &builder.index_count, ctx.is_const);
     free(members.items);
-    Ty const* ret = spread_acc_finish(me, &spread, &builder, OBJECT_LITERAL_FRESH);
+    SourceFile const* file = expr->inner_span.source;
+    Ty const* ret = spread_acc_finish(me, &spread, &builder, OBJECT_LITERAL_FRESH | (file && file->is_js ? OBJECT_JS : 0));
     free(builder.props);
     return ret;
 }

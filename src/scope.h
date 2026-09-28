@@ -540,6 +540,8 @@ Expr* expando_initializer(Expr* init, Span name, bool js);
 // TypeScript `this.x = v` in a constructor or static block: marks the field it types (ClassItem.field.ts_assigned)
 void scope_note_ts_this_assignment(Scope const* me, struct BinaryOpExpr const* op);
 void scope_add_this_property(Scope* me, struct BinaryOpExpr* op);
+// JavaScript `/** @type {T} */ this.x;` (tsc's isSpecialPropertyDeclaration), after `this` is resolved
+void scope_add_this_declaration(Scope* me, struct Expr* access, struct TypeNode const* jsdoc_type);
 // `require` in a `require("m")` of a JavaScript file that doesn't declare the name
 Symbol* binder_require_symbol(Binder* me);
 

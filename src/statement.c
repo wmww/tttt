@@ -590,6 +590,10 @@ void statement_drop(Statement* me) {
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             expr_drop(&my expr);
+            if (my expr_jsdoc_type) {
+                type_drop(my expr_jsdoc_type);
+                free(my expr_jsdoc_type);
+            }
             break;
 
         case STATEMENT_IMPORT_EXPORT:
@@ -1298,6 +1302,10 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 
         case STATEMENT_EXPR:
             expr_lookup_names_statement(&my expr, names, errs);
+            if (my expr_jsdoc_type) {
+                type_lookup_names(my expr_jsdoc_type, names, errs);
+                scope_add_this_declaration(names, &my expr, my expr_jsdoc_type);
+            }
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR: {

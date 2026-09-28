@@ -967,6 +967,29 @@ static bool is_global_this(Ty const* ty) {
         ty->declared.namespace_symbol->is_global_this;
 }
 
+// tsc's isJSLiteralType: without noImplicitAny, what a JavaScript object literal made has every property
+static bool is_js_literal_type(Checker* me, Ty const* type) {
+    if (compiler_options()->no_implicit_any) return false;
+    switch (type->kind) {
+        case TY_ANONYMOUS: return type->anonymous.js_literal;
+        case TY_UNION:
+            for (u32 i = 0; i < type->composite.types.len; i++) {
+                if (!is_js_literal_type(me, type->composite.types.data[i])) return false;
+            }
+            return true;
+        case TY_INTERSECTION:
+            for (u32 i = 0; i < type->composite.types.len; i++) {
+                if (is_js_literal_type(me, type->composite.types.data[i])) return true;
+            }
+            return false;
+        case TY_TYPE_PARAM: {
+            Ty const* constraint = ty_param_constraint(me, type);
+            return constraint && constraint != type && is_js_literal_type(me, constraint);
+        }
+        default: return false;
+    }
+}
+
 static void check_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
     bool error_if_not_found, u32 depth, ErrorCtx* errs
@@ -1061,11 +1084,8 @@ static void check_access(
         report_no_property(me, object, index, 2339, index_span, errs);
         return;
     }
-    // HACK: JavaScript files get no TS2339 yet: what they declare by assignment isn't all there (nested
-    // namespaces `ns.a.b = v`, `var ns = {}` containers and tsc's JS literal leniency, class expressions)
-    // HACK: JavaScript files get no TS2339 yet: what they declare by assignment isn't all there (plan 26 stage 2
-    // notes in hacks.md: class expression hosts, expandos of another file's global namespace, nested `exports.x`...)
-    if (index_span.source && index_span.source->is_js) return;
+    // An object literal of a JavaScript file is open-ended (tsc's isJSLiteralType)
+    if (is_js_literal_type(me, object)) return;
     if (object->flags & TYF_OBJECT) {
         Members const* members = ty_members(me, object);
         // HACK: a mapped type over something generic (`Pick<T, K>`) only knows its members through its constraint

@@ -2305,6 +2305,8 @@ Ty const* ty_object_literal(
         words_push(&words, (u64)(uintptr_t)index[i].param_name << 1 | index[i].readonly);
     }
     Ty const* ret = intern_get(&my links, words.data, words.len);
+    bool js = kind & OBJECT_JS;
+    kind &= ~OBJECT_JS;
     if (!ret) {
         MembersBuilder builder = {0};
         u32 flags = TYF_OBJECT | (kind == OBJECT_LITERAL_FRESH || kind == OBJECT_JSX_ATTRIBUTES_FRESH ? TYF_FRESH_OBJECT : 0);
@@ -2339,6 +2341,7 @@ Ty const* ty_object_literal(
         fresh->anonymous.free_params_unknown = true;
         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
         fresh->anonymous.jsx_attributes = kind == OBJECT_JSX_ATTRIBUTES || kind == OBJECT_JSX_ATTRIBUTES_FRESH;
+        fresh->anonymous.js_literal = js;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         fresh->anonymous.state->members = builder_finish(me, &builder);
         fresh->anonymous.state->members_state = LAZY_STATE_DONE;
@@ -2487,7 +2490,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
     }
     // (JSX attributes stay what they are: hyphenated names are still never excess nor weak-type failures)
     Ty const* ret = ty_object_literal(me, props, count, index, index_count,
-        ty->anonymous.jsx_attributes ? OBJECT_JSX_ATTRIBUTES : OBJECT_LITERAL);
+        (ty->anonymous.jsx_attributes ? OBJECT_JSX_ATTRIBUTES : OBJECT_LITERAL) | (ty->anonymous.js_literal ? OBJECT_JS : 0));
     free(props);
     return ret;
 }
@@ -2619,8 +2622,8 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
         }
         if (changed) {
             ret = ty_object_literal(me, props, members->prop_count, index, index_count,
-                ty->anonymous.jsx_attributes ? (ty->flags & TYF_FRESH_OBJECT ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES) :
-                ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL);
+                (ty->anonymous.jsx_attributes ? (ty->flags & TYF_FRESH_OBJECT ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES) :
+                ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL) | (ty->anonymous.js_literal ? OBJECT_JS : 0));
         }
         free(props);
     }

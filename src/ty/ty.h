@@ -315,6 +315,7 @@ struct Ty {
             bool free_params_unknown;
             bool object_literal; // Made by an object literal expression (ty_object_literal())
             bool jsx_attributes; // OBJECT_JSX_ATTRIBUTES(_FRESH): hyphenated names are never excess, and excess ones say so differently
+            bool js_literal; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
             TyObjectState* state;
         } anonymous;
         struct {
@@ -1211,6 +1212,9 @@ typedef enum ObjectLiteralKind {
     OBJECT_LITERAL_FRESH, // ... as the expression evaluates to it (TYF_FRESH_OBJECT)
     OBJECT_JSX_ATTRIBUTES, // The attributes of a JSX element (tsc's ObjectFlags.JsxAttributes)
     OBJECT_JSX_ATTRIBUTES_FRESH,
+    // Or'ed with the kind: an object literal of a JavaScript file, open-ended without noImplicitAny (tsc's
+    // ObjectFlags.JSLiteral, isJSLiteralType)
+    OBJECT_JS = 1 << 4,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind
