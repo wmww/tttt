@@ -4248,6 +4248,7 @@ static bool is_excess_property_check_target(Ty const* ty) {
         }
         return ty->kind == TY_UNION ? any : all;
     }
+    if (ty->kind == TY_SUBSTITUTION) return is_excess_property_check_target(ty->substitution.base); // (`NoInfer<{ a: 1 }>`)
     return (ty->flags & (TYF_OBJECT | TYF_NON_PRIMITIVE)) != 0;
 }
 
@@ -4311,6 +4312,7 @@ static bool is_known_property(Checker* me, Ty const* target, Atom const* name) {
         if (members->mapped) return true; // TODO: the keys of a mapped type
         if (ty_get_prop(me, target, name) || has_index_for_name(me, members, name)) return true;
     }
+    if (target->kind == TY_SUBSTITUTION) return is_known_property(me, target->substitution.base, name);
     if ((target->kind == TY_UNION || target->kind == TY_INTERSECTION) && is_excess_property_check_target(target)) {
         for (u32 i = 0; i < target->composite.types.len; i++) {
             if (is_known_property(me, target->composite.types.data[i], name)) return true;
