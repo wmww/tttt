@@ -84,6 +84,10 @@ typedef struct ParserShared {
     ModifiedParent statement_parent;
     bool in_namespace_body; // The module block is a `namespace N {}`'s, not an ambient module's
     u32 errors_attempted; // Every parse_error() call, the ones dropped too (a position that already has one)
+    // The parse errors of JSDoc comments (tsc's jsDocDiagnostics): kept whether or not the attempt that parsed the
+    // comment succeeds (a comment is parsed by every attempt that parses its host), deduplicated at the end, and only
+    // reported in checked JavaScript
+    VecError jsdoc_errors;
 } ParserShared;
 
 typedef struct FunctionFlags {
@@ -109,6 +113,7 @@ void parser_shared_drop(ParserShared* me) {
         free(my jsdoc_enum);
     }
     vec_error_drop(&my errors);
+    vec_error_drop(&my jsdoc_errors);
 }
 
 typedef struct ExprCtx {
@@ -560,6 +565,22 @@ static void js_syntax_skip_since(Parser* me, intptr_t start) {
         }
     }
     errors->size = kept;
+}
+
+// Moves the errors a JSDoc parser `me` reported to the JSDoc errors, before it fails
+static void jsdoc_keep_errors(Parser* me) {
+    VecError* errors = &my shared->errors;
+    for (intptr_t i = vec_error_size(errors) - my error_count; i < vec_error_size(errors); i++) {
+        Error error = errors->data[i];
+        if (my shared->source->is_js) {
+            error.phase = ERROR_PHASE_RESOLVE_NAMES;
+            vec_error_push(&my shared->jsdoc_errors, error);
+        } else {
+            error_drop(&error);
+        }
+    }
+    errors->size -= my error_count;
+    my error_count = 0;
 }
 
 static intptr_t error_mark(Parser const* me) {
@@ -2127,7 +2148,8 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         if (fail_on_error) { goto fail; }
     }
 
-    if (vec_spanned_type_is_empty(ret)) {
+    // (tsc's checkGrammarTypeArguments, which doesn't see JSDoc)
+    if (vec_spanned_type_is_empty(ret) && !p.shared->in_jsdoc) {
         parse_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
     }
 
@@ -2995,8 +3017,8 @@ static const char* jsdoc_skip_space(const char* c, const char* end) {
     return c;
 }
 
-// Parses `{T}` at `*pos` (which must be the `{`) into `tag`, moves `*pos` past it. The parse errors of JSDoc types are
-// dropped
+// Parses `{T}` at `*pos` (which must be the `{`) into `tag`, moves `*pos` past it. Its parse errors go to the JSDoc
+// errors
 static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const char* end, JsDocTag* tag) {
     Parser p = parser(parent);
     p.pos = *pos + 1;
@@ -3006,6 +3028,23 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     p.shared->in_jsdoc = true;
     p.shared->jsdoc_end = end;
     hop_whitespace(&p);
+    Anchor module_start = anchor(&p);
+    if (hop_start_if_ends_on_word_break(&p, "module")) {
+        // `{module:foo/bar}` (tsc's parseJSDocType: a JSDocNamepathType, which is the error type): every token up to
+        // a `}`, `,` or whitespace
+        while (p.pos < end && *p.pos != '}' && *p.pos != ',' && !is_jsdoc_space(*p.pos)) p.pos++;
+        if (tag->has_type) type_drop(&tag->type);
+        tag->has_type = true;
+        tag->type = type_any;
+        tag->type_span = span_from(module_start);
+        hop_whitespace(&p);
+        if (p.pos < end && *p.pos == '}') p.pos++;
+        *pos = p.pos;
+        p.shared->in_jsdoc = outer_in_jsdoc;
+        p.shared->jsdoc_end = outer_end;
+        parse_fail(&p);
+        return;
+    }
     bool variadic = hop_start(&p, "...");
     Anchor a = anchor(&p);
     TypeNode type;
@@ -3030,9 +3069,11 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
             tag->type_span = type_span;
             tag->variadic = variadic;
             if (*p.pos == '}') p.pos++;
+            else parse_error(&p, span_from_token(&p), 1005, "'}' expected.");
             *pos = p.pos;
         } else {
             type_drop(&type);
+            parse_error(&p, span_make(p.shared->source, end, end), 1005, "'}' expected.");
         }
     }
     // Past the braces even when the type didn't parse (tsc: `{` starts a type expression that ends at `}`)
@@ -3043,6 +3084,7 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     }
     p.shared->in_jsdoc = outer_in_jsdoc;
     p.shared->jsdoc_end = outer_end;
+    jsdoc_keep_errors(&p);
     parse_fail(&p);
 }
 
@@ -10808,6 +10850,19 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
             error_ctx_append_error(errs, *i);
         }
         *i = (Error){0};
+    }
+    // Every attempt that parsed a comment's host reported its errors: the same error at the same place once
+    for (isize i = 0; i < shared.jsdoc_errors.size; i++) {
+        Error* error = &shared.jsdoc_errors.data[i];
+        bool seen = false;
+        for (isize j = 0; j < i && !seen; j++) {
+            Error const* other = &shared.jsdoc_errors.data[j];
+            seen = other->ts_code == error->ts_code && other->span.sv.buf == error->span.sv.buf &&
+                other->span.sv.size == error->span.sv.size;
+        }
+        if (seen) continue;
+        error_ctx_append_error(errs, *error);
+        *error = (Error){0};
     }
 
     parser_shared_drop(&shared);
