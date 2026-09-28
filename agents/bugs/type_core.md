@@ -10,6 +10,22 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 @exactOptionalPropertyTypes thirdparty/tsc/tests/cases` is unsorted.
 
 ## Inference
+- **First pass skips context-sensitive arguments entirely** (mappedTypeContextualTypesApplied mapped2/mapped5,
+  correlatedUnions `processRecord({ kind: 'n', v: 42, f: v => ... })`): tsc checks them with their functions replaced
+  by anyFunctionType and still infers from the (non-inferrable) literal to anything but a naked type parameter (K from
+  `kind: 'n'` against `{ [P in K]: ... }[K]`), and in the second pass leaves the contextual type alone when *no*
+  inference has candidates (instantiateContextualType). tttt skips the argument, then instantiates with the defaults
+  (T's constraint), so `T extends { [P in keyof T]: F }` gives the literal `{}` as contextual type. Making only the
+  second half tsc-like (keep a candidate-less T as itself, fixed in signatures) regressed correlatedUnions and JSX
+  defaultProps tests, which relied on the defaults standing in for the first-pass inference. Do both together.
+- **A contextually typed function's return type is computed eagerly** (conditionalTypeBasedContextualTypeReturnTypeWidening
+  types): tsc resolves an inner arrow's return type only after the call is resolved, when its contextual signature is
+  itself (S was inferred as the arrow), so `() => 0` keeps the literal; tttt widens to `number` during inference.
+- Still in the "spurious diagnostics" bucket, not investigated in depth: contextualTypeWithTuple (an array literal
+  against `number[] & { length: 2 }` / an interface extending `[]` should be a tuple, tsc's isTupleLikeType of the
+  contextual type), generatorReturnContextualType (async generator `return` against `{ x: 'x' }` TReturn widens),
+  discriminatedUnionInference, inferenceOfNullableObjectTypesWithCommonBase, contravariantOnlyInferenceFromAnnotatedFunction,
+  optionalParameterInDestructuringWithInitializer, mappedTypeRecursiveInference2.
 - **Defaults leak into context-sensitive arguments' return types** (probe `plan19/webpack/contextual_return_default_leak.ts`,
   ~9 webpack TS2322s on `.then` chains): the second pass in `infer_type_arguments()` instantiates a context-sensitive
   argument's whole parameter type with the inferences so far (an uninferred `T = A` becomes A), tsc only the

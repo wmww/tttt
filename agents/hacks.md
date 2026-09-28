@@ -398,6 +398,14 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   the candidates are unwidened). Relations to inference results or nested literals don't see it.
 
 ## Expressions (`ty/expr.c`), contextual typing
+- `intersection_prop_context` (`ty/expr.c`): tsc's getTypeOfPropertyOfContextualType over an intersection sees type
+  variable members through getApparentTypeOfIntersectionType, and the intersection distributes over a member whose
+  constraint is a union; tttt instead asks each such member's apparent union/intersection on its own (`context_map`)
+  and intersects the answers. `get_prop_context`/`contextual_signature` likewise take a type variable's apparent type
+  at the point of use rather than once in a getApparentTypeOfContextualType step.
+- `KEY_CONTEXT_PARAM_PATTERN` (`assign_contextual_signature`, read by the symbols traversal): a destructured parameter
+  whose contextual type fell back to its pattern (tsc's assignParameterType) has no property symbols in the symbols
+  baseline, because tsc's getSymbolAtLocation re-derives the (unknown) contextual type. Marked rather than re-derived.
 - `context_map` (`ty/expr.c`): tsc maps contextual types without union reduction (mapType's noReductions), so an
   `unknown` from one member stays a member; tttt's unions absorb into unknown, so context_map drops an `unknown` part
   when other parts give something. Equivalent while unknown contributes nothing to a contextual type; a real
