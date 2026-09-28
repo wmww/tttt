@@ -652,7 +652,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   (inferConditionalConstraintMappedMember: tsc gives `{ [K in keyof T]: 1 } extends { [_ in keyof T]: infer U } ? U : never`
   the constraint number), and 2000 deferred conditionals against a 2000-member union run out of relation budget
   (conditionalTypeDiscriminatingLargeUnionRegularTypeFetchingSpeedReasonable). Other generic arguments are checked.
-- `check_assignable` (HACK): a source `any` is let through to anything, even `never`.
+- `check_assignable` (HACK): a source `any` is let through to anything, even `never`. (2026-09-28: letting only the error type
+  through, like tsc, costs 25 tests: narrowing and exhaustiveness paths still give any where tsc has never.)
 - `ty_check_index_constraints` on type literals only when the literal syntactically has an index signature and something
   to check (`type_literal_has_index_constraints`); alias bodies go through the alias (`type_decl_typecheck`): evaluating
   a literal early gives it an id (union order) and loses the alias name.
