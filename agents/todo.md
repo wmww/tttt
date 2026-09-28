@@ -28,8 +28,10 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    TS2497 + reportNonExportedMember, TS2721-2723, TS6200 amalgamation, `--pretty` output, triple-slash
    resolution-mode...). Single-code spurious buckets drained (TS2339 38 -> 10, TS2322 36 -> 5, TS2304 35 -> 7); webpack
    30; instructions +2% on tsc/valibot/zod (measurements.md: a lead for entry 9).
-8. **Plan 37 C + D**: decorators checked as calls (+14, nest must stay 0) and evolving arrays (+8), both
-   stage 1 from their prototypes (replaces the plan 35 queue here: its head items 1-2 were plan 37 A and C).
+8. ~~Plan 37 C + D~~ done: decorators as calls (+15 with TS2318 for missing lib types, nest 0, +0.4% instructions)
+   and evolving arrays (+21: +7 from the port, +14 from making Array at checker start; an Opus sub-agent), 10477 ->
+   10513, 0 lost, corpora byte-identical; tsc/webpack +0.3% instructions. Found: webpack gives other diagnostics
+   with `--checkers 1` than with 4 (triage.md, already at 8eab3851).
 9. **Perf: memory and types**: `perf_leads.md` "Unreliable variance measurements" first (zod without its `out`
    annotations costs 2x: is tttt marking more measurements unreliable than tsc?), then "Memory" (the `Prop` split, why
    tttt makes more types than tsc), with the K=4 RSS from entry 2 as the baseline (`measurements.md` Perf: zod 846 MB, react 335 vs 228 at K=1); then plan 36 stage 1 (parallel loading) if the session has room.

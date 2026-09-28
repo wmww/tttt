@@ -28,11 +28,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   protocol, generators, `this` types, mixins, override and variance-annotation checks, elaboration, JSX, tsc's type
   printer and symbol chains, JSDoc + CommonJS + expandos. ~78k lines of C. `documentation.md` describes it,
   `hacks.md` lists what is approximated.
-- **Absent or approximated tsc mechanisms** (each a HACK that the long tail keeps hitting, see below): the missing
-  type (exactOptionalPropertyTypes), non-widening null/undefined (nullWideningType), evolving arrays (autoArrayType),
-  union/keyof origins, decorator checking (decorators as calls, TS1238/TS1241/TS1270), context-free return-only
-  signatures for sensitive arguments, lazy reverse mapped types, permissive instantiation, reduction of intersections
-  by constraint. Out of scope: declaration emit. Not built: project references, parallelism.
+- **Absent or approximated tsc mechanisms** (each a HACK that the long tail keeps hitting, see below): lazy fixing
+  of type parameters (call.c's fixing gate), lazy reverse mapped types, permissive instantiation, reduction of
+  intersections by constraint. Plan 37 ported the missing type, non-widening null/undefined, union/keyof origins,
+  decorators as calls, evolving arrays and return-only signatures (+124 tests over todo entries 4-8). Out of scope: declaration emit. Not built: project references, parallelism.
 
 ## Course correction (insights of 2026-09-28)
 - **Health is very good; no redesign.** Fourth clean window in a row, and the biggest (+806). Parallel sub-agents in
