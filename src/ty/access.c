@@ -22,9 +22,11 @@ Ty const* ty_tuple_slice_element_type(Checker* me, Ty const* tuple, u32 from, u3
     for (u32 i = 0; i < len; i++) {
         Ty const* element = elements.data[from + i];
         if (shape->flags[from + i] & TUPLE_ELEMENT_REST) {
-            // (A variadic `...T` is T[number])
-            element = element->kind == TY_TYPE_PARAM ? ty_indexed(me, element, ty_intrinsic(me, TY_NUMBER)) :
-                ty_rest_element_type(me, element);
+            // (A variadic `...T` is T[number], a generic mapped type `...{ [K in keyof T]: X<T[K]> }` X<T[number]>:
+            // tsc's getIndexedAccessType)
+            bool generic = element->kind == TY_TYPE_PARAM ||
+                (element->kind != TY_REFERENCE && (element->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES));
+            element = generic ? ty_indexed(me, element, ty_intrinsic(me, TY_NUMBER)) : ty_rest_element_type(me, element);
         }
         parts[i] = element;
     }
