@@ -1280,6 +1280,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (loop->is_do_while) {
                 // (Nothing in these, but every expression wants its names looked up)
                 statement_resolve_names(&loop->initialization, loop_scope, errs);
+                expr_mark_result_unused(&loop->afterthought);
                 expr_lookup_names(&loop->afterthought, loop_scope, errs);
                 FlowNode* pre_do = flow_new_loop_label(flow);
                 FlowNode* pre_condition = flow_set_continue_target(flow, label_count, flow_new_branch_label(flow));
@@ -1306,6 +1307,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             statement_resolve_names_body(&loop->body, loop_scope, errs, post, pre_incrementor);
             flow_add_antecedent(flow, pre_incrementor, flow->current);
             flow_set_current(flow, flow_finish_label(pre_incrementor));
+            expr_mark_result_unused(&loop->afterthought);
             expr_lookup_names(&loop->afterthought, loop_scope, errs);
             flow_add_antecedent(flow, pre_loop, flow->current);
             flow_set_current(flow, flow_finish_label(post));

@@ -33486,7 +33486,7 @@ const baselines = {
         types: true,
     },
     'yieldExpressionInFlowLoop': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -45271,7 +45271,7 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck50': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

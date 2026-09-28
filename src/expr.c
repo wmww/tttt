@@ -967,7 +967,16 @@ static void flow_maybe_call(FlowBuilder* flow, Expr const* me) {
     if (expr_is_dotted_name(callee)) flow->current = flow_new_call(flow, flow->current, me);
 }
 
+void expr_mark_result_unused(Expr* me) {
+    if (me->tag == EXPR_UNARY_OP && (me->unary_op->op == UNARY_OP_YIELD || me->unary_op->op == UNARY_OP_YIELD_STAR)) {
+        me->unary_op->result_unused = true;
+    } else if (me->tag == EXPR_BINARY_OP && me->binary_op->op == BINARY_OP_COMMA) {
+        expr_mark_result_unused(&me->binary_op->right); // (the left one is whatever the comma is in)
+    }
+}
+
 void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs) {
+    expr_mark_result_unused(me);
     expr_lookup_names(me, names, errs);
     flow_maybe_call(names->flow, me);
 }
@@ -1370,6 +1379,7 @@ static bool is_plain_binary(Expr const* me) {
 // expr_lookup_names() of a binary expression that isn't logical or an assignment, once its left operand is walked
 static void plain_binary_lookup_names_rest(Expr* me, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
+    if (my binary_op->op == BINARY_OP_COMMA) expr_mark_result_unused(&my binary_op->left);
     if (my binary_op->op == BINARY_OP_COMMA) flow_maybe_call(flow, &my binary_op->left);
     expr_lookup_names(&my binary_op->right, names, errs);
     if (my binary_op->op == BINARY_OP_COMMA) flow_maybe_call(flow, &my binary_op->right);
@@ -1514,6 +1524,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_UNARY_OP: {
             Expr* operand = &my unary_op->expr;
+            if (my unary_op->op == UNARY_OP_VOID) expr_mark_result_unused(operand);
             // tsc's checkStrictModeDeleteExpression
             if (my unary_op->op == UNARY_OP_DELETE && names->strict && operand->tag == EXPR_IDENTIFIER &&
                 !operand->identifier.keyword && !expr_is_perenthisized(operand)
@@ -2742,6 +2753,18 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
         yielded = yield->expr.tag == EXPR_IMPLICIT_ANY ? ty_intrinsic(checker, TY_UNDEFINED) : ty_expr_type(checker, &yield->expr);
     }
     if (async) yielded = ty_awaited(checker, yielded);
+    // tsc's checkYieldExpression: what the generator is sent is any without an annotation or contextual type
+    if (!generator->ret_explicit && yield->op == UNARY_OP_YIELD && compiler_options()->no_implicit_any && !yield->result_unused) {
+        TyIterationTypes const* context = ty_generator_context(checker, generator);
+        LazyMemo const* memo = lazy_type_state_peek((LazyType*)&me->lazy_type);
+        Ty const* contextual = memo && memo->done ? memo->context : nullptr;
+        if (!context && (!contextual || (contextual->flags & TYF_ANY))) {
+            Span keyword = my outer_span; // (the `yield`)
+            if (keyword.sv.size > 5) keyword.sv.size = 5;
+            error_ctx_error_d(errs, keyword, 7057, "'yield' expression implicitly results in an 'any' type because "
+                "its containing generator lacks a return-type annotation.");
+        }
+    }
     if (!generator->ret_explicit) return;
     TyIterationTypes const* declared = ty_generator_context(checker, generator);
     if (declared) {

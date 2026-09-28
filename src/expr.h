@@ -293,6 +293,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs);
 // As the condition of a statement: control goes to one of the labels
 void expr_lookup_names_condition(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target);
 // As an expression statement, where a call can be an assertion
+void expr_mark_result_unused(Expr* me);
 void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs);
 // `for (me of xs)`: what the loop assigns to (already walked)
 typedef struct ForEachLoopStatement ForEachLoopStatement;
@@ -460,6 +461,9 @@ typedef struct UnaryOpExpr {
     bool outside_generator;
     Expr expr;
     FunctionImpl const* generator; // `yield`: the generator it is in (set when resolving), null if there's none
+    // `yield`: what it evaluates to isn't used (an expression statement, a `void` operand, left of a comma, a for loop's
+    // afterthought: tsc's expressionResultIsUnused), set when resolving
+    bool result_unused;
 } UnaryOpExpr;
 
 // Property

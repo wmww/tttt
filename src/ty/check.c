@@ -917,7 +917,8 @@ void ty_check_import_attributes(Checker* me, ImportAttributes const* attributes,
 // checkImportCallExpression)
 // tsc's checkImportCallExpression: the specifier is a string (null and undefined aren't, whatever strictNullChecks says)
 void ty_check_import_call_specifier(Checker* me, Expr const* specifier, ErrorCtx* errs) {
-    Ty const* type = ty_expr_type(me, specifier);
+    // (checked with string as its contextual type, tsc's getContextualTypeForArgumentAtIndex of an import call)
+    Ty const* type = ty_check_expr(me, specifier, ty_intrinsic(me, TY_STRING));
     if (type->flags & TYF_ERROR) return;
     if (!(type->flags & (TYF_UNDEFINED | TYF_NULL)) &&
         ty_is_related(me, type, ty_intrinsic(me, TY_STRING), TY_RELATION_ASSIGNABLE)
