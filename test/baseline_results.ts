@@ -41521,7 +41521,7 @@ const baselines = {
         types: true,
     },
     'declarationWithNoInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41986,17 +41986,17 @@ const baselines = {
         types: false,
     },
     'emptyVariableDeclarationBindingPatterns02_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'emptyVariableDeclarationBindingPatterns02_ES5iterable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'emptyVariableDeclarationBindingPatterns02_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

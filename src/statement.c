@@ -154,7 +154,17 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
             error_ctx_error_d(errs, i->binding.content_span, 7005, "Variable '", i->binding.content_span,
                 "' implicitly has an 'any' type.");
         }
-        if (variable_statement_is_const(me) &&
+        if (i->value.tag == EXPR_IMPLICIT_ANY && !declared &&
+            (i->binding.tag == BINDING_ARRAY || i->binding.tag == BINDING_OBJECT) &&
+            my keyword != VAR_INIT_USING && my keyword != VAR_INIT_AWAIT_USING // (TS1492 instead, variable_statement_check_using())
+        ) {
+            // tsc's checkGrammarVariableDeclaration
+            error_ctx_grammar_error_d(errs, i->binding.content_span, 1182, "A destructuring declaration must have an initializer.");
+            // The pattern is all it goes by (tsc's getWidenedTypeForVariableLikeDeclaration with reportErrors)
+            if (!i->binding.has_explicit_type && compiler_options()->no_implicit_any) {
+                binding_add_implicit_any_type_errors(&i->binding, false, errs);
+            }
+        } else if (variable_statement_is_const(me) &&
             i->value.tag == EXPR_IMPLICIT_ANY &&
             !declared
         ) {

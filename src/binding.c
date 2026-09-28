@@ -189,7 +189,12 @@ void binding_flow_assign(Binding const* me, Scope* names) {
 // tsc's getTypeFromBindingElement with reportErrors: an element with a default takes the default's type, so only the
 // elements without one (and the patterns without one, element by element) are implicitly any
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs) {
-    if (!toplevel && my default_value) return;
+    if (!toplevel && my default_value) {
+        // A default of null or undefined widens to any without strictNullChecks (tsc's reportErrorsFromWidening)
+        if (my tag != BINDING_IDENTIFIER || compiler_options()->strict_null_checks) return;
+        Ty const* type = ty_expr_type(current_checker, my default_value);
+        if (!(type->flags & TYF_NULLABLE) || type->kind == TY_UNION) return;
+    }
     switch (my tag) {
         case BINDING_NOOP: break;
 
