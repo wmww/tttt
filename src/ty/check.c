@@ -1335,6 +1335,19 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
             return;
         }
     }
+    // A const enum's object has no index signature to fall back on, with or without noImplicitAny (tsc's
+    // getPropertyTypeForIndexType: isConstEnumObjectType)
+    if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT && object->declared.symbol &&
+        (object->declared.symbol->flags & SYMBOL_CONST_ENUM)
+    ) {
+        Ty const* key = ty_regular(me, ty_access_key_type(me, access));
+        if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL) &&
+            !ty_access(me, object, key)
+        ) {
+            report_no_property(me, object, key, 2339, access->prop.outer_span, errs);
+        }
+        return;
+    }
     if (!compiler_options()->no_implicit_any) return;
     Span index_span = access->prop.outer_span;
     if (index_span.source && index_span.source->is_js) return; // TODO: JS literal types (any)
