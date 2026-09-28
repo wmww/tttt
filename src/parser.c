@@ -3232,7 +3232,8 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
 }
 
 // The tags of the comment `range` (tsc's parseJSDocCommentWorker: a tag starts at an `@` at the start of a line, after
-// whitespace and at most one `*`, or after whitespace and before something else anywhere; nothing in backticks)
+// whitespace and at most one `*`, or after whitespace and before something else anywhere; not in backticks of a tag's
+// comment)
 static bool jsdoc_is_object_type(JsDocTag const* tag, bool* array);
 
 static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* tags) {
@@ -3240,7 +3241,10 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
     const char* end = range.end - 2;
     bool line_start = true;
     bool saw_asterisk = false;
+    // Backticks keep an `@` from starting a tag in a tag's comment, up to the end of the line; not in the description
+    // (tsc's JSDocState.SavingBackticks, "only used when parsing tag comments")
     bool in_backticks = false;
+    bool in_tag = false;
     JsDocTagKind owner = JSDOC_TAG_OTHER; // The @typedef or @callback the tags are part of, if any
     bool typedef_children = false; // The @typedef has no type or `{Object}`: it takes an `@type` child
     while (c < end) {
@@ -3248,6 +3252,7 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
         if (ch == '\n') {
             line_start = true;
             saw_asterisk = false;
+            in_backticks = false;
             c++;
         } else if (ch == ' ' || ch == '\t' || ch == '\r') {
             c++;
@@ -3258,6 +3263,7 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
             isize before = tags->size;
             c = parse_jsdoc_tag(parent, c, end, tags);
             line_start = false;
+            in_tag = true;
             for (isize i = before; i < tags->size; i++) tags->data[i].comment = range.start;
             // tsc's parseCallbackTag/parseTypedefTag/parseOverloadTag take the tags that follow as their children
             JsDocTag* tag = vec_jsdoc_tag_back_mut(tags);
@@ -3282,7 +3288,7 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
                 owner = JSDOC_TAG_OTHER;
             }
         } else {
-            if (ch == '`') in_backticks = !in_backticks;
+            if (ch == '`' && in_tag) in_backticks = !in_backticks;
             line_start = false;
             c++;
         }
