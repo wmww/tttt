@@ -1546,6 +1546,8 @@ void ty_check_generic_index_write(Checker* me, PropertyExpr const* access, Ty co
     Atom const* name = ty_literal_name(me, key);
     Ty const* apparent = ty_apparent_type(me, object);
     if (!name || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) || ty_find_prop(me, apparent, name).found) return;
+    // (TODO: a generic mapped type's known keys, `Record<keyof T | "k", V>`: tsc's getLowerBoundOfKeyType)
+    if ((apparent->flags & TYF_OBJECT) && ty_members(me, apparent)->mapped) return;
     if (!ty_access(me, apparent, key)) return; // (check_access()'s TS2339)
     cstr object_str = ty_to_cstr(me, object);
     error_ctx_error_d(errs, access->prop.outer_span, 2339, "Property '", atom_sv(name), "' does not exist on type '",
