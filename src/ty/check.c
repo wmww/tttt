@@ -2918,6 +2918,26 @@ Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, 
     return non_null->flags & (TYF_NULLABLE | TYF_NEVER) ? nullptr : non_null;
 }
 
+u32 ty_check_non_null_non_void_at(Checker* me, Ty const* type, Span span, bool check_void, ErrorCtx* errs) {
+    if (!compiler_options()->strict_null_checks) return 0;
+    if (type->flags & TYF_UNKNOWN) {
+        error_ctx_error_d(errs, span, 2571, "Object is of type 'unknown'.");
+        return 2571;
+    }
+    bool has_null = ty_can_be_null(me, type), has_undefined = ty_can_be_undefined(me, type);
+    if (has_null || has_undefined) {
+        char const* what = has_null && has_undefined ? "null' or 'undefined" : has_null ? "null" : "undefined";
+        u32 code = has_null && has_undefined ? 2533 : has_null ? 2531 : 2532;
+        error_ctx_error_d(errs, span, code, "Object is possibly '", what, "'.");
+        return code;
+    }
+    if (check_void && (type->flags & TYF_VOID)) {
+        error_ctx_error_d(errs, span, 2532, "Object is possibly 'undefined'.");
+        return 2532;
+    }
+    return 0;
+}
+
 Ty const* ty_private_name_owner(Checker* me, Expr const* private_name, Atom const** name) {
     ClassDecl const* class_decl = private_name->private_name->private_class;
     if (!class_decl || !class_decl->symbol) return nullptr;

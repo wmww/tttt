@@ -2441,7 +2441,7 @@ const baselines = {
         types: true,
     },
     'bindingPatternCannotBeOnlyInferenceSource': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29251,7 +29251,7 @@ const baselines = {
         types: true,
     },
     'strictNullEmptyDestructuring': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41566,7 +41566,7 @@ const baselines = {
         types: true,
     },
     'destructuringAssignabilityCheck': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41856,7 +41856,7 @@ const baselines = {
         types: true,
     },
     'destructuringVoidStrictNullChecks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -343,8 +343,33 @@ static bool is_js_expando_object_initializer(Binding const* me, Expr const* init
 
 void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, ErrorCtx* errs) {
     if (my has_explicit_type) type_typecheck(&my explicit_type, errs);
+    // A pattern without elements is checked for null and undefined instead: the initializer's type, and the pattern's
+    // (tsc's checkVariableLikeDeclaration: checkNonNullNonVoidType, both are one diagnostic if they say the same)
+    bool empty_pattern = my tag == BINDING_OBJECT && !vec_object_binding_item_size(&my object);
+    if (my tag == BINDING_ARRAY) {
+        empty_pattern = true;
+        for_each (i, vec_binding, &my array) empty_pattern &= i->tag == BINDING_NOOP;
+    }
+    bool strict_empty = empty_pattern && compiler_options()->strict_null_checks && !my ambient;
+    // (A parameter's error is at the whole declaration, the one span is given for: tsc's getErrorSpanForNode has no
+    // case for it)
+    Span at = !my parent && span_valid(span) ? span : my content_span;
+    if (strict_empty) {
+        u32 reported = initializer ?
+            ty_check_non_null_non_void_at(current_checker, ty_expr_type(current_checker, initializer), at, true, errs) : 0;
+        if (my tag == BINDING_OBJECT) {
+            Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
+            // (The same diagnostic twice is one)
+            ErrorCtx quiet = error_ctx_init();
+            u32 again = ty_check_non_null_non_void_at(current_checker, type, at, true, &quiet);
+            if (again && again != reported) error_ctx_merge(errs, &quiet);
+            error_ctx_drop(&quiet);
+        }
+    }
     // (A catch variable's annotation isn't assigned anything: TS1196 is its only check)
-    if (my has_explicit_type && (my parent || my source) && !is_js_expando_object_initializer(me, initializer)) {
+    if (my has_explicit_type && (my parent || my source) && !(strict_empty && initializer) &&
+        !is_js_expando_object_initializer(me, initializer)
+    ) {
         ty_check_assignable_expr(current_checker, ty_binding_assigned_type(current_checker, me),
             ty_of_node(&my explicit_type), span_valid(span) ? span : my content_span, initializer, errs);
     }
@@ -392,7 +417,7 @@ void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, Error
                 ty_check_emit_helpers(current_checker, my content_span, EMIT_HELPER_READ, errs);
             }
             Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
-            ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, my content_span, errs);
+            ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, empty_pattern ? at : my content_span, errs);
             Ty const* parent = element_parent_type(me, nullptr);
             for_each (i, vec_binding, &my array) {
                 // Past the end of a tuple (TS2493), unless there's a default

@@ -1948,6 +1948,10 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
 
         case EXPR_OBJECT:
             if (expr_is_perenthisized(target)) break;
+            // `{} = v`: v must not be null or undefined (tsc's checkObjectLiteralAssignment)
+            if (source && !vec_object_expr_item_size(&target->object)) {
+                ty_check_non_null_non_void_at(checker, source, target->inner_span, false, errs);
+            }
             for_each (i, vec_object_expr_item, &target->object) {
                 Ty const* property = nullptr;
                 if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {

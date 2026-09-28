@@ -996,6 +996,9 @@ u32 ty_nullable_facts(Checker* me, Ty const* ty);
 Ty const* ty_check_non_null_callee(Checker* me, Ty const* callee, Span span, ErrorCtx* errs);
 // tsc's checkNonNullType: unknown and (under strictNullChecks) null or undefined are errors. Null if it reported
 Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, ErrorCtx* errs);
+// tsc's checkNonNullType at a node that isn't an entity name (a pattern): TS2571, TS2531-2533, and with `check_void`
+// checkNonNullNonVoidType's void, possibly undefined. The code reported, 0 if none
+u32 ty_check_non_null_non_void_at(Checker* me, Ty const* type, Span span, bool check_void, ErrorCtx* errs);
 // tsc's checkAssertionDeferred: `x as T` where x's type and T don't overlap (TS2352)
 void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target, Span span, ErrorCtx* errs);
 // tsc's checkDeleteExpression: what `delete` deletes has to be an optional (and writable) property
