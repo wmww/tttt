@@ -155,6 +155,11 @@ static Args collect_args(Checker* me, CallInfo const* info) {
                 ) {
                     variadic = operand;
                 }
+            } else if (operand->kind == TY_ANONYMOUS && (operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+                ty_is_related(me, operand, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE)
+            ) {
+                // (A homomorphic mapped type over an array type parameter too: `Foo<T>` with `T extends any[]`)
+                variadic = operand;
             }
             if (args.spread_index < 0) args.spread_index = (i32)args.len;
             args_push(&args, (Arg){ .expr = i, .type = element, .spread = true, .variadic = variadic });
