@@ -1953,6 +1953,69 @@ static bool namespace_import_resolves_type_members(PortItem const* item) {
     return target && esm_imports_cjs(item, target);
 }
 
+// tsc's resolveESModuleSymbol: an ES import of a module whose `export =` names neither a namespace nor a variable
+// (a class, a function) only works through the synthetic default (TS2497 on the module name)
+static void check_es_module_symbol(PortItem const* item, Symbol const* module, Symbol* assigned, ErrorCtx* errs) {
+    if (!assigned || assigned->is_placeholder || !item->module_ref) return;
+    // (`module.exports = v` of a value that isn't a name is a ValueModule in tsc's bindModuleExportsAssignment)
+    Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
+    if (export_equals && export_equals->decl_count && export_equals->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) return;
+    Symbol const* target = symbol_resolve_alias(assigned);
+    if (!target || target->is_placeholder || target->is_module) return;
+    u32 flags = symbol_resolved_flags(assigned);
+    if (flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE | SYMBOL_FUNCTION_SCOPED_VARIABLE | SYMBOL_BLOCK_SCOPED_VARIABLE)) {
+        return;
+    }
+    error_ctx_error_d(errs, item->module_ref->span, 2497, "This module can only be referenced with ECMAScript "
+        "imports/exports by turning on the '", compiler_options()->module >= MODULE_KIND_ES2015 ?
+        "allowSyntheticDefaultImports" : "esModuleInterop", "' flag and referencing its default export.");
+}
+
+void scope_report_non_exported_member(PortItem const* item, Symbol const* module, ErrorCtx* errs) {
+    Span name = item->source_name;
+    cstr module_name = module_name_for_error(module, item->module_ref, true);
+    SourceFile const* file = module->is_module && module->module ? module->module->file : nullptr;
+    Symbol* local = file && file->scope ? symbol_table_get(&file->scope->locals, port_item_name(name)) : nullptr;
+    Symbol const* export_equals = local ? symbol_get_export(module, c_sv("export=")) : nullptr;
+    if (!local || (export_equals && symbol_resolve_alias((Symbol*)export_equals) != symbol_resolve_alias(local))) {
+        error_ctx_error_d(errs, name, 2305, "Module '", module_name, "' has no exported member '", name, "'.");
+    } else if (export_equals) {
+        // (tsc's reportInvalidImportEqualsExportMember)
+        CompilerOptions const* options = compiler_options();
+        bool interop = options->es_module_interop;
+        if (options->module >= MODULE_KIND_ES2015) {
+            if (interop) error_ctx_error_d(errs, name, 2595, "'", name, "' can only be imported by using a default import.");
+            else error_ctx_error_d(errs, name, 2596, "'", name, "' can only be imported by turning on the 'esModuleInterop' flag and using a default import.");
+        } else if (name.source && name.source->is_js) {
+            if (interop) error_ctx_error_d(errs, name, 2597, "'", name, "' can only be imported by using a 'require' call or by using a default import.");
+            else error_ctx_error_d(errs, name, 2598, "'", name, "' can only be imported by using a 'require' call or by turning on the 'esModuleInterop' flag and using a default import.");
+        } else if (interop) {
+            error_ctx_error_d(errs, name, 2616, "'", name, "' can only be imported by using 'import ", name, " = require(",
+                module_name, ")' or a default import.");
+        } else {
+            error_ctx_error_d(errs, name, 2617, "'", name, "' can only be imported by using 'import ", name, " = require(",
+                module_name, ")' or by turning on the 'esModuleInterop' flag and using a default import.");
+        }
+    } else {
+        // Declared but not exported, or exported under another name
+        Symbol const* resolved = symbol_resolve_alias(local);
+        SymbolTable const* exports = symbol_exports_table(module);
+        csview exported_as = {0};
+        for (u32 i = 0; exports && i < exports->count && !exported_as.size; i++) {
+            if (symbol_resolve_alias(exports->entries[i].symbol) == resolved) exported_as = exports->entries[i].name;
+        }
+        Error* error = exported_as.size ?
+            error_ctx_error_d(errs, name, 2460, "Module '", module_name, "' declares '", name,
+                "' locally, but it is exported as '", exported_as, "'.") :
+            error_ctx_error_d(errs, name, 2459, "Module '", module_name, "' declares '", name, "' locally, but it is not exported.");
+        for (u32 i = 0; i < local->decl_count; i++) {
+            if (i == 0) error_add_related_d(error, local->decls[i].name, 2728, "'", name, "' is declared here.");
+            else error_add_related_d(error, local->decls[i].name, 6204, "and here.");
+        }
+    }
+    cstr_drop(&module_name);
+}
+
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = my alias->scope->errs;
@@ -1989,6 +2052,12 @@ static Symbol* resolve_alias_target(Symbol* me) {
     switch (item->tag) {
         case PORT_IMPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC: {
+            // (tsc's getExternalModuleMember: `{ default as x }` with allowSyntheticDefaultImports is fine)
+            if (!item->value_only && !(csview_equals(port_item_name(item->source_name), "default") &&
+                compiler_options()->allow_synthetic_default_imports)
+            ) {
+                check_es_module_symbol(item, module, assigned, errs);
+            }
             Symbol* found = symbol_get_export(module, port_item_name(item->source_name));
             if (!found && assigned) {
                 if (assigned->is_placeholder) return nullptr;
@@ -2016,10 +2085,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
             if (item->value_only && found && !(symbol_resolved_flags(found) & SYMBOL_VALUE)) return nullptr;
             if (!found) {
                 if (item->value_only) return nullptr;
-                cstr module_name = module_name_for_error(module, item->module_ref, true);
-                error_ctx_error_d(errs, item->source_name, 2305,
-                    "Module '", module_name, "' has no exported member '", item->source_name, "'.");
-                cstr_drop(&module_name);
+                scope_report_non_exported_member(item, module, errs);
                 return nullptr;
             }
             item->source_symbol = found;
@@ -2102,6 +2168,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
 
         case PORT_IMPORT_GATHER:
         case PORT_REEXPORT_GATHER:
+            if (!item->is_require) check_es_module_symbol(item, module, assigned, errs);
             if (assigned) return assigned;
             if (namespace_import_resolves_type_members(item)) resolve_module_type_members(module);
             return make_gather_target(me, module);

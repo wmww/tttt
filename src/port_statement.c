@@ -164,6 +164,18 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             error_ctx_error_d(errs, alias->decl_name, 2438, "Import name cannot be '", alias->decl_name, "'.");
         }
     }
+    // `import { x }` of a property of what `export =` names: tsc's getExternalModuleMember finds none if the value
+    // has no such property (the binder leaves that to the checker, see resolve_alias_target())
+    for_each (i, vec_port_item, &my items) {
+        if ((i->tag != PORT_IMPORT_SPECIFIC && i->tag != PORT_REEXPORT_SPECIFIC) || !i->symbol || i->jsdoc) continue;
+        Symbol const* target = symbol_resolve_alias(i->symbol);
+        if (!target || !target->decl_count || target->decls[0].kind != SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) continue;
+        Symbol const* assigned = target->decls[0].node;
+        if (ty_type_of_symbol(current_checker, assigned)->flags & TYF_ERROR) continue;
+        if (!(ty_type_of_symbol(current_checker, target)->flags & TYF_ERROR)) continue;
+        Symbol const* module = binder_module_of_ref(i->symbol->binder, i->module_ref);
+        if (module) scope_report_non_exported_member(i, module, errs);
+    }
     // tsc's checkImportAttributes()
     ImportAttributes const* node = my attributes;
     if (!node) return;

@@ -566,6 +566,9 @@ bool scope_declares_symbol(Scope const* me, Symbol const* symbol);
 // tsc's getSpellingSuggestion: the candidate name closest to `name`, if any is close enough. `names` are `count`
 // strings, returns the index of the best, or -1
 isize spelling_suggestion(csview name, csview const* names, isize count);
+// tsc's reportNonExportedMember: `import { x }` of a module without an export x (TS2305), which declares x locally
+// (TS2459/TS2460), or whose `export =` is x (TS2595-TS2598, TS2616/TS2617)
+void scope_report_non_exported_member(PortItem const* item, Symbol const* module, ErrorCtx* errs);
 // TS6203 "was also declared here" (TS6204 "and here" from the second on, at most 5) on the duplicate error at `at`,
 // pointing at `other` (tsc's addDuplicateDeclarationError)
 void add_duplicate_related(Error* error, Span at, Span other);
