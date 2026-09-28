@@ -1866,12 +1866,19 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
     Span first = *vec_span_front(&item->alias_path);
     Symbol* target;
     if (vec_span_size(&item->alias_path) == 1) {
+        // (tsc's getSymbolOfPartOfRightHandSideOfImportEquals: a namespace)
         target = scope_resolve(my alias->scope, first.sv, SYMBOL_NAMESPACE);
-        if (!target) target = scope_resolve(my alias->scope, first.sv, SYMBOL_VALUE);
-        if (!target) target = scope_resolve(my alias->scope, first.sv, SYMBOL_TYPE);
         if (target == me) target = nullptr;
         if (!target) {
-            error_ctx_error_d(errs, first, 2304, "Cannot find name '", first, "'.");
+            Symbol const* other = scope_resolve(my alias->scope, first.sv, SYMBOL_VALUE | SYMBOL_TYPE);
+            if (other == me) other = nullptr;
+            if (!other) {
+                error_ctx_error_d(errs, first, 2304, "Cannot find name '", first, "'.");
+            } else if (symbol_resolved_flags(other) & SYMBOL_TYPE) {
+                error_ctx_error_d(errs, first, 2702, "'", first, "' only refers to a type, but is being used as a namespace here.");
+            } else {
+                error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
+            }
             return nullptr;
         }
         unused_mark_referenced(my alias->scope, target, SYMBOL_ANY_MEANING);

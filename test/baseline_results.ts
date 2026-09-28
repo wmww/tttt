@@ -9146,7 +9146,7 @@ const baselines = {
         types: true,
     },
     'decoratorMetadataWithImportDeclarationNameCollision7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -11261,7 +11261,7 @@ const baselines = {
         types: false,
     },
     'errorForUsingPropertyOfTypeAsType02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18691,7 +18691,7 @@ const baselines = {
         types: true,
     },
     'invalidUseOfTypeAsNamespace': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51001,7 +51001,7 @@ const baselines = {
         types: false,
     },
     'invalidImportAliasIdentifiers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

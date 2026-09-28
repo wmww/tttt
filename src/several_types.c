@@ -228,10 +228,29 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                 decl = scope_get_namespace(names, i->sv, &found);
                 unused_mark_referenced(names, (Symbol*)found, SYMBOL_NAMESPACE);
                 if (!decl) {
-                    error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
+                    Symbol const* type_symbol = nullptr;
+                    Symbol const* type = my jsdoc ? nullptr : scope_get_type(names, i->sv, &type_symbol);
+                    if (type && !(type->flags & SYMBOL_NAMESPACE) && !type->is_placeholder) {
+                        my type_as_namespace = type;
+                    } else {
+                        error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
+                    }
                 }
             } else /* Subsequent namespaces */ {
-                decl = get_symbol_from_namespace(namespace, *i, SYMBOL_NAMESPACE, &found, errs);
+                Symbol const* member = namespace ? symbol_get_export(namespace, i->sv) : nullptr;
+                // (A member that is a value too is TS2749 for the whole name, tsc's canSuggestTypeof)
+                Symbol const* type = member && !symbol_for_meaning(member, SYMBOL_NAMESPACE | SYMBOL_VALUE) ?
+                    symbol_for_meaning(member, SYMBOL_TYPE) : nullptr;
+                if (type) {
+                    // An exported type used as a namespace (tsc's resolveEntityName): said at what follows it
+                    Span right = i + 1 < my namespaces.data + my namespaces.size ? i[1] : my name;
+                    error_ctx_error_d(errs, right, 2713, "Cannot access '", *i, ".", right, "' because '", *i,
+                        "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
+                        "' in '", *i, "' with '", *i, "[\"", right, "\"]'?");
+                    decl = nullptr;
+                } else {
+                    decl = get_symbol_from_namespace(namespace, *i, SYMBOL_NAMESPACE, &found, errs);
+                }
             }
             // Everything looked up in a placeholder is any
             namespace = decl && !decl->is_placeholder ? decl : nullptr;
@@ -419,6 +438,19 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }
     identifier_type_check_arity(me, errs);
+    if (my type_as_namespace && vec_span_size(&my namespaces)) {
+        Checker* checker = current_checker;
+        Span left = my namespaces.data[0];
+        Span right = vec_span_size(&my namespaces) > 1 ? my namespaces.data[1] : my name;
+        Ty const* declared = ty_apparent_type(checker, ty_declared_type_of(checker, my type_as_namespace));
+        if (ty_property_of_type(checker, declared, checker_atom(checker, right.sv))) {
+            error_ctx_error_d(errs, span_between(left, right), 2713, "Cannot access '", left, ".", right, "' because '", left,
+                "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
+                "' in '", left, "' with '", left, "[\"", right, "\"]'?");
+        } else {
+            error_ctx_error_d(errs, left, 2702, "'", left, "' only refers to a type, but is being used as a namespace here.");
+        }
+    }
     // tsc's getTypeFromTypeReference: a referenced alias is resolved (TS2456 if that is circular)
     if (my target && (my target->flags & SYMBOL_TYPE_ALIAS) && !my target->is_placeholder) ty_declared_type_of(current_checker, my target);
     if (my target) {

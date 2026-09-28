@@ -33,6 +33,9 @@ typedef struct IdentifierType {
     // What a JSDoc name means instead of what it would find (tsc's getIntendedTypeFromJSDocTypeReference), set when
     // resolving: nothing is looked up then
     uint8_t jsdoc_intrinsic;
+    // `A.b` where A is only a type (tsc's checkAndReportErrorForUsingTypeAsNamespace): that type, TS2713 if it has a
+    // property b, else TS2702, said when checking (it takes the type's members)
+    Symbol const* type_as_namespace;
 } IdentifierType;
 
 typedef enum JsDocIntrinsic {
