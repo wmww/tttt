@@ -1009,6 +1009,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     bool legacy = compiler_options()->experimental_decorators;
     for_each (i, vec_class_item, &my items) {
         // tsc's checkGrammarModifiers via nodeCanBeDecorated(), at the `@` of the first decorator
+        bool decorator_error = false;
         if (vec_expr_size(&i->decorators) && span_valid(i->span)) {
             bool valid = false;
             unsigned code = 1206;
@@ -1024,6 +1025,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                     break;
             }
             if (!valid) {
+                decorator_error = true;
                 Span at = i->span;
                 at.sv = csview_from_n(span_start_ptr(i->span), 1);
                 if (code == 1249) {
@@ -1031,6 +1033,18 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 } else {
                     error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
                 }
+            }
+        }
+        // tsc's checkAmbientInitializer for a field of an ambient class or a `declare` field (one grammar error per
+        // member: not after the decorators')
+        if (!decorator_error && i->tag == CLASS_ITEM_FIELD && (my is_ambient || i->field.is_declare) && i->field.value.tag != EXPR_IMPLICIT_ANY) {
+            if (i->field.is_readonly && !i->field.has_explicit_type) {
+                if (!expr_is_ambient_const_initializer(&i->field.value)) {
+                    error_ctx_grammar_error_d(errs, i->field.value.outer_span, 1254,
+                        "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
+                }
+            } else {
+                error_ctx_grammar_error_d(errs, i->field.value.outer_span, 1039, "Initializers are not allowed in ambient contexts.");
             }
         }
         // Parameters: only legacy decorators, of methods, setters and constructors with a body in a class declaration

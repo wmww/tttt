@@ -167,28 +167,10 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
                 error_ctx_error_d(errs, i->value.outer_span, 1039,
                     "Initializers are not allowed in ambient contexts.");
             } else {
-                bool valid = true;
-                switch (i->value.tag) {
-                    case EXPR_LITERAL:
-                        switch (i->value.literal.tag) {
-                            case VALUE_NUMBER:
-                            case VALUE_STRING:
-                            case VALUE_BOOLEAN:
-                                break;
-
-                            default: goto bad_initializer;
-                        }
-                        break;
-
-                    case EXPR_IDENTIFIER:
-                    case EXPR_PROPERTY: // TODO: check that it's actually a reference to a literal enum member
-                        break;
-
-                    default: bad_initializer:
-                        error_ctx_error_d(errs, i->value.outer_span, 1254,
-                            "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
-                        valid = false;
-                        break;
+                bool valid = expr_is_ambient_const_initializer(&i->value);
+                if (!valid) {
+                    error_ctx_error_d(errs, i->value.outer_span, 1254,
+                        "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
                 }
                 if (valid) variable_statement_check_let_names(me, i, errs);
             }
@@ -203,6 +185,20 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
             ty_check_using_initializer(current_checker, type, my keyword == VAR_INIT_AWAIT_USING,
                 i->value.outer_span, errs);
         }
+    }
+}
+
+// tsc's checkAmbientInitializer: what a const or readonly declaration without a type may be initialized with where
+// nothing is emitted. TODO: an identifier or property access has to be a literal enum member
+bool expr_is_ambient_const_initializer(Expr const* me) {
+    switch (my tag) {
+        case EXPR_LITERAL:
+            return my literal.tag == VALUE_NUMBER || my literal.tag == VALUE_STRING || my literal.tag == VALUE_BOOLEAN;
+        case EXPR_IDENTIFIER:
+        case EXPR_PROPERTY:
+            return true;
+        default:
+            return false;
     }
 }
 

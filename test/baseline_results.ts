@@ -3551,7 +3551,7 @@ const baselines = {
         types: false,
     },
     'classExpressionPropertyModifiers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15771,7 +15771,7 @@ const baselines = {
         types: true,
     },
     'illegalModifiersOnClassElements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33601,7 +33601,7 @@ const baselines = {
         types: true,
     },
     'ambientErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49121,7 +49121,7 @@ const baselines = {
         types: true,
     },
     'initializersInDeclarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

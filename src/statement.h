@@ -103,6 +103,8 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
 void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* errs);
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs);
 // tsc's getModuleInstanceState: the namespace has a value (it declares something other than types)
+// A string, number or boolean literal or what may be a literal enum reference (tsc's checkAmbientInitializer)
+bool expr_is_ambient_const_initializer(Expr const* me);
 bool namespace_decl_is_instantiated(NamespaceDecl const* me);
 bool namespace_decl_declares_value(NamespaceDecl const* me);
 
