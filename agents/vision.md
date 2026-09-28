@@ -17,7 +17,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   **107** (checkJs, JSDoc leftovers). New: **zod-root** (zod's root tsconfig, not clean under tsc: diff it; 28
   spurious in tttt, mostly arktype's string DSL inferring `never`).
 - **Perf** (`measurements.md`): every corpus ahead of *single-threaded* tsgo (webpack 0.56 s vs 0.60 was the last to
-  flip), 2-6x ahead of multi-threaded tsgo elsewhere. ZOD_PERF_PLACEHOLDER
+  flip), 2-6x ahead of multi-threaded tsgo elsewhere. zod halved (1.31 -> 0.73 s,
+  1.3 GB -> 665 MB) with 62d8c89: zod annotates `out`/`in` variance, which tttt now takes as given like tsc; before,
+  its measurement of those interfaces came out *unreliable*, so every comparison went structural (perf_leads.md).
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, mapper instantiation, two-pass inference with priorities, contextual typing, conditional/mapped/indexed/

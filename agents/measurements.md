@@ -37,7 +37,8 @@ Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, 
 which reports 55): tttt 82, of which 28 spurious and 1 missing (plan 19).
 Instructions (`perf stat -e instructions:u`, stable like callgrind, much faster) at the end of the triage session:
 tsc 4.67 G, type-fest 3.30, valibot 5.06, react 1.91, nest 1.02, webpack 3.25, zod **4.26** (8.54 at the corpus
-session: the drop came with suite checker bugs 4, probably the TS2322 sub-agent's relation work; not investigated).
+session; bisected to 62d8c89, variance annotations taken as given: zod's `out` types were measured unreliable before,
+forcing structural comparisons; 932k -> 352k types, arena 975 -> 412 MB). Current walls: zod 0.73 s / 665 MB.
 
 ## Perf (2026-09-28, perf session, `./bench.sh --runs 2`)
 Best wall / peak RSS. tttt now re-executes itself with glibc's malloc on transparent huge pages and madvises its

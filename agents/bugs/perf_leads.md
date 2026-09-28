@@ -27,6 +27,13 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
 - Name resolution adds ~60 MB on webpack (scopes 248 B, symbols 192 B).
 
 ## Time
+- **Unreliable variance measurements** (found bisecting zod's halving, 2026-09-28): before 62d8c89, measuring zod's
+  unannotated-equivalent interfaces (`ZodType<O, I, Internals>`, `ZodObject`, `$ZodObjectInternals`...) gave
+  "unreliable" (8/9/12 in `TTTT_DUMP_VARIANCES=1`), so every comparison of two instantiations fell back to a full
+  structural walk (half of zod's instructions, 580k extra types). zod is fast now only because it annotates `out`.
+  Unannotated libraries of that shape still pay it. Check whether tsc marks the same measurements unreliable (its
+  `reportUnreliableMarkers` sites); if tttt marks more, that is a perf bug and possibly a correctness one. Probe:
+  strip zod's `out`/`in` annotations and compare variance dumps and instructions.
 - **Parser** (13% of the tsc corpus, ~25% of webpack, half of nest): no single function stands out. What's left is
   structural: a `Parser` copy per attempt, identifiers scanned again by each alternative that fails, one malloc per
   node. A real token (scan the identifier or punctuator once per position) and node arenas.

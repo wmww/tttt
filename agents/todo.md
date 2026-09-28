@@ -22,7 +22,8 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    TS2304 35, `bugs/missing_checks.md`); sample, group by cause, parallel Opus sub-agents in worktrees like session 4.
 8. **Plan 35 queue** (silent type differences) minus what plan 37 took, or plan 34's error-text queue if plan 35's
    head is all plan 37 material.
-9. **Perf: memory**: `perf_leads.md` "Memory" (the `Prop` split, why tttt makes 3.5x tsc's types), with the K=4
-   RSS from entry 2 as the baseline; then plan 36 stage 1 (parallel loading) if the session has room.
+9. **Perf: memory and types**: `perf_leads.md` "Unreliable variance measurements" first (zod without its `out`
+   annotations costs 2x: is tttt marking more measurements unreliable than tsc?), then "Memory" (the `Prop` split, why
+   tttt makes more types than tsc), with the K=4 RSS from entry 2 as the baseline; then plan 36 stage 1 (parallel loading) if the session has room.
 10. **Triage.**
 11. **Insights.**
