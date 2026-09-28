@@ -372,7 +372,12 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                     }
                     if (other->method.accessor == CLASS_ACCESSOR_GET && !i->method.accessor_getter) {
                         i->method.accessor_getter = other;
-                        if (i->method.accessor == CLASS_ACCESSOR_SET) function_impl_pair_setter(&i->method.func, &other->method.func);
+                        // (A computed name that isn't a literal or an entity name, `[1 << 6]`, makes no symbol that
+                        // would pair the two: tsc's isLateBindableName)
+                        Expr const* key = i->method.computed_key;
+                        if (i->method.accessor == CLASS_ACCESSOR_SET && (!key || key->tag == EXPR_LITERAL || expr_is_entity_name(key))) {
+                            function_impl_pair_setter(&i->method.func, &other->method.func);
+                        }
                     }
                 }
             }

@@ -325,8 +325,8 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
                 checker->return_context = both[1] ? ty_union(checker, both, 2, nullptr, (TyList){0}) : awaited;
             }
         }
-    } else if (my ret_explicit) {
-        Ty const* annotated = ty_from_node(checker, &my ret, (LowerCtx){ .generic = true });
+    } else if (my ret_explicit || my setter_type) {
+        Ty const* annotated = ty_from_node(checker, my ret_explicit ? &my ret : my setter_type, (LowerCtx){ .generic = true });
         checker->return_context = annotated->flags & (TYF_ANY | TYF_VOID) ? nullptr : annotated;
     } else {
         checker->return_context = ty_return_expressions_context(checker, me);
@@ -338,11 +338,12 @@ Ty const* function_impl_evaluate_type(FunctionImpl* me) {
     return ty_function_type(current_checker, me);
 }
 
-void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl const* getter) {
+void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter) {
     for_each (i, vec_function_arg, &setter->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (is_this) continue;
         if (!i->initializer.binding.has_explicit_type) i->initializer.getter = getter;
+        else if (!getter->ret_explicit) getter->setter_type = &i->initializer.binding.explicit_type;
         return;
     }
 }
@@ -700,7 +701,8 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         .ambient_reported = true,
         .in_function = true,
         // TODO: returns in async functions and generators aren't checked, the declared type wraps what's returned
-        .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret : &type_any,
+        .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret :
+            my setter_type ? my setter_type : &type_any,
         .constructed_class = my is_constructor ? my constructed_class : nullptr,
         .unwrapped_return = my ret_explicit && (my is_async || my is_generator) ? ty_unwrapped_return_type(current_checker, me) : nullptr,
         .await_returned = my is_async,

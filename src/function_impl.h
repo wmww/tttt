@@ -91,6 +91,9 @@ typedef struct FunctionImpl {
     Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
     Span variable_name; // A function expression or arrow function that initializes a variable: its name (display)
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
+    // A getter without a return type annotation whose setter's parameter has one: that annotation, which is the
+    // getter's return type (tsc's getReturnTypeFromAnnotation). Set by the resolve walk
+    TypeNode const* setter_type;
     bool is_expression; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)
     // The callee of a call (tsc's getImmediatelyInvokedFunctionExpression), set by the resolve walk: its unannotated
     // parameters past the call's argument count are optional
@@ -151,6 +154,7 @@ Ty const* function_impl_evaluate_type(FunctionImpl* me);
 Ty const* function_impl_enter_return_context(FunctionImpl const* me);
 // The checks on a parameter list. `is_type`: a function type or signature, which can't have initializers
 // A setter's unannotated parameter has the type the getter of the same property returns
-void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl const* getter);
+// and a getter without a return type annotation returns what the setter's parameter annotation says (setter_type)
+void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter);
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);

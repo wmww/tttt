@@ -204,6 +204,7 @@ Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function) {
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer) {
     if (function->constructed_class) return ty_class_instance_type(me, function->constructed_class);
     if (function->ret_explicit || !function->has_body) return ty_from_node(me, &function->ret, function_lower_ctx);
+    if (function->setter_type) return ty_from_node(me, function->setter_type, function_lower_ctx);
     u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
     void const** slot = intern_slot(me, &my links, key, 2);
     if (!*slot) *slot = arena_new(&my arena, FunctionReturn);
