@@ -70,7 +70,7 @@ parameters, `Object` is `any`, constructor functions). All three have to be desi
 - Without `checkJs` / `// @ts-check` its semantic diagnostics are filtered out afterwards (`SourceFile.unchecked`,
   `error_ctx_remove_unchecked()`), so most non-checkJs JS tests fail only their symbols/types components.
 - Comments are skipped by `hop_comment()`; nothing keeps `/** */` text (except the `{@link}` text scan in unused.c,
-  `mark_jsdoc_links()`, hacks.md).
+  `unused_mark_jsdoc_links()`, hacks.md).
 - `require("m")` calls are not module refs; `module`/`exports`/`require` are unresolved names (spurious TS2580/TS2304);
   a file whose only exports are `exports.x =` isn't a module (TS2306 in the importer, hacks.md).
 - Gates that exist only because JS isn't understood: `check_access()` / `ty_check_element_implicit_any()` skip JS files

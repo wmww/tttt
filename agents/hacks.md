@@ -640,7 +640,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   "Ambient" approximated per call site (`ClassDecl.is_ambient`, `Binding.ambient`, `BlockTypecheckCtx.ambient`; tsc has
   NodeFlags.Ambient). `for await` isn't checked (the statement doesn't know its function).
 - `binary_op_typecheck` (instanceof, HACK): TS2358 skipped in JS files.
-- `mark_jsdoc_links()` (unused.c HACK): `{@link X}` counts as a use by a text scan, looked up from the file scope.
+- `unused_mark_jsdoc_links()` (unused.c HACK): `{@link X}` counts as a use by a text scan, looked up from the file scope (JSDoc is parsed now, plan 26: resolve the link names from the parsed tags).
   Class member reads are a checker table keyed by declaration span start (`ty_mark_member_referenced`).
 - `for_in_accepts` (statement.c): type parameters and deferred types are accepted outright (tsc judges the constraint:
   TS2407 missed).

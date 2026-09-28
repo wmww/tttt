@@ -58,8 +58,6 @@ alias (`typeof CommonResult<false, O>`) left uninstantiated. Probes in `test/pro
 `instantiation_expression_in_alias.ts`.
 
 ### HACKs the zod fixes left (hacks.md "Inference" and "Mapped types")
-- No missing type: `exact_missing_flag()` strips undefined from optional mapped properties read off optional ones;
-  tsc's missingType would also give `'a' in x` narrowing (`x: {a: number} | {a?: never}` -> `number`).
 - Uninferred type parameters stay generic in the second pass's contextual type only where they'd be `unknown`
   (contextual types don't look through type parameters to constraints like getApparentTypeOfContextualType).
 
