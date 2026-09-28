@@ -1722,8 +1722,17 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
             for_each (i, vec_object_expr_item, &target->object) {
                 Ty const* property = nullptr;
                 if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
-                    property = ty_access(checker, source, ty_string_literal(checker, cstr_sv(&i->name_string)));
+                    Ty const* key = ty_string_literal(checker, cstr_sv(&i->name_string));
+                    property = ty_access(checker, source, key);
                     ty_mark_destructured_member(checker, source, cstr_sv(&i->name_string));
+                    // What the source lacks is TS2339, on the source as it is: null and undefined too (tsc's
+                    // checkObjectLiteralDestructuringPropertyAssignment). An object literal source may lack a property
+                    // that has a default (AccessFlags.AllowMissing)
+                    bool has_default = i->shorthand_default ||
+                        (i->value.tag == EXPR_BINARY_OP && i->value.binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(&i->value));
+                    if (!property && !(has_default && source->kind == TY_ANONYMOUS && source->anonymous.object_literal)) {
+                        ty_check_property_access(checker, source, key, span_null, i->name_span, false, true, errs);
+                    }
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD) {
                     assignment_target_typecheck(&i->value, nullptr, nullptr, errs); // TODO: the rest of the object

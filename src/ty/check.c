@@ -1026,6 +1026,13 @@ static void check_access(
             has_undefined |= (member->flags & TYF_UNDEFINED) != 0;
             opaque |= (member->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
         }
+        // A destructured property (no object expression) is looked up in the union as it is, undefined included
+        // (tsc's getBindingElementTypeFromParentType: getIndexedAccessType, no checkNonNullType)
+        if ((has_null || has_undefined) && compiler_options()->strict_null_checks && !span_valid(object_span)) {
+            // (null and undefined have no properties)
+            if (error_if_not_found && !opaque) report_no_property(me, object, index, 2339, index_span, errs);
+            return;
+        }
         if ((has_null || has_undefined) && compiler_options()->strict_null_checks) {
             const char* what = has_null && has_undefined ? "null' or 'undefined" : has_null ? "null" : "undefined";
             if (object_is_named) {
@@ -1118,7 +1125,11 @@ static void check_access(
         if (members->mapped && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
         if (ty_has_unresolved_base(me, object)) return;
     }
-    if (object->flags & TYF_NULLABLE) return; // TODO: TS18050 (the value 'undefined' cannot be used here)
+    if (object->flags & TYF_NULLABLE) {
+        // A destructured property of null or undefined doesn't exist (a property access is TS18050 in tsc: TODO)
+        if (!span_valid(object_span)) report_no_property(me, object, index, 2339, index_span, errs);
+        return;
+    }
     if (ty_access(me, object, index)) return;
     // What `typeof globalThis` doesn't have is any, but a block scoped global isn't there (tsc's
     // checkPropertyAccessExpressionOrQualifiedName)

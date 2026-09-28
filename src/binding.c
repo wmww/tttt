@@ -270,15 +270,47 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
     c_drop(cstr, &type_str, &declared_str);
 }
 
+// tsc's hasTypeFacts(type, EQUndefined), roughly: whether a value of the type may be undefined
+static bool possibly_undefined(Ty const* type) {
+    u32 may = TYF_ANY | TYF_UNKNOWN | TYF_UNDEFINED | TYF_VOID | TYF_TYPE_PARAM | TYF_DEFERRED;
+    if (type->kind == TY_UNION) {
+        for (u32 i = 0; i < type->composite.types.len; i++) {
+            if (type->composite.types.data[i]->flags & may) return true;
+        }
+        return false;
+    }
+    return (type->flags & may) != 0;
+}
+
 // The type a pattern's elements are taken from, as far as reporting what it lacks goes (tsc's
 // getBindingElementTypeFromParentType): null when nothing is reported (any, or nothing an element could be missing from).
-// An object pattern lacks every property of unknown (TS2339), an array pattern reports it once (TS2461)
-static Ty const* element_parent_type(Binding const* me) {
+// An object pattern lacks every property of unknown (TS2339), an array pattern reports it once (TS2461).
+// `initializer`: what the pattern's declaration is initialized with (a root's initializer, else the pattern's default)
+static Ty const* element_parent_type(Binding const* me, Expr const* initializer) {
     Checker* checker = current_checker;
     Ty const* type = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
+    // (Not widened: `= null` is null, not any, without strictNullChecks. tsc's getTypeForBindingElementParent)
+    if (my tag == BINDING_OBJECT && !my has_explicit_type && initializer && !(type->flags & TYF_NULLABLE)) {
+        Ty const* assigned = ty_expr_type(checker, initializer);
+        if (assigned->flags & TYF_NULLABLE) type = assigned;
+    }
     if (type->flags & TYF_ANY || (type->flags & TYF_UNKNOWN && my tag == BINDING_ARRAY)) return nullptr;
     // (tsc takes the non-nullable part: `{}` without strictNullChecks, unknown itself with them)
     if (type->flags & TYF_UNKNOWN) return compiler_options()->strict_null_checks ? type : ty_empty_object_type(checker);
+    if (my tag == BINDING_OBJECT) {
+        // Null and undefined stay: `const { a } = null` or of a `T | undefined` is TS2339 on the whole type
+        // (tsc's getBindingElementTypeFromParentType), except in an ambient parameter, or undefined when the
+        // initializer can't be undefined
+        if (!compiler_options()->strict_null_checks) {
+            if (!(type->flags & TYF_NULLABLE)) type = ty_non_nullable(checker, type);
+        } else if (my ambient && binding_is_parameter(me)) {
+            type = ty_non_nullable(checker, type);
+        } else if (initializer && !possibly_undefined(ty_expr_type(checker, initializer))) {
+            type = ty_without_undefined(checker, type);
+        }
+        if (type->flags & TYF_NEVER) return nullptr;
+        return type;
+    }
     // (What can be null or undefined is reported about the whole pattern)
     type = ty_non_nullable(checker, type);
     if (type->flags & TYF_NEVER) return nullptr;
@@ -326,7 +358,7 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
             }
             Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
             ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, my content_span, errs);
-            Ty const* parent = element_parent_type(me);
+            Ty const* parent = element_parent_type(me, nullptr);
             for_each (i, vec_binding, &my array) {
                 // Past the end of a tuple (TS2493), unless there's a default
                 if (parent && i->tag != BINDING_NOOP && !i->rest && !i->default_value) {
@@ -339,7 +371,7 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
             break;
 
         case BINDING_OBJECT: {
-            Ty const* parent = element_parent_type(me);
+            Ty const* parent = element_parent_type(me, my parent ? my default_value : initializer);
             for_each (i, vec_object_binding_item, &my object) {
                 if (parent && !i->computed_key && !i->target.rest && !(i->target.default_value &&
                     parent->kind == TY_ANONYMOUS && parent->anonymous.object_literal)

@@ -1927,8 +1927,10 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 case FOR_EACH_LOOP_EXPR:
                     expr_typecheck(&my for_each_loop->variable.expr, errs);
                     if (my for_each_loop->variable.expr.assignment_pattern) {
-                        // Destructured element by element (tsc's checkDestructuringAssignment)
+                        // Destructured element by element (tsc's checkDestructuringAssignment). A for..in pattern is
+                        // TS2491 and nothing else
                         expr_destructuring_typecheck(&my for_each_loop->variable.expr,
+                            my for_each_loop->keyword == FOR_EACH_LOOP_IN ? nullptr :
                             ty_widened_objects(checker, lazy_type_get(&my for_each_loop->var_type)), errs);
                         break;
                     }
