@@ -664,9 +664,15 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
     VecInitializedBinding* initializers = &my variable.statement.initializers;
     intptr_t var_size = vec_initialized_binding_size(initializers);
     if (var_size > 1) {
+        // (tsc's grammarErrorOnFirstToken: a pattern's `{` or `[`)
+        Binding const* second = &vec_initialized_binding_at(initializers, 1)->binding;
+        Span span = second->content_span;
+        if (second->tag == BINDING_ARRAY || second->tag == BINDING_OBJECT) {
+            span = span_make(span.source, span_start_ptr(span), span_start_ptr(span) + 1);
+        }
         error_ctx_error_d(
             scope->errs,
-            vec_initialized_binding_at(initializers, 1)->binding.content_span,
+            span,
             my keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
             "Only a single variable declaration is allowed in a 'for...",
             for_each_loop_statement_keyword_str(me).str, "' statement."

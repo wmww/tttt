@@ -417,7 +417,10 @@ void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, Error
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
                     // (tsc's getTypeForBindingElement: getIndexedAccessType with the name as the access node)
-                    if (parent && !i->target.rest) {
+                    // (With a default, an object literal may lack it: AccessFlags.AllowMissing)
+                    if (parent && !i->target.rest && !(i->target.default_value && parent->kind == TY_ANONYMOUS &&
+                        parent->anonymous.object_literal)
+                    ) {
                         Span key_span = i->computed_key->outer_span;
                         ty_check_indexed_access_type(current_checker, parent, expr_get_type(i->computed_key), key_span,
                             key_span, errs);

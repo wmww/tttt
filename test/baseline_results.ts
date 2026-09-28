@@ -2476,7 +2476,7 @@ const baselines = {
         types: true,
     },
     'blockScopedBindingUsedBeforeDef': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5336,12 +5336,12 @@ const baselines = {
         types: true,
     },
     'computedPropertiesInDestructuring1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertiesInDestructuring1_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42286,7 +42286,7 @@ const baselines = {
         types: false,
     },
     'for-of-excess-declarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
