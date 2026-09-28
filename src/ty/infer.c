@@ -472,7 +472,14 @@ static Ty const* reverse_mapped_array_like(Checker* me, Ty const* source, Mapped
     unsigned char* flags = malloc(shape->arity);
     panic_if(!elements || !flags, "out of memory");
     for (u32 i = 0; i < shape->arity; i++) {
-        elements[i] = reverse_mapped_prop_type(me, args.data[i], mapped, operand);
+        Ty const* element = args.data[i];
+        if ((shape->flags[i] & TUPLE_ELEMENT_REST) && ty_is_array(me, element)) {
+            // A rest element is held as its array: it's the element type that is reverse mapped (tsc's getElementTypes)
+            Ty const* reversed = reverse_mapped_prop_type(me, ty_reference_args(me, element).data[0], mapped, operand);
+            elements[i] = ty_array(me, reversed, element->reference.target == my readonly_array_target);
+        } else {
+            elements[i] = reverse_mapped_prop_type(me, element, mapped, operand);
+        }
         // (`?` in the mapped type: T's element needn't be optional)
         flags[i] = mapped->optional > 0 ? shape->flags[i] & ~(unsigned)TUPLE_ELEMENT_OPTIONAL : shape->flags[i];
     }
