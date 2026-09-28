@@ -243,8 +243,13 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 
 ## Narrowing (`ty/flow.c`, hooks in `ty/expr.c`)
 - Aliased conditions (`aliased_condition`) only narrow identifier references (tsc also readonly properties).
-- Not ported (TODOs in `ty/flow.c`): destructured discriminants (`const { kind } = x`, spurious TS18048 in
-  dependentDestructuredVariables), `x.constructor === C`, `[Symbol.hasInstance]` predicates, `"a" in x` intersecting
+- Destructured discriminants and dependent destructured variables/parameters (`discriminant_access()`,
+  `ty_destructured_narrowed_type()`, `ty_parameter_narrowed_type()`) run a flow query with a placeholder reference
+  that matches nothing (`FlowQuery.pattern` / `parameters_of` stand for tsc's pseudo references). Every read of such a
+  variable asks one flow query more.
+- JS late bound `this[k] = v` members are keyed `[k]` by source text in `Symbol.members` (`Symbol.late_bound_key`):
+  two spellings of one key are two members.
+- Not ported (TODOs in `ty/flow.c`): `x.constructor === C`, `[Symbol.hasInstance]` predicates, `"a" in x` intersecting
   with `Record<"a", unknown>` (inKeywordTypeguard), `unknown` narrowed by switch cases, erasure of generic construct
   signatures in `constructor_instance_type()`, narrowing by a literal's regular type.
 - `chain_object_type()` (ty/expr.c): tsc marks the `undefined` of an optional chain that ended (a marker type) and
