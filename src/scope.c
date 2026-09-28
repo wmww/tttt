@@ -3380,8 +3380,19 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
 static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level) {
     if (left->tag != EXPR_PROPERTY) return;
     Span name = expr_static_property_name(left);
-    if (!span_valid(name)) return;
     Expr* object = &left->property->expr;
+    // `f[k] = v` with an entity name k: a late bound member of a function or class (tsc's
+    // isBindableStaticElementAccessExpression, addLateBoundAssignmentDeclarationToSymbol). Named `[k]` as written
+    Expr const* late_bound_key = nullptr;
+    if (!span_valid(name) && left->property->form == PROPERTY_EXPR_BRACKET && !left->property->optional_chain &&
+        !expr_is_perenthisized(left) && expr_is_entity_name(&left->property->prop)
+    ) {
+        late_bound_key = &left->property->prop;
+        name = span_make(left->outer_span.source, span_end_ptr(object->outer_span), span_end_ptr(left->outer_span));
+        if (!span_valid(name) || !csview_starts_with(name.sv, "[")) return;
+    }
+    if (!span_valid(name)) return;
+    if (late_bound_key && (expr_prototype_object(object) || !expr_is_entity_name(object))) return;
     Expr* prototype = expr_prototype_object(object);
     if (prototype) {
         add_prototype_property(me, prototype, name, left, right, jsdoc_type);
@@ -3411,6 +3422,8 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
             push_global_expando(my binder, host);
         }
         add_expando_namespace_decls(me, object, top_level);
+    } else if (late_bound_key) {
+        return;
     } else if (top_level && my file->is_js && is_global_expando_entity(me, left)) {
         host = global_expando_namespace(me, object);
         if (!host) return;
@@ -3456,6 +3469,7 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
         value = &value->binary_op->right;
     }
+    if (late_bound_key && !member->late_bound_key) member->late_bound_key = late_bound_key;
     left->property->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_PROPERTY, .node = value, .name = left->outer_span,

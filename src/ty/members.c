@@ -1148,8 +1148,15 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     Symbol const* symbol = entry->symbol;
     Symbol const* member = symbol_for_meaning(symbol, SYMBOL_VALUE);
     if (!member || member->is_placeholder) return nullptr;
+    Atom const* name = checker_atom(me, entry->name);
+    if (symbol->late_bound_key) {
+        // `f[k] = v` (What the key's type names: a literal or unique symbol, else nothing)
+        bool is_number = false;
+        name = ty_property_name_of_key(me, ty_expr_type(me, symbol->late_bound_key), &is_number);
+        if (!name) return nullptr;
+    }
     Prop* prop = prop_new_declared(me);
-    prop->name = checker_atom(me, entry->name);
+    prop->name = name;
     prop->decl->symbol = member;
     if (member->is_const) prop->flags |= PROP_READONLY; // tsc's isReadonlySymbol: a `const` variable
     // An expando assigned a function is a method (bindPotentiallyNewExpandoMemberToNamespace)

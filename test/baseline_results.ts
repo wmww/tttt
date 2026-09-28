@@ -8292,8 +8292,8 @@ const baselines = {
     },
     'declarationEmitLateBoundAssignments': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitLateBoundAssignments2': {
         errors: true,
@@ -8302,8 +8302,8 @@ const baselines = {
     },
     'declarationEmitLateBoundJSAssignments': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitLocalClassDeclarationMixin': {
         errors: true,
@@ -12502,12 +12502,12 @@ const baselines = {
     },
     'expandoFunctionExpressionsWithDynamicNames': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'expandoFunctionExpressionsWithDynamicNames2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionNestedAssigments': {
@@ -12526,12 +12526,12 @@ const baselines = {
         types: false,
     },
     'expandoFunctionSymbolProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'expandoFunctionSymbolPropertyJs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18808,7 +18808,7 @@ const baselines = {
     'isolatedDeclarationLazySymbols': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationOutFile': {
         errors: true,
@@ -20432,8 +20432,8 @@ const baselines = {
     },
     'lateBoundFunctionMemberAssignmentDeclarations': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'lateBoundMethodNameAssigmentJS': {
         errors: true,
@@ -33402,7 +33402,7 @@ const baselines = {
     },
     'wellKnownSymbolExpando': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'whileStatementInnerComments': {
@@ -60323,7 +60323,7 @@ const baselines = {
     'lateBoundAssignmentDeclarationSupport7': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'lateBoundClassMemberAssignmentJS': {
         errors: true,
