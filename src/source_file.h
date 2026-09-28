@@ -67,6 +67,7 @@ typedef struct SourceFile {
     Block ast;
     // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
     bool is_stdlib;
+    u32 program_order; // Its index in the program's files (tsc's host.getSourceFiles()), set once loaded
     bool is_module;
     // The first statement that makes this file a module (tsc's externalModuleIndicator, as getErrorSpanForNode spans it:
     // a declaration's name, else the statement). Invalid if none does

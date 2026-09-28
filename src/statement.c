@@ -1310,7 +1310,10 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (is_declaration) {
                 unused_register(loop_scope, UNUSED_FOR_IN_OF_VARIABLES, &loop->variable.statement, loop->variable.statement.span);
                 for_each (i, vec_initialized_binding, &loop->variable.statement.initializers) {
+                    // (What its pattern's computed names and defaults may not use yet)
+                    flow->initializing = i;
                     binding_lookup_names(&i->binding, loop_scope, errs);
+                    flow->initializing = outer_initializing;
                     expr_lookup_names(&i->value, loop_scope, errs);
                     if (loop->keyword == FOR_EACH_LOOP_IN && i->binding.tag == BINDING_IDENTIFIER) {
                         // (The loop too: `for (const k in ref)` acts as a non-null on ref, see type_at_flow_assignment())

@@ -214,8 +214,16 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
             decl = &symbol->decls[i];
         }
     }
-    if (!decl || decl->full.source != my name.source) return;
-    if (span_start_ptr(decl->full) <= span_start_ptr(my name)) {
+    if (!decl || !decl->full.source) return;
+    bool other_file = decl->full.source != my name.source;
+    if (other_file) {
+        // Only an outFile orders the files, and a module's declarations are only in scope once imported
+        CompilerOptions const* options = compiler_options();
+        if (cstr_is_empty(&options->out_file) || !my name.source) return;
+        if (decl->full.source->is_module || my name.source->is_module) return;
+        if (decl->full.source->program_order <= my name.source->program_order) return;
+    }
+    if (!other_file && span_start_ptr(decl->full) <= span_start_ptr(my name)) {
         if (decl->kind == SYMBOL_DECL_CLASS) {
             // Declared before, but used in a computed name of its own members (`class A { [A.p]() {} }`)
             bool in_computed_name = false;
@@ -240,6 +248,8 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
             bool in_pattern = at >= span_start_ptr(root->content_span) && at < span_end_ptr(root->content_span);
             Span element = span_valid(binding->element_span) ? binding->element_span : binding->content_span;
             if (binding->default_value) element = span_between(element, binding->default_value->outer_span);
+            // (the element starts at its property name: `{ [a]: a }`)
+            if (span_start_ptr(decl->full) < span_start_ptr(element)) element = span_between(decl->full, element);
             if (in_pattern && !(at >= span_start_ptr(element) && at < span_end_ptr(element))) return;
         }
     } else {

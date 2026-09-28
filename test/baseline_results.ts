@@ -5711,7 +5711,7 @@ const baselines = {
         types: true,
     },
     'constDeclarations-useBeforeDefinition2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19396,7 +19396,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationLetDeclarationOrder2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20541,7 +20541,7 @@ const baselines = {
         types: true,
     },
     'letDeclarations-useBeforeDefinition2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25871,7 +25871,7 @@ const baselines = {
         types: true,
     },
     'privacyClassExtendsClauseDeclFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27596,7 +27596,7 @@ const baselines = {
         types: true,
     },
     'resolvingClassDeclarationWhenInBaseTypeResolution': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34876,7 +34876,7 @@ const baselines = {
         types: true,
     },
     'classExtendsItselfIndirectly2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50986,7 +50986,7 @@ const baselines = {
         types: true,
     },
     'circularImportAlias': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

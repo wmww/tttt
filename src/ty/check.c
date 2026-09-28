@@ -2789,6 +2789,23 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
     error_add_related_d(error, parameter ? parameter->span : prop->decl->name_span, 2728, "'", name, "' is declared here.");
 }
 
+// The class half of tsc's checkPropertyNotUsedBeforeDeclaration: `N.C` of a class a namespace exports, read (not in
+// a type) before the class is declared, unless the read is deferred (in a function, an instance field initializer)
+static void check_class_used_before_declaration(PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
+    while (prop->target) prop = prop->target;
+    Symbol const* symbol = prop->decl->symbol;
+    ClassDecl const* class_decl = symbol ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
+    if (!class_decl || class_decl->is_ambient || access->qualified_name) return;
+    Span used = access->prop.inner_span;
+    if (!span_valid(used) || class_decl->full_span.source != used.source || !used.source || used.source->is_declaration) return;
+    char const* declared_at = span_start_ptr(class_decl->full_span);
+    if (declared_at <= span_start_ptr(used)) return;
+    if (access->containing_function && !span_contains(access->containing_function->full_span, declared_at)) return;
+    if (access->initializer_context == INITIALIZER_INSTANCE_FIELD) return;
+    Error* error = error_ctx_error_d(errs, used, 2449, "Class '", used, "' used before its declaration.");
+    error_add_related_d(error, class_decl->name, 2728, "'", used, "' is declared here.");
+}
+
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
     // `typeof globalThis` has no properties for block scoped variables (TS2339 there, see check_access())
     if ((object->flags & TYF_ANY) || is_global_this(object)) return;
@@ -2825,6 +2842,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     if (access->initializer_context && refs.len == 1 && !(ty_apparent_type(me, object)->flags & TYF_ANY)) {
         check_used_before_initialization(me, access, refs.props[0], errs);
     }
+    if (refs.len == 1 && access->form == PROPERTY_EXPR_DOT) check_class_used_before_declaration(access, refs.props[0], errs);
     // Element access is the way around accessibility
     if (access->form == PROPERTY_EXPR_DOT) {
         bool is_super = is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER);

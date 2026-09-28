@@ -756,6 +756,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     }
 
     // Add here so imports come before importing file
+    source_file->program_order = (u32)vec_source_file_ptr_size(&my source_files_ordered);
     vec_source_file_ptr_push(&my source_files_ordered, source_file);
 
     return source_file;
