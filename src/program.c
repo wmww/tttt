@@ -840,6 +840,81 @@ void program_copy_globals_from(Program* me, Program const* other) {
     binder_set_parent(my binder, other->binder);
 }
 
+static u32 count_asterisks(csview text) {
+    u32 count = 0;
+    for (isize i = 0; i < text.size; i++) count += text.buf[i] == '*';
+    return count;
+}
+
+// tsc's pathIsRelative || pathIsAbsolute (a root: `/`, `c:`, a URL)
+static bool path_is_relative_or_absolute(csview path) {
+    if (csview_starts_with(path, "./") || csview_starts_with(path, "../") || csview_equals(path, ".") ||
+        csview_equals(path, "..") || csview_starts_with(path, ".\\") || csview_starts_with(path, "..\\")
+    ) {
+        return true;
+    }
+    if (path.size && (path.buf[0] == '/' || path.buf[0] == '\\')) return true;
+    if (path.size >= 2 && path.buf[1] == ':' && ((path.buf[0] | 0x20) >= 'a' && (path.buf[0] | 0x20) <= 'z')) return true;
+    return csview_contains(path, "://");
+}
+
+static char const* json_typeof(JsonValue const* value) {
+    switch (value->tag) {
+        case JSON_STRING: return "string";
+        case JSON_NUMBER: return "number";
+        case JSON_BOOL: return "boolean";
+        default: return "object";
+    }
+}
+
+// tsc's verifyCompilerOptions on `paths`, as the config writes them (createDiagnosticForOptionPaths and
+// createDiagnosticForOptionPathKeyValue: on the config's `paths`, else on `compilerOptions`)
+static void program_validate_paths(Program* me) {
+    JsonMember const* options = config_compiler_options(me);
+    if (!options || options->value.tag != JSON_OBJECT) return;
+    for (isize p = 0; p < options->value.count; p++) {
+        JsonMember const* paths = &options->value.members[p];
+        if (!cstr_equals(&paths->key, "paths") || paths->value.tag != JSON_OBJECT) continue;
+        for (isize i = 0; i < paths->value.count; i++) {
+            JsonMember const* pattern = &paths->value.members[i];
+            JsonValue const* substitutions = &pattern->value;
+            if (count_asterisks(cstr_sv(&pattern->key)) > 1) {
+                error_ctx_error_d(my errs, config_span(me, pattern->key_start, pattern->key_end), 5061, "Pattern '",
+                    pattern->key, "' can have at most one '*' character.");
+            }
+            Span value_span = config_span(me, substitutions->start, substitutions->end);
+            if (substitutions->tag != JSON_ARRAY) {
+                error_ctx_error_d(my errs, value_span, 5063, "Substitutions for pattern '", pattern->key,
+                    "' should be an array.");
+                continue;
+            }
+            if (!substitutions->count) {
+                error_ctx_error_d(my errs, value_span, 5066, "Substitutions for pattern '", pattern->key,
+                    "' shouldn't be an empty array.");
+            }
+            for (isize j = 0; j < substitutions->count; j++) {
+                JsonValue const* substitution = &substitutions->items[j];
+                Span at = config_span(me, substitution->start, substitution->end);
+                if (substitution->tag != JSON_STRING) {
+                    // (`${subst}`: the number or boolean as written)
+                    csview written = at.sv;
+                    error_ctx_error_d(my errs, at, 5064, "Substitution '", written, "' for pattern '", pattern->key,
+                        "' has incorrect type, expected 'string', got '", json_typeof(substitution), "'.");
+                    continue;
+                }
+                if (count_asterisks(cstr_sv(&substitution->string)) > 1) {
+                    error_ctx_error_d(my errs, at, 5062, "Substitution '", substitution->string, "' in pattern '",
+                        pattern->key, "' can have at most one '*' character.");
+                }
+                if (!my options.base_url_set && !path_is_relative_or_absolute(cstr_sv(&substitution->string))) {
+                    error_ctx_error_d(my errs, at, 5090,
+                        "Non-relative paths are not allowed when 'baseUrl' is not set. Did you forget a leading './'?");
+                }
+            }
+        }
+    }
+}
+
 // "5.4" as 5 * 1000 + 4, 0 if it isn't a version
 static unsigned parse_major_minor(csview version) {
     unsigned major = 0, minor = 0;
@@ -865,6 +940,7 @@ static void program_validate_options(Program* me) {
             option_error_d(me, "ignoreDeprecations", nullptr, false, 5103, "Invalid value for '--ignoreDeprecations'.");
         }
     }
+    program_validate_paths(me);
     bool removed = version >= parse_major_minor(c_sv("5.5"));
     bool deprecated = !removed && ignore_version < parse_major_minor(c_sv("5.0"));
     if (o->target == SCRIPT_TARGET_ES3 && removed) {
