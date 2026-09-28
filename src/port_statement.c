@@ -165,7 +165,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     // tsc's checkImportAttributes()
     ImportAttributes const* node = my attributes;
     if (!node) return;
-    // TODO: the attributes' type against the global `ImportAttributes` (TS2322 for a non-string value)
+    ty_check_import_attributes(current_checker, node, errs);
     bool type_only = my main.type_only; // tsc's isExclusivelyTypeOnlyImportOrExport
     ImportResolutionOverride override = import_attributes_resolution_mode(node, type_only ? errs : nullptr);
     if (type_only && override) return;

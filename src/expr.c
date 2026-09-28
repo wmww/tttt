@@ -2879,6 +2879,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             if (my call->optional_chain || (expr_is_optional_chain(callee) && !expr_is_perenthisized(callee))) {
                 callee_type = ty_non_nullable(checker, callee_type);
             }
+            // `import("m", options)`: the options are ImportCallOptions
+            if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
+                vec_expr_size(&my call->args) > 1
+            ) {
+                ty_check_import_call_options(checker, vec_expr_at(&my call->args, 1), errs);
+            }
             ty_call_typecheck(checker, callee_type, my call, contextual, my outer_span, errs);
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
                 import_call_check_grammar(me, errs);

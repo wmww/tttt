@@ -832,6 +832,9 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
 Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg);
 Ty const* ty_array(Checker* me, Ty const* element, bool readonly);
 Ty const* ty_tuple_rest_slice(Checker* me, Ty const* source, u32 start);
+struct ImportAttributes;
+void ty_check_import_attributes(Checker* me, struct ImportAttributes const* attributes, ErrorCtx* errs);
+void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* errs);
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
 // The shape of a tuple type, the empty tuple (its own target) included. Null if it isn't one
 TupleShape const* ty_tuple_shape(Ty const* ty);

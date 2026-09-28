@@ -718,6 +718,51 @@ bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, S
     return check_assignable(me, HEAD_TYPE, source, target, span, expr, errs);
 }
 
+// The global ImportAttributes / ImportCallOptions, or null (tsc's getGlobalImportAttributesType & co give the empty
+// object type, which isn't checked against)
+static Ty const* global_import_type(Checker* me, char const* name) {
+    Symbol const* symbol = program_get_global(my program, csview_from(name), SYMBOL_TYPE);
+    if (!symbol || !(symbol->flags & SYMBOL_INTERFACE)) return nullptr;
+    Ty const* type = ty_declared_type_of(me, symbol);
+    return type->kind == TY_DECLARED && !type->declared.type_params.len ? type : nullptr;
+}
+
+static Ty const* with_undefined(Checker* me, Ty const* type) {
+    return ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+}
+
+// `with { type: "json" }`: an object type of the attributes' regular types against the global ImportAttributes (tsc's
+// checkImportAttributes with getTypeFromImportAttributes)
+void ty_check_import_attributes(Checker* me, ImportAttributes const* attributes, ErrorCtx* errs) {
+    Ty const* target = global_import_type(me, "ImportAttributes");
+    if (!target) return;
+    u32 count = (u32)vec_import_attribute_size(&attributes->elements);
+    ObjectLiteralProp* props = calloc(count ? count : 1, sizeof(ObjectLiteralProp));
+    panic_if(!props, "out of memory");
+    for_each (i, vec_import_attribute, &attributes->elements) {
+        csview name = i->name.sv;
+        if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) name = csview_slice(name, 1, name.size - 1);
+        props[i_index] = (ObjectLiteralProp){
+            .name = checker_atom(me, name),
+            .type = ty_regular(me, ty_check_expr(me, &i->value, nullptr)),
+            .name_span = i->name,
+            .own = true,
+        };
+    }
+    Ty const* source = ty_object_literal(me, props, count, nullptr, 0, OBJECT_SYNTHETIC);
+    free(props);
+    ty_check_assignable(me, source, with_undefined(me, target), attributes->span, errs);
+}
+
+// The options of `import("m", options)`, which were checked with ImportCallOptions as their contextual type (tsc's
+// checkImportCallExpression)
+void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* errs) {
+    Ty const* target = global_import_type(me, "ImportCallOptions");
+    if (!target) return;
+    Ty const* source = ty_check_expr(me, options, target);
+    ty_check_assignable(me, source, with_undefined(me, target), options->outer_span, errs);
+}
+
 // tsc's getGlobalDisposableType(/*reportErrors*/ true) & co: TS2318 once when the lib doesn't have it
 static Ty const* global_disposable_type(Checker* me, char const* name, ErrorCtx* errs) {
     Symbol const* symbol = program_get_global(my program, csview_from(name), SYMBOL_TYPE);
