@@ -2374,6 +2374,28 @@ Span ty_prop_decl_span(Prop const* prop) {
     return prop->decl->name_span;
 }
 
+// Where a property whose annotation reaches its own type reports it: the name of what has the annotation (a getter's
+// before a setter's, tsc's getTypeOfAccessors). Invalid if there's no annotation
+static Span prop_annotation_circularity_span(Prop const* prop) {
+    if (prop->decl->node) return prop->decl->name_span;
+    LazyType const* lazy = prop->decl->lazy;
+    if (!lazy) return span_null;
+    if (lazy->tag == LAZY_TYPE_CLASS_ITEM_FIELD) {
+        ClassItem const* item = c_container_of(lazy, ClassItem, field.lazy_type);
+        return item->field.has_explicit_type ? item->field.name_span : span_null;
+    }
+    if (lazy->tag != LAZY_TYPE_CLASS_ITEM_ACCESSOR) return span_null;
+    ClassItem const* item = c_container_of(lazy, ClassItem, method.accessor_type);
+    ClassItem const* getter = item->method.accessor == CLASS_ACCESSOR_GET ? item : item->method.accessor_getter;
+    if (getter && getter->method.func.ret_explicit) return getter->method.name_span;
+    if (item->method.accessor == CLASS_ACCESSOR_SET && vec_function_arg_size(&item->method.func.args) &&
+        vec_function_arg_at(&item->method.func.args, 0)->initializer.binding.has_explicit_type
+    ) {
+        return item->method.name_span;
+    }
+    return span_null;
+}
+
 Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
     switch (prop->type_state) {
@@ -2422,6 +2444,12 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
             mapped, "'.");
         c_drop(cstr, &name, &mapped);
         return prop->type;
+    }
+    // A declared property (or accessor) whose annotation needs its own type (tsc's getTypeOfVariableOrParameterOrProperty
+    // / getTypeOfAccessors when popTypeResolution fails). (What the annotation lowered to is already any-like)
+    if (prop->circular && !prop->target && !prop->mapped_type && span_valid(prop_annotation_circularity_span(prop))) {
+        Span name = prop_annotation_circularity_span(prop);
+        ty_error_at(me, name, 2502, cstr_d("'", name.sv, "' is referenced directly or indirectly in its own type annotation."));
     }
     // What ran into the instantiation limits (TS2589, reported where it happened) is the error type only for now: a
     // later statement starts the count over and gets the real type, not an any that depends on what was checked first

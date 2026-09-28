@@ -3336,7 +3336,7 @@ const baselines = {
         types: true,
     },
     'circularAccessorAnnotations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
