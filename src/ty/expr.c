@@ -1227,6 +1227,10 @@ static bool is_narrowable_access(Expr const* expr) {
                 if (!expr->as_type->is_jsdoc) return false; // (A JSDoc cast is tsc's ParenthesizedExpression)
                 expr = &expr->as_type->expr;
                 break;
+            case EXPR_BINARY_OP:
+                if (expr->binary_op->op != BINARY_OP_COMMA) return false; // `(a, x).y`
+                expr = &expr->binary_op->right;
+                break;
             default:
                 return false;
         }

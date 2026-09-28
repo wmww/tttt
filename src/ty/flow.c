@@ -485,6 +485,10 @@ static bool is_matching_reference(Checker* me, Expr const* source, Expr const* t
         if (op == BINARY_OP_COMMA) return is_matching_reference(me, source, &target->binary_op->right);
         return false;
     }
+    // A reference like `(a, x).y` is about x.y
+    if (source->tag == EXPR_BINARY_OP) {
+        return source->binary_op->op == BINARY_OP_COMMA && is_matching_reference(me, &source->binary_op->right, target);
+    }
     if (source->tag != target->tag) return false;
     switch (source->tag) {
         case EXPR_IDENTIFIER:

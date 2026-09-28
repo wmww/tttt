@@ -22801,9 +22801,9 @@ const baselines = {
         types: true,
     },
     'narrowCommaOperatorNestedWithinLHS': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowRefinedConstLikeParameterBIndingElementNameInInnerScope': {
         errors: true,
