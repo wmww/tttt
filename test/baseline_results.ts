@@ -251,7 +251,7 @@ const baselines = {
         types: true,
     },
     'abstractPropertyNegative': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9931,7 +9931,7 @@ const baselines = {
         types: false,
     },
     'divergentAccessorsVisibility1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15591,12 +15591,12 @@ const baselines = {
         types: false,
     },
     'gettersAndSettersAccessibility': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'gettersAndSettersErrors': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

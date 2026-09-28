@@ -1051,6 +1051,26 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 error_ctx_grammar_error_d(errs, i->field.value.outer_span, 1039, "Initializers are not allowed in ambient contexts.");
             }
         }
+        // tsc's checkAccessorDeclaration: a getter and setter pair agree on abstract (TS2676), and the getter is at least
+        // as accessible as the setter (TS2808), reported at both names
+        if (i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET && i->method.accessor_getter &&
+            !i->method.computed_key
+        ) {
+            ClassItem const* getter = i->method.accessor_getter;
+            Span names[2] = { getter->method.name_span, i->method.name_span };
+            if (getter->method.is_abstract != i->method.is_abstract) {
+                for (u32 n = 0; n < 2; n++) {
+                    error_ctx_error_d(errs, names[n], 2676, "Accessors must both be abstract or non-abstract.");
+                }
+            }
+            if ((getter->access == ACCESS_MODIFIER_PROTECTED && i->access == ACCESS_MODIFIER_PUBLIC) ||
+                (getter->access == ACCESS_MODIFIER_PRIVATE && i->access != ACCESS_MODIFIER_PRIVATE)
+            ) {
+                for (u32 n = 0; n < 2; n++) {
+                    error_ctx_error_d(errs, names[n], 2808, "A get accessor must be at least as accessible as the setter");
+                }
+            }
+        }
         // Parameters: only legacy decorators, of methods, setters and constructors with a body in a class declaration
         FunctionImpl const* function = i->tag == CLASS_ITEM_METHOD ? &i->method.func :
             i->tag == CLASS_ITEM_CONSTRUCTOR ? &i->constructor.func : nullptr;
