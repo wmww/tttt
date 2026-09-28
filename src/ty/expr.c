@@ -355,7 +355,78 @@ static Ty const* context_map(Checker* me, Ty const* contextual, ContextGetter ge
     return get(me, contextual, arg);
 }
 
+static bool is_generic_mapped_context(Checker* me, Ty const* ty) {
+    return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_OBJECT) && !ty->anonymous.function &&
+        (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, ty)->mapped && !ty_members(me, ty)->mapped->name_type;
+}
+
+// (tsc's appendContextualPropertyTypeConstituent: `any` says nothing next to the others)
+static void push_prop_context_part(Checker* me, TyBuf* parts, Ty const* type) {
+    if (type) ty_buf_push(parts, type->flags & TYF_ANY ? ty_intrinsic(me, TY_UNKNOWN_) : type);
+}
+
+// Of an intersection, the intersection of what its object members say: a generic mapped member what its template
+// says for the key, the others their property, or if none has one, their index signatures (tsc's
+// getTypeOfPropertyOfContextualType). Type variables in it say nothing
+static bool is_contextual_type_variable(Ty const* ty) {
+    return ty->kind == TY_TYPE_PARAM || ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || ty->kind == TY_SUBSTITUTION;
+}
+
+static Ty const* get_prop_context(Checker* me, Ty const* object, void const* arg);
+
+static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty const* key) {
+    TyBuf parts = {0};
+    TyBuf index_candidates = {0};
+    bool ignore_index = false;
+    Atom const* name = ty_literal_name(me, key);
+    TyList members = object->composite.types;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        // A type variable member as its constraint (tsc's getApparentTypeOfIntersectionType: getTypeWithThisArgument
+        // with needApparentType). One that is a union or intersection: what that says (tsc distributes the
+        // intersection over it instead)
+        if (is_contextual_type_variable(member)) {
+            member = ty_apparent_type(me, member);
+            if (member->kind == TY_UNION || member->kind == TY_INTERSECTION) {
+                push_prop_context_part(me, &parts, context_map(me, member, get_prop_context, key));
+                continue;
+            }
+        }
+        if (!(member->flags & TYF_OBJECT)) continue;
+        if (is_generic_mapped_context(me, member)) {
+            push_prop_context_part(me, &parts, ty_generic_mapped_prop_context(me, member, key));
+            continue;
+        }
+        FoundProp prop = name ? ty_find_prop(me, member, name) : (FoundProp){0};
+        if (!prop.found) {
+            if (!ignore_index) ty_buf_push(&index_candidates, member);
+            continue;
+        }
+        ignore_index = true;
+        index_candidates.len = 0;
+        push_prop_context_part(me, &parts, ty_access(me, member, key));
+    }
+    for (u32 i = 0; i < index_candidates.len; i++) {
+        IndexInfo const* info = ty_applicable_index_info(me, index_candidates.data[i], key);
+        push_prop_context_part(me, &parts, info ? info->value : nullptr);
+    }
+    Ty const* ret = !parts.len ? nullptr : parts.len == 1 ? parts.data[0] :
+        ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    ty_buf_drop(&index_candidates);
+    return ret;
+}
+
 static Ty const* get_prop_context(Checker* me, Ty const* object, void const* arg) {
+    // A type variable says what its constraint says, a generic mapped one included (tsc's
+    // getApparentTypeOfContextualType)
+    if (is_contextual_type_variable(object)) {
+        object = ty_apparent_type(me, object);
+        if (is_nullable_or_primitive(object) || object->kind == TY_TYPE_PARAM) return nullptr;
+    }
+    if (object->kind == TY_INTERSECTION && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        return intersection_prop_context(me, object, arg);
+    }
     Ty const* mapped = ty_generic_mapped_prop_context(me, object, arg);
     return mapped ? mapped : ty_access(me, object, arg);
 }
@@ -607,6 +678,8 @@ static Signature const* contextual_call_signature(Checker* me, Ty const* type, F
     return ret;
 }
 
+static Ty const* apparent_contextual_type(Checker* me, Ty const* ty);
+
 // tsc's getContextualSignature: of a union, the signature its members have in common (up to return types)
 static Signature const* contextual_signature(Checker* me, Ty const* contextual, FunctionImpl const* function, u32 depth) {
     if (!contextual || depth > 8 || (contextual->flags & TYF_ANY)) return nullptr;
@@ -635,7 +708,18 @@ static Signature const* contextual_signature(Checker* me, Ty const* contextual, 
         Ty const* constraint = ty_param_constraint(me, contextual);
         return constraint && constraint != contextual ? contextual_signature(me, constraint, function, depth + 1) : nullptr;
     }
+    // An indexed access or conditional type: its constraint's (tsc's getApparentTypeOfContextualType)
+    if (contextual->kind == TY_INDEXED || contextual->kind == TY_CONDITIONAL || contextual->kind == TY_SUBSTITUTION) {
+        Ty const* apparent = ty_apparent_type(me, contextual);
+        return apparent != contextual ? contextual_signature(me, apparent, function, depth + 1) : nullptr;
+    }
     if (!(contextual->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
+    // An intersection's signatures are its members', a type variable's those of its constraint (tsc's
+    // getSignaturesOfType of each member through getReducedApparentType)
+    if (contextual->kind == TY_INTERSECTION && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        contextual = apparent_contextual_type(me, contextual);
+        if (!(contextual->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
+    }
     return contextual_call_signature(me, contextual, function);
 }
 
@@ -2190,8 +2274,31 @@ static void literal_members_push(LiteralMembers* members, LiteralMember member) 
     members->items[members->count++] = member;
 }
 
+// tsc's getApparentTypeOfContextualType for an object literal: type variables (of a union too) as their constraints,
+// which the literal's members then discriminate
+static Ty const* apparent_literal_context(Checker* me, Ty const* contextual) {
+    if (is_contextual_type_variable(contextual)) {
+        Ty const* apparent = ty_apparent_type(me, contextual);
+        return apparent->kind == TY_INTRINSIC && (apparent->flags & TYF_UNKNOWN) ? contextual : apparent;
+    }
+    if (contextual->kind != TY_UNION || !(contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return contextual;
+    TyBuf parts = {0};
+    bool changed = false;
+    for (u32 i = 0; i < contextual->composite.types.len; i++) {
+        Ty const* part = contextual->composite.types.data[i];
+        Ty const* apparent = apparent_literal_context(me, part);
+        changed |= apparent != part;
+        ty_buf_push(&parts, apparent);
+    }
+    Ty const* ret = changed ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : contextual;
+    ty_buf_drop(&parts);
+    return ret;
+}
+
 static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     ObjectExpr const* object = &expr->object;
+    Ty const* written_context = ctx.contextual;
+    if (ctx.contextual) ctx.contextual = apparent_literal_context(me, ctx.contextual);
     if (ctx.contextual && ctx.contextual->kind == TY_UNION) {
         ctx.contextual = discriminate_by_object_members(me, ctx.contextual, object);
     }
@@ -2218,9 +2325,9 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             literal_members_flush(me, &members, builder.index, &builder.index_count, ctx.is_const);
             if (builder.count || builder.index_count) spread_acc_props(me, &spread, &builder);
             literal_builder_drop(&builder);
-            // (Its contextual type is the literal's: tsc's getContextualType of a SpreadAssignment)
+            // (Its contextual type is the literal's as given: tsc's getContextualType of a SpreadAssignment)
             spread_acc_type(me, &spread, check_with(me, &i->value, (ExprCtx){
-                .contextual = ctx.contextual, .skip_sensitive = ctx.skip_sensitive,
+                .contextual = written_context, .skip_sensitive = ctx.skip_sensitive,
             }));
             continue;
         }

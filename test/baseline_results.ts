@@ -27738,7 +27738,7 @@ const baselines = {
     'returnTypeInferenceNotTooBroad': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'returnTypeParameter': {
         errors: true,
@@ -27788,7 +27788,7 @@ const baselines = {
     'reverseMappedIntersectionInference1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedIntersectionInference2': {
         errors: true,

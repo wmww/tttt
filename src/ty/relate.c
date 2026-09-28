@@ -2250,12 +2250,33 @@ static Ty const* substitute_indexed_mapped(Checker* me, Ty const* object, Mapped
 // The contextual type of property `key` in a generic mapped type without an `as` clause (tsc's
 // getTypeOfPropertyOfContextualType): the template with the key for the type parameter, if the constraint allows the
 // key. Null if it isn't such a mapped type or the key isn't one of its keys
+static Ty const* actual_type_variable(Ty const* ty) {
+    return ty->kind == TY_SUBSTITUTION ? ty->substitution.base : ty;
+}
+
+// tsc's isExcludedMappedPropertyName: a conditional type pretending to be a negated type (`Exclude<keyof P, "a">`)
+// leaves out the names its extends type takes
+static bool is_excluded_mapped_name(Checker* me, Ty const* constraint, Ty const* key) {
+    if (constraint->kind == TY_CONDITIONAL) {
+        return (ty_conditional_branch(me, constraint, true)->flags & TYF_NEVER) &&
+            actual_type_variable(ty_conditional_branch(me, constraint, false)) == actual_type_variable(constraint->conditional.check) &&
+            ty_is_related(me, key, constraint->conditional.extends, TY_RELATION_ASSIGNABLE);
+    }
+    if (constraint->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < constraint->composite.types.len; i++) {
+            if (is_excluded_mapped_name(me, constraint->composite.types.data[i], key)) return true;
+        }
+    }
+    return false;
+}
+
 Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const* key) {
     if (!(object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
     bool generic = false;
     MappedInfo const* mapped = mapped_info_of(me, object, &generic);
     if (!mapped || !generic || mapped->name_type) return nullptr;
     Ty const* constraint = mapped->constraint;
+    if (is_excluded_mapped_name(me, constraint, key)) return nullptr;
     Ty const* base = constraint->kind == TY_TYPE_PARAM || (constraint->flags & TYF_DEFERRED) ? base_constraint(me, constraint, 0) : nullptr;
     if (!ty_is_related(me, key, base ? base : constraint, TY_RELATION_ASSIGNABLE)) return nullptr;
     return substitute_indexed_mapped(me, object, mapped, true, key);
