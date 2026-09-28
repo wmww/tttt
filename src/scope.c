@@ -2118,6 +2118,8 @@ static Symbol* resolve_default_target(Symbol* me, PortItem* item, Symbol* module
             cstr_drop(&module_name);
             return nullptr; // (tsc's exportDefaultSymbol, which there is none of)
         }
+        // (`{ default as d }` names the `export=` symbol itself)
+        if (item->tag != PORT_IMPORT_DEFAULT) item->source_symbol = symbol_get_export(module, c_sv("export="));
         return assigned;
     }
     if (!found) {
