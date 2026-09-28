@@ -42401,7 +42401,7 @@ const baselines = {
         types: false,
     },
     'for-of3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58851,12 +58851,12 @@ const baselines = {
         types: true,
     },
     'parserForStatement6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserForStatement7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

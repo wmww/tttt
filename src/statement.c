@@ -2035,6 +2035,11 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     expr_typecheck(&my for_each_loop->variable.expr, errs);
                     if (!my for_each_loop->variable.expr.assignment_pattern) {
                         bool in = my for_each_loop->keyword == FOR_EACH_LOOP_IN;
+                        // tsc's checkReferenceExpression (for-in: only if the keys fit, see TS2405 below)
+                        if (!in) {
+                            expr_check_reference_is_reference(&my for_each_loop->variable.expr, 2487,
+                                "The left-hand side of a 'for...of' statement must be a variable or a property access.", errs);
+                        }
                         expr_check_reference_not_optional(&my for_each_loop->variable.expr, in ? 2780 : 2781, in ?
                             "The left-hand side of a 'for...in' statement may not be an optional property access." :
                             "The left-hand side of a 'for...of' statement may not be an optional property access.", errs);
@@ -2054,6 +2059,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                         ) {
                             error_ctx_error_d(errs, my for_each_loop->variable.expr.outer_span, 2405,
                                 "The left-hand side of a 'for...in' statement must be of type 'string' or 'any'.");
+                        } else {
+                            expr_check_reference_is_reference(&my for_each_loop->variable.expr, 2406,
+                                "The left-hand side of a 'for...in' statement must be a variable or a property access.", errs);
                         }
                         break;
                     }

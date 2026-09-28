@@ -386,6 +386,7 @@ Span expr_error_span(Expr const* me);
 // tsc's checkTruthinessOfType, for a condition that has been typechecked
 void expr_check_truthiness(Expr const* me, ErrorCtx* errs);
 bool expr_check_reference_not_optional(Expr const* target, unsigned code, char const* message, ErrorCtx* errs);
+bool expr_check_reference_is_reference(Expr const* target, unsigned code, char const* message, ErrorCtx* errs);
 // expr_typecheck() and expr_check_truthiness() of the condition of an `if` statement whose body is `then`, and tsc's
 // checkTestingKnownTruthyCallableOrAwaitableOrEnumMemberType
 typedef struct Statement Statement;

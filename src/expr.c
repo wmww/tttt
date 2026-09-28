@@ -1904,6 +1904,18 @@ static bool is_container_declaration(BinaryOpExpr const* op) {
 
 // The optional chain part of tsc's checkReferenceExpression: `a?.b = 1` (through assertions). Reports it with the
 // message given, false if so
+// The other part of tsc's checkReferenceExpression: an identifier or a property access (through assertions)
+bool expr_check_reference_is_reference(Expr const* target, unsigned code, char const* message, ErrorCtx* errs) {
+    Expr const* reference = skip_outer_expressions(target);
+    if (((reference->tag != EXPR_IDENTIFIER || reference->identifier.keyword) && reference->tag != EXPR_PROPERTY) ||
+        ty_is_import_meta(reference)
+    ) {
+        error_ctx_error_d(errs, target->outer_span, code, message);
+        return false;
+    }
+    return true;
+}
+
 bool expr_check_reference_not_optional(Expr const* target, unsigned code, char const* message, ErrorCtx* errs) {
     Expr const* reference = skip_outer_expressions(target);
     if (reference->tag != EXPR_PROPERTY || !expr_is_optional_chain(reference)) return true;
