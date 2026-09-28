@@ -22418,7 +22418,7 @@ const baselines = {
     'moduleSymbolMerging': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleUnassignedVariable': {
         errors: true,
@@ -27973,7 +27973,7 @@ const baselines = {
     'semicolonsInModuleDeclarations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'separate1-1': {
         errors: true,
@@ -58143,7 +58143,7 @@ const baselines = {
     'parser509618': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser509630': {
         errors: true,

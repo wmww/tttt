@@ -321,6 +321,10 @@ static bool block_is_instantiated(Block const* me, bool const_enums, Scope const
     for_each (i, vec_statement, &my statements) {
         switch (i->tag) {
             case STATEMENT_NOOP:
+                // `;` and `debugger` are statements like any other to tsc's getModuleInstanceState, what the parser
+                // made of an error isn't there
+                if (span_valid(i->span) && i->span.sv.size && (i->span.sv.buf[0] == ';' || i->span.sv.buf[0] == 'd')) return true;
+                break;
             case STATEMENT_DECL_TYPE:
             case STATEMENT_DECL_INTERFACE:
                 break;
