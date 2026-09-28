@@ -1714,7 +1714,10 @@ static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
 }
 
 static bool is_super_call(CallExpr const* call) {
-    return !call->uses_new && call->callable.tag == EXPR_IDENTIFIER && call->callable.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
+    // (`super<T>()` is TS2754 and otherwise a super call: its type arguments are ignored)
+    Expr const* callee = &call->callable;
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    return !call->uses_new && callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
 }
 
 // A parameter of the declaration is written as a literal type (`method: "stop"`, tsc's SignatureFlags.HasLiteralTypes)
@@ -2103,11 +2106,13 @@ static Ty const* resolve_into(
     // `super(x)` in `class A extends B<T>`: B's constructors with the type arguments of the heritage clause (tsc's
     // getInstantiatedConstructorsForTypeArguments)
     // TODO: without written type arguments tsc instantiates with the defaults instead of inferring
-    ClassDecl const* super_class = is_super_call(call) && call->callable.identifier.target ?
-        symbol_find_node(call->callable.identifier.target, SYMBOL_DECL_CLASS) : nullptr;
+    Expr const* super_callee = &call->callable;
+    if (super_callee->tag == EXPR_GENERIC_PARAMS) super_callee = &super_callee->generic_params->expr;
+    ClassDecl const* super_class = is_super_call(call) && super_callee->identifier.target ?
+        symbol_find_node(super_callee->identifier.target, SYMBOL_DECL_CLASS) : nullptr;
     if (super_class && super_class->extends.tag == EXPR_GENERIC_PARAMS) {
         info.type_arg_nodes = &super_class->extends.generic_params->params;
-    } else if (call->callable.tag == EXPR_GENERIC_PARAMS) {
+    } else if (call->callable.tag == EXPR_GENERIC_PARAMS && !is_super_call(call)) {
         // `f<A, B>(x)`: the callee type is that of `f`
         info.type_arg_nodes = &call->callable.generic_params->params;
     }

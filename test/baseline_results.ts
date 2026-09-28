@@ -29716,17 +29716,17 @@ const baselines = {
         types: true,
     },
     'superWithTypeArgument': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'superWithTypeArgument2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'superWithTypeArgument3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47926,7 +47926,7 @@ const baselines = {
         types: false,
     },
     'errorSuperCalls': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
