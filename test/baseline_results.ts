@@ -38736,7 +38736,7 @@ const baselines = {
         types: true,
     },
     'importCallExpressionErrorInES2015': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38891,12 +38891,12 @@ const baselines = {
         types: true,
     },
     'importCallExpressionNestedES2015': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'importCallExpressionNestedES20152': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50251,7 +50251,7 @@ const baselines = {
         types: true,
     },
     'importAssertion1(module=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50301,7 +50301,7 @@ const baselines = {
         types: true,
     },
     'importAttributes1(module=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

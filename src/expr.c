@@ -1865,6 +1865,42 @@ static PredicateSemantics nullish_semantics(Expr const* me) {
 
 // tsc's checkNullishCoalesceOperands: `??` doesn't mix with `||`/`&&` without parentheses (TS5076), and its left
 // operand has to be possibly nullish, as far as its syntax tells
+// tsc's checkGrammarImportCallExpression (the trailing comma part aside)
+static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    ModuleKind module = options->module;
+    if (options->verbatim_module_syntax && module == MODULE_KIND_COMMONJS) {
+        error_ctx_grammar_error_d(errs, my inner_span, 1286,
+            "ESM syntax is not allowed in a CommonJS module when 'verbatimModuleSyntax' is enabled.");
+        return;
+    }
+    if (module == MODULE_KIND_ES2015) {
+        error_ctx_grammar_error_d(errs, my inner_span, 1323,
+            "Dynamic imports are only supported when the '--module' flag is set to 'es2020', 'es2022', 'esnext', "
+            "'commonjs', 'amd', 'system', 'umd', 'node16', 'node18', or 'nodenext'.");
+        return;
+    }
+    VecExpr const* args = &my call->args;
+    isize count = vec_expr_size(args);
+    bool node = module >= MODULE_KIND_NODE16 && module <= MODULE_KIND_NODENEXT;
+    if (!node && module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE && count > 1) {
+        error_ctx_grammar_error_d(errs, vec_expr_at(args, 1)->outer_span, 1324,
+            "Dynamic imports only support a second argument when the '--module' option is set to 'esnext', 'node16', "
+            "'node18', 'nodenext', or 'preserve'.");
+        return;
+    }
+    if (count == 0 || count > 2) {
+        error_ctx_grammar_error_d(errs, my inner_span, 1450,
+            "Dynamic imports can only accept a module specifier and an optional set of attributes as arguments");
+        return;
+    }
+    for_each (i, vec_expr, args) {
+        if (i->tag != EXPR_SPREAD) continue;
+        error_ctx_grammar_error_d(errs, i->outer_span, 1325, "Argument of dynamic import cannot be spread element.");
+        return;
+    }
+}
+
 static void nullish_coalesce_typecheck(Expr const* me, ErrorCtx* errs) {
     Expr const* operands[] = { &my binary_op->left, &my binary_op->right };
     for (u32 i = 0; i < 2; i++) {
@@ -2784,6 +2820,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 callee_type = ty_non_nullable(checker, callee_type);
             }
             ty_call_typecheck(checker, callee_type, my call, contextual, my outer_span, errs);
+            if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
+                import_call_check_grammar(me, errs);
+            }
             for_each (i, vec_expr, &my call->args) {
                 expr_typecheck(i, errs);
             }
