@@ -1045,7 +1045,7 @@ static i32 first_unfit_argument(
         } else {
             break;
         }
-        bool fits = (source->flags & TYF_ANY) || ty_is_related(me, source, target, relation);
+        bool fits = ty_is_related(me, source, target, relation);
         if (!fits && relation == TY_RELATION_SUBTYPE && arg->context_sensitive) {
             fits = ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
         }

@@ -25038,7 +25038,7 @@ const baselines = {
     'overloadResolutionWithAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadRet': {
         errors: true,
@@ -66176,9 +66176,9 @@ const baselines = {
         types: true,
     },
     'anyAssignabilityInInheritance': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'anyAssignableToEveryType': {
         errors: true,
@@ -66463,7 +66463,7 @@ const baselines = {
     'enumAssignabilityInInheritance': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'everyTypeAssignableToAny': {
         errors: true,
