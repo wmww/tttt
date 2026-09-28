@@ -19,8 +19,10 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 5. ~~Plan 37 B stage 1~~ done: union/keyof origins (+37, 0 components lost, corpora unchanged); valibot +0.7%,
    zod +0.2% instructions after `dedupe_unions` (the prototype's +3% was `U & U` / `keyof (A | B)` cross products).
    E stage 1 too: the missing type (+3, zod-root 82 -> 83 with tsc's TS2412, zod -0.7% instructions).
-6. **Corpus session**: webpack 107 (plan 26 leftovers, plan 19's two TS18048s) and zod-root's arktype `never`
-   (plan 19). Both are real-world JS/type-level signal the suite lacks.
+6. ~~Corpus session~~ done: webpack 107 -> 32 (12 tsc rules, probes in `test/probes/plan19/webpack/`), zod-root = tsc's
+   55 (arktype's DSL: interfaces extending type parameters, const type parameters behind conditionals, `infer X
+   extends C` constraints; execa's instantiation expression; an Opus sub-agent). Suite +6. Left: plan 19 "webpack",
+   the biggest cause being defaulted type parameters leaking into context-sensitive callbacks (bugs/type_core.md).
 7. **Suite checker bugs 5, spurious side**: the single-code buckets are now mostly spurious (TS2339 40, TS2322 39,
    TS2304 35, `bugs/missing_checks.md`); sample, group by cause, parallel Opus sub-agents in worktrees like session 4.
 8. **Plan 37 C + D**: decorators checked as calls (+14, nest must stay 0) and evolving arrays (+8), both

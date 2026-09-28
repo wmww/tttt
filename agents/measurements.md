@@ -31,10 +31,13 @@ tests: spurious TS2339 40, spurious TS2322 39, spurious TS2304 35. The tool line
   M 31. Clusters: other:A 40, other:E 34, other:M 30, other:D 28, permissive:modifiers 22, recovery:list-context 14,
   lexical:identifiers 9, permissive:decorators 9, other:C 8, other:B 8, recovery:object-literal 6.
 
-## Corpora (2026-09-28, triage session)
+## Corpora (2026-09-28, corpus session, todo entry 6)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**0**, zod **0**, webpack **107** (JSDoc, plan 26). **zod-root** (new: zod's root tsconfig, not clean under tsc,
-which reports 55): tttt 83, of which 28 spurious and 0 missing (plan 19; 82 -> 83 is plan 37 E's TS2412).
+**0**, zod **0**, webpack **32** (was 107; plan 19 "webpack"). **zod-root** (zod's root tsconfig, not clean under
+tsc, which reports 55): tttt's `file:line code` set equals tsc's 55 (was 83).
+Corpus session instructions (`TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -p <realpath>`, start -> end): tsc 4.70 ->
+4.71 G, type-fest 3.30 -> 3.29, valibot 5.09 -> 5.13 (+0.8%), webpack 1.17 -> 1.20 (+2.6%, checks more now), zod
+4.25 -> 4.24.
 Instructions (`perf stat -e instructions:u`, stable like callgrind, much faster) at the end of the triage session:
 tsc 4.67 G, type-fest 3.30, valibot 5.06, react 1.91, nest 1.02, webpack 3.25, zod **4.26** (8.54 at the corpus
 session; bisected to 62d8c89, variance annotations taken as given: zod's `out` types were measured unreliable before,

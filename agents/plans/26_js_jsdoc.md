@@ -242,25 +242,20 @@ plus webpack's residue):
   JSDoc type literal is printed by tsc with its newlines dropped (`{    a: string;}`); aliases of JSDoc function types
   (`@enum {function(number): number}` prints `Fs`).
 - JSDoc parse errors (TS8032 `o.a.b` without `o.a`, TS1003...): dropped.
-- webpack 529 -> 169 (2026-09-27 webpack session, probes in `test/probes/plan19/webpack/`): done since then are
-  CommonJS `export=` merged with the module's other exports (module_export_equals()'s clone), JSDoc `T=` only at the
-  top of a JSDoc type, `@overload`, ambient `require` (@types/node) as a CommonJS require, `@extends {B<T>}` and
-  base constructors taking written type arguments, require aliases declared in the function (TS2300, #41697),
-  unique symbols as unit types, `@this`. What's left, by root cause (`./realworld.py --corpus webpack`):
-  - TS2589 12 (examples' `@type {import("webpack").Configuration}`): comparing a JS class (lib/dll/DllPlugin) with
-    its twin in the generated types.d.ts (Compiler vs Compiler...) runs out of relation depth. tsc does too when an
-    example is checked alone (TS2321 `tsc -p` with just that file); in the full project it is clean, apparently thanks
-    to relation results cached from an earlier check. Needs a look at which earlier comparison warms tsc's cache
-    (checking order: bin, lib, tooling, setup, examples) and whether tttt caches maybe-results the same way.
-  - TS2345/TS2322 ~60, scattered: `IterableCollection<T>` vs `Set<T>` (5), tuples with a trailing optional
-    `boolean | null` element from JSDoc (7: `[number, number]` to `[number, number, boolean | null]`), `number` to
-    NodeJS `Timeout` (setTimeout overloads, 3), LazyFunction/Promise unions (8), `Caches<H>` vs conditional (3).
-  - TS7006 26: contextual typing left over (FileSystemInfo's `path` callbacks 7, FileUriPlugin 4, identifier.js 3...).
-  - TS18048/TS2532/TS2533 ~25: narrowing (`watching`, `curDepth`, `chunk`...), unsampled.
-  - TS2349 11 (Compilation.js hooks `.call` on unions?), TS2352 6 (`T[keyof T]` conversions), TS2339 5.
-  - Also seen: `/** @type {T} */ const x = require()` is a plain variable to tsc (no alias with a JSDoc type tag),
-    tttt makes it an alias and doesn't check it; a JSDoc comment on the same line as the previous token isn't leading
-    trivia to tsc for statements (getJSDocCommentRanges), tttt attaches it.
+- webpack: 529 -> 169 (2026-09-27) -> 107 -> 32 (2026-09-28 corpus session); what is left is in plan 19 "webpack".
+  JSDoc items among it:
+  - `@template` on a variable statement: `/** @template T @type {Record<string, (items: T[]) => X<T>>} */ const M`
+    declares T for the `@type` (tsc: a free type parameter, `M.a(x)` returns T); tttt has no Generic on variable
+    statements (TS2304). Needs one on VariableStatement/InitializedBinding, in scope for the JSDoc type's names.
+  - Names in the JSDoc of `var f = function (str) {}` resolve from the variable statement (tsc's parent chain goes
+    JSDoc -> VariableStatement, not through the function): `@param {str} str` is the outer `str`'s type. tttt copies
+    the tags into the function, whose scope has its own `str` (TS2502).
+  - `/** @type {T} */ const x = require()` is a plain variable to tsc (no alias with a JSDoc type tag), tttt makes
+    it an alias and doesn't check it; a JSDoc comment on the same line as the previous token isn't leading trivia to
+    tsc for statements (getJSDocCommentRanges), tttt attaches it.
+  - The display of `@type`-tagged functions: a tag written as a signature (`@type {<T>(m: T) => T}`) keeps the
+    function's parameter names (tsc prints the tag's); `const k = /** @type {Fn} */ function (a, b = 1)` prints the
+    return type inferred from the body where tsc prints the tag's (probe plan19/webpack/parameter_default_removes_undefined.ts).
 
 ### Stage 4: the rest of the tags and JS syntax diagnostics
 `@this`, `@extends`/`@augments` (type arguments for a JS class's base), `@implements`, `@overload`, `@satisfies`,

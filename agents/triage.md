@@ -33,3 +33,8 @@ duplicated webpack), hacks.md (`string_to_double`).
   { a: T, b: (x: T) => void }): T` types both arrows as returning `{ a: true; ... }` where tsc widens their return
   types to `{ a: boolean; ... }` (the object literal itself is `a: true` in both): the inner arrow's inferred return
   type isn't widened in the return-only/final check the way tsc's getReturnTypeFromBody does.
+- Corpus session 2026-09-28 leftovers (display, from probes in `test/probes/plan19/webpack/`): a `require("m").X`
+  alias that resolves to nothing prints `error` in tsc (tttt `any`), tsc lists a same-named `@typedef` as a second
+  declaration of the alias symbol, and `module.exports = f` of a function declaration prints `typeof f`
+  (require_property_value_only.ts); a JS `const S = Symbol()` read through a `@type {typeof S}` const prints `symbol`
+  in tsc (jsdoc_accessor_type.ts). Also: `declare const B = -1n` under a pre-ES2020 target lacks TS2737.

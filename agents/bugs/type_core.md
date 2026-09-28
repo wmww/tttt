@@ -98,10 +98,6 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   conditional's extends type in C.
 
 ## Circularity (plan 29 stage 3 leftovers)
-- Plan 29's optional stage 4, always-lazy conditional branches (hacks.md `TyCondBranch`): the prototype (`P29_BRANCH`
-  in `test/probes/plan29/experiment.patch`, git dbc107b) gave suite +1 but type-fest +2 (writable-deep 2 x TS2345,
-  writable TS2589). Only do it once those are understood; then `node_reaches_alias_in_flight()` can go unless
-  `prop_judgeable()`/`members_judgeable()` still need it. Validate with all corpora and `./findcrash.py`.
 - recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the
   TS2615 cycle at once), and tsc prints the mapped type with `containsError` in mapped syntax.
 - TS4109 missing where tttt catches the cycle elsewhere: circularTypeArgumentsLocalAndOuterNoCrash1,

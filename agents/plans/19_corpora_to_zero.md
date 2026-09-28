@@ -1,9 +1,9 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-28 (after the corpus session, todo entry 8)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
-zod 0, **webpack 107** (checkJs; causes in plan 26 "Stage 3 leftovers"). The history of R1-R21 (identity relation,
+**Status 2026-09-28 (after the corpus session, todo entry 6)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
+zod 0, zod-root = tsc's own 55, **webpack 32** (was 107; checkJs). The history of R1-R21 (identity relation,
 homomorphic mapped modifiers, const type parameters, skip-sensitive inference, the permissive instantiation, ...) and
-of the zod and type-fest items is in git (this file before the corpus session) and in the commits.
+of the zod and type-fest items is in git (this file before the corpus sessions) and in the commits.
 
 ## The loop
 `./realworld.py` (tsc's `src/compiler`, must stay 0) and `./realworld.py --corpus X` for valibot, type-fest, react,
@@ -25,13 +25,26 @@ Corpus notes worth keeping:
   deep-partial.test.ts alone is 745 MB, `bugs/perf_leads.md`).
 
 ## What is left
-### webpack (107)
-JSDoc; plan 26 "Stage 3 leftovers".
-Triage 2026-09-28 looked at two TS18048s: `idleTimer.unref()` right after `idleTimer = setTimeout(...)` with
-`@type {ReturnType<typeof setTimeout> | undefined}` (IdleFileCachePlugin.js:158; the node vs DOM setTimeout overloads?
-the assignment should narrow), and `watching.running` after `if (compiler.watching !== watching) return;`
-(MultiCompiler.js:645, `watching` is `_runGraph`'s inferred SetupResult: a plain TS probe of the shape passes, so the
-difference is in the JS inference). Both need a probe inside webpack's program.
+### webpack (32)
+Fixed 2026-09-28 (probes in `test/probes/plan19/webpack/`, one commit each): JSDoc `[T?]` optional tuple elements,
+overload groups of merged global functions (node's setTimeout before DOM's), parameter defaults removing undefined
+(contextual/JSDoc-typed parameters, closures), JSDoc casts as narrowable references, a declaration's `@type` tag
+signature, lazy conditional branches (TS2456), `require("m").X` value-only aliases, generic array-like spreads,
+conditional-vs-conditional with `infer`, inference from optional parameters, getter `@type`, JSDoc through comments.
+Left, by cause (sampled, not all reduced):
+- **Defaulted type parameters leaking into context-sensitive callbacks** (~9: PackFileCacheStrategy's LazyFunction and
+  `Promise<PackContainer | Pack>` chains, IdleFileCachePlugin:121, maxAge TS2339): bugs/type_core.md "Inference" first
+  bullet, probe `contextual_return_default_leak.ts`. A tried port lost 8 tests; needs the timing of return-type
+  evaluation vs `my outer_inference` understood first.
+- `@template` on a variable statement (`@template T` + `@type {Record<string, (items: T[]) => X<T>>}`,
+  DefaultStatsFactoryPlugin:2733, TS2304 x2): plan 26 "Stage 3 leftovers".
+- A `var f = function` JSDoc resolves its names from the variable statement, outside the function: semver.js's
+  `@param {str} str` (a webpack typo) is the outer parameter's type in tsc, TS2502 + TS7006 here. Plan 26.
+- Unsampled: TS18048 `watching` (MultiCompiler:645, see triage 2026-09-28 note in git: the JS-inferred SetupResult),
+  cli.js `Schema | undefined` x3, buildChunkGraph `false | symbol` vs ConnectionState x2, cleverMerge x3 (TS2536 `keyof
+  (keyof T)`, TS2731, DynamicFunction), `{}` vs intersection/ManifestObject (object literal expandos?), TS2540
+  matchPart, TS2344 `Parser` vs `abstract new`, TS7006 x2 (HttpUriPlugin:216, CommonJsRequireContextDependency:54),
+  FileSystemInfo:3859, module-federation example TS2322.
 
 ### zod-root (tsc 55, tttt 55: the same set)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is

@@ -23,6 +23,10 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   JS, `ty_check_element_implicit_any`'s TODO).
 
 ## Known missing checks
+- **JS (seen in the 2026-09-28 corpus session)**: TS2565 for a property declared by a JS expression statement
+  (`/** @type {F} */ C.prototype.m;`) read in the same flow container (tsc's getFlowTypeOfAccessExpression with
+  assumeUninitialized: jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError); TS7032 (a setter without a parameter
+  type, `@type` on a setter being ignored) is absent entirely (probe plan19/webpack/jsdoc_accessor_type.ts).
 - **Conditions**: TS2774/TS2801 (uncalled function / promise in a condition): tsc's
   checkTestingKnownTruthyCallableOrAwaitableOrEnumMemberType looks for uses of the tested symbol in the body; needs a
   symbol-use walk over expressions (tttt has no generic expression visitor).
