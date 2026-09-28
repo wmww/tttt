@@ -93,6 +93,7 @@ void compiler_options_drop(CompilerOptions* me) {
     cstr_drop(&my config_dir);
     cstr_drop(&my base_url);
     c_drop(cstr, &my jsx_factory, &my jsx_fragment_factory, &my jsx_import_source, &my react_namespace);
+    c_drop(cstr, &my ignore_deprecations, &my typescript_version);
     c_drop(cstr, &my out_dir, &my out_file, &my root_dir, &my declaration_dir);
     cstr_drop(&my paths_base);
     compiler_options_clear_paths(me);
@@ -232,6 +233,8 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
     STRING_OPTION("outfile", out_file)
     STRING_OPTION("rootdir", root_dir)
     STRING_OPTION("declarationdir", declaration_dir)
+    STRING_OPTION("ignoredeprecations", ignore_deprecations)
+    STRING_OPTION("typescriptversion", typescript_version)
 #undef STRING_OPTION
     if (name_equals(name, "baseurl")) {
         cstr_take(&my base_url, cstr_from_sv(value));

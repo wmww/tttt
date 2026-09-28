@@ -14,6 +14,7 @@
 #include "source_file.h"
 #include "ty/ty.h"
 #include "module_resolution.h"
+#include "json.h"
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -86,6 +87,9 @@ typedef struct Program {
     u32 requested_checkers; // program_set_checkers()
     u32 threads; // program_set_threads(), 0: 1
     CompilerOptions options;
+    // program_set_config_file(): the config and its JSON (with offsets), null / a null value without one
+    SourceFile* config_source;
+    JsonValue config_json;
 } Program;
 
 static void program_add_builtins(Program* me) {
@@ -147,8 +151,84 @@ static void program_drop(Program* me) {
     module_resolver_destroy(my resolver);
     cstr_drop(&my lib_dir);
     compiler_options_drop(&my options);
+    if (my config_source) {
+        source_file_drop(my config_source);
+        free(my config_source);
+    }
+    json_drop(&my config_json);
     binder_destroy(my binder); // After the AST: type nodes in it may own things symbols point to
 }
+
+SourceFile const* program_set_config_file(Program* me, csview path) {
+    cstr contents = cstr_null;
+    try (fs_read_file(my fs, path, &contents)) if_err (e) {
+        ignore e;
+        current_error_destroy();
+        return nullptr;
+    }
+    text_decode(&contents);
+    json_drop(&my config_json);
+    if (my config_source) {
+        source_file_drop(my config_source);
+        free(my config_source);
+    }
+    my config_source = c_new(SourceFile, source_file_make(cstr_from_sv(path), contents));
+    my config_source->is_json = true;
+    my config_source->unchecked = true;
+    if (!json_parse(cstr_sv(&my config_source->contents), &my config_json)) my config_json = (JsonValue){0};
+    return my config_source;
+}
+
+static Span config_span(Program const* me, u32 start, u32 end) {
+    char const* text = cstr_str(&my config_source->contents);
+    return span_make(my config_source, text + start, text + end);
+}
+
+// The `compilerOptions` member of the config (tsc's getCompilerOptionsPropertySyntax), null if there's none
+static JsonMember const* config_compiler_options(Program const* me) {
+    if (!my config_source || my config_json.tag != JSON_OBJECT) return nullptr;
+    for (isize i = 0; i < my config_json.count; i++) {
+        if (cstr_equals(&my config_json.members[i].key, "compilerOptions")) return &my config_json.members[i];
+    }
+    return nullptr;
+}
+
+// Where tsc's createDiagnosticForOption puts a diagnostic about an option: on the key (or the value) of every member
+// named name or name2 of the config's compilerOptions (forEachPropertyAssignment), else on the `compilerOptions` key
+// (createCompilerOptionsDiagnostic), else nowhere (a global diagnostic). At least one site, at most 4
+static u32 option_sites(Program const* me, char const* name, char const* name2, bool on_key, Span sites[4]) {
+    JsonMember const* options = config_compiler_options(me);
+    if (!options) {
+        sites[0] = span_null;
+        return 1;
+    }
+    u32 count = 0;
+    if (options->value.tag == JSON_OBJECT) {
+        for (isize i = 0; i < options->value.count && count < 4; i++) {
+            JsonMember const* member = &options->value.members[i];
+            if (!cstr_equals(&member->key, name) && !(name2 && cstr_equals(&member->key, name2))) continue;
+            sites[count++] = on_key ? config_span(me, member->key_start, member->key_end) :
+                config_span(me, member->value.start, member->value.end);
+        }
+    }
+    if (!count) sites[count++] = config_span(me, options->key_start, options->key_end);
+    return count;
+}
+
+// A diagnostic at a site of option_sites(), without a file if it has none
+static Error* option_error_s(Program* me, Span site, unsigned code, cstr message) {
+    if (span_valid(site)) return error_ctx_error_s(my errs, site, code, message);
+    return error_ctx_global_error_s(my errs, code, message);
+}
+// tsc's createDiagnosticForOptionName (on_key) and createOptionValueDiagnostic
+#define option_error_d_one(me, site, code, ...) option_error_s(me, site, code, cstr_d(__VA_ARGS__))
+#define option_error_d(me, name, name2, on_key, code, ...) do { \
+    Span option_sites_[4]; \
+    u32 option_site_count_ = option_sites(me, name, name2, on_key, option_sites_); \
+    for (u32 option_site_ = 0; option_site_ < option_site_count_; option_site_++) { \
+        option_error_s(me, option_sites_[option_site_], code, cstr_d(__VA_ARGS__)); \
+    } \
+} while (0)
 
 CompilerOptions* program_options(Program* me) {
     return &my options;
@@ -760,35 +840,65 @@ void program_copy_globals_from(Program* me, Program const* other) {
     binder_set_parent(my binder, other->binder);
 }
 
-// tsc's verifyCompilerOptions(), the part that doesn't depend on emit. Diagnostics without a file: with a tsconfig tsc
-// puts them on the option there, which we don't
+// "5.4" as 5 * 1000 + 4, 0 if it isn't a version
+static unsigned parse_major_minor(csview version) {
+    unsigned major = 0, minor = 0;
+    isize i = 0;
+    while (i < version.size && version.buf[i] >= '0' && version.buf[i] <= '9') major = major * 10 + (unsigned)(version.buf[i++] - '0');
+    if (i < version.size && version.buf[i] == '.') i++;
+    while (i < version.size && version.buf[i] >= '0' && version.buf[i] <= '9') minor = minor * 10 + (unsigned)(version.buf[i++] - '0');
+    return major * 1000 + minor;
+}
+
+// tsc's verifyCompilerOptions(), the part that doesn't depend on emit. With a tsconfig the diagnostics are on the
+// option there (option_sites())
 static void program_validate_options(Program* me) {
     CompilerOptions const* o = &my options;
-    if (cstr_size(&o->config_dir)) return;
-    for (isize i = 0; i < o->removed_options.count; i++) {
+    // tsc's verifyDeprecatedCompilerOptions: deprecated in 5.0, removed in 5.5. Before that (the harness's
+    // `@typeScriptVersion`) they're only deprecated, which `"ignoreDeprecations": "5.0"` silences
+    unsigned version = parse_major_minor(cstr_size(&o->typescript_version) ? cstr_sv(&o->typescript_version) : c_sv("5.8"));
+    unsigned ignore_version = 0;
+    if (cstr_size(&o->ignore_deprecations)) {
+        if (cstr_equals(&o->ignore_deprecations, "5.0")) {
+            ignore_version = parse_major_minor(c_sv("5.0"));
+        } else {
+            option_error_d(me, "ignoreDeprecations", nullptr, false, 5103, "Invalid value for '--ignoreDeprecations'.");
+        }
+    }
+    bool removed = version >= parse_major_minor(c_sv("5.5"));
+    bool deprecated = !removed && ignore_version < parse_major_minor(c_sv("5.0"));
+    if (o->target == SCRIPT_TARGET_ES3 && removed) {
+        option_error_d(me, "target", nullptr, false, 5108,
+            "Option 'target=ES3' has been removed. Please remove it from your configuration.");
+    } else if (o->target == SCRIPT_TARGET_ES3 && deprecated) {
+        option_error_d(me, "target", nullptr, false, 5107, "Option 'target=ES3' is deprecated and will stop functioning ",
+            "in TypeScript 5.5. Specify compilerOption '\"ignoreDeprecations\": \"5.0\"' to silence this error.");
+    }
+    for (isize i = 0; i < o->removed_options.count && (removed || deprecated); i++) {
         cstr const* name = &o->removed_options.items[i];
-        Error* error = error_ctx_global_error_d(
-            my errs, 5102, "Option '", *name, "' has been removed. Please remove it from your configuration."
-        );
         const char* instead = cstr_equals(name, "out") ? "outFile" :
             cstr_equals(name, "importsNotUsedAsValues") || cstr_equals(name, "preserveValueImports") ?
                 "verbatimModuleSyntax" : nullptr;
-        if (instead) error_sub_error_d(error, span_null, TS_CODE_NONE, "Use '", instead, "' instead.");
-    }
-    if (o->target == SCRIPT_TARGET_ES3) {
-        error_ctx_global_error_d(
-            my errs, 5108, "Option 'target=ES3' has been removed. Please remove it from your configuration."
-        );
+        Span sites[4];
+        u32 site_count = option_sites(me, cstr_str(name), nullptr, true, sites);
+        for (u32 j = 0; j < site_count; j++) {
+            Error* error = removed ?
+                option_error_d_one(me, sites[j], 5102, "Option '", *name,
+                    "' has been removed. Please remove it from your configuration.") :
+                option_error_d_one(me, sites[j], 5101, "Option '", *name, "' is deprecated and will stop functioning in ",
+                    "TypeScript 5.5. Specify compilerOption '\"ignoreDeprecations\": \"5.0\"' to silence this error.");
+            if (instead) error_sub_error_d(error, span_null, TS_CODE_NONE, "Use '", instead, "' instead.");
+        }
     }
     if (o->resolve_json_module) {
         if (o->module_resolution == MODULE_RESOLUTION_CLASSIC) {
-            error_ctx_global_error_d(
-                my errs, 5070,
+            option_error_d(
+                me, "resolveJsonModule", nullptr, true, 5070,
                 "Option '--resolveJsonModule' cannot be specified when 'moduleResolution' is set to 'classic'."
             );
         } else if (o->module == MODULE_KIND_NONE || o->module == MODULE_KIND_SYSTEM || o->module == MODULE_KIND_UMD) {
-            error_ctx_global_error_d(
-                my errs, 5071,
+            option_error_d(
+                me, "resolveJsonModule", "module", true, 5071,
                 "Option '--resolveJsonModule' cannot be specified when 'module' is set to 'none', 'system', or 'umd'."
             );
         }
@@ -801,8 +911,8 @@ static void program_validate_options(Program* me) {
         o->custom_conditions.count > 0,
     };
     for (isize i = 0; i < 3 && !modern_resolution; i++) {
-        if (given[i]) error_ctx_global_error_d(
-            my errs, 5098, "Option '", needs_modern[i],
+        if (given[i]) option_error_d(
+            me, needs_modern[i], nullptr, true, 5098, "Option '", needs_modern[i],
             "' can only be used when 'moduleResolution' is set to 'node16', 'nodenext', or 'bundler'."
         );
     }
@@ -811,23 +921,23 @@ static void program_validate_options(Program* me) {
         o->module_resolution == MODULE_RESOLUTION_NODENEXT;
     bool es_module = o->module >= MODULE_KIND_ES2015 && o->module <= MODULE_KIND_ESNEXT;
     if (o->module_resolution == MODULE_RESOLUTION_BUNDLER && !es_module && o->module != MODULE_KIND_PRESERVE) {
-        error_ctx_global_error_d(
-            my errs, 5095,
+        option_error_d(
+            me, "moduleResolution", nullptr, false, 5095,
             "Option 'bundler' can only be used when 'module' is set to 'preserve' or to 'es2015' or later."
         );
     }
     if (node_module && !node_resolution) {
         const char* module_name = o->module == MODULE_KIND_NODE16 ? "Node16" :
             o->module == MODULE_KIND_NODE18 ? "Node18" : "NodeNext";
-        error_ctx_global_error_d(
-            my errs, 5109, "Option 'moduleResolution' must be set to '",
+        option_error_d(
+            me, "moduleResolution", nullptr, false, 5109, "Option 'moduleResolution' must be set to '",
             o->module == MODULE_KIND_NODENEXT ? "NodeNext" : "Node16",
             "' (or left unspecified) when option 'module' is set to '", module_name, "'."
         );
     } else if (node_resolution && !node_module) {
         const char* name = o->module_resolution == MODULE_RESOLUTION_NODE16 ? "Node16" : "NodeNext";
-        error_ctx_global_error_d(
-            my errs, 5110, "Option 'module' must be set to '", name, "' when option 'moduleResolution' is set to '",
+        option_error_d(
+            me, "module", nullptr, false, 5110, "Option 'module' must be set to '", name, "' when option 'moduleResolution' is set to '",
             name, "'."
         );
     }
@@ -839,21 +949,21 @@ static void program_validate_options(Program* me) {
         o->declaration_map ? "declarationMap" : nullptr,
     };
     for (isize i = 0; i < 3 && !declarations; i++) {
-        if (needs_declarations[i]) error_ctx_global_error_d(my errs, 5069, "Option '", needs_declarations[i],
-            "' cannot be specified without specifying option 'declaration' or option 'composite'.");
+        if (needs_declarations[i]) option_error_d(me, needs_declarations[i], "declaration", true, 5069, "Option '",
+            needs_declarations[i], "' cannot be specified without specifying option 'declaration' or option 'composite'.");
     }
     if (cstr_size(&o->out_file) && !o->emit_declaration_only && o->module_set && o->module != MODULE_KIND_NONE &&
         o->module != MODULE_KIND_AMD && o->module != MODULE_KIND_SYSTEM
     ) {
-        error_ctx_global_error_d(my errs, 6082, "Only 'amd' and 'system' modules are supported alongside --outFile.");
+        option_error_d(me, "outFile", "module", true, 6082, "Only 'amd' and 'system' modules are supported alongside --outFile.");
     }
     if (o->emit_declaration_only && !declarations) {
-        error_ctx_global_error_d(my errs, 5069,
+        option_error_d(me, "emitDeclarationOnly", "declaration", true, 5069,
             "Option 'emitDeclarationOnly' cannot be specified without specifying option 'declaration' or option 'composite'.");
     }
     if (o->emit_decorator_metadata && !o->experimental_decorators) {
-        error_ctx_global_error_d(
-            my errs, 5052,
+        option_error_d(
+            me, "emitDecoratorMetadata", "experimentalDecorators", true, 5052,
             "Option 'emitDecoratorMetadata' cannot be specified without specifying option 'experimentalDecorators'."
         );
     }
@@ -862,40 +972,40 @@ static void program_validate_options(Program* me) {
     const char* jsx_name = o->jsx == JSX_REACT_JSX ? "react-jsx" : o->jsx == JSX_REACT_JSXDEV ? "react-jsxdev" : "react";
     if (cstr_size(&o->jsx_factory)) {
         if (cstr_size(&o->react_namespace)) {
-            error_ctx_global_error_d(my errs, 5053, "Option 'reactNamespace' cannot be specified with option 'jsxFactory'.");
+            option_error_d(me, "reactNamespace", "jsxFactory", true, 5053, "Option 'reactNamespace' cannot be specified with option 'jsxFactory'.");
         }
         if (automatic) {
-            error_ctx_global_error_d(my errs, 5089, "Option 'jsxFactory' cannot be specified when option 'jsx' is '",
+            option_error_d(me, "jsxFactory", jsx_name, true, 5089, "Option 'jsxFactory' cannot be specified when option 'jsx' is '",
                 jsx_name, "'.");
         }
         if (!compiler_option_is_entity_name(cstr_sv(&o->jsx_factory))) {
-            error_ctx_global_error_d(my errs, 5067, "Invalid value for 'jsxFactory'. '", o->jsx_factory,
+            option_error_d(me, "jsxFactory", nullptr, false, 5067, "Invalid value for 'jsxFactory'. '", o->jsx_factory,
                 "' is not a valid identifier or qualified-name.");
         }
     } else if (cstr_size(&o->react_namespace) && !compiler_option_is_identifier(cstr_sv(&o->react_namespace))) {
-        error_ctx_global_error_d(my errs, 5059, "Invalid value for '--reactNamespace'. '", o->react_namespace,
+        option_error_d(me, "reactNamespace", nullptr, false, 5059, "Invalid value for '--reactNamespace'. '", o->react_namespace,
             "' is not a valid identifier.");
     }
     if (cstr_size(&o->jsx_fragment_factory)) {
         if (!cstr_size(&o->jsx_factory)) {
-            error_ctx_global_error_d(my errs, 5052,
+            option_error_d(me, "jsxFragmentFactory", "jsxFactory", true, 5052,
                 "Option 'jsxFragmentFactory' cannot be specified without specifying option 'jsxFactory'.");
         }
         if (automatic) {
-            error_ctx_global_error_d(my errs, 5089, "Option 'jsxFragmentFactory' cannot be specified when option 'jsx' is '",
+            option_error_d(me, "jsxFragmentFactory", jsx_name, true, 5089, "Option 'jsxFragmentFactory' cannot be specified when option 'jsx' is '",
                 jsx_name, "'.");
         }
         if (!compiler_option_is_entity_name(cstr_sv(&o->jsx_fragment_factory))) {
-            error_ctx_global_error_d(my errs, 18035, "Invalid value for 'jsxFragmentFactory'. '", o->jsx_fragment_factory,
+            option_error_d(me, "jsxFragmentFactory", nullptr, false, 18035, "Invalid value for 'jsxFragmentFactory'. '", o->jsx_fragment_factory,
                 "' is not a valid identifier or qualified-name.");
         }
     }
     if (cstr_size(&o->react_namespace) && automatic) {
-        error_ctx_global_error_d(my errs, 5089, "Option 'reactNamespace' cannot be specified when option 'jsx' is '",
+        option_error_d(me, "reactNamespace", jsx_name, true, 5089, "Option 'reactNamespace' cannot be specified when option 'jsx' is '",
             jsx_name, "'.");
     }
     if (cstr_size(&o->jsx_import_source) && o->jsx == JSX_REACT) {
-        error_ctx_global_error_d(my errs, 5089, "Option 'jsxImportSource' cannot be specified when option 'jsx' is '",
+        option_error_d(me, "jsxImportSource", jsx_name, true, 5089, "Option 'jsxImportSource' cannot be specified when option 'jsx' is '",
             jsx_name, "'.");
     }
 }

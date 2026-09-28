@@ -254,7 +254,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     }
     type_flow_restore(saved_flow);
     function_scope->no_super = NO_SUPER_NONE;
-    if (my has_body) {
+    // (Not a JSDoc `@returns`, which sees the body's types: tsc's resolveNameHelper exempts a JSDoc lastLocation)
+    if (my has_body && !(names->file && names->file->is_js)) {
         Scope* return_scope = scope_new(function_scope, SCOPE_BLOCK);
         return_scope->return_type = true;
         type_lookup_names(&my ret, return_scope, errs);

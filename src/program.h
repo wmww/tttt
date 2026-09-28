@@ -24,6 +24,10 @@ void program_follow_lib_references(Program* me);
 // checking of this program read them through compiler_options()
 CompilerOptions* program_options(Program* me);
 
+// The tsconfig.json the options came from (tsc's options.configFile): diagnostics about the options go on it. Returns
+// its source file, which isn't part of the program (nothing parses or checks it), null if it can't be read
+SourceFile const* program_set_config_file(Program* me, csview path);
+
 // Where the program's diagnostics go (the checker reports tsc's `error(currentNode, ...)` diagnostics straight into it)
 ErrorCtx* program_errors(Program const* me);
 

@@ -526,6 +526,8 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
             break;
         }
         my has_tsconfig = true;
+        SourceFile const* config_source = program_set_config_file(my program, cstr_sv(&i->path));
+        i->config_source = config_source;
         VecCStr directives = my directives;
         my directives = (VecCStr){0};
         for (isize j = 0; j + 1 < vec_cstr_size(&directives); j += 2) {
@@ -567,7 +569,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
 static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* source) {
     panic_if(!source, "Tests detected span with null source");
     for_each (i, vec_baseline_test_file, &my files) {
-        if (i->source == source) {
+        if (i->source == source || (i->config_source && i->config_source == source)) {
             return i;
         }
     }
@@ -870,6 +872,8 @@ BaselineTestCase run_baseline_test_case(
         if (!i->source && (path_is_script(cstr_sv(&i->path)) || csview_ends_with(cstr_sv(&i->path), ".json"))) {
             i->source = program_find_source(program, cstr_sv(&i->path));
         }
+        // (Only now: the paths are final)
+        if (i->config_source) ((SourceFile*)i->config_source)->display_path_override = cstr_str(&i->path);
         if (i->source) {
             ((SourceFile*)i->source)->display_path_override = cstr_str(&i->path);
         } else {

@@ -26,10 +26,15 @@ struct JsonValue {
     JsonValue* items; // JSON_ARRAY
     JsonMember* members; // JSON_OBJECT
     isize count; // Of items or members
+    // Where it is in the text json_parse() read (byte offsets, end exclusive; a string with its quotes)
+    u32 start;
+    u32 end;
 };
 
 struct JsonMember {
     cstr key;
+    u32 key_start; // Offsets of the key in the text, with its quotes
+    u32 key_end;
     JsonValue value;
 };
 

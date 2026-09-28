@@ -110,7 +110,8 @@ static cstr real_path_of(void* ctx, csview path) {
 
 // The project's tsconfig if there is one (else strict, unless told otherwise), then whatever was on the command line.
 // The config's root files are appended to root_files
-static_failable apply_compiler_options(Options const* opts, CompilerOptions* options, StrList* root_files) {
+static_failable apply_compiler_options(Options const* opts, Program* program, StrList* root_files) {
+    CompilerOptions* options = program_options(program);
     bool libs_decided = false;
     cstr config = opts->project ? cstr_from(opts->project) :
         opts->path_count ? cstr_null : tsconfig_find(fs, c_sv("."));
@@ -121,6 +122,9 @@ static_failable apply_compiler_options(Options const* opts, CompilerOptions* opt
             cstr_drop(&config);
         }
         libs_decided = options->target_set || cstr_size(&options->lib);
+        // (Where the diagnostics about the options go)
+        if (fs_is_directory(fs, cstr_sv(&config))) cstr_append_lit(&config, "/tsconfig.json");
+        program_set_config_file(program, cstr_sv(&config));
     } else {
         ignore compiler_options_set(options, c_sv("strict"), c_sv("true"));
     }
@@ -173,7 +177,7 @@ static_failable check_files(Options const* opts, returns int) {
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
-    try (apply_compiler_options(opts, program_options(program), &root_files)) cleanup {
+    try (apply_compiler_options(opts, program, &root_files)) cleanup {
         str_list_drop(&root_files);
         destroy_program(program, &errs);
     }

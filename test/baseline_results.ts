@@ -8671,7 +8671,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitToDeclarationDirWithoutCompositeAndDeclarationOptions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9456,7 +9456,7 @@ const baselines = {
         types: true,
     },
     'deprecatedCompilerOptions1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9466,22 +9466,22 @@ const baselines = {
         types: true,
     },
     'deprecatedCompilerOptions3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49991,17 +49991,17 @@ const baselines = {
         types: true,
     },
     'verbatimModuleSyntaxCompat2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'verbatimModuleSyntaxCompat3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'verbatimModuleSyntaxCompat4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54051,7 +54051,7 @@ const baselines = {
         types: false,
     },
     'bundlerOptionsCompat': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54176,7 +54176,7 @@ const baselines = {
         types: true,
     },
     'packageJsonExportsOptionsCompat': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

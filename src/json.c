@@ -1,6 +1,7 @@
 #include "json.h"
 
 typedef struct JsonParser {
+    const char* text;
     const char* at;
     const char* end;
     int depth;
@@ -121,8 +122,10 @@ static bool parse_container(JsonParser* me, JsonValue* out, bool is_object) {
         if (is_object) {
             if (*my at != '"' && *my at != '\'') return false;
             JsonMember* member = &out->members[out->count];
-            *member = (JsonMember){0};
-            if (!parse_string(me, &member->key)) return false;
+            *member = (JsonMember){ .key_start = (u32)(my at - my text) };
+            bool key = parse_string(me, &member->key);
+            member->key_end = (u32)(my at - my text);
+            if (!key) return false;
             out->count++; // From here on json_drop() owns it
             skip_trivia(me);
             if (my at >= my end || *my at != ':') return false;
@@ -143,9 +146,19 @@ static bool parse_literal(JsonParser* me, const char* word) {
     return true;
 }
 
+static bool parse_value_at(JsonParser* me, JsonValue* out);
+
 static bool parse_value(JsonParser* me, JsonValue* out) {
     *out = (JsonValue){0};
     skip_trivia(me);
+    u32 start = (u32)(my at - my text);
+    bool parsed = parse_value_at(me, out);
+    out->start = start;
+    out->end = (u32)(my at - my text);
+    return parsed;
+}
+
+static bool parse_value_at(JsonParser* me, JsonValue* out) {
     if (my at >= my end || my depth > 200) return false;
     switch (*my at) {
         case '{':
@@ -189,7 +202,7 @@ static bool parse_value(JsonParser* me, JsonValue* out) {
 }
 
 bool json_parse(csview text, JsonValue* out) {
-    JsonParser parser = { .at = text.buf, .end = text.buf + text.size };
+    JsonParser parser = { .text = text.buf, .at = text.buf, .end = text.buf + text.size };
     if (parse_value(&parser, out)) return true;
     json_drop(out);
     return false;

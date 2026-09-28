@@ -164,6 +164,8 @@ typedef struct CompilerOptions {
     cstr jsx_fragment_factory;
     cstr jsx_import_source;
     cstr react_namespace;
+    cstr ignore_deprecations; // "5.0" silences the 5.0 deprecations (anything else is TS5103)
+    cstr typescript_version; // The harness's `@typeScriptVersion`: the version deprecations are judged by, "" for ours
     // Emit paths, only for tsc's output path checks (TS5055/TS5056): tttt doesn't emit. Relative to config_dir like
     // the module resolution ones below
     cstr out_dir;
