@@ -17101,9 +17101,9 @@ const baselines = {
         types: true,
     },
     'indexedAccessWithVariableElement': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexer': {
         errors: true,

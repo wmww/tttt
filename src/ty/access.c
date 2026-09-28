@@ -253,7 +253,11 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             // (tsc's getTupleElementTypeOutOfStartCount)
             if (fixed < shape->arity) {
                 Ty const* rest = ty_tuple_slice_element_type(me, object, fixed, 0);
-                return include_undefined ? with_undefined(me, rest) : rest;
+                // Only past as many elements as the tuple surely has, the trailing fixed ones included (tsc's
+                // getTotalFixedElementCount)
+                u32 end_fixed = 0;
+                while (end_fixed < shape->arity - fixed && !(shape->flags[shape->arity - 1 - end_fixed] & TUPLE_ELEMENT_REST)) end_fixed++;
+                return include_undefined && at >= fixed + end_fixed ? with_undefined(me, rest) : rest;
             }
             return nullptr;
         }
