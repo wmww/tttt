@@ -1380,7 +1380,18 @@ void ty_check_property_access(
 // One member of the index of a non-generic `O[K]` type (tsc's getPropertyTypeForIndexType with an access node)
 static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const* index, Span index_span, ErrorCtx* errs) {
     if (index->flags & TYF_NEVER) return;
-    if (ty_access(me, apparent, index)) return;
+    // What can't be a key is an error even on any (tsc's isTypeAssignableToKind(StringLike | NumberLike | ESSymbolLike),
+    // any included, before the object is looked at)
+    u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL;
+    bool is_key = !(index->flags & TYF_NULLABLE) && (ty_key_flags(index) & key_like);
+    if (is_key && (apparent->flags & (TYF_ANY | TYF_NEVER))) return;
+    if (is_key && (index->flags & TYF_ANY)) {
+        // Any indexes what has an index signature (any is assignable to every key type), else it's no key at all
+        // (tsc's getPropertyTypeForIndexType falls through to TS2538)
+        if (!(apparent->flags & TYF_OBJECT) || ty_applicable_index_info(me, apparent, index)) return;
+        is_key = false;
+    }
+    if (is_key && ty_access(me, apparent, index)) return;
     if (ty_is_tuple(apparent) && (index->flags & TYF_NUMBER_LITERAL)) {
         // (ty_access() only misses an element past the end of a tuple without a rest element)
         double n = index->literal.value.number;
@@ -1396,7 +1407,11 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
     }
     if (is_global_this(apparent) && !(index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) return;
     cstr object_str = ty_to_cstr(me, apparent);
-    if (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
+    if (!is_key) {
+        cstr index_str = ty_to_cstr(me, index);
+        error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
+        cstr_drop(&index_str);
+    } else if (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
         cstr name = cstr_null;
         cstr_append_value_js(&name, &index->literal.value);
         if (index->literal.string) {
@@ -1488,8 +1503,8 @@ void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty
 
 void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs) {
     index = ty_regular(me, index);
-    if ((object->flags | index->flags) & TYF_ERROR) return;
-    if (ty_is_generic_index(index) || ty_is_generic_object(me, object)) {
+    if (object->flags & TYF_ERROR) return;
+    if (!(index->flags & TYF_ERROR) && (ty_is_generic_index(index) || ty_is_generic_object(me, object))) {
         // tsc's checkIndexedAccessIndexType on the deferred type, reported on the whole `O[K]`
         Ty const* indexed = ty_indexed(me, object, index);
         if (indexed->kind != TY_INDEXED || ty_indexed_access_index_ok(me, indexed)) return;
@@ -1498,9 +1513,7 @@ void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index
         c_drop(cstr, &index_str, &object_str);
         return;
     }
-    if (object->flags & (TYF_ANY | TYF_NEVER)) return;
-    Ty const* apparent = ty_apparent_type(me, object);
-    if (apparent->flags & (TYF_ANY | TYF_NEVER)) return;
+    Ty const* apparent = (object->flags & (TYF_ANY | TYF_NEVER)) ? object : ty_apparent_type(me, object);
     if (index->kind == TY_UNION && !(index->flags & TYF_BOOLEAN)) {
         for (u32 i = 0; i < index->composite.types.len; i++) {
             check_indexed_access_part(me, apparent, index->composite.types.data[i], index_span, errs);

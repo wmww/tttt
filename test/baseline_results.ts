@@ -906,7 +906,7 @@ const baselines = {
         types: true,
     },
     'anyIndexedAccessArrayNoException': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11236,7 +11236,7 @@ const baselines = {
         types: true,
     },
     'errorElaboration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33666,12 +33666,12 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclarationParameterEvaluation(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asyncFunctionDeclarationParameterEvaluation(target=es2017)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34601,17 +34601,17 @@ const baselines = {
         types: true,
     },
     'asyncGeneratorParameterEvaluation(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asyncGeneratorParameterEvaluation(target=es2017)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asyncGeneratorParameterEvaluation(target=es2018)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
