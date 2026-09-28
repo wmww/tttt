@@ -10357,6 +10357,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             if (main->tag == PORT_IMPORT_ALIAS || main->is_require) {
                 modified.kind = MODIFIED_IMPORT_EQUALS;
                 main->export_import |= modifiers.includes[MODIFIER_EXPORT];
+                main->declared |= modifiers.includes[MODIFIER_DECLARE];
             } else if (is_import) {
                 modified.kind = MODIFIED_IMPORT;
                 code = 1191;

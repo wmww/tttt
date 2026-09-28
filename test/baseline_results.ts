@@ -16096,7 +16096,7 @@ const baselines = {
         types: true,
     },
     'importDeclWithClassModifiers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16111,12 +16111,12 @@ const baselines = {
         types: true,
     },
     'importDeclWithExportModifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'importDeclWithExportModifierAndExportAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

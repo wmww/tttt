@@ -163,6 +163,18 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         ) {
             error_ctx_error_d(errs, alias->decl_name, 2438, "Import name cannot be '", alias->decl_name, "'.");
         }
+        // tsc's markImportEqualsAliasReferenced: `export import x = A.B` of a value (not a const enum) or of nothing
+        // references A as a value (markIdentifierAliasReferenced -> getResolvedSymbol), a namespace only is TS2708
+        u32 target_flags = target ? symbol_resolved_flags(target) : 0;
+        bool unknown = !target || target->is_placeholder || target->is_unresolved;
+        bool value = target_flags & SYMBOL_VALUE && (target_flags & SYMBOL_VALUE & ~SYMBOL_CONST_ENUM);
+        if (alias->export_import && !ambient && !alias->declared && (unknown || value)) {
+            Span first = *vec_span_at(&alias->alias_path, 0);
+            Scope const* scope = alias->symbol->alias->scope;
+            if (!scope_resolve(scope, first.sv, SYMBOL_VALUE) && scope_resolve(scope, first.sv, SYMBOL_NAMESPACE)) {
+                error_ctx_error_d(errs, first, 2708, "Cannot use namespace '", first, "' as a value.");
+            }
+        }
     }
     // `import { x }` of a property of what `export =` names: tsc's getExternalModuleMember finds none if the value
     // has no such property (the binder leaves that to the checker, see resolve_alias_target())

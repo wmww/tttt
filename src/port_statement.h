@@ -47,6 +47,7 @@ typedef struct PortItem {
     VecSpan alias_path; // Only used for PORT_IMPORT_ALIAS, the dotted name after the =
     VecSymbolCPtr alias_path_symbols; // What each item of alias_path found (maybe an alias), shorter if resolution failed
     bool export_import; // `export import foo = ...`
+    bool declared; // `declare import foo = ...` (TS1029 or so, but ambient)
     bool not_top_level; // PORT_EXPORT_AS_NAMESPACE: not directly in the file (TS1316)
     Span modifiers; // PORT_EXPORT_AS_NAMESPACE: modifiers in front (TS1184, a binder error in tsc)
     bool is_require; // `import foo = require("./abc")` (a PORT_IMPORT_GATHER that isn't a namespace import)
