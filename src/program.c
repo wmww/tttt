@@ -200,6 +200,22 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
     if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
     ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+    if (cstr_size(&resolved.ambiguous_root_package_json)) {
+        cstr shown = program_path_for_message(me, cstr_sv(&resolved.ambiguous_root_package_json));
+        cstr message = cstr_d(
+            "The project root is ambiguous, but is required to resolve ",
+            resolved.ambiguous_root_in_imports ? "import" : "export", " map entry '", resolved.ambiguous_root_entry,
+            "' in file '", shown, "'. Supply the `rootDir` compiler option to disambiguate."
+        );
+        unsigned code = resolved.ambiguous_root_in_imports ? 2210 : 2209;
+        bool seen = false;
+        if (my errs) for_each (i, vec_error, &my errs->errors) {
+            if (i->ts_code == code && cstr_eq(&i->message, &message)) seen = true;
+        }
+        if (seen) cstr_drop(&message);
+        else error_ctx_global_error_s(my errs, code, message);
+        cstr_drop(&shown);
+    }
     if (my options.no_resolve) {
         // Nothing is added to the program, but a name may still mean a file that is part of it
         if (resolved.kind != RESOLVED_NONE) ref->file = program_find_source(me, cstr_sv(&resolved.path));

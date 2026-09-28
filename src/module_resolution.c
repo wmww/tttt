@@ -68,12 +68,18 @@ typedef struct State {
     isize condition_count;
     csview containing_dir;
     bool json_without_option;
+    // tsc's TS2209/TS2210: an exports/imports target was mapped back to an input file with the project root guessed
+    cstr ambiguous_root_entry;
+    cstr ambiguous_root_package_json;
+    bool ambiguous_root_in_imports;
 } State;
 
 void resolved_module_drop(ResolvedModule* me) {
     cstr_drop(&my path);
     cstr_drop(&my suggested_extension);
     cstr_drop(&my package_id);
+    cstr_drop(&my ambiguous_root_entry);
+    cstr_drop(&my ambiguous_root_package_json);
     *me = (ResolvedModule){0};
 }
 
@@ -82,6 +88,8 @@ static ResolvedModule resolved_module_clone(ResolvedModule const* me) {
     ret.path = cstr_clone(my path);
     ret.suggested_extension = cstr_clone(my suggested_extension);
     ret.package_id = cstr_clone(my package_id);
+    ret.ambiguous_root_entry = cstr_clone(my ambiguous_root_entry);
+    ret.ambiguous_root_package_json = cstr_clone(my ambiguous_root_package_json);
     return ret;
 }
 
@@ -781,6 +789,120 @@ static cstr replace_all_stars(csview text, csview star) {
 
 static Search resolve_non_relative(State* me, csview name, csview from_dir, int extensions, Found* out);
 
+// tsc's containsPath() of two normalised absolute paths
+static bool path_contains(csview dir, csview path) {
+    if (dir.size == 1) return true;
+    return sv_starts_with(path, dir) && (path.size == dir.size || path.buf[dir.size] == '/');
+}
+
+// tsc's extensionIsOk()
+static bool extension_is_ok(int extensions, const char* extension) {
+    csview e = c_sv(extension, strlen(extension));
+    if (extensions & EXT_JS && (csview_equals(e, ".js") || csview_equals(e, ".jsx") || csview_equals(e, ".mjs") ||
+        csview_equals(e, ".cjs"))) return true;
+    if (extensions & EXT_TS && (csview_equals(e, ".ts") || csview_equals(e, ".tsx") || csview_equals(e, ".mts") ||
+        csview_equals(e, ".cts"))) return true;
+    if (extensions & EXT_DTS && (csview_equals(e, ".d.ts") || csview_equals(e, ".d.mts") || csview_equals(e, ".d.cts")))
+        return true;
+    return extensions & EXT_JSON && csview_equals(e, ".json");
+}
+
+// tsc's tryLoadInputFileForPath(): a package's exports/imports that point into the outDir/declarationDir of the
+// project itself (package self-names) mean the input files the outputs are made from. The root the output structure
+// mirrors (the common source directory) isn't known while files are still being found, so without a rootDir (or a
+// composite project) every directory from the file system root down to the common directory of the importing file
+// and the package.json is tried, and TS2209/TS2210 says the root is ambiguous
+static bool try_load_input_file_for_path(
+    State* me, csview final_path, csview entry, csview package_dir, bool is_imports, int extensions, Found* out
+) {
+    CompilerOptions const* options = my resolver->options;
+    if (!cstr_size(&options->out_dir) && !cstr_size(&options->declaration_dir)) return false;
+    if (path_contains_node_modules(final_path)) return false;
+    bool has_config = cstr_size(&options->config_dir) > 0;
+    if (has_config) {
+        cstr config_dir = option_path(my resolver, c_sv("."));
+        bool inside = path_contains(package_dir, cstr_sv(&config_dir));
+        cstr_drop(&config_dir);
+        if (!inside) return false;
+    }
+    StrList guesses = {0};
+    if (cstr_size(&options->root_dir) || (options->composite && has_config)) {
+        cstr dir = cstr_size(&options->root_dir) ? option_path(my resolver, cstr_sv(&options->root_dir)) :
+            option_path(my resolver, c_sv("."));
+        str_list_push(&guesses, cstr_sv(&dir));
+        cstr_drop(&dir);
+    } else if (my containing_dir.size) {
+        // The common directory of the importing file and the package.json, and every directory above it
+        csview a = my containing_dir, b = package_dir;
+        isize n = 0, last_sep = 0;
+        while (n < a.size && n < b.size && a.buf[n] == b.buf[n]) {
+            if (a.buf[n] == '/') last_sep = n;
+            n++;
+        }
+        bool whole = (n == a.size || a.buf[n] == '/') && (n == b.size || b.buf[n] == '/');
+        cstr dir = cstr_from_sv(csview_slice(a, 0, whole ? n : last_sep ? last_sep : 1));
+        if (!cstr_size(&dir)) cstr_assign(&dir, "/");
+        // (Pushed deepest first, tried from the top down: the most general root wins)
+        do str_list_push(&guesses, cstr_sv(&dir)); while (go_up(&dir));
+        cstr_drop(&dir);
+    }
+    if (guesses.count > 1 && !cstr_size(&my ambiguous_root_package_json)) {
+        cstr_assign_sv(&my ambiguous_root_entry, entry.size ? entry : c_sv("."));
+        my ambiguous_root_package_json = join(package_dir, c_sv("package.json"));
+        my ambiguous_root_in_imports = is_imports;
+    }
+    static const char* const output_extensions[] = { ".mjs", ".cjs", ".js", ".json", ".d.mts", ".d.cts", ".d.ts" };
+    bool found = false;
+    for (isize g = guesses.count - 1; g >= 0 && !found; g--) {
+        csview guess = cstr_sv(&guesses.items[g]);
+        cstr candidates[2] = {0};
+        isize candidate_count = 0;
+        // Relative to the current directory with a tsconfig (its paths are absolute by then), else to the guess
+        csview output_dirs[2] = { cstr_sv(&options->declaration_dir), cstr_sv(&options->out_dir) };
+        for (isize i = 0; i < 2; i++) {
+            if (!output_dirs[i].size) continue;
+            if (i == 1 && csview_equals_sv(output_dirs[1], output_dirs[0])) continue;
+            candidates[candidate_count++] = has_config ? option_path(my resolver, output_dirs[i]) :
+                join(guess, output_dirs[i]);
+        }
+        for (isize c = 0; c < candidate_count && !found; c++) {
+            csview candidate = cstr_sv(&candidates[c]);
+            if (!path_contains(candidate, final_path) || final_path.size == candidate.size) continue;
+            csview fragment = csview_slice(final_path, candidate.size == 1 ? 1 : candidate.size + 1, final_path.size);
+            cstr base = join(guess, fragment);
+            csview base_sv = cstr_sv(&base);
+            for (isize e = 0; e < (isize)c_arraylen(output_extensions) && !found; e++) {
+                if (!ends_with(base_sv, output_extensions[e])) continue;
+                // tsc's getPossibleOriginalInputExtensionForExtension()
+                static const char* const mts[] = { ".mts", ".mjs", nullptr };
+                static const char* const cts[] = { ".cts", ".cjs", nullptr };
+                static const char* const json[] = { ".json", nullptr };
+                static const char* const ts[] = { ".tsx", ".ts", ".jsx", ".js", nullptr };
+                const char* const* inputs =
+                    ends_with(base_sv, ".d.mts") || ends_with(base_sv, ".mjs") || ends_with(base_sv, ".mts") ? mts :
+                    ends_with(base_sv, ".d.cts") || ends_with(base_sv, ".cjs") || ends_with(base_sv, ".cts") ? cts :
+                    ends_with(base_sv, ".d.json.ts") ? json : ts;
+                csview stem = csview_slice(base_sv, 0, base_sv.size - (isize)strlen(output_extensions[e]));
+                for (isize k = 0; inputs[k] && !found; k++) {
+                    if (!extension_is_ok(extensions, inputs[k])) continue;
+                    cstr input = cstr_d(stem, inputs[k]);
+                    if (file_exists(me, cstr_sv(&input))) {
+                        found = true;
+                        Found loaded = {0};
+                        if (load_package_json_field(me, cstr_sv(&input), extensions, &loaded)) *out = loaded;
+                        else found = false;
+                    }
+                    cstr_drop(&input);
+                }
+            }
+            cstr_drop(&base);
+        }
+        for (isize c = 0; c < candidate_count; c++) cstr_drop(&candidates[c]);
+    }
+    str_list_drop(&guesses);
+    return found;
+}
+
 // tsc's loadModuleFromTargetExportOrImport(): what one target of an exports/imports map leads to. Anything that
 // doesn't resolve lets the next condition or array entry try (the callers make an overall miss final)
 static Search load_target(
@@ -804,7 +926,8 @@ static Search load_target(
             if (has_bad_segment(text, true) || has_bad_segment(subpath, false)) return SEARCH_CONTINUE;
             cstr relative = pattern ? replace_all_stars(text, subpath) : cstr_d(text, subpath);
             cstr path = join(package_dir, cstr_sv(&relative));
-            bool found = load_package_json_field(me, cstr_sv(&path), extensions, out);
+            bool found = try_load_input_file_for_path(me, cstr_sv(&path), subpath, package_dir, is_imports, extensions, out) ||
+                load_package_json_field(me, cstr_sv(&path), extensions, out);
             cstr_drop(&relative);
             cstr_drop(&path);
             return found ? SEARCH_FOUND : SEARCH_CONTINUE;
@@ -1289,6 +1412,9 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
             cstr_drop(&stem);
         }
     }
+    ret.ambiguous_root_entry = state.ambiguous_root_entry;
+    ret.ambiguous_root_package_json = state.ambiguous_root_package_json;
+    ret.ambiguous_root_in_imports = state.ambiguous_root_in_imports;
     return ret;
 }
 

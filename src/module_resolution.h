@@ -41,6 +41,11 @@ typedef struct ResolvedModule {
     // tsc's packageId: `name/sub/module.d.ts@version` for a file of a node_modules package whose package.json has a name
     // and a version, else empty. The program takes a second file with the same id for the first (duplicate packages)
     cstr package_id;
+    // tsc's TS2209/TS2210 (found or not): an exports/imports entry of a package.json (absolute path) pointed into the
+    // outDir without a rootDir that says which input directory the outputs mirror
+    cstr ambiguous_root_entry; // "." for the main export
+    cstr ambiguous_root_package_json; // Empty when there's nothing to report
+    bool ambiguous_root_in_imports;
 } ResolvedModule;
 
 void resolved_module_drop(ResolvedModule* me);

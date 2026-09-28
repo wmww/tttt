@@ -213,7 +213,9 @@ void module_ref_report_resolved(ModuleRef const* me, ErrorCtx* errs) {
                 "dynamic 'import(\"", my path, "\")' call instead.");
             // What would make this file an ES module, when its extension leaves that open
             csview name = cstr_sv(&from->canonical_path);
-            bool ts = csview_ends_with(name, ".ts"), js = csview_ends_with(name, ".js");
+            // (tsc's tryGetExtensionFromPath(): a .d.ts is none of these)
+            bool ts = csview_ends_with(name, ".ts") && !csview_ends_with(name, ".d.ts");
+            bool js = csview_ends_with(name, ".js");
             if (error && (ts || js || csview_ends_with(name, ".tsx") || csview_ends_with(name, ".jsx"))) {
                 const char* rename = ts ? ".mts" : js ? ".mjs" : nullptr;
                 cstr hint = cstr_lit("To convert this file to an ECMAScript module, ");
