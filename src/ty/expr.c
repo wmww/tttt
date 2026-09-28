@@ -677,7 +677,9 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
     Ty const* from_signature = intern_get(&my links, this_key, 2);
     if (from_signature) return from_signature;
-    if (!compiler_options()->no_implicit_this) return nullptr;
+    // (tsc's getContextualThisParameterType: the containing literal or assigned object with noImplicitThis, or in JS)
+    bool in_js = function->full_span.source && function->full_span.source->is_js;
+    if (!compiler_options()->no_implicit_this && !in_js) return nullptr;
     if (function->this_literal) {
         Expr const* literal = function->this_literal;
         u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)literal };
