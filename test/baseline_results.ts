@@ -51292,7 +51292,7 @@ const baselines = {
     },
     'checkJsdocTypeTagOnObjectProperty1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'checkJsdocTypeTagOnObjectProperty2': {
@@ -52016,7 +52016,7 @@ const baselines = {
         types: true,
     },
     'jsdocAccessibilityTags': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52301,14 +52301,14 @@ const baselines = {
         types: false,
     },
     'jsdocReadonly': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsdocReadonlyDeclarations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocReturnTag1': {
         errors: true,
@@ -52322,7 +52322,7 @@ const baselines = {
     },
     'jsdocTemplateClass': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocTemplateConstructorFunction': {
@@ -52747,7 +52747,7 @@ const baselines = {
     },
     'typedefTagExtraneousProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typedefTagNested': {
@@ -60067,12 +60067,12 @@ const baselines = {
     },
     'circularMultipleAssignmentDeclaration': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classCanExtendConstructorFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'commonJSAliasedExport': {
@@ -60127,12 +60127,12 @@ const baselines = {
     },
     'constructorFunctions3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'constructorFunctionsStrict': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'constructorNameInAccessor': {
@@ -60282,7 +60282,7 @@ const baselines = {
     },
     'jsObjectsMarkedAsOpenEnded': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocConstructorFunctionTypeReference': {
@@ -60652,7 +60652,7 @@ const baselines = {
     },
     'spellingUncheckedJS': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'thisPropertyAssignment': {
@@ -60697,7 +60697,7 @@ const baselines = {
     },
     'typeFromJSInitializer': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromJSInitializer2': {
@@ -60797,7 +60797,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment22': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeFromPropertyAssignment23': {
@@ -67628,12 +67628,12 @@ const baselines = {
     'uniqueSymbolsDeclarationsInJs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'uniqueSymbolsDeclarationsInJsErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'uniqueSymbolsErrors': {
         errors: false,

@@ -1548,6 +1548,13 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
     ) {
         return false;
     }
+    // So can a JavaScript constructor function's (tsc's isAssignmentToReadonlyEntity: isJSConstructor)
+    if (refs->len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) &&
+        access->expr.identifier.this_kind == THIS_ANY && access->expr.identifier.this_function &&
+        ty_js_constructor_class(access->expr.identifier.this_function) == refs->props[0]->parent
+    ) {
+        return false;
+    }
     return true;
 }
 

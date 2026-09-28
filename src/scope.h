@@ -135,10 +135,18 @@ typedef enum AssignmentDeclKind : uint8_t {
     ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, // `F.prototype.x = v`
 } AssignmentDeclKind;
 
+// JSDoc modifier tags of a JavaScript declaration (tsc's getJSDocModifierFlagsNoCache)
+typedef enum JsDocModifiers {
+    JSDOC_MODIFIER_PRIVATE = 1 << 0,
+    JSDOC_MODIFIER_PROTECTED = 1 << 1,
+    JSDOC_MODIFIER_READONLY = 1 << 2,
+} JsDocModifiers;
+
 typedef struct SymbolDecl {
     SymbolDeclKind kind;
     AssignmentDeclKind assignment; // SYMBOL_DECL_ASSIGNMENT only
     u32 flags; // What this declaration added to the symbol's flags
+    uint8_t jsdoc_modifiers; // SYMBOL_DECL_ASSIGNMENT: JsDocModifiers
     void const* node;
     // SYMBOL_DECL_ASSIGNMENT: the JSDoc `@type` of the assignment (`/** @type {T} */ this.x = v`), which is the
     // declared type (tsc's getAnnotatedTypeForAssignmentDeclaration)

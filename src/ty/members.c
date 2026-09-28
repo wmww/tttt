@@ -516,6 +516,11 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             prop->ctx = (LowerCtx){ .generic = true };
             prop->name_span = member->name_span;
             prop_add_decl_spans(me, prop, spans.data, (u32)vec_span_size(&spans));
+            // `/** @private */ this.x = v` (tsc's getDeclarationModifierFlagsFromSymbol: the value declaration's)
+            uint8_t modifiers = member->decl_count ? member->decls[0].jsdoc_modifiers : 0;
+            if (modifiers & JSDOC_MODIFIER_PRIVATE) prop->flags |= PROP_PRIVATE;
+            else if (modifiers & JSDOC_MODIFIER_PROTECTED) prop->flags |= PROP_PROTECTED;
+            if (modifiers & JSDOC_MODIFIER_READONLY) prop->flags |= PROP_READONLY;
             builder_push(builder, props, prop);
         }
         vec_span_drop(&spans);

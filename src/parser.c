@@ -5339,9 +5339,28 @@ static bool parse_class_computed_key(Parser* parent, Expr** ret) {
 }
 
 // A class member's JSDoc: a property's `@type`, a method's (or a function-valued property's) `@param`s and `@returns`
+// `@private`, `@protected`, `@readonly` of the host's own comment
+static uint8_t jsdoc_modifiers(VecJsDocTag const* tags) {
+    uint8_t ret = 0;
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->earlier) continue;
+        if (i->kind == JSDOC_TAG_PRIVATE) ret |= JSDOC_MODIFIER_PRIVATE;
+        if (i->kind == JSDOC_TAG_PROTECTED) ret |= JSDOC_MODIFIER_PROTECTED;
+        if (i->kind == JSDOC_TAG_READONLY) ret |= JSDOC_MODIFIER_READONLY;
+    }
+    return ret;
+}
+
 static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item) {
     VecJsDocTag tags = {0};
     if (!jsdoc_before(p, start, &tags)) return;
+    // The modifier tags add to the written modifiers (tsc's getEffectiveModifierFlags)
+    uint8_t modifiers = jsdoc_modifiers(&tags);
+    if (item->access == ACCESS_MODIFIER_PUBLIC) {
+        if (modifiers & JSDOC_MODIFIER_PRIVATE) item->access = ACCESS_MODIFIER_PRIVATE;
+        else if (modifiers & JSDOC_MODIFIER_PROTECTED) item->access = ACCESS_MODIFIER_PROTECTED;
+    }
+    if (item->tag == CLASS_ITEM_FIELD && (modifiers & JSDOC_MODIFIER_READONLY)) item->field.is_readonly = true;
     switch (item->tag) {
         case CLASS_ITEM_CONSTRUCTOR: jsdoc_apply_function(&tags, &item->constructor.func); break;
         case CLASS_ITEM_METHOD: jsdoc_apply_function(&tags, &item->method.func); break;
@@ -9779,6 +9798,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
                     if (tag) assignment->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
                 }
+                assignment->jsdoc_modifiers = jsdoc_modifiers(&tags);
             }
             break;
         case STATEMENT_RETURN_EXPR:

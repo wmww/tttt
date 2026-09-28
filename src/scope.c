@@ -2839,7 +2839,8 @@ static bool is_global_expando_entity(Scope* me, Expr const* target) {
     Expr const* entity = target;
     Expr const* second = nullptr;
     while (entity->tag == EXPR_PROPERTY && !expr_is_perenthisized(entity)) {
-        if (!span_valid(expr_static_property_name(entity))) return false;
+        Span name = expr_static_property_name(entity);
+        if (!span_valid(name) || name.sv.buf[0] == '#') return false;
         second = entity;
         entity = &entity->property->expr;
     }
@@ -2856,6 +2857,13 @@ static bool is_global_expando_entity(Scope* me, Expr const* target) {
         if (found->decls[i].full.source == my file) return false;
     }
     return true;
+}
+
+// `exports` or `module` at the root of an entity name
+static bool is_commonjs_root(Expr const* entity) {
+    while (entity->tag == EXPR_PROPERTY) entity = &entity->property->expr;
+    return entity->tag == EXPR_IDENTIFIER && !entity->identifier.keyword &&
+        (span_equals(entity->identifier.name, "exports") || span_equals(entity->identifier.name, "module"));
 }
 
 // Each name of `a.b` of a top-level JavaScript `a.b.x = v` is a global namespace declared here, merged with the
@@ -2940,7 +2948,7 @@ static void add_expando_namespace_decls(Scope* me, Expr const* entity, bool top_
 
 static void declare_assignment_member(
     Scope* me, SymbolTable** table, Symbol* parent, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type,
-    AssignmentDeclKind kind
+    AssignmentDeclKind kind, uint8_t jsdoc_modifiers
 );
 
 // JavaScript `F.prototype.x = v` declares an instance member x of F, which makes F a class (tsc's
@@ -2958,7 +2966,7 @@ static void add_prototype_property(Scope* me, Expr* constructor, Span name, Expr
         value = &value->binary_op->right;
     }
     host->flags |= SYMBOL_CLASS;
-    declare_assignment_member(me, &host->members, host, name, left, value, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY);
+    declare_assignment_member(me, &host->members, host, name, left, value, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, 0);
 }
 
 static Symbol* js_constructor_symbol(Symbol* symbol);
@@ -2987,6 +2995,21 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
         host = global_expando_namespace(me, object);
         if (!host) return;
     } else {
+        // What the file declares that can't have expandos still gets the namespace declarations (tsc's
+        // bindPotentiallyMissingNamespaces), which only the symbols baseline shows
+        Expr const* root = object;
+        bool private_name = false;
+        while (root->tag == EXPR_PROPERTY) {
+            private_name |= root->property->prop.inner_span.sv.size && root->property->prop.inner_span.sv.buf[0] == '#';
+            root = &root->property->expr;
+        }
+        Symbol const* root_symbol = root->tag == EXPR_IDENTIFIER ? lookup_for_property_access(me, root) : nullptr;
+        if (top_level && my file->is_js && expr_is_entity_name(object) && name.sv.buf[0] != '#' && !private_name &&
+            root_symbol && !(root_symbol->flags & SYMBOL_ALIAS) && !root_symbol->is_placeholder &&
+            !(my file->is_commonjs && is_commonjs_root(object))
+        ) {
+            add_expando_namespace_decls(me, object, true);
+        }
         return;
     }
     // The member (bindPotentiallyNewExpandoMemberToNamespace)
@@ -3058,7 +3081,7 @@ static Symbol* js_constructor_symbol(Symbol* symbol) {
 // Declares an assignment member `name` (`left` = v) in a class's or constructor function's table
 static void declare_assignment_member(
     Scope* me, SymbolTable** table, Symbol* parent, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type,
-    AssignmentDeclKind kind
+    AssignmentDeclKind kind, uint8_t jsdoc_modifiers
 ) {
     if (!*table) *table = arena_new(&my binder->arena, SymbolTable);
     bool merged;
@@ -3071,7 +3094,7 @@ static void declare_assignment_member(
     }
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
-        .name = left->outer_span, .full = left->outer_span, .jsdoc_type = jsdoc_type,
+        .name = left->outer_span, .full = left->outer_span, .jsdoc_type = jsdoc_type, .jsdoc_modifiers = jsdoc_modifiers,
     });
     // In source order, like tsc's one binder walk (`F.prototype.x = v` is declared before the walk reaches a
     // `this.x = v` above it)
@@ -3136,7 +3159,7 @@ void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
             if (!class_symbol) return;
             AssignmentDeclKind kind = function && function->is_constructor ?
                 ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : ASSIGNMENT_DECL_THIS_IN_METHOD;
-            declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, op->jsdoc_type, kind);
+            declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, op->jsdoc_type, kind, op->jsdoc_modifiers);
             // A field the class body declares without a type or initializer has the type the constructor assigns
             ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
             ClassItem* field = class_decl ? class_decl_find_member(class_decl, name.sv, false) : nullptr;
@@ -3156,7 +3179,7 @@ void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
                 class_symbol->flags |= SYMBOL_VALUE_MODULE;
                 symbol_add_decl(class_symbol, (SymbolDecl){ .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE });
             }
-            declare_assignment_member(me, &class_symbol->exports, class_symbol, name, left, value, op->jsdoc_type, ASSIGNMENT_DECL_THIS_IN_METHOD);
+            declare_assignment_member(me, &class_symbol->exports, class_symbol, name, left, value, op->jsdoc_type, ASSIGNMENT_DECL_THIS_IN_METHOD, op->jsdoc_modifiers);
         }   break;
         case THIS_ANY: {
             FunctionImpl* this_function = (FunctionImpl*)this->this_function;
@@ -3177,7 +3200,7 @@ void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
             }
             if (!class_symbol) return;
             class_symbol->flags |= SYMBOL_CLASS;
-            declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, op->jsdoc_type, kind);
+            declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, op->jsdoc_type, kind, op->jsdoc_modifiers);
         }   break;
         default: break;
     }
