@@ -7822,6 +7822,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         *ret = expr_private_name(span_from(a), c_new(PrivateNameExpr, {0}));
     } else if (c == '{' && parse_object(&p, &ret->object)) {
         ret->tag = EXPR_OBJECT;
+        ret->jsdoc_enum_literal = false; // (ret isn't zeroed)
     } else if (c == '[' && parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
     } else if ((c == '@' || c == 'a' || c == 'c') && parse_class_decl(&p, false, &parsed.class_decl)) {
@@ -10180,6 +10181,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 }
                 TypeNode type = jsdoc_take_type(enum_tag, nullptr);
                 type.from_jsdoc = false;
+                if (initializer->value.tag == EXPR_OBJECT) initializer->value.jsdoc_enum_literal = true;
                 p->shared->jsdoc_enum = c_new(Statement, (Statement){
                     .tag = STATEMENT_DECL_TYPE,
                     .decl.type = {

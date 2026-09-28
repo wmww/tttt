@@ -2204,9 +2204,10 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     free(accessor_spans);
     literal_members_flush(me, &members, builder.index, &builder.index_count, ctx.is_const);
     free(members.items);
-    // (An object literal with a contextual type isn't open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
+    // (An object literal with a contextual type or an `@enum` tag isn't open-ended: tsc's isJSObjectLiteral in
+    // checkObjectLiteral)
     SourceFile const* file = expr->inner_span.source;
-    bool js = file && file->is_js && !ctx.contextual;
+    bool js = file && file->is_js && !ctx.contextual && !expr->jsdoc_enum_literal;
     Ty const* ret = spread_acc_finish(me, &spread, &builder, OBJECT_LITERAL_FRESH | (js ? OBJECT_JS : 0));
     free(builder.props);
     return ret;

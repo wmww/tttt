@@ -108,6 +108,8 @@ typedef struct Expr {
     // An array or object literal that is assigned to, a destructuring pattern (tsc's isAssignmentTarget). Set by
     // expr_lookup_names()
     bool assignment_pattern;
+    // An object literal that initializes a JavaScript `/** @enum {T} */` variable: not open-ended (set by the parser)
+    bool jsdoc_enum_literal;
     union {
         Value literal;
         IdentifierExpr identifier;
