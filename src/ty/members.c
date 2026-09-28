@@ -1172,12 +1172,23 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
 static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbol const* decl) {
     Ty const** entries;
     u32 entry_count = ty_merged_value_entries(me, decl, &entries);
+    // A property only one entry has is that entry's own (an inherited static stays the base's, whose private and
+    // protected ones are only related to themselves); it's copied once another entry adds to it
+    TyBuf shared = {0};
     for (u32 entry_index = 0; entry_index < entry_count; entry_index++) {
         Ty const* entry = entries[entry_index];
         if (!(entry->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, entry);
         for (u32 j = 0; j < members->prop_count; j++) {
             Prop* existing = builder_find_prop(builder, members->props[j]->name);
+            bool is_shared = false;
+            for (u32 k = 0; existing && k < shared.len && !is_shared; k++) is_shared = (Prop const*)(void const*)shared.data[k] == existing;
+            if (is_shared) {
+                Prop* copy = arena_new(&my arena, Prop);
+                prop_copy_into(me, copy, existing);
+                for (u32 k = 0; k < builder->props_count; k++) if (builder->props[k] == existing) builder->props[k] = copy;
+                existing = copy;
+            }
             if (existing && existing->parent && existing->parent != decl && members->props[j]->parent == decl) {
                 // The symbol's own export (a JavaScript class's expando `C.x = v`) hides a static the class inherits
                 // (tsc: the class's exports come before the base constructor's members). The props here are copies
@@ -1186,10 +1197,8 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
             } else if (existing) {
                 prop_add_decl_spans(me, existing, members->props[j]->decl->decl_spans, members->props[j]->decl->decl_span_count);
             } else {
-                // A copy: decl spans are added to it
-                Prop* prop = arena_new(&my arena, Prop);
-                prop_copy_into(me, prop, members->props[j]);
-                if (prop->type_state != LAZY_STATE_DONE) prop->type_state = LAZY_STATE_NOT_STARTED;
+                Prop* prop = (Prop*)members->props[j];
+                ty_buf_push(&shared, (Ty const*)(void const*)prop);
                 builder_push(builder, props, prop);
             }
         }
@@ -1210,6 +1219,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
         }
     }
     free(entries);
+    ty_buf_drop(&shared);
     // What a module's `export =` assigns, with the module's other exports (module_export_equals())
     if (decl->merged_export_equals_of) {
         for (u32 i = 0; i < decl->exports->count; i++) {

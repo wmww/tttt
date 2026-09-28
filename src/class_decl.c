@@ -897,7 +897,8 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
         // The static side only when the instance side fits
         Ty const* base_static = ty_apparent_type(checker, ty_expr_type(checker, &my extends));
         if (fits && !(base_static->flags & (TYF_ANY | TYF_NULLABLE))) {
-            ty_check_static_heritage(checker, ty_static_type_of(checker, my symbol), base_static, span, errs);
+            // (The value of the class, with what merges into it: a namespace's exports are static members too)
+            ty_check_static_heritage(checker, ty_type_of_symbol(checker, my symbol), base_static, span, errs);
         }
     }
     for_each (i, vec_spanned_type, &my implements) {
