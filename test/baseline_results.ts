@@ -12333,7 +12333,7 @@ const baselines = {
     'esNextWeakRefs_IterableWeakMap': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'escapedIdentifiers': {
         errors: false,

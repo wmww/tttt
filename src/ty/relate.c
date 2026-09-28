@@ -1782,6 +1782,10 @@ static Ternary index_signatures_related(
         for (u32 j = 0; j < source_members->index_count && !source_info; j++) {
             if (index_key_applies(&source_members->index[j], target_info)) source_info = &source_members->index[j];
         }
+        // (tsc's getApplicableIndexInfo(source, targetInfo.keyType): `string & A & B` takes `string & A`'s)
+        if (!source_info && target_info->key->kind == TY_INTERSECTION && source_members->index_count) {
+            source_info = ty_applicable_index_info(me, source, target_info->key);
+        }
         if (source_info) {
             Ternary related = is_related_to(me, st, source_info->value, target_info->value, report);
             if (!related) {
