@@ -683,6 +683,8 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
                 expr_typecheck(decorator, errs);
             }
         }
+        // (The type of a JSDoc `@this {T}` isn't checked: tsc's checkJSDocThisTag only looks at its host)
+        if (i->jsdoc_this) continue;
         initialized_binding_typecheck_parameter(&i->initializer, i->span, errs);
         if (i->initializer.binding.tag == BINDING_ARRAY && i->initializer.value.tag != EXPR_IMPLICIT_ANY &&
             !i->initializer.binding.has_explicit_type
