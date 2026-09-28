@@ -182,6 +182,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
 
     // A control flow container. tsc: bindContainer()
     my is_expression = kind == FUNCTION_IS_EXPRESSION;
+    my no_outer_type_params = !names->generics && !my is_expression && !my is_method && !span_valid(my member_name) &&
+        !(my full_span.source && my full_span.source->is_js);
     FlowBuilder* outer = names->flow;
     bool is_iife = outer->next_function_is_iife && my has_body;
     outer->next_function_is_iife = false;

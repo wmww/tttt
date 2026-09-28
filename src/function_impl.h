@@ -83,6 +83,10 @@ typedef struct FunctionImpl {
     bool private_ambient; // A private method of an ambient class: no implicit any errors (tsc's isPrivateWithinAmbient)
     bool ambient; // Declared in an ambient context (`declare`, a declaration file), where it can't have a body
     bool expression_body; // An arrow function whose body is an expression (a synthesized `return`)
+    // A declaration no type parameter list encloses (not an expression, whose context may have some, nor a method, nor
+    // JavaScript): its type mentions no type parameters but its own (tsc's getOuterTypeParameters is empty), so
+    // instantiating it is the identity. Set by the resolve walk
+    bool no_outer_type_params;
     Block body; // Initialized to empty block if has_body is false
     // Control flow (flow.h), set by the resolve walk
     FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in
