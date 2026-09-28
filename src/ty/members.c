@@ -2641,8 +2641,9 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         ctx.method = false; // Parameter types aren't methods (callbacks are compared with tsc's callback rule)
         u32 count = (u32)vec_function_arg_size(&function->args);
         SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
-        bool counting_required = true;
         u32 iife_arg_count = function->is_iife ? ty_iife_effective_arg_count(me, function) : 0;
+        // The arguments it takes are up to its last required parameter: one with a default before it is required too
+        // (tsc's minArgumentCount and isOptionalParameter)
         for_each (i, vec_function_arg, &function->args) {
             SigParam* param = &params[i_index];
             param->name = checker_atom(me, i->initializer.binding.content_span.sv);
@@ -2650,15 +2651,23 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             param->decl = i;
             param->optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY;
             param->type = ty_binding_type(me, &i->initializer.binding, ctx);
-            if (param->optional || param->rest) counting_required = false;
             // (tsc's isOptionalParameter: an immediately invoked function's parameter past the arguments)
             // (the minimum argument count goes by the arguments as written, getSignatureFromDeclaration; whether it's
             // optional by the effective ones, tuple spreads expanded)
-            if (function->is_iife && !i->initializer.binding.has_explicit_type) {
-                if (i_index >= function->iife_arg_count) counting_required = false;
-                if (i_index >= iife_arg_count && !i->rest) param->optional = true;
+            bool iife = function->is_iife && !i->initializer.binding.has_explicit_type;
+            if (iife && i_index >= iife_arg_count && !i->rest) param->optional = true;
+            bool past_written = iife && i_index >= function->iife_arg_count;
+            if (!param->optional && !param->rest && !past_written) sig->min_args = (u32)i_index + 1;
+        }
+        for (u32 j = 0; j < sig->min_args; j++) {
+            if (!params[j].optional || params[j].decl->explicit_optional) continue;
+            // (Its type still takes undefined, which the default replaces: tsc's addOptionality for a parameter with
+            // an initializer)
+            params[j].optional = false;
+            if (compiler_options()->strict_null_checks) {
+                Ty const* parts[2] = { params[j].type, ty_intrinsic(me, TY_UNDEFINED) };
+                params[j].type = ty_union(me, parts, 2, nullptr, (TyList){0});
             }
-            if (counting_required) sig->min_args++;
         }
         if (function_is_untyped_js(function)) sig->min_args = 0;
         // A JavaScript function that uses `arguments` takes a rest parameter `args` of any[] (or, replacing a last
