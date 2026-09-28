@@ -241,3 +241,16 @@ Parser items that were in triage.md; fold them into whichever stage they fit.
   ?` (inferTypesWithExtends1 X12/X13) the other half of the rule; tttt gets TS1005s.
 - Small: `parse_type` turns a leading `&`/`|` into an `any`/`never` operand that every consumer must skip (hacks.md).
   Overloads of `*()`-style nameless members. `override`/TS4112+.
+- (triage 2026-09-28) Rest element grammar: TS2566 (`{ ...rest: x }`: tsc parses a property name after `...`, tttt
+  doesn't), TS2501, TS2462, TS1186; `a?.\`x\`` (tsc TS1358, tttt TS1003); a comma expression as a computed key
+  (`[a, b]: 1`: tsc parses it and reports TS1171, tttt TS1136). All in plainJSGrammarErrors, whose parse errors hide
+  ~50 grammar errors.
+- `interface void {}` / `type void = I` (interfacesWithPredefinedTypesAsNames, reservedNamesInAliases): tsc gives
+  both TS2304 "Cannot find name 'interface'" and TS2427 at `void`: its statement-start lookahead refuses the
+  declaration, but something still declares it. tttt reports only TS2427. Not understood.
+- Tagged templates: `new tag<T> \`...\`<U>(...)` parses wrong (taggedTemplatesWithTypeArguments1/2: tttt TS7009/
+  TS2347/TS2693, tsc TS2345s), `super<T> \`\``, incomplete templates' types (taggedTemplatesWithIncomplete
+  TemplateExpressions4/5), taggedTemplateChain.
+- TransportStream (a binary file, `G@` then bytes): tsc's TS1128 is at 1:4 spanning the rest of the file, tttt's at
+  1:2 (TS1490 is right).
+- `function f3(function) {}` (reservedWords3) makes TS2813/TS2814 with an invalid span (a checker `log_error`).

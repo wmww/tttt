@@ -332,3 +332,9 @@ JS items that were in triage.md (statuses checked then); stage 4, the "Stage 3 l
 - `requireOfJsonFileInJsFile` (JSON through `require` in JS); JS-only duplicate buckets (TS2323/TS2528/TS2451 in
   `module.exports`/`@typedef` tests); TS8002/TS8006/TS8010 (stage 4); the displaydiff `tsc-typeof` bucket (expando
   functions print `typeof f`).
+- (triage 2026-09-28) JS `0other` bucket (78 tests at the stage 4 sample): node16/nodenext package
+  `exports`/`imports` and self-name resolution in allowJs tests (TS2209/TS2210/TS2303, 15 tests: nodeModulesAllowJs*,
+  nodeAllowJsPackageSelfName); importNonExportedMember8-11 (TS2595-TS2598 + TS2497: named/default imports of an
+  `export =` module); TS18042/TS18043 (types in JS import/export: jsDeclarationsInterfaces, elidedJSImport1,
+  jsxCheckJsxNoTypeArgumentsAllowed); TS7029 (jsFileCompilationBindReachabilityErrors), TS2393 duplicate function
+  implementation in JS; ~25 are types-only (`./displaydiff.py -f` on them). Some may be done by suite checker bugs 4.

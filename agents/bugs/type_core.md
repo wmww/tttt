@@ -3,6 +3,8 @@ Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `displa
 2026-09-27 (triage, suite 8952); "(re-probed)" = the symptom was confirmed then.
 
 ## Inference
+- const type parameters with several candidates: `function f4<const T>(x: [T, T]): T; f4([[1, "x"], [2, "y"]])`
+  gives TS2322s where tsc infers `readonly [1, "x"] | readonly [2, "y"]` (jsdocTemplateTag6, plain TS too).
 - **Context-free type of return-sensitive functions** (badInferenceLowerPriorityThanGoodInference, spurious TS2339 now):
   tsc's first round types an argument like `() => ({ a: 1, b: x => {} })` as a return-only signature whose return is
   checked with `SkipContextSensitive` (nested sensitive functions are the non-inferrable `anyFunctionType`, nothing
@@ -105,6 +107,9 @@ Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `displa
 - selfReferentialDefaultNoStackOverflow wants TS7022 on `export default { mixins: [DefaultSpinner] }` importing itself.
 
 ## Classes and declarations
+- Plan 32 leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
+  (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
+  generic method type parameters (`Outer<string>.Outer.m<U>.In`).
 - `this` in a class member's computed name: tsc types it as the class instance, tttt any (computedPropertyNames21/23
   types). computedPropertyNames49/50 pass errors now, fail symbols/types.
 - Duplicate class/interface members show as separate symbols (tsc: one merged symbol).

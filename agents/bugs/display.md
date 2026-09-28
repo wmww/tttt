@@ -4,6 +4,10 @@ mechanisms across the suite (`other` is mostly type-core bugs the types baseline
 rules. Plan 21 (closed) did the bulk. Re-probed 2026-09-27 (triage) unless noted.
 
 ## Aliases
+- `shows_alias()` (ty_display.c) hides type aliases declared in a block/function body when printing for a place.
+  tsc's isDeclarationVisible also hides non-exported aliases inside namespaces in some cases; unverified.
+- Non-strict `[]` argument prints as `any[]` in TS2345 where tsc says `undefined[]`
+  (taggedTemplateStringsWithOverloadResolution1; plain calls too?).
 tsc's rule, as far as it is understood (getTypeAliasInstantiation, getConditionalType, instantiateMappedType,
 getIndexedAccessType): a type gets a *new* alias name only when it is the body of an alias declaration (`type X =
 Foo<...>`) and that body instantiation created it: an object type (not a homomorphic mapped type over a non-union), a

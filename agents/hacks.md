@@ -764,3 +764,5 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `failstats.py: line_ratio` is multiset line overlap, not a diff; `syntax_gaps` re-parses rendered errors (approximate
   for multi-file tests). `bench/make_corpus.py` replicates passing tests in namespaces (flatters tttt).
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip them when bisecting.
+- `string_to_double()` (string_helpers.c) is only used by value.c and accumulates decimals digit by digit (not
+  correctly rounded for long mantissas); the parser uses strtod on the separator-free digits.

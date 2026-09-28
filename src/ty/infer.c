@@ -454,6 +454,8 @@ static Ty const* reverse_mapped_type(Checker* me, Ty const* source, MappedInfo c
 
 // Of an array or tuple: an array or tuple of the reverse mapped element types
 static Ty const* reverse_mapped_array_like(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
+    // (A tuple target itself, the declared type, has no arguments to map)
+    if (source->kind != TY_REFERENCE) return source;
     TyList args = ty_reference_args(me, source);
     if (ty_is_array(me, source)) {
         Ty const* element = reverse_mapped_prop_type(me, args.data[0], mapped, operand);

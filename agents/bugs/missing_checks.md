@@ -115,6 +115,10 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
 - **Errors inside lib files** (objectTypeHidingMembersOfExtendedObject, duplicateNumericIndexers: global interface
   augmentations checked through the lib's first declaration) are dropped by `error_ctx_error_s` with a log_error.
 
+- TS2507 "Type 'X' is not a constructor function type" for an `extends` expression is missing (only `new` reports
+  it), and so is its related info for a type parameter (TS2735 "Did you mean for 'T' to be constrained to type
+  'new (...args: any[]) => ...'?"). Plan 32 leftover.
+
 ## Wrong codes that are type-core bugs
 Spurious TS2403 ("Subsequent variable declarations must have the same type") means tttt computed two spellings of one
 type differently; each is one type-core bug, good one-per-session material (all re-checked failing 2026-09-27):

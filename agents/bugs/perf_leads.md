@@ -50,6 +50,10 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
   stacks: matters for parallelism.
 - The suite: the slowest tests left are the React-typings JSX ones (~1 s each: react16.d.ts per test).
 
+- **valibot +2.5% instructions** since the corpus session (todo entry 8): generic homomorphic mapped types get index
+  signatures from their constraint, eagerly instantiated. tsc resolves them lazily; a lazy IndexInfo value (or the
+  mapped type's members computed only when index infos are asked for) would take that back.
+
 ## Pathologies
 - **webpack loaded twice: 89 s** (tsc: 11 s on the same program). Run from a worktree whose `thirdparty/corpora` is a
   symlink (`cd /tmp/wt; tttt -p thirdparty/corpora/webpack`), the root files keep the symlinked path and

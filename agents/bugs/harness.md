@@ -27,3 +27,9 @@
   `key.expr.owned`/`ref` into one pointer each; drop `LAZY_TYPE_FUNCTION`.
 - The git stash list holds a foreign entry ("WIP on (no branch): 2d0b590", relate.c); worktree agents share the
   stash, don't use it.
+- `baseline_test_traversal.c` `port_item_add_alias`: the `import type`/`export type` declared-type rule checks the
+  resolved symbol for class/interface/enum/alias only; tsc's getDeclaredTypeOfSymbol also takes type parameters and
+  enum members. Unverified whether any test reaches that.
+- modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib (`@lib: es2015.core` alone) makes 27 checker
+  `log_error`s "Error added with invalid span": diagnostics inside lib files (`Cannot find name '_'`), which
+  error_ctx_error_s() drops. Harmless, but the log_error count should be 0; find what in the lib refers to `_`.
