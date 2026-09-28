@@ -1124,38 +1124,54 @@ static bool is_subtype(Checker* me, Ty const* source, Ty const* target) {
     return ty_is_related(me, source, target, TY_RELATION_SUBTYPE);
 }
 
-// One member of the candidate of getNarrowedType(): the members of `type` that are it, or that it is
-static Ty const* narrowed_by_candidate_member(Checker* me, Ty const* type, Ty const* c, bool check_derived) {
-    TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+typedef struct {
+    Ty const* type;  // The type being narrowed
+    Ty const* c;  // The member of the candidate being mapped
+    bool check_derived;
+} NarrowArg;
+
+// A member t of the narrowed type against the candidate member c: the more specific of the two if they're directly
+// related. When they're related both ways, a type predicate prefers c (the asserted type) and `instanceof` prefers t
+// (generics aren't reflected in prototype object types)
+static Ty const* narrow_directly_related(Checker* me, Ty const* t, void const* arg) {
+    NarrowArg const* a = arg;
+    Ty const* c = a->c;
+    if (a->check_derived) {
+        return is_type_derived_from(me, t, c) ? t : is_type_derived_from(me, c, t) ? c : ty_intrinsic(me, TY_NEVER);
+    }
+    return is_strict_subtype(me, t, c) ? t
+        : is_strict_subtype(me, c, t)  ? c
+        : is_subtype(me, t, c)         ? t
+        : is_subtype(me, c, t)         ? c
+                                       : ty_intrinsic(me, TY_NEVER);
+}
+
+// A type parameter whose constraint the candidate member fits is both
+static Ty const* narrow_generic_related(Checker* me, Ty const* t, void const* arg) {
+    NarrowArg const* a = arg;
+    if (!(t->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) return ty_intrinsic(me, TY_NEVER);
+    Ty const* constraint = ty_base_constraint(me, t);
+    if (!constraint || constraint == t) constraint = ty_intrinsic(me, TY_UNKNOWN_);
+    if (!(a->check_derived ? is_type_derived_from(me, a->c, constraint) : is_subtype(me, a->c, constraint))) {
+        return ty_intrinsic(me, TY_NEVER);
+    }
+    Ty const* both[2] = { t, a->c };
+    return ty_intersection(me, both, 2, nullptr, (TyList){0});
+}
+
+// One member of the candidate of getNarrowedType(): the members of `type` that are it, or that it is. Built with
+// map_type() like tsc's mapType(), so a union whose members all map to themselves stays the same (aliased) type
+static Ty const* narrowed_by_candidate_member(Checker* me, Ty const* c, void const* arg) {
+    NarrowArg a = *(NarrowArg const*)arg;
+    a.c = c;
+    Ty const* type = a.type;
     // Only the member with the candidate's key, if the union has a key property (tsc's getNarrowedTypeWorker)
-    Atom const* key = ty_union_key_property(me, type);
+    Atom const* key = type->kind == TY_UNION ? ty_union_key_property(me, type) : nullptr;
     Ty const* discriminant = key ? ty_prop_type_of(me, c, key) : nullptr;
     Ty const* matching = discriminant ? ty_union_member_for_key(me, type, discriminant) : nullptr;
-    TyList direct = matching ? (TyList){ .data = &matching, .len = 1 } : members;
-    TyBuf parts = {0};
-    for (u32 i = 0; i < direct.len; i++) {
-        Ty const* t = direct.data[i];
-        if (check_derived ? is_type_derived_from(me, t, c) : is_strict_subtype(me, t, c)) ty_buf_push(&parts, t);
-        else if (check_derived ? is_type_derived_from(me, c, t) : is_strict_subtype(me, c, t)) ty_buf_push(&parts, c);
-        else if (!check_derived && is_subtype(me, t, c)) ty_buf_push(&parts, t);
-        else if (!check_derived && is_subtype(me, c, t)) ty_buf_push(&parts, c);
-    }
-    if (!parts.len) {
-        // A type parameter whose constraint the candidate fits is both
-        for (u32 i = 0; i < members.len; i++) {
-            Ty const* t = members.data[i];
-            if (!(t->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) continue;
-            Ty const* constraint = ty_base_constraint(me, t);
-            if (!constraint || constraint == t) constraint = ty_intrinsic(me, TY_UNKNOWN_);
-            if (check_derived ? is_type_derived_from(me, c, constraint) : is_subtype(me, c, constraint)) {
-                Ty const* both[2] = { t, c };
-                ty_buf_push(&parts, ty_intersection(me, both, 2, nullptr, (TyList){0}));
-            }
-        }
-    }
-    Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
-    ty_buf_drop(&parts);
-    return ret;
+    Ty const* direct = map_type(me, matching ? matching : type, narrow_directly_related, &a);
+    if (!(direct->flags & TYF_NEVER)) return direct;
+    return map_type(me, type, narrow_generic_related, &a);
 }
 
 static bool is_not_subset_of(Checker* me, Ty const* member, void const* arg) {
@@ -1194,13 +1210,8 @@ static Ty const* narrowed_type_uncached(Checker* me, Ty const* type, Ty const* c
         return was_unknown && rest == type ? ty_intrinsic(me, TY_UNKNOWN_) : rest;
     }
     if ((type->flags & (TYF_ANY | TYF_UNKNOWN)) || type == candidate) return candidate;
-    TyList candidates = candidate->kind == TY_UNION ? candidate->composite.types : (TyList){ .data = &candidate, .len = 1 };
-    TyBuf parts = {0};
-    for (u32 i = 0; i < candidates.len; i++) {
-        ty_buf_push(&parts, narrowed_by_candidate_member(me, type, candidates.data[i], check_derived));
-    }
-    Ty const* narrowed = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
-    ty_buf_drop(&parts);
+    NarrowArg arg = { .type = type, .check_derived = check_derived };
+    Ty const* narrowed = map_type(me, candidate, narrowed_by_candidate_member, &arg);
     if (!(narrowed->flags & TYF_NEVER)) return narrowed;
     if (is_subtype(me, candidate, type)) return candidate;
     if (ty_is_related(me, type, candidate, TY_RELATION_ASSIGNABLE)) return type;
