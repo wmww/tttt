@@ -2202,7 +2202,8 @@ static bool primitive_or_never(Ty const* ty) {
 static Signature* const* call_signatures_of(Checker* me, Ty const* ty, u32* count) {
     if (ty->kind == TY_UNION) return ty_union_signatures(me, ty->composite.types, false, count);
     Ty const* apparent = ty_apparent_type(me, ty);
-    Members const* members = apparent->flags & TYF_OBJECT ? ty_members(me, apparent) : nullptr;
+    // (An intersection's are those of its members, see ty_members())
+    Members const* members = (apparent->flags & TYF_OBJECT) || apparent->kind == TY_INTERSECTION ? ty_members(me, apparent) : nullptr;
     *count = members ? members->call_count : 0;
     return members ? members->call : nullptr;
 }

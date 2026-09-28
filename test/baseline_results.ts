@@ -37901,9 +37901,9 @@ const baselines = {
         types: true,
     },
     'controlFlowIterationErrorsAsync': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowNoIntermediateErrors': {
         errors: true,
