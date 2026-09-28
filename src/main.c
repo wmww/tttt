@@ -236,6 +236,10 @@ static_failable check_files(Options const* opts, returns int) {
         type_errors = report_errors(&errs);
         if (type_errors) ret = 1;
         phase_done(opts, "typecheck", &last);
+        if (opts->time) {
+            Checker const* checker = program_get_checker(program);
+            eprintln("time: checker arena ", (i64)(checker->arena.total >> 20), " MB, ", checker->next_type_id, " types");
+        }
     }
 
     if (parse_errors || name_errors || type_errors) {
