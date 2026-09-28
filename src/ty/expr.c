@@ -2699,10 +2699,10 @@ static bool is_constructor_declared_target(Checker* me, PropertyExpr const* acce
     (void)me;
     if (access->assignment_target != FLOW_TARGET_DEFINITE || access->form != PROPERTY_EXPR_DOT) return false;
     Expr const* object = &access->expr;
-    if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) return false;
+    IdentifierExpr const* this = expr_this_or_alias(object);
+    if (!this) return false;
     SourceFile const* file = object->inner_span.source;
     if (!file || !file->is_js) return false;
-    IdentifierExpr const* this = &object->identifier;
     Symbol const* class_symbol = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE) {
         if (!access->in_constructor_of) return false;

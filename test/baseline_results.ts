@@ -60241,14 +60241,14 @@ const baselines = {
         types: true,
     },
     'inferringClassMembersFromAssignments6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'inferringClassMembersFromAssignments7': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'inferringClassMembersFromAssignments8': {
         errors: true,
@@ -60727,12 +60727,12 @@ const baselines = {
     },
     'typeFromPropertyAssignment10': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment10_1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment11': {
@@ -60896,9 +60896,9 @@ const baselines = {
         types: true,
     },
     'typeFromPropertyAssignment40': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment5': {
         errors: true,

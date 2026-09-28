@@ -3250,16 +3250,15 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
     // (Private names must be declared, even in JavaScript)
     if (!span_valid(name) || csview_starts_with(name.sv, "#")) return;
     Expr const* object = &left->property->expr;
-    if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS || expr_is_perenthisized(object)) {
-        return;
-    }
+    // `this.x`, `var self = this; self.x` (tsc's isThisInitializedDeclaration)
+    IdentifierExpr const* this = expr_this_or_alias(object);
+    if (!this) return;
     // The function `this` belongs to (arrow functions have their container's)
     FunctionImpl const* function = nullptr;
     for (Scope const* scope = me; scope && !function; scope = scope->parent) {
         if (scope->kind == SCOPE_FUNCTION && scope->function && !span_valid(scope->function->arrow_span)) function = scope->function;
         if (scope->kind == SCOPE_STATIC_BLOCK || scope->kind == SCOPE_MODULE || scope->kind == SCOPE_SCRIPT) break;
     }
-    IdentifierExpr const* this = &object->identifier;
     switch (this->this_kind) {
         case THIS_CLASS_INSTANCE: {
             Symbol* class_symbol = (Symbol*)this->target;

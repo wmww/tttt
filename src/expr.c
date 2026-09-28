@@ -3159,6 +3159,17 @@ Expr* expr_prototype_object(Expr* me) {
     return expr_is_entity_name(object) ? object : nullptr;
 }
 
+IdentifierExpr const* expr_this_or_alias(Expr const* me) {
+    if (my tag != EXPR_IDENTIFIER || expr_is_perenthisized(me)) return nullptr;
+    if (my identifier.keyword == KEYWORD_IDENTIFIER_THIS) return &my identifier;
+    if (my identifier.keyword || !my identifier.target) return nullptr;
+    Binding const* binding = symbol_find_node(my identifier.target, SYMBOL_DECL_VARIABLE);
+    if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
+    Expr const* init = &((InitializedBinding const*)binding)->value;
+    bool is_this = init->tag == EXPR_IDENTIFIER && init->identifier.keyword == KEYWORD_IDENTIFIER_THIS && !expr_is_perenthisized(init);
+    return is_this ? &init->identifier : nullptr;
+}
+
 Symbol const* expr_entity_name_symbol(Expr const* me) {
     if (expr_is_perenthisized(me)) return nullptr;
     if (my tag == EXPR_IDENTIFIER) return my identifier.keyword ? nullptr : my identifier.target;
