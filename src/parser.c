@@ -5102,11 +5102,15 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     }
 
     item.span = span_from(a);
-    if (p.shared->source->is_js && item.tag != OBJECT_ITEM_SHORTHAND) {
+    // (A shorthand property ends with its name, not with the whitespace looked past for a `:`)
+    if (item.tag == OBJECT_ITEM_SHORTHAND && !item.shorthand_default) {
+        item.span = span_make(item.span.source, span_start_ptr(item.span), span_end_ptr(item.name_span));
+    }
+    if (p.shared->source->is_js) {
         // The tags of a method, or of a property whose value is a function, are the function's
         VecJsDocTag tags = {0};
-        FunctionImpl* function = jsdoc_function_of(&item.value);
-        if ((function || item.tag == OBJECT_ITEM_PROPERTY) && jsdoc_before(&p, a.start, &tags)) {
+        FunctionImpl* function = item.tag == OBJECT_ITEM_SHORTHAND ? nullptr : jsdoc_function_of(&item.value);
+        if ((function || item.tag == OBJECT_ITEM_PROPERTY || item.tag == OBJECT_ITEM_SHORTHAND) && jsdoc_before(&p, a.start, &tags)) {
             // A `@type` that isn't a written signature (`{F["tap"]}`) is the declared type, which a function value is
             // contextually typed by
             JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
