@@ -54716,19 +54716,19 @@ const baselines = {
         types: true,
     },
     'nodeModulesCjsFormatFileAlwaysHasDefault(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesCjsFormatFileAlwaysHasDefault(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesCjsFormatFileAlwaysHasDefault(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesConditionalPackageExports(module=node16)': {
         errors: true,

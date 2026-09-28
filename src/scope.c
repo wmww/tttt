@@ -2106,6 +2106,9 @@ static Symbol* resolve_default_target(Symbol* me, PortItem* item, Symbol* module
     }
     if (!found) {
         SourceFile const* file = item->module_ref->file;
+        // In Node.js a CommonJS module always has a synthetic default when an ES module imports it (tsc's
+        // canHaveSyntheticDefault, before allowSyntheticDefaultImports)
+        if (file && esm_imports_cjs(item, file)) return module;
         if (compiler_options()->allow_synthetic_default_imports && file && file->is_commonjs &&
             !symbol_get_export(module, c_sv("__esModule"))
         ) {
