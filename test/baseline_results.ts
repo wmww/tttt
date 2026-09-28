@@ -52751,9 +52751,9 @@ const baselines = {
         types: true,
     },
     'typedefTagNested': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typedefTagTypeResolution': {
         errors: true,

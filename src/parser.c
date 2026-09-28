@@ -3227,6 +3227,8 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
 
 // The tags of the comment `range` (tsc's parseJSDocCommentWorker: a tag starts at an `@` at the start of a line, after
 // whitespace and at most one `*`, or after whitespace and before something else anywhere; nothing in backticks)
+static bool jsdoc_is_object_type(JsDocTag const* tag, bool* array);
+
 static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* tags) {
     const char* c = range.start + 3;
     const char* end = range.end - 2;
@@ -3234,6 +3236,7 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
     bool saw_asterisk = false;
     bool in_backticks = false;
     JsDocTagKind owner = JSDOC_TAG_OTHER; // The @typedef or @callback the tags are part of, if any
+    bool typedef_children = false; // The @typedef has no type or `{Object}`: it takes an `@type` child
     while (c < end) {
         char ch = *c;
         if (ch == '\n') {
@@ -3254,6 +3257,11 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
             JsDocTag* tag = vec_jsdoc_tag_back_mut(tags);
             if (tag->kind == JSDOC_TAG_TYPEDEF || tag->kind == JSDOC_TAG_CALLBACK || tag->kind == JSDOC_TAG_OVERLOAD) {
                 owner = tag->kind;
+                bool array;
+                typedef_children = tag->kind == JSDOC_TAG_TYPEDEF && jsdoc_is_object_type(tag, &array);
+            } else if (owner == JSDOC_TAG_TYPEDEF && tag->kind == JSDOC_TAG_TYPE && typedef_children) {
+                // (tsc's parseTypedefTag: an `@type` child of an untyped or `{Object}` typedef is its type)
+                tag->nested = true;
             } else if (owner == JSDOC_TAG_CALLBACK && (tag->kind == JSDOC_TAG_PARAM || tag->kind == JSDOC_TAG_RETURNS ||
                 tag->kind == JSDOC_TAG_TEMPLATE)
             ) {
@@ -3841,8 +3849,16 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
                 type = jsdoc_callback_type(i, i + 1, children);
             } else {
                 bool has_properties = false;
-                for (isize j = 0; j < children; j++) has_properties |= i[1 + j].kind == JSDOC_TAG_PROPERTY;
-                if (has_properties && jsdoc_is_object_type(i, &array)) {
+                JsDocTag* type_child = nullptr;
+                for (isize j = 0; j < children; j++) {
+                    has_properties |= i[1 + j].kind == JSDOC_TAG_PROPERTY;
+                    if (!type_child && i[1 + j].kind == JSDOC_TAG_TYPE && i[1 + j].has_type) type_child = &i[1 + j];
+                }
+                bool child_array;
+                if (type_child && !jsdoc_is_object_type(type_child, &child_array)) {
+                    type = jsdoc_take_type(type_child, nullptr);
+                    type.from_jsdoc = false;
+                } else if (has_properties && jsdoc_is_object_type(i, &array)) {
                     type = jsdoc_type_literal(i + 1, children, (csview){0}, jsdoc_tag_decl_span(i));
                     if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
                 } else if (i->has_type) {
