@@ -442,6 +442,20 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         for (u32 i = 0; i < decl->decl_count && !first; i++) {
             if (decl->decls[i].kind != SYMBOL_DECL_EXPANDO) first = &decl->decls[i];
         }
+        // `exports.K = NS.K`: the assignment of an entity name is the symbol it names (tsc's exportAssignmentIsAlias)
+        for (u32 depth = 0; depth < 8 && first && first->kind == SYMBOL_DECL_ASSIGNMENT && first->full.source &&
+            first->full.source->is_js && !(decl->flags & SYMBOL_TYPE_ALIAS); depth++
+        ) {
+            Expr const* value = first->node;
+            if (value->tag != EXPR_PROPERTY || !expr_is_entity_name(value)) break;
+            Symbol const* named = expr_entity_name_symbol(value);
+            if (!named || named == decl) break;
+            decl = named;
+            first = nullptr;
+            for (u32 i = 0; i < decl->decl_count && !first; i++) {
+                if (decl->decls[i].kind != SYMBOL_DECL_EXPANDO) first = &decl->decls[i];
+            }
+        }
         if (first && first->full.source && first->full.source->is_js && !(decl->flags & SYMBOL_TYPE_ALIAS)) {
             if (first->kind == SYMBOL_DECL_ASSIGNMENT) {
                 init = expando_initializer((Expr*)first->node, span_null, true);

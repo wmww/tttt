@@ -60091,7 +60091,7 @@ const baselines = {
         types: false,
     },
     'commonJSImportNestedClassTypeReference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
