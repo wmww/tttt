@@ -3283,16 +3283,39 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
     if (!comments->size) return false;
     const char* file_start = source_file_start(parent->shared->source);
     const char* c = pos;
-    while (c > file_start && is_js_ascii_space(c[-1])) c--;
-    if (c - file_start < 4 || c[-1] != '/' || c[-2] != '*') return false;
-    // Binary search for the comment ending at c
-    isize lo = 0, hi = comments->size;
-    while (lo < hi) {
-        isize mid = (lo + hi) / 2;
-        if (comments->data[mid].end < c) lo = mid + 1;
-        else hi = mid;
+    // The last JSDoc comment among the host's leading comments (tsc's getJSDocCommentRanges): other comments between
+    // it and the host (`// eslint-disable-next-line`) are skipped
+    isize lo;
+    while (true) {
+        while (c > file_start && is_js_ascii_space(c[-1])) c--;
+        if (c - file_start >= 4 && c[-1] == '/' && c[-2] == '*') {
+            // Binary search for the comment ending at c
+            lo = 0;
+            isize hi = comments->size;
+            while (lo < hi) {
+                isize mid = (lo + hi) / 2;
+                if (comments->data[mid].end < c) lo = mid + 1;
+                else hi = mid;
+            }
+            if (lo < comments->size && comments->data[lo].end == c) break;
+            // A plain block comment: before its `/*`
+            const char* open = c - 2;
+            while (open > file_start + 1 && !(open[-2] == '/' && open[-1] == '*')) open--;
+            if (open <= file_start + 1) return false;
+            c = open - 2;
+            continue;
+        }
+        // A line that is a line comment
+        const char* line = c;
+        while (line > file_start && line[-1] != '\n' && line[-1] != '\r') line--;
+        const char* text = line;
+        while (text < c && is_js_ascii_space(*text)) text++;
+        if (c - text >= 2 && text[0] == '/' && text[1] == '/' && line < c) {
+            c = line;
+            continue;
+        }
+        return false;
     }
-    if (lo >= comments->size || comments->data[lo].end != c) return false;
     // The comments before it (only whitespace between) for their `@overload` tags (tsc's getJSDocOverloadTags)
     isize first = lo;
     while (first > 0) {

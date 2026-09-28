@@ -19146,8 +19146,8 @@ const baselines = {
         types: true,
     },
     'jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError': {
-        errors: true,
-        symbols: false,
+        errors: false,
+        symbols: true,
         types: false,
     },
     'jsElementAccessNoContextualTypeCrash': {
