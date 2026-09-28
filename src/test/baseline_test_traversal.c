@@ -638,6 +638,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 if (i->initializer.binding.has_explicit_type) {
                     type_compile_test_info(&i->initializer.binding.explicit_type, ctx);
                 }
+                // (An initializer is an error here, TS2371, but still an expression)
+                if (i->initializer.value.tag != EXPR_IMPLICIT_ANY) expr_compile_test_info(&i->initializer.value, ctx);
             }
             if (my callable->function->predicate) {
                 type_predicate_compile_test_info(my callable->function->predicate, ctx);

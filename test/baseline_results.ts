@@ -9263,7 +9263,7 @@ const baselines = {
     'defaultArgsInOverloads': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultBestCommonTypesHaveDecls': {
         errors: true,
@@ -9363,7 +9363,7 @@ const baselines = {
     'defaultValueInFunctionTypes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deferredConditionalTypes': {
         errors: true,
@@ -20733,7 +20733,7 @@ const baselines = {
     'literals-negative': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'literals1': {
         errors: true,
@@ -26583,7 +26583,7 @@ const baselines = {
     'reactImportDropped': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactImportUnusedInNewJSXEmit(jsx=react-jsx)': {
         errors: true,
@@ -34828,7 +34828,7 @@ const baselines = {
     'classExtendingNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAppearsToHaveMembersOfObject': {
         errors: true,
@@ -41697,8 +41697,8 @@ const baselines = {
     },
     'destructuringParameterDeclaration2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'destructuringParameterDeclaration3ES5': {
         errors: true,
@@ -59413,7 +59413,7 @@ const baselines = {
     'parserRealSource4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource5': {
         errors: true,
@@ -64553,7 +64553,7 @@ const baselines = {
     'callSignatureWithOptionalParameterAndInitializer': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callSignatureWithoutAnnotationsOrBody': {
         errors: true,
@@ -64603,7 +64603,7 @@ const baselines = {
     'callSignaturesWithParameterInitializers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callSignaturesWithParameterInitializers2': {
         errors: false,
