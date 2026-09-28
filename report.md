@@ -52,3 +52,20 @@ Concerns are mild: the planning notes are growing (two files are mostly history)
 A third clean window: ten sessions, all committed, nothing lost. The suite went 8952 -> 9409 of 13540 (69%), JS tests 299 -> 395. Two new real-world corpora were pinned: webpack (checked as JavaScript with JSDoc types, 6146 diagnostics at first, now 135) and zod (inference-heavy, 87 -> 15 the same day). tsc's compiler, valibot, react and the NestJS app stay at 0, type-fest is at 4. Parser fidelity and error message text each got a tool and a plan, and both buckets shrank by about a quarter.
 
 Two concerns set the next window. First, the types component now fails more tests than any other (2797), and most of those differences are not about printing: tttt computes a different type and no error shows it. Nothing owned that bucket, so plan 35 builds a tool to name its mechanisms. Second, performance margins are narrowing. On webpack, tsgo now beats tttt even on one thread (0.60 s vs 0.69 s), and the NestJS app is within 35% of multi-threaded tsgo. So this window has a perf session aimed at webpack and zod, and a planning session (plan 36) to prototype parallel parsing and audit what blocks multi-threading. Until now parallelism had been postponed as "later".
+
+## 2026-09-28 — insights (after the window of plans 32 B-36)
+The best window so far: ten sessions, all committed, nothing lost, and the suite went 9409 -> 10215 of 13540 (75%),
+with JS tests 395 -> 519. Six of the seven real-world corpora report nothing tsc doesn't (type-fest and zod reached 0
+this window). webpack, checked as JavaScript, is at 107 (from 135). tttt now beats even single-threaded tsgo on every
+corpus. Sessions that fan out small independent fixes to parallel sub-agents delivered about twice what one agent
+does.
+
+The concern is a pattern in the remaining long tail. More and more fixes stop at "this needs tsc's mechanism X, which
+tttt approximates", and then add another workaround around X: the missing type behind exactOptionalPropertyTypes,
+null/undefined widening, evolving arrays, decorators checked as calls, union origins. So the next window starts
+porting these properly (plan 37), beginning with a planning session that measures and ranks them. This is how the
+earlier type-core ports went, and they paid off.
+
+It also starts building parallelism. The design question was settled in favour of a fixed number of logical
+checkers, as tsgo does, so output doesn't depend on the thread count. Parallel checking comes first, since it is the
+big win (about 3x on webpack's check phase at 4 threads); parallel parsing follows later.

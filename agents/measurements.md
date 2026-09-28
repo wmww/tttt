@@ -10,14 +10,14 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Suite (2026-09-28, triage session, 7aef64e)
-**10189 / 13540** full pass (errors 11682, symbols 12528, types 11350); **10215** at the session's end (the
-numbers below are from 7aef64e). A suite run takes ~23 s. `./failstats.py`:
-errors component fails in 1858 tests: both missing and spurious 513, tsc reports errors and tttt nothing 421, **same
-codes+positions, other text 298**, only missing 256, tttt errors where tsc has none 219, only spurious 130, column
-differs 21. 254 tests have a spurious TS1xxx (29 of them expect no errors). Checker log_error output: 29 lines in 2
-tests (invalid spans, `bugs/harness.md`). Top missing codes: TS1005 157 in 84 tests, TS2322 100/54, TS2339 98/28,
-TS2304 90/56; top spurious: TS2304 484 in 164 tests, TS2339 347/99, TS1005 261/89, TS2322 246/107.
+## Suite (2026-09-28, insights, 9352ec1)
+**10215 / 13540** full pass (errors 11709, symbols 12530, types 11353). A suite run takes ~23 s. `./failstats.py`:
+errors component fails in 1831 tests: both missing and spurious 510, tsc reports errors and tttt nothing 400, **same
+codes+positions, other text 297**, only missing 252, tttt errors where tsc has none 219, only spurious 132, column
+differs 21. 253 tests have a spurious TS1xxx (29 of them expect no errors). Checker log_error output: 29 lines in 2
+tests (invalid spans, `bugs/harness.md`). Top missing codes: TS1005 157 in 84 tests, TS2322 99/53, TS2339 98/28,
+TS2304 90/56; top spurious: TS2304 484 in 164 tests, TS2339 347/99, TS1005 260/88, TS2322 246/107. Single-code
+tests: spurious TS2339 40, spurious TS2322 39, spurious TS2304 35. The tool lines below are from 7aef64e (10189).
 - `./displaydiff.py`, tests fixed by one kind (TS, JS): other 390 + 53, underlines/order only 110 + 22, we-any 65 +
   37, union-order 48 + 3, tsc-any 34 + 5, names-only 28 + 5, tsc-typeof 24 + 9, line-missing 23 + 4.
 - `./displaydiff.py --fine`, TS tests by the kind of their first differing line: underlines/order 110, line-missing

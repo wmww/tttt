@@ -70,7 +70,11 @@ tsc's checker.ts, zod's deep-partial.test.ts, type-fest's one heavy test file. P
 parallel load and K=4: tsc ~0.40 s (0.66 now, tsgo 1.27), webpack ~0.27 (0.56, tsgo 0.67), zod ~0.85 (1.31).
 After that the sequential **resolve names** phase (54-89 ms) is the next largest serial part.
 
-## The decision stage 3 needs (for the insights session, possibly the human)
+## The decision stage 3 needs: **made** (insights 2026-09-28): option 1
+A fixed logical checker count, `--checkers K` defaulting to 4, independent of `--threads`; the test harness runs 1.
+Stages 2 and 3 are scheduled before stage 1 (the check phase is the win). Stage 2 therefore also does stage 1's
+step 1 (the cleat `thread_local` patch, linking `dependency('threads')`) and stage 3 starts its own worker threads
+if the load pool doesn't exist yet (stage 1 can then share them). The original analysis:
 With K checkers, printed union order depends on which checker saw what first. Options:
 1. **Fixed logical checker count** (tsgo's approach: `--checkers`, default 4, independent of the thread count),
    files assigned by a rule that depends only on the file list. Output is deterministic for a given K and identical

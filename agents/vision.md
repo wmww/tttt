@@ -5,54 +5,52 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-09-27, third insights of the day, after the window of plans 32-34)
-- **Suite 9409 / 13540** fully pass (errors 11168, symbols 12349, types 10743); JS tests 395 / 1049. +457 in the ten
-  sessions since the last insights (8952), all ten committed, nothing lost: webpack pinned (plan 33), plan 30
-  finished, plan 34 stages 1-2 (error text: 432 -> 311), plan 32 stage A, plan 26 stage 3 (JS 310 -> 375), suite
-  checker bugs, parser perf, plan 27 stage 2 (parser-diff tests 544 -> 402), zod pinned, triage.
-- **Where the 4131 failures are**: the **types component fails most (2797 tests)**, errors 2372, symbols 1191. Of the
-  errors: 656 tests where tttt reports nothing, 584 missing+spurious, 389 only missing, 311 other text, 402 with a
-  parser diff. Of the tests that pass errors and fail types, most are *not* display: `displaydiff.py`'s unnamed
-  `other` (429 tests fixed alone) and `we-any` (166) are wrong types no diagnostic shows (plan 35).
-- **Corpora** (all clean under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-  **4** (mixins, plan 32 C), webpack **135** (checkJs; JSDoc leftovers, plan 26), zod **15** (plan 19: the missing
-  type, ProtoOf inference, keyof deferral). *Update 09-28 (corpus session)*: type-fest **0**, zod **0**, webpack
-  **115**; every corpus but webpack is clean.
-- **Perf** (`measurements.md`; tsgo 7.0.2 on 4 cores): tsc corpus 0.80 s vs 1.24 s, type-fest 0.41 vs 1.94, valibot
-  0.74 vs 1.61, react 0.29 vs 1.04, nest 0.26 vs 0.40, zod 1.43 vs 2.95, webpack 0.69 vs 0.61. *Update 09-28 (perf
-  session)*: webpack 0.56 vs 0.60 single-threaded, every corpus ahead again (huge pages, inference depth 2); memory is
-  now the weak side (zod 1.3 GB, 3.5x tsc's type count on its worst file; `Prop` is 200 bytes).
-- **Built and holding**: hand-written backtracking parser (JSX included), tsc-shaped binder with persistent symbols
-  and merging, interned `Ty` core with id-keyed relations and tsc's identity relation, mapper instantiation, two-pass
-  inference with priorities, contextual typing, conditional/mapped/indexed/template/substitution types, deferred
-  references, flow graph + narrowing, module resolution + tsconfig, iteration protocol, generators, `this` types,
-  elaboration, JSX, tsc's type printer and symbol chains, JSDoc (typedefs, templates, imports) + CommonJS + expandos.
-  ~66k lines of C. `documentation.md` describes it, `hacks.md` lists what is approximated.
-- **Absent**: union origins, lazy reverse mapped types, decorator checking, `in`/`out` variance
-  annotations, regex literal checks (TS15xx), JSDoc stage 4 (the other tags, TS8xxx), declaration emit (out of scope),
-  project references, parallelism.
+## State (2026-09-28, insights after the window of plans 32 B-36)
+- **Suite 10215 / 13540** fully pass (errors 11709, symbols 12530, types 11353); JS tests 519 / 1049. **+806** in the
+  ten sessions since the last insights (9409), the best window so far, all committed, nothing lost: plan 32 finished
+  (outer type parameters, mixins), plan 35 stages 1-2, a perf session, plan 36 planning, plan 26 stage 3 leftovers,
+  plan 27 stage 3 (lexical), a corpus session, suite checker bugs 4 (four parallel sub-agents, +210), triage.
+- **Where the 3325 failures are**: types 2187, errors 1831, symbols 1010. Errors: 510 missing+spurious, 400 where
+  tttt reports nothing, 297 other text, 252 only missing, 219+132 only spurious, 253 with a parser diff. The
+  single-code tests are now mostly *spurious* diagnostics (TS2339 40, TS2322 39, TS2304 35).
+- **Corpora** (all clean under tsc 5.8): tsc `src/compiler`, valibot, react, nest, type-fest, zod all **0**; webpack
+  **107** (checkJs, JSDoc leftovers). New: **zod-root** (zod's root tsconfig, not clean under tsc: diff it; 28
+  spurious in tttt, mostly arktype's string DSL inferring `never`).
+- **Perf** (`measurements.md`): every corpus ahead of *single-threaded* tsgo (webpack 0.56 s vs 0.60 was the last to
+  flip), 2-6x ahead of multi-threaded tsgo elsewhere. ZOD_PERF_PLACEHOLDER
+- **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
+  tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
+  relation, mapper instantiation, two-pass inference with priorities, contextual typing, conditional/mapped/indexed/
+  template/substitution types, deferred references, flow graph + narrowing, module resolution + tsconfig, iteration
+  protocol, generators, `this` types, mixins, override and variance-annotation checks, elaboration, JSX, tsc's type
+  printer and symbol chains, JSDoc + CommonJS + expandos. ~78k lines of C. `documentation.md` describes it,
+  `hacks.md` lists what is approximated.
+- **Absent or approximated tsc mechanisms** (each a HACK that the long tail keeps hitting, see below): the missing
+  type (exactOptionalPropertyTypes), non-widening null/undefined (nullWideningType), evolving arrays (autoArrayType),
+  union/keyof origins, decorator checking (decorators as calls, TS1238/TS1241/TS1270), context-free return-only
+  signatures for sensitive arguments, lazy reverse mapped types, permissive instantiation, reduction of intersections
+  by constraint. Out of scope: declaration emit. Not built: project references, parallelism.
 
-## Course correction (third insights of 2026-09-27)
-- **Health is good; no redesign needed.** Third clean window in a row (ten sessions, all committed, +373 then +457).
-  The process works; the long tail is long (4131 tests) and each window moves ~3.5% of the suite.
-- **The types component is the biggest unowned bucket.** 2797 failing tests, and in the ones that pass errors the
-  largest kinds are unnamed (`other`) or `we-any`: wrong inference results, wrong literal widening, missing outer
-  type parameters, where no error shows the difference. These are checker semantics bugs of the same kind that later
-  surface as spurious errors in real code, so they're worth more than their test count. **Plan 35**: tool first
-  (split the bucket by mechanism), then fix from the top. Same pattern as plans 27/34.
-- **Parallelism gets a planning session now (plan 36)**, not "later". *Done 09-28*: three stages written (parallel
-  loading, check-phase readiness single-threaded, parallel checking); stage 3 waits on the union-order decision. webpack is lost even to single-threaded tsgo,
-  nest is within 35% of multi-threaded tsgo, and every window of completeness work costs instructions. Meanwhile the
-  binder keeps growing shared state (JS declarations). Parallel parsing is the likely first stage (13-43% of the time
-  on every corpus); the planning session measures a prototype before staging anything. The rule "single-threaded
-  must stay ahead of single-threaded tsgo" still holds too: this window also has a perf session aimed at webpack
-  (JSDoc checking) and zod (inference by type arguments), plus the free wins (`DEBUG_ALLOCATOR` is on in release).
-- **Parser**: the perf session's verdict is that no function stands out any more; what's left is structural (a
-  `Parser` copy per attempt, identifiers rescanned per alternative, one malloc per node). That points at a token
-  cache and node arenas, not a rewrite; the no-rewrite rule stands. Fidelity: stage 3 (lexical, including tsc 5.5's
-  regex checks, which tttt lacks entirely) is next.
-- **Corpus sessions keep paying**: zod pinned at 87 went to 15 the same day. The remaining corpus counts have named
-  causes (plan 32 C, plan 26 leftovers, plan 19 zod items); one corpus session this window.
+## Course correction (insights of 2026-09-28)
+- **Health is very good; no redesign.** Fourth clean window in a row, and the biggest (+806). Parallel sub-agents in
+  worktrees (suite checker bugs 4, triage) roughly doubled what one session delivers; keep doing that for
+  independent small fixes.
+- **The long tail now keeps hitting the same approximations.** Sessions increasingly end with "the fix needs tsc's
+  X, which tttt doesn't have": plan 35's top item is nullWideningType ("medium, risky"), the zod fixes left
+  `exact_missing_flag()` standing in for the missing type, call.c's fixing gate "stands in for something else",
+  evolving arrays are a HACK in three files. Each small session works around the same missing mechanism a little
+  more. This is the "almost works" pattern: **port the mechanisms instead** (plan 37). One planning session ranks
+  them by suite + corpus impact and risk, derisks the top ones with prototypes and writes a sub-plan each; the
+  window then executes the top two. Same shape as the type core ports of plans 29-30, which paid.
+- **Parallelism is built now (plan 36), checking first.** The decision stage 3 needed is made: **a fixed logical
+  checker count** (tsgo's `--checkers`, default 4, independent of the thread count; files dealt by a rule that
+  depends only on the file list; the test harness runs 1). Output is identical for any thread count; it differs from
+  a one-checker run only in union member order inside messages, which tsc itself doesn't keep stable across
+  programs. Stage 2 (readiness, single-threaded) and stage 3 (threads) go first because they are the big win
+  (webpack's check 3.1x at K=4) and because the binder and checker keep growing shared state; parallel loading
+  (stage 1, 5-10%) comes after. Memory grows with K (zod +17% at K=4): the `Prop` split (`perf_leads.md`) is the
+  counterweight if needed.
+- Corpora: webpack's 107 and zod-root's 28 have named causes; one corpus session.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **Every todo window has corpus sessions** (the corpora were once left alone for ~30 sessions), and todo.md has a
@@ -114,8 +112,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    (28)~~ done.
 3. ~~Checkjs corpus (33), JS stage 3, error text tool (34), substitution fallout (30 stage 3), parser perf, permissive
    grammar (27 stage 2), zod corpus~~ done.
-4. **Now**: mixins (32 C; outer type parameters, 32 B, done), silent type differences (35), parallelism planning (36),
-   perf (webpack, zod), JS leftovers and stage 4, lexical diagnostics (27 stage 3), error text queue (34).
-5. Then: parallel parse (36's first stage), decorator checking, union origins, variance annotations, evolving arrays,
-   a token cache / node arenas in the parser.
-6. Sharded checking, perf tuning against the corpora.
+4. ~~Mixins (32), silent type differences (35 stages 1-2), parallelism planning (36), perf (webpack, zod), JS
+   leftovers, lexical diagnostics (27 stage 3)~~ done.
+5. **Now**: parallel checking (36 stages 2-3), tsc mechanism ports (37: planning, then the top two), webpack and
+   zod-root, the spurious-diagnostic long tail.
+6. Then: the rest of plan 37 (decorators, union origins, ...), parallel loading (36 stage 1), memory (`Prop` split,
+   type counts), plan 35/34 queues, a token cache / node arenas in the parser, parallel name resolution.
