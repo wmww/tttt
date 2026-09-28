@@ -2095,6 +2095,16 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             } else if (ctx.specified_return) {
                 return_typecheck(me, &my expr, ty_of_node(ctx.specified_return), false, false, errs);
             }
+            // tsc's checkReturnStatement: a bare `return;` where the function returns something
+            if (statement_is_bare_return(me) && ctx.function && !ctx.constructed_class && compiler_options()->no_implicit_returns &&
+                !compiler_options()->strict_null_checks
+            ) {
+                Ty const* returned = ty_function_return_type(current_checker, ctx.function);
+                if (!(returned->flags & TYF_NEVER) && !function_impl_return_void_any_or_undefined(ctx.function, returned)) {
+                    error_ctx_error_d(errs, span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6), 7030,
+                        "Not all code paths return a value.");
+                }
+            }
             break;
 
         case STATEMENT_IMPORT_EXPORT:

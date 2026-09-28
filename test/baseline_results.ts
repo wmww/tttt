@@ -14541,7 +14541,7 @@ const baselines = {
         types: false,
     },
     'functionsMissingReturnStatementsAndExpressionsStrictNullChecks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23636,7 +23636,7 @@ const baselines = {
         types: true,
     },
     'noImplicitReturnsExclusions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23646,7 +23646,7 @@ const baselines = {
         types: true,
     },
     'noImplicitReturnsInAsync2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23666,7 +23666,7 @@ const baselines = {
         types: true,
     },
     'noImplicitReturnsWithoutReturnExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26561,7 +26561,7 @@ const baselines = {
         types: true,
     },
     'reachabilityChecks7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

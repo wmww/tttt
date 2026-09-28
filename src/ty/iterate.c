@@ -607,7 +607,11 @@ void ty_check_generator_annotation(Checker* me, FunctionImpl const* generator, E
 // What a `return` in an annotated async function or generator is checked against (tsc's unwrapReturnType), null if
 // nothing (the annotation isn't something a generator could be)
 Ty const* ty_unwrapped_return_type(Checker* me, FunctionImpl const* function) {
-    Ty const* ret = ty_from_node(me, &function->ret, (LowerCtx){ .generic = true });
+    return ty_unwrap_return_type(me, function, ty_from_node(me, &function->ret, (LowerCtx){ .generic = true }));
+}
+
+Ty const* ty_unwrap_return_type(Checker* me, FunctionImpl const* function, Ty const* ret) {
+    if (!function->is_async && !function->is_generator) return ret;
     if (function->is_generator) {
         if (ret->flags & TYF_ANY) return nullptr;
         TyIterationTypes const* types = ty_generator_return_iteration_types(me, ret, function->is_async);

@@ -22,6 +22,7 @@ typedef struct BlockTypecheckCtx {
     // specified_return (tsc's unwrapReturnType), and whether they're awaited first. Null: not checked
     struct Ty const* unwrapped_return;
     bool await_returned;
+    struct FunctionImpl const* function; // The function whose body it is in (null in a static block or at the top)
     bool break_allowed;
     bool continue_allowed;
     bool inside_label; // Labeled breaks are allowed

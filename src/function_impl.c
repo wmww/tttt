@@ -546,6 +546,11 @@ static bool ty_maybe_void(Ty const* type) {
     return false;
 }
 
+bool function_impl_return_void_any_or_undefined(FunctionImpl const* me, Ty const* return_type) {
+    Ty const* unwrapped = ty_unwrap_return_type(current_checker, me, return_type);
+    return unwrapped && (ty_maybe_void(unwrapped) || unwrapped->flags & (TYF_ANY | TYF_UNDEFINED));
+}
+
 // tsc: checkAllCodePathsInNonVoidFunctionReturnOrThrow(). Only when it is certain that control can fall off the end
 // (ty_function_end_reachability())
 static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
@@ -555,9 +560,7 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
 
     // What tsc reports a function-like node at: its name, the head of an arrow function, else its first token
     Span name = span_valid(my name) ? my name : my member_name;
-    Span at = my ret_explicit ? my ret_span : name;
-    if (!span_valid(at) && span_valid(my arrow_span)) at = span_between(my args_span, my arrow_span);
-    if (!span_valid(at)) at = my args_span; // TODO: the `function` keyword
+    Span at = my ret_explicit ? my ret_span : function_error_span(me);
 
     if (my accessor == 1 && !my has_explicit_return) {
         if (span_valid(name)) error_ctx_error_d(errs, name, 2378, "A 'get' accessor must return a value.");
@@ -565,9 +568,10 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
     }
     Ty const* type = nullptr;
     if (my ret_explicit) {
-        if (my is_async || my is_generator) return; // TODO: what the annotation says about the returned value
-        type = ty_from_node(checker, &my ret, (LowerCtx){ .generic = true });
-        if (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
+        // (tsc's unwrapReturnType: an async function's is what it awaits to, error if that's nothing)
+        type = ty_unwrapped_return_type(checker, me);
+        if (!type && my is_async && !my is_generator) type = ty_intrinsic(checker, TY_ANY);
+        if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
     }
     if (type && type->flags & TYF_NEVER) {
         error_ctx_error_d(errs, at, 2534, "A function returning 'never' cannot have a reachable end point.");
@@ -581,9 +585,8 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
             "Function lacks ending return statement and return type does not include 'undefined'.");
     } else if (compiler_options()->no_implicit_returns) {
         if (!type) {
-            if (!my has_explicit_return || my is_async || my is_generator) return;
-            Ty const* inferred = ty_function_return_type(checker, me);
-            if (ty_maybe_void(inferred) || inferred->flags & (TYF_ANY | TYF_UNDEFINED)) return;
+            if (!my has_explicit_return) return;
+            if (function_impl_return_void_any_or_undefined(me, ty_function_return_type(checker, me))) return;
         }
         error_ctx_error_d(errs, at, 7030, "Not all code paths return a value.");
     }
@@ -747,6 +750,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         .constructed_class = my is_constructor ? my constructed_class : nullptr,
         .unwrapped_return = my ret_explicit && (my is_async || my is_generator) ? ty_unwrapped_return_type(current_checker, me) : nullptr,
         .await_returned = my is_async,
+        .function = me,
     };
     if (my ret_explicit && my is_generator) ty_check_generator_annotation(current_checker, me, errs);
     Ty const* outer_context = function_impl_enter_return_context(me);
