@@ -27,6 +27,11 @@ Corpus notes worth keeping:
 ## What is left
 ### webpack (107)
 JSDoc; plan 26 "Stage 3 leftovers".
+Triage 2026-09-28 looked at two TS18048s: `idleTimer.unref()` right after `idleTimer = setTimeout(...)` with
+`@type {ReturnType<typeof setTimeout> | undefined}` (IdleFileCachePlugin.js:158; the node vs DOM setTimeout overloads?
+the assignment should narrow), and `watching.running` after `if (compiler.watching !== watching) return;`
+(MultiCompiler.js:645, `watching` is `_runGraph`'s inferred SetupResult: a plain TS probe of the shape passes, so the
+difference is in the JS inference). Both need a probe inside webpack's program.
 
 ### zod-root (tsc 55, tttt 82: 28 spurious, 1 missing)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is

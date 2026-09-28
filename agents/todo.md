@@ -37,7 +37,13 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    grammar, TS2350, TS7029, ...) plus four Opus sub-agents in worktrees (missing TS2339, missing TS2322, TS2303/TS2209,
    two corpus regressions: isGenericType and variance annotations). Suite 9978 -> 10188, tsc-errors-tttt-none 541 ->
    421, corpora unchanged (webpack 115). The single-code buckets are now mostly spurious errors (missing_checks.md).
-10. **Triage**: drain triage.md, prune hacks.md (677 lines) of entries that are fixed, refresh measurements.md.
+10. ~~**Triage**~~ done: triage.md drained (fixes: zod root-config segfault, object rest with computed keys,
+   `export default;`, primitive keywords before `.` (arktype), `await` quick types, intersection property types in
+   flow/await (execa), for-in non-null; the rest routed to plans 19/26/27 and bugs/). Worktree corpus numbers were a
+   symlink artifact (realworld.py uses real paths now). New corpus `zod-root` (not clean under tsc: diff it, plan 19).
+   exactOptionalPropertyTypes written up as one bug (23 configurations, type_core.md). hacks.md was nearly all still
+   true. Override/variance checks by a sub-agent: OVERRIDE_RESULT. Suite 10188 -> SUITE_END, webpack 115 -> 107,
+   zod-root 93 -> 82, instructions unchanged.
 11. **Insights.**
 
 After insights (for it to order): plan 36 stage 1 (parallel loading, one session), stage 2 (check-phase readiness,
