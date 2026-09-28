@@ -1303,7 +1303,18 @@ static void append_decl(cstr* target, Span span) {
                     start = file_start; // A shebang is trivia too
                     break;
                 }
+                // (Not a `//` in a string literal: `"https://x",`)
+                char quote = 0;
                 for (const char* c = line_start; c + 1 < start; c++) {
+                    if (quote) {
+                        if (c[0] == '\\') c++;
+                        else if (c[0] == quote) quote = 0;
+                        continue;
+                    }
+                    if (c[0] == '"' || c[0] == '\'' || c[0] == '`') {
+                        quote = c[0];
+                        continue;
+                    }
                     if (c[0] == '/' && c[1] == '/') {
                         keep_going = true;
                         start = c;
