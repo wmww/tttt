@@ -259,6 +259,10 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
         if (symbol->decls[i].flags & SYMBOL_VALUE && symbol->decls[i].kind != SYMBOL_DECL_EXPANDO) first = &symbol->decls[i];
     }
     if (!first || first->node == me) return;
+    // Not for a symbol a top-level assignment made a namespace (tsc: SymbolFlags.Assignment)
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind == SYMBOL_DECL_EXPANDO && span_valid(symbol->decls[i].full)) return;
+    }
     Checker* checker = current_checker;
     Ty const* type = ty_type_of_symbol(checker, symbol);
     Ty const* declared = ty_binding_type(checker, me, (LowerCtx){ .generic = true });

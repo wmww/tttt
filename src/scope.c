@@ -705,6 +705,44 @@ static void check_require_exports_collision(Scope* me, Span name) {
 
 // tsc's declareSymbol(). *merged is whether the symbol existed already. default_export: a declaration of the `default`
 // export of a module, which conflicts with the others as TS2528
+// Whether a top-level assignment of a JavaScript file makes `name` a namespace: `name.a = v`, `name.a.b = v`,
+// `name.prototype = v` (tsc's bindPotentiallyMissingNamespaces gives it SymbolFlags.Assignment), not `name.prototype.a = v`
+static bool js_file_assigns_namespace(SourceFile const* file, csview name) {
+    if (!file || !file->is_js) return false;
+    for_each (i, vec_statement, &file->ast.statements) {
+        if (i->tag != STATEMENT_EXPR) continue;
+        for (Expr const* e = &i->expr; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e);
+            e = &e->binary_op->right
+        ) {
+            Expr const* left = &e->binary_op->left;
+            if (!span_valid(expr_static_property_name(left))) continue;
+            Expr const* object = &left->property->expr;
+            if (expr_prototype_object((Expr*)object)) continue;
+            Expr const* root = object;
+            while (span_valid(expr_static_property_name(root))) root = &root->property->expr;
+            if (root->tag == EXPR_IDENTIFIER && !root->identifier.keyword && !expr_is_perenthisized(root) &&
+                csview_equals_sv(root->identifier.name.sv, name) && expr_is_entity_name(object)
+            ) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// A global declared in other files that a JavaScript file's top-level assignment makes a namespace, or the other way
+// around, merges with anything (tsc's mergeSymbol: the Assignment flag of either side). Conflicts inside a file stay
+static bool global_merges_by_assignment(Scope const* scope, Symbol const* existing, csview name) {
+    SourceFile const* file = scope->file;
+    bool assigned = js_file_assigns_namespace(file, name);
+    for (u32 i = 0; i < existing->decl_count; i++) {
+        SourceFile const* other = existing->decls[i].full.source;
+        if (!other || other == file) return false;
+        if (!assigned) assigned = js_file_assigns_namespace(other, name);
+    }
+    return assigned;
+}
+
 static Symbol* declare_symbol(
     Scope* scope, SymbolTable* table, csview name, Span name_span, u32 includes, u32 excludes, bool default_export,
     bool* merged
@@ -732,7 +770,9 @@ static Symbol* declare_symbol(
         // Assignment flag)
         bool expando_only = existing->decl_count > 0;
         for (u32 i = 0; i < existing->decl_count && expando_only; i++) expando_only = existing->decls[i].kind == SYMBOL_DECL_EXPANDO;
-        if (existing->flags & excludes && !(expando_only && table == &binder->globals)) {
+        if (existing->flags & excludes && !(expando_only && table == &binder->globals) &&
+            !(table == &binder->globals && global_merges_by_assignment(scope, existing, name))
+        ) {
             if (default_export && existing->decl_count) report_multiple_defaults(scope->errs, existing, name_span);
             else report_conflicts(scope->errs, existing, name_span, includes, false);
             return binder_new_symbol(binder, name, includes);
@@ -3132,6 +3172,16 @@ static bool is_commonjs_root(Expr const* entity) {
         (span_equals(entity->identifier.name, "exports") || span_equals(entity->identifier.name, "module"));
 }
 
+// A global with expandos, whose variable initializers (in whichever file) get the members once every file is bound
+static void push_global_expando(Binder* binder, Symbol* symbol) {
+    if (binder->global_expando_count == binder->global_expando_cap) {
+        binder->global_expando_cap = binder->global_expando_cap ? binder->global_expando_cap * 2 : 8;
+        binder->global_expandos = realloc(binder->global_expandos, sizeof(Symbol*) * binder->global_expando_cap);
+        panic_if(!binder->global_expandos, "out of memory");
+    }
+    binder->global_expandos[binder->global_expando_count++] = symbol;
+}
+
 // Each name of `a.b` of a top-level JavaScript `a.b.x = v` is a global namespace declared here, merged with the
 // globals of that name (tsc's jsGlobalAugmentations, merged into the globals by initializeTypeChecker)
 static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
@@ -3161,13 +3211,7 @@ static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = entity, .name = decl_name, .full = decl_name,
     });
-    Binder* binder = my binder;
-    if (binder->global_expando_count == binder->global_expando_cap) {
-        binder->global_expando_cap = binder->global_expando_cap ? binder->global_expando_cap * 2 : 8;
-        binder->global_expandos = realloc(binder->global_expandos, sizeof(Symbol*) * binder->global_expando_cap);
-        panic_if(!binder->global_expandos, "out of memory");
-    }
-    binder->global_expandos[binder->global_expando_count++] = symbol;
+    push_global_expando(my binder, symbol);
     return symbol;
 }
 
@@ -3300,6 +3344,11 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
         add_commonjs_export_namespace_decls(module, object);
     } else if (host) {
         set_expando_initializer_host(init, host);
+        // A global merged across files (tsc's mergeSymbol with the Assignment flag): the variable of another file that
+        // it may take its value from gets the members too
+        if (!init && object->tag == EXPR_IDENTIFIER && my file->is_js && symbol_table_get(&my binder->globals, host->name) == host) {
+            push_global_expando(my binder, host);
+        }
         add_expando_namespace_decls(me, object, top_level);
     } else if (top_level && my file->is_js && is_global_expando_entity(me, left)) {
         host = global_expando_namespace(me, object);

@@ -654,6 +654,15 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   isn't a host still binds). Claims set by a parse attempt that failed stay set. `@import` only at a list's top level.
   Dotted typedef names (`@callback NS.Nested.Inner`, tsc: namespaces) and `@typedef` without a name (named by the
   host) are skipped. Several typedefs in one comment share its templates, and only the first gets the constraints.
+- No `SymbolFlags.Assignment`: `global_merges_by_assignment()` (scope.c) recovers tsc's cross-file merge exemption by
+  rescanning the top-level statements of the files involved (`js_file_assigns_namespace()`) when a global conflicts;
+  `check_subsequent_declaration()` (TS2403) looks for a top-level `SYMBOL_DECL_EXPANDO` instead. A host merged across
+  files is pushed to `Binder.global_expandos` so another file's variable initializer gets its members.
+- Expandos nested in expressions (`(f.x = 1)`, `if (f.x = 1)`) are declared by the resolve walk
+  (`scope_add_nested_expando()`), not the declare step: a statement-level `f.x.y = v` doesn't see a nested `f.x = {}`,
+  and FlowBuilder.object_literal_depth stands in for tsc's object-literal container.
+- `exports.x = v` / `module.exports = v` inside functions (IIFEs: moduleExportAliasExports) aren't declared: tsc binds
+  them from any container, `add_nested_commonjs_exports()` only walks top-level statement lists.
 - `ParserShared.jsdoc_enum`: a one-slot handoff from `jsdoc_apply_statement()` to the statement list; statements
   parsed outside a list (if arms) drop theirs.
 - `baseline_test_case.c` Decl printing: a declaration starting at an `@` preceded by `*` and spaces is a JSDoc tag and

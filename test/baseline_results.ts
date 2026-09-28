@@ -60106,8 +60106,8 @@ const baselines = {
         types: false,
     },
     'constructorFunctionMergeWithClass': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'constructorFunctionMethodTypeParameters': {
@@ -60266,9 +60266,9 @@ const baselines = {
         types: true,
     },
     'jsContainerMergeTsDeclaration': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsContainerMergeTsDeclaration2': {
         errors: true,
@@ -60277,8 +60277,8 @@ const baselines = {
     },
     'jsContainerMergeTsDeclaration3': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsObjectsMarkedAsOpenEnded': {
         errors: true,
