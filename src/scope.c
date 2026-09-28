@@ -1392,6 +1392,7 @@ static void add_commonjs_export(Scope* me, BinaryOpExpr* op, Span statement) {
             Expr const* object = &left->property->expr;
             if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || !is_exports_alias(me, object)) break;
             if (span_equals(object->identifier.name, "exports")) break; // (binary_commonjs_declaration()'s)
+            left->property->commonjs_export_alias = true;
             declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, left->outer_span, statement);
         }   break;
         case COMMONJS_TARGET_EXPORTS_PROPERTY:

@@ -1814,7 +1814,7 @@ static bool is_commonjs_export_assignment(PropertyExpr const* access) {
 }
 
 static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object, MemberRefs* refs) {
-    if (!access->assignment_target || is_commonjs_export_assignment(access)) return false;
+    if (!access->assignment_target || access->commonjs_export_alias || is_commonjs_export_assignment(access)) return false;
     Atom const* name = access_name(me, access);
     if (!name) return false;
     int readonly = member_refs(me, object, name, refs, 0);

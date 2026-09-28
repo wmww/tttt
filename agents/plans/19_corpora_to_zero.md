@@ -29,7 +29,7 @@ Corpus notes worth keeping:
   deep-partial.test.ts alone is 745 MB, `bugs/perf_leads.md`).
 
 ## What is left
-### webpack (18)
+### webpack (17)
 Fixed 2026-09-28 (probes in `test/probes/plan19/webpack/`, one commit each): JSDoc `[T?]` optional tuple elements,
 overload groups of merged global functions (node's setTimeout before DOM's), parameter defaults removing undefined
 (contextual/JSDoc-typed parameters, closures), JSDoc casts as narrowable references, a declaration's `@type` tag
@@ -37,7 +37,8 @@ signature, lazy conditional branches (TS2456), `require("m").X` value-only alias
 conditional-vs-conditional with `infer`, inference from optional parameters, getter `@type`, JSDoc through comments.
 Sixth window's corpus session (30 -> 18): unique symbols kept in declaration unions, any/unknown defaults removing
 undefined, `{}` initializers with expandos unchecked, keyof `keyof T`, string-index-only element access, the whole base
-constraint for TS2731, description backticks, constructor-declared JS members by flow type, `@this` types unchecked.
+constraint for TS2731, description backticks, constructor-declared JS members by flow type, `@this` types unchecked, exports through a
+`module.exports` alias not read-only.
 Left, every one reduced:
 - **Defaulted type parameters leaking into context-sensitive callbacks** (~9: PackFileCacheStrategy's LazyFunction and
   `Promise<PackContainer | Pack>` chains, IdleFileCachePlugin:121, maxAge TS2339): bugs/type_core.md "Inference" first
@@ -49,8 +50,7 @@ Left, every one reduced:
 - The module-federation example's TS2322: the arrow's return type comes from its variable's `@type` in tsc (plan 26
   leftovers, "TS6210 related info").
 - cleverMerge.js:355 `newFn[DYNAMIC_INFO] = ...`: late-bound expandos (plan 26 leftovers).
-- ModuleFilenameHelpers.js:353 TS2540 `matchPart` read-only: only in the whole program (a copy of the file with
-  another requiring it is clean), so some other file's view of the CommonJS export comes first. Not reduced.
+
 
 ### zod-root (tsc 55, tttt 55: the same set)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is

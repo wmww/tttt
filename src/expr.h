@@ -467,6 +467,9 @@ typedef struct PropertyExpr {
     uint8_t assignment_target; // FlowAssignmentKind
     bool compound_like_target; // Like IdentifierExpr.compound_like_target
     bool method_call; // The callee of a call or new (tsc's isMethodAccessForCall): the object widens
+    // `M.x = v` declaring an export of a CommonJS module through an alias of it (`const M = module.exports`), set by the
+    // declare step: a declaration, not an assignment to what x may alias (like `exports.x = v`)
+    bool commonjs_export_alias;
     FlowNode* flow; // Like IdentifierExpr.flow
     // The innermost class it is in (member accessibility, see ClassDecl.outer_class for the others), and the class
     // whose constructor is the function it is directly in (where `this.x = ` may write a readonly x)
