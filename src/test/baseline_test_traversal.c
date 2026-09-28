@@ -1200,7 +1200,12 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
 static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     Checker* checker = current_checker;
     if (my this_kind == THIS_GLOBAL) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my name, .allow_declaration_empty = true, .text = cstr_lit("globalThis") });
+        // (Declared by the JavaScript `globalThis.x = v` that give it expandos)
+        Symbol const* global_this = checker->binder->global_this;
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = global_this ? declaration_get_spans(global_this) : vec_span_init(), .span = my name,
+            .allow_declaration_empty = true, .text = cstr_lit("globalThis"),
+        });
         return;
     }
     Symbol const* symbol = my target;
