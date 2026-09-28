@@ -16,7 +16,16 @@ smaller leftovers to `bugs/*.md` and hacks.md.
 - Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
   `g2<T extends unknown[]>(x: [...{ [K in keyof T]: S2<T[K]> }])` widens `g2(['a'])` to `[string]`, tsc `["a"]` (its
   forConstraint constraint of `S2<T[number]>` keeps the true branch with T's implied `string`).
-- HACK candidate: after ty_instantiation_limit_reached, TY_ERROR results are memoized for good in lazily resolved Props,
-  so one TS2589 poisons every later user (xstate: StateMachine.ts:516, see plan 19 "xstate").
 - A corpus's output can depend on the checker count (4 by default): a file can look fine alone and fail in the corpus.
   Reproduce with `--checkers 1` and the suspect file first in `files`.
+- xstate's output still depends on the checker count: 5 diagnostics only at `--checkers 1` (actor.test.ts:1060/1499/
+  1566, assign.test.ts:20, invoke.test.ts:1257/1276: callbacks typed `AssignArgs<MachineContext...>`), no limit hit:
+  some cached inference state (plan 38 territory?). checkerdiff.py should flag it; it's a determinism bug.
+- `StateId<U>` to `StateId<T>` (xstate's StateId, no variance measurement) still gives TS2589 + TS2322, tsc nothing:
+  the definitely-assignable checks instantiate deeply nested indexed-access chains. Repro: test/probes/xstate/ (agent A's
+  s4 shape; rewrite it there if missing).
+- `interface I<C> { a: StateNode<C, any> }` where StateNode requires `C extends MachineContext`: tsc's TS2344 missing.
+- A binding default `{} as any` misses tsc's empty `^^^` types-mask line (bindingDefaultAnyRemovesUndefined.ts types).
+- tsc prints a written `<T extends any>` as `extends unknown`.
+- ~30 callers of ty_non_nullable still use its stripped-constraint behaviour for type parameters (hacks.md
+  "ty_non_nullable"); `x!` and optional-chain roots use ty_non_nullish_part (tsc's getNonNullableType) now.

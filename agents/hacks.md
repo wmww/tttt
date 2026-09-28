@@ -609,6 +609,15 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   its base constraint, which tsc asks for, cost 5% of valibot's instructions (`primitive_constraint_of`, memoized
   per type variable). The real fix is a cheaper conditional base constraint (bugs/perf_leads.md).
 
+- `apparent_type()` of an intersection with generic members (the intersection of their apparent types, tsc's
+  getApparentTypeOfIntersectionType route) keeps a member whose apparent type is any/unknown as it is: base_constraint()
+  of a conditional doesn't leave out an `any` branch like tsc's default constraint, and webpack's `Reflect.get(...) &
+  any[]` became any. Fix base_constraint() instead (sixth window corpus session, sub-agent A).
+- The distributive-constraint fallback for an intersection target (`related_to_intersection`-side, 0aff1b31's) covers
+  conditional sources only.
+- A property type computed after ty_instantiation_limit_reached isn't memoized (8cfa04a9); other lazily cached results
+  (signatures, members, variances) still keep what an exhausted budget produced, so one TS2589 can poison later users.
+
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`, `ty/helpers.c`)
 - `ty_check_static_heritage` (HACK): tsc gives a class extending `X & K` (K a type variable) the static type `typeof
   C & K`; tttt's `ty_static_type_of` doesn't, so the check adds `& K` to the source itself (else
