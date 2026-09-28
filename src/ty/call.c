@@ -416,27 +416,27 @@ static void add_array_literal(Inference* inf, Ty const* type) {
 }
 
 // The tuples of the array literals nested in an argument's object and array literals (tsc flags array literal types
-// ObjectFlags.ArrayLiteral; tuples are interned here, so the inference remembers them instead)
-static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* expr, u32 depth) {
-    if (depth > 4) return;
+// ObjectFlags.ArrayLiteral; tuples are interned here, so the inference remembers them instead). By the argument's type,
+// which a const context made readonly where the nested expressions' own types may not be
+static void add_nested_array_literals(Checker* me, Inference* inf, Expr const* expr, Ty const* type, u32 depth) {
+    if (depth > 4 || !type) return;
     if (expr->tag == EXPR_ARRAY) {
+        if (!ty_is_tuple(type)) return;
+        TyList elements = ty_reference_args(me, type);
+        u32 n = 0;
         for_each (i, vec_expr, &expr->array) {
-            if (i->tag != EXPR_ARRAY) {
-                if (i->tag == EXPR_OBJECT) add_nested_array_literals(me, inf, i, depth + 1);
-                continue;
-            }
-            Ty const* type = ty_expr_type(me, i);
-            if (ty_is_tuple(type)) add_array_literal(inf, type);
-            add_nested_array_literals(me, inf, i, depth + 1);
+            if (i->tag == EXPR_SPREAD || n >= elements.len) return;
+            Ty const* element = elements.data[n++];
+            if (i->tag == EXPR_ARRAY && ty_is_tuple(element)) add_array_literal(inf, element);
+            if (i->tag == EXPR_ARRAY || i->tag == EXPR_OBJECT) add_nested_array_literals(me, inf, i, element, depth + 1);
         }
     } else if (expr->tag == EXPR_OBJECT) {
         for_each (i, vec_object_expr_item, &expr->object) {
-            if (i->tag != OBJECT_ITEM_PROPERTY || (i->value.tag != EXPR_ARRAY && i->value.tag != EXPR_OBJECT)) continue;
-            if (i->value.tag == EXPR_ARRAY) {
-                Ty const* type = ty_expr_type(me, &i->value);
-                if (ty_is_tuple(type)) add_array_literal(inf, type);
-            }
-            add_nested_array_literals(me, inf, &i->value, depth + 1);
+            if (i->tag != OBJECT_ITEM_PROPERTY || (i->value.tag != EXPR_ARRAY && i->value.tag != EXPR_OBJECT) || i->computed_key) continue;
+            FoundProp prop = ty_find_prop(me, type, checker_atom(me, cstr_sv(&i->name_string)));
+            if (!prop.found) continue;
+            if (i->value.tag == EXPR_ARRAY && ty_is_tuple(prop.type)) add_array_literal(inf, prop.type);
+            add_nested_array_literals(me, inf, &i->value, prop.type, depth + 1);
         }
     }
 }
@@ -447,7 +447,7 @@ static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape,
     if (arg->type && !arg->spread && !arg->part_of_spread && arg->expr->tag == EXPR_ARRAY && ty_is_array(me, arg->type)) {
         add_array_literal(inf, arg->type);
     }
-    if (arg->type && !arg->spread && !arg->part_of_spread) add_nested_array_literals(me, inf, arg->expr, 0);
+    if (arg->type && !arg->spread && !arg->part_of_spread) add_nested_array_literals(me, inf, arg->expr, arg->type, 0);
     if (param_type && args->data[i].type) infer_types(me, inf, args->data[i].type, param_type, INFER_PRIORITY_NORMAL);
 }
 

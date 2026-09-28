@@ -52361,9 +52361,9 @@ const baselines = {
         types: true,
     },
     'jsdocTemplateTag6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTemplateTag7': {
         errors: false,
@@ -66106,7 +66106,7 @@ const baselines = {
         types: true,
     },
     'typeParameterConstModifiers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
