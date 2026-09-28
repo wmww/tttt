@@ -1661,6 +1661,48 @@ static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* 
     return filter_type(me, type, is_presence_possible, &arg);
 }
 
+// `x.constructor` or `x["constructor"]` of the reference (tsc's isMatchingConstructorReference)
+static bool is_matching_constructor_reference(FlowQuery* q, Expr const* expr) {
+    Checker* me = q->me;
+    expr = skip_reference_wrappers(expr);
+    if (expr->tag != EXPR_PROPERTY) return false;
+    PropertyExpr const* access = expr->property;
+    if (access->private_class) return false;
+    Expr const* key = &access->prop;
+    bool named = access->form == PROPERTY_EXPR_BRACKET ?
+        key->tag == EXPR_LITERAL && key->literal.tag == VALUE_STRING && access_name(me, access) == checker_atom(me, c_sv("constructor")) :
+        access_name(me, access) == checker_atom(me, c_sv("constructor"));
+    return named && is_matching_reference(me, q->reference, &access->expr);
+}
+
+static bool is_constructed_by(Checker* me, Ty const* source, void const* arg) {
+    Ty const* target = arg;
+    bool source_class = source->kind == TY_DECLARED && source->declared.kind == TY_DECLARED_CLASS_INSTANCE;
+    bool target_class = target->kind == TY_DECLARED && target->declared.kind == TY_DECLARED_CLASS_INSTANCE;
+    if (source_class || target_class) {
+        return source_class && target_class && source->declared.symbol == target->declared.symbol;
+    }
+    return is_subtype(me, source, target);
+}
+
+// `x.constructor === C`: x is what C's prototype is (tsc's narrowTypeByConstructor)
+static Ty const* narrow_by_constructor(FlowQuery* q, Ty const* type, BinaryOp op, Expr const* identifier, bool assume_true) {
+    Checker* me = q->me;
+    bool equals = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL;
+    if (equals != assume_true) return type;
+    Ty const* identifier_type = ty_flow_expr_type(me, identifier);
+    if (!(identifier_type->flags & TYF_OBJECT)) return type;
+    Members const* members = ty_members(me, identifier_type);
+    if (!members->call_count && !members->construct_count) return type;
+    Prop const* prototype = ty_get_prop(me, identifier_type, checker_atom(me, c_sv("prototype")));
+    if (!prototype) return type;
+    Ty const* candidate = ty_access(me, identifier_type, ty_string_literal(me, c_sv("prototype")));
+    if (!candidate || (candidate->flags & TYF_ANY)) return type;
+    if (candidate == ty_global_object_type(me) || candidate == ty_global_function_type(me)) return type;
+    if (type->flags & TYF_ANY) return candidate;
+    return filter_type(me, type, is_constructed_by, candidate);
+}
+
 static bool is_boolean_literal_expr(Expr const* expr) {
     return expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_BOOLEAN;
 }
@@ -1700,7 +1742,8 @@ static Ty const* narrow_by_binary(FlowQuery* q, Ty const* type, Expr const* expr
                 if (by_key) return by_key;
                 return narrow_by_discriminant(q, type, access, narrow_prop_by_equality, &arg);
             }
-            // TODO: `x.constructor === C`
+            if (is_matching_constructor_reference(q, left)) return narrow_by_constructor(q, type, binary->op, right, assume_true);
+            if (is_matching_constructor_reference(q, right)) return narrow_by_constructor(q, type, binary->op, left, assume_true);
             // `isFoo(x) === true`
             bool equals = binary->op == BINARY_OP_DOUBLE_EQUAL || binary->op == BINARY_OP_TRIPLE_EQUAL;
             if (is_boolean_literal_expr(right) && left->tag != EXPR_PROPERTY) {

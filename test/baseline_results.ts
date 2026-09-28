@@ -30981,29 +30981,29 @@ const baselines = {
         types: true,
     },
     'typeGuardConstructorClassAndNumber': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeGuardConstructorDerivedClass': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeGuardConstructorNarrowAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardConstructorNarrowPrimitivesInUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardConstructorPrimitiveTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowByMutableUntypedField': {
         errors: true,
