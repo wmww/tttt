@@ -1,4 +1,5 @@
 #include "program.h"
+#include "string_helpers.h"
 #include "unused.h"
 #include "import_attributes.h"
 #include "parser.h"
@@ -498,6 +499,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         cstr_drop(&canonical_path);
         return nullptr;
     }
+    text_decode_utf16_bom(&contents);
 
     SourceFile* source_file = c_new(
         SourceFile,

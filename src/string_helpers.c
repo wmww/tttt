@@ -140,3 +140,27 @@ const char* file_start_excluding_bom(const char* contents) {
     }
     return contents;
 }
+
+void text_decode_utf16_bom(cstr* contents) {
+    const unsigned char* b = (const unsigned char*)cstr_str(contents);
+    intptr_t size = cstr_size(contents);
+    if (size < 2) return;
+    bool little = b[0] == 0xFF && b[1] == 0xFE;
+    if (!little && !(b[0] == 0xFE && b[1] == 0xFF)) return;
+    cstr out = cstr_with_capacity(size);
+    for (intptr_t i = 2; i + 1 < size; i += 2) {
+        u32 unit = little ? (u32)b[i] | (u32)b[i + 1] << 8 : (u32)b[i] << 8 | (u32)b[i + 1];
+        if (unit >= 0xD800 && unit <= 0xDBFF && i + 3 < size) {
+            u32 low = little ? (u32)b[i + 2] | (u32)b[i + 3] << 8 : (u32)b[i + 2] << 8 | (u32)b[i + 3];
+            if (low >= 0xDC00 && low <= 0xDFFF) {
+                unit = 0x10000 + ((unit - 0xD800) << 10) + (low - 0xDC00);
+                i += 2;
+            }
+        }
+        char buf[8];
+        int n = cutf8_encode(buf, unit);
+        cstr_append_n(&out, buf, n);
+    }
+    cstr_drop(contents);
+    *contents = out;
+}

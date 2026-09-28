@@ -31,6 +31,7 @@ core_files = files(
     'scope.c',
     'symbol_chain.c',
     'lib_features.c',
+    'unicode_identifiers.c',
     'unused.c',
     'flow.c',
     'engine.c',

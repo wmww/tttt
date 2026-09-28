@@ -1,4 +1,6 @@
 #include "symbol_chain.h"
+#include "unicode_identifiers.h"
+#include "compiler_options.h"
 #include "port_statement.h"
 #include "source_file.h"
 #include "ty/ty.h"
@@ -496,15 +498,22 @@ SymbolChain symbol_member_container_chain_at(Scope const* enclosing, Symbol cons
 
 // Printing (tsc's getNameOfSymbolAsWritten and createExpressionFromSymbolChain)
 
-static bool is_identifier_start(unsigned char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '$' || c >= 0x80;
+// Of the UTF-16 code unit at c, as tsc's charCodeAt sees it: half of a surrogate pair starts nothing
+static bool is_identifier_start(const char* c, const char* end) {
+    unsigned char b = (unsigned char)*c;
+    if (b < 0x80) return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || b == '_' || b == '$';
+    if (b >= 0xF0) return false;
+    u32 code = b >= 0xE0 && end - c >= 3 ? (u32)(b & 0x0F) << 12 | (u32)(c[1] & 0x3F) << 6 | (c[2] & 0x3F)
+        : end - c >= 2 ? (u32)(b & 0x1F) << 6 | (c[1] & 0x3F) : 0;
+    return unicode_is_identifier_start(code, compiler_options()->target >= SCRIPT_TARGET_ES2015);
 }
 
 // tsc's canUsePropertyAccess
 static bool can_use_property_access(csview name) {
     if (!name.size) return false;
-    if (name.buf[0] == '#') return name.size > 1 && is_identifier_start((unsigned char)name.buf[1]);
-    return is_identifier_start((unsigned char)name.buf[0]);
+    const char* end = name.buf + name.size;
+    if (name.buf[0] == '#') return name.size > 1 && is_identifier_start(name.buf + 1, end);
+    return is_identifier_start(name.buf, end);
 }
 
 static bool is_quote(char c) {

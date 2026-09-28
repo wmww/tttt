@@ -9,8 +9,15 @@ unsigned span_line_index(Span me) {
     return source_file_line_index(me.source, span_start_ptr(me));
 }
 
+// In UTF-16 code units, like tsc's positions: a UTF-8 lead byte is one, a 4-byte character's two
 unsigned span_col_index(Span me) {
-    return span_start_ptr(me) - span_line_start(me);
+    unsigned col = 0;
+    for (const char* c = span_line_start(me); c < span_start_ptr(me); c++) {
+        unsigned char b = (unsigned char)*c;
+        col += (b & 0xC0) != 0x80;
+        col += b >= 0xF0;
+    }
+    return col;
 }
 
 const char* span_line_start(Span me) {

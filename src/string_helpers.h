@@ -25,3 +25,7 @@ const char* string_to_double(
 
 // Skip the Byte Order Mark
 const char* file_start_excluding_bom(const char* contents);
+
+// A file that starts with a UTF-16 byte order mark (either endianness) is decoded to UTF-8 without it, like tsc's
+// sys.readFile. Anything else is left alone
+void text_decode_utf16_bom(cstr* contents);

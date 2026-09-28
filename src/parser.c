@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "unicode_identifiers.h"
 #include "scope.h"
 #include "block.h"
 #include "interface.h"
@@ -592,14 +593,23 @@ static const uint8_t identifier_char_class[256] = {
     0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0,
 };
 
-// TODO: unicode support: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Continue%7D
+// ASCII only: identifier_char_size() knows the rest
 static inline bool is_identifier_char(char c) {
     return identifier_char_class[(uint8_t)c] & 2;
 }
 
-// TODO: unicode support: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Start%7D
 static inline bool is_identifier_start_char(char c) {
     return identifier_char_class[(uint8_t)c] & 1;
+}
+
+static int identifier_char_size_slow(const char* c, bool start);
+
+// The length of the character at c if it can start (`start`) or continue an identifier, else 0: ASCII, non-ASCII
+// (tsc's unicode tables for the target) and unicode escapes of either (`\u0061`, `\u{61}`)
+static inline int identifier_char_size(const char* c, bool start) {
+    uint8_t b = (uint8_t)*c;
+    if (b < 0x80 && b != '\\') return (identifier_char_class[b] & (start ? 1 : 2)) ? 1 : 0;
+    return identifier_char_size_slow(c, start);
 }
 
 static inline bool is_number_char(char c) {
@@ -613,9 +623,10 @@ static inline bool is_number_start_char(char c) {
 // ret can be null
 static inline bool parse_identifier_or_keyword(Parser* parent, Span* ret) {
     Anchor a = anchor(parent);
-    if (is_identifier_start_char(*parent->pos)) {
-        parent->pos++;
-        while (is_identifier_char(*parent->pos)) parent->pos++;
+    int size = identifier_char_size(parent->pos, true);
+    if (size) {
+        parent->pos += size;
+        while ((size = identifier_char_size(parent->pos, false))) parent->pos += size;
         if (ret) {
             *ret = span_from(a);
         }
@@ -789,16 +800,47 @@ static int utf8_char_size(const char* c) {
 
 static int identifier_escape_size(const char* c);
 
-// A character at c that starts no token (tsc's scanner: TS1127 Invalid character): its length, else 0. Non-ASCII
-// characters all count until identifiers are unicode aware (is_identifier_char)
+// The code point of the (well-formed) UTF-8 character of `size` bytes at c
+static u32 utf8_code_point(const char* c, int size) {
+    const unsigned char* b = (const unsigned char*)c;
+    switch (size) {
+        case 2: return (u32)(b[0] & 0x1F) << 6 | (b[1] & 0x3F);
+        case 3: return (u32)(b[0] & 0x0F) << 12 | (u32)(b[1] & 0x3F) << 6 | (b[2] & 0x3F);
+        case 4: return (u32)(b[0] & 0x07) << 18 | (u32)(b[1] & 0x3F) << 12 | (u32)(b[2] & 0x3F) << 6 | (b[3] & 0x3F);
+        default: return b[0];
+    }
+}
+
+static int identifier_char_size_slow(const char* c, bool start) {
+    u32 code;
+    int size;
+    if (*c == '\\') {
+        size = identifier_escape_size(c);
+        if (!size) return 0;
+        code = 0;
+        for (const char* d = c + 2; d < c + size; d++) {
+            if (hex_digit_value(*d) >= 0) code = code * 16 + (u32)hex_digit_value(*d);
+            if (code > 0x10FFFF) return 0;
+        }
+        if (code < 0x80) return (identifier_char_class[code] & (start ? 1 : 2)) ? size : 0;
+    } else {
+        size = utf8_char_size(c);
+        if (size < 2) return 0;
+        code = utf8_code_point(c, size);
+    }
+    bool esnext = compiler_options()->target >= SCRIPT_TARGET_ES2015;
+    return (start ? unicode_is_identifier_start(code, esnext) : unicode_is_identifier_part(code, esnext)) ? size : 0;
+}
+
+// A character at c that starts no token (tsc's scanner: TS1127 Invalid character): its length, else 0
 static int invalid_char_size(const char* c) {
     unsigned char b = (unsigned char)c[0];
-    if (b >= 0x80) return unicode_whitespace_size(c) ? 0 : utf8_char_size(c);
-    if (b == '\\') return identifier_escape_size(c) ? 0 : 1;
+    if (b >= 0x80) return unicode_whitespace_size(c) || identifier_char_size_slow(c, true) ? 0 : utf8_char_size(c);
+    if (b == '\\') return identifier_char_size_slow(c, true) ? 0 : 1;
     if (b && b < 0x20 && !is_js_ascii_space((char)b)) return 1;
     // A `#` that starts no private name (tsc's scanner still makes it a PrivateIdentifier token, with this error).
     // `#!` is TS18026
-    if (b == '#' && c[1] != '!' && !is_identifier_start_char(c[1]) && !identifier_escape_size(c + 1)) return 1;
+    if (b == '#' && c[1] != '!' && !identifier_char_size(c + 1, true)) return 1;
     return 0;
 }
 
@@ -939,7 +981,7 @@ __attribute__((always_inline)) static inline bool hop_start_if_ends_on_word_brea
         prefix++;
         pos++;
     }
-    if (is_identifier_char(*pos)) return false;
+    if (identifier_char_size(pos, false)) return false;
     parent->pos = pos;
     return true;
 }
@@ -985,7 +1027,7 @@ static bool hop_token(Parser* parent) {
             }
 
         case '#':
-            if (is_identifier_start_char(parent->pos[1])) {
+            if (identifier_char_size(parent->pos + 1, true)) {
                 parent->pos++;
                 parse_identifier_or_keyword(parent, nullptr);
                 return true;
@@ -1037,9 +1079,10 @@ typedef struct Tok {
 // The end of the token at c, tsc's scanner's idea of it but cheap: no values, templates are just their backtick
 static const char* tok_scan_end(const char* c) {
     if (!*c) return c;
-    if (is_identifier_start_char(*c) || (*c == '#' && is_identifier_start_char(c[1]))) {
-        c++;
-        while (is_identifier_char(*c)) c++;
+    int size = identifier_char_size(c + (*c == '#'), true);
+    if (size) {
+        c += size + (*c == '#');
+        while ((size = identifier_char_size(c, false))) c += size;
         return c;
     }
     if ((*c >= '0' && *c <= '9') || (*c == '.' && c[1] >= '0' && c[1] <= '9')) {
@@ -1107,7 +1150,7 @@ static bool tok_is_eof(Tok t) {
 // tsc's tokenIsIdentifierOrKeyword, which private names (`#x`) pass too
 static bool tok_is_word(Tok t) {
     // (A lone `#` is a private name too, with TS1127: see hop_private_name())
-    return is_identifier_start_char(*t.start) || (*t.start == '#' && t.start[1] != '!');
+    return identifier_char_size(t.start, true) || (*t.start == '#' && t.start[1] != '!');
 }
 
 static bool tok_is_one_of(Tok t, const char* const* words) {
@@ -1122,7 +1165,7 @@ static bool is_reserved_word(csview word);
 // tsc's isIdentifier (reserved words and private names aren't; `yield`/`await` are, which only matters to the
 // stricter predicates)
 static bool tok_is_identifier(Tok t) {
-    return is_identifier_start_char(*t.start) && !is_reserved_word((csview){ t.start, t.end - t.start });
+    return identifier_char_size(t.start, true) && !is_reserved_word((csview){ t.start, t.end - t.start });
 }
 
 // Any keyword tsc's scanner knows, contextual ones included (tsc's textToKeywordObj)
@@ -1794,7 +1837,7 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
         if ((hop_start_if_ends_on_word_break(&modifier_p, "in") ||
              hop_start_if_ends_on_word_break(&modifier_p, "out") ||
              (modifier_const = hop_start_if_ends_on_word_break(&modifier_p, "const"))) &&
-            (hop_whitespace(&modifier_p), is_identifier_start_char(*modifier_p.pos))
+            (hop_whitespace(&modifier_p), identifier_char_size(modifier_p.pos, true))
         ) {
             is_const |= modifier_const;
             parse_success(&modifier_p);
@@ -2526,7 +2569,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     *ret = (TypeNode){0}; // (Some branches only fill in what they're about)
     // Every branch below needs a particular first character: test it before trying the branch
     char c = *p.pos;
-    bool word = is_identifier_start_char(c);
+    bool word = identifier_char_size(p.pos, true);
     if (p.shared->in_jsdoc && parse_jsdoc_prefix_type(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "any")) {
         *ret = type_any;
@@ -4115,7 +4158,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
                 enum_case.name = enum_case.full_name;
                 enum_case.computed_name = true;
             }
-        } else if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+        } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
             // A private name (tsc's parsePropertyName): TS18024 from the checker
             p.pos++;
             parse_identifier_or_keyword(&p, nullptr);
@@ -4797,7 +4840,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         }
         item.computed_key = c_new(Expr, key);
         item.name_span = span_from(key_anchor);
-    } else if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+    } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
         // A private name (tsc's parsePropertyName), the checker reports it (not a shorthand: `{ #x }` misses a `:`)
         Anchor name_anchor = anchor(&p);
         p.pos++;
@@ -5722,7 +5765,7 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
         while (*c == ' ' || *c == '\t' || *c == '\n' || *c == '\r') {
             c++;
         }
-        starts_with_implements_clause = is_identifier_start_char(*c);
+        starts_with_implements_clause = identifier_char_size(c, true);
     }
     if (starts_with_followed_by_word_break(&p, "extends") ||
         starts_with_implements_clause ||
@@ -6139,7 +6182,7 @@ static bool await_is_operator(Parser* parent) {
     while (*c == ' ' || *c == '\t') {
         c++;
     }
-    if (is_identifier_start_char(*c) || is_number_start_char(*c) || *c == '"' || *c == '\'' || *c == '`') {
+    if (identifier_char_size(c, true) || is_number_start_char(*c) || *c == '"' || *c == '\'' || *c == '`') {
         return true;
     }
     // At the top level an operand can start with anything that can't continue an expression that began with an
@@ -6154,7 +6197,7 @@ static bool yield_is_operator_outside_generator(Parser* parent) {
     const char* c = parent->pos + strlen("yield");
     while (*c == ' ' || *c == '\t') c++;
     if (c[0] == '/' && (c[1] == '/' || c[1] == '*')) return false; // (a comment: be conservative)
-    return is_identifier_start_char(*c) || is_number_start_char(*c) || (unsigned char)*c >= 0x80 || *c == '"' ||
+    return identifier_char_size(c, true) || is_number_start_char(*c) || (unsigned char)*c >= 0x80 || *c == '"' ||
         *c == '\'' || *c == '`';
 }
 
@@ -6216,7 +6259,7 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     // tsc reads a top-level `await (x)` as a call of `await`, which a module reparses as an expression in an await
     // context (reparseTopLevelAwait): no grammar errors. `await x` is an await expression from the start
     char c = *p.pos;
-    if (await_place == AWAIT_AT_TOP_LEVEL && !(is_identifier_start_char(c) || is_number_start_char(c) || c == '"' ||
+    if (await_place == AWAIT_AT_TOP_LEVEL && !(identifier_char_size(p.pos, true) || is_number_start_char(c) || c == '"' ||
         c == '\'' || c == '`')) {
         await_place = AWAIT_ALLOWED;
     }
@@ -6230,7 +6273,7 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     if (op == UNARY_OP_YIELD) {
         // tsc's parseYieldExpression(): an operand if one starts on the same line (isStartOfExpression)
         char c = *p.pos;
-        bool starts_expression = is_identifier_start_char(c) || is_number_start_char(c) || (unsigned char)c >= 0x80 ||
+        bool starts_expression = identifier_char_size(p.pos, true) || is_number_start_char(c) || (unsigned char)c >= 0x80 ||
             strchr("\"'`([{!~+-/<@#", c) != nullptr;
         bare_yield = !c || !starts_expression || p.whitespace == WHITESPACE_NEWLINE;
     }
@@ -6313,9 +6356,10 @@ static double digits_value(csview digits, int base) {
 // After a numeric literal that ends at c (tsc's checkForIdentifierStartAfterNumericLiteral): an identifier right
 // after it is TS1351 and a token of its own, but a lone `n` is a bigint suffix in the wrong place (consumed)
 static const char* check_identifier_after_number(Parser* p, const char* start, const char* c, bool scientific) {
-    if (!is_identifier_start_char(*c)) return c;
-    const char* id_end = c + 1;
-    while (is_identifier_char(*id_end)) id_end++;
+    int size = identifier_char_size(c, true);
+    if (!size) return c;
+    const char* id_end = c + size;
+    while ((size = identifier_char_size(id_end, false))) id_end += size;
     if (id_end - c == 1 && *c == 'n') {
         Span span = span_make(p->shared->source, start, id_end);
         if (scientific) parse_error(p, span, 1352, "A bigint literal cannot use exponential notation.");
@@ -7007,26 +7051,22 @@ static int identifier_escape_size(const char* c) {
 // dot: `hyphens`). Unicode escapes are read, and are TS17021
 static bool parse_jsx_identifier_hyphens(Parser* parent, bool hyphens, Span* ret) {
     Anchor a = anchor(parent);
-    bool escaped = false;
     int escape = identifier_escape_size(parent->pos);
     if (escape) {
         parent->pos += escape;
-        escaped = true;
     } else if (!parse_identifier_or_keyword(parent, nullptr)) {
         return false;
     }
     while (true) {
-        if ((hyphens && *parent->pos == '-') || is_identifier_char(*parent->pos)) {
-            parent->pos++;
-        } else if ((escape = identifier_escape_size(parent->pos))) {
-            parent->pos += escape;
-            escaped = true;
-        } else {
-            break;
-        }
+        int size = hyphens && *parent->pos == '-' ? 1 : identifier_char_size(parent->pos, false);
+        if (!size) size = identifier_escape_size(parent->pos);
+        if (!size) break;
+        parent->pos += size;
     }
     *ret = span_from(a);
-    if (escaped) parse_error(parent, *ret, 17021, "Unicode escape sequence cannot appear here.");
+    if (memchr(ret->sv.buf, '\\', ret->sv.size)) {
+        parse_error(parent, *ret, 17021, "Unicode escape sequence cannot appear here.");
+    }
     return true;
 }
 
@@ -7087,7 +7127,7 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
         if (!parse_jsx_identifier_hyphens(&dot, false, &prop)) {
             *broken = true;
             // (a private name is read and dropped, tsc's parseRightSideOfDot, which reports after it)
-            if (*dot.pos == '#' && is_identifier_start_char(dot.pos[1])) {
+            if (*dot.pos == '#' && identifier_char_size(dot.pos + 1, true)) {
                 dot.pos++;
                 parse_identifier_or_keyword(&dot, nullptr);
                 parse_error(&dot, span_from_pos(&dot), 1003, "Identifier expected.");
@@ -7548,7 +7588,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     VecCStr texts;
     // Most branches below need a particular first character: test it before trying the branch
     char c = *p.pos;
-    bool word = is_identifier_start_char(c);
+    bool word = identifier_char_size(p.pos, true);
     if (c == '`' && parse_template(&p, &substitutions, &texts)) {
         *ret = expr_template(span_from(a), c_new(TemplateExpr, {
             .template_span = span_from(a),
@@ -7561,7 +7601,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ret->tag = EXPR_LITERAL;
     } else if (c == '/' && parse_regex(&p)) {
         *ret = expr_regex(span_from(a));
-    } else if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+    } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
         p.pos++;
         Span ignored;
         parse_identifier_or_keyword(&p, &ignored);
@@ -8398,7 +8438,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
 // A variable's, parameter's or catch variable's binding: tsc's parseIdentifierOrPattern also takes a private name as an
 // identifier, reporting code (TS18029 variables, TS18009 parameters)
 static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, u32 code, char const* message) {
-    if (*parent->pos != '#' || !is_identifier_start_char(parent->pos[1])) return parse_binding_content(parent, ret);
+    if (*parent->pos != '#' || !identifier_char_size(parent->pos + 1, true)) return parse_binding_content(parent, ret);
     Anchor a = anchor(parent);
     parent->pos++;
     parse_identifier_or_keyword(parent, nullptr);
@@ -9163,8 +9203,9 @@ static bool statement_start_needs_check(Parser* p) {
             next.pos += strlen("import");
             hop_whitespace(&next);
             char c = *next.pos;
+            bool word = identifier_char_size(next.pos, true);
             parse_fail(&next);
-            return !(is_identifier_start_char(c) || (c && strchr("\"'*{(<.", c)));
+            return !(word || (c && strchr("\"'*{(<.", c)));
         }
         case 'p':
             return starts_with_followed_by_word_break(p, "public") || starts_with_followed_by_word_break(p, "private") ||
@@ -9941,7 +9982,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     ret->flow = nullptr;
     // Every branch before the expression statement needs a particular first character: test it first
     char c = *p.pos;
-    bool word = is_identifier_start_char(c);
+    bool word = identifier_char_size(p.pos, true);
     if (c == ';') {
         *ret = statement_noop;
     } else if (hop_start_if_ends_on_word_break(&p, "debugger")) {
