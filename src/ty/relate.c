@@ -4843,7 +4843,15 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         }
         if (source == target) return TERNARY_TRUE;
     }
-    target = ty_strip_nullable_target(me, source, target);
+    Ty const* stripped = ty_strip_nullable_target(me, source, target);
+    // (What's left is normalized too: tsc's getNormalizedType(nullStrippedTarget, writing))
+    while (stripped != target && (stripped->kind == TY_INDEXED || stripped->kind == TY_CONDITIONAL || stripped->kind == TY_SUBSTITUTION)) {
+        Ty const* next = stripped->kind != TY_SUBSTITUTION ? ty_regular(me, ty_simplified(me, stripped, true)) :
+            stripped->substitution.base;
+        if (next == stripped) break;
+        stripped = next;
+    }
+    target = stripped;
     if (source == target) return TERNARY_TRUE;
     // (Errors name an alias as it was: tsc's reportErrorResults)
     Ty const* report_target = original_target->alias ? original_target : target;

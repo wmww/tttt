@@ -17066,7 +17066,7 @@ const baselines = {
         types: false,
     },
     'indexedAccessNormalization': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
