@@ -977,6 +977,8 @@ static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u
                 }
                 Ty const* b_type = prop_type(me, other);
                 if (!is_literal_like(a_type) && !is_literal_like(b_type)) continue;
+                // (Not when one of them is never: tsc's isDiscriminantWithNeverType, CheckFlags.HasNeverType)
+                if ((a_type->flags | b_type->flags) & TYF_NEVER) continue;
                 Ty const* both[2] = { a_type, b_type };
                 conflict = (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) != 0;
             }

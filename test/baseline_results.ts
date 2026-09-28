@@ -5277,8 +5277,8 @@ const baselines = {
     },
     'complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'complicatedIndexesOfIntersectionsAreInferencable': {
         errors: true,
