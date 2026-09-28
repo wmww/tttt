@@ -29,3 +29,13 @@ smaller leftovers to `bugs/*.md` and hacks.md.
 - tsc prints a written `<T extends any>` as `extends unknown`.
 - ~30 callers of ty_non_nullable still use its stripped-constraint behaviour for type parameters (hacks.md
   "ty_non_nullable"); `x!` and optional-chain roots use ty_non_nullish_part (tsc's getNonNullableType) now.
+- (sub-agent C) Elaboration into a `NoInfer` member: against `NoInfer<{ type: 'A' }> | Expr` tsc elaborates to `'"B"'
+  is not assignable to '"A"'`, tttt reports the whole argument (best_matching_type doesn't pick the substitution).
+- Union-source elaboration: for `Snap<...>` (a union alias) not assignable to `number`, tsc adds a line for the
+  union's first member; tttt omits it.
+- Missing TS2353 for `const x: Trans<E> = { NEXT: ... }` in a generic function with `Trans<E> = { [K in E['type'] |
+  '*']?: ... }`.
+- TS2305 where tsc gives TS2724 ("Did you mean 'StateSchema'?") for a missing named import.
+- tttt adds TS6500 related info on `NoInfer<{...}>` targets; tsc doesn't.
+- xstate meta.test.ts 270/434: elaboration stops one level too high (at `e2:`, tsc goes on to the `meta:` under the
+  `@ts-expect-error`). Not reduced.

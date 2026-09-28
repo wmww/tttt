@@ -52,6 +52,26 @@ Left, every one reduced:
 - cleverMerge.js:355 `newFn[DYNAMIC_INFO] = ...`: late-bound expandos (plan 26 leftovers).
 
 
+### xstate (61)
+Pinned 2026-09-28 (sixth window, todo entry 1) as the inference-heavy corpus: xstate core at f210b35 (last commit
+before TypeScript 6) with its vitest tests, through our `corpora-locks/xstate.overlay/packages/core/tsconfig.corpus.json`
+(lib es2024, src + test). tsc 5.8: 0 in 5.9 s. tttt went 394 -> 61 the same session (three sub-agents + main tree):
+unknown-like unions, instantiation expressions of functions, nested generic calls skipped in the first pass, the
+target-side isDeeplyNestedType(10) bail-out for conditionals (a TS2589 blowup whose memoized error types poisoned the
+test files and made the output checker-count dependent), `extends any`, x! as NonNullable<T>, speculative memos...
+Left, by cause (sub-agent reports in the commit messages; repros in `plans/38_prototypes/xstate_*.ts`):
+- **Plan 38, most of it**: defaults leaking into the second pass's contextual type (setup.types 37-132, TS7006/7031),
+  the return mapper applied to the whole parameter type (types 2006-2038), the contextual type instantiated whole
+  instead of leaf-wise (`assign({ prop: ({ spawn }) => ... })`, 7 TS7031), fixing through the parameter walk
+  (actorLogic x7, predictableExec, system), `params` unknown in provided actions (types 3035/3848), spawnChild's
+  `{ id: 'ok1' }` widened (types 870), `spawn('child')` over both logics (types 1662), setup().extend() guards/delays
+  (setup.types 2787-2951, not reproduced standalone), dieHard.test.ts, StateMachine.ts:393.
+- Elaboration: meta.test 270/434 stops one level high (triage).
+- Not investigated: invoke `event.output` unknown x4 / `Snapshot<unknown>` context x3, actor 869, actions
+  3951/4152/4181 (DoNotInfer leak?), actions 4224/4272 (GetConcreteByKey), emit 49/52 (TS2353), spawn.ts:132
+  (deferred conditional rest parameter).
+- Determinism: 5 diagnostics only at `--checkers 1` (triage).
+
 ### zod-root (tsc 55, tttt 55: the same set)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
 **not clean under tsc**: 55 diagnostics of its own (26 TS2307 for bench deps the workspace doesn't install, 14 TS6133,

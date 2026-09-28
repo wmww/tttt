@@ -396,6 +396,11 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   `Checker.jsx_element` lets `report_relation_error` apply the JSX head rule (`ty_jsx_skips_head`); relations about
   attributes outside `ty_check_jsx_element` don't see it.
 
+- `LazyMemo.speculative` / `lazy_type_set_speculative()` (c1a53328): a call typed during an outer inference round
+  doesn't replace the memo made against the instantiated contextual type, so the error pass doesn't re-resolve nested
+  calls with a raw contextual type (xstate's `DoNotInfer<TContext>` leaking into enqueueActions). Stands in for tsc
+  caching a call's first resolved signature (links.resolvedSignature); plan 38's per-resolution scope should replace it.
+
 ## Expressions (`ty/expr.c`), contextual typing
 - `intersection_prop_context` (`ty/expr.c`): tsc's getTypeOfPropertyOfContextualType over an intersection sees type
   variable members through getApparentTypeOfIntersectionType, and the intersection distributes over a member whose
