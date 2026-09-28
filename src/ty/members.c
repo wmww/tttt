@@ -1035,6 +1035,8 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     } else if (base_constructor) {
         Members const* base_members = ty_members(me, base_constructor);
         for (u32 i = 0; i < base_members->prop_count; i++) {
+            // A static `#x` isn't inherited (tsc's addInheritedMembers: isStaticPrivateIdentifierProperty)
+            if (ty_private_name_class(me, base_members->props[i]->name)) continue;
             if (!builder_find_prop(builder, base_members->props[i]->name)) {
                 builder_push(builder, props, base_members->props[i]);
             }

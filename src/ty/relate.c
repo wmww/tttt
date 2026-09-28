@@ -1363,6 +1363,12 @@ static bool elaborate_array_like(Checker* me, Ty const* source, Ty const* target
     return true;
 }
 
+// A static `#x` isn't required of a source (tsc's getUnmatchedProperties: isStaticPrivateIdentifierProperty), which is
+// how a derived class's static side relates to its base's
+static bool is_static_private_name(Checker* me, Prop const* prop) {
+    return (prop->flags & PROP_STATIC) && ty_private_name_class(me, prop->name);
+}
+
 static Ternary props_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent
 ) {
@@ -1378,6 +1384,7 @@ static Ternary props_related(
         for (u32 i = 0; i < target_members->prop_count; i++) {
             Prop const* target_prop = target_members->props[i];
             if ((target_prop->flags & PROP_OPTIONAL) || find_prop(me, source, target_prop->name, 0).found) continue;
+            if (is_static_private_name(me, target_prop)) continue;
             if (missing_count < c_arraylen(missing)) missing[missing_count] = target_prop->name;
             if (!missing_count) missing_prop = target_prop;
             missing_count++;
@@ -1439,6 +1446,7 @@ static Ternary props_related(
         }
         FoundProp source_prop = find_prop(me, source, target_prop->name, 0);
         if (!source_prop.found) {
+            if (is_static_private_name(me, target_prop)) continue;
             // Subtypes need the optional properties too, unless an object literal, [] or a tuple leaves them out
             // (tsc's requireOptionalProperties)
             if ((target_prop->flags & PROP_OPTIONAL) && (!is_subtype_relation(st->relation) || !requires_optional_properties(me, source))) {
