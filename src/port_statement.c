@@ -66,14 +66,31 @@ ImportResolutionOverride import_attributes_resolution_mode(ImportAttributes cons
     return IMPORT_RESOLUTION_DEFAULT;
 }
 
+// An export declaration (`export { a }`, `export * from "m"`), not an exported declaration or `export =`/`export import`
+static bool port_statement_is_export_declaration(PortStatement const* me) {
+    if (!csview_equals(my keyword_span.sv, "export")) return false;
+    switch (my main.tag) {
+        case PORT_IMPORT_DEFAULT: case PORT_IMPORT_GATHER: case PORT_IMPORT_SPECIFIC: case PORT_IMPORT_ALIAS:
+        case PORT_EXPORT_AS_NAMESPACE:
+            return false; // (`export import x = ...`, `export as namespace N`)
+        default:
+            return true;
+    }
+}
+
 void port_statement_add_names(PortStatement* me, Scope* scope) {
-    if (my module_ref && !my jsdoc && !(scope->kind == SCOPE_MODULE || (scope->container && scope->container->is_module))) {
-        error_ctx_error_d(
-            scope->errs,
-            my keyword_span,
-            1232,
-            "An import declaration can only be used at the top level of a namespace or module."
-        );
+    // (tsc's checkGrammarModuleElementContext: a file, a namespace body or an ambient module's)
+    bool top = scope->kind == SCOPE_MODULE || scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_GLOBAL_AUGMENTATION ||
+        (scope->container && scope->container->is_module);
+    my in_namespace = !top && scope->kind == SCOPE_NAMESPACE;
+    my in_ambient_namespace = my in_namespace && scope->ambient;
+    bool is_import_alias = my main.tag == PORT_IMPORT_ALIAS && csview_equals(my keyword_span.sv, "import");
+    if (!my jsdoc && !top && !my in_namespace && (my module_ref || is_import_alias || port_statement_is_export_declaration(me))) {
+        my wrong_context = true;
+        bool is_export = csview_equals(my keyword_span.sv, "export");
+        error_ctx_error_d(scope->errs, my keyword_span, is_export ? 1233 : 1232, is_export ?
+            "An export declaration can only be used at the top level of a namespace or module." :
+            "An import declaration can only be used at the top level of a namespace or module.");
         return;
     }
 
@@ -87,8 +104,10 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 
 
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs) {
+    if (my wrong_context) return;
     // Ambient modules of every file are known by now. tsc doesn't mind unresolved side effect imports (`import "./a"`)
-    bool unchecked = my side_effect_only && !compiler_options()->no_unchecked_side_effect_imports;
+    // (In a namespace it is TS1147/TS1194 instead, and nothing is resolved: tsc's checkExternalImportOrExportDeclaration)
+    bool unchecked = (my side_effect_only && !compiler_options()->no_unchecked_side_effect_imports) || my in_namespace;
     if (my module_ref && !unchecked && !my module_ref->file &&
         !binder_module_of_ref(scope->binder, my module_ref)
     ) {
@@ -135,6 +154,18 @@ static void port_statement_check_emit_helpers(PortStatement const* me, Span span
 }
 
 void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs) {
+    if (my in_namespace && !my jsdoc) {
+        if (port_statement_is_export_declaration(me)) {
+            // (tsc's checkExportDeclaration: at the module name with one, else at the declaration unless ambient)
+            if (my module_ref) {
+                error_ctx_error_d(errs, my module_ref->span, 1194, "Export declarations are not permitted in a namespace.");
+            } else if (!my in_ambient_namespace && my main.tag != PORT_REEXPORT_SPLAT && my main.tag != PORT_REEXPORT_GATHER) {
+                error_ctx_error_d(errs, span_with_semicolon(span), 1194, "Export declarations are not permitted in a namespace.");
+            }
+        } else if (my module_ref) {
+            error_ctx_error_d(errs, my module_ref->span, 1147, "Import declarations in a namespace cannot reference a module.");
+        }
+    }
     if (!ambient) port_statement_check_emit_helpers(me, span, errs);
     // tsc's checkImportEqualsDeclaration: `import x = require()` can't be emitted as an ES module (by the module
     // option, whatever the file's format)

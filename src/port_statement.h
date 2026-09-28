@@ -105,6 +105,11 @@ typedef struct PortStatement {
     ModuleRef* module_ref; // Made by the parser when there is a target path
     ImportAttributes* attributes; // Owned, null if there are none
     bool jsdoc; // A JavaScript file's `@import` tag (type-only, not part of the baselines' walk, no module indicator)
+    // Directly in a namespace body (not an ambient module's), set by port_statement_add_names(): an import of a module
+    // is TS1147, an export declaration TS1194 (unless the namespace is ambient and nothing is re-exported)
+    bool in_namespace;
+    bool in_ambient_namespace;
+    bool wrong_context; // In a block or function (TS1232/TS1233): not declared, nothing resolved
 } PortStatement;
 
 void port_statement_drop(PortStatement* me);
