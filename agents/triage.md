@@ -17,3 +17,9 @@ non-widening undefined, `infer X extends C` scope), `bugs/display.md` (object li
 - `baseline_test_traversal.c` `port_item_add_alias`: the `import type`/`export type` declared-type rule checks the
   resolved symbol for class/interface/enum/alias only; tsc's getDeclaredTypeOfSymbol also takes type parameters and
   enum members. Unverified whether any test reaches that.
+- **Segfault on zod's root tsconfig** (`./release/tttt -q --keep-going -p thirdparty/corpora/zod`, not the pinned
+  `packages/zod/tsconfig.test.json`, which is fine): crashes in `reverse_mapped_type_uncached` <- `infer_to_mapped`
+  <- `infer_from_objects` <- ~10 nested `infer_from` <- `infer_type_arguments`, while checking a variable statement.
+  Present at 0746971 (not a stack overflow: `ulimit -s unlimited` still crashes). Found by plan 36's planning session;
+  `gdb -batch -ex run -ex bt --args ./release/tttt ...` with `TTTT_NO_REEXEC=1` reproduces in ~2 s. Worth pinning
+  the root config as a second zod corpus once it runs.

@@ -16,8 +16,10 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    re-walks flow, inference's deep-nesting limit is tsc's 2 (+ circularity, typesDefinitelyUnrelated: zod's TS2589s
    gone), relation budget (TS2859; suite 50 -> 23 s). Suite 9666 -> 9667, webpack 130 -> 118, zod 15 -> 13.
    Memory is the next perf front (`bugs/perf_leads.md`: `Prop` split, 3.5x tsc's type count, AST node arenas).
-4. **Plan 36 planning**: parallelism readiness. Prototype parallel parsing, measure, audit bind/check shared state,
-   write the staged plan. No production parallelism in this session unless the prototype is clean and cheap.
+4. ~~**Plan 36 planning**~~ done: prototypes of parallel loading (cache-warmer pool: byte-identical output, whole
+   runs 5-10% faster on 4 cores) and K checkers (sequential; webpack's check 3.1x at K=4 ideal, +4..19% duplicated
+   work, only union member order differs). Plan 36 rewritten with 3 stages; stage 3 needs a decision (fixed
+   logical checker count, recommended). Nothing in `src/` changed.
 5. **Plan 26**: stage 3 leftovers (global expando namespaces, prototype methods' templates) then stage 4 as far as
    it goes; webpack 118 is the corpus check.
 6. **Plan 27 stage 3**: lexical diagnostics (`syntaxstats.py` lexical clusters; tsc 5.5's regex literal checks,
@@ -28,3 +30,6 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    If time is left, plan 34's queue (error text, 311 tests).
 10. **Triage**: drain triage.md, prune hacks.md (677 lines) of entries that are fixed, refresh measurements.md.
 11. **Insights.**
+
+After insights (for it to order): plan 36 stage 1 (parallel loading, one session), stage 2 (check-phase readiness,
+single-threaded `--checkers K`), then stage 3 (parallel checking) once the union-order decision is made.

@@ -64,3 +64,9 @@ stdlib alone (esnext.full, 42k lines) 13 / 5 / 33. `--time` prints the resident 
 At the session's start (028246a) -> end: tsc corpus 5.100 -> 4.661 G, type-fest 3.348 -> 3.276, valibot 5.262 -> 5.012,
 react 1.929 -> 1.934, nest 1.008 -> 1.022 (the parser's shrink_to_fit reallocs), webpack 3.383 -> 3.282,
 zod 10.889 -> 9.057. (valgrind runs don't re-exec, so huge pages aren't in these.)
+
+## Parallelism prototypes (2026-09-28, plan 36 planning, 0746971 + `plans/36_prototype.patch`)
+Parallel loading at 4 workers, whole run best of 5: tsc 661 -> 631 ms, webpack 564 -> 527, nest 201 -> 180, react
+243 -> 228, valibot 622 -> 599, zod 1315 -> 1260, type-fest 327 -> 321; output byte-identical. K checkers run one
+after another, typecheck ms K=1 -> K=4 sum / slowest checker: tsc 464 -> 505 / 243, webpack 337 -> 400 / 107, zod
+1147 -> 1266 / 717, valibot 515 -> 586 / 188, react 119 -> 245 / 73. Details and the load-phase split in plan 36.

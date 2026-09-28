@@ -39,7 +39,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   type parameters, where no error shows the difference. These are checker semantics bugs of the same kind that later
   surface as spurious errors in real code, so they're worth more than their test count. **Plan 35**: tool first
   (split the bucket by mechanism), then fix from the top. Same pattern as plans 27/34.
-- **Parallelism gets a planning session now (plan 36)**, not "later". webpack is lost even to single-threaded tsgo,
+- **Parallelism gets a planning session now (plan 36)**, not "later". *Done 09-28*: three stages written (parallel
+  loading, check-phase readiness single-threaded, parallel checking); stage 3 waits on the union-order decision. webpack is lost even to single-threaded tsgo,
   nest is within 35% of multi-threaded tsgo, and every window of completeness work costs instructions. Meanwhile the
   binder keeps growing shared state (JS declarations). Parallel parsing is the likely first stage (13-43% of the time
   on every corpus); the planning session measures a prototype before staging anything. The rule "single-threaded
@@ -87,8 +88,13 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
   stack; tsc walks them iteratively), backtracking cost.
 - **Binder**: still writes to shared tables and one arena (`hacks.md`, "Parallelism contract audit"), the one phase
   that doesn't shard per file. JS support will add declarations from assignments; design it with that in mind.
-- **Threading** (not built, not precluded): N checkers over one AST is "make N `Checker`s and partition files". Type
-  ids are per checker, and printed union order depends on them: keep output deterministic under any partition.
+- **Threading** (not built; plan 36 prototyped it 09-28): parsing is thread-clean, and a pool that parses ahead of the
+  unchanged sequential loader gives byte-identical output (5-10% faster runs). K `Checker`s over one AST already
+  work unchanged (the walk goes through the thread-local `current_checker`); the check phase writes a handful of
+  shared things (plan 36's audit). Type ids are per checker and printed union order depends on them, so K>1
+  checkers differ from K=1 in union member order inside messages only: fix K independently of the thread count
+  (tsgo's `--checkers`) to keep output identical for any thread count. Checking is where the win is (webpack's
+  check 3.1x at K=4); after that the serial resolve-names phase is next.
 
 ## Risks / concerns
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order by

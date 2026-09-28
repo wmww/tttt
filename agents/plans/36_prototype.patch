@@ -1,0 +1,601 @@
+diff --git a/src/main.c b/src/main.c
+index 0d5c2af..31a1575 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -180,6 +180,42 @@ static_failable check_files(Options const* opts, returns int) {
+     }
+     double last = now_ms();
+ 
++    // PROTOTYPE (plan 36): TTTT_PREPARSE=N parses the libs and the root files on N threads first
++    char const* preparse = getenv("TTTT_PREPARSE");
++    if (preparse && atoi(preparse) > 0) {
++        StrList paths = {0};
++        isize lib_count = 0;
++        if (!opts->no_lib) {
++            cstr libs = compiler_options_lib_files(program_options(program));
++            csview rest = cstr_sv(&libs);
++            while (rest.size) {
++                intptr_t end = csview_find_sv(rest, c_sv(","));
++                cstr lib = program_lib_path(program, csview_slice(rest, 0, end));
++                str_list_push(&paths, cstr_sv(&lib));
++                cstr_drop(&lib);
++                lib_count++;
++                if (end == c_NPOS) break;
++                rest = csview_slice(rest, end + 1, INTPTR_MAX);
++            }
++            cstr_drop(&libs);
++        }
++        for (intptr_t i = 0; i < opts->path_count; i++) str_list_push(&paths, csview_from(opts->paths[i]));
++        for (isize i = 0; i < root_files.count; i++) str_list_push(&paths, cstr_sv(&root_files.items[i]));
++        check(paths.count > 0);
++        csview* views = c_new_n(csview, paths.count);
++        bool* is_stdlib = c_new_n(bool, paths.count);
++        for (isize i = 0; i < paths.count; i++) {
++            views[i] = cstr_sv(&paths.items[i]);
++            is_stdlib[i] = i < lib_count;
++        }
++        program_preparse(program, views, is_stdlib, paths.count, atoi(preparse));
++        if (getenv("TTTT_PREPARSE_WAIT")) sleep(1); // (measure the pool alone)
++        c_free_n(views, paths.count);
++        c_free_n(is_stdlib, paths.count);
++        str_list_drop(&paths);
++        phase_done(opts, "preparse", &last);
++    }
++
+     if (!opts->no_lib) {
+         if (!opts->quiet) println(color_good, "Loading libraries...", color_normal);
+         try (load_stdlib(program)) cleanup {
+@@ -206,7 +242,9 @@ static_failable check_files(Options const* opts, returns int) {
+     }
+     str_list_drop(&root_files);
+     program_load_automatic_types(program);
++    program_preparse_finish(program);
+     phase_done(opts, "load+parse files", &last);
++    { extern long long proto_resolve_ns, proto_parse_ns; if (opts->time) eprintln("time: (of which resolve ", (i64)(proto_resolve_ns / 1000000), " ms, parse ", (i64)(proto_parse_ns / 1000000), " ms)"); }
+ 
+     int ret = 0;
+     const intptr_t parse_errors = report_errors(&errs);
+diff --git a/src/program.c b/src/program.c
+index abdab32..febf921 100644
+--- a/src/program.c
++++ b/src/program.c
+@@ -10,6 +10,8 @@
+ #include "source_file.h"
+ #include "ty/ty.h"
+ #include "module_resolution.h"
++#include <pthread.h>
++#include <time.h>
+ 
+ #define g_class_key SourceFile, source_file
+ #define g_no_clone
+@@ -74,6 +76,8 @@ typedef struct Program {
+     HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
+     Checker* checker; // Created by program_make_current()
+     CompilerOptions options;
++    // PROTOTYPE (plan 36): files parsed ahead of time by program_preparse(), taken by program_add_source_idempotent()
++    struct Preparse* pre;
+ } Program;
+ 
+ static void program_add_builtins(Program* me) {
+@@ -147,6 +151,10 @@ void program_destroy(Program* me) {
+     }
+ }
+ 
++struct Preparse;
++static void pre_lock(Program* me);
++static void pre_unlock(Program* me);
++
+ static ModuleResolver* program_resolver(Program* me) {
+     if (!my resolver) my resolver = module_resolver_new(my fs, &my options);
+     return my resolver;
+@@ -160,7 +168,11 @@ void program_follow_lib_references(Program* me) {
+     my follow_lib_references = true;
+ }
+ 
++static RealpathFn proto_realpath;
++static void* proto_realpath_ctx;
+ void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx) {
++    proto_realpath = realpath;
++    proto_realpath_ctx = ctx;
+     module_resolver_set_realpath(program_resolver(me), realpath, ctx);
+ }
+ 
+@@ -186,6 +198,7 @@ static bool source_declares_ambient_module(SourceFile const* source, csview name
+     return false;
+ }
+ 
++long long proto_resolve_ns, proto_parse_ns;
+ // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
+ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
+     ModuleResolver* resolver = program_resolver(me);
+@@ -195,7 +208,11 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef*
+         ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
+     if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
+     if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
++    struct timespec t0, t1; clock_gettime(CLOCK_MONOTONIC, &t0);
++    pre_lock(me);
+     ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
++    pre_unlock(me);
++    clock_gettime(CLOCK_MONOTONIC, &t1); proto_resolve_ns += (t1.tv_sec - t0.tv_sec) * 1000000000LL + (t1.tv_nsec - t0.tv_nsec);
+     if (my options.no_resolve) {
+         // Nothing is added to the program, but a name may still mean a file that is part of it
+         if (resolved.kind != RESOLVED_NONE) ref->file = program_find_source(me, cstr_sv(&resolved.path));
+@@ -278,7 +295,9 @@ static SourceFile* program_load_reference_path(Program* me, Span path_span, csvi
+ }
+ 
+ static SourceFile* program_load_type_reference(Program* me, csview name, csview containing_file) {
++    pre_lock(me);
+     ResolvedModule resolved = module_resolver_resolve_type_reference(program_resolver(me), name, containing_file);
++    pre_unlock(me);
+     SourceFile* ret = resolved.kind == RESOLVED_NONE ? nullptr :
+         program_add_source_idempotent(me, cstr_sv(&resolved.path));
+     resolved_module_drop(&resolved);
+@@ -473,36 +492,10 @@ static void source_jsx_pragmas(SourceFile* file) {
+     }
+ }
+ 
+-static SourceFile* program_add_source_idempotent(Program* me, csview path) {
+-    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+-
+-    cstr cwd = cstr_null;
+-    // Not being able to determine our own working directory isn't something we can carry on from
+-    try (fs_get_cwd(my fs, &cwd)) or_panic;
+-    cstr canonical_path = relative_path_of(cstr_sv(&cwd), path);
+-    cstr_drop(&cwd);
+-
+-    auto cached_source = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
+-    if (cached_source) {
+-        // A source file is already created for this path
+-        cstr_drop(&canonical_path);
+-        return cached_source->second.get;
+-    }
+-
+-    // No source file is created for this path, load it
+-    cstr contents;
+-    try (fs_read_file(my fs, cstr_sv(&canonical_path), &contents)) if_err (e) {
+-        // Not worth reporting: the caller turns a null return into a TypeScript "file not found" error
+-        ignore e;
+-        current_error_destroy();
+-        cstr_drop(&canonical_path);
+-        return nullptr;
+-    }
+-
+-    SourceFile* source_file = c_new(
+-        SourceFile,
+-        source_file_make(cstr_clone(canonical_path), contents)
+-    );
++// Takes canonical_path and contents
++static SourceFile* program_make_source(Program const* me, cstr canonical_path, cstr contents, bool is_stdlib) {
++    SourceFile* source_file = c_new(SourceFile, source_file_make(canonical_path, contents));
++    csview path = cstr_sv(&source_file->canonical_path);
+ 
+     if (csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts")) {
+         source_file->is_declaration = true;
+@@ -525,18 +518,302 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
+     if (source_file->is_declaration && my options.skip_lib_check) source_file->unchecked = true;
+     if (my options.no_check) source_file->unchecked = true; // (tsc's skipTypeChecking: no semantic diagnostics at all)
+ 
+-    if (my loading_stdlib) {
++    if (is_stdlib) {
+         source_file->is_stdlib = true;
+         csview filename = basename_of(cstr_sv(&source_file->canonical_path));
+         cstr_take(&source_file->decl_override, cstr_d("lib.", filename, ", --, --"));
+     }
+ 
++    return source_file;
++}
++
++// PROTOTYPE (plan 36): a worklist of files parsed by a thread pool. Whoever finishes parsing a file resolves what it
++// imports (under `lock`, the resolver isn't thread safe) and queues the files that aren't queued yet. The sequential
++// loader takes the results in its own order, waiting for the ones still in flight; what it never asks for is wasted
++#define PRE_MAX (1 << 17)
++typedef struct PreEntry {
++    cstr path;
++    bool is_stdlib;
++    _Atomic int state; // 0 queued, 1 parsing, 2 done
++    SourceFile* file; // null: unreadable
++    ErrorCtx errs;
++} PreEntry;
++
++#define g_pro_key SvStr, svstr
++#define g_val isize, isize
++#include <cleat/generic/hmap.h>
++
++typedef struct Preparse {
++    pthread_mutex_t lock; // entries/count/index/next/in_flight/stop, the resolver
++    pthread_cond_t cond;
++    PreEntry* entries;
++    isize count;
++    HMapisize index; // path -> entry
++    isize next; // first queued entry
++    isize in_flight;
++    bool stop;
++    pthread_t threads[64];
++    int thread_count;
++    long long wasted;
++    double started_at, idle_at, lock_wait_ms;
++    int late;
++    double main_wait_ms, discover_ms;
++} Preparse;
++
++static void pre_queue_locked(Program* me, cstr path, bool is_stdlib) {
++    Preparse* pre = my pre;
++    if (hmap_isize_get(&pre->index, cstr_sv(&path)) || pre->count >= PRE_MAX) {
++        cstr_drop(&path);
++        return;
++    }
++    PreEntry* e = &pre->entries[pre->count];
++    e->path = cstr_clone(path);
++    e->is_stdlib = is_stdlib;
++    e->errs = error_ctx_init();
++    hmap_isize_insert(&pre->index, path, pre->count);
++    pre->count++;
++    pthread_cond_broadcast(&pre->cond);
++}
++
++static cstr pre_canonical(Program* me, csview path) {
++    cstr cwd = cstr_null;
++    try (fs_get_cwd(my fs, &cwd)) or_panic;
++    cstr ret = relative_path_of(cstr_sv(&cwd), path);
++    cstr_drop(&cwd);
++    return ret;
++}
++
++// What the sequential loader will probably load from this file (a guess: a wrong one only costs a parse)
++static void pre_discover(Program* me, ModuleResolver* resolver, SourceFile* file, cstr* found, isize* found_count) {
++    bool node_formats = (my options.module >= MODULE_KIND_NODE16 && my options.module <= MODULE_KIND_NODENEXT) ||
++        my options.module_resolution == MODULE_RESOLUTION_NODE16 ||
++        my options.module_resolution == MODULE_RESOLUTION_NODENEXT;
++    bool is_esm = false;
++    if (node_formats && !file->is_stdlib && !file->is_json) {
++        FileFormat format = module_resolver_file_format(resolver, cstr_sv(&file->canonical_path));
++        is_esm = format.mode == RESOLUTION_MODE_ESM;
++        cstr_drop(&format.package_json);
++    }
++    csview containing = cstr_sv(&file->canonical_path);
++    if (!my options.no_resolve) for (u32 i = 0; i < file->module_ref_count; i++) {
++        ModuleRef* ref = file->module_refs[i];
++        if (ref->is_declaration || ref->ambient_only) continue;
++        ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_REQUIRE_SYNTAX :
++            ref->syntax == MODULE_REF_DYNAMIC || is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
++        if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
++        if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
++        ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
++        bool load = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || resolved.kind == RESOLVED_JSON ||
++            (resolved.kind == RESOLVED_JS && my options.allow_js && !(resolved.is_external_library &&
++                csview_find_sv(cstr_sv(&resolved.path), c_sv("/node_modules/")) != c_NPOS));
++        if (load) found[(*found_count)++] = pre_canonical(me, cstr_sv(&resolved.path));
++        resolved_module_drop(&resolved);
++    }
++    for_each (s, vec_statement, &file->ast.statements) {
++        if (s->tag != STATEMENT_SOURCE_DIRECTIVE) continue;
++        SourceDirectiveStatement* d = s->source_directive;
++        if (d->tag == SOURCE_DIRECTIVE_REFERENCE_TYPES) {
++            ResolvedModule resolved = module_resolver_resolve_type_reference(resolver, cstr_sv(&d->path), containing);
++            if (resolved.kind != RESOLVED_NONE) found[(*found_count)++] = pre_canonical(me, cstr_sv(&resolved.path));
++            resolved_module_drop(&resolved);
++        } else if (d->tag == SOURCE_DIRECTIVE_REFERENCE_LIB && file->is_stdlib) {
++            cstr name = cstr_d(d->path, ".d.ts");
++            cstr_lowercase(&name);
++            cstr lib = cstr_d(dirname_of(containing), "/", name);
++            cstr_drop(&name);
++            // (the loader's own naming of lib files may differ: then this is wasted)
++            found[(*found_count)++] = pre_canonical(me, cstr_sv(&lib));
++            cstr_drop(&lib);
++        }
++    }
++}
++
++static void pre_queue_found_locked(Program* me, SourceFile* file, cstr* found, isize found_count) {
++    for (isize k = 0; k < found_count; k++) pre_queue_locked(me, found[k], file->is_stdlib && csview_starts_with(cstr_sv(&found[k]), "thirdparty/lib/"));
++}
++
++static void* preparse_worker(void* arg) {
++    Program* me = arg;
++    Preparse* pre = my pre;
++    ModuleResolver* resolver = module_resolver_new(my fs, &my options);
++    if (proto_realpath) module_resolver_set_realpath(resolver, proto_realpath, proto_realpath_ctx);
++    pthread_mutex_lock(&pre->lock);
++    for (;;) {
++        while (!pre->stop && pre->next >= pre->count) pthread_cond_wait(&pre->cond, &pre->lock);
++        if (pre->stop) break;
++        PreEntry* e = &pre->entries[pre->next++];
++        if (e->state == 3) continue;
++        pre->in_flight++;
++        e->state = 1;
++        pthread_mutex_unlock(&pre->lock);
++        cstr contents;
++        SourceFile* file = nullptr;
++        bool readable = true;
++        try (fs_read_file(my fs, cstr_sv(&e->path), &contents)) if_err (err) {
++            ignore err;
++            current_error_destroy();
++            readable = false;
++        }
++        if (readable) {
++            file = program_make_source(me, cstr_clone(e->path), contents, e->is_stdlib);
++            parse_file(file, &e->errs);
++        }
++        struct timespec d0, d1; clock_gettime(CLOCK_MONOTONIC, &d0);
++        isize found_count = 0;
++        cstr* found = file ? c_new_n(cstr, file->module_ref_count + vec_statement_size(&file->ast.statements) + 1) : nullptr;
++        if (file) pre_discover(me, resolver, file, found, &found_count);
++        clock_gettime(CLOCK_MONOTONIC, &d1);
++        pthread_mutex_lock(&pre->lock);
++        pre->discover_ms += (d1.tv_sec - d0.tv_sec) * 1e3 + (d1.tv_nsec - d0.tv_nsec) / 1e6;
++        if (file) pre_queue_found_locked(me, file, found, found_count);
++        if (found) c_free_n(found, file->module_ref_count + vec_statement_size(&file->ast.statements) + 1);
++        e->file = file;
++        e->state = 2;
++        pre->in_flight--;
++        {
++            struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t);
++            double now = t.tv_sec * 1e3 + t.tv_nsec / 1e6;
++            if (now - pre->started_at < 900) pre->idle_at = now; else pre->late++;
++        }
++        pthread_cond_broadcast(&pre->cond);
++    }
++    pthread_mutex_unlock(&pre->lock);
++    module_resolver_destroy(resolver);
++    return nullptr;
++}
++
++void program_preparse(Program* me, csview const* paths, bool const* is_stdlib, isize count, int threads) {
++    Preparse* pre = c_new(Preparse, {0});
++    pthread_mutex_init(&pre->lock, nullptr);
++    pthread_cond_init(&pre->cond, nullptr);
++    pre->entries = calloc(PRE_MAX, sizeof(PreEntry));
++    my pre = pre;
++    program_resolver(me);
++    { struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); pre->started_at = t.tv_sec * 1e3 + t.tv_nsec / 1e6; }
++    pthread_mutex_lock(&pre->lock);
++    for (isize k = 0; k < count; k++) pre_queue_locked(me, pre_canonical(me, paths[k]), is_stdlib[k]);
++    pthread_mutex_unlock(&pre->lock);
++    if (threads > 64) threads = 64;
++    pre->thread_count = threads;
++    for (int t = 0; t < threads; t++) pthread_create(&pre->threads[t], nullptr, preparse_worker, me);
++}
++
++static void pre_lock(Program* me) {
++    if (!my pre || true) return;
++    struct timespec w0, w1; clock_gettime(CLOCK_MONOTONIC, &w0);
++    pthread_mutex_lock(&my pre->lock);
++    clock_gettime(CLOCK_MONOTONIC, &w1);
++    my pre->lock_wait_ms += (w1.tv_sec - w0.tv_sec) * 1e3 + (w1.tv_nsec - w0.tv_nsec) / 1e6;
++}
++
++static void pre_unlock(Program* me) {
++    if (my pre && false) pthread_mutex_unlock(&my pre->lock);
++}
++
++// The sequential loader is done: stop the pool
++void program_preparse_finish(Program* me) {
++    Preparse* pre = my pre;
++    if (!pre) return;
++    pthread_mutex_lock(&pre->lock);
++    pre->stop = true;
++    pthread_cond_broadcast(&pre->cond);
++    pthread_mutex_unlock(&pre->lock);
++    for (int t = 0; t < pre->thread_count; t++) pthread_join(pre->threads[t], nullptr);
++    isize wasted = 0, unparsed = 0;
++    for (isize k = 0; k < pre->count; k++) {
++        if (pre->entries[k].file) wasted++;
++        if (pre->entries[k].state == 0) unparsed++;
++    }
++    if (getenv("TTTT_PREPARSE_STATS")) {
++        eprintln("preparse: pool idle after ", pre->idle_at - pre->started_at, " ms, late ", pre->late, ", main waited for files ", pre->main_wait_ms, " ms, for the lock ", pre->lock_wait_ms, " ms; workers discovered for ", pre->discover_ms, " ms");
++        eprintln("preparse: ", pre->count, " queued, ", wasted, " parsed but unused, ", unparsed, " never parsed, ",
++            (i64)pre->wasted, " parsed inline");
++    }
++    my pre = nullptr; // (leaks the prototype's leftovers)
++}
++
++// A preparsed file for canonical_path (waiting for it if it's in flight), taking it and its errors; null if there's none
++static SourceFile* pre_take(Program* me, csview canonical_path, ErrorCtx** errs) {
++    Preparse* pre = my pre;
++    if (!pre) return nullptr;
++    pthread_mutex_lock(&pre->lock);
++    auto found = hmap_isize_get(&pre->index, canonical_path);
++    if (!found) {
++        if (getenv("TTTT_PREPARSE_STATS")) eprintln("inline (not queued): ", canonical_path);
++        pre->wasted++;
++        pthread_mutex_unlock(&pre->lock);
++        return nullptr;
++    }
++    PreEntry* e = &pre->entries[found->second];
++    if (e->state == 0) {
++        // Not started: parse it ourselves
++        e->state = 3;
++        if (getenv("TTTT_PREPARSE_STATS")) eprintln("inline (not started): ", canonical_path);
++        pre->wasted++;
++        pthread_mutex_unlock(&pre->lock);
++        return nullptr;
++    }
++    struct timespec w0, w1; clock_gettime(CLOCK_MONOTONIC, &w0);
++    while (e->state != 2) pthread_cond_wait(&pre->cond, &pre->lock);
++    clock_gettime(CLOCK_MONOTONIC, &w1);
++    pre->main_wait_ms += (w1.tv_sec - w0.tv_sec) * 1e3 + (w1.tv_nsec - w0.tv_nsec) / 1e6;
++    SourceFile* file = e->file;
++    if (file && file->is_stdlib != my loading_stdlib) {
++        pre->wasted++;
++        pthread_mutex_unlock(&pre->lock);
++        return nullptr;
++    }
++    e->file = nullptr;
++    *errs = &e->errs;
++    pthread_mutex_unlock(&pre->lock);
++    return file;
++}
++
++cstr program_lib_path(Program const* me, csview name) {
++    return cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name, ".d.ts");
++}
++
++static SourceFile* program_add_source_idempotent(Program* me, csview path) {
++    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
++
++    cstr cwd = cstr_null;
++    // Not being able to determine our own working directory isn't something we can carry on from
++    try (fs_get_cwd(my fs, &cwd)) or_panic;
++    cstr canonical_path = relative_path_of(cstr_sv(&cwd), path);
++    cstr_drop(&cwd);
++
++    auto cached_source = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
++    if (cached_source) {
++        // A source file is already created for this path
++        cstr_drop(&canonical_path);
++        return cached_source->second.get;
++    }
++
++    SourceFile* source_file = nullptr;
++    ErrorCtx* preparsed_errs = nullptr;
++    source_file = pre_take(me, cstr_sv(&canonical_path), &preparsed_errs);
++    if (source_file) {
++    } else {
++        // No source file is created for this path, load it
++        cstr contents;
++        try (fs_read_file(my fs, cstr_sv(&canonical_path), &contents)) if_err (e) {
++            // Not worth reporting: the caller turns a null return into a TypeScript "file not found" error
++            ignore e;
++            current_error_destroy();
++            cstr_drop(&canonical_path);
++            return nullptr;
++        }
++        source_file = program_make_source(me, cstr_clone(canonical_path), contents, my loading_stdlib);
++    }
++
+     bool node_formats = (my options.module >= MODULE_KIND_NODE16 && my options.module <= MODULE_KIND_NODENEXT) ||
+         my options.module_resolution == MODULE_RESOLUTION_NODE16 ||
+         my options.module_resolution == MODULE_RESOLUTION_NODENEXT;
+     // (A JSON file has no module format of its own: tsc's getImpliedNodeFormatForFile)
+     if (node_formats && !my loading_stdlib && !source_file->is_json) {
++        pre_lock(me);
+         FileFormat format = module_resolver_file_format(program_resolver(me), cstr_sv(&source_file->canonical_path));
++        pre_unlock(me);
+         source_file->is_esm = format.mode == RESOLUTION_MODE_ESM;
+         source_file->package_has_type = format.package_has_type;
+         if (cstr_size(&format.package_json)) {
+@@ -545,7 +822,34 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
+         cstr_drop(&format.package_json);
+     }
+ 
+-    parse_file(source_file, my errs);
++    if (preparsed_errs) {
++        for_each (e, vec_error, &preparsed_errs->errors) {
++            error_ctx_append_error(my errs, *e);
++            *e = (Error){0};
++        }
++    } else {
++        struct timespec t0, t1; clock_gettime(CLOCK_MONOTONIC, &t0);
++        parse_file(source_file, my errs);
++        clock_gettime(CLOCK_MONOTONIC, &t1); proto_parse_ns += (t1.tv_sec - t0.tv_sec) * 1000000000LL + (t1.tv_nsec - t0.tv_nsec);
++        if (my pre) {
++            // Queue what it imports for the pool; nobody parses it again
++            pthread_mutex_lock(&my pre->lock);
++            if (!hmap_isize_get(&my pre->index, cstr_sv(&canonical_path)) && my pre->count < PRE_MAX) {
++                PreEntry* e = &my pre->entries[my pre->count];
++                e->path = cstr_clone(canonical_path);
++                e->state = 3;
++                hmap_isize_insert(&my pre->index, cstr_clone(canonical_path), my pre->count);
++                my pre->count++;
++            }
++            isize found_count = 0;
++            isize cap = source_file->module_ref_count + vec_statement_size(&source_file->ast.statements) + 1;
++            cstr* found = c_new_n(cstr, cap);
++            pre_discover(me, program_resolver(me), source_file, found, &found_count);
++            pre_queue_found_locked(me, source_file, found, found_count);
++            c_free_n(found, cap);
++            pthread_mutex_unlock(&my pre->lock);
++        }
++    }
+     if (source_file->is_json) source_file->is_module = true;
+ 
+     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
+@@ -683,7 +987,9 @@ failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
+ void program_load_automatic_types(Program* me) {
+     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+     set_compiler_options(&my options);
++    pre_lock(me);
+     StrList names = module_resolver_automatic_types(program_resolver(me));
++    pre_unlock(me);
+     for (isize i = 0; i < names.count; i++) {
+         if (program_load_type_reference(me, cstr_sv(&names.items[i]), c_sv(""))) continue;
+         cstr const* name = &names.items[i];
+@@ -986,18 +1292,40 @@ void program_typecheck(Program* me) {
+ 
+     scope_report_missing_prefixes(my binder);
+     program_report_missing_global_types(me);
+-    ty_init_global_types(my checker);
+-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+-        SourceFile* source = *i;
+-        if (!source->is_stdlib && !source->unchecked) {
+-            if (source->is_declaration) block_check_required_declare(&source->ast, my errs);
+-            block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, my errs);
++    // PROTOTYPE (plan 36): TTTT_CHECKERS=K checks the files with K checkers one after the other, files dealt round
++    // robin, each checker kept alive (what K threads would hold)
++    char const* checkers_env = getenv("TTTT_CHECKERS");
++    int checker_count = checkers_env && atoi(checkers_env) > 0 ? atoi(checkers_env) : 1;
++    for (int c = 0; c < checker_count; c++) {
++        struct timespec t0, t1; clock_gettime(CLOCK_MONOTONIC, &t0);
++        if (c > 0) {
++            my checker = checker_new(me);
++            checker_make_current(my checker);
++        }
++        ty_init_global_types(my checker);
++        isize index = 0;
++        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
++            SourceFile* source = *i;
++            if (!source->is_stdlib && !source->unchecked) {
++                if (index++ % checker_count != c) continue;
++                if (source->is_declaration) block_check_required_declare(&source->ast, my errs);
++                block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, my errs);
++            }
++        }
++        // After everything is checked: the checker marks members it reads
++        index = 0;
++        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
++            SourceFile* source = *i;
++            if (!source->is_stdlib && !source->unchecked) {
++                if (index++ % checker_count != c) continue;
++                if (!source->is_declaration) unused_report(source, my errs);
++            }
++        }
++        clock_gettime(CLOCK_MONOTONIC, &t1);
++        if (checker_count > 1) {
++            eprintln("checker ", c, ": ", (i64)((t1.tv_sec - t0.tv_sec) * 1000 + (t1.tv_nsec - t0.tv_nsec) / 1000000),
++                " ms, arena ", (i64)(my checker->arena.total >> 20), " MB, ", my checker->next_type_id, " types");
+         }
+-    }
+-    // After everything is checked: the checker marks members it reads
+-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+-        SourceFile* source = *i;
+-        if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_report(source, my errs);
+     }
+     error_ctx_remove_unchecked(my errs);
+     program_apply_comment_directives(me, ERROR_PHASE_TYPECHECK);
+diff --git a/src/program.h b/src/program.h
+index 0ec2e90..691b7d2 100644
+--- a/src/program.h
++++ b/src/program.h
+@@ -39,6 +39,11 @@ void program_load_automatic_types(Program* me);
+ // The file at path if it is part of the program (loaded or imported), null otherwise
+ SourceFile* program_find_source(Program const* me, csview path);
+ 
++// PROTOTYPE (plan 36): parse these files on `threads` threads now; program_load() takes them when it gets there
++void program_preparse(Program* me, csview const* paths, bool const* is_stdlib, isize count, int threads);
++cstr program_lib_path(Program const* me, csview name);
++void program_preparse_finish(Program* me);
++
+ // Loads the standard library file based on the name (such as es5 or es2015.collection)
+ failable program_load_stdlib(Program* me, csview name, returns SourceFile*);
+ 
+diff --git a/thirdparty/meson.build b/thirdparty/meson.build
+index 8f6e639..5ceee19 100644
+--- a/thirdparty/meson.build
++++ b/thirdparty/meson.build
+@@ -2,4 +2,5 @@
+ subdir('cleat')
+ thirdparty_deps = [
+     cleat_dep,
++    dependency('threads'),
+ ]

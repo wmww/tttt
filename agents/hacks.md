@@ -37,7 +37,11 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   file's own persistent scopes; `Symbol.referenced` (noUnused*) is written also on script globals other files share
   (a data race once files resolve in parallel); `scope_add_expandos()`/`scope_add_this_property()` (see JavaScript)
   write file-level symbols; `jsx_lookup_factory` writes `SourceFile.jsx_fragment_factory_looked_up` through a const
-  cast (`ModuleRef.jsx_runtime_reported` likewise). Check phase: the thread-local `current_checker`.
+  cast (`ModuleRef.jsx_runtime_reported` likewise). Check phase: the thread-local `current_checker`, and what plan
+  36's audit lists (shared `ErrorCtx`, `merged_export_equals` allocating binder symbols at check time,
+  `Symbol.referenced` from `mark_jsdoc_links`, `CommentDirective.used`, `ClassDecl.has_typechecked`, getenv
+  `static int` caches). Everywhere: cleat's `return ok;` writes the global `_GLOBAL_RETURNED_VALUE_TARGET`
+  (`failable.h`), a data race under threads (TSan flags it; plan 36 stage 1 makes it `thread_local` by a patch).
 - The resolver's caches (`ModuleResolver`, per `Program`) are unsynchronised; no cache of resolutions themselves (tsc:
   per directory + name + mode; not visible in profiles so far).
 
