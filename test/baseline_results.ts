@@ -23616,7 +23616,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyStringIndexerOnObject': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31326,9 +31326,9 @@ const baselines = {
         types: true,
     },
     'typeParameterExplicitlyExtendsAny': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeParameterExtendingUnion1': {
         errors: true,
@@ -66097,8 +66097,8 @@ const baselines = {
     },
     'propertyAccessOnTypeParameterWithoutConstraints': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'staticMembersUsingClassTypeParameter': {
         errors: true,

@@ -843,6 +843,8 @@ static Ty const* apparent_type(Checker* me, Ty const* ty) {
         else if (f & TYF_ES_SYMBOL_LIKE) global = global_type(me, GLOBAL_SYMBOL);
         else if (f & (TYF_BIGINT | TYF_BIGINT_LITERAL)) global = global_type(me, GLOBAL_BIGINT);
         else if (f & TYF_NON_PRIMITIVE) global = global_type(me, GLOBAL_EMPTY_OBJECT);
+        // (tsc's getApparentType: unknown is `{}` without strictNullChecks, `T extends any`'s constraint included)
+        else if ((f & TYF_UNKNOWN) && !compiler_options()->strict_null_checks) global = global_type(me, GLOBAL_EMPTY_OBJECT);
         else return ty;
         return global ? global : global_type(me, GLOBAL_EMPTY_OBJECT);
     }

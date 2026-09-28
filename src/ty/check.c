@@ -1539,6 +1539,7 @@ static bool suggested_index_method(Checker* me, PropertyExpr const* access, Ty c
     FoundProp prop = ty_find_prop(me, object, checker_atom(me, csview_from(method)));
     if (!prop.found) return false;
     Signature const* sig = ty_single_signature(me, ty_apparent_type(me, prop.type), false, true);
+    if (sig) signature_resolve(me, sig);
     if (!sig || sig->min_args < 1 || !ty_is_related(me, index, ty_signature_param_type_at(me, sig, 0), TY_RELATION_ASSIGNABLE)) {
         return false;
     }
