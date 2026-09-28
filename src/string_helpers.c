@@ -163,7 +163,18 @@ static void text_replace_invalid_utf8(cstr* contents) {
     const unsigned char* b = (const unsigned char*)cstr_str(contents);
     intptr_t size = cstr_size(contents);
     intptr_t i = 0;
-    for (int n; i < size && (n = utf8_well_formed_size(b + i, size - i)) > 0; i += n) {}
+    while (true) {
+        // (Mostly ASCII: eight bytes at a time)
+        while (i + 8 <= size) {
+            uint64_t word;
+            memcpy(&word, b + i, 8);
+            if (word & 0x8080808080808080ull) break;
+            i += 8;
+        }
+        int n;
+        if (i >= size || (n = utf8_well_formed_size(b + i, size - i)) <= 0) break;
+        i += n;
+    }
     if (i == size) return;
     cstr out = cstr_with_capacity(size + 16);
     cstr_append_n(&out, (const char*)b, i);

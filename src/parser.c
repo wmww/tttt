@@ -647,7 +647,8 @@ static int identifier_char_size_slow(const char* c, bool start);
 // (tsc's unicode tables for the target) and unicode escapes of either (`\u0061`, `\u{61}`)
 static inline int identifier_char_size(const char* c, bool start) {
     uint8_t b = (uint8_t)*c;
-    if (b < 0x80 && b != '\\') return (identifier_char_class[b] & (start ? 1 : 2)) ? 1 : 0;
+    if (identifier_char_class[b] & (start ? 1 : 2)) return 1;
+    if (b < 0x80 && b != '\\') return 0;
     return identifier_char_size_slow(c, start);
 }
 
@@ -665,7 +666,12 @@ static inline bool parse_identifier_or_keyword(Parser* parent, Span* ret) {
     int size = identifier_char_size(parent->pos, true);
     if (size) {
         parent->pos += size;
-        while ((size = identifier_char_size(parent->pos, false))) parent->pos += size;
+        while (true) {
+            while (is_identifier_char(*parent->pos)) parent->pos++;
+            if ((uint8_t)*parent->pos < 0x80 && *parent->pos != '\\') break;
+            if (!(size = identifier_char_size_slow(parent->pos, false))) break;
+            parent->pos += size;
+        }
         if (ret) {
             *ret = span_from(a);
         }
@@ -894,6 +900,7 @@ static bool is_replacement_char(const char* c) {
 // tsc's isConflictMarkerTrivia: seven `<`, `=`, `>` or `|` at the start of a line, then a space (`=======` needs
 // none)
 static bool is_conflict_marker(Parser* parent, const char* c) {
+    if (c[0] != '<' && c[0] != '=' && c[0] != '>' && c[0] != '|') return false;
     if (c != cstr_str(&parent->shared->source->contents) && c[-1] != '\n' && c[-1] != '\r') return false;
     for (int i = 1; i < 7; i++) {
         if (c[i] != c[0]) return false;
@@ -920,15 +927,18 @@ static inline bool is_conflict_marker_char(char c) {
     return c == '<' || c == '=' || c == '>' || c == '|';
 }
 
+// At the start of a line: the conflict markers there (after a ======= the next one is at a line start too)
+static void hop_conflict_markers(Parser* parent) {
+    while (is_conflict_marker(parent, parent->pos)) parent->pos = hop_conflict_marker(parent, parent->pos);
+}
+
 // Most calls are at a token already: whitespace is ASCII at most ' ', and the rest starts with `/` or a non-ASCII byte
 static inline void hop_whitespace_full(Parser* parent, bool hop_comments, bool hop_newlines) {
     if (parent->pos == parent->whitespace_end) {
         return;
     }
     char c = *parent->pos;
-    if ((unsigned char)c > ' ' && (unsigned char)c < 0x80 && c != '/' &&
-        !(is_conflict_marker_char(c) && is_conflict_marker(parent, parent->pos))
-    ) {
+    if ((unsigned char)c > ' ' && (unsigned char)c < 0x80 && c != '/') {
         parent->whitespace = WHITESPACE_NONE;
         parent->whitespace_end = parent->pos;
         return;
@@ -956,6 +966,9 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
                     // tsc's skipJsDocLeadingAsterisks: the `*` a comment's line starts with isn't part of the type
                     while (*parent->pos == ' ' || *parent->pos == '\t') parent->pos++;
                     if (*parent->pos == '*' && parent->pos[1] != '/') parent->pos++;
+                } else if (is_conflict_marker_char(*parent->pos)) {
+                    // (Only a line's start can be a conflict marker, the file's start is parse_file()'s)
+                    hop_conflict_markers(parent);
                 }
                 break;
 
@@ -968,14 +981,6 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
             case '\v':
             case '\f':
                 parent->pos++;
-                break;
-
-            case '<':
-            case '=':
-            case '>':
-            case '|':
-                if (!hop_newlines || !is_conflict_marker(parent, parent->pos)) goto ws_end;
-                parent->pos = hop_conflict_marker(parent, parent->pos);
                 break;
 
             default: {
@@ -6439,7 +6444,7 @@ static const char* scan_digit_fragment(Parser* p, const char* c, int base, cstr*
         } else if (is_digit_of_base(*c, base)) {
             allow_separator = true;
             previous_separator = false;
-            cstr_push(digits, (char[]){ *c, 0 });
+            cstr_append_n(digits, c, 1);
         } else {
             break;
         }
@@ -6534,7 +6539,7 @@ static bool scan_numeric_literal(Parser* parent, double* ret, bool* bigint) {
     bool decimal = false;
     if (*c == '.') {
         decimal = true;
-        cstr_push(&digits, ".");
+        cstr_append_n(&digits, ".", 1);
         c = scan_digit_fragment(parent, c + 1, 10, &digits);
     }
     const char* end = c;
@@ -6549,8 +6554,8 @@ static bool scan_numeric_literal(Parser* parent, double* ret, bool* bigint) {
         if (!cstr_size(&exponent)) {
             parse_error(parent, span_make(parent->shared->source, c, c), 1124, "Digit expected.");
         } else {
-            cstr_push(&digits, "e");
-            if (sign) cstr_push(&digits, (char[]){ sign, 0 });
+            cstr_append_n(&digits, "e", 1);
+            if (sign) cstr_append_n(&digits, &sign, 1);
             cstr_append_s(&digits, exponent);
             end = c;
         }
@@ -7009,8 +7014,11 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             !((parsed.unary == UNARY_OP_RIGHT_PLUS_PLUS || parsed.unary == UNARY_OP_RIGHT_MINUS_MINUS) &&
                 (ctx.min_precedence > unary_op_get_precedence(UNARY_OP_LEFT_PLUS_PLUS) ||
                     (!expr_is_perenthisized(left_and_ret) && ((left_and_ret->tag == EXPR_UNARY_OP &&
-                        left_and_ret->unary_op->op != UNARY_OP_RIGHT_BANG) || left_and_ret->tag == EXPR_BINARY_OP || left_and_ret->tag == EXPR_TERNARY ||
-                        left_and_ret->tag == EXPR_AS_TYPE))))
+                        left_and_ret->unary_op->op != UNARY_OP_RIGHT_BANG) || left_and_ret->tag == EXPR_BINARY_OP ||
+                        left_and_ret->tag == EXPR_TERNARY ||
+                        // (Not a JSDoc assertion, `/** @type {T} */ (x)++`: parenthesized, its type comes first)
+                        (left_and_ret->tag == EXPR_AS_TYPE && span_start_ptr(left_and_ret->as_type->keyword_span) >
+                            span_start_ptr(left_and_ret->as_type->expr.outer_span))))))
         ) {
             if (parsed.unary == UNARY_OP_RIGHT_BANG) {
                 js_syntax_error(&p, span_from(a), 8013, "Non-null assertions can only be used in TypeScript files.");
@@ -8712,16 +8720,25 @@ static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, 
 
 // ECMAScript's reserved words: never a binding identifier (strict mode ones are, with a grammar error)
 static bool is_reserved_word(csview word) {
-    if (word.size < 2 || word.size > 10 || word.buf[0] < 'b' || word.buf[0] > 'w') return false;
-    static const char* const words[] = {
-        "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else", "enum",
-        "export", "extends", "false", "finally", "for", "function", "if", "import", "in", "instanceof", "new", "null",
-        "return", "super", "switch", "this", "throw", "true", "try", "typeof", "var", "void", "while", "with",
-    };
-    for (size_t i = 0; i < sizeof(words) / sizeof(*words); i++) {
-        if (csview_equals(word, words[i])) return true;
+#define WORD_IS(lit) (word.size == sizeof(lit) - 1 && memcmp(word.buf, lit, sizeof(lit) - 1) == 0)
+    if (word.size < 2 || word.size > 10) return false;
+    switch (word.buf[0]) {
+        case 'b': return WORD_IS("break");
+        case 'c': return WORD_IS("case") || WORD_IS("catch") || WORD_IS("class") || WORD_IS("const") ||
+            WORD_IS("continue");
+        case 'd': return WORD_IS("debugger") || WORD_IS("default") || WORD_IS("delete") || WORD_IS("do");
+        case 'e': return WORD_IS("else") || WORD_IS("enum") || WORD_IS("export") || WORD_IS("extends");
+        case 'f': return WORD_IS("false") || WORD_IS("finally") || WORD_IS("for") || WORD_IS("function");
+        case 'i': return WORD_IS("if") || WORD_IS("import") || WORD_IS("in") || WORD_IS("instanceof");
+        case 'n': return WORD_IS("new") || WORD_IS("null");
+        case 'r': return WORD_IS("return");
+        case 's': return WORD_IS("super") || WORD_IS("switch");
+        case 't': return WORD_IS("this") || WORD_IS("throw") || WORD_IS("true") || WORD_IS("try") || WORD_IS("typeof");
+        case 'v': return WORD_IS("var") || WORD_IS("void");
+        case 'w': return WORD_IS("while") || WORD_IS("with");
+        default: return false;
     }
-    return false;
+#undef WORD_IS
 }
 
 // After `using`: a declaration if a binding identifier or `{` follows on the same line (tsc's
@@ -10325,6 +10342,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         // A shebang line is trivia (tsc's scanShebangTrivia)
         while (*p.pos && *p.pos != '\n') p.pos++;
     }
+    hop_conflict_markers(&p);
     if (source->is_json) {
         // A JSON file is the value of one expression (tsc's parseJsonText), which is what the module is
         hop_whitespace(&p);
