@@ -2879,6 +2879,10 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* ret = expr->property->assignment_target ? ty_access(me, object, key) : ty_access_reading(me, object, key);
             if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target) ret = object_literal_access(me, object, key);
             if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET) ret = generic_element_access(me, expr->property, object, key);
+            if (!ret && expr->property->qualified_name && (key->flags & TYF_STRING_LITERAL)) {
+                Prop const* prop = ty_namespace_type_only_prop(me, object, ty_literal_name(me, key));
+                if (prop) ret = prop_type(me, prop);
+            }
             if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET && tuple_past_the_end(me, object, key)) {
                 return ty_intrinsic(me, TY_UNDEFINED); // TS2493/TS2514 (tsc's getPropertyTypeForIndexType)
             }

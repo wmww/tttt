@@ -1042,6 +1042,30 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     }
 }
 
+static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry);
+
+// A type-only export of a namespace or module (`export type { A }`, or reached through `export type *`)
+static bool namespace_export_is_type_only(Symbol const* namespace, SymbolEntry const* entry) {
+    return symbol_type_only_declaration(entry->symbol) ||
+        module_type_only_star((Symbol*)symbol_members(namespace), entry->name);
+}
+
+Prop const* ty_namespace_type_only_prop(Checker* me, Ty const* object, Atom const* name) {
+    if (object->kind != TY_DECLARED || object->declared.kind != TY_DECLARED_NAMESPACE) return nullptr;
+    Symbol const* namespace = object->declared.namespace_symbol;
+    csview sv = atom_sv(name);
+    Symbol* symbol = symbol_get_export(namespace, sv);
+    if (!symbol) return nullptr;
+    SymbolEntry entry = { .hash = symbol_name_hash(sv), .name = sv, .symbol = symbol };
+    if (!namespace_export_is_type_only(namespace, &entry)) return nullptr;
+    u64 key[3] = { KEY_TYPE_ONLY_EXPORT, (u64)(uintptr_t)namespace, (u64)(uintptr_t)symbol };
+    Prop const* existing = intern_get(&my links, key, 3);
+    if (existing) return existing;
+    Prop* made = namespace_export_prop(me, &entry);
+    *intern_slot(me, &my links, key, 3) = made;
+    return made;
+}
+
 // The property a namespace's export makes of its value, null if it has no value
 static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     Symbol const* symbol = entry->symbol;
@@ -1366,6 +1390,10 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             for (u32 i = 0; i < export_count; i++) {
                 // `typeof globalThis` has the global `var`s and functions, not let, const, classes and enums
                 if (ty->declared.namespace_symbol->is_global_this && (exports[i].symbol->flags & GLOBAL_BLOCK_SCOPED)) continue;
+                // A type-only export (`export type { A }`, through `export type *`) isn't a value of the namespace (tsc's
+                // isNamedMember: symbolIsValue, with getSymbolFlags excluding type-only meanings)
+                // (`typeof ns.A` still names it: ty_namespace_type_only_prop())
+                if (namespace_export_is_type_only(ty->declared.namespace_symbol, &exports[i])) continue;
                 Prop* prop = namespace_export_prop(me, &exports[i]);
                 if (prop) builder_push(&builder, props, prop);
             }

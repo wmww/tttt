@@ -2776,6 +2776,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 ty_check_non_null_type(current_checker, expr_type, &my property->expr, errs);
                 break;
             }
+            if (my property->qualified_name && my property->prop.tag == EXPR_LITERAL &&
+                ty_namespace_type_only_prop(current_checker, expr_type, ty_literal_name(current_checker, ty_access_key_type(current_checker, my property)))
+            ) {
+                break;
+            }
             ty_check_property_access(
                 current_checker,
                 expr_type,

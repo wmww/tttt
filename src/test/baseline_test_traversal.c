@@ -123,6 +123,7 @@ typedef struct PropSymbolInfo {
     u32 member_count; // Members of the object type that have the property
     bool missing_in_member; // Some member of a union has no such property: no symbol at all, like tsc
     bool strict_union; // A member that isn't an object (`undefined`) has no such property either
+    bool qualified_name; // `typeof ns.A`: a namespace's type-only export too (ty_namespace_type_only_prop())
     Symbol const* parent;
     Symbol const* member_symbol; // A namespace's or module's export: named by its symbol
     Symbol const* namespace; // The object is a namespace's or module's value: the property is its export
@@ -180,6 +181,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         return;
     }
     Prop const* prop = ty_get_object_prop(checker, object, name);
+    if (!prop && info->qualified_name) prop = ty_namespace_type_only_prop(checker, object, name);
     if (!prop) {
         info->missing_in_member = true;
         return;
@@ -1468,7 +1470,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     Checker* checker = current_checker;
     Ty const* object = ty_expr_type(checker, &my property->expr);
     Ty const* key = ty_access_key_type(checker, my property);
-    PropSymbolInfo info = {0};
+    PropSymbolInfo info = { .qualified_name = my property->qualified_name };
     if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL)) {
         collect_prop_symbol(checker, object, ty_literal_name(checker, key), &info, 0);
     }

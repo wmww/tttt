@@ -431,6 +431,8 @@ typedef struct PropertyExpr {
     } form;
     bool optional_chain;
     bool constraint_position; // Like IdentifierExpr.constraint_position
+    // Part of the entity name of a `typeof a.b` type (tsc's QualifiedName): also sees a namespace's type-only exports
+    bool qualified_name;
     uint8_t assignment_target; // FlowAssignmentKind
     bool compound_like_target; // Like IdentifierExpr.compound_like_target
     FlowNode* flow; // Like IdentifierExpr.flow

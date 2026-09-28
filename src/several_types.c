@@ -492,6 +492,11 @@ void typeof_type_lookup_names(TypeofType* me, Scope* names, ErrorCtx* errs) {
     names->flow->in_type_query = true;
     expr_lookup_names(my expr, names, errs);
     names->flow->in_type_query = saved;
+    Expr* name = my expr;
+    if (name->tag == EXPR_GENERIC_PARAMS) name = &name->generic_params->expr;
+    for (; name->tag == EXPR_PROPERTY && name->property->form == PROPERTY_EXPR_DOT; name = &name->property->expr) {
+        name->property->qualified_name = true;
+    }
 }
 
 void typeof_type_typecheck(TypeofType const* me, ErrorCtx* errs) {
