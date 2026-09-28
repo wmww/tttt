@@ -3,7 +3,7 @@ The latest of each kind of measurement. **Replace a section when re-measuring** 
 append history, git has it (this file before the 2026-09-27 triage holds every entry since plan 05).
 
 ## Machine and caveats
-AMD EPYC-Turin, 4 cores, 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22, tsc 5.8.2 (`thirdparty/tsc`), tsgo =
+AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22, tsc 5.8.2 (`thirdparty/tsc`), tsgo =
 `typescript@7.0.2`. Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one session. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo exits 1 on valibot (TS5108,
@@ -40,31 +40,33 @@ tsc 4.67 G, type-fest 3.30, valibot 5.06, react 1.91, nest 1.02, webpack 3.25, z
 session; bisected to 62d8c89, variance annotations taken as given: zod's `out` types were measured unreliable before,
 forcing structural comparisons; 932k -> 352k types, arena 975 -> 412 MB). Current walls: zod 0.73 s / 665 MB.
 
-## Perf (2026-09-28, perf session, `./bench.sh --runs 2`)
-Best wall / peak RSS. tttt now re-executes itself with glibc's malloc on transparent huge pages and madvises its
-arena (`TTTT_NO_REEXEC=1` to measure without: 5-20% slower, same RSS):
+## Perf (2026-09-28, plan 36 stage 3, `./bench.sh`, tttt at its new defaults: 4 checkers on 4 threads)
+Best wall / peak RSS. **The machine is 2 physical cores x 2 SMT threads** (KVM, `lscpu`): 4 busy threads run ~55%
+slower each (4 independent single-threaded processes do too), so 4 threads buy ~2.4x on the check phase, not ~3.7x.
+tttt re-executes itself with glibc's malloc on transparent huge pages (`TTTT_NO_REEXEC=1` to measure without).
+tttt 1 thread is `--checkers 1` (the previous numbers, re-measured for tsc and synthetic this session).
 
-| corpus | tttt | tsc 5.8 | tsgo | tsgo 1 thread |
-|---|---|---|---|---|
-| synthetic (987 tests x 200, 2.70 M lines) | 4.61 s / 3984 MB | 51.2 s / 4309 MB | 10.30 s / 5719 MB | 12.40 s / 3782 MB |
-| tsc `src/compiler` (193k lines) | **0.65 s** / 351 MB | 7.36 s | 1.27 s / 406 MB | 1.72 s |
-| type-fest | 0.32 s / 476 MB | 5.33 s | 1.90 s / 800 MB | 2.34 s |
-| valibot | 0.62 s / 453 MB | 8.97 s | 1.60 s / 832 MB | 2.40 s |
-| react (1511 files) | 0.24 s / 228 MB | 3.74 s | 1.04 s / 539 MB | 0.94 s / 295 MB |
-| nest (2394 files) | 0.19 s / 225 MB | 2.57 s | 0.43 s / 240 MB | 0.51 s / 212 MB |
-| webpack (1188 files, checkJs) | **0.56 s** / 375 MB | 8.75 s | 0.67 s / 450 MB | 0.60 s / 307 MB |
-| zod (621 files) | 1.31 s / 1302 MB | 10.75 s | 2.89 s / 1367 MB | 3.71 s / 971 MB |
+| corpus | tttt | tttt 1 thread | tsc 5.8 | tsgo | tsgo 1 thread |
+|---|---|---|---|---|---|
+| synthetic (987 tests x 200, 2.70 M lines) | **3.70 s** / 4356 MB | 4.86 s / 4252 MB | 51.2 s | 10.30 s / 5719 MB | 12.40 s / 3782 MB |
+| tsc `src/compiler` (193k lines) | **0.48 s** / 409 MB | 0.66 s / 365 MB | 7.36 s | 1.26 s / 444 MB | 1.73 s / 348 MB |
+| type-fest | 0.28 s / 494 MB | 0.32 s / 476 MB | 5.35 s | 1.93 s / 805 MB | 2.32 s |
+| valibot | **0.38 s** / 536 MB | 0.62 s / 453 MB | 8.95 s | 1.65 s / 825 MB | 2.40 s |
+| react (1511 files) | 0.23 s / 335 MB | 0.24 s / 228 MB | 3.77 s | 1.03 s / 543 MB | 0.92 s / 315 MB |
+| nest (2394 files) | 0.20 s / 251 MB | 0.19 s / 225 MB | 2.58 s | 0.40 s / 250 MB | 0.51 s / 213 MB |
+| webpack (1188 files, checkJs) | **0.40 s** / 461 MB | 0.56 s / 375 MB | 8.75 s | 0.67 s / 463 MB | 0.60 s / 308 MB |
+| zod (621 files) | **0.45 s** / 846 MB | 0.73 s / 665 MB | 10.74 s | 2.92 s / 1406 MB | 3.70 s / 1029 MB |
 
-tttt phases (parse files / resolve / typecheck, ms; checker arena, types): synthetic 760 / 709 / 3173 (970 MB, 2.1 M);
-tsc corpus 104 / 89 / 455 (60 MB, 94k); type-fest 15 / 7 / 293 (413 MB, 575k); valibot 48 / 37 / 518 (291 MB, 374k);
-react 65 / 42 / 118; nest 101 / 54 / 30; webpack 131 / 78 / 335 (93 MB); zod 72 / 62 / 1159 (1026 MB, 943k); the
-stdlib alone (esnext.full, 42k lines) 13 / 5 / 33. `--time` prints the resident set per phase and the arena/types.
-Parsing the tsc corpus after plan 27 stage 3 (2026-09-28): 104 -> 109 ms, callgrind in `parse_file` 728 -> 750 M
-(unicode-aware identifier scanning, `text_decode`, the number scanner; it was 116 ms / 825 M before a cleanup:
-`hop_whitespace_slow`'s switch is sensitive to extra cases, and the keyword probe/identifier loops to any extra work).
-- **tttt beats single-threaded tsgo on every corpus now**, webpack included (0.56 vs 0.60; was 0.69).
-- Memory is the weak side: zod 1.3 GB (deep-partial.test.ts alone is 745 MB, 587k types where tsc makes 168k),
-  type-fest 476 MB for 575k types. `perf_leads.md`.
+tttt phases at K=4 (parse files / resolve / typecheck, ms): synthetic 836 / 728 / 2116; tsc corpus 110 / 90 / 281
+(slowest checker 281 ms: the one with checker.ts); type-fest 16 / 8 / 249 (one heavy test file); valibot 51 / 37 /
+275; react 70 / 42 / 105; nest 108 / 55 / 23; webpack 137 / 78 / 162; zod 77 / 62 / 293. **Load + resolve is now
+40-90% of every run but type-fest's** (plan 36 stage 1, then parallel name resolution).
+- Peak RSS at K=4 vs 1: synthetic +2%, type-fest +4%, tsc +12%, nest +12%, valibot +18%, webpack +23%, zod +27%,
+  react +47% (every checker instantiates the React typings). Still at or under multi-threaded tsgo's everywhere.
+- Memory is still the weak side: zod 846 MB (deep-partial.test.ts alone is 745 MB at K=1, 587k types where tsc makes
+  168k), type-fest ~480 MB for 575k types. `perf_leads.md`.
+- Parsing the tsc corpus after plan 27 stage 3: 104 -> 109 ms, callgrind in `parse_file` 728 -> 750 M (unicode-aware
+  identifier scanning, `text_decode`, the number scanner; `hop_whitespace_slow`'s switch is sensitive to extra cases).
 
 ## Parallelism prototypes (2026-09-28, plan 36 planning, 0746971 + `plans/36_prototype.patch`)
 Parallel loading at 4 workers, whole run best of 5: tsc 661 -> 631 ms, webpack 564 -> 527, nest 201 -> 180, react

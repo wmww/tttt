@@ -24,12 +24,12 @@ static LazyMemo* lazy_type_state(LazyType* me) {
     panic_if(!current_lazy_slots, "LazyType evaluated without a current checker");
     LazyMemo*** dir = &current_lazy_slots->top[my slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
     if (!*dir) {
-        *dir = calloc(1 << LAZY_DIR_BITS, sizeof(LazyMemo*));
+        *dir = zeroed_table(1 << LAZY_DIR_BITS, sizeof(LazyMemo*));
         panic_if(!*dir, "out of memory");
     }
     LazyMemo** page = &(*dir)[(my slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
     if (!*page) {
-        *page = calloc(1 << LAZY_PAGE_BITS, sizeof(LazyMemo));
+        *page = zeroed_table(1 << LAZY_PAGE_BITS, sizeof(LazyMemo));
         panic_if(!*page, "out of memory");
     }
     return &(*page)[my slot & ((1 << LAZY_PAGE_BITS) - 1)];

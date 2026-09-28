@@ -698,6 +698,7 @@ static int tsconfig_file_rank(BaselineTestCase const* test, MockFs* fs, Baseline
 }
 
 u32 baseline_test_checkers = 0;
+u32 baseline_test_threads = 0;
 
 BaselineTestCase run_baseline_test_case(
     BaselineTestCache* cache,
@@ -717,6 +718,7 @@ BaselineTestCase run_baseline_test_case(
     Program* program = program_new(errs, mock_fs_get_fs(fs));
     program_set_realpath(program, mock_fs_realpath, fs);
     program_set_checkers(program, baseline_test_checkers);
+    program_set_threads(program, baseline_test_threads);
 
     BaselineTestCase ret = {
         .source_path = source_path,

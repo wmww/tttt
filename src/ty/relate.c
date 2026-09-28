@@ -111,8 +111,8 @@ static unsigned relation_cache_get(RelationCache const* me, u64 key) {
 static void relation_cache_put(RelationCache* me, u64 key, unsigned value) {
     if ((my len + 1) * 4 > my cap * 3) {
         RelationCache bigger = { .cap = my cap ? my cap * 2 : 256 };
-        bigger.keys = calloc(bigger.cap, sizeof(u64));
-        bigger.values = calloc(bigger.cap, 1);
+        bigger.keys = zeroed_table(bigger.cap, sizeof(u64));
+        bigger.values = zeroed_table(bigger.cap, 1);
         panic_if(!bigger.keys || !bigger.values, "out of memory");
         for (u32 i = 0; i < my cap; i++) {
             if (my keys[i]) {

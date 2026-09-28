@@ -32,6 +32,16 @@ typedef struct DebugEnv {
 } DebugEnv;
 extern DebugEnv debug_env;
 
+// calloc() for tables that are probed (read) before they are written: fresh pages calloc() gets from the kernel are
+// mapped to the shared zero page on the first read, and the first write then copies it, which flushes the TLB of every
+// thread in the process (inter-processor interrupts: +30% of the check phase's cycles with 4 checker threads).
+// Writing the zeroes first faults the pages in directly. Panics when out of memory
+static inline void* zeroed_table(size_t count, size_t size) {
+    void* ret = malloc(count * size);
+    panic_if(!ret, "out of memory");
+    return memset(ret, 0, count * size);
+}
+
 // These are used in debugging, DBG should not appear in committed code. Other debugging logic can be tagged with // DBG
 #define PANIC_DBG panic("AAaaa")
 #define PANIC_AFTER_DBG(count, ...) do { \

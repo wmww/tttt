@@ -133,14 +133,24 @@ K=2/4 differ from K=1 in one test (reactDefaultPropsInferenceSuccess, and only i
 in how TS2769 prints overload signatures, see triage.md). `tttt --time` prints each checker's time: round robin
 balances well (webpack 4 x ~100 ms vs 345 at K=1, zod 137-193 ms vs 572), so "by size" partitioning wasn't tried.
 
-### Stage 3: parallel checking (one session, after the decision above)
-Run the K checkers on the pool's threads (thread-local `current_checker`/`current_lazy_slots`/`current_flow`/
-`cycle_trace`/`display_type_depth` are already per thread). Default `--checkers` per the decision (4). TSan on
-corpora. Stack size: worker threads need the main thread's 8 MB (`pthread_attr_setstacksize`; `perf_leads.md`
-"Stack depth"). Memory: RSS grows +7..43% at K=4 (measure; if zod's 1.5 GB is a problem, `Prop` split from
-`perf_leads.md` first).
+### Stage 3: parallel checking: **done** (2026-09-28)
+`--threads N` (tttt: default the core count up to 4; `baseline_tests --threads N`, default 1) runs the K checkers on
+N threads (`program_set_threads()`; the main thread works too, workers take checker indices from an atomic counter,
+worker stacks get the main thread's `RLIMIT_STACK`, at least 8 MB). tttt's `--checkers` now defaults to 4, the
+harness's stays 1. Validation: `./threadcheck.sh` (every corpus, `--threads 1` vs 4 three times, `cmp`) identical;
+`baseline_tests --checkers 4 --threads 1/4 --dump` identical; a TSan build (`meson setup /tmp/tsan --buildtype
+release -Db_sanitize=thread -Dc_args=-g`, `TTTT_NO_REEXEC=1`) reports nothing on all 8 corpora at K=4 on 4 threads.
+Nothing had to change in the checker: stage 2's audit was complete for everything the corpora reach.
+**This machine has 2 physical cores x 2 SMT threads** (the "4 cores" of `measurements.md`): 4 independent
+single-threaded tttt processes each slow down by the same ~55% as 4 checker threads do, so per-checker time at 4
+threads (webpack ~100 -> ~155 ms each) is the hardware, not sharing. 4 threads still beats 2 and 3 everywhere measured.
+One real sharing cost was found and fixed: tables `calloc`ed fresh from the kernel and probed before written
+(intern tables, relation caches, lazy slot pages) got the zero page mapped on read, and the copy-on-write on the first
+write flushed every thread's TLB (4% of cycles in IPIs); `zeroed_table()` writes them first.
+Numbers: `measurements.md` "Perf". Memory: peak RSS +2..+47% at K=4 (react worst, zod 665 -> 846 MB; see there).
 
 ### Later (not planned yet)
+- **Stage 1 (parallel loading)** above is still to do; it is now the largest serial part next to name resolution.
 - **Parallel name resolution** (54-89 ms serial after stage 3): per-file declare/resolve need per-file binder arenas
   and the globals/ambient-module tables merged in link (`hacks.md` "Parallelism contract"). Plan it after stage 3
   measures what's left.

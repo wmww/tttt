@@ -15,6 +15,9 @@
 #include "ty/ty.h"
 #include "module_resolution.h"
 #include <time.h>
+#include <pthread.h>
+#include <stdatomic.h>
+#include <sys/resource.h>
 
 #define g_class_key SourceFile, source_file
 #define g_no_clone
@@ -81,6 +84,7 @@ typedef struct Program {
     Checker** checkers; // malloc'd, checker_count of them once typechecked: checker and the others
     u32 checker_count;
     u32 requested_checkers; // program_set_checkers()
+    u32 threads; // program_set_threads(), 0: 1
     CompilerOptions options;
 } Program;
 
@@ -1227,6 +1231,11 @@ void program_set_checkers(Program* me, u32 count) {
     my requested_checkers = count;
 }
 
+void program_set_threads(Program* me, u32 count) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    my threads = count;
+}
+
 Binder const* program_get_binder(Program const* me) {
     return my binder;
 }
@@ -1265,6 +1274,49 @@ static void program_report_missing_global_types(Program* me) {
     }
 }
 
+// The checkers of program_typecheck(), taken by the threads in index order. Which files a checker checks depends only
+// on the file list and the checker count, never on which thread runs it
+typedef struct CheckShares {
+    Program* program;
+    u32 count;
+    atomic_uint next;
+} CheckShares;
+
+static void check_share(Program* me, u32 c, u32 count) {
+    struct timespec start, end;
+    timespec_get(&start, TIME_UTC);
+    Checker* checker = my checkers[c];
+    checker_make_current(checker);
+    ty_init_global_types(checker);
+    u32 index = 0;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
+        if (source->is_stdlib || source->unchecked || index++ % count != c) continue;
+        checker->file_order = index - 1;
+        if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
+        block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
+    }
+    // After its files are checked: the checker marks members it reads
+    index = 0;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
+        if (source->is_stdlib || source->unchecked || index++ % count != c) continue;
+        if (!source->is_declaration) unused_report(source, checker->errs);
+    }
+    checker_make_current(nullptr);
+    timespec_get(&end, TIME_UTC);
+    checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+}
+
+static void check_shares_run(CheckShares* me) {
+    for (u32 c; (c = atomic_fetch_add(&my next, 1)) < my count;) check_share(my program, c, my count);
+}
+
+static void* check_shares_thread(void* shares) {
+    check_shares_run(shares);
+    return nullptr;
+}
+
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     my errs->phase = ERROR_PHASE_TYPECHECK;
@@ -1275,7 +1327,7 @@ void program_typecheck(Program* me) {
     program_report_missing_global_types(me);
     // The files are dealt to the checkers round robin: which checker checks a file depends only on the file list, so
     // the output depends only on the checker count. Each reports into its own ErrorCtx; nothing may write to the
-    // program's or make symbols meanwhile (they will run on threads of their own)
+    // program's or make symbols meanwhile (they run on threads of their own)
     u32 count = my requested_checkers ? my requested_checkers : 1;
     my checkers = c_new_n(Checker*, count);
     my checker_count = count;
@@ -1283,30 +1335,32 @@ void program_typecheck(Program* me) {
     my binder->frozen = true;
     my errs->frozen = true;
     for (u32 c = 0; c < count; c++) {
-        struct timespec start, end;
-        timespec_get(&start, TIME_UTC);
-        Checker* checker = my checkers[c] = c ? checker_new(me) : my checker;
         checker_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
-        checker->errs = &checker_errs[c];
-        checker_make_current(checker);
-        ty_init_global_types(checker);
-        u32 index = 0;
-        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-            SourceFile* source = *i;
-            if (source->is_stdlib || source->unchecked || index++ % count != c) continue;
-            checker->file_order = index - 1;
-            if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
-            block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
+        my checkers[c] = c ? checker_new(me) : my checker;
+        my checkers[c]->errs = &checker_errs[c];
+    }
+    CheckShares shares = { .program = me, .count = count };
+    u32 threads = my threads ? my threads : 1;
+    if (threads > count) threads = count;
+    if (threads <= 1) {
+        check_shares_run(&shares);
+    } else {
+        // The main thread works too. Workers get the main thread's stack size: the checker recurses per nesting level
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        struct rlimit limit;
+        size_t stack = 8u << 20;
+        if (!getrlimit(RLIMIT_STACK, &limit) && limit.rlim_cur != RLIM_INFINITY && limit.rlim_cur > stack) stack = limit.rlim_cur;
+        if (stack > (256u << 20)) stack = 256u << 20;
+        pthread_attr_setstacksize(&attr, stack);
+        pthread_t* workers = c_new_n(pthread_t, threads - 1);
+        for (u32 t = 0; t < threads - 1; t++) {
+            panic_if(pthread_create(&workers[t], &attr, check_shares_thread, &shares), "couldn't start a checker thread");
         }
-        // After its files are checked: the checker marks members it reads
-        index = 0;
-        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-            SourceFile* source = *i;
-            if (source->is_stdlib || source->unchecked || index++ % count != c) continue;
-            if (!source->is_declaration) unused_report(source, checker->errs);
-        }
-        timespec_get(&end, TIME_UTC);
-        checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+        check_shares_run(&shares);
+        for (u32 t = 0; t < threads - 1; t++) pthread_join(workers[t], nullptr);
+        free(workers);
+        pthread_attr_destroy(&attr);
     }
     my binder->frozen = false;
     my errs->frozen = false;

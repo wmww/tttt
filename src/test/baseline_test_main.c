@@ -32,6 +32,7 @@ static void show_help(FILE* target) {
         "                            leave checker log output on (used by ./failstats.py)\n\n"
         "  --checkers [K]            check every test with K checkers (files dealt round robin; tsc's\n"
         "                            baselines are one checker's, the default)\n\n"
+        "  --threads [N]             run those checkers on N threads (default 1; the results must not change)\n\n"
         "  -d, --diffs               if to show all diffs for failing tests\n\n"
         "  --err                     show errors diffs for failing tests\n\n"
         "  --sym                     show symbols diffs for failing tests\n\n"
@@ -85,6 +86,10 @@ static_failable parse_args(int argc, const char** argv) {
             try (const char* count, next_arg_value(argc, argv, &i, &count)) bubble;
             if (atoi(count) < 1) return err_d("--checkers takes a positive number, not ", count);
             baseline_test_checkers = (u32)atoi(count);
+        } else if (streq(argv[i], "--threads")) {
+            try (const char* count, next_arg_value(argc, argv, &i, &count)) bubble;
+            if (atoi(count) < 1) return err_d("--threads takes a positive number, not ", count);
+            baseline_test_threads = (u32)atoi(count);
         } else if (streq(argv[i], "-s") || streq(argv[i], "--save")) {
             save_results = true;
         } else {

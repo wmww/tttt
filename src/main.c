@@ -33,7 +33,8 @@ typedef struct Options {
     bool keep_going; // Typecheck even if there were parse or name errors
     bool no_lib;  // Don't load the standard library, for checking the library files themselves
     const char* project; // -p: a tsconfig.json or the directory of one
-    u32 checkers; // --checkers, 0: the default
+    u32 checkers; // --checkers
+    u32 threads; // --threads
     const char** paths;
     intptr_t path_count;
     // --strictNullChecks false, --target es2020 and so on, in order
@@ -168,6 +169,7 @@ static_failable check_files(Options const* opts, returns int) {
     Program* program = program_new(&errs, fs);
     program_set_realpath(program, real_path_of, nullptr);
     program_set_checkers(program, opts->checkers);
+    program_set_threads(program, opts->threads);
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
@@ -285,7 +287,8 @@ static void reexec_with_huge_pages(char const* const* argv) {
 
 int main(int argc, const char** argv) {
     reexec_with_huge_pages(argv);
-    Options opts = { .paths = argv };
+    long cores = sysconf(_SC_NPROCESSORS_ONLN);
+    Options opts = { .paths = argv, .checkers = 4, .threads = cores < 1 ? 1 : cores > 4 ? 4 : (u32)cores };
     for (int i = 1; i < argc; i++) {
         if (streq(argv[i], "--help") || streq(argv[i], "-h")) {
             println(
@@ -298,7 +301,9 @@ int main(int argc, const char** argv) {
                 "  --no-lib      don't load the standard library\n"
                 "  --keep-going  typecheck even after parse or name errors\n"
                 "  --all-errors  print every diagnostic, not just the first 5000 of each phase\n"
-                "  --checkers K  check with K checkers (default 1): the files are dealt to them round robin\n"
+                "  --checkers K  check with K checkers (default 4): the files are dealt to them round robin. Only the\n"
+                "                order of union members in messages depends on K\n"
+                "  --threads N   run the checkers on N threads (default: the number of cores, at most 4)\n"
                 "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
                 "                --noImplicitAny... (strict is on by default, a boolean without a value means true)"
             );
@@ -317,6 +322,8 @@ int main(int argc, const char** argv) {
             opts.project = argv[++i];
         } else if (streq(argv[i], "--checkers") && i + 1 < argc && atoi(argv[i + 1]) > 0) {
             opts.checkers = (u32)atoi(argv[++i]);
+        } else if (streq(argv[i], "--threads") && i + 1 < argc && atoi(argv[i + 1]) > 0) {
+            opts.threads = (u32)atoi(argv[++i]);
         } else if (streq(argv[i], "--no-lib")) {
             opts.no_lib = true;
         } else if (argv[i][0] == '-' && argv[i][1] == '-') {

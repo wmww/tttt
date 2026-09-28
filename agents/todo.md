@@ -8,9 +8,9 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 
 1. ~~Plan 36 stage 2~~ done: `--checkers K`, per-checker ErrorCtx + tsc's sortAndDeduplicate (+2 tests),
    `./checkerdiff.py`; suite and corpora identical to K=1 modulo quoted text (plan 36 stage 2 section).
-2. **Plan 36 stage 3**: parallel checking on threads (`--threads`), `./threadcheck.sh` byte-identical across thread
-   counts, TSan clean on webpack/nest/tsc, `./bench.sh` into `measurements.md`. Report RSS growth; if zod's peak
-   is a problem, note it for the memory session.
+2. ~~Plan 36 stage 3~~ done: `--threads` (default cores up to 4) runs `--checkers` (now default 4) on threads;
+   `./threadcheck.sh` identical, TSan clean on all corpora; tsc corpus 0.66 -> 0.48 s, webpack 0.56 -> 0.40, zod
+   0.73 -> 0.45, valibot 0.62 -> 0.38 (2 cores x 2 SMT here); RSS +2..+47% (react worst, zod 846 MB).
 3. **Plan 37 planning**: rank and derisk the tsc mechanism ports (missing type, nullWideningType, evolving arrays,
    decorators as calls, origins, context-free signatures...), write sub-plans for the top ones, fill in entries 4-5.
 4. **Plan 37, first port** (named by entry 3).
@@ -23,6 +23,6 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    head is all plan 37 material.
 9. **Perf: memory and types**: `perf_leads.md` "Unreliable variance measurements" first (zod without its `out`
    annotations costs 2x: is tttt marking more measurements unreliable than tsc?), then "Memory" (the `Prop` split, why
-   tttt makes more types than tsc), with the K=4 RSS from entry 2 as the baseline; then plan 36 stage 1 (parallel loading) if the session has room.
+   tttt makes more types than tsc), with the K=4 RSS from entry 2 as the baseline (`measurements.md` Perf: zod 846 MB, react 335 vs 228 at K=1); then plan 36 stage 1 (parallel loading) if the session has room.
 10. **Triage.**
 11. **Insights.**

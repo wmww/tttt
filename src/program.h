@@ -57,6 +57,10 @@ void program_typecheck(Program* me);
 // Call it while loading
 void program_set_checkers(Program* me, u32 count);
 
+// How many threads run those checkers (0 is the default, 1: the calling thread alone). The output doesn't depend on
+// it. Call it while loading
+void program_set_threads(Program* me, u32 count);
+
 // Makes this program's checker (created on first use) the one that types get evaluated in, until another program is
 // made current or this one is destroyed. program_typecheck() does this, call it yourself to look at types of a program
 // that isn't typechecked

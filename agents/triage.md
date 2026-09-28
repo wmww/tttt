@@ -18,3 +18,8 @@ duplicated webpack), hacks.md (`string_to_double`).
   `'new <P extends Props = BaseProps>(props: Readonly<P>): FieldFeedback<P>'` instead of tsc's instantiated
   `'(props: Readonly<Props>): FieldFeedback<Props>'`. Some memo that checking the lib file fills changes what the
   overload error reports: an evaluation-order dependence, and the only one K checkers show on the suite.
+- **Thread startup per program** (plan 36 stage 3): `baseline_tests --checkers 4 --threads 4` takes 38 s against
+  24 s at `--threads 1` (same output): ~1 ms per program for starting and joining 3 threads (8 MB stacks, glibc arenas;
+  most suite tests have one file, so there is nothing to overlap). Irrelevant for one CLI run; a persistent pool
+  (which stage 1's load pool would be) fixes it if a watch/LSP mode or a threaded harness ever wants it. Also, with
+  fewer checked files than checkers, the empty checkers still build their global types (~0.2 ms each).

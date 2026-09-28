@@ -131,6 +131,7 @@ u32 baseline_test_case_enter_type_params(BaselineTestCase* me, struct TyList par
 // How many checkers every test program is checked with (baseline_tests --checkers, program_set_checkers()). tsc's
 // baselines come from one checker
 extern u32 baseline_test_checkers;
+extern u32 baseline_test_threads; // baseline_tests --threads, program_set_threads()
 
 BaselineTestCase run_baseline_test_case(
     BaselineTestCache* cache,

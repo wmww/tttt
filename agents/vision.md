@@ -16,10 +16,11 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Corpora** (all clean under tsc 5.8): tsc `src/compiler`, valibot, react, nest, type-fest, zod all **0**; webpack
   **107** (checkJs, JSDoc leftovers). New: **zod-root** (zod's root tsconfig, not clean under tsc: diff it; 28
   spurious in tttt, mostly arktype's string DSL inferring `never`).
-- **Perf** (`measurements.md`): every corpus ahead of *single-threaded* tsgo (webpack 0.56 s vs 0.60 was the last to
-  flip), 2-6x ahead of multi-threaded tsgo elsewhere. zod halved (1.31 -> 0.73 s,
-  1.3 GB -> 665 MB) with 62d8c89: zod annotates `out`/`in` variance, which tttt now takes as given like tsc; before,
-  its measurement of those interfaces came out *unreliable*, so every comparison went structural (perf_leads.md).
+- **Perf** (`measurements.md`): checking runs on threads now (plan 36 stage 3: 4 checkers on up to 4 threads by
+  default): tsc corpus 0.48 s (tsgo 1.26), webpack 0.40 (0.67), zod 0.45 (2.92), valibot 0.38 (1.65), all on a
+  2-core/4-SMT machine. Single-threaded tttt was already ahead of single-threaded tsgo everywhere. Peak RSS grows
+  with the checkers (+2..+47%, react worst) but stays at or under multi-threaded tsgo's. Load + name resolution are
+  now 40-90% of most runs and serial: plan 36 stage 1 (parallel loading) and parallel name resolution are next.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, mapper instantiation, two-pass inference with priorities, contextual typing, conditional/mapped/indexed/
@@ -44,14 +45,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   more. This is the "almost works" pattern: **port the mechanisms instead** (plan 37). One planning session ranks
   them by suite + corpus impact and risk, derisks the top ones with prototypes and writes a sub-plan each; the
   window then executes the top two. Same shape as the type core ports of plans 29-30, which paid.
-- **Parallelism is built now (plan 36), checking first.** The decision stage 3 needed is made: **a fixed logical
-  checker count** (tsgo's `--checkers`, default 4, independent of the thread count; files dealt by a rule that
-  depends only on the file list; the test harness runs 1). Output is identical for any thread count; it differs from
-  a one-checker run only in union member order inside messages, which tsc itself doesn't keep stable across
-  programs. Stage 2 (readiness, single-threaded) and stage 3 (threads) go first because they are the big win
-  (webpack's check 3.1x at K=4) and because the binder and checker keep growing shared state; parallel loading
-  (stage 1, 5-10%) comes after. Memory grows with K (zod +17% at K=4): the `Prop` split (`perf_leads.md`) is the
-  counterweight if needed.
+- **Parallel checking is built (plan 36 stages 2-3)**: a fixed logical checker count (`--checkers`, default 4,
+  files dealt round robin; the harness runs 1), any thread count gives byte-identical output (`./threadcheck.sh`),
+  TSan clean on every corpus. K=4 differs from K=1 only in union member order inside messages. Next: parallel loading
+  (stage 1, now a bigger share since checking shrank) and parallel name resolution (binder per-file arenas). Memory
+  grows with K: the `Prop` split (`perf_leads.md`) is the counterweight if needed.
 - Corpora: webpack's 107 and zod-root's 28 have named causes; one corpus session.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
@@ -89,13 +87,11 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
   stack; tsc walks them iteratively), backtracking cost.
 - **Binder**: still writes to shared tables and one arena (`hacks.md`, "Parallelism contract audit"), the one phase
   that doesn't shard per file. JS support will add declarations from assignments; design it with that in mind.
-- **Threading** (not built; plan 36 prototyped it 09-28): parsing is thread-clean, and a pool that parses ahead of the
-  unchanged sequential loader gives byte-identical output (5-10% faster runs). K `Checker`s over one AST already
-  work unchanged (the walk goes through the thread-local `current_checker`); the check phase writes a handful of
-  shared things (plan 36's audit). Type ids are per checker and printed union order depends on them, so K>1
-  checkers differ from K=1 in union member order inside messages only: fix K independently of the thread count
-  (tsgo's `--checkers`) to keep output identical for any thread count. Checking is where the win is (webpack's
-  check 3.1x at K=4); after that the serial resolve-names phase is next.
+- **Threading**: checking is threaded (stage 3; nothing in the checker had to change once stage 2's audit fixes were
+  in, which is evidence the "AST read-only while checking" contract holds). Any new checker-wide memo that *reports*
+  must be tagged `Error.once_key`, and anything written to AST/binder state during checking is a race (the frozen
+  guards log it; TSan on the corpora is the net: `plans/36_parallelism.md` has the build line). Parsing is
+  thread-clean (the prototype's cache-warmer pool is stage 1). The serial resolve-names phase is next after that.
 
 ## Risks / concerns
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order by

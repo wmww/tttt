@@ -89,7 +89,7 @@ static InternEntry* intern_find(InternTable const* me, u64 hash, u64 const* word
 
 static void intern_grow(InternTable* me) {
     InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len };
-    bigger.entries = calloc(bigger.cap, sizeof(InternEntry));
+    bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
     panic_if(!bigger.entries, "out of memory");
     for (u32 i = 0; i < my cap; i++) {
         InternEntry* entry = &my entries[i];
@@ -130,7 +130,7 @@ Atom const* checker_atom(Checker* me, csview sv) {
     InternTable* table = &my atoms;
     if ((table->len + 1) * 4 > table->cap * 3) {
         InternTable bigger = { .cap = table->cap ? table->cap * 2 : 256, .len = table->len };
-        bigger.entries = calloc(bigger.cap, sizeof(InternEntry));
+        bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
         panic_if(!bigger.entries, "out of memory");
         for (u32 i = 0; i < table->cap; i++) {
             InternEntry* entry = &table->entries[i];
