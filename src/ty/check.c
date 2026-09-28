@@ -1539,6 +1539,20 @@ bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed) {
     return true;
 }
 
+void ty_check_generic_index_write(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs) {
+    if (access->form != PROPERTY_EXPR_DOT || !access->assignment_target || access->private_class) return;
+    if (object->kind == TY_TYPE_PARAM ? object->param.state->is_this : !ty_is_generic_object(me, object)) return;
+    Ty const* key = ty_regular(me, ty_access_key_type(me, access));
+    Atom const* name = ty_literal_name(me, key);
+    Ty const* apparent = ty_apparent_type(me, object);
+    if (!name || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) || ty_find_prop(me, apparent, name).found) return;
+    if (!ty_access(me, apparent, key)) return; // (check_access()'s TS2339)
+    cstr object_str = ty_to_cstr(me, object);
+    error_ctx_error_d(errs, access->prop.outer_span, 2339, "Property '", atom_sv(name), "' does not exist on type '",
+        object_str, "'.");
+    cstr_drop(&object_str);
+}
+
 void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
     Ty const* invalid = ty_invalid_generic_element_access(me, access, object);
     if (!invalid) return;
