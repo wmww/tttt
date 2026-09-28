@@ -384,6 +384,21 @@ static bool is_simple_related_enum(Checker* me, RelationState const* st, Ty cons
     return false;
 }
 
+// tsc's isUnknownLikeUnionType: `undefined | null | {}` (with strictNullChecks), to which anything is assignable
+static bool is_unknown_like_union(Checker* me, Ty const* t) {
+    if (t->kind != TY_UNION || t->composite.types.len < 3 || !compiler_options()->strict_null_checks) return false;
+    bool undefined = false, null = false;
+    for (u32 i = 0; i < t->composite.types.len; i++) {
+        undefined |= (t->composite.types.data[i]->flags & TYF_UNDEFINED) != 0;
+        null |= (t->composite.types.data[i]->flags & TYF_NULL) != 0;
+    }
+    if (!undefined || !null) return false;
+    for (u32 i = 0; i < t->composite.types.len; i++) {
+        if (ty_is_empty_anonymous_object(me, t->composite.types.data[i])) return true;
+    }
+    return false;
+}
+
 static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s, Ty const* t) {
     u32 sf = s->flags;
     u32 tf = t->flags;
@@ -416,8 +431,14 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
         return members->prop_count || members->call_count || members->construct_count || members->index_count || members->mapped;
     }
     // Enum literals and computed members carry an enum flag; enum types themselves are aliased unions
-    if (((sf | tf) & (TYF_ENUM | TYF_ENUM_LITERAL)) || (s->kind == TY_UNION && t->kind == TY_UNION && s->alias && t->alias)) {
-        return is_simple_related_enum(me, st, s, t);
+    if ((((sf | tf) & (TYF_ENUM | TYF_ENUM_LITERAL)) || (s->kind == TY_UNION && t->kind == TY_UNION && s->alias && t->alias)) &&
+        is_simple_related_enum(me, st, s, t)
+    ) {
+        return true;
+    }
+    // Anything is assignable to a union containing undefined, null and {}
+    if ((st->relation == TY_RELATION_ASSIGNABLE || st->relation == TY_RELATION_COMPARABLE) && is_unknown_like_union(me, t)) {
+        return true;
     }
     return false;
 }
