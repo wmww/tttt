@@ -13561,7 +13561,7 @@ const baselines = {
         types: true,
     },
     'fallFromLastCase2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19271,7 +19271,7 @@ const baselines = {
         types: false,
     },
     'jsFileCompilationBindReachabilityErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26546,7 +26546,7 @@ const baselines = {
         types: true,
     },
     'reachabilityChecks4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

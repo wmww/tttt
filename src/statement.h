@@ -310,6 +310,10 @@ typedef struct SwitchCase {
         Span default_span;
     };
     VecStatement statements;
+    Span head; // `case x:` / `default:`
+    // With noFallthroughCasesInSwitch: where control is at the end of the statements, if it may get there and this
+    // isn't the last clause (tsc's fallthroughFlowNode, TS7029)
+    struct FlowNode const* fallthrough;
 } SwitchCase;
 
 void switch_case_drop(SwitchCase* me);

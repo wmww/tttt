@@ -1087,6 +1087,9 @@ static void switch_resolve_names(SwitchStatement* me, Scope* names, ErrorCtx* er
             statement_resolve_names(j, switch_scope, errs);
         }
         fallthrough = flow->current;
+        if (compiler_options()->no_fallthrough_cases_in_switch && i != count - 1 && !flow_is_unreachable(flow->current)) {
+            clause->fallthrough = flow->current;
+        }
     }
     flow_add_antecedent(flow, post, flow->current);
     if (!has_default && !flow_is_unreachable(flow->pre_switch_case_flow)) {
@@ -1983,6 +1986,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 }
                 for_each (j, vec_statement, &i->statements) {
                     statement_typecheck(j, ctx, errs);
+                }
+                if (i->fallthrough && ty_flow_reachability(current_checker, i->fallthrough) == FLOW_REACH_YES) {
+                    error_ctx_error_d(errs, i->head, 7029, "Fallthrough case in switch.");
                 }
             }
         }   break;

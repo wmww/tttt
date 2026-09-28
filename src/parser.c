@@ -9606,6 +9606,7 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
         hop_whitespace(&p);
 
         expect_char(&p, ':');
+        ret->head = span_from(a);
     } else if (hop_start_if_ends_on_word_break(&p, "default")) {
         hop_whitespace(&p);
 
@@ -9615,6 +9616,7 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
             .is_pattern = false,
             .default_span = span_from(a),
             .statements = {0},
+            .head = span_from(a),
         };
     } else {
         return parse_fail(&p);
