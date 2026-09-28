@@ -32226,12 +32226,12 @@ const baselines = {
         types: true,
     },
     'unmetTypeConstraintInImportCall': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unmetTypeConstraintInJSDocImportCall': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

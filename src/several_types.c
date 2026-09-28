@@ -347,7 +347,7 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         jsdoc_named = true;
     }
     if (!jsdoc_named && (!symbol || symbol->is_placeholder)) return;
-    if (my keyword || my import_ref || !span_valid(my name) || !my name.source) return;
+    if (my keyword || !span_valid(my name) || !my name.source) return;
     u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
     Span span = identifier_type_span(me);
     if (jsdoc_named) {
