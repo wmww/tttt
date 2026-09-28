@@ -59,6 +59,11 @@ typedef struct ParserShared {
     bool saw_jsx;
     Span module_exports_span; // See SourceFile.module_exports_span
     bool saw_commonjs; // A `require()` call, an assignment to `exports.x` or `module.exports` (a JavaScript file's)
+    // Top-level variables of a JavaScript file initialized to `module.exports`, `exports` or another of them (malloc'd):
+    // `M.x = v` with one of them makes the file CommonJS too (tsc's isExportsOrModuleExportsOrAlias)
+    csview* exports_aliases;
+    u32 exports_alias_count;
+    u32 exports_alias_cap;
     // JavaScript files: every `/** */` comment hopped so far (not `/**/`), sorted by start. Hosts find theirs by looking
     // back from their first token (jsdoc_before())
     VecJsDocRange jsdoc_comments;
@@ -6433,6 +6438,8 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     return matched ? parse_success(&p) : parse_fail(&p);
 }
 
+static bool is_exports_alias_name(Parser const* p, Expr const* e);
+
 static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     Parser p = parser(parent);
 
@@ -6475,7 +6482,10 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
         bool named = left_and_ret->property->form == PROPERTY_EXPR_DOT || prop->tag == EXPR_LITERAL;
         mark_assigned_name(&right, named ? prop->inner_span : left_and_ret->inner_span);
     }
-    if (op == BINARY_OP_EQUAL && p.shared->source->is_js && expr_commonjs_target(left_and_ret, nullptr)) {
+    if (op == BINARY_OP_EQUAL && p.shared->source->is_js && (expr_commonjs_target(left_and_ret, nullptr) ||
+        (!p.shared->function_depth && span_valid(expr_static_property_name(left_and_ret)) &&
+            is_exports_alias_name(&p, &left_and_ret->property->expr)))
+    ) {
         p.shared->saw_commonjs = true;
     }
     expr_mark_binary_operand(left_and_ret);
@@ -9048,6 +9058,30 @@ static void note_require_declaration(InitializedBinding* initializer) {
 }
 
 // in_for: the declaration of a `for` loop, where `using of` is `for (using of x)`
+static bool is_exports_alias_name(Parser const* p, Expr const* e) {
+    if (e->tag != EXPR_IDENTIFIER || e->identifier.keyword || expr_is_perenthisized(e)) return false;
+    for (u32 i = 0; i < p->shared->exports_alias_count; i++) {
+        if (csview_eq(&p->shared->exports_aliases[i], &e->identifier.name.sv)) return true;
+    }
+    return false;
+}
+
+// `const M = module.exports` at the top level (see ParserShared.exports_aliases)
+static void note_exports_alias(Parser* p, InitializedBinding const* initializer) {
+    if (p->shared->function_depth || initializer->binding.tag != BINDING_IDENTIFIER) return;
+    Expr const* value = &initializer->value;
+    bool alias = expr_is_module_exports(value) || is_exports_alias_name(p, value) || (value->tag == EXPR_IDENTIFIER &&
+        !value->identifier.keyword && !expr_is_perenthisized(value) && span_equals(value->identifier.name, "exports"));
+    if (!alias) return;
+    ParserShared* shared = p->shared;
+    if (shared->exports_alias_count == shared->exports_alias_cap) {
+        shared->exports_alias_cap = shared->exports_alias_cap ? shared->exports_alias_cap * 2 : 4;
+        shared->exports_aliases = realloc(shared->exports_aliases, sizeof(csview) * shared->exports_alias_cap);
+        panic_if(!shared->exports_aliases, "out of memory");
+    }
+    shared->exports_aliases[shared->exports_alias_count++] = initializer->binding.content_span.sv;
+}
+
 static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, VariableStatement* ret) {
     Parser p = parser(parent);
 
@@ -9160,7 +9194,10 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
             hop_whitespace(&p);
         }
 
-        if (p.shared->source->is_js) note_require_declaration(&initializer);
+        if (p.shared->source->is_js) {
+            note_require_declaration(&initializer);
+            note_exports_alias(&p, &initializer);
+        }
         vec_initialized_binding_push(&ret->initializers, initializer);
 
         if (*p.pos == ';' ||
@@ -10617,6 +10654,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     // parse errors, and like all grammar errors they aren't reported in a file with parse errors (hasParseDiagnostics)
     source->has_import_meta = shared.saw_import_meta;
     source->has_commonjs = shared.saw_commonjs;
+    free(shared.exports_aliases);
     source->module_exports_span = shared.module_exports_span;
     source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;

@@ -13,9 +13,6 @@ to `bugs/type_core.md`, the zod-without-variance TS2589, intersection property l
 smaller leftovers to `bugs/*.md` and hacks.md.
 
 ## 2026-09-28, sixth window's corpus session (todo entry 1)
-- `const M = module.exports; M.a = 1` in a JS file with no require/`exports.x =`: tsc's isExportsOrModuleExportsOrAlias
-  makes it a CommonJS module (setCommonJsModuleIndicator through the alias), tttt's parser flag `saw_commonjs` only
-  sees direct `module.exports`/`exports.x` targets: another file's `require("./p")` gets TS2306 "not a module".
 - Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
   `g2<T extends unknown[]>(x: [...{ [K in keyof T]: S2<T[K]> }])` widens `g2(['a'])` to `[string]`, tsc `["a"]` (its
   forConstraint constraint of `S2<T[number]>` keeps the true branch with T's implied `string`).
