@@ -188,6 +188,27 @@ static_failable check_files(Options const* opts, returns int) {
     }
     double last = now_ms();
 
+    {
+        // Parsing on the side: what the loader will want, as far as that's known now
+        cstr libs = opts->no_lib ? cstr_null : compiler_options_lib_files(program_options(program));
+        isize lib_count = 0, root_count = opts->path_count + root_files.count;
+        csview* lib_names = c_new_n(csview, cstr_size(&libs) + 1);
+        for (csview rest = cstr_sv(&libs); rest.size;) {
+            intptr_t end = csview_find_sv(rest, c_sv(","));
+            lib_names[lib_count++] = csview_slice(rest, 0, end);
+            if (end == c_NPOS) break;
+            rest = csview_slice(rest, end + 1, INTPTR_MAX);
+        }
+        csview* roots = c_new_n(csview, root_count + 1);
+        for (isize i = 0; i < root_count; i++) {
+            roots[i] = i < opts->path_count ? csview_from(opts->paths[i]) : cstr_sv(&root_files.items[i - opts->path_count]);
+        }
+        program_load_ahead(program, lib_names, lib_count, roots, root_count);
+        c_free_n(roots, root_count + 1);
+        c_free_n(lib_names, cstr_size(&libs) + 1);
+        cstr_drop(&libs);
+    }
+
     if (!opts->no_lib) {
         if (!opts->quiet) println(color_good, "Loading libraries...", color_normal);
         try (load_stdlib(program)) cleanup {

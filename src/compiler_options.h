@@ -236,8 +236,9 @@ bool compiler_option_varies(csview name);
 // same thing. Writes up to max names into out, returns how many there are. ids[i] is equal for equal values
 isize compiler_option_values(csview name, const char** out, int* ids, isize max);
 
-// The options of the program being parsed or checked
-extern CompilerOptions const* compiler_options_private;
+// The options of the program being parsed or checked, per thread (a program's load pool and checker threads set
+// them for themselves)
+extern thread_local CompilerOptions const* compiler_options_private;
 void set_compiler_options(CompilerOptions const* options);
 void clear_compiler_options();
 static inline CompilerOptions const* compiler_options() {

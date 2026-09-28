@@ -13,11 +13,13 @@
 //
 // Must be included before any STC or cleat header, so nothing has already been compiled against the real functions.
 
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-extern intptr_t debug_allocation_count;
+// Atomic: the load pool and checker threads allocate too (relaxed: only the total matters)
+extern _Atomic intptr_t debug_allocation_count;
 
 // Seems to cause problems (especially in release mode) if not a word multiple
 #define DEBUG_ALLOCATOR_OFFSET (sizeof(intptr_t))
@@ -30,7 +32,7 @@ static inline void* debug_malloc(size_t size) {
     if (size == 0) return nullptr;
     void* ret = (malloc)(size + DEBUG_ALLOCATOR_OFFSET);
     if (!ret) return nullptr;
-    debug_allocation_count++;
+    atomic_fetch_add_explicit(&debug_allocation_count, 1, memory_order_relaxed);
     return (char*)ret + DEBUG_ALLOCATOR_OFFSET;
 }
 
@@ -38,7 +40,7 @@ static inline void* debug_calloc(size_t num, size_t size) {
     if (num == 0 || size == 0) return nullptr;
     void* ret = (calloc)(1, num * size + DEBUG_ALLOCATOR_OFFSET);
     if (!ret) return nullptr;
-    debug_allocation_count++;
+    atomic_fetch_add_explicit(&debug_allocation_count, 1, memory_order_relaxed);
     return (char*)ret + DEBUG_ALLOCATOR_OFFSET;
 }
 
@@ -56,7 +58,7 @@ static inline void* debug_realloc(void* ptr, size_t new_size) {
 static inline void debug_free(void* ptr) {
     if (!ptr) return;
     (free)((char*)ptr - DEBUG_ALLOCATOR_OFFSET);
-    debug_allocation_count--;
+    atomic_fetch_sub_explicit(&debug_allocation_count, 1, memory_order_relaxed);
 }
 
 #define malloc(size) debug_malloc(size)

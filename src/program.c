@@ -15,6 +15,7 @@
 #include "ty/ty.h"
 #include "module_resolution.h"
 #include "json.h"
+#include "load_pool.h"
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -76,6 +77,7 @@ typedef struct Program {
     cstr lib_dir; // cstr_null: default_lib_dir
     ErrorCtx* errs; // unowned
     Fs const* fs;
+    cstr cwd; // program_cwd()
     Binder* binder;
     ModuleResolver* resolver; // Made on first use, the options are final by then
     HMapBoxSourceFile source_files_map;
@@ -86,6 +88,7 @@ typedef struct Program {
     u32 checker_count;
     u32 requested_checkers; // program_set_checkers()
     u32 threads; // program_set_threads(), 0: 1
+    LoadPool* pool; // While loading with threads: parses files ahead of the loader
     CompilerOptions options;
     // program_set_config_file(): the config and its JSON (with offsets), null / a null value without one
     SourceFile* config_source;
@@ -141,6 +144,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
 }
 
 static void program_drop(Program* me) {
+    load_pool_destroy(my pool);
     // First, its memos point into the AST and the scopes
     for (u32 i = 1; i < my checker_count; i++) checker_drop(my checkers[i]);
     free(my checkers);
@@ -150,6 +154,7 @@ static void program_drop(Program* me) {
     vec_source_file_ptr_drop(&my source_files_ordered);
     module_resolver_destroy(my resolver);
     cstr_drop(&my lib_dir);
+    cstr_drop(&my cwd);
     compiler_options_drop(&my options);
     if (my config_source) {
         source_file_drop(my config_source);
@@ -258,17 +263,23 @@ void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path),
     module_resolver_set_realpath(program_resolver(me), realpath, ctx);
 }
 
+// The fs' working directory as of its first use (the harness sets it up after making the program), which must not
+// change once files are loaded. Read on the main thread before the load pool starts, only read after
+static csview program_cwd(Program const* me) {
+    if (!cstr_size(&my cwd)) {
+        // Not being able to determine our own working directory isn't something we can carry on from
+        try (fs_get_cwd(my fs, &((Program*)me)->cwd)) or_panic;
+    }
+    return cstr_sv(&my cwd);
+}
+
 // tsc names files by absolute path, and its test harness strips the directory the test's files are in: relative
 // below the working directory, absolute elsewhere
-static cstr program_path_for_message(Program* me, csview absolute) {
-    cstr cwd = cstr_null;
-    try (fs_get_cwd(my fs, &cwd)) or_panic;
-    if (cstr_size(&cwd) > 1) cstr_append_lit(&cwd, "/");
-    cstr ret = cstr_size(&cwd) > 1 && absolute.size > cstr_size(&cwd) &&
-            !memcmp(absolute.buf, cstr_str(&cwd), (size_t)cstr_size(&cwd)) ?
-        cstr_from_sv(csview_slice(absolute, cstr_size(&cwd), absolute.size)) : cstr_from_sv(absolute);
-    cstr_drop(&cwd);
-    return ret;
+static cstr program_path_for_message(Program const* me, csview absolute) {
+    csview cwd = program_cwd(me);
+    bool below = cwd.size > 1 && absolute.size > cwd.size + 1 && !memcmp(absolute.buf, cwd.buf, (size_t)cwd.size) &&
+        absolute.buf[cwd.size] == '/';
+    return below ? cstr_from_sv(csview_slice(absolute, cwd.size + 1, absolute.size)) : cstr_from_sv(absolute);
 }
 
 // Whether a script declares `declare module "<name>"` (tsc's SourceFile.ambientModuleNames)
@@ -606,37 +617,20 @@ static void source_jsx_pragmas(SourceFile* file) {
     }
 }
 
-static SourceFile* program_add_source_idempotent(Program* me, csview path) {
-    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
-
-    cstr cwd = cstr_null;
-    // Not being able to determine our own working directory isn't something we can carry on from
-    try (fs_get_cwd(my fs, &cwd)) or_panic;
-    cstr canonical_path = relative_path_of(cstr_sv(&cwd), path);
-    cstr_drop(&cwd);
-
-    auto cached_source = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
-    if (cached_source) {
-        // A source file is already created for this path
-        cstr_drop(&canonical_path);
-        return cached_source->second.get;
-    }
-
-    // No source file is created for this path, load it
+// A new SourceFile for the file at canonical_path, parsed (its errors into errs), null if it can't be read. On the
+// loader's thread or on a load pool worker: it only reads the program
+static SourceFile* program_make_source(Program const* me, csview canonical_path, bool is_stdlib, ErrorCtx* errs) {
     cstr contents;
-    try (fs_read_file(my fs, cstr_sv(&canonical_path), &contents)) if_err (e) {
+    try (fs_read_file(my fs, canonical_path, &contents)) if_err (e) {
         // Not worth reporting: the caller turns a null return into a TypeScript "file not found" error
         ignore e;
         current_error_destroy();
-        cstr_drop(&canonical_path);
         return nullptr;
     }
     text_decode(&contents);
 
-    SourceFile* source_file = c_new(
-        SourceFile,
-        source_file_make(cstr_clone(canonical_path), contents)
-    );
+    SourceFile* source_file = c_new(SourceFile, source_file_make(cstr_from_sv(canonical_path), contents));
+    csview path = cstr_sv(&source_file->canonical_path);
 
     if (csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts")) {
         source_file->is_declaration = true;
@@ -659,7 +653,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     if (source_file->is_declaration && my options.skip_lib_check) source_file->unchecked = true;
     if (my options.no_check) source_file->unchecked = true; // (tsc's skipTypeChecking: no semantic diagnostics at all)
 
-    if (my loading_stdlib) {
+    if (is_stdlib) {
         source_file->is_stdlib = true;
         csview filename = basename_of(cstr_sv(&source_file->canonical_path));
         cstr_take(&source_file->decl_override, cstr_d("lib.", filename, ", --, --"));
@@ -671,8 +665,8 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     // (A JSON file has no module format of its own: tsc's getImpliedNodeFormatForFile, which also looks at the
     // package.json of anything in node_modules)
     bool in_node_modules = csview_contains(cstr_sv(&source_file->canonical_path), "/node_modules/");
-    if ((node_formats || in_node_modules) && !my loading_stdlib && !source_file->is_json) {
-        FileFormat format = module_resolver_file_format(program_resolver(me), cstr_sv(&source_file->canonical_path));
+    if ((node_formats || in_node_modules) && !is_stdlib && !source_file->is_json) {
+        FileFormat format = module_resolver_file_format(my resolver, cstr_sv(&source_file->canonical_path));
         source_file->is_esm = format.mode == RESOLUTION_MODE_ESM;
         source_file->has_format = true;
         source_file->package_has_type = format.package_has_type;
@@ -682,7 +676,129 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         cstr_drop(&format.package_json);
     }
 
-    parse_file(source_file, my errs);
+    parse_file(source_file, errs);
+    return source_file;
+}
+
+static void source_file_free(void* ctx, SourceFile* file) {
+    ignore ctx;
+    source_file_drop(file);
+    free(file);
+}
+
+static void program_queue_path(Program* me, LoadPool* pool, csview absolute, bool is_stdlib) {
+    cstr canonical = relative_path_of(program_cwd(me), absolute);
+    load_pool_queue(pool, cstr_sv(&canonical), is_stdlib);
+    cstr_drop(&canonical);
+}
+
+// Queues what the loader will probably load from a parsed file: a guess (the loader decides with what it learns after
+// parsing, like the file's module-ness, the helpers and JSX runtime imports), so a wrong one only costs a parse.
+// Resolutions go to the shared resolver's cache, where the loader finds them
+static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile const* file) {
+    if (my options.no_resolve) return;
+    ModuleResolver* resolver = my resolver;
+    csview containing = cstr_sv(&file->canonical_path);
+    for (u32 i = 0; i < file->module_ref_count; i++) {
+        ModuleRef const* ref = file->module_refs[i];
+        if (ref->is_declaration || ref->ambient_only) continue;
+        ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_REQUIRE_SYNTAX :
+            ref->syntax == MODULE_REF_DYNAMIC || file->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
+        if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM | RESOLUTION_MODE_EXPLICIT;
+        if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX | RESOLUTION_MODE_EXPLICIT;
+        ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+        bool load = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || resolved.kind == RESOLVED_JSON ||
+            (resolved.kind == RESOLVED_JS && my options.allow_js && !(resolved.is_external_library &&
+                csview_contains(cstr_sv(&resolved.path), "/node_modules/")));
+        if (load) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
+        resolved_module_drop(&resolved);
+    }
+    for_each (s, vec_statement, &file->ast.statements) {
+        if (s->tag != STATEMENT_SOURCE_DIRECTIVE) continue;
+        SourceDirectiveStatement const* directive = s->source_directive;
+        switch (directive->tag) {
+            case SOURCE_DIRECTIVE_REFERENCE_PATH:
+                // (program_load_reference_path() probes extensions: the common case is a whole name)
+                if (span_valid(directive->path_span)) {
+                    csview path = cstr_sv(&directive->path);
+                    cstr full = path.size && path.buf[0] == '/' ? cstr_from_sv(path) :
+                        cstr_d(dirname_of(containing), "/", path);
+                    program_queue_path(me, pool, cstr_sv(&full), file->is_stdlib);
+                    cstr_drop(&full);
+                }
+                break;
+            case SOURCE_DIRECTIVE_REFERENCE_TYPES: {
+                ResolutionMode mode = RESOLUTION_MODE_COMMONJS;
+                bool has_mode = true;
+                if (directive->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
+                else if (directive->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_COMMONJS;
+                else if (file->has_format) mode = file->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
+                else has_mode = false;
+                ResolvedModule resolved = module_resolver_resolve_type_reference(
+                    resolver, cstr_sv(&directive->path), containing, has_mode ? &mode : nullptr
+                );
+                if (resolved.kind != RESOLVED_NONE) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
+                resolved_module_drop(&resolved);
+            }   break;
+            case SOURCE_DIRECTIVE_REFERENCE_LIB: {
+                if (!file->is_stdlib && !(my follow_lib_references && !my options.no_lib)) break;
+                cstr name = cstr_d(directive->path, ".d.ts");
+                cstr_lowercase(&name);
+                cstr path = file->is_stdlib ? cstr_d(dirname_of(containing), "/", name) :
+                    cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name);
+                program_queue_path(me, pool, cstr_sv(&path), true);
+                cstr_drop(&path);
+                cstr_drop(&name);
+            }   break;
+        }
+    }
+}
+
+// A load pool worker's job
+static SourceFile* program_parse_ahead(void* ctx, LoadPool* pool, csview path, bool is_stdlib, ErrorCtx* errs) {
+    Program* me = ctx;
+    set_compiler_options(&my options);
+    SourceFile* file = program_make_source(me, path, is_stdlib, errs);
+    if (file) program_load_ahead_from(me, pool, file);
+    clear_compiler_options();
+    return file;
+}
+
+// The load pool, started on first use when there are threads
+static LoadPool* program_pool(Program* me) {
+    if (!my pool && my threads > 1 && my phase == PROGRAM_PHASE_LOADING) {
+        program_resolver(me);
+        program_cwd(me);
+        my pool = load_pool_new(my threads, program_parse_ahead, source_file_free, me);
+    }
+    return my pool;
+}
+
+static SourceFile* program_add_source_idempotent(Program* me, csview path) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+
+    cstr canonical_path = relative_path_of(program_cwd(me), path);
+
+    auto cached_source = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
+    if (cached_source) {
+        // A source file is already created for this path
+        cstr_drop(&canonical_path);
+        return cached_source->second.get;
+    }
+
+    // No source file is created for this path: a load pool worker may have parsed it, else parse it here
+    program_resolver(me);
+    SourceFile* source_file = nullptr;
+    if (program_pool(me)) source_file = load_pool_take(my pool, cstr_sv(&canonical_path), my loading_stdlib, my errs);
+    if (!source_file) {
+        source_file = program_make_source(me, cstr_sv(&canonical_path), my loading_stdlib, my errs);
+        if (!source_file) {
+            cstr_drop(&canonical_path);
+            return nullptr;
+        }
+        // (Its imports for the pool, which the loader is about to resolve anyway)
+        if (my pool) program_load_ahead_from(me, my pool, source_file);
+    }
     if (source_file->is_json) source_file->is_module = true;
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
@@ -815,10 +931,7 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
 }
 
 SourceFile* program_find_source(Program const* me, csview path) {
-    cstr cwd = cstr_null;
-    try (fs_get_cwd(my fs, &cwd)) or_panic;
-    cstr canonical_path = relative_path_of(cstr_sv(&cwd), path);
-    cstr_drop(&cwd);
+    cstr canonical_path = relative_path_of(program_cwd(me), path);
     auto found = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
     cstr_drop(&canonical_path);
     return found ? found->second.get : nullptr;
@@ -834,6 +947,26 @@ failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
     my loading_stdlib = false;
     cstr_drop(&path);
     return ok(source);
+}
+
+void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview const* roots, isize root_count) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    LoadPool* pool = program_pool(me);
+    if (!pool) return;
+    for (isize i = 0; i < lib_count; i++) {
+        cstr path = cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", libs[i], ".d.ts");
+        program_queue_path(me, pool, cstr_sv(&path), true);
+        cstr_drop(&path);
+    }
+    for (isize i = 0; i < root_count; i++) program_queue_path(me, pool, roots[i], false);
+    // The automatic types (program_load_automatic_types() resolves them again)
+    StrList names = module_resolver_automatic_types(my resolver);
+    for (isize i = 0; i < names.count; i++) {
+        ResolvedModule resolved = module_resolver_resolve_type_reference(my resolver, cstr_sv(&names.items[i]), c_sv(""), nullptr);
+        if (resolved.kind != RESOLVED_NONE) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
+        resolved_module_drop(&resolved);
+    }
+    str_list_drop(&names);
 }
 
 void program_load_automatic_types(Program* me) {
@@ -1539,6 +1672,9 @@ static void program_check_builtin_global_names(Program* me) {
 
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
+    // Loading is over: what the pool parsed for nothing goes
+    load_pool_destroy(my pool);
+    my pool = nullptr;
     program_validate_options(me);
     program_verify_module_kind(me);
     program_verify_emit_paths(me);
@@ -1706,7 +1842,9 @@ static void check_shares_run(CheckShares* me) {
 }
 
 static void* check_shares_thread(void* shares) {
+    set_compiler_options(&((CheckShares*)shares)->program->options);
     check_shares_run(shares);
+    clear_compiler_options();
     return nullptr;
 }
 

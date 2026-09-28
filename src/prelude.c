@@ -1,7 +1,7 @@
 #include "prelude.h"
 
 #ifdef DEBUG_ALLOCATOR_ACTIVE
-intptr_t debug_allocation_count = 0;
+_Atomic intptr_t debug_allocation_count = 0;
 #endif
 
 // The macros this replaced all used to print file:line, and cleat's logger doesn't by default. Everything else about

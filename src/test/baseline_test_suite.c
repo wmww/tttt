@@ -170,7 +170,7 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
             debug_allocation_count = 0;
             baseline_test_result_run(i, me, prev_obj, false, false, false);
             if (debug_allocation_count != 0) {
-                println(" ", color_highlighted_error, " ", debug_allocation_count,
+                println(" ", color_highlighted_error, " ", (i64)debug_allocation_count,
                     " net allocations! ", color_normal);
                 vec_baseline_test_result_c_ptr_push(&memory_issues, i);
             }

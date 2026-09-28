@@ -1,5 +1,6 @@
 #include "module_resolution.h"
 #include "json.h"
+#include <pthread.h>
 
 // tsc's version, for `typesVersions` and versioned `types@>=5.0` conditions
 enum { TS_VERSION_MAJOR = 5, TS_VERSION_MINOR = 8 };
@@ -35,8 +36,15 @@ static void package_json_drop(PackageJson* me) {
     json_drop(&my json);
 }
 
+// Boxed: a PackageJson never moves once read, whatever other threads add to the map
+typedef PackageJson* PackageJsonBox;
+static void package_json_box_drop(PackageJsonBox* me) {
+    package_json_drop(*me);
+    free(*me);
+}
+
 #define g_pro_key SvStr, svstr
-#define g_class_val PackageJson, package_json
+#define g_class_val PackageJsonBox, package_json_box
 #define g_no_clone
 #include <cleat/generic/hmap.h>
 
@@ -51,7 +59,10 @@ typedef struct ModuleResolver {
     cstr cwd;
     RealpathFn realpath;
     void* realpath_ctx;
-    HMapPackageJson package_jsons; // By directory. The map never moves its values' json, only the PackageJson structs
+    // Resolutions may run on several threads at once (a program's load pool): the caches are shared, under lock (the
+    // filesystem probing between a miss and the insert isn't; two threads may both do a lookup, and agree)
+    pthread_mutex_t lock;
+    HMapPackageJsonBox package_jsons; // By directory
     // module_resolver_resolve()'s results by containing directory, mode and specifier (resolution_key()): the files of
     // a directory import the same packages, each a walk up the node_modules directories
     HMapResolvedModule resolutions;
@@ -94,7 +105,9 @@ static ResolvedModule resolved_module_clone(ResolvedModule const* me) {
 }
 
 ModuleResolver* module_resolver_new(Fs const* fs, CompilerOptions const* options) {
-    return c_new(ModuleResolver, { .fs = fs, .options = options });
+    ModuleResolver* ret = c_new(ModuleResolver, { .fs = fs, .options = options });
+    pthread_mutex_init(&ret->lock, nullptr);
+    return ret;
 }
 
 void module_resolver_set_realpath(ModuleResolver* me, RealpathFn realpath, void* ctx) {
@@ -115,8 +128,9 @@ static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
 void module_resolver_destroy(ModuleResolver* me) {
     if (!me) return;
     cstr_drop(&my cwd);
-    hmap_package_json_drop(&my package_jsons);
+    hmap_package_json_box_drop(&my package_jsons);
     hmap_resolved_module_drop(&my resolutions);
+    pthread_mutex_destroy(&my lock);
     free(me);
 }
 
@@ -346,10 +360,11 @@ static bool load_file(State* me, csview candidate, int extensions, Found* out) {
 
 static PackageJson const* package_json_of(State* me, csview directory) {
     ModuleResolver* resolver = my resolver;
-    auto cached = hmap_package_json_get(&resolver->package_jsons, directory);
-    if (cached) {
-        return cached->second.exists ? &cached->second : nullptr;
-    }
+    pthread_mutex_lock(&resolver->lock);
+    auto cached = hmap_package_json_box_get(&resolver->package_jsons, directory);
+    PackageJson const* known = cached ? cached->second : nullptr;
+    pthread_mutex_unlock(&resolver->lock);
+    if (known) return known->exists ? known : nullptr;
     PackageJson package = {0};
     cstr path = cstr_d(directory, "/package.json");
     if (fs_is_reg_file(resolver->fs, cstr_sv(&path))) {
@@ -368,8 +383,13 @@ static PackageJson const* package_json_of(State* me, csview directory) {
         }
     }
     cstr_drop(&path);
-    auto inserted = hmap_package_json_insert(&resolver->package_jsons, cstr_from_sv(directory), package);
-    return inserted.ref->second.exists ? &inserted.ref->second : nullptr;
+    PackageJson* box = c_new(PackageJson, package);
+    pthread_mutex_lock(&resolver->lock);
+    // (If another thread's read of the same file got there first, the same contents: insert drops ours)
+    auto inserted = hmap_package_json_box_insert(&resolver->package_jsons, cstr_from_sv(directory), box);
+    known = inserted.ref->second;
+    pthread_mutex_unlock(&resolver->lock);
+    return known->exists ? known : nullptr;
 }
 
 // tsc's parseNodeModuleFromPath + withPackageId: the package directory after the last node_modules (`@scope/name`
@@ -1323,9 +1343,11 @@ static void add_condition(State* me, const char* condition) {
 
 // The working directory as of the first resolution: whoever made the resolver may still have been setting up
 static void resolver_init_cwd(ModuleResolver* resolver) {
+    pthread_mutex_lock(&resolver->lock);
     if (!cstr_size(&resolver->cwd)) {
         try (fs_get_cwd(resolver->fs, &resolver->cwd)) or_panic;
     }
+    pthread_mutex_unlock(&resolver->lock);
 }
 
 static State state_make(ModuleResolver* resolver, ResolutionMode mode) {
@@ -1431,14 +1453,18 @@ ResolvedModule module_resolver_resolve(
     cstr dir = absolute_containing_dir(me, containing_file);
     // (Paths are C strings further down: the directory is its own string, and no path has a line break)
     cstr key = cstr_d(dir, "\n", (char)('0' + mode), specifier);
+    pthread_mutex_lock(&my lock);
     auto cached = hmap_resolved_module_get(&my resolutions, cstr_sv(&key));
-    ResolvedModule ret;
+    ResolvedModule ret = cached ? resolved_module_clone(&cached->second) : (ResolvedModule){0};
+    pthread_mutex_unlock(&my lock);
     if (cached) {
         cstr_drop(&key);
-        ret = resolved_module_clone(&cached->second);
     } else {
         ret = resolve_uncached(me, specifier, cstr_sv(&dir), mode);
-        hmap_resolved_module_insert(&my resolutions, key, resolved_module_clone(&ret));
+        ResolvedModule copy = resolved_module_clone(&ret);
+        pthread_mutex_lock(&my lock);
+        hmap_resolved_module_insert(&my resolutions, key, copy);
+        pthread_mutex_unlock(&my lock);
     }
     cstr_drop(&dir);
     return ret;

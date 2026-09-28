@@ -36,6 +36,11 @@ ErrorCtx* program_errors(Program const* me);
 // program's ErrorCtx instead. A JavaScript file without `allowJs` is such a problem (TS6504) and gives null
 failable program_load(Program* me, csview path, returns SourceFile*);
 
+// With threads (program_set_threads()), starts parsing these ahead of program_load(), program_load_stdlib() and
+// program_load_automatic_types(), which still decide everything: the libs by name (`es5`), the root files by path,
+// and the automatic types. Only makes loading faster
+void program_load_ahead(Program* me, csview const* libs, isize lib_count, csview const* roots, isize root_count);
+
 // The packages that are part of every program: the `types` option, else everything in the type roots (`typeRoots`,
 // else node_modules/@types from the config's or the current directory upwards). Call it after the root files
 void program_load_automatic_types(Program* me);

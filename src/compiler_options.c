@@ -370,7 +370,7 @@ isize compiler_option_values(csview name, const char** out, int* ids, isize max)
     return count;
 }
 
-CompilerOptions const* compiler_options_private = nullptr;
+thread_local CompilerOptions const* compiler_options_private = nullptr;
 
 void set_compiler_options(CompilerOptions const* options) {
     check(options);

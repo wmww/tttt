@@ -56,7 +56,7 @@ int main(int argc, const char** argv) {
             BaselineTestCase rerun_case = run_baseline_test_case(&cache, test_path, c_sv(""), true, false);
             baseline_test_case_drop(&rerun_case);
             if (debug_allocation_count != 0) {
-                eprintln("Detected ", debug_allocation_count, " net allocations");
+                eprintln("Detected ", (i64)debug_allocation_count, " net allocations");
                 println("mem");
             }
         }
