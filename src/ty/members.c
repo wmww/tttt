@@ -3240,6 +3240,14 @@ static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
         TypeNode const* node = state->constraint_node;
         if (state->item) {
             node = state->item->extends_explicit ? &state->item->extends : nullptr;
+            // Merged declarations share the type parameter: the first one that constrains it does (tsc's
+            // getConstraintDeclaration)
+            Symbol const* symbol = param->param.symbol;
+            for (u32 i = 0; !node && symbol && i < symbol->decl_count; i++) {
+                if (symbol->decls[i].kind != SYMBOL_DECL_TYPE_PARAMETER) continue;
+                GenericItem const* item = symbol->decls[i].node;
+                if (item && item->extends_explicit) node = &item->extends;
+            }
         }
         state->constraint = node ? ty_from_node(me, node, (LowerCtx){ .generic = true }) : nullptr;
         // A declared `extends any` is `extends unknown` (tsc's getConstraintFromTypeParameter; its keyofConstraintType for

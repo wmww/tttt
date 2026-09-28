@@ -646,9 +646,12 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   only via the constraint) and classes with bases `class_base()` can't see (`ty_has_unresolved_base()`). Bracket access
   never reports a missing property. Generic TS2536 (`ty_indexed_access_index_ok`) lacks tsc's TS4105 case (a
   private/protected property named through a type parameter).
-- `ty_check_type_reference_constraints` (HACK): arguments that could contain type variables aren't checked for TS2344
-  (~60 false positives otherwise, each a relation bug: indexedAccessRetainsIndexSignature,
-  conditionalTypeClassMembers, homomorphicMappedTypeNesting, interfaceMergedUnconstrainedNoErrorIrrespectiveOfOrder).
+- `ty_check_type_reference_constraints` (HACK): a deferred conditional argument (or a union whose first member is one)
+  isn't checked for TS2344. Two relation gaps behind it: a conditional's default constraint doesn't have what tsc
+  infers for its `infer` type parameters when the check type is a generic mapped type
+  (inferConditionalConstraintMappedMember: tsc gives `{ [K in keyof T]: 1 } extends { [_ in keyof T]: infer U } ? U : never`
+  the constraint number), and 2000 deferred conditionals against a 2000-member union run out of relation budget
+  (conditionalTypeDiscriminatingLargeUnionRegularTypeFetchingSpeedReasonable). Other generic arguments are checked.
 - `check_assignable` (HACK): a source `any` is let through to anything, even `never`.
 - `ty_check_index_constraints` on type literals only when the literal syntactically has an index signature and something
   to check (`type_literal_has_index_constraints`); alias bodies go through the alias (`type_decl_typecheck`): evaluating

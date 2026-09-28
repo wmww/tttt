@@ -797,7 +797,16 @@ static Ty const* apparent_type_of_mapped(Checker* me, Ty const* ty) {
     MappedInfo const* mapped = mapped_info_of(me, ty, &generic);
     if (!mapped || !generic || !mapped->keyof_constraint || mapped->name_type || !mapped->modifiers_type) return ty;
     if (mapped->constraint->kind != TY_KEYOF) return ty; // (Substituted: not homomorphic, see homomorphic_variable())
-    Ty const* variable = mapped->modifiers_type;
+    // (tsc's getHomomorphicTypeVariable on the constraint, where the keys of a generic mapped type are its constraint's:
+    // `Identity<UnboxArray<T>>` iterates over `keyof T`)
+    Ty const* operand = mapped->constraint->keyof.operand;
+    for (u32 depth = 0; operand->kind == TY_ANONYMOUS && depth < 8; depth++) {
+        bool inner_generic = false;
+        MappedInfo const* inner = mapped_info_of(me, operand, &inner_generic);
+        if (!inner || !inner_generic || inner->name_type || inner->constraint->kind != TY_KEYOF) break;
+        operand = inner->constraint->keyof.operand;
+    }
+    Ty const* variable = ty_actual_type_variable(me, operand);
     if (variable->kind != TY_TYPE_PARAM) return ty;
     Ty const* constraint = base_constraint(me, variable, 0);
     if (!constraint || constraint == variable || (constraint->flags & TYF_NEVER)) return ty;
@@ -1792,6 +1801,7 @@ static SourceProp* source_props(Checker* me, Ty const* source, Members const* so
 }
 
 // `source_is_primitive`: `source` is a primitive's apparent type, which a string `any` index signature doesn't take as is
+static TyMapper const* mapped_key_param_mapper(Checker* me, MappedInfo const* mapped);
 static Ternary index_signatures_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool source_is_primitive, bool report
 ) {
@@ -1810,9 +1820,12 @@ static Ternary index_signatures_related(
         ) {
             continue;
         }
-        // A generic mapped type's template stands for all of its values (tsc's indexSignaturesRelatedTo)
+        // A generic mapped type's template stands for all of its values (tsc's indexSignaturesRelatedTo), its key type
+        // parameter constrained by the instantiated constraint (tsc's fresh type parameter of an instantiated mapped type)
         if (source_members->mapped && target_has_string_index) {
-            Ternary related = is_related_to(me, st, ty_mapped_template(me, source_members->mapped), target_info->value, report);
+            MappedInfo const* mapped = source_members->mapped;
+            Ty const* template = ty_instantiate(me, ty_mapped_template(me, mapped), mapped_key_param_mapper(me, mapped));
+            Ternary related = is_related_to(me, st, template, target_info->value, report);
             if (!related) return TERNARY_FALSE;
             result &= related;
             continue;
@@ -3982,7 +3995,15 @@ static Ternary structured_related_members(
 
     bool source_is_tuple = is_tuple(source) || is_empty_tuple(source);
     bool target_is_tuple = is_tuple(target) || is_empty_tuple(target);
-    if (source_is_tuple && target_is_tuple) return tuples_related(me, st, source, target, report);
+    if (source_is_tuple && target_is_tuple) {
+        // A generic tuple against a non-generic one relates as its base constraint (tsc's structuredTypeRelatedToWorker,
+        // isGenericTupleType(source)): `[S, ...T]` with `T extends readonly X[]` as `[S, ...X[]]`
+        if (is_tuple(source) && ty_is_generic_tuple(me, source) && !(is_tuple(target) && ty_is_generic_tuple(me, target))) {
+            Ty const* constraint = base_constraint(me, source, 0);
+            if (constraint && constraint != source) return is_related_to(me, st, constraint, target, report);
+        }
+        return tuples_related(me, st, source, target, report);
+    }
     if (target_is_tuple && source->kind == TY_ANONYMOUS) {
         // A homomorphic mapped type over a type parameter constrained to a tuple is a tuple (its apparent type)
         Ty const* apparent = apparent_type(me, source);
