@@ -2601,6 +2601,7 @@ typedef struct JsDocTag {
     bool variadic; // `{...T}`
     Span name; // `@param {T} name`, `@typedef {T} Name`, `@template T`: the name (maybe dotted: `o.a`)
     bool bracketed; // `[name]`, `[name=default]`: optional
+    bool is_const; // `@template const T`
     // A `@param`/`@returns` of a `@callback`, a `@property` of a `@typedef`: part of that, not about the host
     bool nested;
     // `@returns {x is T}`, `{asserts x}`: owned, `type` is then the return type the predicate goes with
@@ -2815,6 +2816,20 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
             while (true) {
                 bool bracketed = c < end && *c == '[';
                 if (bracketed) c = jsdoc_skip_space(c + 1, end);
+                // Modifiers (tsc's parseTemplateTagTypeParameter: parseModifiers): `const`, `in`, `out`
+                bool is_const = false;
+                while (true) {
+                    const char* word = c;
+                    while (c < end && (is_identifier_char(*c) || (uint8_t)*c >= 0x80)) c++;
+                    csview w = { word, c - word };
+                    bool modifier = csview_equals(w, "const") || csview_equals(w, "in") || csview_equals(w, "out");
+                    if (!modifier || c >= end || (*c != ' ' && *c != '\t')) {
+                        c = word;
+                        break;
+                    }
+                    is_const |= csview_equals(w, "const");
+                    c = jsdoc_skip_space(c, end);
+                }
                 const char* name_start = c;
                 while (c < end && (is_identifier_char(*c) || (uint8_t)*c >= 0x80)) c++;
                 if (c == name_start) break;
@@ -2824,6 +2839,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 }
                 tag.name = span_make(source, name_start, c);
                 tag.bracketed = bracketed;
+                tag.is_const = is_const;
                 if (bracketed) {
                     while (c < end && (*c == ' ' || *c == '\t')) c++;
                     if (c < end && *c == '=') {
@@ -3340,7 +3356,7 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
         if (comment ? i->comment != comment : i->earlier) continue;
-        GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true };
+        GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true, .is_const = i->is_const };
         if (i->has_type) {
             item.extends = jsdoc_take_type(i, nullptr);
             item.extends.from_jsdoc = false;
