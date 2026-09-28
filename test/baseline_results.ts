@@ -9556,9 +9556,9 @@ const baselines = {
         types: true,
     },
     'destructureTupleWithVariableElement': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuredDeclarationEmit': {
         errors: true,
@@ -59956,7 +59956,7 @@ const baselines = {
         types: false,
     },
     'noUncheckedIndexedAccessDestructuring': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

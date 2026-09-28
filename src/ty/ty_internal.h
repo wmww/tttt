@@ -286,8 +286,6 @@ bool ty_is_object_literal_without_spread(Checker* me, Ty const* ty);
 // A definitely non-nullable source against `T | undefined` (or `| null`, or both) is related to T, which errors name
 // too (tsc's isRelatedTo). Else `target`
 Ty const* ty_strip_nullable_target(Checker* me, Ty const* source, Ty const* target);
-// ty_access() of an expression that reads: with noUncheckedIndexedAccess, index signatures give undefined too
-Ty const* ty_access_reading(Checker* me, Ty const* object, Ty const* index);
 Ty const* ty_access_write_type(Checker* me, Ty const* object, Ty const* index); // access.c
 // Where an interface's method or call signature was declared: tsc's signature.declaration symbol and parent, which
 // overload resolution orders by (reorder_candidates)

@@ -1270,6 +1270,8 @@ bool ty_definitely_unassignable(Checker* me, Ty const* source, Ty const* target)
 // The type of `object[index]` (and `object.name`, the index being the name as a literal). Null if there's no such
 // property or the index isn't one that can be looked up
 Ty const* ty_access(Checker* me, Ty const* object, Ty const* index);
+// ty_access() of an expression that reads: with noUncheckedIndexedAccess, index signatures give undefined too
+Ty const* ty_access_reading(Checker* me, Ty const* object, Ty const* index);
 
 // expr.c: the types of expressions. One entry point, with the contextual type (null for none) as a parameter:
 // contextual typing of function expressions, object and array literals, and the context-sensitive pass of generic

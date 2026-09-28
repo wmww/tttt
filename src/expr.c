@@ -1936,8 +1936,9 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                 } else {
                     if (array_like) {
                         Value key = value_number(index);
-                        element = ty_access(checker, source, ty_literal(checker, &key));
-                        if (!element) element = ty_access(checker, source, ty_intrinsic(checker, TY_NUMBER));
+                        // (Read like an expression: noUncheckedIndexedAccess's undefined)
+                        element = ty_access_reading(checker, source, ty_literal(checker, &key));
+                        if (!element) element = ty_access_reading(checker, source, ty_intrinsic(checker, TY_NUMBER));
                     }
                     assignment_target_typecheck(i, element, nullptr, errs);
                 }
@@ -1956,7 +1957,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                 Ty const* property = nullptr;
                 if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
                     Ty const* key = ty_string_literal(checker, cstr_sv(&i->name_string));
-                    property = ty_access(checker, source, key);
+                    property = ty_access_reading(checker, source, key);
                     ty_mark_destructured_member(checker, source, cstr_sv(&i->name_string));
                     // What the source lacks is TS2339, on the source as it is: null and undefined too (tsc's
                     // checkObjectLiteralDestructuringPropertyAssignment). An object literal source may lack a property
@@ -1978,7 +1979,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                     if (!(has_default && source->kind == TY_ANONYMOUS && source->anonymous.object_literal)) {
                         ty_check_indexed_access_type(checker, source, key, key_span, key_span, errs);
                     }
-                    property = ty_access(checker, source, key);
+                    property = ty_access_reading(checker, source, key);
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD) {
                     assignment_target_typecheck(&i->value, nullptr, nullptr, errs); // TODO: the rest of the object

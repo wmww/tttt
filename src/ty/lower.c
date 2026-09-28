@@ -1881,7 +1881,9 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding c
             };
         }
     }
-    Ty const* ret = ty_object_literal(me, props, count, nullptr, 0, OBJECT_SYNTHETIC);
+    // (The intersection's index signatures stay: tsc's getRestType with getIndexInfosOfType)
+    Members const* own = ty_members(me, source);
+    Ty const* ret = ty_object_literal(me, props, count, own->index, own->index_count, OBJECT_SYNTHETIC);
     free(props);
     return ret;
 }
@@ -2204,7 +2206,8 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         ret = object_rest_type(me, object, parent);
     } else if (in_array) {
         Value index = value_number(binding->parent_index);
-        ret = ty_access(me, object, ty_literal(me, &index));
+        // (Read like an expression: noUncheckedIndexedAccess's undefined, tsc's AccessFlags.ExpressionPosition)
+        ret = ty_access_reading(me, object, ty_literal(me, &index));
         // Past the end of a tuple (TS2493, binding_typecheck()) is undefined (tsc's getIndexedAccessTypeOrUndefined)
         TupleShape const* shape = ty_tuple_shape(object);
         bool has_rest = false;
@@ -2213,7 +2216,8 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
     } else {
         ObjectBindingItem const* item = binding->parent_item;
-        ret = ty_access(me, object, item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));
+        ret = ty_access_reading(me, object,
+            item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));
         // A property an object literal lacks is undefined when there's a default, which decides (tsc's
         // AccessFlags.AllowMissing)
         if (!ret && binding->default_value && object->kind == TY_ANONYMOUS && object->anonymous.object_literal) {

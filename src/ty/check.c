@@ -1216,6 +1216,16 @@ static bool is_js_literal_type(Checker* me, Ty const* type) {
     }
 }
 
+// An entity name as tsc's entityNameToString writes it: the names and dots, not the whitespace between them
+static cstr entity_name_text(Span span) {
+    cstr ret = cstr_null;
+    for (isize i = 0; i < span.sv.size; i++) {
+        char c = span.sv.buf[i];
+        if (c != ' ' && c != '\t' && c != '\n' && c != '\r') cstr_append_n(&ret, &span.sv.buf[i], 1);
+    }
+    return ret;
+}
+
 static void check_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
     bool error_if_not_found, u32 depth, ErrorCtx* errs
@@ -1262,10 +1272,12 @@ static void check_access(
         if ((has_null || has_undefined) && compiler_options()->strict_null_checks) {
             const char* what = has_null && has_undefined ? "null' or 'undefined" : has_null ? "null" : "undefined";
             if (object_is_named) {
+                cstr name = entity_name_text(object_span);
                 error_ctx_error_d(
                     errs, object_span, has_null && has_undefined ? 18049 : has_null ? 18047 : 18048,
-                    "'", object_span, "' is possibly '", what, "'."
+                    "'", name, "' is possibly '", what, "'."
                 );
+                cstr_drop(&name);
             } else {
                 error_ctx_error_d(
                     errs, object_span, has_null && has_undefined ? 2533 : has_null ? 2531 : 2532,
@@ -1317,7 +1329,9 @@ static void check_access(
         } else if (!span_valid(object_span)) {
             if (error_if_not_found) report_no_property(me, object, index, 2339, index_span, errs);
         } else if (object_is_named) {
-            error_ctx_error_d(errs, object_span, 18046, "'", object_span, "' is of type 'unknown'.");
+            cstr name = entity_name_text(object_span);
+            error_ctx_error_d(errs, object_span, 18046, "'", name, "' is of type 'unknown'.");
+            cstr_drop(&name);
         } else {
             error_ctx_error_d(errs, object_span, 2571, "Object is of type 'unknown'.");
         }
@@ -2893,7 +2907,9 @@ Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, 
     Span span = expr_error_span(expr);
     if (compiler_options()->strict_null_checks && (type->flags & TYF_UNKNOWN)) {
         if (named) {
-            error_ctx_error_d(errs, span, 18046, "'", span, "' is of type 'unknown'.");
+            cstr name = entity_name_text(span);
+            error_ctx_error_d(errs, span, 18046, "'", name, "' is of type 'unknown'.");
+            cstr_drop(&name);
         } else {
             error_ctx_error_d(errs, span, 2571, "Object is of type 'unknown'.");
         }
@@ -2908,8 +2924,10 @@ Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, 
     } else if (bare && expr->literal.tag == VALUE_UNDEFINED && csview_equals(expr->inner_span.sv, "undefined")) {
         error_ctx_error_d(errs, span, 18050, "The value 'undefined' cannot be used here.");
     } else if (named) {
+        cstr name = entity_name_text(span);
         error_ctx_error_d(errs, span, has_null && has_undefined ? 18049 : has_null ? 18047 : 18048,
-            "'", span, "' is possibly '", what, "'.");
+            "'", name, "' is possibly '", what, "'.");
+        cstr_drop(&name);
     } else {
         error_ctx_error_d(errs, span, has_null && has_undefined ? 2533 : has_null ? 2531 : 2532,
             "Object is possibly '", what, "'.");
