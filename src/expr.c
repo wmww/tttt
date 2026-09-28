@@ -282,6 +282,24 @@ void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
     }
 }
 
+// What an entity name expression (`a`, `a.b.c`) names with `meaning`, quietly: null if nothing
+static Symbol const* entity_name_symbol(Scope* names, Expr const* expr, u32 meaning) {
+    if (expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword) {
+        return symbol_for_meaning(scope_resolve(names, expr->identifier.name.sv, meaning), meaning);
+    }
+    if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return nullptr;
+    Expr const* name = &expr->property->prop;
+    if (name->tag != EXPR_LITERAL || name->literal.tag != VALUE_STRING) return nullptr;
+    Symbol const* container = entity_name_symbol(names, &expr->property->expr, SYMBOL_NAMESPACE);
+    if (!container || container->is_placeholder) return nullptr;
+    return symbol_for_meaning(symbol_get_export(container, cstr_sv(&name->literal.string)), meaning);
+}
+
+// A class's `extends` names an interface (tsc's checkAndReportErrorForExtendingInterface)
+static bool entity_names_interface(Scope* names, Expr const* entity) {
+    return entity_name_symbol(names, entity, SYMBOL_INTERFACE) != nullptr;
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
@@ -404,6 +422,16 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     ) {
         // `export = N`, `export default N`: a name exports whatever it means (tsc's checkExportAssignment resolves it
         // with every meaning), a namespace or a type is fine. No target: it has no value type
+    } else if (my extends_entity && entity_names_interface(names, my extends_entity)) {
+        // (tsc's checkAndReportErrorForExtendingInterface)
+        error_ctx_error_d(errs, my name, 2689, "Cannot extend an interface '", my extends_entity->outer_span,
+            "'. Did you mean 'implements'?");
+        my symbol = scope_resolve(names, my name.sv, SYMBOL_ANY_MEANING);
+        my namespace_as_value = my extends_entity->tag != EXPR_IDENTIFIER;
+    } else if (scope_resolve(names, my name.sv, SYMBOL_NAMESPACE_MODULE)) {
+        // (tsc's checkAndReportErrorForUsingNamespaceAsTypeOrValue)
+        error_ctx_error_d(errs, my name, 2708, "Cannot use namespace '", my name, "' as a value.");
+        my symbol = scope_resolve(names, my name.sv, SYMBOL_NAMESPACE_MODULE);
     } else if (scope_get_type(names, my name.sv, nullptr)) {
         // (tsc's isES2015OrLaterConstructorName)
         static char const* const later[] = { "Promise", "Symbol", "Map", "WeakMap", "Set", "WeakSet" };

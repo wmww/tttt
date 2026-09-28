@@ -253,6 +253,11 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         }
     } else {
         my target = scope_get_type(names, my name.sv, &my symbol);
+        // A namespace isn't a type (tsc's checkAndReportErrorForUsingNamespaceAsTypeOrValue, before TS2749)
+        if (!my target && !my jsdoc && scope_resolve(names, my name.sv, SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE)) {
+            error_ctx_error_d(errs, my name, 2709, "Cannot use namespace '", my name, "' as a type.");
+            return;
+        }
         if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
         if (!my target && my jsdoc) my target = my symbol = jsdoc_prototype_type_param(names, my name);
         unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);

@@ -55,6 +55,9 @@ typedef struct IdentifierExpr {
     // A name an instance field can't use because its constructor declares it (TS2301): no target (any), but `symbol`
     // is still what it finds
     bool invalid_initializer_reference;
+    // The namespace an extended interface's name starts with (`M` of `extends M.I`, TS2689): no target, but the
+    // symbols baseline shows `symbol` (tsc's getSymbolAtLocation of a property access's object)
+    bool namespace_as_value;
     // The callee of `require(x)` in a JavaScript file (module_ref is the module if x is a string literal): 1, or 2 when
     // the call is what a declaration's aliases import (InitializedBinding.require_ports, which report the module)
     uint8_t require_call;
@@ -67,6 +70,8 @@ typedef struct IdentifierExpr {
     bool super_member;
     bool super_call;
     bool class_base; // The whole element of a class's `extends` clause (TS2863 rather than TS2693 for `extends number`)
+    // The first name of the entity name a class's `extends` clause is (`M` of `extends M.I`), that entity name
+    Expr const* extends_entity;
     // `this` in a function that isn't a method or arrow function (THIS_ANY): that function, whose `this` may be
     // contextually typed (ty_contextual_this_type())
     FunctionImpl const* this_function;

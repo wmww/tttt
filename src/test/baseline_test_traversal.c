@@ -1314,7 +1314,8 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
     }
     // (A name an instance field can't use still shows what it finds)
     Symbol const* target = my target ? my target :
-        my invalid_initializer_reference ? symbol_for_meaning(my symbol, SYMBOL_VALUE) : nullptr;
+        my invalid_initializer_reference ? symbol_for_meaning(my symbol, SYMBOL_VALUE) :
+        my namespace_as_value ? my symbol : nullptr;
     Symbol const* shown = target ? shown_declaration(my symbol, target) : nullptr;
     // (an alias of an anonymous declaration, `export default class {}`, has a name)
     if (shown && (span_valid(target->name_span) || span_valid(shown->name_span))) {

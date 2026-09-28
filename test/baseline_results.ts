@@ -421,7 +421,7 @@ const baselines = {
         types: true,
     },
     'aliasOnMergedModuleInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1521,7 +1521,7 @@ const baselines = {
         types: true,
     },
     'assignToModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1896,7 +1896,7 @@ const baselines = {
         types: true,
     },
     'assignmentToReferenceTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3651,7 +3651,7 @@ const baselines = {
         types: true,
     },
     'classExtendsInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3661,7 +3661,7 @@ const baselines = {
         types: true,
     },
     'classExtendsInterfaceInModule': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -18186,7 +18186,7 @@ const baselines = {
         types: true,
     },
     'interfaceNameAsIdentifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21031,7 +21031,7 @@ const baselines = {
         types: false,
     },
     'memberScope': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21541,29 +21541,29 @@ const baselines = {
         types: true,
     },
     'moduleAsBaseType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'moduleAssignmentCompat1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleAssignmentCompat2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleAssignmentCompat3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleAssignmentCompat4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleAugmentationCollidingNamesInAugmentation1': {
         errors: true,
@@ -21811,9 +21811,9 @@ const baselines = {
         types: true,
     },
     'moduleCrashBug1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleDeclarationExportStarShadowingGlobalIsNameable': {
         errors: true,
@@ -21881,9 +21881,9 @@ const baselines = {
         types: true,
     },
     'moduleInTypePosition1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleKeywordRepeatError': {
         errors: true,
@@ -22447,8 +22447,8 @@ const baselines = {
     },
     'moduleVisibilityTest3': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleVisibilityTest4': {
         errors: false,
@@ -22456,7 +22456,7 @@ const baselines = {
         types: true,
     },
     'moduleWithNoValuesAsType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22466,9 +22466,9 @@ const baselines = {
         types: true,
     },
     'moduleWithValuesAsType': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'module_augmentExistingAmbientVariable': {
         errors: true,
@@ -23371,9 +23371,9 @@ const baselines = {
         types: true,
     },
     'noCrashOnImportShadowing': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'noCrashOnMixin': {
         errors: true,
@@ -25752,7 +25752,7 @@ const baselines = {
     },
     'primaryExpressionMods': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'primitiveConstraints1': {
@@ -29061,9 +29061,9 @@ const baselines = {
         types: true,
     },
     'staticInstanceResolution5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'staticInterfaceAssignmentCompat': {
         errors: true,
@@ -31626,7 +31626,7 @@ const baselines = {
         types: true,
     },
     'typeUsedAsValueError2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -31741,9 +31741,9 @@ const baselines = {
         types: true,
     },
     'typeofInternalModules': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeofObjectInference': {
         errors: true,
@@ -34856,7 +34856,7 @@ const baselines = {
         types: true,
     },
     'classExtendsEveryObjectType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48726,7 +48726,7 @@ const baselines = {
         types: true,
     },
     'assignments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50866,7 +50866,7 @@ const baselines = {
         types: true,
     },
     'importStatementsInterfaces': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -51026,7 +51026,7 @@ const baselines = {
         types: true,
     },
     'InvalidNonInstantiatedModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65236,7 +65236,7 @@ const baselines = {
         types: false,
     },
     'genericTypeReferenceWithoutTypeArgument2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

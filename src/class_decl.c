@@ -386,6 +386,9 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
 
     Expr* base = my extends.tag == EXPR_GENERIC_PARAMS ? &my extends.generic_params->expr : &my extends;
     if (base->tag == EXPR_IDENTIFIER) base->identifier.class_base = true;
+    Expr* head = base;
+    while (head->tag == EXPR_PROPERTY && head->property->form == PROPERTY_EXPR_DOT) head = &head->property->expr;
+    if (head->tag == EXPR_IDENTIFIER && !head->identifier.keyword) head->identifier.extends_entity = base;
     expr_lookup_names(&my extends, names, errs);
     for_each (i, vec_spanned_type, &my implements) {
         type_lookup_names(&i->type, names, errs);
