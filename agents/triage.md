@@ -72,7 +72,7 @@ smaller leftovers to `bugs/*.md` and hacks.md.
   in the true branch (tsc: only `Record<string, any>[]`), spurious TS7053.
 - mappedTypeGenericWithKnownKeys: `obj.unknownLiteralKey = 3` on `Record<keyof T | "k", V>` should be TS2551 (did you
   mean 'k'), `obj['' as string] = 4` TS2862; ty_check_generic_index_write() skips generic mapped types.
-- TS2705/TS2468 (async function in ES5 without a global `Promise` value, tsc's createPromiseReturnType): tsc reports it only when the return type of an async function *without* `return x` is computed from its body (noImplicitReturns, a call, a contextual signature...), not for every such function; checking every one of them breaks 9 tests (asyncFunctionWithForStatementNoInitializer, classStaticBlock7...). Needs the error at the lazy return-type computation (asyncFunctionNoReturnType, operationsAvailableOnPromisedType, destructuringControlFlowNoCrash). TS2712 (the same for `import()`) is unconditional in checkImportCallExpression.
+- TS2712 (a dynamic `import()` in ES5 without a global `Promise` value, with TS2468): tsc reports it unconditionally in checkImportCallExpression (createPromiseReturnType); the async-function half (TS2705) is in `infer_return_type()` (ty/function.c).
 ## 2026-09-28, suite checker bugs, sub-agent C (circularity / noImplicitAny / definite assignment)
 - tsc's circularity is one resolution stack (pushTypeResolution): a cycle found at entry i marks every entry from i on
   circular, so the *outer* declarations get TS7022/TS2502 too. tttt has separate in-flight states (LazyType
