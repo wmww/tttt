@@ -699,7 +699,15 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
     SymbolEntry* entries = symbol_table_collect(symbol->members, &count);
     for (u32 i = 0; i < count; i++) {
         Symbol const* member = entries[i].symbol;
-        Atom const* name = checker_atom(me, entries[i].name);
+        Atom const* name;
+        if (member->late_bound_key) {
+            // (What the key's type names: a literal or unique symbol, else nothing)
+            bool is_number = false;
+            name = ty_property_name_of_key(me, ty_expr_type(me, member->late_bound_key), &is_number);
+            if (!name) continue;
+        } else {
+            name = checker_atom(me, entries[i].name);
+        }
         VecSpan spans = symbol_declaration_spans(member);
         Prop* existing = builder_find_prop(builder, name);
         // (One the class body declares has no assignment declarations: tsc's declareSymbol with isReplaceableByMethod)

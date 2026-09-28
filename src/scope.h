@@ -268,6 +268,9 @@ typedef struct Symbol {
     // where the flow query of tsc's getFlowTypeInConstructor goes (lower.c's assignment_symbol_type)
     struct Expr const* constructor_assigned;
     FunctionImpl const* declaring_constructor;
+    // A JavaScript class's member `this[k] = v` declares with an entity name k (tsc's late bound assignment
+    // declarations): its name is what k's type names, known to the checker only. In Symbol.members as `[k]`
+    struct Expr const* late_bound_key;
 } Symbol;
 
 // The symbol that gives the name the given meaning: itself, or for an alias its target (null if there is none).

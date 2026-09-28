@@ -1072,6 +1072,14 @@ static cstr index_name(Checker* me, Ty const* index) {
     return ty_to_cstr(me, index);
 }
 
+// A type as a plain typeToString prints it (tsc's default AllowUniqueESSymbolType: `unique symbol`, not `typeof sym`,
+// unlike the relation errors' getTypeNamesForErrorDisplay)
+static cstr index_type_str(Checker* me, Ty const* index) {
+    cstr ret = cstr_null;
+    ty_display(me, (TyDisplay){ .target = &ret, .unique_symbols = true }, index);
+    return ret;
+}
+
 // The class an instance type is of, if it is
 static Symbol const* instance_class(Ty const* object) {
     Ty const* declared = object->kind == TY_REFERENCE ? object->reference.target : object;
@@ -1229,7 +1237,7 @@ static void check_access(
     // never indexes anything, to never (tsc's getPropertyTypeForIndexType: it is assignable to every key kind)
     if (index->flags & TYF_NEVER) return;
     if (!(ty_key_flags(index) & key_like)) {
-        cstr index_str = ty_to_cstr(me, index);
+        cstr index_str = index_type_str(me, index);
         error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
         cstr_drop(&index_str);
         return;
@@ -1408,7 +1416,7 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
     if (is_global_this(apparent) && !(index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) return;
     cstr object_str = ty_to_cstr(me, apparent);
     if (!is_key) {
-        cstr index_str = ty_to_cstr(me, index);
+        cstr index_str = index_type_str(me, index);
         error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
         cstr_drop(&index_str);
     } else if (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
@@ -1426,7 +1434,7 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
             index_str, "'.");
         cstr_drop(&index_str);
     } else {
-        cstr index_str = ty_to_cstr(me, index);
+        cstr index_str = index_type_str(me, index);
         error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
         cstr_drop(&index_str);
     }
@@ -1586,7 +1594,6 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
     }
     if (!compiler_options()->no_implicit_any) return;
     Span index_span = access->prop.outer_span;
-    if (index_span.source && index_span.source->is_js) return; // TODO: JS literal types (any)
     Ty const* full_index = ty_regular(me, ty_access_key_type(me, access));
     u32 key_like = TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
     // (`any` is a key like any other: tsc's isTypeAssignableToKind)
@@ -1677,12 +1684,16 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         error_ctx_error_d(errs, span, 7052, "Element implicitly has an 'any' type because type '", object_str,
             "' has no index signature. Did you mean to call '", method, "'?");
     } else {
-        cstr full_str = ty_to_cstr(me, full_index);
+        cstr full_str = index_type_str(me, full_index);
         Error* error = error_ctx_error_d(errs, span, 7053, "Element implicitly has an 'any' type because expression of type '",
             full_str, "' can't be used to index type '", object_str, "'.");
         cstr index_str = index_name(me, index);
         if (!error) {
-        } else if (index->flags & (TYF_ENUM_LITERAL | TYF_UNIQUE_ES_SYMBOL)) {
+        } else if (index->flags & TYF_UNIQUE_ES_SYMBOL) {
+            // (index_name() has the brackets)
+            error_sub_error_d(error, (Span){0}, TS_CODE_NONE, "Property '", index_str, "' does not exist on type '",
+                object_str, "'.");
+        } else if (index->flags & TYF_ENUM_LITERAL) {
             error_sub_error_d(error, (Span){0}, TS_CODE_NONE, "Property '[", index_str, "]' does not exist on type '",
                 object_str, "'.");
         } else if (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {

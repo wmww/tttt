@@ -20426,7 +20426,7 @@ const baselines = {
         types: true,
     },
     'lateBoundDestructuringImplicitAnyError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -60291,7 +60291,7 @@ const baselines = {
         types: false,
     },
     'lateBoundAssignmentDeclarationSupport1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60301,7 +60301,7 @@ const baselines = {
         types: true,
     },
     'lateBoundAssignmentDeclarationSupport3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -60316,7 +60316,7 @@ const baselines = {
         types: false,
     },
     'lateBoundAssignmentDeclarationSupport6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60328,17 +60328,17 @@ const baselines = {
     'lateBoundClassMemberAssignmentJS': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lateBoundClassMemberAssignmentJS2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lateBoundClassMemberAssignmentJS3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'malformedTags': {
         errors: true,
@@ -60656,7 +60656,7 @@ const baselines = {
         types: false,
     },
     'thisPropertyAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60666,7 +60666,7 @@ const baselines = {
         types: false,
     },
     'thisPropertyAssignmentComputed': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60956,7 +60956,7 @@ const baselines = {
         types: true,
     },
     'typeFromPrototypeAssignment3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67606,7 +67606,7 @@ const baselines = {
         types: false,
     },
     'unionTypeWithIndexSignature': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

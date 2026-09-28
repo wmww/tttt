@@ -3644,12 +3644,23 @@ void scope_add_this_declaration(Scope* me, Expr* access, TypeNode const* jsdoc_t
 static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const* jsdoc_type, uint8_t jsdoc_modifiers) {
     if (left->tag != EXPR_PROPERTY) return;
     Span name = expr_static_property_name(left);
+    Expr const* object = &left->property->expr;
+    // `this[k]` with an entity name k: a late bound name (tsc's isBindableStaticElementAccessExpression), a member of a
+    // class only (tsc's bindThisPropertyAssignment: addLateBoundAssignmentDeclarationToSymbol). Named `[k]` as written
+    Expr const* late_bound_key = nullptr;
+    if (!span_valid(name) && left->property->form == PROPERTY_EXPR_BRACKET && !left->property->optional_chain &&
+        !expr_is_perenthisized(left) && expr_is_entity_name(&left->property->prop)
+    ) {
+        late_bound_key = &left->property->prop;
+        name = span_make(left->outer_span.source, span_end_ptr(object->outer_span), span_end_ptr(left->outer_span));
+        if (!span_valid(name) || !csview_starts_with(name.sv, "[")) return;
+    }
     // (Private names must be declared, even in JavaScript)
     if (!span_valid(name) || csview_starts_with(name.sv, "#")) return;
-    Expr const* object = &left->property->expr;
     // `this.x`, `var self = this; self.x` (tsc's isThisInitializedDeclaration)
     IdentifierExpr const* this = expr_this_or_alias(object);
     if (!this) return;
+    if (late_bound_key && this->this_kind != THIS_CLASS_INSTANCE) return;
     // The function `this` belongs to (arrow functions have their container's)
     FunctionImpl const* function = nullptr;
     for (Scope const* scope = me; scope && !function; scope = scope->parent) {
@@ -3664,6 +3675,8 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
                 ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : ASSIGNMENT_DECL_THIS_IN_METHOD;
             declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
             Symbol* member = (Symbol*)symbol_table_get(class_symbol->members, name.sv);
+            if (late_bound_key && member && !member->late_bound_key) member->late_bound_key = late_bound_key;
+            if (late_bound_key) break;
             if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !member->constructor_assigned) {
                 member->constructor_assigned = left;
                 member->declaring_constructor = function;
