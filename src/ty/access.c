@@ -11,7 +11,7 @@ u32 ty_tuple_fixed_length(TupleShape const* shape) {
     return fixed;
 }
 
-Ty const* ty_tuple_slice_element_type(Checker* me, Ty const* tuple, u32 from, u32 end_skip) {
+Ty const* ty_tuple_slice_element_type(Checker* me, Ty const* tuple, u32 from, u32 end_skip, bool no_reductions) {
     TupleShape const* shape = tuple->reference.target->declared.tuple;
     if (from + end_skip >= shape->arity) return nullptr;
     TyList elements = ty_reference_args(me, tuple);
@@ -30,7 +30,7 @@ Ty const* ty_tuple_slice_element_type(Checker* me, Ty const* tuple, u32 from, u3
         }
         parts[i] = element;
     }
-    Ty const* ret = ty_union(me, parts, len, nullptr, (TyList){0});
+    Ty const* ret = no_reductions ? ty_union_unreduced(me, parts, len) : ty_union(me, parts, len, nullptr, (TyList){0});
     if (parts != stack) free(parts);
     return ret;
 }
@@ -282,7 +282,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             // Past the leading fixed elements of a tuple with a rest element: any of the elements from there on
             // (tsc's getTupleElementTypeOutOfStartCount)
             if (fixed < shape->arity) {
-                Ty const* rest = ty_tuple_slice_element_type(me, object, fixed, 0);
+                Ty const* rest = ty_tuple_slice_element_type(me, object, fixed, 0, false);
                 // Only past as many elements as the tuple surely has, the trailing fixed ones included (tsc's
                 // getTotalFixedElementCount)
                 u32 end_fixed = 0;

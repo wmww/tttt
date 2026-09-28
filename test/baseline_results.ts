@@ -28956,7 +28956,7 @@ const baselines = {
         types: true,
     },
     'spreadsAndContextualTupleTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

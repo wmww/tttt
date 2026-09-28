@@ -526,7 +526,7 @@ static Ty const* tuple_element_context(Checker* me, Ty const* tuple, ElementCont
     if (a->length != UINT32_MAX && a->last_spread != UINT32_MAX && a->length - a->last_spread < end_skip) {
         end_skip = a->length - a->last_spread;
     }
-    return ty_tuple_slice_element_type(me, tuple, from, end_skip);
+    return ty_tuple_slice_element_type(me, tuple, from, end_skip, true);
 }
 
 static Ty const* get_element_context(Checker* me, Ty const* object, void const* arg) {
