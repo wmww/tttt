@@ -1166,7 +1166,7 @@ typedef struct Tok {
     bool newline_before;
 } Tok;
 
-// The end of the token at c, tsc's scanner's idea of it but cheap: no values, templates are just their backtick
+// The end of the token at c, tsc's scanner's idea of it but cheap: no values
 static const char* tok_scan_end(const char* c) {
     if (!*c) return c;
     int size = identifier_char_size(c + (*c == '#'), true);
@@ -1187,6 +1187,15 @@ static const char* tok_scan_end(const char* c) {
             c++;
         }
         return *c == quote ? c + 1 : c;
+    }
+    if (*c == '`') {
+        // A template without substitutions, or a template head (up to its `${`)
+        c++;
+        while (*c && *c != '`' && !(c[0] == '$' && c[1] == '{')) {
+            if (*c == '\\' && c[1]) c++;
+            c++;
+        }
+        return *c == '`' ? c + 1 : *c ? c + 2 : c;
     }
     // Only these start a punctuator of more than one character
     if (!strchr(">.=!*<&|?+-/%^", *c)) return c + utf8_char_size(c);
@@ -4817,7 +4826,7 @@ static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* nam
         *name_ret = cstr_from_span(*span_ret);
         *name_is_value_ret = false;
         return true;
-    } else if (parse_literal(parent, &value)) {
+    } else if (*parent->pos != '`' && parse_literal(parent, &value)) { // (a template is no property name)
         if (value.tag == VALUE_STRING) {
             *name_ret = value.string;
             // Now value shouldn't be dropped
@@ -5081,7 +5090,10 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
     list_leave(&p, saved_context);
     shrink_list(vec_object_expr_item, ret);
 
-    expect_closing(&p, '}', open);
+    if (!expect_closing(&p, '}', open)) {
+        // The literal ends with its last token, not the whitespace after it
+        while (p.pos > open + 1 && is_js_ascii_space(p.pos[-1])) p.pos--;
+    }
 
     return parse_success(&p);
 }
@@ -6814,6 +6826,13 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     // `f?.(x)` and `a?.[i]`. `a?.b` is parse_dot_prop()'s, and `a ? .5 : b` is a ternary
     bool optional_chain = false;
+    // tsc's parseUpdateExpression: `a++` is no left-hand side expression, only operators continue it (`a--.b` and
+    // `a++ ++` are missing a `;`)
+    if (left_and_ret->tag == EXPR_UNARY_OP && !expr_is_perenthisized(left_and_ret) &&
+        (left_and_ret->unary_op->op == UNARY_OP_RIGHT_PLUS_PLUS || left_and_ret->unary_op->op == UNARY_OP_RIGHT_MINUS_MINUS)
+    ) {
+        goto operators;
+    }
     if (p.pos[0] == '?' && p.pos[1] == '.' && (p.pos[2] == '(' || p.pos[2] == '[')) {
         optional_chain = true;
         p.pos += 2;
@@ -6974,7 +6993,15 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
 
     if (!ctx.reject_operators && !hit_newline) {
-        if (parse_right_unary_op(&p, &parsed.unary)) {
+        if (parse_right_unary_op(&p, &parsed.unary) &&
+            // A postfix `++`/`--` takes a left-hand side expression (tsc's parseUpdateExpression): not in the operand
+            // of a prefix one, `--a--`, and not after an operator expression, `--a --`
+            !((parsed.unary == UNARY_OP_RIGHT_PLUS_PLUS || parsed.unary == UNARY_OP_RIGHT_MINUS_MINUS) &&
+                (ctx.min_precedence > unary_op_get_precedence(UNARY_OP_LEFT_PLUS_PLUS) ||
+                    (!expr_is_perenthisized(left_and_ret) && ((left_and_ret->tag == EXPR_UNARY_OP &&
+                        left_and_ret->unary_op->op != UNARY_OP_RIGHT_BANG) || left_and_ret->tag == EXPR_BINARY_OP || left_and_ret->tag == EXPR_TERNARY ||
+                        left_and_ret->tag == EXPR_AS_TYPE))))
+        ) {
             if (parsed.unary == UNARY_OP_RIGHT_BANG) {
                 js_syntax_error(&p, span_from(a), 8013, "Non-null assertions can only be used in TypeScript files.");
             }
@@ -6989,6 +7016,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         }
     }
 
+operators:
     if (!ctx.reject_operators && parse_binary_op_expr(&p, ctx, left_and_ret)) {
         return parse_success(&p);
     }
@@ -8784,7 +8812,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         parse_fail(&ahead);
     }
 
-    // The declarator loop isn't tsc's list yet, but the lists inside it abort at its terminators
+    // tsc's parseDelimitedList for the declarators, but with the terminators checked after each (below)
     u32 saved_context = list_enter(&p, PARSING_VARIABLE_DECLARATIONS);
     while (true) {
         if (empty_for_of || !parse_binding_content_or_private_name(&p, &initializer.binding, 18029,
@@ -8803,8 +8831,10 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                     s.sv.size = 0;
                     parse_error(&p, s, 1123, "Variable declaration list cannot be empty.");
                 }
-            } else {
-                parse_error(&p, span_from_token(&p), 1134, "Variable declaration expected.");
+            } else if (!list_abort_or_skip(&p, PARSING_VARIABLE_DECLARATIONS)) {
+                // (tsc's abortParsingListOrMoveToNextToken: `var x = {} : 1` skips the `:`)
+                comma_span = span_null;
+                continue;
             }
             break;
         }

@@ -2080,6 +2080,12 @@ static bool is_side_effect_free(Expr const* me) {
 // a reference (tsc's checkReferenceExpression)
 static void increment_typecheck(Expr const* operand, ErrorCtx* errs) {
     Checker* checker = current_checker;
+    if (operand->tag == EXPR_IMPLICIT_ANY) return; // A missing operand (tsc's missing identifier is fine)
+    if (is_written_undefined(operand) && !expr_is_perenthisized(operand)) {
+        // tsc's undefinedSymbol: its type isn't reported as possibly undefined, but it's no variable
+        error_ctx_error_d(errs, operand->inner_span, 2539, "Cannot assign to 'undefined' because it is not a variable.");
+        return;
+    }
     Ty const* type = ty_check_non_null_type(checker, ty_expr_type(checker, operand), operand, errs);
     Ty const* numeric[] = { ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_BIGINT) };
     Ty const* number_or_bigint = ty_union(checker, numeric, 2, nullptr, (TyList){});
