@@ -260,6 +260,12 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         }
         if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
         if (!my target && my jsdoc) my target = my symbol = jsdoc_prototype_type_param(names, my name);
+        // `exports` of a CommonJS file is the file's symbol, a value (tsc's resolveNameHelper)
+        if (!my target && my jsdoc && names->file && names->file->is_commonjs && names->file->scope &&
+            span_equals(my name, "exports")
+        ) {
+            my target = my symbol = names->file->scope->container;
+        }
         unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
         if (!my target) scope_report_not_found(names, my name, SYMBOL_TYPE, false, errs);
         if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER)) check_static_type_parameter_reference(me, names, errs);

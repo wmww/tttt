@@ -52416,9 +52416,9 @@ const baselines = {
         types: false,
     },
     'jsdocTypeReferenceExports': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeReferenceToImport': {
         errors: false,
