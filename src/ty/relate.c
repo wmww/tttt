@@ -3478,7 +3478,20 @@ static Ternary structured_related_members(
         if (related || (!source_is_generic && source->kind != TY_INTERSECTION)) return related;
     }
     if (target->kind == TY_INTERSECTION) {
+        isize_t saved = vec_ty_report_line_size(&st->lines);
         Ternary result = target_each_related(me, st, source, target->composite.types, report);
+        // A conditional source whose members aren't all related may still be related as a whole through its
+        // distributive constraint, which only the intersection isn't a conditional type for (tsc's
+        // structuredTypeRelatedToWorker goes on for an instantiable source): `Emitted<L>` with `L extends { e: any }`
+        // (any) to `Emitted<L> & (T extends "*" ? unknown : { type: T })`
+        if (!result && source->kind == TY_CONDITIONAL) {
+            Ty const* constraint = distributive_constraint(me, source, 0);
+            Ternary related = constraint ? is_related_to(me, st, constraint, target, false) : TERNARY_FALSE;
+            if (related) {
+                report_truncate(st, saved);
+                return related;
+            }
+        }
         // The properties of the intersection as a whole too, as if not in one (tsc: IntersectionState.None): the
         // weak type and excess property checks of what they combine to
         bool generic = false;
