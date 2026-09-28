@@ -312,13 +312,17 @@ Ty const* ty_check_expr_skipping_sensitive(Checker* me, Expr const* expr, Ty con
 
 // Unions and widening
 
+// tsc's isUnitType
+static bool is_unit_for_reduction(Ty const* ty) {
+    return ty->kind != TY_UNION && (ty->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE));
+}
+
 Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len) {
     if (len < 2) return len ? types[0] : ty_intrinsic(me, TY_NEVER);
     // Flatten first, so members of member unions take part
     Ty const* flat = ty_union(me, types, len, nullptr, (TyList){0});
     if (flat->kind != TY_UNION || (flat->flags & TYF_BOOLEAN)) return flat;
     TyList members = flat->composite.types;
-    if (members.len > 64) return flat; // PERF: quadratic
     // Like tsc's removeSubtypes, only structured and instantiable members are candidates for removal, unless there's
     // an empty object type to absorb primitives. Literals next to their primitive are gone already (ty_union()), of
     // tsc's removeRedundantLiteralTypes that leaves `undefined` next to `void`
@@ -333,26 +337,62 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
     }
     u32 structured = TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_TEMPLATE_LITERAL |
         TYF_STRING_MAPPING;
-    Ty const** kept = malloc(sizeof(Ty const*) * members.len);
-    u32 kept_len = 0;
-    for (u32 i = 0; i < members.len; i++) {
-        if (!has_empty_object && !(members.data[i]->flags & structured)) {
-            if (!(has_void && (members.data[i]->flags & TYF_UNDEFINED))) kept[kept_len++] = members.data[i];
+    // From the last member on, each is dropped if it's a strict subtype of one still there (so of mutual subtypes the
+    // first stays). A member whose first unit-typed property differs from another's can't be its subtype. After 100000
+    // checks, an estimate of more than a million is too complex (TS2590, and the error type)
+    bool* dropped = calloc(members.len, sizeof(bool));
+    panic_if(!dropped, "out of memory");
+    u32 count = 0;
+    Ty const* ret = nullptr;
+    for (u32 i = members.len; i-- > 0 && !ret;) {
+        Ty const* source = members.data[i];
+        if (!has_empty_object && !(source->flags & structured)) {
+            if (has_void && (source->flags & TYF_UNDEFINED)) dropped[i] = true;
             continue;
         }
-        bool redundant = false;
-        for (u32 j = 0; j < members.len && !redundant; j++) {
-            if (i == j) continue;
-            Ty const* a = members.data[i];
-            Ty const* b = members.data[j];
-            if (!ty_is_related(me, a, b, TY_RELATION_STRICT_SUBTYPE)) continue;
-            // Mutual subtypes: the first one stays
-            redundant = j < i || !ty_is_related(me, b, a, TY_RELATION_STRICT_SUBTYPE);
+        Prop const* key = nullptr;
+        Ty const* key_type = nullptr;
+        if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+            Members const* m = ty_members(me, source);
+            for (u32 k = 0; k < m->prop_count && !key; k++) {
+                Ty const* t = prop_type(me, m->props[k]);
+                if (is_unit_for_reduction(t)) {
+                    key = m->props[k];
+                    key_type = ty_regular(me, t);
+                }
+            }
         }
-        if (!redundant) kept[kept_len++] = members.data[i];
+        for (u32 j = 0; j < members.len; j++) {
+            if (j == i || dropped[j]) continue;
+            Ty const* target = members.data[j];
+            if (count == 100000) {
+                u64 estimate = (u64)count / (members.len - i) * members.len;
+                if (estimate > 1000000) {
+                    ty_error_at_current_node_d(me, 2590, "Expression produces a union type that is too complex to represent.");
+                    ret = ty_intrinsic(me, TY_ERROR);
+                    break;
+                }
+            }
+            count++;
+            if (key && (target->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+                Ty const* t = ty_prop_type_of(me, target, key->name);
+                if (t && is_unit_for_reduction(t) && ty_regular(me, t) != key_type) continue;
+            }
+            if (ty_is_related(me, source, target, TY_RELATION_STRICT_SUBTYPE)) {
+                dropped[i] = true;
+                break;
+            }
+        }
     }
-    Ty const* ret = kept_len == members.len ? flat : ty_union(me, kept, kept_len, nullptr, (TyList){0});
-    free(kept);
+    if (!ret) {
+        Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+        panic_if(!kept, "out of memory");
+        u32 kept_len = 0;
+        for (u32 i = 0; i < members.len; i++) if (!dropped[i]) kept[kept_len++] = members.data[i];
+        ret = kept_len == members.len ? flat : ty_union(me, kept, kept_len, nullptr, (TyList){0});
+        free(kept);
+    }
+    free(dropped);
     return ret;
 }
 

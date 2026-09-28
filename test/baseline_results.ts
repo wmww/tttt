@@ -13608,7 +13608,7 @@ const baselines = {
     'fatarrowfunctionsOptionalArgsErrors1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fatarrowfunctionsOptionalArgsErrors2': {
         errors: false,
@@ -27496,14 +27496,14 @@ const baselines = {
         types: true,
     },
     'requiredInitializedParameter1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'requiredInitializedParameter2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'requiredInitializedParameter3': {
         errors: true,
@@ -27513,7 +27513,7 @@ const baselines = {
     'requiredInitializedParameter4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'requiredMappedTypeModifierTrumpsVariance': {
         errors: true,
@@ -31388,7 +31388,7 @@ const baselines = {
     'typeParameterLeak': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeParameterListWithTrailingComma1': {
         errors: true,
@@ -32063,7 +32063,7 @@ const baselines = {
     'unionOfClassCalls': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unionOfEnumInference': {
         errors: true,
@@ -32106,9 +32106,9 @@ const baselines = {
         types: true,
     },
     'unionSubtypeReductionErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeErrorMessageTypeRefs01': {
         errors: true,
@@ -35616,7 +35616,7 @@ const baselines = {
         types: true,
     },
     'derivedClassSuperProperties': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: true,
     },
@@ -51358,7 +51358,7 @@ const baselines = {
     'jsDeclarationsClassLeadingOptional': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsClassLikeHeuristic': {
         errors: false,
