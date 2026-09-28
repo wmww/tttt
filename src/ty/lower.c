@@ -647,7 +647,15 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
             IdentifierType const* identifier = node->identifier;
             Symbol const* decl = identifier->target;
             if (identifier->keyword) {
-                out->unknown = true; // `this` is the enclosing class applied to its type parameters
+                // `this`: the class's or interface's own `this` type parameter, else (a function's `this`...) unknown
+                Ty const* declared = decl && (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) &&
+                    identifier->keyword == KEYWORD_IDENTIFIER_THIS && identifier->this_kind != THIS_CLASS_STATIC ?
+                    ty_declared_type_of(me, decl) : nullptr;
+                if (declared && declared->kind == TY_DECLARED && declared->declared.this_param) {
+                    free_params_add(out, declared->declared.this_param);
+                } else {
+                    out->unknown = true;
+                }
             } else if (decl && decl->flags & SYMBOL_TYPE_PARAMETER) {
                 free_params_add(out, ty_type_param(me, decl));
             }
