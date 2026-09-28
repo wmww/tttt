@@ -7016,9 +7016,9 @@ const baselines = {
         types: true,
     },
     'controlFlowWithIncompleteTypes': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'convertClassExpressionToFunctionFromObjectProperty1': {
         errors: true,

@@ -2797,6 +2797,8 @@ static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     }
     bool optional = false;
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
+    // An incomplete `never` of control flow calls to nothing (tsc's silentNeverSignature)
+    if (callee_type == ty_intrinsic(me, TY_SILENT_NEVER)) return callee_type;
     Ty const* ret = ty_call_return_type(me, callee_type, call, ctx.contextual);
     if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER && !call->uses_new) {
         return ty_intrinsic(me, TY_VOID); // Whatever it resolved to, and even if it's an error
@@ -3047,6 +3049,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
             if (expr->property->method_call || expr->property->assignment_target) object = ty_widened_nullable(me, object);
+            // An incomplete `never` of control flow is like any (tsc's silentNeverType)
+            if (object == ty_intrinsic(me, TY_SILENT_NEVER)) return object;
             // `never` has no properties (TS2339), `never[k]` is never
             if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
             Ty const* key = ty_access_key_type(me, expr->property);
