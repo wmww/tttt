@@ -1268,6 +1268,15 @@ static bool class_item_private_in_ambient(ClassDecl const* me, ClassItem const* 
 // initializer that widens to any (`x = null`)
 static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const* item, ErrorCtx* errs) {
     Span name = item->field.name_span;
+    // An initializer that needs the field's own type (tsc's reportCircularityError)
+    if (span_valid(name) && !item->field.has_explicit_type && compiler_options()->no_implicit_any &&
+        !(name.source && name.source->is_js) && item->field.value.tag != EXPR_IMPLICIT_ANY &&
+        class_item_get_type((ClassItem*)item) == ty_intrinsic(current_checker, TY_CIRCULAR)
+    ) {
+        error_ctx_error_d(errs, name, 7022, "'", name, "' implicitly has type 'any' because it does not have a type "
+            "annotation and is referenced directly or indirectly in its own initializer.");
+        return;
+    }
     if (item->field.has_explicit_type || !compiler_options()->no_implicit_any || !span_valid(name)) return;
     if ((name.source && name.source->is_js) || class_item_private_in_ambient(me, item) || item->field.ts_assigned) return;
     if (item->field.value.tag != EXPR_IMPLICIT_ANY) {

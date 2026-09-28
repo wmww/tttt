@@ -36306,7 +36306,7 @@ const baselines = {
         types: true,
     },
     'privateNameCircularReference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
