@@ -12396,7 +12396,7 @@ const baselines = {
         types: true,
     },
     'excessPropertyCheckIntersectionWithIndexSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

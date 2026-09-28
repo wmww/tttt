@@ -3605,6 +3605,10 @@ static Ternary structured_related_members(
         }
         if (result && !st->intersection_target && !generic && (source->flags & TYF_OBJECT || source->kind == TY_INTERSECTION)) {
             result &= intersection_props_related(me, st, source, target, report);
+            // (And a fresh object literal's properties against the index signatures they combine to)
+            if (result && ty_is_fresh_object(source) && source->kind == TY_ANONYMOUS && source->anonymous.object_literal) {
+                result &= index_signatures_related(me, st, source, target, false, report);
+            }
         }
         return result;
     }
