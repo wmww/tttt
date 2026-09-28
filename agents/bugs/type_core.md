@@ -2,6 +2,18 @@
 Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `display.md`). Test statuses checked
 2026-09-27 (triage, suite 8952); "(re-probed)" = the symptom was confirmed then.
 
+## exactOptionalPropertyTypes (23 failing test configurations, 2026-09-28 triage)
+tsc models it with `missingType` (an `undefined` that optional properties carry and exact relations don't accept);
+tttt has no missing type (hacks.md "No missing type", `exact_missing_flag()`), and the pieces that hang off it are
+absent: assigning `undefined` to an optional property is accepted (strictOptionalProperties1 line 6), TS2375/TS2379/
+TS2412 (the exactOptional variants of TS2322/TS2345: none exist in `src/`, 73 in the baselines), optional tuple
+elements print as `(string | undefined)?` where tsc prints `string?`, `[number, undefined]` is accepted for
+`[number, string?]`, `'a' in x` narrowing through `{a?: never}`, contextuallyTypedOptionalProperty's TS18048. Tests:
+`grep -rli @exactOptionalPropertyTypes thirdparty/tsc/tests/cases` (49 files; strictOptionalProperties1-3,
+intersectionsAndOptionalProperties2/3, regexpExecAndMatchTypeUsages, discriminateWithOptionalProperty2-4, ...);
+zod-root's one missing diagnostic is a TS2412. Worth a plan: the missing type is a type-core change (optional
+property reads, relations, `removeMissingType`, display), then the messages are one elaboration each.
+
 ## Inference
 - const type parameters with several candidates: `function f4<const T>(x: [T, T]): T; f4([[1, "x"], [2, "y"]])`
   gives TS2322s where tsc infers `readonly [1, "x"] | readonly [2, "y"]` (jsdocTemplateTag6, plain TS too).
