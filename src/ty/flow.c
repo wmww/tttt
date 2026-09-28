@@ -609,6 +609,12 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     } else if (key->tag == EXPR_IDENTIFIER) {
         Symbol const* symbol = key->identifier.target;
         if (!symbol || !symbol->is_const || key->identifier.keyword) return nullptr;
+        // (tsc's tryGetNameFromEntityNameExpression only reads the initializer of a declaration before the use: the
+        // type of one after it may depend on this very reference, `bar[id]++; const id = foo.bar`)
+        Span declared = symbol->name_span;
+        if (declared.source == key->inner_span.source && span_start_ptr(declared) > span_start_ptr(key->inner_span)) {
+            return nullptr;
+        }
     } else if (!is_constant_entity_name(me, key)) {
         return nullptr;
     }
