@@ -47,9 +47,9 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   contextual type.
 
 ## Relations, instantiation, reduction
-- **Intersection reduction by constraint** (typeVariableConstraintIntersections): tsc reduces `K & "c"` to never for
-  `K extends "a" | "b"`, and `option.kind` of `Options & { kind: K }` is K (getReducedType / intersection with a
-  constraint). Related: conflicting discriminants and privates are reduced at construction
+- **Intersection reduction by constraint**: `T & P` for a type parameter T with a primitive constraint is reduced
+  (`reduce_type_variable_intersection`, and `(T & "a") | (T & "b")` back to T), but not for indexed access type
+  variables (see hacks.md) nor type parameters with a deferred declared constraint. Related: conflicting discriminants and privates are reduced at construction
   (`has_conflicting_discriminants`) only for non-generic members; tsc reduces lazily, so a generic intersection
   instantiated later isn't re-checked, and the "The intersection 'A & B' was reduced to 'never' because..." elaborations
   (6 tests) need the unreduced intersection. mappedTypeNotMistakenlyHomomorphic (`keyof Gen<ABC.A>` misses `a`),
@@ -104,6 +104,23 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   variable reduction (`reduce_type_variable_intersection`) turned `TSchema['~types'] & {}` into never; not reduced to
   a small repro (a two-member union of interfaces with an optional `'~types'` under exactOptionalPropertyTypes is
   fine). Possibly a constraint computed while an alias or the type parameter's constraint is in flight and memoized.
+
+- **Unreduced unions in contextual types** (unionTypeWithIndexAndTuple): tsc's getContextualTypeForElementExpression
+  and getTypeOfPropertyOfContextualType map a union contextual type with `noReductions`, and getUnionType with
+  UnionReduction.None doesn't let `any` absorb the rest: the element contextual type of `["a"] | I` (I with a number
+  index signature of any) is the union `"a" | any`, which keeps the literal `"a"` (isLiteralOfContextualType sees the
+  `"a"` member), so `f(["a"])` passes. tttt's `ty_union` always reduces to any, so the literal widens and `[string]`
+  fails. Needs a non-reducing union (a union Ty that may hold any) for contextual types, or computing literal-ness per
+  member before the union.
+- **Alias variance of an alias whose body is a type reference** (varianceReferences): `type VarianceShape<in out V> =
+  Shape<V>` gets TS2637 (annotations only for object/function/mapped aliases), and tsc then relates
+  `VarianceShape<1>` to `VarianceShape<1 | 2>` covariantly (no error on line 44), while tttt applies the invalid `in
+  out` annotation through the alias variance path. Also tsc names `VarianceDeepShape<1 | 2>` where tttt names the
+  innermost alias `Level2of3Shape<1 | 2>`. Needs a look at which aliases tsc attaches to (deferred) type references
+  and whether getAliasVariances is even reached there.
+- **`awaitedTypeStrictNull` overflows the stack** in `instantiate_mapped_over_list` under the debug build + valgrind
+  (8MB main stack; the release build passes). Deep but maybe not infinite recursion; worth checking whether the
+  recursion is bounded.
 
 ## Circularity (plan 29 stage 3 leftovers)
 - recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the
