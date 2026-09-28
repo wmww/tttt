@@ -2330,6 +2330,7 @@ Ty const* ty_object_literal(
             prop->name_span = props[i].name_span;
             prop->name_is_value = props[i].name_is_value;
             prop->literal_own = props[i].own;
+            prop->numeric_redeclared = props[i].numeric_redeclared;
             prop->asserted = props[i].asserted;
             prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
@@ -2464,6 +2465,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .name_is_value = prop->name_is_value,
             .asserted = prop->asserted,
             .own = prop->literal_own,
+            .numeric_redeclared = prop->numeric_redeclared,
         };
     }
     u32 count = members->prop_count;
@@ -2616,6 +2618,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
                 .name_is_value = prop->name_is_value,
                 .asserted = prop->asserted,
                 .own = prop->literal_own,
+                .numeric_redeclared = prop->numeric_redeclared,
             };
         }
         IndexInfo index[8] = {0};

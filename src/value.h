@@ -85,6 +85,8 @@ static inline void value_drop(Value* me) {
 Value value_clone(Value me);
 bool value_to_boolean(Value const* me);
 double value_to_number(Value const* me);
+// `(+name).toString() === name` (tsc's isNumericLiteralName): "1", "1.1", "1e+21", not "01" or "1.0"
+bool value_is_numeric_literal_name(csview name);
 void cstr_append_value_js(cstr* target, Value const* me);
 bool value_loose_eq(Value const* a, Value const* b);
 bool value_strict_eq(Value const* a, Value const* b);

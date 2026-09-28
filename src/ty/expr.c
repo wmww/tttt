@@ -2153,6 +2153,9 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
         Span* decl_span = arena_new(&my arena, Span);
         *decl_span = i->span;
+        bool quoted = i->name_span.sv.size && (i->name_span.sv.buf[0] == '"' || i->name_span.sv.buf[0] == '\'');
+        bool numeric_redeclared = existing && (existing->numeric_redeclared || !quoted ||
+            !existing->name_span.sv.size || (existing->name_span.sv.buf[0] != '"' && existing->name_span.sv.buf[0] != '\''));
         u32 flags = 0;
         if (i->tag == OBJECT_ITEM_METHOD) flags |= PROP_METHOD;
         if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER | PROP_READONLY; // Until a setter shows up
@@ -2169,6 +2172,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .name_is_value = name_is_value,
             .asserted = asserted,
             .own = true,
+            .numeric_redeclared = numeric_redeclared,
         });
     }
     free(accessor_spans);

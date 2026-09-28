@@ -153,6 +153,21 @@ static void append_js_number(cstr* target, double number) {
     }
 }
 
+bool value_is_numeric_literal_name(csview name) {
+    if (!name.size || name.size > 64) return false;
+    char buf[65];
+    memcpy(buf, name.buf, (size_t)name.size);
+    buf[name.size] = 0;
+    char* end = nullptr;
+    double number = strtod(buf, &end);
+    if (end != buf + name.size) return false;
+    cstr printed = cstr_init();
+    append_js_number(&printed, number);
+    bool ret = csview_equals_sv(cstr_sv(&printed), name);
+    cstr_drop(&printed);
+    return ret;
+}
+
 void cstr_append_value_js(cstr* target, Value const* me) {
     switch (my tag) {
         case VALUE_UNDEFINED: cstr_append_lit(target, "undefined"); break;

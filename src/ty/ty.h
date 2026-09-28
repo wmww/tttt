@@ -432,6 +432,8 @@ struct Prop {
     u32 decl_span_count;
     bool name_is_value; // The name was written as a string or number literal
     bool literal_own; // A property of an object literal written in it (not spread): see ObjectLiteralProp.own
+    // Declared more than once, not every time with a string literal name (`{ 1: a, "1": b }`): prints as a number
+    bool numeric_redeclared;
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
     TypeNode const* asserted;
     Ty const* mapped_type; // A property of this mapped type (the resolved one): for TS2615, see prop_type()
@@ -1204,6 +1206,7 @@ typedef struct ObjectLiteralProp {
     bool name_is_value;
     TypeNode const* asserted; // See Prop.asserted
     bool own; // Written in the literal itself, not spread into it: only those get excess property checks
+    bool numeric_redeclared; // See Prop.numeric_redeclared
     Prop const* reuse; // The property is this one as it is (tsc: the same symbol), the other fields are ignored
 } ObjectLiteralProp;
 typedef enum ObjectLiteralKind {

@@ -271,12 +271,9 @@ static bool is_identifier_name(csview sv) {
     return true;
 }
 
+// Written as a number literal (tsc's createPropertyNameNodeForIdentifierOrLiteral: a non-negative numeric name)
 static bool is_numeric_name(csview sv) {
-    if (!sv.size) return false;
-    for (isize_t i = 0; i < sv.size; i++) {
-        if (sv.buf[i] < '0' || sv.buf[i] > '9') return false;
-    }
-    return sv.size == 1 || sv.buf[0] != '0';
+    return sv.size && sv.buf[0] != '-' && value_is_numeric_literal_name(sv);
 }
 
 // How a unique symbol is written as an expression: `sym`, `C.key`, `Symbol.iterator`
@@ -327,6 +324,26 @@ cstr ty_prop_written_name(Checker* me, Prop const* prop) {
     }
     if (span_valid(name) && name.sv.size && name.sv.buf[0] >= '0' && name.sv.buf[0] <= '9') return cstr_from_sv(name.sv);
     return ty_prop_name_cstr(me, prop->name);
+}
+
+// A property declared with a string literal name prints quoted even if it reads as a number (tsc's isStringNamed)
+static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
+    Prop const* root = prop;
+    while (root->target) root = root->target;
+    csview sv = atom_sv(prop->name);
+    if (root->name != prop->name || !is_numeric_name(sv)) {
+        display_prop_name(me, d, prop->name);
+        return;
+    }
+    // (Every declaration: `{ 1: a, "1": b }` is a number)
+    bool string_named = span_valid(root->name_span) && !root->numeric_redeclared;
+    Span const* spans = root->decl_span_count ? root->decl_spans : &root->name_span;
+    u32 count = root->decl_span_count ? root->decl_span_count : 1;
+    for (u32 i = 0; i < count && string_named; i++) {
+        string_named = span_valid(spans[i]) && spans[i].sv.size >= 2 && (spans[i].sv.buf[0] == '"' || spans[i].sv.buf[0] == '\'');
+    }
+    if (string_named) display_string_literal(d, sv);
+    else display_prop_name(me, d, prop->name);
 }
 
 static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
@@ -1429,7 +1446,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             for (u32 j = 0; j < type_members->call_count; j++) {
                 // (A method named `new` is quoted: it would read as a construct signature)
                 if (csview_equals(atom_sv(prop->name), "new")) out_lit(d, "\"new\"");
-                else display_prop_name(me, d, prop->name);
+                else display_member_name(me, d, prop);
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
                 display_signature(me, d, type_members->call[j], ": ", false);
                 out_lit(d, "; ");
@@ -1437,7 +1454,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             continue;
         }
         if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
-        display_prop_name(me, d, prop->name);
+        display_member_name(me, d, prop);
         if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
         out_lit(d, ": ");
         // The annotation of a property signature unless instantiated, or the type assertion of an object literal's

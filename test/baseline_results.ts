@@ -1836,9 +1836,9 @@ const baselines = {
         types: true,
     },
     'assignmentIndexedToPrimitives': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentNestedInLiterals': {
         errors: true,
@@ -10623,12 +10623,12 @@ const baselines = {
     'emitAccessExpressionOfCastedObjectLiteralExpressionInArrowFunctionES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitAccessExpressionOfCastedObjectLiteralExpressionInArrowFunctionES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitBOM': {
         errors: true,
@@ -40498,12 +40498,12 @@ const baselines = {
     'binaryIntegerLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'binaryIntegerLiteralES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'binaryIntegerLiteralError': {
         errors: true,
@@ -40518,12 +40518,12 @@ const baselines = {
     'octalIntegerLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'octalIntegerLiteralES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'octalIntegerLiteralError': {
         errors: true,
@@ -64358,7 +64358,7 @@ const baselines = {
     'objectTypeWithNumericProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypeWithStringAndNumberIndexSignatureToAny': {
         errors: false,
@@ -64373,7 +64373,7 @@ const baselines = {
     'objectTypeWithStringNamedNumericProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypeWithStringNamedPropertyOfIllegalCharacters': {
         errors: true,
@@ -64753,7 +64753,7 @@ const baselines = {
     'numericIndexingResults': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringIndexerConstrainsPropertyDeclarations': {
         errors: true,
