@@ -42,7 +42,7 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    flow/await (execa), for-in non-null; the rest routed to plans 19/26/27 and bugs/). Worktree corpus numbers were a
    symlink artifact (realworld.py uses real paths now). New corpus `zod-root` (not clean under tsc: diff it, plan 19).
    exactOptionalPropertyTypes written up as one bug (23 configurations, type_core.md). hacks.md was nearly all still
-   true. Override/variance checks by a sub-agent: OVERRIDE_RESULT. Suite 10188 -> SUITE_END, webpack 115 -> 107,
+   true. Override checks (TS4112-TS4128) and variance annotation checks (TS2636/TS2637, TS1273/TS1274/TS1277) by an Opus sub-agent: +25 tests. Suite 10188 -> 10215, webpack 115 -> 107,
    zod-root 93 -> 82, instructions unchanged.
 11. **Insights.**
 

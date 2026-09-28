@@ -119,6 +119,12 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   it), and so is its related info for a type parameter (TS2735 "Did you mean for 'T' to be constrained to type
   'new (...args: any[]) => ...'?"). Plan 32 leftover.
 
+- Override and variance checks exist now (triage 2026-09-28); left: JSDoc `@template in/out/const` grammar errors
+  (jsdocTemplateTag7/8: the owner isn't known when tags are parsed, TODO in `ty_check_variance_annotations`),
+  varianceAnnotationsWithCircularlyReferencesError (tsc's recovery for `type T1<in in>`), varianceReferences' extra
+  TS2322 (line 44, variance of an alias of an interface reference), varianceAnnotations' extra error on
+  `InstanceType<typeof Anon<T>>` of a class expression.
+
 ## Wrong codes that are type-core bugs
 Spurious TS2403 ("Subsequent variable declarations must have the same type") means tttt computed two spellings of one
 type differently; each is one type-core bug, good one-per-session material (all re-checked failing 2026-09-27):

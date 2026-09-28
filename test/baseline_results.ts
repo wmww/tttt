@@ -13791,9 +13791,9 @@ const baselines = {
         types: true,
     },
     'forInStrictNullChecksNoError': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forLoopEndingMultilineComments': {
         errors: true,
@@ -33246,7 +33246,7 @@ const baselines = {
         types: true,
     },
     'varianceAnnotationValidation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33261,7 +33261,7 @@ const baselines = {
         types: true,
     },
     'varianceMeasurement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37902,7 +37902,7 @@ const baselines = {
     },
     'controlFlowIterationErrorsAsync': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowNoIntermediateErrors': {
@@ -52226,7 +52226,7 @@ const baselines = {
         types: true,
     },
     'jsdocOverrideTag1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52373,7 +52373,7 @@ const baselines = {
     'jsdocTemplateTag8': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTemplateTagDefault': {
         errors: false,
@@ -55656,7 +55656,7 @@ const baselines = {
         types: true,
     },
     'override1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55681,7 +55681,7 @@ const baselines = {
         types: true,
     },
     'override13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55691,7 +55691,7 @@ const baselines = {
         types: true,
     },
     'override15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55726,52 +55726,52 @@ const baselines = {
         types: true,
     },
     'override19': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'override2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'override20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'override21': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'override3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'override4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'override5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'override6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'override7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'override8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55781,12 +55781,12 @@ const baselines = {
         types: true,
     },
     'overrideDynamicName1(noimplicitoverride=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'overrideDynamicName1(noimplicitoverride=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55796,32 +55796,32 @@ const baselines = {
         types: true,
     },
     'overrideLateBindableIndexSignature1(noimplicitoverride=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'overrideLateBindableIndexSignature1(noimplicitoverride=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'overrideLateBindableName1(noimplicitoverride=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'overrideLateBindableName1(noimplicitoverride=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'overrideParameterProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'overrideWithoutNoImplicitOverride1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55831,7 +55831,7 @@ const baselines = {
         types: true,
     },
     'override_js2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55841,7 +55841,7 @@ const baselines = {
         types: true,
     },
     'override_js4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57801,9 +57801,9 @@ const baselines = {
         types: true,
     },
     'parserModuleDeclaration11': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserModuleDeclaration12': {
         errors: true,
@@ -65043,7 +65043,7 @@ const baselines = {
     'objectRest': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'objectRest2': {
         errors: true,
@@ -66157,8 +66157,8 @@ const baselines = {
     },
     'varianceAnnotations': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'varianceAnnotationsWithCircularlyReferencesError': {
         errors: false,

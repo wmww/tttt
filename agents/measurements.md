@@ -11,7 +11,8 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 there than a clean run.
 
 ## Suite (2026-09-28, triage session, 7aef64e)
-**10189 / 13540** full pass (errors 11682, symbols 12528, types 11350). A suite run takes ~23 s. `./failstats.py`:
+**10189 / 13540** full pass (errors 11682, symbols 12528, types 11350); **10215** at the session's end (the
+numbers below are from 7aef64e). A suite run takes ~23 s. `./failstats.py`:
 errors component fails in 1858 tests: both missing and spurious 513, tsc reports errors and tttt nothing 421, **same
 codes+positions, other text 298**, only missing 256, tttt errors where tsc has none 219, only spurious 130, column
 differs 21. 254 tests have a spurious TS1xxx (29 of them expect no errors). Checker log_error output: 29 lines in 2
@@ -32,8 +33,8 @@ TS2304 90/56; top spurious: TS2304 484 in 164 tests, TS2339 347/99, TS1005 261/8
 
 ## Corpora (2026-09-28, triage session)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**0**, zod **0**, webpack **115** (JSDoc, plan 26). **zod-root** (new: zod's root tsconfig, not clean under tsc,
-which reports 55): tttt 91, of which 37 spurious and 1 missing (plan 19).
+**0**, zod **0**, webpack **107** (JSDoc, plan 26). **zod-root** (new: zod's root tsconfig, not clean under tsc,
+which reports 55): tttt 82, of which 28 spurious and 1 missing (plan 19).
 Instructions (`perf stat -e instructions:u`, stable like callgrind, much faster) at the end of the triage session:
 tsc 4.67 G, type-fest 3.30, valibot 5.06, react 1.91, nest 1.02, webpack 3.25, zod **4.26** (8.54 at the corpus
 session: the drop came with suite checker bugs 4, probably the TS2322 sub-agent's relation work; not investigated).
