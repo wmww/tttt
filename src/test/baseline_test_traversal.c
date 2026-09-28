@@ -1804,6 +1804,17 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         Ty const* undefined_array = ty_array(checker, ty_intrinsic(checker, TY_UNDEFINED), false);
         baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, undefined_array);
     } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
+        // `null` itself has no line, `(null)` does
+        const char* start = span_start_ptr(my inner_span);
+        const char* end = span_end_ptr(my inner_span);
+        const char* outer_start = span_start_ptr(my outer_span);
+        const char* outer_end = span_end_ptr(my outer_span);
+        while (start > outer_start && start[-1] != '(') start--;
+        while (end < outer_end && *end != ')') end++;
+        if (start > outer_start && end < outer_end) {
+            Span parenthesized = span_make(my inner_span.source, start - 1, end + 1);
+            baseline_test_case_add_type_recursive(ctx, my outer_span, parenthesized, ty_regular(current_checker, expr_get_type(me)));
+        }
     } else if (my tag == EXPR_GENERIC_PARAMS) {
     } else if (my tag == EXPR_IDENTIFIER && my identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
         // The `import` of `import("m")` and `import.meta` isn't an expression of its own
