@@ -320,6 +320,17 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         // What the annotation (or the contextual type) says the generator returns
         TyIterationTypes const* context = ty_generator_context(checker, me);
         checker->return_context = context && !(context->return_type->flags & (TYF_ANY | TYF_VOID)) ? context->return_type : nullptr;
+        if (my is_async && checker->return_context) {
+            // Awaited, or a PromiseLike of that (tsc's getContextualTypeForReturnExpression for an async generator)
+            Ty const* context_type = checker->return_context;
+            TyList members = context_type->kind == TY_UNION ? context_type->composite.types : (TyList){ .data = &context_type, .len = 1 };
+            TyBuf parts = {0};
+            for (u32 i = 0; i < members.len; i++) ty_buf_push(&parts, ty_awaited_no_alias(checker, members.data[i]));
+            Ty const* awaited = ty_union(checker, parts.data, parts.len, nullptr, (TyList){0});
+            ty_buf_drop(&parts);
+            Ty const* both[2] = { awaited, ty_promise_like_of(checker, awaited) };
+            checker->return_context = both[1] ? ty_union(checker, both, 2, nullptr, (TyList){0}) : awaited;
+        }
     } else if (my is_async) {
         // The awaited annotation, or a PromiseLike of it (tsc's getContextualTypeForReturnExpression)
         Ty const* annotated = my ret_explicit ? ty_unwrapped_return_type(checker, me) : nullptr;

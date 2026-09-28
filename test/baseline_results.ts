@@ -50181,9 +50181,9 @@ const baselines = {
         types: false,
     },
     'generatorReturnContextualType': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorReturnTypeFallback.1': {
         errors: true,
