@@ -2896,7 +2896,8 @@ static Ty const* chain_object_type(Checker* me, Expr const* object_expr, bool is
     if (!compiler_options()->strict_null_checks) return is_root ? ty_non_nullable(me, object) : object;
     if (is_root) {
         *optional = ty_can_be_nullish(me, object) && !(object->flags & (TYF_ANY | TYF_UNKNOWN));
-        return ty_non_nullable(me, object);
+        // (tsc's getOptionalExpressionType: getNonNullableType, which takes void too)
+        return ty_non_nullish_part(me, object);
     }
     if (expr_is_optional_chain(object_expr) && !expr_is_perenthisized(object_expr) && includes_undefined(object)) {
         *optional = true;

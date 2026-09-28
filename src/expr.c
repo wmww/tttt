@@ -2983,7 +2983,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             Ty const* callee_type = ty_expr_type(checker, callee);
             // `f?.()` doesn't call the undefined, and neither does `a?.b()` the undefined of a chain that ended, see
             // chain_object_type()
-            if (my call->optional_chain || (expr_is_optional_chain(callee) && !expr_is_perenthisized(callee))) {
+            // (`f?.()` takes tsc's getNonNullableType, which removes void too, like ty/expr.c's chain_object_type())
+            if (my call->optional_chain && compiler_options()->strict_null_checks) {
+                callee_type = ty_non_nullish_part(checker, callee_type);
+            } else if (my call->optional_chain || (expr_is_optional_chain(callee) && !expr_is_perenthisized(callee))) {
                 callee_type = ty_non_nullable(checker, callee_type);
             }
             if (!my call->uses_new && !my call->is_extends) {
