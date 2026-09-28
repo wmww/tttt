@@ -3058,6 +3058,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             }
             // `import("m", options)`: the options are ImportCallOptions
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
+                vec_expr_size(&my call->args) > 0 && vec_expr_at(&my call->args, 0)->tag != EXPR_SPREAD
+            ) {
+                ty_check_import_call_specifier(checker, vec_expr_at(&my call->args, 0), errs);
+            }
+            if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
                 vec_expr_size(&my call->args) > 1
             ) {
                 ty_check_import_call_options(checker, vec_expr_at(&my call->args, 1), errs);

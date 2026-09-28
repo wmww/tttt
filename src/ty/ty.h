@@ -929,6 +929,8 @@ bool ty_is_evolving_array_operation_target(Checker* me, struct Expr const* refer
 Ty const* ty_tuple_rest_slice(Checker* me, Ty const* source, u32 start);
 struct ImportAttributes;
 void ty_check_import_attributes(Checker* me, struct ImportAttributes const* attributes, ErrorCtx* errs);
+// `import(x)`: x is a string (TS7036)
+void ty_check_import_call_specifier(Checker* me, Expr const* specifier, ErrorCtx* errs);
 void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* errs);
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
 // The shape of a tuple type, the empty tuple (its own target) included. Null if it isn't one

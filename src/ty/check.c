@@ -888,6 +888,21 @@ void ty_check_import_attributes(Checker* me, ImportAttributes const* attributes,
 
 // The options of `import("m", options)`, which were checked with ImportCallOptions as their contextual type (tsc's
 // checkImportCallExpression)
+// tsc's checkImportCallExpression: the specifier is a string (null and undefined aren't, whatever strictNullChecks says)
+void ty_check_import_call_specifier(Checker* me, Expr const* specifier, ErrorCtx* errs) {
+    Ty const* type = ty_expr_type(me, specifier);
+    if (type->flags & TYF_ERROR) return;
+    if (!(type->flags & (TYF_UNDEFINED | TYF_NULL)) &&
+        ty_is_related(me, type, ty_intrinsic(me, TY_STRING), TY_RELATION_ASSIGNABLE)
+    ) {
+        return;
+    }
+    cstr shown = ty_to_cstr(me, type);
+    error_ctx_error_d(errs, specifier->outer_span, 7036, "Dynamic import's specifier must be of type 'string', but here ",
+        "has type '", shown, "'.");
+    cstr_drop(&shown);
+}
+
 void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* errs) {
     Ty const* target = global_import_type(me, "ImportCallOptions");
     if (!target) return;
