@@ -8930,6 +8930,7 @@ static void note_require_declaration(InitializedBinding* initializer) {
             .full_span = binding->content_span,
             .source_name = accessed,
             .is_require = !span_valid(accessed),
+            .value_only = span_valid(accessed),
             .module_ref = ref,
         });
         initializer->require_port_count = 1;

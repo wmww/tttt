@@ -1998,12 +1998,14 @@ static Symbol* resolve_alias_target(Symbol* me) {
                         .name = item->source_name,
                         .full = item->full_span,
                     });
-                    if (!found) return property;
+                    if (!found || item->value_only) return property;
                     my alias->value_target = property;
                 }
                 if (!found) return nullptr;
             }
+            if (item->value_only && found && !(symbol_resolved_flags(found) & SYMBOL_VALUE)) return nullptr;
             if (!found) {
+                if (item->value_only) return nullptr;
                 cstr module_name = module_name_for_error(module, item->module_ref, true);
                 error_ctx_error_d(errs, item->source_name, 2305,
                     "Module '", module_name, "' has no exported member '", item->source_name, "'.");
