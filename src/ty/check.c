@@ -1663,9 +1663,13 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
             return;
         }
     }
+    // (tsc's getIndexTypeOfType(objectType, numberType): an intersection has what any of its members has)
     bool number_index = false;
-    if (object->flags & TYF_OBJECT) {
-        Members const* members = ty_members(me, object);
+    TyList parts = object->kind == TY_INTERSECTION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
+    for (u32 j = 0; j < parts.len; j++) {
+        Ty const* part = object->kind == TY_INTERSECTION ? ty_apparent_type(me, parts.data[j]) : parts.data[j];
+        if (!(part->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, part);
         for (u32 i = 0; i < members->index_count; i++) number_index |= (members->index[i].key->flags & TYF_NUMBER) != 0;
     }
     if (name && class_symbol && !csview_equals(atom_sv(name), "prototype") &&

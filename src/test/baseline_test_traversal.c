@@ -1323,6 +1323,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
             .declarations = declaration_get_spans(shown),
             .span = my name,
             .text = symbol_text(ctx, shown),
+            .allow_declaration_empty = shown->is_global_this, // (It has no declarations: `Symbol(globalThis)`)
         });
     }
 }

@@ -8152,7 +8152,7 @@ const baselines = {
     },
     'declarationEmitGlobalThisPreserved': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitHasTypesRefOnNamespaceUse': {
@@ -15637,12 +15637,12 @@ const baselines = {
     },
     'globalThisDeclarationEmit': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'globalThisDeclarationEmit2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'globalThisDeclarationEmit3': {
@@ -17172,7 +17172,7 @@ const baselines = {
     },
     'indirectGlobalSymbolPartOfObjectType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'indirectSelfReference': {
@@ -39187,12 +39187,12 @@ const baselines = {
     },
     'globalThisAmbientModules': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'globalThisBlockscopedProperties': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'globalThisCollision': {
@@ -39212,27 +39212,27 @@ const baselines = {
     },
     'globalThisReadonlyProperties': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'globalThisTypeIndexAccess': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'globalThisUnknown': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'globalThisUnknownNoImplicitAny': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'globalThisVarDeclaration': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importMeta(module=commonjs,target=es5)': {
@@ -47992,7 +47992,7 @@ const baselines = {
     },
     'typeOfThisGeneral': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeOfThisInConstructorParamList': {
