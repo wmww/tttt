@@ -847,13 +847,44 @@ static int invalid_char_size(const char* c) {
 static void hop_jsdoc_optional(Parser* parent, TypeNode* type);
 static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newlines);
 
+// tsc's isConflictMarkerTrivia: seven `<`, `=`, `>` or `|` at the start of a line, then a space (`=======` needs
+// none)
+static bool is_conflict_marker(Parser* parent, const char* c) {
+    if (c != cstr_str(&parent->shared->source->contents) && c[-1] != '\n' && c[-1] != '\r') return false;
+    for (int i = 1; i < 7; i++) {
+        if (c[i] != c[0]) return false;
+    }
+    return c[7] && (c[0] == '=' || c[7] == ' ');
+}
+
+// tsc's scanConflictMarkerTrivia: TS1185, then the marker's line is trivia, and after a `=======` or `|||||||` the
+// other side of the conflict too (up to the next `=======` or `>>>>>>>`)
+static const char* hop_conflict_marker(Parser* parent, const char* c) {
+    parse_error(parent, span_make(parent->shared->source, c, c + 7), 1185, "Merge conflict marker encountered.");
+    char marker = c[0];
+    if (marker == '<' || marker == '>') {
+        while (*c && *c != '\n' && *c != '\r') c++;
+        return c;
+    }
+    for (; *c; c++) {
+        if ((*c == '=' || *c == '>') && *c != marker && is_conflict_marker(parent, c)) break;
+    }
+    return c;
+}
+
+static inline bool is_conflict_marker_char(char c) {
+    return c == '<' || c == '=' || c == '>' || c == '|';
+}
+
 // Most calls are at a token already: whitespace is ASCII at most ' ', and the rest starts with `/` or a non-ASCII byte
 static inline void hop_whitespace_full(Parser* parent, bool hop_comments, bool hop_newlines) {
     if (parent->pos == parent->whitespace_end) {
         return;
     }
     char c = *parent->pos;
-    if ((unsigned char)c > ' ' && (unsigned char)c < 0x80 && c != '/') {
+    if ((unsigned char)c > ' ' && (unsigned char)c < 0x80 && c != '/' &&
+        !(is_conflict_marker_char(c) && is_conflict_marker(parent, parent->pos))
+    ) {
         parent->whitespace = WHITESPACE_NONE;
         parent->whitespace_end = parent->pos;
         return;
@@ -893,6 +924,14 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
             case '\v':
             case '\f':
                 parent->pos++;
+                break;
+
+            case '<':
+            case '=':
+            case '>':
+            case '|':
+                if (!hop_newlines || !is_conflict_marker(parent, parent->pos)) goto ws_end;
+                parent->pos = hop_conflict_marker(parent, parent->pos);
                 break;
 
             default: {
@@ -6528,35 +6567,75 @@ static bool parse_string(Parser* parent, cstr* ret) {
     return parse_string_or_tagged(parent, ret, true);
 }
 
+// The end tsc gives an unterminated regular expression literal (in its reScanSlashToken): the first unbalanced `)`,
+// `]` or `}` outside a character class, else the line's end, without the whitespace and semicolons before it
+static const char* unterminated_regex_end(const char* body, const char* line_end) {
+    const char* c = body;
+    bool in_escape = false;
+    bool in_quantifier = false;
+    int class_depth = 0;
+    int group_depth = 0;
+    for (; c < line_end; c++) {
+        char ch = *c;
+        if (in_escape) {
+            in_escape = false;
+        } else if (ch == '\\') {
+            in_escape = true;
+        } else if (ch == '[') {
+            class_depth++;
+        } else if (ch == ']' && class_depth) {
+            class_depth--;
+        } else if (!class_depth) {
+            if (ch == '{') {
+                in_quantifier = true;
+            } else if (ch == '}' && in_quantifier) {
+                in_quantifier = false;
+            } else if (!in_quantifier) {
+                if (ch == '(') group_depth++;
+                else if (ch == ')' && group_depth) group_depth--;
+                else if (ch == ')' || ch == ']' || ch == '}') break;
+            }
+        }
+    }
+    while (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\v' || c[-1] == '\f' || c[-1] == ';') c--;
+    return c;
+}
+
 // A regular expression literal. Only called where an expression may start, which is what makes the `/` not a division
-// (tsc rescans the slash token in the same situation)
+// (tsc rescans the slash token in the same situation). Its body and flags are checked by the checker
 static bool parse_regex(Parser* parent) {
     Parser p = parser(parent);
 
     if (*p.pos != '/' || p.pos[1] == '/' || p.pos[1] == '*') {
         return parse_fail(&p);
     }
+    const char* start = p.pos;
     p.pos++;
     bool in_class = false;
-    while (in_class || *p.pos != '/') {
-        switch (*p.pos) {
-            case '\0': case '\n': case '\r':
-                return parse_fail(&p); // TODO: TS1161 Unterminated regular expression literal
-            case '\\':
-                if (p.pos[1] && p.pos[1] != '\n') {
-                    p.pos++;
-                }
-                break;
-            case '[': in_class = true; break;
-            case ']': in_class = false; break;
-            default: break;
+    bool in_escape = false;
+    while (true) {
+        char c = *p.pos;
+        if (!c || c == '\n' || c == '\r' || unicode_whitespace_size(p.pos) < 0) {
+            p.pos = unterminated_regex_end(start + 1, p.pos);
+            parse_error(&p, span_make(p.shared->source, start, p.pos), 1161, "Unterminated regular expression literal.");
+            return parse_success(&p);
+        }
+        if (in_escape) {
+            in_escape = false;
+        } else if (c == '/' && !in_class) {
+            break;
+        } else if (c == '[') {
+            in_class = true;
+        } else if (c == '\\') {
+            in_escape = true;
+        } else if (c == ']') {
+            in_class = false;
         }
         p.pos++;
     }
     p.pos++;
-    while (is_identifier_char(*p.pos)) {
-        p.pos++;
-    }
+    int size;
+    while ((size = identifier_char_size(p.pos, false))) p.pos += size;
 
     return parse_success(&p);
 }
@@ -7523,7 +7602,7 @@ __attribute__((noinline)) static bool at_jsx_element_start(Parser* parent) {
     Parser p = parser(parent);
     p.pos++;
     hop_whitespace(&p);
-    bool ret = *p.pos == '>' || is_identifier_start_char(*p.pos) || identifier_escape_size(p.pos);
+    bool ret = *p.pos == '>' || identifier_char_size(p.pos, true) || identifier_escape_size(p.pos);
     parse_fail(&p);
     return ret;
 }
