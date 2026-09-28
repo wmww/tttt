@@ -715,7 +715,14 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
         }
         case FLOW_PATH_PROPERTY: {
             ObjectExprItem const* item = path->item;
-            if (item->computed_key) return nullptr;
+            if (item->computed_key) {
+                // A computed name only if it has a literal type (tsc's getTypeOfDestructuredProperty)
+                Ty const* key = ty_regular(me, ty_flow_expr_type(me, item->computed_key));
+                bool is_number = false;
+                if (!ty_property_name_of_key(me, key, &is_number)) return nullptr;
+                ret = ty_access(me, object, key);
+                break;
+            }
             ret = ty_access(me, object, ty_string_literal(me, cstr_sv(&item->name_string)));
             break;
         }
