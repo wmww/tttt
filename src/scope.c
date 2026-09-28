@@ -1250,6 +1250,14 @@ void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool expor
 
 // `exports.x = v`: an alias when v is a name (tsc's isAliasableExpression), else a property whose type is what is
 // assigned (several assignments merge)
+// A function expression assigned to a declared property (`exports.F = function () {}`, `ns.F = function () {}`) is a
+// class of that symbol if it assigns `this.x` (tsc's bindThisPropertyAssignment: the function's own symbol)
+static void set_function_class_symbol(Expr* value, Symbol* symbol) {
+    if (value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span) || value->function->class_symbol) return;
+    SourceFile const* file = value->inner_span.source;
+    if (file && file->is_js) value->function->class_symbol = symbol;
+}
+
 static void declare_commonjs_export(
     Scope* me, csview name, Span name_span, Expr* value, TypeNode const* jsdoc_type, Span left, Span statement
 ) {
@@ -1277,6 +1285,7 @@ static void declare_commonjs_export(
             .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_PROPERTY, .node = value, .name = left, .full = statement,
             .jsdoc_type = jsdoc_type,
         });
+        set_function_class_symbol(value, symbol);
     }
 }
 
@@ -3118,6 +3127,7 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
         .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_PROPERTY, .node = value, .name = left->outer_span,
         .full = left->outer_span, .jsdoc_type = jsdoc_type,
     });
+    set_function_class_symbol(value, member);
     // JavaScript `F.prototype = { ... }` makes F a class (tsc's bindPrototypeAssignment: containerIsClass)
     if (span_equals(name, "prototype") && value->tag == EXPR_OBJECT && my file->is_js && js_constructor_symbol(host) &&
         !symbol_find_decl(host, SYMBOL_DECL_CLASS)

@@ -5208,7 +5208,7 @@ const baselines = {
     'commonjsAccessExports': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'commonjsSafeImport': {
         errors: true,
@@ -52693,7 +52693,7 @@ const baselines = {
     'typedefCrossModule': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typedefCrossModule2': {
         errors: false,
@@ -60263,7 +60263,7 @@ const baselines = {
     'jsContainerMergeJsContainer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsContainerMergeTsDeclaration': {
         errors: false,
@@ -60716,7 +60716,7 @@ const baselines = {
         types: true,
     },
     'typeFromParamTagForFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
