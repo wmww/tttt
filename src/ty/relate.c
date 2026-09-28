@@ -646,6 +646,7 @@ static void flush_incompatible(RelationState* st) {
 }
 
 // tsc's reportErrorResults
+static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty);
 static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top) {
     bool suppress = st->override_next_head > 0;
     if (suppress) st->override_next_head--;
@@ -665,6 +666,23 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         report_line(st, 2692, cstr_d("'", target_str, "' is a primitive, but '", source_str, "' is a wrapper object. Prefer using '",
             target_str, "' when possible."));
         c_drop(cstr, &source_str, &target_str);
+    }
+    // A readonly array or tuple where a mutable one is wanted says so instead of the head (tsc's reportErrorResults
+    // with tryElaborateArrayLikeErrors)
+    if ((source->flags & TYF_OBJECT) && (target->flags & TYF_OBJECT) && is_mutable_array_or_tuple(me, target)) {
+        TupleShape const* shape = is_tuple(source) ? source->reference.target->declared.tuple :
+            is_empty_tuple(source) ? source->declared.tuple : nullptr;
+        bool readonly = shape ? shape->readonly :
+            source->kind == TY_REFERENCE && source->reference.target == my readonly_array_target;
+        if (readonly) {
+            cstr source_str = display_for_report(me, source, false);
+            cstr target_str = display_for_report(me, target, false);
+            report_line(st, 4104, cstr_d(
+                "The type '", source_str, "' is 'readonly' and cannot be assigned to the mutable type '", target_str, "'."
+            ));
+            c_drop(cstr, &source_str, &target_str);
+            suppress = true;
+        }
     }
     if (suppress) {
         if (!top || !pending) {
@@ -4045,7 +4063,9 @@ static Ternary structured_related_members(
             for (u32 i = 0; i < shape->arity; i++) {
                 if (!(shape->flags[i] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) min = i + 1;
             }
-            if (report && min) {
+            // (A readonly array to a mutable tuple fails first, TS4104's: tsc's propertiesRelatedTo)
+            bool readonly_to_mutable = source->reference.target == my readonly_array_target && !shape->readonly;
+            if (report && min && !readonly_to_mutable) {
                 report_line(st, 2620, cstr_d("Target requires ", min, " element(s) but source may have fewer."));
             }
             return TERNARY_FALSE;
@@ -4143,19 +4163,8 @@ static Ternary structured_related_members(
         } else if (is_array_target(me, source_target) && is_array_target(me, target_target)) {
             // HACK: Array<S> and ReadonlyArray<T> relate like their element types. It's what comparing the two
             // interfaces member by member comes to, without depending on how well generic methods compare yet
-            if (source_target == my readonly_array_target && !comparable) {
-                if (report) {
-                    cstr source_str = display_for_report(me, source, false);
-                    cstr target_str = display_for_report(me, target, false);
-                    report_line(st, 4104, cstr_d(
-                        "The type '", source_str, "' is 'readonly' and cannot be assigned to the mutable type '",
-                        target_str, "'."
-                    ));
-                    c_drop(cstr, &source_str, &target_str);
-                    st->override_next_head++;
-                }
-                return TERNARY_FALSE;
-            }
+            // (TS4104 is report_relation_error()'s)
+            if (source_target == my readonly_array_target && !comparable) return TERNARY_FALSE;
             return is_related_to(me, st, ty_reference_args(me, source).data[0], ty_reference_args(me, target).data[0], report);
         }
     }

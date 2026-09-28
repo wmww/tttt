@@ -26686,7 +26686,7 @@ const baselines = {
         types: false,
     },
     'readonlyTupleAndArrayElaboration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
