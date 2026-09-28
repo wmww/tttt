@@ -23571,7 +23571,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyNamelessParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

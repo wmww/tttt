@@ -18,6 +18,9 @@ typedef struct FunctionArg {
     Span question_span; // `?`, invalid when the parameter has none (explicit_optional can come from JSDoc)
     Span rest_span;
     bool rest;
+    // A parameter of a signature in a type written as just a name that is a type (`(string) => void`), set when
+    // resolving names: TS7051 instead of TS7006 (tsc's reportImplicitAny)
+    bool name_is_type;
     bool jsdoc_variadic; // JavaScript `@param {...T} x` of a parameter that isn't a rest parameter (x is T)
     VecExpr decorators; // Of a class member's parameter: checked as calls by class_decl_typecheck()
     // `constructor(public x: T)`: also declares a property of the class

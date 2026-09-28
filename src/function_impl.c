@@ -664,6 +664,11 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
         if (i->initializer.binding.has_explicit_type || i->initializer.value.tag != EXPR_IMPLICIT_ANY) continue;
         if (my jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me, nullptr);
         if (i->initializer.getter || ty_contextual_parameter_type(current_checker, &i->initializer)) continue;
+        if (i->name_is_type && my is_type && !my is_constructor) {
+            error_ctx_error_d(errs, i->span, 7051, "Parameter has a name but no type. Did you mean 'arg", (u32)i_index, ": ",
+                i->initializer.binding.content_span, i->rest ? "[]" : "", "'?");
+            continue;
+        }
         if (i->rest && i->initializer.binding.tag == BINDING_IDENTIFIER) {
             error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", i->initializer.binding.content_span,
                 "' implicitly has an 'any[]' type.");
