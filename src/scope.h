@@ -172,10 +172,12 @@ typedef struct SymbolAlias {
     Scope* scope; // Where `import x = A.B` and `export { x }` resolve from
     Span name; // `export default x`, which has no item: the name to resolve from scope
     AliasState state;
-    Symbol* target; // Never an alias that is nothing else. A placeholder when resolution failed
+    // An alias that is nothing else only if that alias has a value_target. A placeholder when resolution failed
+    Symbol* target;
     // `import { Request } from "m"` where m's `export =` names a value whose namespace exports `Request` without a
     // value meaning: the property `Request` of the value, which gives the import its value meaning (tsc's
-    // combineValueAndTypeSymbols). Null otherwise
+    // combineValueAndTypeSymbols). `export default F` of a local type F and an exported value F: the value (tsc's
+    // local symbol with an exportSymbol). Null otherwise
     Symbol* value_target;
     // An import or re-export of a name its module only exports through `export type *`: that star
     PortItem const* type_only_star;

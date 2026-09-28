@@ -1789,7 +1789,10 @@ static bool symbol_is_pure_alias(Symbol const* me) {
 
 // What tsc's resolveSymbol() does to the thing an alias names: only an alias that is nothing else is seen through
 static Symbol* resolve_if_pure_alias(Symbol* me) {
-    return me && symbol_is_pure_alias(me) ? symbol_resolve_alias(me) : me;
+    if (!me || !symbol_is_pure_alias(me)) return me;
+    Symbol* target = symbol_resolve_alias(me);
+    // An alias whose meanings come from two symbols stays: symbol_for_meaning() picks (see SymbolAlias.value_target)
+    return my alias->value_target ? me : target;
 }
 
 static Symbol* resolve_import_alias_path(Symbol* me) {
@@ -1957,6 +1960,13 @@ static Symbol* resolve_alias_target(Symbol* me) {
         // `export default x`, TS2304 comes from the expression
         Symbol* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);
         if (found == me) return nullptr;
+        // A local type and an exported value of the name are one symbol in tsc (the local one has the exported one as
+        // its exportSymbol): `interface F {}` + `export const F = ...` + `export default F` exports both
+        Symbol* container = my alias->scope->container;
+        if (found && !(found->flags & SYMBOL_VALUE) && container && container->exports) {
+            Symbol* value = symbol_table_get(container->exports, my alias->name.sv);
+            if (value && value != found && value != me && (value->flags & SYMBOL_VALUE)) my alias->value_target = value;
+        }
         unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
         return resolve_if_pure_alias(found);
     }

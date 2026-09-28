@@ -16156,7 +16156,7 @@ const baselines = {
         types: true,
     },
     'importElisionExportNonExportAndDefault': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
