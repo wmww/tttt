@@ -1730,9 +1730,30 @@ static Ty const* non_undefined_type(Checker* me, Ty const* ty) {
     return ty_without_undefined(me, ty);
 }
 
+// Whether a computed key of type `key` names the property `name` (tsc's getRestType: the property's literal key type
+// is assignable to the key's; numeric names against `number` aren't told apart from string ones, TODO)
+static bool computed_key_names(Checker* me, Ty const* key, Atom const* name) {
+    if (key->kind == TY_UNION) {
+        for (u32 i = 0; i < key->composite.types.len; i++) {
+            if (computed_key_names(me, key->composite.types.data[i], name)) return true;
+        }
+        return false;
+    }
+    if (key->flags & TYF_ANY) return true;
+    bool is_number = false;
+    Atom const* named = ty_property_name_of_key(me, key, &is_number);
+    if (named) return named == name;
+    return key->kind == TY_INTRINSIC && (key->flags & TYF_STRING) && !ty_unique_symbol_of_name(me, name);
+}
+
+// Whether the object pattern takes the property `name` out of its rest
 static bool pattern_names(Checker* me, Binding const* pattern, Atom const* name) {
     for_each (item, vec_object_binding_item, &pattern->object) {
-        if (item->target.rest || item->computed_key) continue;
+        if (item->target.rest) continue;
+        if (item->computed_key) {
+            if (computed_key_names(me, ty_expr_type(me, item->computed_key), name)) return true;
+            continue;
+        }
         bool is_number = false;
         if (ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number) == name) return true;
     }
@@ -1806,13 +1827,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
         if (!ty_is_spreadable_prop(me, prop)) continue;
-        bool named = false;
-        for_each (item, vec_object_binding_item, &pattern->object) {
-            if (item->target.rest || item->computed_key) continue;
-            bool is_number = false;
-            if (ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number) == prop->name) named = true;
-        }
-        if (named) continue;
+        if (pattern_names(me, pattern, prop->name)) continue;
         // (tsc's getSpreadSymbol: the same property unless that makes it writable)
         if (!(prop->flags & PROP_READONLY)) {
             props[count++] = (ObjectLiteralProp){ .reuse = prop };
