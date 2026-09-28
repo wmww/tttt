@@ -444,7 +444,11 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   R<O>`), but not one whose object type mentions the type parameters too (instantiate.c HACK). Their display is the
   expanded object type (`{ new (): D<string>; ... }` where tsc prints `typeof D<string>`).
 - `ty_non_nullable` of a type parameter/deferred type whose constraint allows nullish returns the stripped
-  *constraint* (tsc: `T & {}`), losing `T` (checker.c HACK).
+  *constraint* (tsc: `T & {}`, printed `NonNullable<T>`), losing `T` (checker.c HACK); applied to each generic member
+  of a union too, dropping those left never (tsc filters by type facts). tsc's getNonNullableType is
+  `ty_non_nullish_part()` (flow.c's getAdjustedTypeWithFacts port), which nothing but flow uses yet: switching the 24
+  callers over (and printing the `{}` intersection as `NonNullable<T>`, tsc's getGlobalNonNullableTypeInstantiation)
+  is the real fix; nonNullableReduction's types show the gap.
 - Fresh literals: literal ids follow tsc only where tttt makes literals in the same order (`1 | 0` vs `0 | 1`).
 - Iteration (`ty/iterate.c`): errors reported at the top only (tsc adds related info).
 - Error elaboration (`elaborate_error`, ty/check.c): reads memos (`ty_mutable_location_type`,

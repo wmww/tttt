@@ -38,3 +38,7 @@ duplicated webpack), hacks.md (`string_to_double`).
   declaration of the alias symbol, and `module.exports = f` of a function declaration prints `typeof f`
   (require_property_value_only.ts); a JS `const S = Symbol()` read through a `@type {typeof S}` const prints `symbol`
   in tsc (jsdoc_accessor_type.ts). Also: `declare const B = -1n` under a pre-ES2020 target lacks TS2737.
+- Suite checker bugs 5 (flow bucket) found the same bug twice: code that reads signatures/members only when
+  `apparent->flags & TYF_OBJECT`, skipping intersections whose `ty_members()` are well defined
+  (`constructor_instance_type` in flow.c, `call_signatures_of` in call.c). Grep for other `TYF_OBJECT ? ty_members`
+  gates and check whether tsc's counterpart (getSignaturesOfType etc.) accepts intersections there.
