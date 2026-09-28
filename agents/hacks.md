@@ -534,7 +534,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   exported bindings aren't widened like tsc (defaultNamedExportWithType1).
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`, `ty/helpers.c`)
-- `check_access` (TS2339, HACKs): lets through JS files (see JavaScript), generic mapped types (`Pick<T, K>`: members
+- `check_access` (TS2339, HACKs): lets through generic mapped types (`Pick<T, K>`: members
   only via the constraint) and classes with bases `class_base()` can't see (`ty_has_unresolved_base()`). Bracket access
   never reports a missing property. Generic TS2536 (`ty_indexed_access_index_ok`) lacks tsc's TS4105 case (a
   private/protected property named through a type parameter).
@@ -600,18 +600,35 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   apart); position arithmetic on them reads garbage.
 - `jsdoc_apply_type_signature()`: `@type {F}` on a function *moves* the signature's TypeNodes into it, only for a
   written function type or `{(...): R}` literal.
-- CommonJS module indicator is syntactic (parser `saw_commonjs`, also set by failed attempts). `exports.x =` is only
-  declared from a file's top-level statements (`statement_add_names()`). `module.exports.x = v` after
-  `module.exports = v0` declares a separate export next to `export=`.
+- CommonJS module indicator is syntactic (parser `saw_commonjs`, also set by failed attempts). `exports.x =` is
+  declared from the file's top-level statements and the statements nested in their blocks
+  (`add_nested_commonjs_exports()`: statements only, not an assignment inside an expression). `module.exports.x = v`
+  after `module.exports = v0` declares a separate export next to `export=`; an `export=` of a non-object (`new EE()`)
+  with other exports doesn't print tsc's merged `{ on(s): void; x: number; }` (moduleExportAssignment).
+- `is_exports_alias()` looks up module-level variables only (tsc: `lookupSymbolForName(file)`), through a queue of 16.
 - `require()` declarations are aliases through `PortItem`s the parser synthesizes; only flat object patterns qualify.
 - Symbols baseline overrides keyed by span (`symbol_overrides`: `commonjs_symbol_overrides()`,
   `prototype_symbol_overrides()`, `this_property_symbol_overrides()`) stand in for tsc's
   getSpecialPropertyAssignmentSymbol shapes.
 - `readonly_assignment()` never reports a declaring `exports.x =`.
-- **The JS TS2339 gate** (`check_access()`): removing it costs ~57 tests for +6. Spurious TS2339s behind it: expandos of
-  a global namespace declared in another script (tsc's jsGlobalAugmentations), `exports.x`/`this.x` in nested
-  blocks/functions, class expressions assigned to members, `F.prototype = {...}`,
-  `Object.defineProperty` declarations, JSDoc names resolving to expando values.
+- TS2339 in JavaScript (the gate went 2026-09-28): what's still missing from the binder shows as spurious TS2339 in
+  ~15 tests: `Object.defineProperty(x, "p", {...})` declarations (jsExpandoObjectDefineProperty), expandos on class
+  statics (`C.method.prop = 1`: class body members aren't binder symbols), `var X = m.X = {}` chained containers
+  (typeFromPropertyAssignment18), `exports["e"] =` element access exports, `module.exports.a.cat =` expandos of a
+  CommonJS export, `F.prototype = {...}` members of a class declaration's `this` in methods (jsDeclarationsFunctionLikeClasses2).
+- Global expando namespaces (`global_expando_namespace()`) are declared into the shared globals while each file is
+  bound, not per file and merged later like tsc's jsGlobalAugmentations: `declare_symbol()` lets any declaration merge
+  with a global that only has expando declarations, and `binder_link_global_expandos()` gives variable initializers
+  their members once every file is bound. Declaration order follows binding order (tsc's too, by accident).
+- `jsdoc_prototype_type_param()`: a JSDoc name not in scope in a prototype method (`F.prototype.m = function`) looks at
+  F's type parameters from anywhere inside the method's nearest function scope (tsc: only the method's own and its
+  statement's comments).
+- `set_function_class_symbol()`: a function expression assigned to `exports.F`/`ns.F` that assigns `this.x` is a class
+  of the property's symbol (tsc: of the function expression's own symbol). `o.m = function () { this.x = 1 }` on a
+  plain object isn't a class at all (tsc: it is).
+- `F.prototype = {...}` members are the literal's type's props added to the instance type at member resolution
+  (`builder_add_assignment_members()`), not merged symbols (tsc's mergeJSSymbols); only for function hosts.
+- The class static side check (TS2417) doesn't see a JS class's expandos.
 - `scope_add_expandos()` runs in `block_add_names()`, so nested top-level blocks write expandos into file-level symbols
   from the resolve walk, and `scope_add_this_property()` writes `Symbol.members` from it: should be a per-file list
   merged after the walks. Only expression statements and `var` initializers are scanned (tsc: every binary expression).
@@ -620,6 +637,12 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - A JS constructor function is its anonymous function type plus a construct signature (`resolve_members()`), with
   `typeof F` special-cased in the printer (`ty_js_constructor_class()`), not a class static type.
 - Other JS gates: `scope_add_port()` has no `export as namespace` alias in JS.
+- TypeScript-only syntax errors in JS (TS8xxx) are reported by the parser at each construct (`js_syntax_error()`), and
+  what tsc's walk would skip inside a reported construct is erased afterwards (`js_syntax_skip_since()`, by error
+  index): every construct that tsc skips needs its call. Node array spans (type parameters, parameter modifiers) run
+  first element to last, not tsc's `nodes.pos` (which can include leading trivia).
+- `Statement.expr_jsdoc_type` sits next to `expr` in the union: every site that makes an expression statement by
+  assigning `->expr` must clear it (parse_statement's `return`/`throw`/expression, the for loop's initializer).
 
 ## Modules and program (`module_resolution.c`, `tsconfig.c`, `program.c`, `main.c`)
 - A `.js` file resolved with `allowJs` is parsed as TypeScript (plus JSDoc/CommonJS). `program_load` refuses a `.js`

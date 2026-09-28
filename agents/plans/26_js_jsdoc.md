@@ -22,6 +22,14 @@ list (`jsdoc_bind_comments()`), `@template` (functions, methods, classes, typede
 `import("./m")` as value-or-type, JS calls inferring any (AnyDefault), braceless `@type`/`@enum`, `@returns {asserts x}`.
 Unresolved JSDoc names report TS2304 now (the silencing HACK is gone), which is what the "Stage 3 leftovers" below
 cost: 26 tests lost a component. `documentation.md` "JSDoc" describes what exists.
+**Stage 3 leftovers and stage 4 (part)** (2026-09-28, todo entry 5, 12 commits): JS tests passing 408 -> 470, suite
+9667 -> 9729, webpack 118 -> 116. Done: global expando namespaces, generic constructor functions (templates, prototype
+methods' JSDoc names), `F.prototype = {...}`, this aliases, `@type` property declarations, CommonJS exports through
+aliases and nested blocks, **the JS TS2339 gate is gone** (JS literal leniency instead), the TS8xxx syntax walk,
+`@implements`, `@private`/`@protected`/`@readonly`, `@template const`. What's left of the TS2339 gate's causes is in
+hacks.md "JavaScript"; the `0other` sample went to triage.md. Not done: dotted typedef names (`@callback NS.Inner`),
+the display items below, JSDoc parse errors, `@override` (no override checks exist at all), the JS-only grammar errors
+(plainJS* tests: mostly parser recovery, triage.md).
 Stage 2 notes (kept for the leftovers): `Object.defineProperty(exports, ...)` is the rest of spurious TS2580; the symbols baseline already has
 an override hook for tsc's getSpecialPropertyAssignmentSymbol shapes (`commonjs_symbol_overrides()`), `this.x =` and
 expandos will need the same kinds of lines; `binary_commonjs_declaration()` is where assignment declaration kinds
@@ -227,15 +235,7 @@ each.
 ### Stage 3: declarations in JSDoc (done, see Status)
 **Stage 3 leftovers**, by what they cost (tests that lost a component when unresolved JSDoc names stopped being silent,
 plus webpack's residue):
-- **Global expando namespaces** (tsc's jsGlobalAugmentations): `Outer.Inner = class {}` in a script where `Outer` is a
-  global of another script declares nothing (`expando_host()` only extends the file's own symbols), so `@type
-  {Outer.Inner}` is TS2503. 8 tests (typeFromPropertyAssignment4/6/10/10_1/14/35/OutOfOrder, exportNestedNamespaces,
-  moduleExportNestedNamespaces). Needs a per-file list of unresolved expando hosts merged into the globals in the link
-  step (it is also one of the TS2339 gate's causes).
-- **Constructor function type parameters seen from prototype methods** (tsc's getAssignmentDeclarationLocation):
-  `/** @param {K} k */ F.prototype.get = function (k)` finds K on F's `@template`. Also the instance type of a generic
-  constructor function isn't generic. 5 tests (jsdocTemplateTag4/5/6, constructorFunctionMethodTypeParameters,
-  propertiesOfGenericConstructorFunctions); `@this` (inferThis) with it.
+- (Done 2026-09-28: global expando namespaces, constructor function type parameters seen from prototype methods.)
 - Dotted typedef names (`@callback NS.Nested.Inner`: namespaces), 6 tests; `@typedef` named by its host.
 - Display: a typedef of a CommonJS module with `export=` prints through the export= name in tsc
   (`memoize.FunctionReturning<T>`, `MF.CompilationHooks`), tttt prints `import("memoize").FunctionReturning<T>`; a
@@ -308,8 +308,8 @@ is done).
 JS items that were in triage.md (statuses checked then); stage 4, the "Stage 3 leftovers" or the TS2339 gate session.
 - jsEnumCrossFileExport: `@param {!Host.UserMetrics.Action}` resolves to the expando value (its object type) where tsc
   takes the `@enum` tag; `@typedef {string} Host.UserMetrics.Bargh` isn't declared.
-- The JS TS2339 gate: hacks.md "JavaScript" lists what removing it still breaks; each item is a small binder piece.
-  Worth one session (after the global expando namespaces of the "Stage 3 leftovers").
+- The JS TS2339 gate is gone (2026-09-28); hacks.md "JavaScript" lists the binder pieces whose absence still shows as
+  spurious TS2339 (~15 tests: Object.defineProperty, class static expandos, chained containers...).
 - multipleDeclarations: `F.prototype.m = function` next to `this.m = v` is two symbols in tsc (Method excludes
   Property), one member here.
 - `module.exports.x = v` after `module.exports = C` is a member of the export= type in tsc (members copied into a new

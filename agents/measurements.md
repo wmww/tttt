@@ -11,8 +11,9 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 there than a clean run.
 
 ## Suite (2026-09-27, plan 35 stage 1, bef38cb)
-**9666 / 13540** full pass (errors 11180, symbols 12356, types 11049); 9667 after the 09-28 perf session
-(errors 11182, symbols 12354, types 11050), whose other numbers below weren't re-measured. A suite run takes ~23 s
+**9666 / 13540** full pass (errors 11180, symbols 12356, types 11049); 9667 after the 09-28 perf session, **9729**
+after the 09-28 plan 26 session (errors 11242, symbols 12407, types 11090; errors component: 2298 failing, tsc
+reports errors and tttt nothing 578), whose other numbers below weren't re-measured. A suite run takes ~23 s
 (was 50: relationComplexityError alone took 27). `./failstats.py`: errors component fails in
 2360 tests: tsc reports errors and tttt nothing 654, both missing and spurious 585, only missing 389, **same
 codes+positions, other text 311**, tttt errors where tsc has none 254, only spurious 137, column differs 30. 323 tests
@@ -25,17 +26,18 @@ spans of the silent call resolutions). The lines below the displaydiff ones are 
   48, object-differs/declaration 46, union-differs/declaration 44, our-typeof 42 (plan 35's queue).
 - `./errtextdiff.py --coarse` (311 tests): fixed by one part: chain 95, header 78, underline 60, related 46, outside
   diagnostics 15.
-- `./jsstats.py`: 1049 JS tests, **395 pass**. Failing by category (only / involved): other 86 / 86, CommonJS 58 /
-  157, expandos 55 / 198, advanced JSDoc 13 / 100, JSDoc 73 / 280, leniency 2 / 18, syntax 33 / 137, emit 16 / 39,
-  `.ts`-only 17 / 26.
+- `./jsstats.py` (2026-09-28, plan 26 session, 7236285): 1049 JS tests, **470 pass**. Failing by category (only /
+  involved): other 78 / 78, CommonJS 67 / 151, expandos 41 / 160, advanced JSDoc 8 / 86, JSDoc 73 / 262, leniency
+  2 / 17, syntax 20 / 88, emit 34 / 39, `.ts`-only 14 / 23.
 - `./syntaxstats.py`: **402** tests whose parser diagnostics differ (44 JS). TS tests: A 83, B 25, C 40, D 53, E 79,
   M 78. Clusters: other:M 70, lexical:literals 60, other:A 42, other:E 34, lexical:identifiers 32, other:D 30,
   recovery:list-context 23, permissive:modifiers 21, other:B 9, permissive:decorators 9, other:C 8, yield-await 7.
 
 ## Corpora (2026-09-28, perf session, todo entry 3)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**4** (mixin classes, plan 32 stage C), webpack **118** (JSDoc, plan 26; 130 -> 118 at the perf session: union
-inference with circularity), zod **13** (plan 19; its 2 TS2589s went with the inference depth fix).
+**4** (mixin classes, plan 32 stage C), webpack **116** (JSDoc, plan 26; 130 -> 118 at the perf session: union
+inference with circularity; 118 -> 116 at the plan 26 session, which also turned on TS2339 in JS: 3 of those left),
+zod **13** (plan 19; its 2 TS2589s went with the inference depth fix). Re-checked 2026-09-28 (7236285).
 
 ## Perf (2026-09-28, perf session, `./bench.sh --runs 2`)
 Best wall / peak RSS. tttt now re-executes itself with glibc's malloc on transparent huge pages and madvises its

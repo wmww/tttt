@@ -23,3 +23,18 @@ non-widening undefined, `infer X extends C` scope), `bugs/display.md` (object li
   Present at 0746971 (not a stack overflow: `ulimit -s unlimited` still crashes). Found by plan 36's planning session;
   `gdb -batch -ex run -ex bt --args ./release/tttt ...` with `TTTT_NO_REEXEC=1` reproduces in ~2 s. Worth pinning
   the root config as a second zod corpus once it runs.
+- **const type parameter inference with several candidates** (plain TS too): `function f4<const T>(x: [T, T]): T;
+  f4([[1, "x"], [2, "y"]])` gives TS2322s where tsc infers `readonly [1, "x"] | readonly [2, "y"]`
+  (jsdocTemplateTag6). Found at the plan 26 session.
+- Rest element grammar errors are unimplemented: TS2566 (`{ ...rest: x }`, which tttt doesn't even parse: tsc parses
+  a property name after `...`), TS2501, TS2462, TS1186; also `a?.\`x\`` (tsc TS1358, tttt TS1003) and a comma
+  expression as a computed key (`[a, b]: 1`, tsc parses it and reports TS1171; tttt TS1136). All in
+  plainJSGrammarErrors, whose parse errors hide its ~50 grammar errors.
+- Override checks (TS4113-TS4123, `override` keyword and noImplicitOverride, JSDoc `@override`) don't exist at all
+  (override_js2/4, jsdocOverrideTag1 and the TS tests of the feature: `./unimplemented_codes.sh`).
+- JS `0other` bucket (plan 26 stage 4 sample, 78 tests): node16/nodenext package `exports`/`imports` and self-name
+  resolution in allowJs tests (TS2209/TS2210/TS2303, 15 tests: nodeModulesAllowJs*, nodeAllowJsPackageSelfName);
+  importNonExportedMember8-11 (TS2595-TS2598 + TS2497: importing an `export =` module with named/default imports);
+  TS18042/TS18043 (types in JS import/export: jsDeclarationsInterfaces, elidedJSImport1,
+  jsxCheckJsxNoTypeArgumentsAllowed); TS7029 (jsFileCompilationBindReachabilityErrors), TS2393 duplicate function
+  implementation in JS; ~25 are types-only (`./displaydiff.py -f` on them).
