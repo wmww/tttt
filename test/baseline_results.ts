@@ -19203,7 +19203,7 @@ const baselines = {
     'jsExtendsImplicitAny': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsFileAlternativeUseOfOverloadTag': {
         errors: true,
@@ -51966,7 +51966,7 @@ const baselines = {
         types: true,
     },
     'importTag23': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52058,7 +52058,7 @@ const baselines = {
     'jsdocAugments_withTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocBindingInUnreachableCode': {
         errors: true,
@@ -52091,17 +52091,17 @@ const baselines = {
         types: true,
     },
     'jsdocImplements_class': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'jsdocImplements_interface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsdocImplements_interface_multiple': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52116,12 +52116,12 @@ const baselines = {
         types: true,
     },
     'jsdocImplements_properties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsdocImplements_signatures': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -2981,7 +2981,8 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
             if (after < end && *after == '{') {
                 parse_jsdoc_type_expression(parent, &after, end, &tag);
                 c = after;
-            } else if ((tag.kind == JSDOC_TAG_TYPE || tag.kind == JSDOC_TAG_ENUM) && after < end && after > c &&
+            } else if ((tag.kind == JSDOC_TAG_TYPE || tag.kind == JSDOC_TAG_ENUM || tag.kind == JSDOC_TAG_EXTENDS ||
+                    tag.kind == JSDOC_TAG_IMPLEMENTS) && after < end && after > c &&
                 !memchr(c, '\n', (size_t)(after - c)) && *after != '@'
             ) {
                 // Braces may be omitted (tsc's parseJSDocTypeExpression(mayOmitBraces)): `@type object`, `@enum number`
@@ -3280,6 +3281,13 @@ static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
 // tag's ExpressionWithTypeArguments stands for the heritage clause's)
 static void jsdoc_apply_class(VecJsDocTag* tags, ClassDecl* class_decl) {
     jsdoc_apply_template(tags, &class_decl->generic);
+    // `@implements {I}` (tsc's getEffectiveImplementsTypeNodes: in JavaScript the tags, not the clause)
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind != JSDOC_TAG_IMPLEMENTS || !i->has_type || i->earlier) continue;
+        Span span;
+        TypeNode type = jsdoc_take_type(i, &span);
+        vec_spanned_type_push(&class_decl->implements, spanned_type(span, type));
+    }
     if (class_decl->extends.tag == EXPR_IMPLICIT_ANY || class_decl->extends.tag == EXPR_GENERIC_PARAMS) return;
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
     if (!tag || tag->type.tag != TYPE_IDENTIFIER || !vec_spanned_type_size(&tag->type.identifier->generic_params)) return;

@@ -1960,7 +1960,15 @@ Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
 
 Span ty_prop_decl_span(Prop const* prop) {
     while (prop && !span_valid(prop->name_span)) prop = prop->target;
-    return prop ? prop->name_span : (Span){0};
+    if (!prop) return (Span){0};
+    // An assignment declaration (`this.x = v`) is the whole access (tsc's getErrorSpanForNode of the declaration)
+    Symbol const* symbol = prop->symbol;
+    if (symbol && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && span_valid(symbol->decls[0].name) &&
+        span_contains_span(symbol->decls[0].name, prop->name_span)
+    ) {
+        return symbol->decls[0].name;
+    }
+    return prop->name_span;
 }
 
 Ty const* prop_type(Checker* me, Prop const* const_prop) {
