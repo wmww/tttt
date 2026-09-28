@@ -20956,7 +20956,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeTupleConstraintAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27696,7 +27696,7 @@ const baselines = {
         types: true,
     },
     'restTypeRetainsMappyness': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64221,7 +64221,7 @@ const baselines = {
         types: true,
     },
     'mappedTypesArraysTuples': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

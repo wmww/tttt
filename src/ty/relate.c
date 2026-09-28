@@ -3721,6 +3721,13 @@ static Ternary structured_related_members(
     bool source_is_tuple = is_tuple(source) || is_empty_tuple(source);
     bool target_is_tuple = is_tuple(target) || is_empty_tuple(target);
     if (source_is_tuple && target_is_tuple) return tuples_related(me, st, source, target, report);
+    if (target_is_tuple && source->kind == TY_ANONYMOUS) {
+        // A homomorphic mapped type over a type parameter constrained to a tuple is a tuple (its apparent type)
+        Ty const* apparent = apparent_type(me, source);
+        if (apparent != source && (is_tuple(apparent) || is_empty_tuple(apparent))) {
+            return tuples_related(me, st, apparent, target, report);
+        }
+    }
     if (target_is_tuple) {
         TupleShape const* shape = is_empty_tuple(target) ? target->declared.tuple : target->reference.target->declared.tuple;
         if (source->kind == TY_REFERENCE && is_array_target(me, source->reference.target)) {
