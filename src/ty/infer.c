@@ -510,15 +510,57 @@ static bool is_partially_inferable(Checker* me, Ty const* ty, u32 depth) {
     return false;
 }
 
+// The properties of what's reverse mapped (tsc's getPropertiesOfType): an object's own, an intersection's those of all
+// of its members, each name once, of the type and with the modifiers the intersection has for it. malloc'd
+static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralProp** out) {
+    *out = nullptr;
+    if (source->flags & TYF_OBJECT) {
+        Members const* members = ty_members(me, source);
+        *out = calloc(members->prop_count + 1, sizeof(ObjectLiteralProp));
+        panic_if(!*out, "out of memory");
+        for (u32 i = 0; i < members->prop_count; i++) {
+            Prop const* prop = members->props[i];
+            (*out)[i] = (ObjectLiteralProp){ .name = prop->name, .flags = prop->flags, .type = prop_type(me, prop) };
+        }
+        return members->prop_count;
+    }
+    u32 count = 0, cap = 0;
+    for (u32 p = 0; p < source->composite.types.len; p++) {
+        Ty const* part = ty_apparent_type(me, source->composite.types.data[p]);
+        if (!(part->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, part);
+        for (u32 i = 0; i < members->prop_count; i++) {
+            Atom const* name = members->props[i]->name;
+            bool seen = false;
+            for (u32 k = 0; k < count && !seen; k++) seen = (*out)[k].name == name;
+            if (seen) continue;
+            FoundProp found = ty_find_prop(me, source, name);
+            if (!found.found) continue;
+            if (count == cap) {
+                cap = cap ? cap * 2 : 8;
+                *out = realloc(*out, sizeof(ObjectLiteralProp) * cap);
+                panic_if(!*out, "out of memory");
+            }
+            (*out)[count++] = (ObjectLiteralProp){ .name = name, .flags = found.flags, .type = found.type };
+        }
+    }
+    return count;
+}
+
 static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
-    if (!(source->flags & TYF_OBJECT)) return nullptr;
+    // (tsc's createReverseMappedType takes any object type, an intersection too)
+    if (!(source->flags & TYF_OBJECT) && (source->kind != TY_INTERSECTION || ty_is_generic_object(me, source))) return nullptr;
+    ObjectLiteralProp* source_props;
+    u32 source_prop_count = reverse_mapped_source_props(me, source, &source_props);
     // Reverse mappable: a string index signature, or properties and partially inferable (tsc's createReverseMappedType)
     if (!ty_applicable_index_info(me, source, ty_intrinsic(me, TY_STRING)) &&
-        (!ty_members(me, source)->prop_count || !is_partially_inferable(me, source, 0))
+        (!source_prop_count || !is_partially_inferable(me, source, 0))
     ) {
+        free(source_props);
         return nullptr;
     }
     if (ty_is_array(me, source) || ty_tuple_shape(source)) {
+        free(source_props);
         if (my reverse_mapped_depth >= 4) return nullptr;
         my reverse_mapped_depth++;
         Ty const* ret = reverse_mapped_array_like(me, source, mapped, operand);
@@ -534,27 +576,24 @@ static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, Map
             has_string_index = true;
         }
     }
-    if (!members->prop_count && !has_string_index) return nullptr;
     // A recursive mapped type (`{ [K in keyof V]: Foo<V[K]> }`) reverse maps its property types again, all the way
     // down: tsc's reverse mapped types resolve their members lazily, these are built right away and cut off
-    if (my reverse_mapped_depth >= 4) return nullptr;
+    if ((!source_prop_count && !has_string_index) || my reverse_mapped_depth >= 4) {
+        free(source_props);
+        return nullptr;
+    }
     my reverse_mapped_depth++;
-    ObjectLiteralProp* props = calloc(members->prop_count + 1, sizeof(ObjectLiteralProp));
-    panic_if(!props, "out of memory");
-    for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+    for (u32 i = 0; i < source_prop_count; i++) {
+        ObjectLiteralProp* prop = &source_props[i];
         u32 flags = prop->flags & (PROP_OPTIONAL | PROP_READONLY);
         if (mapped->optional > 0) flags &= ~(u32)PROP_OPTIONAL; // `?` in the mapped type: T's property needn't be
         if (mapped->readonly > 0) flags &= ~(u32)PROP_READONLY;
-        props[i] = (ObjectLiteralProp){
-            .name = prop->name,
-            .flags = flags,
-            .type = reverse_mapped_prop_type(me, prop_type(me, prop), mapped, operand),
-        };
+        prop->flags = flags;
+        prop->type = reverse_mapped_prop_type(me, prop->type, mapped, operand);
     }
     if (has_string_index) string_index.value = reverse_mapped_prop_type(me, string_index.value, mapped, operand);
-    Ty const* ret = ty_object_literal(me, props, members->prop_count, &string_index, has_string_index ? 1 : 0, OBJECT_SYNTHETIC);
-    free(props);
+    Ty const* ret = ty_object_literal(me, source_props, source_prop_count, &string_index, has_string_index ? 1 : 0, OBJECT_SYNTHETIC);
+    free(source_props);
     my reverse_mapped_depth--;
     return ret;
 }
