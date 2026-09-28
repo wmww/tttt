@@ -186,6 +186,10 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
     // (A static block's decorators are TS1206 and nothing else: tsc's checkClassStaticBlockDeclaration doesn't check
     // them. Their names are still resolved for the baselines)
     ErrorCtx* decorator_errs = my tag == CLASS_ITEM_STATIC_BLOCK ? binder_discarded_errs(names->binder) : errs;
+    if (my tag == CLASS_ITEM_FIELD) {
+        names = scope_new(names, SCOPE_BLOCK);
+        names->in_field = true;
+    }
     for_each (i, vec_expr, &my decorators) {
         lookup_names_without_super(i, names, NO_SUPER_DECORATOR, decorator_errs);
     }
@@ -882,6 +886,51 @@ static bool same_member(ClassItem const* a, ClassItem const* b) {
     return !a->method.computed_key && !b->method.computed_key && cstr_eq(&a->method.name_string, &b->method.name_string);
 }
 
+// tsc's checkConstructorDeclarationDiagnostics: without standard class fields, a derived class with initialized
+// instance properties, parameter properties or private names runs their initialization right after `super(...)`,
+// which then has to be a statement of the constructor's body
+static bool class_super_call_should_be_root(ClassDecl const* me, FunctionImpl const* constructor) {
+    CompilerOptions const* options = compiler_options();
+    if (options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022) return false;
+    for_each (i, vec_class_item, &my items) {
+        if (span_valid(class_item_private_name(i))) return true;
+        if (i->tag == CLASS_ITEM_FIELD && !i->field.is_static && i->field.value.tag != EXPR_IMPLICIT_ANY) return true;
+    }
+    for_each (arg, vec_function_arg, &constructor->args) {
+        if (arg->is_parameter_property) return true;
+    }
+    return false;
+}
+
+// TS2401 when the call isn't a statement of the body, else TS2376 when a statement before it refers to `this` or
+// `super` (tsc's nodeImmediatelyReferencesSuperOrThis: not in a nested function or arrow function)
+static void check_super_call_root(Span name, FunctionImpl const* func, Expr const* super_call, ErrorCtx* errs) {
+    Statement const* statement = nullptr;
+    for_each (i, vec_statement, &func->body.statements) {
+        if (i->tag == STATEMENT_EXPR && &i->expr == super_call) { // (Parentheses are the same Expr)
+            statement = i;
+            break;
+        }
+    }
+    if (!statement) {
+        error_ctx_error_d(errs, super_call->outer_span, 2401, "A 'super' call must be a root-level statement within a ",
+            "constructor of a derived class that contains initialized properties, parameter properties, or private ",
+            "identifiers.");
+        return;
+    }
+    Span first = func->first_this_or_super;
+    Span body = block_span(&func->body);
+    if (span_valid(first) && span_valid(body) && span_start_ptr(first) >= span_start_ptr(body) &&
+        span_start_ptr(first) < span_start_ptr(statement->span)
+    ) {
+        // (At the `constructor` keyword: the name span runs to the parameters)
+        while (name.sv.size && (name.sv.buf[name.sv.size - 1] == ' ' || name.sv.buf[name.sv.size - 1] == '\t')) name.sv.size--;
+        error_ctx_error_d(errs, name, 2376, "A 'super' call must be the first statement in the ",
+            "constructor to refer to 'super' or 'this' when a derived class contains initialized properties, parameter ",
+            "properties, or private identifiers.");
+    }
+}
+
 static Span overload_name(ClassItem const* item) {
     return item->tag == CLASS_ITEM_CONSTRUCTOR ? item->constructor.name_span : item->method.name_span;
 }
@@ -1352,6 +1401,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                     } else if (!super_call && !extends_null) {
                         error_ctx_error_d(errs, i->constructor.name_span, 2377,
                             "Constructors for derived classes must contain a 'super' call.");
+                    }
+                    if (super_call && class_super_call_should_be_root(me, &i->constructor.func)) {
+                        check_super_call_root(i->constructor.name_span, &i->constructor.func, super_call, errs);
                     }
                 }
                 if (i->constructor.func.has_body) constructor_count++; // Overloads are fine

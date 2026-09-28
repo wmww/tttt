@@ -374,6 +374,9 @@ typedef struct Scope {
     // A computed member name, a member decorator or a constructor's parameters: `super` can't be used, tsc's
     // isLegalUsageOfSuperExpression (see resolve_super())
     NoSuper no_super;
+    // Everything of a class's field (decorators, computed name, initializer): not directly in a constructor it's
+    // nested in (tsc's isThisContainerOrFunctionBlock has PropertyDeclaration)
+    bool in_field;
     // The scope of a decorator of this class (for a member decorator, no_super is NO_SUPER_DECORATOR instead): an ES
     // decorator runs before the class is initialized (tsc's isBlockScopedNameDeclaredBeforeUse)
     struct ClassDecl const* decorator_of;

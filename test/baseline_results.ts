@@ -29201,7 +29201,7 @@ const baselines = {
         types: true,
     },
     'strictModeInConstructor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35601,7 +35601,7 @@ const baselines = {
         types: true,
     },
     'derivedClassParameterProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35616,12 +35616,12 @@ const baselines = {
         types: true,
     },
     'derivedClassSuperProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'derivedClassSuperStatementPosition': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -36291,7 +36291,7 @@ const baselines = {
         types: true,
     },
     'privateNameBadSuper': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

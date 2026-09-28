@@ -382,8 +382,25 @@ static bool entity_names_interface(Scope* names, Expr const* entity) {
     return entity_name_symbol(names, entity, SYMBOL_INTERFACE) != nullptr;
 }
 
+// In a constructor and not in a function, arrow function or class field in it (tsc's isThisContainerOrFunctionBlock:
+// a nested class's property declaration, its decorators and computed name included; a method's decorators count)
+static bool directly_in_constructor(Scope const* names) {
+    FunctionImpl const* constructor = names->function;
+    if (!constructor || !constructor->is_constructor) return false;
+    for (Scope const* scope = names; scope; scope = scope->parent) {
+        if (scope->kind == SCOPE_FUNCTION && scope->function == constructor) return true;
+        if (scope->in_field) return false;
+    }
+    return false;
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
+        if ((my keyword == KEYWORD_IDENTIFIER_THIS || (my keyword == KEYWORD_IDENTIFIER_SUPER && !my super_call)) &&
+            directly_in_constructor(names) && !span_valid(names->function->first_this_or_super)
+        ) {
+            names->function->first_this_or_super = my name;
+        }
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
             ThisRef this_ref = scope_get_this(names, false);
             my this_kind = this_ref.kind;
