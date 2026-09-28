@@ -336,26 +336,34 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
     if (ty->anonymous.applies_type_args) {
         // An instantiation expression whose type arguments mention the type parameters: `typeof C<O>` in `type R<O>`
-        // is `typeof C<string>` for R<string>. HACK: one whose object type mentions them too isn't instantiated (its
-        // signatures' type parameters would be others)
+        // is `typeof C<string>` for R<string>. An object type that may mention them too (a function type: whose free
+        // type parameters aren't known) keeps the outer mapping alongside the type arguments, so its signatures, whose
+        // own type parameters the arguments replace, get both (`typeof raise<T>` in `interface Enq<T>`)
         TyMapper const* args = ty->anonymous.mapper;
-        Ty const* stack_targets[16];
-        Ty const** targets = args->len <= c_arraylen(stack_targets) ? stack_targets : malloc(sizeof(Ty const*) * args->len);
-        panic_if(!targets, "out of memory");
         bool changed = false;
+        for (u32 i = 0; i < args->len && !changed; i++) changed = ty_instantiate(me, args->targets[i], mapper) != args->targets[i];
+        Ty const* target = ty->anonymous.target;
+        bool outer = ty_instantiate(me, target, mapper) != target;
+        if (!changed && !outer) return ty;
+        u32 cap = args->len + (outer ? mapper->len : 0);
+        Ty const** sources = malloc(sizeof(Ty const*) * cap * 2);
+        panic_if(!sources, "out of memory");
+        Ty const** targets = sources + cap;
+        u32 len = 0;
         for (u32 i = 0; i < args->len; i++) {
-            targets[i] = ty_instantiate(me, args->targets[i], mapper);
-            changed |= targets[i] != args->targets[i];
+            sources[len] = args->sources[i];
+            targets[len++] = ty_instantiate(me, args->targets[i], mapper);
         }
-        Ty const* ret = ty;
-        if (changed && ty_instantiate(me, ty->anonymous.target, mapper) == ty->anonymous.target) {
-            TyMapper const* applied = ty_mapper_new(
-                me, (TyList){ .data = args->sources, .len = args->len }, (TyList){ .data = targets, .len = args->len }
-            );
-            ret = ty_apply_type_arguments_mapper(me, ty->anonymous.target, applied);
+        for (u32 i = 0; outer && i < mapper->len; i++) {
+            bool shadowed = mapper->sources[i] == mapper->targets[i];
+            for (u32 j = 0; j < args->len; j++) shadowed |= args->sources[j] == mapper->sources[i];
+            if (shadowed) continue;
+            sources[len] = mapper->sources[i];
+            targets[len++] = mapper->targets[i];
         }
-        if (targets != stack_targets) free(targets);
-        return ret;
+        TyMapper const* applied = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
+        free(sources);
+        return ty_apply_type_arguments_mapper(me, target, applied);
     }
     Ty const* as_list = instantiate_mapped_over_list(me, ty, mapper);
     if (as_list) return as_list;
