@@ -36661,7 +36661,7 @@ const baselines = {
         types: true,
     },
     'privateNameSetterNoGetter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36991,7 +36991,7 @@ const baselines = {
         types: true,
     },
     'privateWriteOnlyAccessorRead': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

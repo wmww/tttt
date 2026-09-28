@@ -3116,7 +3116,21 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
     Ty const* apparent = ty_apparent_type(me, object);
     if (!(apparent->flags & TYF_OBJECT)) return false;
     Members const* members = ty_members(me, apparent);
-    if (lexical && lexical->symbol && ty_get_prop(me, apparent, ty_private_name(me, lexical->symbol, name.sv))) return false;
+    Prop const* own = lexical && lexical->symbol ? ty_get_prop(me, apparent, ty_private_name(me, lexical->symbol, name.sv)) : nullptr;
+    if (own) {
+        bool setter = false, getter = false;
+        for_each (i, vec_class_item, &lexical->items) {
+            if (i->tag != CLASS_ITEM_METHOD || !csview_equals_sv(i->method.name_span.sv, name.sv)) continue;
+            setter |= i->method.accessor == CLASS_ACCESSOR_SET;
+            getter |= i->method.accessor == CLASS_ACCESSOR_GET;
+        }
+        if (setter && !getter && access->assignment_target != FLOW_TARGET_DEFINITE) {
+            // The whole access (tsc's error(node))
+            Span at = span_make(name.source, span_start_ptr(access->expr.outer_span), span_end_ptr(name));
+            error_ctx_error_d(errs, at, 2806, "Private accessor was defined without a getter.");
+        }
+        return false;
+    }
     // A private name of the same spelling on the type is another class's
     Prop const* other = nullptr;
     for (u32 i = 0; i < members->prop_count && !other; i++) {
