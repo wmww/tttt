@@ -19741,7 +19741,7 @@ const baselines = {
         types: false,
     },
     'jsdocReferenceGlobalTypeInCommonJs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49951,7 +49951,7 @@ const baselines = {
         types: false,
     },
     'umd5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49966,7 +49966,7 @@ const baselines = {
         types: true,
     },
     'umd8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

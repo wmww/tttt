@@ -394,6 +394,20 @@ static bool directly_in_constructor(Scope const* names) {
     return false;
 }
 
+// tsc's resolveNameHelper: a module can't use the value of a UMD global (`export as namespace Foo` of a declaration
+// file) without an import, unless allowUmdGlobalAccess
+static void check_umd_global_use(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    if (!symbol || !symbol->decl_count || !names->file || !names->file->is_module) return;
+    if (compiler_options()->allow_umd_global_access) return;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind != SYMBOL_DECL_ALIAS || ((PortItem const*)decl->node)->tag != PORT_EXPORT_AS_NAMESPACE) return;
+    }
+    error_ctx_error_d(errs, my name, 2686, "'", my name, "' refers to a UMD global, but the current file is a module. ",
+        "Consider adding an import instead.");
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if ((my keyword == KEYWORD_IDENTIFIER_THIS || (my keyword == KEYWORD_IDENTIFIER_SUPER && !my super_call)) &&
@@ -502,6 +516,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         check_type_only_value(me, names, errs);
         check_declared_before_use(me, names, errs);
         check_parameter_reference(me, names, errs);
+        check_umd_global_use(me, names, errs);
         my outer_reference = my target->flow_start && names->flow && names->flow->start != my target->flow_start;
     } else if (span_equals(my name, "arguments") && scope_has_arguments(names)) {
         // No symbol: ty_identifier_reference_type() makes it IArguments
