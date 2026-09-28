@@ -89,11 +89,44 @@ ClassItem* class_decl_find_member(ClassDecl const* me, csview name, bool is_stat
     return nullptr;
 }
 
+// What `this.x` is at the end of a flow container: null if nothing but null/undefined was assigned (tsc's
+// getFlowTypeInConstructor)
+static Ty const* field_flow_type(Checker* checker, Expr const* reference, FlowNode const* end) {
+    Ty const* ret = ty_flow_type(checker, reference, ty_intrinsic(checker, TY_AUTO), ty_intrinsic(checker, TY_UNDEFINED), end);
+    if (ret == ty_intrinsic(checker, TY_AUTO)) return ty_intrinsic(checker, TY_ANY);
+    if (ret->kind != TY_UNION) return ret->flags & TYF_NULLABLE ? nullptr : ret;
+    for (u32 i = 0; i < ret->composite.types.len; i++) {
+        if (!(ret->composite.types.data[i]->flags & TYF_NULLABLE)) return ret;
+    }
+    return nullptr;
+}
+
+// A TypeScript field without a type or initializer under noImplicitAny: the type `this.x` has at the end of the
+// constructor, or of the first static block that assigns more than null/undefined. Null: none (any)
+static Ty const* field_type_from_assignments(Checker* checker, ClassItem const* me) {
+    if (!my field.ts_assigned || !compiler_options()->no_implicit_any) return nullptr;
+    for_each (i, vec_class_item, &my field.ts_assigned_class->items) {
+        if (my field.is_static && i->tag == CLASS_ITEM_STATIC_BLOCK && i->static_block_return_flow) {
+            Ty const* ret = field_flow_type(checker, my field.ts_assigned, i->static_block_return_flow);
+            if (ret) return ret;
+        }
+        if (!my field.is_static && i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) {
+            FlowNode const* end = i->constructor.func.return_flow;
+            return end ? field_flow_type(checker, my field.ts_assigned, end) : nullptr;
+        }
+    }
+    return nullptr;
+}
+
 Ty const* class_item_field_evaluate_type(ClassItem* me) {
     check(my tag == CLASS_ITEM_FIELD);
     Checker* checker = current_checker;
     if (my field.has_explicit_type) return ty_of_node(&my field.explicit_type);
     if (my field.js_assigned) return ty_type_of_symbol(checker, my field.js_assigned);
+    if (my field.value.tag == EXPR_IMPLICIT_ANY) {
+        Ty const* assigned = field_type_from_assignments(checker, me);
+        if (assigned) return assigned;
+    }
     Ty const* ret = ty_widened_for_declaration(checker, ty_expr_type(checker, &my field.value), !my field.is_readonly);
     // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
     if ((ret->flags & TYF_UNIQUE_ES_SYMBOL) && ret->literal.unique->key != me) ret = ty_intrinsic(checker, TY_ES_SYMBOL);
@@ -209,7 +242,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
         case CLASS_ITEM_STATIC_BLOCK:
             Scope* block_scope = scope_new(names, SCOPE_STATIC_BLOCK);
             block_add_names(&my static_block, block_scope);
-            block_lookup_names_inline_container(&my static_block, block_scope, errs);
+            my static_block_return_flow = block_lookup_names_inline_container(&my static_block, block_scope, errs);
             break;
     }
 }

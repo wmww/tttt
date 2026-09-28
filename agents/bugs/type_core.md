@@ -104,9 +104,6 @@ Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `displa
 - selfReferentialDefaultNoStackOverflow wants TS7022 on `export default { mixins: [DefaultSpinner] }` importing itself.
 
 ## Classes and declarations
-- TypeScript fields assigned in the constructor get their type from it (getFlowTypeInConstructor); tttt only skips
-  TS7008 for them (`ClassItem.field.ts_assigned`): classAttributeInferenceTemplate, classStaticBlockUseBeforeDef1/2/4/5,
-  controlFlowPrivateClassField (types).
 - `this` in a class member's computed name: tsc types it as the class instance, tttt any (computedPropertyNames21/23
   types). computedPropertyNames49/50 pass errors now, fail symbols/types.
 - Duplicate class/interface members show as separate symbols (tsc: one merged symbol).

@@ -3473,12 +3473,12 @@ const baselines = {
     'classAccessorInitializationInferenceWithElementAccess1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAttributeInferenceTemplate': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAttributeInferenceTemplateJS': {
         errors: true,
@@ -3943,7 +3943,7 @@ const baselines = {
     'classPropInitializationInferenceWithElementAccess': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classPropertyErrorOnNameOnly': {
         errors: false,
@@ -6868,7 +6868,7 @@ const baselines = {
     'controlFlowAutoAccessor1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowBreakContinueWithLabel': {
         errors: true,
@@ -6993,7 +6993,7 @@ const baselines = {
     'controlFlowPrivateClassField': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowPropertyDeclarations': {
         errors: true,
@@ -35418,22 +35418,22 @@ const baselines = {
     'classStaticBlockUseBeforeDef1(target=es2022)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlockUseBeforeDef1(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlockUseBeforeDef2(target=es2022)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlockUseBeforeDef2(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlockUseBeforeDef3': {
         errors: true,
@@ -35443,12 +35443,12 @@ const baselines = {
     'classStaticBlockUseBeforeDef4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlockUseBeforeDef5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classWithoutExplicitConstructor': {
         errors: true,

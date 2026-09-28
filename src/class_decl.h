@@ -68,12 +68,17 @@ typedef struct ClassItem {
             // it has (tsc's isAutoTypedProperty). Set by the resolve walk
             struct Symbol const* js_assigned;
             // TypeScript, without a type or initializer: the constructor (a static block, for a static field) assigns
-            // `this.x` directly, which tsc types the field by (getFlowTypeInConstructor, not implemented) instead of
-            // reporting it implicitly any. Set by the resolve walk
-            bool ts_assigned;
+            // `this.x` directly, which types the field under noImplicitAny (tsc's getFlowTypeInConstructor /
+            // getFlowTypeInStaticBlocks) instead of it being implicitly any. The first such `this.x`, which the flow
+            // query at the end of the constructor / static blocks goes by, and the class. Set by the resolve walk
+            Expr const* ts_assigned;
+            struct ClassDecl const* ts_assigned_class;
         } field;
         InterfaceMember interface_memeber;
-        Block static_block;
+        struct {
+            Block static_block;
+            FlowNode const* static_block_return_flow; // Every way out, like FunctionImpl.return_flow
+        };
     };
 } ClassItem;
 

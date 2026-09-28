@@ -50,7 +50,7 @@ void block_lookup_names_as(Block const* me, bool is_block, Scope* names, ErrorCt
 }
 
 // A `static {}` block of a class runs where the class is evaluated: part of the flow around it, like an IIFE
-void block_lookup_names_inline_container(Block const* me, Scope* scope, ErrorCtx* errs) {
+FlowNode const* block_lookup_names_inline_container(Block const* me, Scope* scope, ErrorCtx* errs) {
     FlowBuilder* outer = scope->flow;
     FlowBuilder flow;
     flow_builder_init(&flow, outer, scope, nullptr, errs);
@@ -78,6 +78,7 @@ void block_lookup_names_inline_container(Block const* me, Scope* scope, ErrorCtx
         outer->current = flow.current;
         outer->has_flow_effects |= flow.has_flow_effects;
     }
+    return flow.current;
 }
 
 void block_lookup_names_container(Block const* me, bool is_block, csview kind, Span name, Scope* scope, ErrorCtx* errs) {

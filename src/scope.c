@@ -3235,7 +3235,10 @@ void scope_note_ts_this_assignment(Scope const* me, BinaryOpExpr const* op) {
     Symbol const* class_symbol = object->identifier.target;
     ClassDecl const* class_decl = class_symbol ? symbol_find_node(class_symbol, SYMBOL_DECL_CLASS) : nullptr;
     ClassItem* field = class_decl ? class_decl_find_member(class_decl, name.sv, is_static) : nullptr;
-    if (field) field->field.ts_assigned = true;
+    if (field && field->tag == CLASS_ITEM_FIELD && !field->field.ts_assigned) {
+        field->field.ts_assigned = left;
+        field->field.ts_assigned_class = class_decl;
+    }
 }
 
 static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const* jsdoc_type, uint8_t jsdoc_modifiers);

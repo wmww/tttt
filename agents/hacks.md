@@ -287,8 +287,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   constructor return type).
 - `FunctionImpl.private_ambient` is set by `class_decl_typecheck` right before checking the member (AST mutation in
   the typecheck walk; FunctionImpl doesn't know its access modifier).
-- `ClassItem.field.ts_assigned` (`scope_note_ts_this_assignment()`): a field the constructor assigns only skips TS7008;
-  its type isn't taken from that flow (getFlowTypeInConstructor).
+- `ClassItem.field.ts_assigned` (`field_type_from_assignments()`, class_decl.c): tsc's getFlowTypeInConstructor queries
+  a synthetic `this.x`; tttt reuses the first real `this.x = ` target of the constructor / static block as the
+  reference (none: the field is any anyway). Not ported: an ambient `declare x;` taking the base class property's type.
 - `expr_requires_scope_change()` (function_impl.c, TS2373) is a hand-written expression walk (no JSX): tttt has no
   generic expression visitor.
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS` (ty.h HACK): what the operator checks mean by "extends number" (null/undefined
