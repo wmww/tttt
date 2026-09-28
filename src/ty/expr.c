@@ -225,6 +225,14 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     if (my flow_uncached) return ret;
     // (What such a reference is while type arguments are inferred isn't what it is once they are)
     if (my inferential_depth && identifier_uses_context(me, expr)) return ret;
+    // A call typed while an outer call infers, against a contextual type that mentions the type parameters being inferred,
+    // saw the inferences so far (see OuterInference), which a later look at the memo (the error pass resolves the call
+    // again with its contextual type) doesn't: it doesn't replace what was typed against the instantiated contextual type
+    if (expr->tag == EXPR_CALL && my outer_inference && ctx.contextual && (ctx.contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        if (memo && memo->done && !memo->speculative) return ret;
+        lazy_type_set_speculative(lazy, ret, ctx.contextual);
+        return ret;
+    }
     lazy_type_set(lazy, ret, ctx.contextual);
     return ret;
 }
