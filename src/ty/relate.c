@@ -4412,7 +4412,8 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
         }
         break;
     }
-    // findMostOverlappyType: the (last) member sharing the most property names with the source
+    // findMostOverlappyType: the (last) member sharing the most property names with the source (keys, so an index
+    // signature takes every name it applies to)
     Ty const* best = nullptr;
     if (structured_source) {
         Members const* members = ty_members(me, source);
@@ -4421,7 +4422,11 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
             Ty const* t = types.data[i];
             if (!(t->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
             u32 count = 0;
-            for (u32 p = 0; p < members->prop_count; p++) count += ty_get_prop(me, t, members->props[p]->name) != nullptr;
+            for (u32 p = 0; p < members->prop_count; p++) {
+                Atom const* name = members->props[p]->name;
+                count += find_prop(me, apparent_type(me, t), name, 0).found ||
+                    ty_applicable_index_info(me, t, ty_prop_name_literal(me, name));
+            }
             if (count && count >= best_count) {
                 best = t;
                 best_count = count;

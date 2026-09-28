@@ -189,7 +189,13 @@ static Prop const* target_prop_of(Checker* me, Ty const* target, Atom const* nam
 // tsc's getBestMatchIndexedAccessTypeOrUndefined
 static Ty const* best_match_indexed_access(Checker* me, Ty const* source, Ty const* target, Ty const* name_type) {
     if (ty_is_generic_object(me, target)) return nullptr;
-    Ty const* ret = ty_access(me, target, name_type);
+    // (ty_access() reads past a union's null and undefined, tsc's getIndexedAccessTypeOrUndefined finds nothing in them:
+    // `["x"]` against `readonly T[] | T | undefined` goes to the best matching member)
+    bool nullable_member = false;
+    for (u32 i = 0; target->kind == TY_UNION && i < target->composite.types.len; i++) {
+        nullable_member |= (target->composite.types.data[i]->flags & TYF_NULLABLE) != 0;
+    }
+    Ty const* ret = nullable_member ? nullptr : ty_access(me, target, name_type);
     if (ret || target->kind != TY_UNION) return ret;
     Ty const* best = ty_best_matching_type(me, source, target);
     return best && !ty_is_generic_object(me, best) ? ty_access(me, best, name_type) : nullptr;
