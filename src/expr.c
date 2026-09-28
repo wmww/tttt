@@ -287,7 +287,11 @@ static void check_parameter_reference(IdentifierExpr const* me, Scope const* nam
 static bool scope_has_arguments(Scope const* scope) {
     bool arrows = compiler_options()->target < SCRIPT_TARGET_ES2015;
     for (; scope; scope = scope->parent) {
-        if (scope->kind == SCOPE_FUNCTION && scope->function && (arrows || !span_valid(scope->function->arrow_span))) {
+        // (Not a signature: tsc's resolveName gives `arguments` to function declarations and expressions, methods,
+        // constructors and accessors only)
+        if (scope->kind == SCOPE_FUNCTION && scope->function && !scope->function->is_type &&
+            (arrows || !span_valid(scope->function->arrow_span))
+        ) {
             return true;
         }
     }

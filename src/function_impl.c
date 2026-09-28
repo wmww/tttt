@@ -254,7 +254,13 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     }
     type_flow_restore(saved_flow);
     function_scope->no_super = NO_SUPER_NONE;
-    type_lookup_names(&my ret, function_scope, errs);
+    if (my has_body) {
+        Scope* return_scope = scope_new(function_scope, SCOPE_BLOCK);
+        return_scope->return_type = true;
+        type_lookup_names(&my ret, return_scope, errs);
+    } else {
+        type_lookup_names(&my ret, function_scope, errs);
+    }
     for (u32 i = 0; i < my jsdoc_overload_count; i++) {
         for_each (item, vec_generic_item, &my jsdoc_overloads[i].callable->function->generic.items) {
             if (!item->jsdoc_shared) continue;

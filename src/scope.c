@@ -2856,7 +2856,7 @@ csview symbol_default_export_local_name(Symbol const* me) {
 
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     u64 hash = symbol_name_hash(name);
-    bool from_parameters = false;
+    bool from_parameters = false, from_return_type = false;
     bool arguments = (meaning & SYMBOL_VARIABLE) && csview_equals(name, "arguments");
     bool arrows_have_arguments = compiler_options()->target < SCRIPT_TARGET_ES2015;
     bool jsdoc_parameter_type = false;
@@ -2872,10 +2872,11 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
             ) {
                 found = nullptr;
             }
+            if (from_return_type && found && !found->is_parameter) found = nullptr;
             if (found && !body_variable && symbol_has_meaning(found, meaning)) return found;
         }
         if (scope->kind == SCOPE_FUNCTION) jsdoc_parameter_type = false;
-        if (arguments && scope->kind == SCOPE_FUNCTION && scope->function &&
+        if (arguments && scope->kind == SCOPE_FUNCTION && scope->function && !scope->function->is_type &&
             (arrows_have_arguments || !span_valid(scope->function->arrow_span))
         ) {
             // A function's own `arguments` hides outer declarations (tsc's resolveNameHelper returns argumentsSymbol):
@@ -2883,6 +2884,7 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
             return nullptr;
         }
         from_parameters = scope->parameters && !scope->parameters_see_body;
+        from_return_type = scope->return_type;
         if (scope->container && scope->container->is_module && scope->container->exports) {
             // `A` of `export default class A` (tsc's resolveName)
             Symbol* found = symbol_table_lookup(scope->container->exports, c_sv("default"), symbol_name_hash(c_sv("default")));
@@ -2894,8 +2896,11 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
         }
         if (scope->container && scope->container->exports) {
             Symbol* found = symbol_table_lookup(scope->container->exports, name, hash);
+            // An enum and a namespace merged share their exports: an enum sees only the members, a namespace all but
+            // them (tsc's resolveNameHelper looks up SymbolFlags.EnumMember, SymbolFlags.ModuleMember)
+            u32 visible = scope->kind == SCOPE_ENUM ? SYMBOL_ENUM_MEMBER : ~(u32)SYMBOL_ENUM_MEMBER;
             // `export { a }` must not find itself
-            if (found && !is_export_specifier_alias(found) && symbol_has_meaning(found, meaning)) return found;
+            if (found && !is_export_specifier_alias(found) && symbol_has_meaning(found, meaning & visible)) return found;
         }
     }
     return nullptr;

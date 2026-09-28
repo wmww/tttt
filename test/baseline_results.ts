@@ -941,9 +941,9 @@ const baselines = {
         types: true,
     },
     'arguments': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'argumentsAsPropertyName': {
         errors: true,
@@ -11136,9 +11136,9 @@ const baselines = {
         types: true,
     },
     'enumWithExport': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'enumWithInfinityProperty': {
         errors: true,
@@ -14421,8 +14421,8 @@ const baselines = {
         types: false,
     },
     'functionVariableInReturnTypeAnnotation': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'functionWithAnyReturnTypeAndNoReturnExpression': {
@@ -21091,9 +21091,9 @@ const baselines = {
         types: true,
     },
     'mergedDeclarations2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mergedDeclarations3': {
         errors: true,
