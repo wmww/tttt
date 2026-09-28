@@ -30016,9 +30016,9 @@ const baselines = {
         types: true,
     },
     'taggedPrimitiveNarrowing': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'taggedTemplateStringWithSymbolExpression01': {
         errors: true,

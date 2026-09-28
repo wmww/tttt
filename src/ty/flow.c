@@ -210,6 +210,14 @@ static u32 type_facts(Checker* me, Ty const* ty, u32 mask) {
         return facts;
     }
     if (flags & TYF_INTERSECTION) {
+        // A generic one goes by its base constraint as a whole (`string & T` with an object constraint is a string)
+        bool generic = false;
+        for (u32 i = 0; i < ty->composite.types.len; i++) generic |= (ty->composite.types.data[i]->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
+        if (generic) {
+            Ty const* constraint = ty_base_constraint(me, ty);
+            if (!constraint) return TF_ALL & ~TF_IS_UNDEFINED_OR_NULL;
+            if (constraint != ty) return type_facts(me, constraint, mask);
+        }
         // Object types next to a primitive are presumably tags (`string & { __brand: true }`)
         bool ignore_objects = false;
         for (u32 i = 0; i < ty->composite.types.len; i++) {
