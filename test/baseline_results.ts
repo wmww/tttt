@@ -6833,12 +6833,12 @@ const baselines = {
     'contravariantOnlyInferenceWithAnnotatedOptionalParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contravariantOnlyInferenceWithAnnotatedOptionalParameterJs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contravariantTypeAliasInference': {
         errors: true,

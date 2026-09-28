@@ -179,7 +179,11 @@ static void infer_step(Checker* me, Inference* inf, InferStep step, Ty const* so
 // The type of parameter position i of `sig` instantiated with `mapper` (tsc's getTypeAtPosition, without optionality):
 // a rest parameter stands for every position from its own on, a rest tuple for its elements. Null past the end
 static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapper const* mapper) {
-    if (i < sig->param_count && !sig->params[i].rest) return ty_instantiate(me, sig->params[i].type, mapper);
+    if (i < sig->param_count && !sig->params[i].rest) {
+        // (An optional parameter's type has the undefined, tsc's getTypeAtPosition)
+        Ty const* type = ty_instantiate(me, sig->params[i].type, mapper);
+        return sig->params[i].optional ? ty_optional_param_type(me, type) : type;
+    }
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
     Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
     if (ty_is_tuple(rest)) {
@@ -215,7 +219,8 @@ static void infer_from_params(
         }
         Ty const* source_type = source_type_at(me, source, i, mapper);
         if (!source_type) break;
-        infer_step(me, inf, step, source_type, target_param->type);
+        infer_step(me, inf, step, source_type,
+            target_param->optional ? ty_optional_param_type(me, target_param->type) : target_param->type);
     }
 }
 
