@@ -368,8 +368,23 @@ static bool block_is_instantiated(Block const* me, bool const_enums, Scope const
 }
 
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props) {
+    // tsc's checkGrammarModuleElementContext: directly in a file or a namespace body, else only this is said about it
+    bool misplaced = my labeled || !(scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_MODULE ||
+        scope->kind == SCOPE_NAMESPACE || scope->kind == SCOPE_GLOBAL_AUGMENTATION);
+    ErrorCtx* errs = misplaced ? nullptr : scope->errs;
+    bool checked = true;
+    for (Scope const* i = scope; i && checked; i = i->parent) checked = !i->with_body;
+    if (misplaced && checked) {
+        Span first = my full_span;
+        isize len = 0;
+        while (len < first.sv.size && (isalnum((unsigned char)first.sv.buf[len]) || first.sv.buf[len] == '_')) len++;
+        first.sv.size = len;
+        error_ctx_grammar_error_d(scope->errs, first, (my is_global || my is_ambient_module) ? 1234 : 1235,
+            (my is_global || my is_ambient_module) ? "An ambient module declaration is only allowed at the top level in a file." :
+            "A namespace declaration is only allowed at the top level of a namespace or module.");
+    }
     if (my is_global && !props.declared && !scope->ambient) {
-        error_ctx_error_d(scope->errs, my name, 2670,
+        error_ctx_error_d(errs, my name, 2670,
             "Augmentations for the global scope should have 'declare' modifier unless they appear in already ambient context.");
     }
 
@@ -381,7 +396,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
         bool in_script_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container &&
             scope->container->is_module && scope->parent && scope->parent->kind == SCOPE_SCRIPT;
         if (my is_global && (scope->kind == SCOPE_SCRIPT || (scope->kind != SCOPE_MODULE && !in_script_ambient_module))) {
-            error_ctx_error_d(scope->errs, my name, 2669, "Augmentations for the global scope can only be directly nested "
+            error_ctx_error_d(errs, my name, 2669, "Augmentations for the global scope can only be directly nested "
                 "in external modules or ambient module declarations.");
             // It augments nothing then: a namespace named `global` (tsc's binder declares a ValueModule for it)
             my is_global = false;
@@ -389,9 +404,9 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
         } else if (!my is_global && scope->kind == SCOPE_SCRIPT && my module_ref &&
             module_name_is_relative(cstr_sv(&my module_ref->path))
         ) {
-            error_ctx_error_d(scope->errs, my name, 2436, "Ambient module declaration cannot specify relative module name.");
+            error_ctx_error_d(errs, my name, 2436, "Ambient module declaration cannot specify relative module name.");
         } else if (!my is_global && scope->kind != SCOPE_SCRIPT && scope->kind != SCOPE_MODULE && !in_script_ambient_module) {
-            error_ctx_error_d(scope->errs, my name, 2435, "Ambient modules cannot be nested in other modules or namespaces.");
+            error_ctx_error_d(errs, my name, 2435, "Ambient modules cannot be nested in other modules or namespaces.");
         }
     }
 
@@ -890,6 +905,7 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_LABELED:
+            if (my labeled.body->tag == STATEMENT_DECL_NAMESPACE) my labeled.body->decl.namespace.labeled = true;
             statement_add_names(my labeled.body, scope);
             break;
 
@@ -1227,6 +1243,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             // tsc binds the body like any other statement but never checks it, so nothing the checker would say
             // about it is said (not even names that aren't found)
             Scope* body_scope = scope_new(names, SCOPE_BLOCK);
+            body_scope->with_body = true;
             statement_add_names(&with->body, body_scope);
             statement_resolve_names(&with->body, body_scope, nullptr);
         }   break;

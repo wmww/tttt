@@ -32251,12 +32251,12 @@ const baselines = {
         types: true,
     },
     'unreachableDeclarations(preserveconstenums=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unreachableDeclarations(preserveconstenums=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63371,12 +63371,12 @@ const baselines = {
         types: true,
     },
     'labeledStatementWithLabel': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'labeledStatementWithLabel_es2015': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

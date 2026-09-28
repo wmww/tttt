@@ -388,6 +388,7 @@ typedef struct Scope {
     Symbol const* self;
     // Strict mode code (tsc's inStrictMode): a module, alwaysStrict, a "use strict" prologue, a class body
     bool strict;
+    bool with_body; // The body of a `with` statement: bound, never checked (tsc's checker skips it)
     // The statements declared in this scope (block_add_names()), null if none were
     struct Block const* block;
     // The type and initializer of an instance field of a class with a constructor, when fields are initialized in the

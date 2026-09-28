@@ -93,6 +93,7 @@ typedef struct NamespaceDecl {
     bool is_shorthand; // `declare module "name";`: everything imported from it is any
     ModuleRef* module_ref; // Of an ambient module
     bool is_augmentation; // `declare module "./a" {}` in a module: adds to the module it names
+    bool labeled; // The body of a labeled statement (a context it isn't allowed in, TS1234/TS1235)
     Block contents;
     Scope* inner_scope;
     Symbol* symbol;
