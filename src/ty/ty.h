@@ -1242,6 +1242,8 @@ bool ty_evaluate_string(Checker* me, Expr const* expr, cstr* out); // enums.c, t
 Ty const* ty_enum_of_member(Checker* me, Ty const* member); // The enum type an enum literal belongs to
 bool ty_is_enum_union(Ty const* ty);
 
+// check.c: tsc's getSuggestedSymbolForNonexistentProperty, the property of `object` spelled most like `name` (null if none)
+Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name);
 // relate.c
 bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation);
 // Why source isn't related to target, outermost line first. The first line is the natural head of the error: TS2322

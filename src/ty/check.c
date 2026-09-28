@@ -1089,7 +1089,7 @@ static Symbol const* instance_class(Ty const* object) {
 
 // tsc's getSuggestedSymbolForNonexistentProperty: the property of `object` whose name is closest to `name` (of a union,
 // those all its members have)
-static Prop const* suggested_property(Checker* me, Ty const* object, csview name) {
+Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
     TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
     Ty const* first = nullptr;
     for (u32 i = 0; i < parts.len && !first; i++) {
@@ -1158,7 +1158,7 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     } else if (lib) {
         error = error_ctx_error_d(errs, span, 2550, "Property '", name, "' does not exist on type '", object_str,
             "'. Do you need to change your target library? Try changing the 'lib' compiler option to '", lib, "' or later.");
-    } else if (atom && ts_code == 2339 && !(object->flags & TYF_NEVER) && (suggestion = suggested_property(me, object, atom_sv(atom)))) {
+    } else if (atom && ts_code == 2339 && !(object->flags & TYF_NEVER) && (suggestion = ty_suggested_property(me, object, atom_sv(atom)))) {
         error = error_ctx_error_d(errs, span, 2551, "Property '", name, "' does not exist on type '", object_str,
             "'. Did you mean '", atom_sv(suggestion->name), "'?");
         Prop const* declared = suggestion;
@@ -1739,7 +1739,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
     } else if (number_index) {
         error_ctx_error_d(errs, index_span, 7015,
             "Element implicitly has an 'any' type because index expression is not of type 'number'.");
-    } else if (name && !(object->flags & TYF_UNKNOWN) && (suggestion = suggested_property(me, object, atom_sv(name)))) {
+    } else if (name && !(object->flags & TYF_UNKNOWN) && (suggestion = ty_suggested_property(me, object, atom_sv(name)))) {
         error_ctx_error_d(errs, index_span, 2551, "Property '", atom_sv(name), "' does not exist on type '", object_str,
             "'. Did you mean '", atom_sv(suggestion->name), "'?");
     } else if (!(object->flags & TYF_UNKNOWN) && suggested_index_method(me, access, object, index, &method)) {

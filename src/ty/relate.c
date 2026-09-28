@@ -4617,11 +4617,25 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                 c_drop(cstr, &name, &target_str);
             } else if (report) {
                 cstr name = ty_prop_written_name(me, prop);
-                cstr target_str = display_for_report(me, filter_excess_check_targets(me, reduced), false);
-                report_line_at(st, 2353, cstr_d(
-                    "Object literal may only specify known properties, and '", name, "' does not exist in type '",
-                    target_str, "'."
-                ), prop->decl->name_span);
+                Ty const* error_target = filter_excess_check_targets(me, reduced);
+                cstr target_str = display_for_report(me, error_target, false);
+                // A property written as an identifier gets a spelling suggestion (tsc: `isIdentifier(name)`)
+                csview written = prop->decl->name_span.sv;
+                bool identifier = span_valid(prop->decl->name_span) && written.size && written.buf[0] != '"' &&
+                    written.buf[0] != '\'' && written.buf[0] != '[' && written.buf[0] != '#' &&
+                    !(written.buf[0] >= '0' && written.buf[0] <= '9');
+                Prop const* suggestion = identifier ? ty_suggested_property(me, error_target, atom_sv(prop->name)) : nullptr;
+                if (suggestion) {
+                    report_line_at(st, 2561, cstr_d(
+                        "Object literal may only specify known properties, but '", name, "' does not exist in type '",
+                        target_str, "'. Did you mean to write '", atom_sv(suggestion->name), "'?"
+                    ), prop->decl->name_span);
+                } else {
+                    report_line_at(st, 2353, cstr_d(
+                        "Object literal may only specify known properties, and '", name, "' does not exist in type '",
+                        target_str, "'."
+                    ), prop->decl->name_span);
+                }
                 c_drop(cstr, &name, &target_str);
                 st->override_next_head++; // (tsc's reportParentSkippedError)
             }
