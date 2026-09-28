@@ -555,7 +555,12 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     *vec_symbol_cptr_at(&my identifier->namespace_symbols, index) :
                     nullptr;
                 ctx->any_keeps_underline = true; // Part of a qualified name
-                baseline_test_case_add_type_node(ctx, *i, &type_any);
+                if (heritage && decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE)) {
+                    // A heritage clause's name is an expression to tsc's writer (ExpressionWithTypeArguments)
+                    baseline_test_case_add_symbol_value(ctx, *i, decl);
+                } else {
+                    baseline_test_case_add_type_node(ctx, *i, &type_any);
+                }
                 if (heritage && !decl) break;
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declaration_get_spans(decl),

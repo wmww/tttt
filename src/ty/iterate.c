@@ -619,7 +619,7 @@ Ty const* ty_unwrapped_return_type(Checker* me, FunctionImpl const* function) {
 
 TyIterationTypes const* ty_generator_context(Checker* me, FunctionImpl const* generator) {
     Ty const* ret = generator->ret_explicit ?
-        ty_from_node(me, &generator->ret, (LowerCtx){ .generic = true }) : ty_contextual_return_type(me, generator);
+        ty_from_node(me, &generator->ret, (LowerCtx){ .generic = true }) : ty_return_expressions_context(me, generator);
     if (!ret || (ret->flags & TYF_ANY)) return nullptr;
     bool async = generator->is_async;
     if (ret->kind == TY_UNION) {

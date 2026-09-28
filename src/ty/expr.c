@@ -2646,8 +2646,6 @@ static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx)
     return context ? context->next_type : any_type(me);
 }
 
-// `{ a: 1, b: "" }[k]` that doesn't find k (tsc's getPropertyTypeForIndexType on an object literal type): a missing
-// literal key is undefined (TS2339 under noImplicitAny), a string or number key any of the properties or undefined
 // `t[5]` of tuples (every member of a union) with no element there: undefined after the error
 static bool tuple_past_the_end(Checker* me, Ty const* object, Ty const* key) {
     if (!(key->flags & TYF_NUMBER_LITERAL)) return false;
@@ -2658,6 +2656,8 @@ static bool tuple_past_the_end(Checker* me, Ty const* object, Ty const* key) {
     return true;
 }
 
+// `{ a: 1, b: "" }[k]` that doesn't find k (tsc's getPropertyTypeForIndexType on an object literal type): a missing
+// literal key is undefined (TS2339 under noImplicitAny), a string or number key any of the properties or undefined
 static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* key) {
     key = ty_regular(me, key);
     TyList keys = key->kind == TY_UNION && !(key->flags & TYF_BOOLEAN) ? key->composite.types : (TyList){ .data = &key, .len = 1 };

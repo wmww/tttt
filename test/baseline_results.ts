@@ -2603,7 +2603,7 @@ const baselines = {
     'bluebirdStaticThis': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'bom-utf16be': {
         errors: true,
@@ -4043,7 +4043,7 @@ const baselines = {
     'classdecl': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'clinterfaces': {
         errors: true,
@@ -7338,7 +7338,7 @@ const baselines = {
     'declFileGenericType': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declFileGenericType2': {
         errors: true,
@@ -14908,12 +14908,12 @@ const baselines = {
     'genericConstraintOnExtendedBuiltinTypes': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericConstraintOnExtendedBuiltinTypes2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericConstraintSatisfaction1': {
         errors: true,
@@ -18088,7 +18088,7 @@ const baselines = {
     'interfaceDeclaration4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'interfaceDeclaration5': {
         errors: true,
@@ -18208,7 +18208,7 @@ const baselines = {
     'interfacePropertiesWithSameName2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'interfacePropertiesWithSameName3': {
         errors: true,
@@ -25878,7 +25878,7 @@ const baselines = {
     'privacyClassImplementsClauseDeclFile': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'privacyFunc': {
         errors: true,
@@ -32093,7 +32093,7 @@ const baselines = {
     'unionReductionWithStringMappingAndIdenticalBaseTypeExistsNoCrash': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unionRelationshipCheckPasses': {
         errors: true,
@@ -45142,8 +45142,8 @@ const baselines = {
     },
     'generatorTypeCheck27': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'generatorTypeCheck28': {
         errors: true,
@@ -45152,8 +45152,8 @@ const baselines = {
     },
     'generatorTypeCheck29': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'generatorTypeCheck3': {
         errors: true,
@@ -45162,8 +45162,8 @@ const baselines = {
     },
     'generatorTypeCheck30': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'generatorTypeCheck31': {
         errors: true,
@@ -49688,7 +49688,7 @@ const baselines = {
     'extendsClause': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'filterNamespace_import': {
         errors: true,
