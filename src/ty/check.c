@@ -1222,23 +1222,23 @@ static bool is_global_this(Ty const* ty) {
 }
 
 // tsc's isJSLiteralType: without noImplicitAny, what a JavaScript object literal made has every property
-static bool is_js_literal_type(Checker* me, Ty const* type) {
+bool ty_is_js_literal_type(Checker* me, Ty const* type) {
     if (compiler_options()->no_implicit_any) return false;
     switch (type->kind) {
         case TY_ANONYMOUS: return type->anonymous.js_literal;
         case TY_UNION:
             for (u32 i = 0; i < type->composite.types.len; i++) {
-                if (!is_js_literal_type(me, type->composite.types.data[i])) return false;
+                if (!ty_is_js_literal_type(me, type->composite.types.data[i])) return false;
             }
             return true;
         case TY_INTERSECTION:
             for (u32 i = 0; i < type->composite.types.len; i++) {
-                if (is_js_literal_type(me, type->composite.types.data[i])) return true;
+                if (ty_is_js_literal_type(me, type->composite.types.data[i])) return true;
             }
             return false;
         case TY_TYPE_PARAM: {
             Ty const* constraint = ty_param_constraint(me, type);
-            return constraint && constraint != type && is_js_literal_type(me, constraint);
+            return constraint && constraint != type && ty_is_js_literal_type(me, constraint);
         }
         default: return false;
     }
@@ -1362,7 +1362,7 @@ static void check_access(
                 if (apparent->composite.types.data[i]->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NULLABLE | TYF_TYPE_PARAM | TYF_DEFERRED)) return;
             }
         }
-        if (is_js_literal_type(me, apparent)) return;
+        if (ty_is_js_literal_type(me, apparent)) return;
         if (apparent->flags & TYF_OBJECT) {
             Members const* members = ty_members(me, apparent);
             if (members->mapped && (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
@@ -1416,7 +1416,7 @@ static void check_access(
         return;
     }
     // An object literal of a JavaScript file is open-ended (tsc's isJSLiteralType)
-    if (is_js_literal_type(me, object)) return;
+    if (ty_is_js_literal_type(me, object)) return;
     if (object->flags & TYF_OBJECT) {
         Members const* members = ty_members(me, object);
         // HACK: a mapped type over something generic (`Pick<T, K>`) only knows its members through its constraint

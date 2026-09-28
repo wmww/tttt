@@ -1373,6 +1373,7 @@ Atom const* ty_jsx_children_prop_name(Checker* me, struct JsxElement const* elem
 JsxIntrinsic ty_jsx_intrinsic(Checker* me, struct JsxElement const* element);
 JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, struct JsxElement const* element, csview name);
 void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs);
+bool ty_is_js_literal_type(Checker* me, Ty const* type);
 bool ty_jsx_skips_head(Checker* me, Ty const* source, Ty const* target);
 bool ty_jsx_tag_arity_fits(Checker* me, struct JsxElement const* element, Ty const* tag_type, ErrorCtx* errs);
 Ty const* ty_jsx_signature_props(Checker* me, struct JsxElement const* element, Signature const* sig, TyMapper const* mapper, bool class_component);

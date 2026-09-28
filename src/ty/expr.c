@@ -50,11 +50,13 @@ static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* 
     if (object->kind == TY_TYPE_PARAM && object->param.state->is_this) object = ty_apparent_type(me, object);
     bool global_this = object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE &&
         object->declared.namespace_symbol && object->declared.namespace_symbol->is_global_this;
-    if (!(object->flags & TYF_OBJECT) || (object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object) ||
-        (expr->outer_span.source && expr->outer_span.source->is_js)
-    ) {
+    if (!(object->flags & TYF_OBJECT) || (object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object)) {
         return any_type(me);
     }
+    // What a JavaScript object literal made has every property, except in a JavaScript file that isn't checked (tsc's
+    // checkPropertyAccessExpressionOrQualifiedName: isUncheckedJSSuggestion makes it a suggestion and errorType)
+    SourceFile const* file = expr->outer_span.source;
+    if (!(file && file->is_js && file->unchecked) && ty_is_js_literal_type(me, object)) return any_type(me);
     return ty_intrinsic(me, TY_ERROR);
 }
 
