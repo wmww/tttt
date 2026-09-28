@@ -1081,6 +1081,11 @@ static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* na
 // member. Stored in the links table per union: KEY_UNION_KEY_NAME and KEY_UNION_KEY_MEMBER
 
 Ty const* ty_prop_type_of(Checker* me, Ty const* ty, Atom const* name) {
+    // (An intersection has no members of its own: its property is the intersection of its members')
+    if (ty->kind == TY_INTERSECTION) {
+        FoundProp found = ty_find_prop(me, ty, name);
+        return found.found ? found.type : nullptr;
+    }
     Ty const* holder = ty->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty : ty_apparent_type(me, ty);
     Prop const* prop = ty_get_prop(me, holder, name);
     return prop ? prop_type(me, prop) : nullptr;
