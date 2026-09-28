@@ -1924,6 +1924,14 @@ static bool is_rest_array(Checker* me, Ty const* rest) {
     return rest->kind != TY_TYPE_PARAM;
 }
 
+// A class or interface whose length is number literals (one extending a tuple): an array is no match for it, the
+// tuple itself is compared with it member by member
+static bool has_literal_length(Checker* me, Ty const* ty) {
+    Ty const* length = ty_prop_type_of(me, ty, checker_atom(me, c_sv("length")));
+    return length && !(length->flags & TYF_NUMBER) && !(length->flags & TYF_ANY) && (length->flags & TYF_NUMBER_LITERAL ||
+        (length->kind == TY_UNION && (length->composite.types.data[0]->flags & TYF_NUMBER_LITERAL)));
+}
+
 static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     TupleShape const* source_shape = is_empty_tuple(source) ? source->declared.tuple : source->reference.target->declared.tuple;
     TupleShape const* target_shape = is_empty_tuple(target) ? target->declared.tuple : target->reference.target->declared.tuple;
@@ -4031,7 +4039,9 @@ static Ternary structured_related_members(
     }
     // (As the array it extends against generic interfaces and classes, where variances help; structurally, with its
     // element properties, against anything else: `{ 0: number }`, `Pick<[string, ...string[]], ...>`)
-    if (source_is_tuple && (target->kind == TY_REFERENCE || target->kind == TY_DECLARED)) source = tuple_as_array(me, source);
+    if (source_is_tuple && (target->kind == TY_REFERENCE || (target->kind == TY_DECLARED && !has_literal_length(me, target)))) {
+        source = tuple_as_array(me, source);
+    }
 
     // A class or interface with a `this` type is a reference to itself (tsc: its declared type is one)
     bool source_self = source->kind == TY_DECLARED && source->declared.this_param;

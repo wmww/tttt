@@ -580,6 +580,18 @@ Ty const* ty_contextual_element_type(Checker* me, Ty const* contextual, u32 inde
     return contextual_element_type(me, contextual, index);
 }
 
+// tsc's isTupleLikeType past its "0" check: an array-like type (assignable to `readonly any[]`) whose length is number
+// literals
+static bool array_like_with_literal_length(Checker* me, Ty const* ty) {
+    Ty const* length = ty_prop_type_of(me, ty, checker_atom(me, c_sv("length")));
+    if (!length) return false;
+    TyList parts = length->kind == TY_UNION ? length->composite.types : (TyList){ .data = &length, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        if (!(parts.data[i]->flags & TYF_NUMBER_LITERAL)) return false;
+    }
+    return parts.len && ty_is_related(me, ty, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE);
+}
+
 static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) {
     if (!contextual || depth > 8) return false;
     if (ty_is_tuple(contextual)) return true;
@@ -595,7 +607,13 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
             if (context_is_tuple_like(me, contextual->composite.types.data[i], depth + 1)) return true;
         }
     }
-    // Anything with a "0" property (tsc's isTupleLikeType: `Pick<[T, ...T[]], ...> & { length: 3 }`)
+    // Anything with a "0" property (tsc's isTupleLikeType: `Pick<[T, ...T[]], ...> & { length: 3 }`), or array-like
+    // with a literal length (`number[] & { length: 2 }`, an interface extending `[]`)
+    if ((contextual->kind == TY_INTERSECTION || contextual->kind == TY_DECLARED || contextual->kind == TY_REFERENCE) &&
+        array_like_with_literal_length(me, contextual)
+    ) {
+        return true;
+    }
     if (contextual->kind == TY_INTERSECTION) return ty_get_prop(me, contextual, checker_atom(me, c_sv("0"))) != nullptr;
     if (contextual->kind == TY_TYPE_PARAM) {
         Ty const* constraint = ty_param_constraint(me, contextual);
