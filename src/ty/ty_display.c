@@ -1508,8 +1508,18 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // (Instantiated in a signature that has fresh type parameters in tsc, not tttt: see TyDisplay.fresh_params)
         if (origin != prop && mentions(me, type, d.fresh_params)) annotation = nullptr;
         // (Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol)
-        if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, type);
-        else display_annotated(me, d, annotation, type, (prop->flags & PROP_OPTIONAL) != 0);
+        // An optional property's type has undefined under strictNullChecks, unless exactOptionalPropertyTypes (tsc's
+        // addOptionality in getTypeOfSymbol); a reused annotation doesn't say it
+        Ty const* shown = type;
+        if ((prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks &&
+            !compiler_options()->exact_optional_property_types && ty_without_undefined(me, type) == type
+        ) {
+            shown = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+        }
+        bool optional = (prop->flags & PROP_OPTIONAL) != 0;
+        if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, shown);
+        else if (annotation && d.underline && d.enclosing && annotation_is(me, annotation, type, optional)) display_node(me, d, annotation);
+        else display_annotated(me, d, annotation, shown, optional);
         out_lit(d, "; ");
     }
     out_lit(d, "}");
