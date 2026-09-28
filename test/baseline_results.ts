@@ -29136,7 +29136,7 @@ const baselines = {
         types: true,
     },
     'staticPrototypeProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -37536,7 +37536,7 @@ const baselines = {
         types: true,
     },
     'propertyNamedPrototype': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37616,12 +37616,12 @@ const baselines = {
         types: true,
     },
     'staticPropertyNameConflicts(usedefineforclassfields=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'staticPropertyNameConflicts(usedefineforclassfields=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

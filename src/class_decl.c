@@ -942,6 +942,42 @@ static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
     several_types_check_arity(target, arg_count, my extends.outer_span, errs);
 }
 
+// tsc's checkClassForStaticPropertyNameConflicts: a static member named like a property every function has (TS2699).
+// Only `prototype` with useDefineForClassFields, the others are just redefined then
+static void class_check_static_name_conflicts(ClassDecl const* me, ErrorCtx* errs) {
+    for_each (i, vec_class_item, &my items) {
+        if (!class_item_is_static(i)) continue;
+        cstr const* name_string = nullptr;
+        Expr const* computed_key = nullptr;
+        Span name_span = span_null;
+        if (i->tag == CLASS_ITEM_METHOD) {
+            name_string = &i->method.name_string;
+            computed_key = i->method.computed_key;
+            name_span = i->method.name_span;
+        } else if (i->tag == CLASS_ITEM_FIELD) {
+            name_string = &i->field.name_string;
+            computed_key = i->field.computed_key;
+            name_span = i->field.name_span;
+        } else {
+            continue;
+        }
+        csview name = cstr_sv(name_string);
+        if (computed_key) {
+            // (tsc's getEffectivePropertyNameForPropertyNameNode: a computed name of a literal type)
+            bool is_number = false;
+            Atom const* atom = ty_property_name_of_key(current_checker, ty_expr_type(current_checker, computed_key), &is_number);
+            name = atom ? atom_sv(atom) : c_sv("");
+        }
+        bool function_member = csview_equals(name, "name") || csview_equals(name, "length") ||
+            csview_equals(name, "caller") || csview_equals(name, "arguments");
+        if (!(function_member && !compiler_options()->use_define_for_class_fields) && !csview_equals(name, "prototype")) {
+            continue;
+        }
+        error_ctx_error_d(errs, name_span, 2699, "Static property '", name, "' conflicts with built-in property 'Function.",
+            name, "' of constructor function '", class_decl_display_name(me).sv, "'.");
+    }
+}
+
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (my has_typechecked) {
         return;
@@ -969,6 +1005,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     for_each (i, vec_expr, &my decorators) {
         expr_typecheck(i, errs);
     }
+    if (!my is_ambient) class_check_static_name_conflicts(me, errs);
     bool legacy = compiler_options()->experimental_decorators;
     for_each (i, vec_class_item, &my items) {
         // tsc's checkGrammarModifiers via nodeCanBeDecorated(), at the `@` of the first decorator
