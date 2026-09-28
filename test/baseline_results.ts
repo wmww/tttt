@@ -5206,7 +5206,7 @@ const baselines = {
         types: true,
     },
     'commonjsAccessExports': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30643,7 +30643,7 @@ const baselines = {
     'truthinessCallExpressionCoercion4': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'truthinessPromiseCoercion': {
         errors: false,
@@ -51843,7 +51843,7 @@ const baselines = {
     'exportedAliasedEnumTag': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportedEnumTypeAndValue': {
         errors: false,
@@ -60356,8 +60356,8 @@ const baselines = {
         types: true,
     },
     'moduleExportAlias': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'moduleExportAlias2': {
@@ -60876,7 +60876,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment37': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
