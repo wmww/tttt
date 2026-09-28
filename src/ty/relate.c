@@ -1623,6 +1623,12 @@ static Ternary index_signatures_related(
                 ) {
                     type = ty_without_undefined(me, type);
                 }
+                // (For a numeric index signature it does: tsc relates getNonMissingTypeOfSymbol as is)
+                if ((props[j].flags & PROP_OPTIONAL) && (target_info->key->flags & TYF_NUMBER) &&
+                    compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types
+                ) {
+                    type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+                }
                 Ternary related = is_related_to(me, st, type, target_info->value, report);
                 if (!related) {
                     if (report) {
