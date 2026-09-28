@@ -975,6 +975,61 @@ static Span overload_name(ClassItem const* item) {
     return item->tag == CLASS_ITEM_CONSTRUCTOR ? item->constructor.name_span : item->method.name_span;
 }
 
+// tsc's checkFlagAgreementBetweenOverloads and checkQuestionTokenAgreementBetweenOverloads for the methods of a class
+// (the declarations of one method symbol, with an overload among them): each declaration that differs from the
+// canonical one (the implementation, else the first) in accessibility (TS2385), else abstractness (TS2512), and in
+// optionality (TS2386)
+static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) {
+    isize count = vec_class_item_size(&my items);
+    for (isize i = 0; i < count; i++) {
+        ClassItem const* item = vec_class_item_at(&my items, i);
+        if (item->tag != CLASS_ITEM_METHOD || item->method.accessor || item->method.computed_key) continue;
+        bool first = true, overloads = false;
+        ClassItem const* implementation = nullptr;
+        u32 some_flags = 0, all_flags = ~0u;
+        bool some_optional = false, all_optional = true;
+        for (isize j = 0; j < count; j++) {
+            ClassItem const* other = vec_class_item_at(&my items, j);
+            if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || !same_member(item, other) ||
+                other->method.is_static != item->method.is_static
+            ) {
+                continue;
+            }
+            if (j < i) first = false;
+            u32 flags = (u32)other->access << 1 | other->method.is_abstract;
+            some_flags |= flags;
+            all_flags &= flags;
+            some_optional |= other->method.is_optional;
+            all_optional &= other->method.is_optional;
+            if (other->method.func.has_body) {
+                if (!implementation) implementation = other;
+            } else {
+                overloads = true;
+            }
+        }
+        if (!first || !overloads) continue;
+        ClassItem const* canonical = implementation ? implementation : item;
+        for (isize j = 0; j < count; j++) {
+            ClassItem const* other = vec_class_item_at(&my items, j);
+            if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || !same_member(item, other) ||
+                other->method.is_static != item->method.is_static
+            ) {
+                continue;
+            }
+            if (some_flags != all_flags) {
+                if (other->access != canonical->access) {
+                    error_ctx_error_d(errs, other->method.name_span, 2385, "Overload signatures must all be public, private or protected.");
+                } else if (other->method.is_abstract != canonical->method.is_abstract) {
+                    error_ctx_error_d(errs, other->method.name_span, 2512, "Overload signatures must all be abstract or non-abstract.");
+                }
+            }
+            if (some_optional != all_optional && other->method.is_optional != canonical->method.is_optional) {
+                error_ctx_error_d(errs, other->method.name_span, 2386, "Overload signatures must all be optional or required.");
+            }
+        }
+    }
+}
+
 // tsc's checkFunctionOrConstructorSymbol for the methods and constructors of a class: overloads are consecutive and
 // followed by the implementation (TS2391, TS2389, TS2390, TS2516, TS2387/TS2388), one implementation (TS2393)
 static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
@@ -1419,6 +1474,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     class_heritage_typecheck(me, errs);
     class_check_overloads(me, errs);
     class_check_property_initialization(me, errs);
+    class_check_overload_agreement(me, errs);
     ty_check_class_duplicate_members(current_checker, me, errs);
     if (my symbol && symbol_find_node(my symbol, SYMBOL_DECL_CLASS) == me) {
         ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);
@@ -1496,6 +1552,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 }
                 function_impl_typecheck(&i->method.func, errs);
                 function_impl_check_implicit_any_return(&i->method.func, i->method.name_span, i->method.name_span, errs);
+                if (i->method.is_abstract && !i->method.accessor && i->method.func.has_body) { // (tsc's checkMethodDeclaration)
+                    error_ctx_error_d(errs, i->method.name_span, 1245, "Method '", i->method.name_span,
+                        "' cannot have an implementation because it is marked abstract.");
+                }
                 break;
 
             case CLASS_ITEM_FIELD: {

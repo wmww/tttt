@@ -14311,7 +14311,7 @@ const baselines = {
         types: true,
     },
     'functionOverloads5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34706,7 +34706,7 @@ const baselines = {
         types: true,
     },
     'classAbstractInstantiations2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34721,12 +34721,12 @@ const baselines = {
         types: true,
     },
     'classAbstractMethodInNonAbstractClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classAbstractMethodWithImplementation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34736,7 +34736,7 @@ const baselines = {
         types: true,
     },
     'classAbstractOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37486,7 +37486,7 @@ const baselines = {
         types: true,
     },
     'memberFunctionsWithPublicPrivateOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

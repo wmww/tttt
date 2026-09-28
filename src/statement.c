@@ -1746,7 +1746,7 @@ static bool function_symbol_decl_is_ambient(SymbolDecl const* decl) {
 // The ambient half of tsc's checkFlagAgreementBetweenOverloads (TS2384): when some but not all of the function's
 // declarations are ambient, those that differ from the canonical one of their file (the implementation if it's in the
 // same container as the file's first declaration, else that first declaration). TODO: TS2383 (export), which needs the
-// export context of ambient declarations, and TS2385/TS2512/TS2386 for methods
+// export context of ambient declarations (the class method ones, TS2385/TS2512/TS2386, are class_check_overload_agreement())
 static void function_check_ambient_agreement(Symbol const* symbol, FunctionImpl const* implementation, ErrorCtx* errs) {
     bool some = false, all = true;
     SymbolDecl const* implementation_decl = nullptr;
