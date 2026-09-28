@@ -845,8 +845,11 @@ BaselineTestCase run_baseline_test_case(
         if (!i->source) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
         ret.enclosing = i->source->scope;
+        // (Types as the checker that checked the file knows them, whatever the checker count)
+        checker_make_current(program_checker_of(program, i->source));
         block_compile_test_info(&i->source->ast, &ret);
     }
+    checker_make_current(program_get_checker(program));
     clear_compiler_options();
 
     process_errors(&ret);

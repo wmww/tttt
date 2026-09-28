@@ -74,6 +74,7 @@ struct Checker* program_get_checker(Program const* me);
 // The checkers program_typecheck() used (the first is program_get_checker()'s), 0 before
 u32 program_checker_count(Program const* me);
 struct Checker* program_checker_at(Program const* me, u32 index);
+struct Checker* program_checker_of(Program const* me, SourceFile const* file);
 
 // A global by name and meaning (SymbolFlags), null if there is none
 struct Symbol const* program_get_global(Program const* me, csview name, u32 meaning);

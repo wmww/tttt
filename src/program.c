@@ -1357,6 +1357,21 @@ Checker* program_checker_at(Program const* me, u32 index) {
     return my checkers[index];
 }
 
+// The checker that checked a file in program_typecheck() (the first one for a file nobody checked). Expression types
+// are only complete in the checker that walked the file: one that didn't would type an expression without the
+// contextual type its parent gives it (see "Expressions" in documentation.md)
+Checker* program_checker_of(Program const* me, SourceFile const* file) {
+    if (my checker_count <= 1 || file->is_stdlib || file->unchecked) return my checker;
+    u32 index = 0;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile const* source = *i;
+        if (source->is_stdlib || source->unchecked) continue;
+        if (source == file) return my checkers[index % my checker_count];
+        index++;
+    }
+    return my checker;
+}
+
 Symbol const* program_get_global(Program const* me, csview name, u32 meaning) {
     return symbol_for_meaning(symbol_table_get(&my binder->globals, name), meaning);
 }
