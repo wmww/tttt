@@ -449,6 +449,7 @@ typedef enum SignatureFlags {
     SIGNATURE_CONSTRUCT = 1 << 0,
     SIGNATURE_ABSTRACT  = 1 << 1,
     SIGNATURE_METHOD    = 1 << 2, // declared with method syntax: parameters are bivariant even under strictFunctionTypes
+    SIGNATURE_NON_INFERRABLE = 1 << 3, // tsc's SignatureFlags.IsNonInferrable: a return-only signature (expr.c)
 } SignatureFlags;
 
 typedef struct SigParam {
@@ -1529,6 +1530,7 @@ Ty const* ty_awaited(Checker* me, Ty const* ty);
 Ty const* ty_promise_like_of(Checker* me, Ty const* ty);
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);
 Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual); // function.c
+Ty const* ty_promise_of(Checker* me, struct FunctionImpl const* function, Ty const* type); // Promise<type>, for an async function (function.c)
 Ty const* ty_awaited_returned(Checker* me, Ty const* ty);
 
 // ty_display.c

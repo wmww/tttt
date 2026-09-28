@@ -255,7 +255,7 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
     bool saved_bivariant = inf->bivariant;
     inf->bivariant |= (target->flags & SIGNATURE_METHOD) != 0;
     if (flip) inf->contravariant = !inf->contravariant;
-    infer_from_params(me, inf, (InferStep){0}, source, target, base);
+    if (!(source->flags & SIGNATURE_NON_INFERRABLE)) infer_from_params(me, inf, (InferStep){0}, source, target, base);
     if (flip) inf->contravariant = !inf->contravariant;
     inf->bivariant = saved_bivariant;
     infer_from_returns(me, inf, (InferStep){0}, source, target, base);

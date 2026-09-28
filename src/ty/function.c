@@ -30,7 +30,7 @@ typedef struct FunctionReturn {
     Ty const* type;
 } FunctionReturn;
 
-static Ty const* promise_of(Checker* me, FunctionImpl const* function, Ty const* type) {
+Ty const* ty_promise_of(Checker* me, FunctionImpl const* function, Ty const* type) {
     if (!function->promise_decl) return ty_intrinsic(me, TY_ANY);
     Ty const* promise = ty_declared_type_of(me, function->promise_decl);
     if (promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return ty_intrinsic(me, TY_ANY);
@@ -174,7 +174,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
         }
     }
     ty_buf_drop(&returned);
-    if (function->is_async && !function->is_generator) ret = promise_of(me, function, ret);
+    if (function->is_async && !function->is_generator) ret = ty_promise_of(me, function, ret);
     return ret;
 }
 

@@ -14,8 +14,8 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 3. ~~Plan 37 planning~~ done: six candidates prototyped (all 0 lost), ranked in the plan; prototypes in
    `plans/37_prototypes/`. Null widening +48, union origins +37, decorators +14, evolving arrays +8, missing type +3
    (+ zod-root's TS2412), return-only signatures +1; fixing-without-candidates and lazy reverse mapped: not now.
-4. **Plan 37 A: non-widening null/undefined**, stage 1 (land `null_widening.patch`, +48); F (return-only
-   signatures, +1) if there is room.
+4. ~~Plan 37 A stage 1 + F~~ done: non-widening null/undefined (+48, `Ty.xflags`) and return-only signatures (+1);
+   corpora unchanged, perf flat (zod/valibot within 0.1%).
 5. **Plan 37 B: union/keyof origins**, stage 1 (land `union_origins.patch`, +37, recover valibot's +3%
    instructions); E (missing type, +3, zod-root) if there is room, else E goes in entry 8.
 6. **Corpus session**: webpack 107 (plan 26 leftovers, plan 19's two TS18048s) and zod-root's arktype `never`

@@ -94,6 +94,7 @@ enum {
     KEY_DISCRIMINANT_CONFLICT, // (intersection member ids) -> 1 + whether they have conflicting discriminants
     KEY_SIGNATURE_INSTANCE, // (Signature, type argument ids) -> ty_signature_instantiation()
     KEY_SIGNATURE_TYPE, // Signature -> ty_signature_type()
+    KEY_CONTEXT_FREE, // FunctionImpl -> its return-only type (tsc's links.contextFreeType, return_only_type())
     KEY_EMIT_HELPERS,   // helpers module Symbol -> EmitHelper mask already checked; SourceFile -> TS2354 said (helpers.c)
 };
 

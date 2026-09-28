@@ -354,7 +354,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   type only when it has no type variables.
 - `TYF_NON_INFERRABLE`: set on the silent never and `ty_any_function_type()`, propagated through unions,
   intersections, references, object literals and aliased anonymous instantiations.
-- Skip-sensitive first pass (`ExprCtx.skip_sensitive`): no returnOnlyType; the first overload round's applicability
+- Skip-sensitive first pass (`ExprCtx.skip_sensitive`): returnOnlyType (`return_only_type()`) gives generators
+  anyFunctionType instead of their body's type; the first overload round's applicability
   check skips such arguments entirely (`first_unfit_argument`); isPartiallyInferableType only as a priority.
 - `infer_intra_expression` (HACK): only arrow functions are sites (plus nested/spread literals); methods and function
   expressions would need `this` recomputed per check (tttt memoizes it).

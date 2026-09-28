@@ -128,11 +128,75 @@ static bool in_const_context(Checker* me, Expr const* expr, ExprCtx ctx) {
         is_const_context_kind(expr) && ty_is_const_type_variable(me, ctx.contextual, 0));
 }
 
+static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx);
+static bool has_context_sensitive_params(FunctionImpl const* function);
+
+static _Thread_local struct { Expr const* data[64]; u32 len; bool overflow; } collected_returns;
+static bool collect_return(Expr const* expr) {
+    if (collected_returns.len == c_arraylen(collected_returns.data)) collected_returns.overflow = true;
+    else collected_returns.data[collected_returns.len++] = expr;
+    return false;
+}
+
+// A context-sensitive function checked while skipping context-sensitive arguments (tsc's returnOnlyType in
+// checkFunctionExpressionOrObjectLiteralMethod): when its parameters aren't what makes it context sensitive (its
+// returned expression is: `(): ... => x => x.length`, `() => ({ f: x => x })`) and the contextual return type could
+// mention type parameters, a signature that only has the return type of the body, checked skipping context-sensitive
+// parts too, so its other parts infer early. Non-inferrable: its (missing) parameters don't infer anything.
+// Generators get tsc's anyFunctionType
+static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty const* contextual) {
+    if (!contextual || function->ret_explicit || !function->has_body || function->is_generator ||
+        has_context_sensitive_params(function)) {
+        return ty_any_function_type(me);
+    }
+    Signature const* context_sig = ty_contextual_signature(me, contextual, function);
+    if (!context_sig) return ty_any_function_type(me);
+    signature_resolve(me, context_sig);
+    Ty const* context_ret = signature_return_type(me, context_sig);
+    if (!(context_ret->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty_any_function_type(me);
+    u64 key[2] = { KEY_CONTEXT_FREE, (u64)(uintptr_t)function };
+    void const* known = intern_get(&my links, key, 2);
+    if (known) return known;
+
+    // The returned expressions are collected first: checking them can get here for a nested function
+    collected_returns.len = 0;
+    collected_returns.overflow = false;
+    statements_any_return(&function->body.statements, collect_return);
+    if (collected_returns.overflow || !collected_returns.len) return ty_any_function_type(me);
+    u32 count = collected_returns.len;
+    Expr const* returned[c_arraylen(collected_returns.data)];
+    memcpy(returned, collected_returns.data, count * sizeof(Expr const*));
+
+    Ty const* context = function->is_async ? ty_async_contextual_awaited(me, context_ret) : context_ret;
+    TyBuf types = {0};
+    for (u32 i = 0; i < count; i++) {
+        Ty const* type = check_with(me, returned[i], (ExprCtx){ .contextual = context, .skip_sensitive = true });
+        ty_buf_push(&types, function->is_async ? ty_awaited(me, type) : type);
+    }
+    FlowReachability end = ty_function_end_reachability(me, function);
+    if (compiler_options()->strict_null_checks && (function->has_bare_return || end == FLOW_REACH_YES)) {
+        ty_buf_push(&types, ty_intrinsic(me, TY_UNDEFINED));
+    }
+    Ty const* body = ty_widened_return_type(me, ty_union_subtype_reduced(me, types.data, types.len), context);
+    ty_buf_drop(&types);
+    if (function->is_async) body = ty_promise_of(me, function, body);
+
+    Signature* sig = arena_new(&my arena, Signature);
+    *sig = (Signature){
+        .flags = SIGNATURE_NON_INFERRABLE, .state = LAZY_STATE_DONE, .ret_state = LAZY_STATE_DONE, .ret = body,
+        .predicate_done = true,
+    };
+    Ty* type = (Ty*)ty_signature_type(me, sig);
+    type->flags |= TYF_NON_INFERRABLE;
+    *intern_slot(me, &my links, key, 2) = type;
+    return type;
+}
+
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     ctx.is_const = in_const_context(me, expr, ctx);
     if (ctx.skip_sensitive) {
         if (ty_expr_is_context_sensitive(expr)) {
-            if (expr->tag == EXPR_FUNCTION) return ty_any_function_type(me);
+            if (expr->tag == EXPR_FUNCTION) return return_only_type(me, expr->function, ctx.contextual);
             return compute(me, expr, ctx);
         }
         ctx.skip_sensitive = false;
@@ -789,13 +853,13 @@ void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function) {
     assign_contextual_signature(me, function, ty_of_node(function->jsdoc_signature_type));
 }
 
-bool ty_function_is_context_sensitive(FunctionImpl const* function) {
+// tsc's hasContextSensitiveParameters
+static bool has_context_sensitive_params(FunctionImpl const* function) {
     if (vec_generic_item_size(&function->generic.items)) return false;
     for_each (i, vec_function_arg, &function->args) {
         if (!i->initializer.binding.has_explicit_type) return true;
     }
-    // A function expression's `this` is contextually typed too, unless it declares one (tsc's
-    // hasContextSensitiveParameters)
+    // A function expression's `this` is contextually typed too, unless it declares one
     if (!span_valid(function->arrow_span)) {
         FunctionArg const* first = vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
         if (!(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
@@ -804,6 +868,12 @@ bool ty_function_is_context_sensitive(FunctionImpl const* function) {
             return true;
         }
     }
+    return false;
+}
+
+bool ty_function_is_context_sensitive(FunctionImpl const* function) {
+    if (vec_generic_item_size(&function->generic.items)) return false;
+    if (has_context_sensitive_params(function)) return true;
     // So is one whose returned expression is (tsc's hasContextSensitiveReturnExpression): `() => x => x.length`
     return !function->ret_explicit && function->has_body &&
         statements_any_return(&function->body.statements, ty_expr_is_context_sensitive);

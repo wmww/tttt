@@ -29,3 +29,7 @@ duplicated webpack), hacks.md (`string_to_double`).
 - **Type-predicate narrowing should return the candidate unchanged** (tsc's getNarrowedType; plan 37 B finding):
   tttt prints `A | B` where tsc has `Both` (flowControlTypeGuardThenSwitch, partiallyDiscriminantedUnions,
   stringLiteralCheckedInIf02).
+- `test/probes/plan37/return_only.ts` (plan 37 F): `k(() => () => ({ a: true, b: x => x }))` with `k<T>(g: () => () =>
+  { a: T, b: (x: T) => void }): T` types both arrows as returning `{ a: true; ... }` where tsc widens their return
+  types to `{ a: boolean; ... }` (the object literal itself is `a: true` in both): the inner arrow's inferred return
+  type isn't widened in the return-only/final check the way tsc's getReturnTypeFromBody does.

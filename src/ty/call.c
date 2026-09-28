@@ -809,9 +809,10 @@ static TyMapper const* infer_type_arguments(
         if (arg->context_sensitive || arg->generic_call) {
             any_sensitive = true;
             // The rest of an object or array literal with a context-sensitive function in it is inferred from already
-            // (tsc's CheckMode.SkipContextSensitive): `{ schema, onSubmit: (values) => {} }`
+            // (tsc's CheckMode.SkipContextSensitive): `{ schema, onSubmit: (values) => {} }`, and so is the return
+            // type of a function that is context sensitive only through what it returns (return_only_type() in expr.c)
             Ty const* param_type = shape_type_at(&shape, i);
-            if (arg->context_sensitive && arg->expr->tag != EXPR_FUNCTION && !arg->spread && !arg->part_of_spread && param_type) {
+            if (arg->context_sensitive && !arg->spread && !arg->part_of_spread && param_type) {
                 my outer_inference = &self;
                 Ty const* context = return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
                 GenericFunctionMode mode = {0};

@@ -17,11 +17,6 @@ property reads, relations, `removeMissingType`, display), then the messages are 
 ## Inference
 - const type parameters with several candidates: `function f4<const T>(x: [T, T]): T; f4([[1, "x"], [2, "y"]])`
   gives TS2322s where tsc infers `readonly [1, "x"] | readonly [2, "y"]` (jsdocTemplateTag6, plain TS too).
-- **Context-free type of return-sensitive functions** (badInferenceLowerPriorityThanGoodInference, spurious TS2339 now):
-  tsc's first round types an argument like `() => ({ a: 1, b: x => {} })` as a return-only signature whose return is
-  checked with `SkipContextSensitive` (nested sensitive functions are the non-inferrable `anyFunctionType`, nothing
-  memoised: `links.contextFreeType`). `ExprCtx.skip_sensitive` exists (plan 19 R10), but a function argument is still
-  skipped whole: the missing piece is the return-only signature.
 - **Fixing without candidates** (plan 30 stage 2): `mutate((a, b) => b)` with `callback: (a: NoInfer<T>, b: number)
   => T` is `number`, tsc `unknown`: tsc fixes every type parameter a context-sensitive function's contextual
   parameters mention, candidates or not; call.c's argument loop only fixes those with candidates. Dropping that gate

@@ -2256,9 +2256,9 @@ const baselines = {
         types: true,
     },
     'badInferenceLowerPriorityThanGoodInference': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'badOverloadError': {
         errors: true,

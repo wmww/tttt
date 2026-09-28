@@ -34,7 +34,9 @@ length: n}, (_, i) => ...)` must stay clean. Measured gain +1: revisit when a co
 types, not now**: arrays/tuples are reverse mapped already (bugs/type_core.md's note was stale, fixed), only
 reverseMappedTypeRecursiveInference plausibly needs laziness.
 
-## A. Non-widening null/undefined (`null_widening.patch`, `null_widening_gained.txt`)
+**Landed**: A stage 1 (+48) and F (+1) in todo entry 4.
+
+## A. Non-widening null/undefined (landed at stage 1; stage 2 open)
 tsc, non-strict only: `undefinedWideningType`/`nullWideningType` print as `undefined`/`null`, carry
 ContainsWideningType, come from the `null`/`undefined` expressions, `void e`, bare `yield`, `[]`'s element, and a union
 of only widening nullables; the flag spreads into unions, references and object literals; `getWidenedType` widens only
@@ -132,7 +134,8 @@ array holes are optional missing elements; TS2375 (`ty_has_exact_optional_unassi
   Property), inferring `T` from `Partial<T>` makes properties required (strictOptionalProperties1), JSDoc `[value]`
   optional properties (strictOptionalProperties3).
 
-## F. Return-only signatures (`inference.patch`: `return_only_type()` in ty/expr.c; ignore the P37_* toggles)
+## F. Return-only signatures: landed (`return_only_type()` in ty/expr.c, async too; generators get anyFunctionType)
+`inference.patch` stays for its fixing-without-candidates probe (`P37_FIX`) and reverse mapped depth toggle.
 tsc's returnOnlyType under SkipContextSensitive: a non-inferrable signature whose return is the body checked against
 the contextual return, cached under `KEY_CONTEXT_FREE`; `infer_from_signatures` skips non-inferrable parameters.
 Fires in 6 suite tests, 0 corpus sites; +1 (badInferenceLowerPriorityThanGoodInference). Before landing: the shared
