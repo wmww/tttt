@@ -636,7 +636,13 @@ static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message = 
 #define g_class_key TyReportLine, ty_report_line
 #include <cleat/generic/vec.h>
 
-enum { TYX_CONTAINS_WIDENING = 1 }; // tsc's ObjectFlags.ContainsWideningType
+enum {
+    TYX_CONTAINS_WIDENING = 1, // tsc's ObjectFlags.ContainsWideningType
+    // `T & P` where T's constraint is primitives and P a primitive that constrains it further (tsc's
+    // ObjectFlags.IsConstrainedTypeVariable): unions of them that cover T's constraint are T. Only read on the
+    // intersection itself (it propagates like the others, meaninglessly)
+    TYX_CONSTRAINED_TYPE_VARIABLE = 2,
+};
 
 typedef enum TyIntrinsic {
     // Creation order copies tsc's, since union members print in id order

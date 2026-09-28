@@ -645,6 +645,8 @@ static u32 remove_literals_matched_by_patterns(Checker* me, Ty const** types, u3
 // Subtype reduction is a separate operation (TODO, the legacy type_composite() does its own through the relation).
 // `origin` is what the union was built as (see Ty.composite.origin); without one, a union made of named unions gets
 // them as its origin
+static u32 remove_constrained_type_variables(Checker* me, Ty const** types, u32 len);
+
 static Ty const* union_with_origin(
     Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, OriginSpec const* origin
 ) {
@@ -707,6 +709,11 @@ static Ty const* union_with_origin(
         if ((includes & TYF_STRING_LITERAL) && (includes & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING))) {
             out = remove_literals_matched_by_patterns(me, buf.data, out);
         }
+        bool has_constrained = false;
+        for (u32 i = 0; i < out && !has_constrained; i++) {
+            has_constrained = buf.data[i]->kind == TY_INTERSECTION && (buf.data[i]->xflags & TYX_CONSTRAINED_TYPE_VARIABLE);
+        }
+        if (has_constrained) out = remove_constrained_type_variables(me, buf.data, out);
         if (out == 0) {
             // Nothing but null and undefined (without strictNullChecks): null wins, like in tsc's getUnionType
             TyIntrinsic only = TY_NEVER;
@@ -1103,6 +1110,86 @@ static void dedupe_unions(TyBuf* buf) {
     buf->len = out;
 }
 
+// HACK: tsc's TypeVariable is indexed accesses too, but tttt's base constraint of one can be premature (valibot's
+// `NonNullable<TSchema['~types']>` would be never: the constraint came out as undefined), see hacks.md
+static bool is_type_variable(Ty const* t) { return t->kind == TY_TYPE_PARAM; }
+
+// A primitive, `object` or `{}`: what a constrained type variable intersection is made of (tsc's getIntersectionType)
+static bool is_primitive_or_empty_object(Checker* me, Ty const* t) {
+    return primitive_family(t) || (t->flags & TYF_NON_PRIMITIVE) || ty_is_empty_anonymous_object(me, t);
+}
+
+// tsc's getIntersectionType for `T & P`, T a type variable, P a primitive, `object` or `{}`, when T's constraint is
+// made of those too: T if the constraint is a strict subtype of P, never if they are unrelated. Otherwise null, and
+// *constrained says whether it's a constrained type variable
+static Ty const* reduce_type_variable_intersection(Checker* me, Ty const* a, Ty const* b, bool* constrained) {
+    *constrained = false;
+    Ty const* variable = is_type_variable(a) ? a : b;
+    Ty const* primitive = variable == a ? b : a;
+    if (!is_type_variable(variable) || !is_primitive_or_empty_object(me, primitive)) return nullptr;
+    Ty const* constraint = ty_base_constraint(me, variable);
+    if (!constraint || constraint == variable) return nullptr;
+    TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        if (!is_primitive_or_empty_object(me, parts.data[i])) return nullptr;
+    }
+    if (ty_is_related(me, constraint, primitive, TY_RELATION_STRICT_SUBTYPE)) return variable;
+    bool some = false;
+    for (u32 i = 0; constraint->kind == TY_UNION && i < parts.len && !some; i++) {
+        some = ty_is_related(me, parts.data[i], primitive, TY_RELATION_STRICT_SUBTYPE);
+    }
+    if (!some && !ty_is_related(me, primitive, constraint, TY_RELATION_STRICT_SUBTYPE)) return my intrinsics[TY_NEVER];
+    *constrained = true;
+    return nullptr;
+}
+
+// tsc's removeConstrainedTypeVariables: `(T & "a") | (T & "b")` with `T extends "a" | "b"` is T. `types` is sorted
+// by id, and stays so; returns the new length
+static u32 remove_constrained_type_variables(Checker* me, Ty const** types, u32 len) {
+    for (u32 v = 0; v < len; v++) {
+        Ty const* t = types[v];
+        if (t->kind != TY_INTERSECTION || !(t->xflags & TYX_CONSTRAINED_TYPE_VARIABLE) || t->composite.types.len != 2) continue;
+        Ty const* variable = is_type_variable(t->composite.types.data[0]) ? t->composite.types.data[0] : t->composite.types.data[1];
+        // The primitives it's intersected with in this union
+        TyBuf primitives = {0};
+        for (u32 i = 0; i < len; i++) {
+            Ty const* u = types[i];
+            if (u->kind != TY_INTERSECTION || !(u->xflags & TYX_CONSTRAINED_TYPE_VARIABLE) || u->composite.types.len != 2) continue;
+            TyList pair = u->composite.types;
+            if (pair.data[0] == variable) ty_buf_push(&primitives, pair.data[1]);
+            else if (pair.data[1] == variable) ty_buf_push(&primitives, pair.data[0]);
+        }
+        Ty const* constraint = ty_base_constraint(me, variable);
+        TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+        bool covered = true;
+        for (u32 i = 0; i < parts.len && covered; i++) {
+            bool found = false;
+            for (u32 j = 0; j < primitives.len && !found; j++) found = primitives.data[j] == parts.data[i];
+            covered = found;
+        }
+        if (covered) {
+            u32 out = 0;
+            for (u32 i = 0; i < len; i++) {
+                Ty const* u = types[i];
+                bool drop = u->kind == TY_INTERSECTION && (u->xflags & TYX_CONSTRAINED_TYPE_VARIABLE) &&
+                    u->composite.types.len == 2 && (u->composite.types.data[0] == variable || u->composite.types.data[1] == variable);
+                if (!drop && u != variable) types[out++] = u;
+            }
+            // (Sorted insertion)
+            u32 at = out;
+            while (at > 0 && types[at - 1]->id > variable->id) {
+                types[at] = types[at - 1];
+                at--;
+            }
+            types[at] = variable;
+            len = out + 1;
+            v = (u32)-1; // Start over: the list changed
+        }
+        ty_buf_drop(&primitives);
+    }
+    return len;
+}
+
 static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object) {
     if (len == 1) return types[0];
     for (u32 i = 0; i < len; i++) {
@@ -1255,7 +1342,14 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         } else if (out == 1) {
             ret = buf.data[0];
         } else {
-            ret = intern_composite(me, TY_INTERSECTION, buf.data, out, alias, alias_args);
+            bool constrained = false;
+            Ty const* reduced = out == 2 ? reduce_type_variable_intersection(me, buf.data[0], buf.data[1], &constrained) : nullptr;
+            if (reduced) {
+                ret = reduced;
+            } else {
+                ret = intern_composite(me, TY_INTERSECTION, buf.data, out, alias, alias_args);
+                if (constrained) ((Ty*)ret)->xflags |= TYX_CONSTRAINED_TYPE_VARIABLE;
+            }
         }
     }
     ty_buf_drop(&buf);

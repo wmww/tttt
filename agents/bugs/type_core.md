@@ -97,6 +97,14 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   of the same clause isn't visible (tsc: TS2304, inferTypesWithExtends2 passes); unchecked: an `infer` of an *outer*
   conditional's extends type in C.
 
+- Base constraint of an indexed access comes out wrong in valibot: in
+  `library/src/methods/required/requiredAsync.ts` (the `'~run'` member's `InferIssue<TSchema>`, TSchema constrained
+  to `SchemaWithoutPipe<LooseObjectSchema<...> | ...>` = `(A | B | ...) & { pipe?: never }`), `ty_base_constraint` of
+  `TSchema['~types']` is `undefined`, where tsc has `{ input; output; issue } | undefined`. Found when constrained type
+  variable reduction (`reduce_type_variable_intersection`) turned `TSchema['~types'] & {}` into never; not reduced to
+  a small repro (a two-member union of interfaces with an optional `'~types'` under exactOptionalPropertyTypes is
+  fine). Possibly a constraint computed while an alias or the type parameter's constraint is in flight and memoized.
+
 ## Circularity (plan 29 stage 3 leftovers)
 - recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the
   TS2615 cycle at once), and tsc prints the mapped type with `containsError` in mapped syntax.

@@ -31646,7 +31646,7 @@ const baselines = {
         types: true,
     },
     'typeVariableConstraintIntersections': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52656,7 +52656,7 @@ const baselines = {
         types: true,
     },
     'typeParameterExtendsUnionConstraintDistributed': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63821,9 +63821,9 @@ const baselines = {
         types: true,
     },
     'intersectionWithUnionConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionsAndEmptyObjects': {
         errors: true,
