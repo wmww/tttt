@@ -28,7 +28,7 @@ Corpus notes worth keeping:
 ### webpack (115)
 JSDoc; plan 26 "Stage 3 leftovers".
 
-### zod-root (tsc 55, tttt 91: 37 spurious, 1 missing)
+### zod-root (tsc 55, tttt 89: 35 spurious, 1 missing)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
 **not clean under tsc**: 55 diagnostics of its own (26 TS2307 for bench deps the workspace doesn't install, 14 TS6133,
 8 TS6196, ...), so compare, don't count: `node thirdparty/tsc/lib/tsc.js --noEmit --pretty false -p
@@ -40,7 +40,6 @@ namespace named after a primitive keyword). Left, tttt only:
   have; worth a probe.
 - execa results: `proc.stdout` is `Readable` where tsc has `string` (TS2339 `.split`/`.match`, attw.test.ts,
   tsc/bisect.ts, then TS7006 on the callbacks).
-- TS7022 on `const conn = data.repository[key]` (scripts/triage-signal.ts:318): a spurious circularity.
 - Missing: TS2412 at scripts/triage-signal.ts:676 (exactOptionalPropertyTypes' assignment check).
 
 ### HACKs the zod fixes left (hacks.md "Inference" and "Mapped types")

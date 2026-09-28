@@ -595,6 +595,10 @@ static bool in_optional_chain(Expr const* expr) {
 // what lets `x = f(y)` in a loop not depend on `y`'s type (tsc's getQuickTypeOfExpression). Null: no shortcut. The
 // flow engine asks for the callee through its own cache (`in_flow`), which doesn't remember loop-incomplete types
 Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
+    if (expr->tag == EXPR_UNARY_OP && expr->unary_op->op == UNARY_OP_AWAIT) {
+        Ty const* quick = ty_quick_expr_type(me, &expr->unary_op->expr, in_flow);
+        return quick ? ty_awaited(me, quick) : nullptr;
+    }
     if (expr->tag != EXPR_CALL) return nullptr;
     CallExpr const* call = expr->call;
     if (call->uses_new || call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS || in_optional_chain(expr)) {
