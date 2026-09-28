@@ -2416,6 +2416,31 @@ static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed) {
     return nullptr;
 }
 
+// The `as` type of each key of the apparent type of a mapped type's `keyof X` (tsc's getApparentMappedTypeKeys with
+// forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType): X's properties and index signature keys. An intersection's
+// generic members have none
+static Ty const* apparent_mapped_type_keys(Checker* me, MappedInfo const* mapped) {
+    Ty const* modifiers = mapped->modifiers_type;
+    TyList parts = modifiers->kind == TY_INTERSECTION ? modifiers->composite.types : (TyList){ .data = &modifiers, .len = 1 };
+    TyBuf keys = {0};
+    for (u32 p = 0; p < parts.len; p++) {
+        Ty const* part = apparent_type(me, parts.data[p]);
+        if (!(part->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, part);
+        if (members->mapped) continue;
+        for (u32 i = 0; i < members->prop_count + members->index_count; i++) {
+            Ty const* key = i < members->prop_count ? ty_prop_key_literal(me, members->props[i]) :
+                members->index[i - members->prop_count].key;
+            if (i < members->prop_count && (members->props[i]->flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
+            TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 });
+            ty_buf_push(&keys, ty_instantiate(me, mapped->name_type, mapper));
+        }
+    }
+    Ty const* ret = ty_union(me, keys.data, keys.len, nullptr, (TyList){0});
+    ty_buf_drop(&keys);
+    return ret;
+}
+
 // A mapped type whose keys aren't known yet as the target (tsc's isGenericMappedType branch of
 // structuredTypeRelatedTo): S is related to `{ [P in Q]: T }` if Q is related to keyof S and S[Q] to T, to
 // `{ [P in Q]: X[P] }` if S is related to X. With `?`, the keys S has in common with Q are enough
@@ -3465,10 +3490,14 @@ static Ternary structured_related_members(
             } else if (!constraint && operand->kind == TY_ANONYMOUS && ty_members(me, operand)->mapped &&
                 ty_is_generic_index(ty_members(me, operand)->mapped->constraint)
             ) {
-                // A generic mapped type's keys are at least its `as` type, or else its constraint. HACK: tsc adds the
-                // `as` type of the apparent keys of a `keyof T` constraint (getApparentMappedTypeKeys)
+                // A generic mapped type's keys are at least its `as` type, or else its constraint, and with `as` over
+                // `keyof X` the `as` type of X's apparent keys (tsc's getApparentMappedTypeKeys)
                 MappedInfo const* mapped = ty_members(me, operand)->mapped;
                 Ty const* keys = mapped->name_type ? mapped->name_type : mapped->constraint;
+                if (mapped->name_type && mapped->keyof_constraint && mapped->modifiers_type) {
+                    Ty const* both[2] = { apparent_mapped_type_keys(me, mapped), mapped->name_type };
+                    keys = ty_union(me, both, 2, nullptr, (TyList){0});
+                }
                 Ternary related = is_related_to(me, st, source, keys, false);
                 if (related == TERNARY_TRUE) return related;
             }
@@ -3809,6 +3838,34 @@ static Ternary structured_related_members(
     }
 
     Ty const* apparent = source->kind == TY_INTERSECTION ? source : apparent_type(me, source);
+    if (apparent != source && apparent->kind == TY_UNION && target->kind == TY_REFERENCE &&
+        is_array_target(me, target->reference.target)
+    ) {
+        // A union of arrays and tuples (the apparent type of a homomorphic mapped type over them) against an array: by
+        // element types, if every member is a tuple, or for a readonly array also an array (tsc's
+        // structuredTypeRelatedToWorker, isReadonlyArrayType(target) ? everyType(source, isArrayOrTupleType) : ...)
+        bool readonly_target = target->reference.target == my readonly_array_target;
+        TyList members = apparent->composite.types;
+        bool every = true;
+        for (u32 i = 0; i < members.len && every; i++) {
+            Ty const* member = members.data[i];
+            TupleShape const* shape = ty_tuple_shape(member);
+            bool array = member->kind == TY_REFERENCE && is_array_target(me, member->reference.target);
+            every = readonly_target ? (shape || array) : (shape && !shape->readonly);
+        }
+        if (every) {
+            Ty const** elements = malloc(sizeof(Ty const*) * members.len);
+            panic_if(!elements, "out of memory");
+            for (u32 i = 0; i < members.len; i++) {
+                Ty const* member = members.data[i];
+                Ty const* array = ty_tuple_shape(member) ? tuple_as_array(me, member) : member;
+                elements[i] = ty_reference_args(me, array).data[0];
+            }
+            Ty const* element = ty_union(me, elements, members.len, nullptr, (TyList){0});
+            free(elements);
+            return is_related_to(me, st, element, ty_reference_args(me, target).data[0], report);
+        }
+    }
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return TERNARY_FALSE;
     if (my variance_depth && target_mapped) my variance_unreliable = true;
     if (apparent->kind == TY_INTERSECTION) {

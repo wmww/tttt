@@ -20326,14 +20326,14 @@ const baselines = {
         types: true,
     },
     'keyRemappingKeyofResult': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'keyofDoesntContainSymbols': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'keyofGenericExtendingClassDoubleLayer': {
         errors: true,
@@ -20961,7 +20961,7 @@ const baselines = {
         types: true,
     },
     'mappedTypeUnionConstrainTupleTreatedAsArrayLike': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27646,7 +27646,7 @@ const baselines = {
         types: true,
     },
     'restParamUsingMappedTypeOverUnionConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
