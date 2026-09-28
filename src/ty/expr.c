@@ -1426,6 +1426,9 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     if (binding && binding->parent) {
         Ty const* narrowed = ty_destructured_narrowed_type(me, binding, identifier->flow);
         if (narrowed) type = narrowed;
+    } else if (binding && symbol->is_parameter) {
+        Ty const* narrowed = ty_parameter_narrowed_type(me, binding, identifier->flow);
+        if (narrowed) type = narrowed;
     }
     Ty const* initial = symbol->is_parameter ? parameter_initial_type(me, binding, type) : type;
     if (!assume_initialized) {

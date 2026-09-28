@@ -116,6 +116,9 @@ typedef struct FlowQuery {
     // A binding pattern as a pseudo reference (reference is then a placeholder that matches nothing): what its sibling
     // elements' discriminants say about the destructured value (tsc's getNarrowedTypeOfSymbol)
     Binding const* pattern;
+    // A function as a pseudo reference, the same for its parameters (tsc's getNarrowedTypeOfSymbol of a parameter of a
+    // function contextually typed by a rest parameter of a union of tuples)
+    FunctionImpl const* parameters_of;
     Ty const* declared;
     Ty const* initial;
     u32 key; // 0: none (not computed, or the reference has none)
@@ -1442,6 +1445,21 @@ typedef struct DiscriminantAccess {
     Atom const* name;
 } DiscriminantAccess;
 
+// The position of a parameter (without an initializer, not `...`, `this` not counted) of `function` that `symbol` is
+static bool parameter_index(FunctionImpl const* function, Symbol const* symbol, u32* index) {
+    u32 at = 0;
+    for_each (i, vec_function_arg, &function->args) {
+        Binding const* binding = &i->initializer.binding;
+        if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+        if (binding->tag == BINDING_IDENTIFIER && binding->symbol == symbol) {
+            *index = at;
+            return !i->rest && i->initializer.value.tag == EXPR_IMPLICIT_ANY;
+        }
+        at++;
+    }
+    return false;
+}
+
 // The property an element of `pattern` destructures, if `symbol` is one without a default or `...`
 static Atom const* pattern_element_name(Checker* me, Binding const* pattern, Symbol const* symbol) {
     if (!symbol || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) return nullptr;
@@ -1484,6 +1502,17 @@ static DiscriminantAccess discriminant_access(FlowQuery* q, Expr const* expr, Ty
     DiscriminantAccess none = {0};
     if (q->declared->kind != TY_UNION && computed->kind != TY_UNION) return none;
     expr = skip_reference_wrappers(expr);
+    if (q->parameters_of) {
+        u32 index = 0;
+        Atom const* name = nullptr;
+        Symbol const* symbol = expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword ? expr->identifier.target : nullptr;
+        if (symbol && symbol->is_parameter && parameter_index(q->parameters_of, symbol, &index)) {
+            char buf[16];
+            int n = snprintf(buf, sizeof buf, "%u", (unsigned)index);
+            name = checker_atom(me, csview_from_n(buf, n));
+        }
+        return name && is_discriminant_property(me, computed, name) ? (DiscriminantAccess){ nullptr, name } : none;
+    }
     if (q->pattern) {
         // An element of the pattern, without a default (tsc's getCandidateDiscriminantPropertyAccess)
         Atom const* name = expr->tag == EXPR_IDENTIFIER ? pattern_element_name(me, q->pattern, expr->identifier.target) : nullptr;
@@ -2179,7 +2208,9 @@ static Expr const* aliased_condition(FlowQuery* q, Expr const* condition) {
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
     // (A pattern pseudo reference is constant: ty_destructured_narrowed_type() only asks for one that is)
-    if (initialized->value.tag == EXPR_IMPLICIT_ANY || (!q->pattern && !is_constant_reference(q->me, q->reference))) {
+    if (initialized->value.tag == EXPR_IMPLICIT_ANY ||
+        (!q->pattern && !q->parameters_of && !is_constant_reference(q->me, q->reference))
+    ) {
         return nullptr;
     }
     return &initialized->value;
@@ -2825,15 +2856,43 @@ Ty const* ty_destructured_narrowed_type(Checker* me, Binding const* binding, Flo
     Ty const* narrowed = result.type;
     if (narrowed == ty_intrinsic(me, TY_UNREACHABLE_NEVER) || narrowed == parent) return nullptr;
     if (narrowed->flags & TYF_NEVER) return ty_intrinsic(me, TY_NEVER);
-    Ty const* key;
-    if (pattern->tag == BINDING_ARRAY) {
-        Value index = value_number(binding->parent_index);
-        key = ty_literal(me, &index);
-    } else {
-        ObjectBindingItem const* item = binding->parent_item;
-        key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+    return ty_binding_element_type_from(me, binding, narrowed);
+}
+
+Ty const* ty_parameter_narrowed_type(Checker* me, Binding const* binding, FlowNode const* flow) {
+    Symbol const* symbol = binding->symbol;
+    if (!flow || binding->parent || binding->has_explicit_type || !symbol || !symbol->is_parameter || !symbol->function) {
+        return nullptr;
     }
-    return ty_access_reading(me, narrowed, key);
+    FunctionImpl const* function = symbol->function;
+    u32 index = 0;
+    if (vec_function_arg_size(&function->args) < 2 || !parameter_index(function, symbol, &index)) return nullptr;
+    if (!ty_function_is_context_sensitive(function)) return nullptr;
+    Signature const* sig = ty_function_assigned_contextual_signature(me, function);
+    if (!sig || sig->param_count != 1 || !sig->params[0].rest) return nullptr;
+    Ty const* rest = ty_apparent_type(me, sig->params[0].type);
+    if (rest->kind != TY_UNION) return nullptr;
+    for (u32 i = 0; i < rest->composite.types.len; i++) {
+        if (!ty_is_tuple(rest->composite.types.data[i])) return nullptr;
+    }
+    for_each (i, vec_function_arg, &function->args) {
+        if (some_pattern_symbol_assigned(&i->initializer.binding)) return nullptr;
+    }
+    static Expr const placeholder = { .tag = EXPR_IMPLICIT_ANY };
+    FlowQuery q = {
+        .me = me,
+        .reference = &placeholder,
+        .parameters_of = function,
+        .declared = rest,
+        .initial = rest,
+        .shared_start = my flow_shared_count,
+    };
+    FlowType result = type_at_flow_node(&q, flow);
+    my flow_shared_count = q.shared_start;
+    Ty const* narrowed = result.type;
+    if (narrowed == ty_intrinsic(me, TY_UNREACHABLE_NEVER) || narrowed == rest) return nullptr;
+    Value key = value_number(index);
+    return ty_access(me, narrowed, ty_literal(me, &key));
 }
 
 // Inferred type predicates (tsc's getTypePredicateFromBody): `x => x !== undefined` is `(x: T | undefined) => x is T`

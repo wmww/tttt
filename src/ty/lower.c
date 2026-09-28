@@ -1783,6 +1783,23 @@ static Ty const* destructured_flow_type(Checker* me, Binding const* binding, Ty 
     return access ? ty_flow_type(me, access, declared, declared, flow) : declared;
 }
 
+Ty const* ty_binding_element_type_from(Checker* me, Binding const* binding, Ty const* object) {
+    Binding const* parent = binding->parent;
+    Ty const* key;
+    if (parent->tag == BINDING_ARRAY) {
+        Value index = value_number(binding->parent_index);
+        key = ty_literal(me, &index);
+    } else {
+        ObjectBindingItem const* item = binding->parent_item;
+        key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+    }
+    Ty const* ret = ty_access_reading(me, object, key);
+    if (!ret) return nullptr;
+    if (!parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
+    if (!parent->has_explicit_type && !binding_is_parameter(parent)) ret = ty_widened_for_declaration(me, ret, false);
+    return ret;
+}
+
 
 static bool is_generic_with_undefined_constraint(Checker* me, Ty const* ty) {
     if (ty->kind != TY_TYPE_PARAM && !(ty->flags & TYF_DEFERRED)) return false;

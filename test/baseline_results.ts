@@ -37977,7 +37977,7 @@ const baselines = {
     },
     'dependentDestructuredVariables': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'dependentDestructuredVariablesFromNestedPatterns': {

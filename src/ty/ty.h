@@ -1274,6 +1274,12 @@ Ty const* ty_access(Checker* me, Ty const* object, Ty const* index);
 // narrows that union by the pattern's other elements (`const { kind, payload } = x; if (kind === "a") payload`). Null
 // if nothing narrows it
 Ty const* ty_destructured_narrowed_type(Checker* me, struct Binding const* binding, struct FlowNode const* flow);
+// tsc's getNarrowedTypeOfSymbol for a parameter of a context-sensitive function whose contextual signature takes one
+// rest parameter of a union of tuples: the union as control flow narrows it by the other parameters. Null if not
+Ty const* ty_parameter_narrowed_type(Checker* me, struct Binding const* binding, struct FlowNode const* flow);
+// An element of a pattern (no default, not `...`) read from `object` as its pattern's type: the property or element,
+// with the flow type of the destructured reference and the widening of an unannotated pattern. Null if it has none
+Ty const* ty_binding_element_type_from(Checker* me, struct Binding const* binding, Ty const* object);
 // ty_access() of an expression that reads: with noUncheckedIndexedAccess, index signatures give undefined too
 Ty const* ty_access_reading(Checker* me, Ty const* object, Ty const* index);
 
