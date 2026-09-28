@@ -2064,6 +2064,14 @@ static void declare_symbol_flags(
         if (!entry->has_member && !is_member) return;
         for (u32 i = 0; i < entry->decl_count; i++) report_duplicate(entry->decls[i], errs);
         report_duplicate(span, errs);
+        // Declarations merged from other files point at each other (tsc's mergeSymbol across files: its
+        // amalgamatedDuplicates with fewer than 8 names, TODO: one TS6200 per file from 8 on)
+        Error* error = error_ctx_find(errs, span, 2300);
+        for (u32 i = 0; i < entry->decl_count; i++) {
+            if (!span_valid(entry->decls[i]) || entry->decls[i].source == span.source) continue;
+            add_duplicate_related(error_ctx_find(errs, entry->decls[i], 2300), entry->decls[i], span);
+            add_duplicate_related(error, span, entry->decls[i]);
+        }
         return;
     }
     entry->flags |= includes;

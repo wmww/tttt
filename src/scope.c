@@ -542,7 +542,7 @@ static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
 
 // tsc's addDuplicateDeclarationError: the checker's merges (across files) point each error at the other side's
 // declarations, the binder's (within a file) don't
-static void add_duplicate_related(Error* error, Span at, Span other) {
+void add_duplicate_related(Error* error, Span at, Span other) {
     if (!error || span_eq(at, other) || !span_valid(other) || !other.source || other.source->is_stdlib) return;
     u32 count = 0;
     for_each (i, vec_error, &error->sub_errors) {

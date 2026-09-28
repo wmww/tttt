@@ -15,6 +15,7 @@ typedef struct Scope Scope;
 typedef struct Binder Binder;
 typedef struct FlowBuilder FlowBuilder; // flow.h
 typedef struct NamespaceDecl NamespaceDecl; // statement.h
+typedef struct Error Error; // error.h
 
 // tsc's SymbolFlags, bit for bit where they exist here
 typedef enum SymbolFlags {
@@ -565,6 +566,9 @@ bool scope_declares_symbol(Scope const* me, Symbol const* symbol);
 // tsc's getSpellingSuggestion: the candidate name closest to `name`, if any is close enough. `names` are `count`
 // strings, returns the index of the best, or -1
 isize spelling_suggestion(csview name, csview const* names, isize count);
+// TS6203 "was also declared here" (TS6204 "and here" from the second on, at most 5) on the duplicate error at `at`,
+// pointing at `other` (tsc's addDuplicateDeclarationError)
+void add_duplicate_related(Error* error, Span at, Span other);
 // A name used with `meaning` wasn't found: TS2304, or TS2552 with the closest name in scope (tsc's
 // onFailedToResolveSymbol with getSuggestedSymbolForNonexistentSymbol). `shorthand`: the value of `{ a }` (TS18004)
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs);
