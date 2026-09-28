@@ -1357,7 +1357,9 @@ static cstr absolute_containing_dir(ModuleResolver* me, csview containing_file) 
 
 static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csview containing_dir, ResolutionMode mode) {
     ResolvedModule ret = {0};
-    State state = state_make(me, mode);
+    bool explicit_mode = mode & RESOLUTION_MODE_EXPLICIT;
+    State state = state_make(me, (ResolutionMode)(mode & ~RESOLUTION_MODE_EXPLICIT));
+    if (explicit_mode && state.kind == MODULE_RESOLUTION_NODE10) state.use_exports = state.use_imports = state.use_self_name = true;
     state.containing_dir = containing_dir;
 
     Found found = {0};

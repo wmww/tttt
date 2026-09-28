@@ -54272,8 +54272,8 @@ const baselines = {
     },
     'resolutionModeTypeOnlyImport1(moduleresolution=node10)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'resolvesWithoutExportsDiagnostic1(moduleresolution=bundler)': {
         errors: false,

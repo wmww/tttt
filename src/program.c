@@ -207,8 +207,8 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     // The conditions `exports` are read with: by syntax, else the format of the importing file
     ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_REQUIRE_SYNTAX :
         ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
-    if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
-    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
+    if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM | RESOLUTION_MODE_EXPLICIT;
+    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX | RESOLUTION_MODE_EXPLICIT;
     ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
     if (cstr_size(&resolved.ambiguous_root_package_json)) {
         cstr shown = program_path_for_message(me, cstr_sv(&resolved.ambiguous_root_package_json));
