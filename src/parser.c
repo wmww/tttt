@@ -2655,10 +2655,18 @@ static bool parse_unique_symbol_type(Parser* parent) {
 }
 
 // A primitive type keyword not followed by `.` (tsc's parseKeywordAndNoDot): `string.x` names a namespace `string`
-static bool hop_type_keyword(Parser* parent, char const* keyword) {
-    Parser p = parser(parent);
-    if (!hop_start_if_ends_on_word_break(&p, keyword) || *tok_peek(&p).start == '.') return parse_fail(&p);
-    return parse_success(&p);
+__attribute__((always_inline)) static inline bool hop_type_keyword(Parser* p, char const* keyword) {
+    if (*p->pos != *keyword) return false;
+    char const* start = p->pos;
+    if (!hop_start_if_ends_on_word_break(p, keyword)) return false;
+    char const* c = p->pos;
+    while (*c == ' ' || *c == '\t') c++;
+    // (Only a `.`, or line breaks and comments that may hide one, need the tokenizer)
+    if ((*c == '.' || *c == '/' || *c == '\n' || *c == '\r' || (unsigned char)*c >= 0x80) && *tok_peek(p).start == '.') {
+        p->pos = start;
+        return false;
+    }
+    return true;
 }
 
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {

@@ -54,7 +54,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   many places; `parse_binding_identifier()` (bindings, class names) and the enum name refuse all of
   `is_reserved_word()`. Making `parse_identifier()` refuse them all broke 68 tests (`as const`, ...): each caller
   would have to say whether it wants tsc's parseIdentifier, parseIdentifierName or parseBindingIdentifier.
-  `parse_binary_op` is an if/else chain.
 - Conflict markers (TS1185) are only looked for after a `\n` in `hop_whitespace_slow()` and at the file's start
   (`parse_file()`): anything else that consumes a newline (a string, template, comment, JSX text) is where tsc's
   scanner wouldn't look either, but a lone `\r` line ending isn't a newline to `hop_whitespace`. `Decl()` positions in
@@ -69,7 +68,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   (tsc's missing identifier); tttt has no missing-identifier node, bindings use `BINDING_NOOP` (no symbol) where tsc
   declares `(Missing)` (objectBindingPatternKeywordIdentifiers0x symbols).
 - Object literals and accessors: a missing `}` makes the literal end at its last token by walking back over ASCII
-  whitespace (not comments) in `parse_object_literal`; the TS1005 `'{' expected` of a bodyless accessor/method finds
+  whitespace (not comments) in `parse_object`; the TS1005 `'{' expected` of a bodyless accessor/method finds
   its last character the same way (`class_decl_typecheck`, the `EXPR_OBJECT` typecheck).
 - Error recovery (plan 27): `list_abort_or_skip()` skips a token that starts an element of the current list instead
   of ending it (right while tttt element parsers fail where tsc's commit). The fail cache ignores
@@ -95,8 +94,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - Class field `x!: T`: the parser drops the `!` (`let x!: T` keeps it in `Binding.definitely_assigned`); `class_decl.c`
   (`definite`, used by `class_instance_member`/override checks) and `check_used_before_initialization` peek at the
   source character after the field's name.
-- `parse_generic_decl_item` parses and drops `in`/`out` type parameter modifiers (`const` is kept): they don't print
-  and don't set variances.
+- `parse_generic_decl_item`: `in`/`out` type parameter modifiers give the variance (`get_variances`, relate.c) but
+  never print (only `const` does; tsc's getTypeParameterModifiers prints all three).
 - `parse_object_item`: `{ a = 1 }` keeps the default in `ObjectExprItem.shorthand_default` (resolved, checked by
   `assignment_target_typecheck`, not in the types baseline). Object literal methods are plain `EXPR_FUNCTION` values.
 - Class accessors (`ClassItem.method.accessor`, `class_item_accessor_evaluate_type`): paired by name+staticness in
@@ -192,7 +191,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `declare_symbol`: a declaration named like a builtin type symbol (`class number`) gets a detached symbol on conflict,
   so `new number()` doesn't resolve.
 - `symbol_table_collect` allocates (`ty_namespace_type` members, `extend_export_stars`).
-- `scope_init_declaration`'s "Declaration ... acquired multiple times" `log_error` fires in one test (a node added twice).
 - Type parameters of merged interface/class declarations are one symbol per name (`scope_new_generic_merged`) except
   when the earlier declaration is the shared lib program's (nothing is written to lib symbols); `type_parameter_is_unused`
   (unused.c) checks every declaration's parameter at the same index for that case.
@@ -207,8 +205,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - TS1361/TS1362 valid use sites (`FlowBuilder.type_only_alias_ok`, `in_type_query`) are set by the enclosing
   constructs, not derived from parents like tsc's isValidTypeOnlyAliasUseSite. `export =`/`export default` of a
   namespace- or type-only name gets `symbol` but no `target` (`identifier_expr_lookup_names`), so the checker sees an
-  untyped name there.
-
+  untyped name there. `check_type_only_value()` (expr.c) finds the start of a type-only default import's clause by
+  scanning back from the name for `type` (PortItem has no span for the import clause).
 - `statement_resolve_names_reachable` (`STATEMENT_WITH`): the body of a `with` is bound and resolved (scopes, flow,
   hoisted `var`s) but with a null ErrorCtx, since tsc never checks it and tttt reports many checker errors (TS2304...)
   from the resolve walk. Whatever resolve-time errors tsc reports from its binder (duplicate labels...) are lost in
@@ -304,7 +302,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `variable_statement_typecheck` TS1254: any identifier or property access counts as a "literal enum reference".
 - `widen_nullable` (members.c; ty.h HACK): non-strict widening to `any` of null/undefined is shallow (top level and
   array elements), tttt has one null type (tsc only widens its widening null/undefined), spread properties are exempt.
-  Real fix: tsc's nullWideningType/undefinedWideningType.
+  Inference results (`ty_widened_nullable` in infer.c) widen every null/undefined candidate the same way, a written
+  `undefined` type too. Real fix: tsc's nullWideningType/undefinedWideningType.
 - `contains_spread` (members.c HACK, tsc's ObjectFlags.ContainsSpread): "a property came from a spread" (`{ ...{} }`
   doesn't count). The widened literal stays an object literal type.
 
@@ -315,9 +314,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `props_related` (`ty/relate.c`): tsc skips a property whose source and target are the same symbol; tttt's props are
   per type, so only object literal accessors of the same function are recognized as "the same" (what the recursive
   getter idiom needs). Other shared symbols are related (and typed) as usual.
-- `access` union branch (`ty/access.c`): exactOptionalPropertyTypes has no missing type. Optional reads add a real
-  `undefined`, so `{ [K in keyof T]: T[K] }` over an optional property holds `X | undefined` where tsc holds
-  `X | missing` (dropped against index signatures). Plan 19 "zod corpus" has the fix (tsc's missingType).
 - `ty_call_typecheck` / `KEY_CALL_RESOLUTION` (plan 28): the typecheck walk skips resolving a call again when the type
   pass's last settled resolution under the same contextual type would report nothing; it trusts no resolution-relevant
   state changed. "Would report" is set by hand at each error site of `resolve_call`/`resolve_with_signatures`
@@ -340,10 +336,10 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   mapper only fills type parameters the main inference left without candidates (using it for everything was
   tsc-exact on tests but cost valibot 9%). The first pass gives a non-context-sensitive function argument its parameter
   type fully instantiated with the return mapper, other arguments only the top level (`instantiate_instantiable`).
-  Higher-order branch not tsc's (call.c:588 HACK). A binding pattern's return mapper drops what inferred `any` (tsc's
-  nonInferrableAnyType, which tttt lacks) and a pattern with a rest element gives none. Nested literals ask
-  `ty_instantiate_contextual_type()` only in `check_for_mutable_location()` (tsc instantiates every contextual type
-  lookup with the returnMapper).
+  Higher-order branch not tsc's (`ty_generic_function_in_context` HACK). A binding pattern's return mapper drops what
+  inferred `any` (tsc's nonInferrableAnyType, which tttt lacks) and a pattern with a rest element gives none. Nested
+  literals ask `ty_instantiate_contextual_type()` only in `check_for_mutable_location()` (tsc instantiates every
+  contextual type lookup with the returnMapper).
 - Second pass contextual types (`infer_type_arguments`, HACK): a type parameter without candidates stays itself only
   where it would be `unknown` (then `Checker.contextual_fixing_mapper` fixes it in contextual signatures); others are
   substituted by the constraint/default as before, because tttt's contextual lookups don't go through a type
@@ -391,7 +387,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `jsx_signatures_of`: an unknown intrinsic string tag's fake signature takes the error type (tsc: TS2339).
   `Checker.jsx_element` lets `report_relation_error` apply the JSX head rule (`ty_jsx_skips_head`); relations about
   attributes outside `ty_check_jsx_element` don't see it.
-
 - `literal_lacks_prop_of` (infer.c): tsc's propertiesRelatedTo rejects a source property that an *unwidened* object
   literal target (ObjectFlags.ObjectLiteral) lacks, in every relation; tttt's regular object literal types are also the
   widened ones declarations hold, so the rule can't live in relate.c and is only applied in `common_supertype` (where
@@ -423,7 +418,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   relates the regular element type (tsc: property by property). Array literal targets type as arrays, not tuples (tsc's
   inDestructuringPattern), and a binding pattern isn't its initializer's contextual type.
 - Expando assignments to functions (`foo.constructor = 1`) are checked against the existing member;
-  `is_container_declaration()` skips checking `ns.a = {}` without tsc's isAssignmentDeclaration condition.
+  `is_container_declaration()` (expr.c) approximates tsc's isAssignmentDeclaration for `ns.a = {}` (JS: unchecked when
+  `ns.a` has exports; a CommonJS export is always taken as declaring members).
 - `apparent_contextual_type` maps type variables/intersection members to apparent types only for `this` in object
   literals; `ty_apparent_type` leaves intersections alone (tsc's getApparentTypeOfIntersectionType).
 - `missing_property_type` (HACK): a failed property access is errorType only under conditions approximating when
@@ -436,9 +432,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   copy of the tag Expr (spans and syntax only; typing the copy would make a second memo) and whose args are the
   substitutions; `CallInfo.tagged_template` adds the TemplateStringsArray. A real TaggedTemplate node kind, or call
   resolution over an argument list abstraction, would avoid the copy.
-- Inference widens null/undefined candidates to any without strictNullChecks (`ty_widened_nullable` in infer.c), all
-  of them: tsc only widens the *widening* null/undefined of expressions, not a written `undefined` type (same
-  approximation as widen_nullable's HACK).
 - `compute`: Bigint values are doubles (`Value.bigint`). `satisfies`
   doesn't narrow its result.
 - `ty_apply_type_arguments` (instantiation expressions): maps every signature taking at least that many type arguments;
@@ -452,14 +445,16 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   different source. `ty_is_generic_object` approximates isGenericObjectType. `ty_best_matching_type`: no key-property
   map, references matched by target, anonymous types by alias, "most overlappy" counts shared property names.
 - `intersection_props_related`: which member TS2741 names under a whole-object failure was matched to one tsc example
-  (probe `overload_omit_intersection_missing_prop.ts`), not derived from tsc.
+  (probe `test/probes/plan19/valibot/overload_omit_intersection_missing_prop.ts`), not derived from tsc.
 - `type_decl_span` (related-information positions): declared types, function type nodes and type literals only; mapped
   properties of a renaming `as` clause lose their declarations.
 
 ## Type core (`src/ty/`)
-- `exact_missing_flag()` (members.c HACK): no missing type. An optional mapped property whose modifiers property is
-  optional strips undefined under exactOptionalPropertyTypes (tsc: `T[K]` is `X | missing`, and the non-missing view
-  drops it), even an undefined the property declares.
+- No missing type (tsc's missingType; plan 19 "zod corpus" has the fix): under exactOptionalPropertyTypes optional
+  reads (`ty_access`) add a real `undefined`, so `{ [K in keyof T]: T[K] }` over an optional property holds
+  `X | undefined` where tsc holds `X | missing`. `exact_missing_flag()` (members.c HACK) compensates: an optional mapped
+  property whose modifiers property is optional strips undefined (tsc's non-missing view drops only the missing), even
+  an undefined the property declares.
 - Relation budget (`recursive_related`, `check_related`): tsc's relationCount, but without union origins tttt spends
   it where tsc takes a shortcut: `T1 & T2` (distributed into a 20k-member union) against `T1` is true at once in tsc
   (the union's origin is an intersection containing T1) and TS2859 in tttt (relationComplexityError's f1). Union
@@ -470,8 +465,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   head is only kept when a pending incompatible step suppressed it, because the callers of `ty_explain_unrelated()`
   rely on other overrides (TS2741...) dropping the natural head. `skipped_source/target` (tsc's lastSkippedInfo) and
   `override_next_head` aren't restored by `report_truncate()` (tsc's resetErrorInfo restores both).
-- `check_type_only_value()` (expr.c): the start of a type-only default import's clause is found by scanning back from
-  the name for `type` (PortItem has no span for the import clause).
 - Substitution types (TY_SUBSTITUTION): the true-branch chain around a node is `TypeNode.flow`, set by the resolve
   walk; it flips at function parameters and index signature keys and stops only at function bodies (setter write types,
   `typeof` operands, arrow functions in type queries not special). The homomorphic mapped key rule (`number |
@@ -613,7 +606,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `binary_op_typecheck` (instanceof, HACK): TS2358 skipped in JS files.
 - `mark_jsdoc_links()` (unused.c HACK): `{@link X}` counts as a use by a text scan, looked up from the file scope.
   Class member reads are a checker table keyed by declaration span start (`ty_mark_member_referenced`).
-- `for_in_accepts` (statement.c): a type parameter should be judged by its constraint (spurious TS2407 possible).
+- `for_in_accepts` (statement.c): type parameters and deferred types are accepted outright (tsc judges the constraint:
+  TS2407 missed).
 - Decorators are typechecked as ordinary expressions; placement checked (TS1206/TS1249), validity for the target isn't.
 - `program_apply_comment_directives` (`@ts-expect-error`/`@ts-ignore`): suppression goes by tttt's error *phase*
   (RESOLVE_NAMES/TYPECHECK), not tsc's diagnostic kind, so parser-reported grammar errors aren't suppressed and
@@ -760,7 +754,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   passes).
 - `TTTT_IGNORE_UNDERLINES=1` (`compare_outputs`): a measurement mode, not for saving results.
 - `engine.c` (reads `test/baseline_results.ts` for the harness only): ignores newer constructs, no let/const/var
-  distinction, drops property assignment on arrays, `value_loose_eq` stringifies. `DEBUG_ALLOCATOR` always on.
+  distinction, drops property assignment on arrays, `value_loose_eq` stringifies.
 - `failstats.py: line_ratio` is multiset line overlap, not a diff; `syntax_gaps` re-parses rendered errors (approximate
   for multi-file tests). `bench/make_corpus.py` replicates passing tests in namespaces (flatters tttt).
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip them when bisecting.

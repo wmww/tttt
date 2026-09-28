@@ -3,10 +3,10 @@
   manyCompilerErrorsInTheTwoFiles, multiLineContextDiagnosticWithPretty...): the errors baseline starts with tsc's
   formatDiagnosticsWithColorAndContext output (ANSI colours, source line with gutter, `~` underline, related info,
   "Found N errors") before the usual section. The CLI could use the same formatter.
-- `error.c` "Error added with invalid span": ~58 lines per suite run (TS2511 abstract class instantiation ~31, e.g.
-  classAbstract*, newAbstractInstance; TS2503 `Intl` ~13; TS2304/TS2552 `ArrayBufferLike`/`ArrayLike`/`Date` looked up
-  from lib files ~14). `grep "invalid span" build/failstats/stderr.txt`. A span computed from the wrong node or file.
-  Also one "Declaration B acquired multiple times" (scope.c).
+- `error.c` "Error added with invalid span": 29 lines per suite run (2026-09-28), in two tests:
+  modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib (`@lib: es2015.core` alone: 27 diagnostics inside lib
+  files, `Cannot find name '_'`, which error_ctx_error_s() drops; harmless, but find what in the lib refers to `_`)
+  and reservedWords3 (plan 27 leftovers). `grep "invalid span" build/failstats/stderr.txt`.
 - `@baselineFile`, `@fullEmitPaths` are ignored; bad option values are ignored (tsc's harness throws).
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration.
 - The harness reruns a test when the first run leaves net allocations (lib cache fill), ~170 times per suite run.
@@ -30,6 +30,3 @@
 - `baseline_test_traversal.c` `port_item_add_alias`: the `import type`/`export type` declared-type rule checks the
   resolved symbol for class/interface/enum/alias only; tsc's getDeclaredTypeOfSymbol also takes type parameters and
   enum members. Unverified whether any test reaches that.
-- modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib (`@lib: es2015.core` alone) makes 27 checker
-  `log_error`s "Error added with invalid span": diagnostics inside lib files (`Cannot find name '_'`), which
-  error_ctx_error_s() drops. Harmless, but the log_error count should be 0; find what in the lib refers to `_`.
