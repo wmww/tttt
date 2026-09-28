@@ -1592,9 +1592,10 @@ static Ty const* constructor_instance_type(Checker* me, Ty const* constructor, v
     if ((apparent->flags & TYF_OBJECT) || apparent->kind == TY_INTERSECTION) {
         Members const* members = ty_members(me, apparent);
         if (members->construct_count) {
-            // TODO: tsc erases the type parameters of a generic signature to any
             TyBuf results = {0};
-            for (u32 i = 0; i < members->construct_count; i++) ty_buf_push(&results, signature_return_type(me, members->construct[i]));
+            for (u32 i = 0; i < members->construct_count; i++) {
+                ty_buf_push(&results, signature_return_type(me, ty_erased_signature(me, members->construct[i])));
+            }
             Ty const* ret = ty_union(me, results.data, results.len, nullptr, (TyList){0});
             ty_buf_drop(&results);
             return ret;

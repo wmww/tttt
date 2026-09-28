@@ -281,6 +281,7 @@ Ty const* ty_rest_element_type(Checker* me, Ty const* rest);
 bool ty_type_param_is_contravariant(Checker* me, Ty const* target, u32 index);
 bool ty_alias_param_is_contravariant(Checker* me, Symbol const* alias, u32 index);
 Ty const* ty_alias_instance(Checker* me, Symbol const* decl, TyList args);
+Signature const* ty_erased_signature(Checker* me, Signature const* sig); // relate.c, tsc's getErasedSignature
 TyList ty_alias_type_params(Checker* me, Symbol const* decl);
 bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional);
 bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c

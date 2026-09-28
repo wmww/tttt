@@ -48316,12 +48316,12 @@ const baselines = {
         types: true,
     },
     'typeGuardsWithInstanceOfByConstructorSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardsWithInstanceOfBySymbolHasInstance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

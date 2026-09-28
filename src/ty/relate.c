@@ -1186,7 +1186,7 @@ static unsigned signature_return_code(Signature const* source, Signature const* 
 }
 
 // tsc's getErasedSignature: every type parameter is any
-static Signature const* erased_signature(Checker* me, Signature const* sig) {
+Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
     signature_resolve(me, sig);
     if (!sig->type_params.len) return sig;
     Ty const* stack_anys[16];
@@ -1199,8 +1199,8 @@ static Signature const* erased_signature(Checker* me, Signature const* sig) {
 }
 
 bool ty_implementation_compatible_with_overload(Checker* me, Signature const* implementation, Signature const* overload) {
-    Signature const* source = erased_signature(me, implementation);
-    Signature const* target = erased_signature(me, overload);
+    Signature const* source = ty_erased_signature(me, implementation);
+    Signature const* target = ty_erased_signature(me, overload);
     Ty const* source_return = signature_return_type(me, source);
     Ty const* target_return = signature_return_type(me, target);
     if (target_return != ty_intrinsic(me, TY_VOID) && !ty_is_related(me, target_return, source_return, TY_RELATION_ASSIGNABLE) &&
@@ -1269,7 +1269,7 @@ static Ternary signatures_related(
         // Pairwise, with type parameters erased: they are the same ones
         for (u32 i = 0; i < target_count; i++) {
             Ternary related = compare_signatures(
-                me, st, erased_signature(me, source_sigs[i]), erased_signature(me, target_sigs[i]), CALLBACK_NONE, report,
+                me, st, ty_erased_signature(me, source_sigs[i]), ty_erased_signature(me, target_sigs[i]), CALLBACK_NONE, report,
                 signature_return_code(source_sigs[i], target_sigs[i], construct)
             );
             if (!related) return TERNARY_FALSE;
@@ -1279,19 +1279,19 @@ static Ternary signatures_related(
         // A single generic source is instantiated in the context of the target instead (only comparability erases)
         bool erase = st->relation == TY_RELATION_COMPARABLE;
         result = compare_signatures(
-            me, st, erase ? erased_signature(me, source_sigs[0]) : source_sigs[0],
-            erase ? erased_signature(me, target_sigs[0]) : target_sigs[0], CALLBACK_NONE, report,
+            me, st, erase ? ty_erased_signature(me, source_sigs[0]) : source_sigs[0],
+            erase ? ty_erased_signature(me, target_sigs[0]) : target_sigs[0], CALLBACK_NONE, report,
             signature_return_code(source_sigs[0], target_sigs[0], construct)
         );
     } else {
         // Every target signature needs a source signature, type parameters erased. Only the first failure explains
         for (u32 i = 0; i < target_count; i++) {
-            Signature const* target_sig = erased_signature(me, target_sigs[i]);
+            Signature const* target_sig = ty_erased_signature(me, target_sigs[i]);
             isize_t saved = vec_ty_report_line_size(&st->lines);
             bool elaborate = report;
             Ternary related = TERNARY_FALSE;
             for (u32 j = 0; j < source_count && !related; j++) {
-                related = compare_signatures(me, st, erased_signature(me, source_sigs[j]), target_sig, CALLBACK_NONE, elaborate,
+                related = compare_signatures(me, st, ty_erased_signature(me, source_sigs[j]), target_sig, CALLBACK_NONE, elaborate,
                     signature_return_code(source_sigs[j], target_sigs[i], construct));
                 elaborate = false;
             }
