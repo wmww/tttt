@@ -7246,12 +7246,12 @@ const baselines = {
         types: true,
     },
     'declFileEmitDeclarationOnlyError1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declFileEmitDeclarationOnlyError2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8906,7 +8906,7 @@ const baselines = {
         types: true,
     },
     'declarationMapsWithoutDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21976,7 +21976,7 @@ const baselines = {
         types: true,
     },
     'moduleNoneErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23456,12 +23456,12 @@ const baselines = {
         types: true,
     },
     'noErrorUsingImportExportModuleAugmentationInDeclarationFile2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'noErrorUsingImportExportModuleAugmentationInDeclarationFile3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24741,7 +24741,7 @@ const baselines = {
         types: true,
     },
     'optionsOutAndNoModuleGen': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24786,12 +24786,12 @@ const baselines = {
         types: true,
     },
     'out-flag2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'out-flag3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24801,7 +24801,7 @@ const baselines = {
         types: true,
     },
     'outModuleConcatCommonjs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24811,7 +24811,7 @@ const baselines = {
         types: true,
     },
     'outModuleConcatES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24821,17 +24821,17 @@ const baselines = {
         types: true,
     },
     'outModuleConcatUmd': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'outModuleConcatUnspecifiedModuleKind': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'outModuleConcatUnspecifiedModuleKindDeclarationOnly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27391,7 +27391,7 @@ const baselines = {
         types: true,
     },
     'requireOfJsonFileWithModuleEmitNone': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27421,7 +27421,7 @@ const baselines = {
         types: true,
     },
     'requireOfJsonFileWithModuleNodeResolutionEmitNone': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31546,12 +31546,12 @@ const baselines = {
         types: true,
     },
     'typeReferenceDirectives11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeReferenceDirectives12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

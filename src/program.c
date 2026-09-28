@@ -7,6 +7,9 @@
 #include <cleat/filesystem.h>
 #include "error.h"
 #include "statement.h"
+#include "class_decl.h"
+#include "enum_decl.h"
+#include "interface_decl.h"
 #include "port_statement.h"
 #include "source_file.h"
 #include "ty/ty.h"
@@ -343,11 +346,13 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
             PortStatement* port = statement->import_export;
             if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) && !port->jsdoc) {
                 source->is_module = true;
+                if (!span_valid(source->module_indicator)) source->module_indicator = statement->span;
             }
         }   break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:
             source->is_module = true;
+            if (!span_valid(source->module_indicator)) source->module_indicator = statement->span;
             break;
 
         case STATEMENT_DECL_NAMESPACE:
@@ -359,6 +364,15 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
         case STATEMENT_DECL_INTERFACE:
             if (statement->decl.props.exported) {
                 source->is_module = true;
+                if (!span_valid(source->module_indicator)) {
+                    Span name = statement->tag == STATEMENT_DECL_CLASS ? statement->decl.class->name :
+                        statement->tag == STATEMENT_DECL_FUNCTION ? statement->decl.function.impl->name :
+                        statement->tag == STATEMENT_DECL_ENUM ? statement->decl.enum_->name :
+                        statement->tag == STATEMENT_DECL_INTERFACE ? statement->decl.interface->name :
+                        statement->tag == STATEMENT_DECL_TYPE ? statement->decl.type.name :
+                        statement->tag == STATEMENT_DECL_NAMESPACE ? statement->decl.namespace.name : span_null;
+                    source->module_indicator = span_valid(name) ? name : statement->span;
+                }
             }
             break;
 
@@ -778,6 +792,26 @@ static void program_validate_options(Program* me) {
             name, "'."
         );
     }
+    // Declaration emit options without declaration emit
+    bool declarations = o->declaration || o->composite;
+    const char* needs_declarations[3] = {
+        o->isolated_declarations ? "isolatedDeclarations" : nullptr,
+        cstr_size(&o->declaration_dir) ? "declarationDir" : nullptr,
+        o->declaration_map ? "declarationMap" : nullptr,
+    };
+    for (isize i = 0; i < 3 && !declarations; i++) {
+        if (needs_declarations[i]) error_ctx_global_error_d(my errs, 5069, "Option '", needs_declarations[i],
+            "' cannot be specified without specifying option 'declaration' or option 'composite'.");
+    }
+    if (cstr_size(&o->out_file) && !o->emit_declaration_only && o->module_set && o->module != MODULE_KIND_NONE &&
+        o->module != MODULE_KIND_AMD && o->module != MODULE_KIND_SYSTEM
+    ) {
+        error_ctx_global_error_d(my errs, 6082, "Only 'amd' and 'system' modules are supported alongside --outFile.");
+    }
+    if (o->emit_declaration_only && !declarations) {
+        error_ctx_global_error_d(my errs, 5069,
+            "Option 'emitDeclarationOnly' cannot be specified without specifying option 'declaration' or option 'composite'.");
+    }
     if (o->emit_decorator_metadata && !o->experimental_decorators) {
         error_ctx_global_error_d(
             my errs, 5052,
@@ -905,6 +939,31 @@ static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* see
         hmap_source_file_ptr_insert(seen, key, nullptr);
     }
     cstr_drop(&output);
+}
+
+// The part of tsc's verifyCompilerOptions that blames the first module (tsc's firstNonAmbientExternalModuleSourceFile):
+// modules need a module kind (TS1148), and one that can be bundled into an outFile (TS6131)
+static void program_verify_module_kind(Program* me) {
+    CompilerOptions const* o = &my options;
+    SourceFile const* first = nullptr;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile const* source = *i;
+        if (source->is_module && !source->is_commonjs && !source->is_json && !source->is_declaration && !source->is_stdlib) {
+            first = source;
+            break;
+        }
+    }
+    // (tsc's indicator of a module by moduleDetection has a span of its own: not reported)
+    if (!first || !span_valid(first->module_indicator)) return;
+    bool isolated = o->isolated_modules || o->verbatim_module_syntax;
+    if (!isolated && o->target < SCRIPT_TARGET_ES2015 && o->module_set && o->module == MODULE_KIND_NONE) {
+        error_ctx_error_d(my errs, first->module_indicator, 1148,
+            "Cannot use imports, exports, or module augmentations when '--module' is 'none'.");
+    }
+    if (cstr_size(&o->out_file) && !o->emit_declaration_only && !o->module_set) {
+        error_ctx_error_d(my errs, first->module_indicator, 6131,
+            "Cannot compile modules using option 'outFile' unless the '--module' flag is 'amd' or 'system'.");
+    }
 }
 
 // The end of tsc's verifyCompilerOptions: no output file may overwrite an input file or another output file
@@ -1054,6 +1113,7 @@ static void program_report_unused_expect_errors(Program* me) {
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     program_validate_options(me);
+    program_verify_module_kind(me);
     program_verify_emit_paths(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     set_compiler_options(&my options);

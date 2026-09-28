@@ -68,6 +68,9 @@ typedef struct SourceFile {
     // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
     bool is_stdlib;
     bool is_module;
+    // The first statement that makes this file a module (tsc's externalModuleIndicator, as getErrorSpanForNode spans it:
+    // a declaration's name, else the statement). Invalid if none does
+    Span module_indicator;
     bool is_declaration;
     // The parser reported something (tsc's hasParseDiagnostics): grammar errors aren't reported then, see
     // error_ctx_grammar_error_d()

@@ -81,6 +81,7 @@ typedef enum ModuleDetectionKind {
     X(allow_arbitrary_extensions, "allowarbitraryextensions", false) \
     X(composite, "composite", false) \
     X(declaration, "declaration", false) \
+    X(declaration_map, "declarationmap", false) \
     X(downlevel_iteration, "downleveliteration", false) \
     X(emit_declaration_only, "emitdeclarationonly", false) \
     X(emit_decorator_metadata, "emitdecoratormetadata", false) \
@@ -112,6 +113,7 @@ typedef enum ModuleDetectionKind {
     X(resolve_package_json_imports, "resolvepackagejsonimports", false) \
     X(rewrite_relative_import_extensions, "rewriterelativeimportextensions", false) \
     X(skip_default_lib_check, "skipdefaultlibcheck", false) \
+    X(source_map, "sourcemap", false) \
     X(skip_lib_check, "skiplibcheck", false) \
     X(suppress_excess_property_errors, "suppressexcesspropertyerrors", false) \
     X(suppress_implicit_any_index_errors, "suppressimplicitanyindexerrors", false) \
