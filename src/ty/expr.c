@@ -2493,6 +2493,14 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 break;
         }
 
+        // (tsc's checkObjectLiteral: a context-sensitive property or method is an intra-expression inference site of the
+        // call inferring now, against its contextual type as the literal gives it)
+        if ((i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_METHOD) && member_context && !ctx.skip_sensitive &&
+            ty_expr_is_context_sensitive(&i->value)
+        ) {
+            ty_add_intra_expression_site(me, type, member_context);
+        }
+
         if (object_item_is_private_name(i)) continue;
 
         // What the member adds to index signatures (tsc's isSymbolWithNumericName, isSymbolWithSymbolName: the
@@ -2686,6 +2694,10 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             continue;
         }
         Ty const* element = check_for_mutable_location(me, i, element_ctx);
+        // (tsc's checkArrayLiteral: in a tuple context, a context-sensitive element is an intra-expression inference site)
+        if (element_context && !ctx.skip_sensitive && context_is_tuple_like(me, ctx.contextual, 0) && ty_expr_is_context_sensitive(i)) {
+            ty_add_intra_expression_site(me, element, element_context);
+        }
         if (has_omitted) {
             flags[count] = TUPLE_ELEMENT_OPTIONAL;
             element = ty_optional_prop_type(me, element);

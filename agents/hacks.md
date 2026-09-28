@@ -359,8 +359,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - Skip-sensitive first pass (`ExprCtx.skip_sensitive`): returnOnlyType (`return_only_type()`) gives generators
   anyFunctionType instead of their body's type; the first overload round's applicability
   check skips such arguments entirely (`first_unfit_argument`); isPartiallyInferableType only as a priority.
-- `infer_intra_expression` (HACK): only arrow functions are sites (plus nested/spread literals); methods and function
-  expressions would need `this` recomputed per check (tttt memoizes it).
+- Intra-expression sites (`ty_add_intra_expression_site()`, from `check_object()`/`check_array()`): tsc's, but not
+  for JSX attributes yet, and a tuple context is `context_is_tuple_like()` (tsc's inTupleContext also counts a spread
+  into a call). The sites of an argument stay for the next arguments' fixings, like tsc's.
 - Higher-order inference (`inference_propagate_generic`, `Arg.generic_function`/`generic_call`, `waits_for_sensitive`):
   a failed call's return type is re-inferred without them, then the arguments are re-checked against the failed
   candidate only to restore their memos (the types baseline prints the last check). `add_implementation_success` does

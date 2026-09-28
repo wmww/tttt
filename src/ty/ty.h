@@ -1271,6 +1271,9 @@ Ty const* ty_instantiate_contextual_type_for(Checker* me, Ty const* contextual, 
 // tsc's getContextualThisParameterType: instantiated with the fixing mapper of the call inferring now
 Ty const* ty_instantiate_fixing(Checker* me, Ty const* type);
 Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, struct FunctionImpl const* function);
+// A context-sensitive member of an object or array literal was checked while the call inferring now fixes: what it
+// is inferred from before the next type parameter is fixed (tsc's addIntraExpressionInferenceSite)
+void ty_add_intra_expression_site(Checker* me, Ty const* type, Ty const* contextual);
 Ty const* ty_contextual_signature_type_at(Checker* me, Signature const* sig, u32 index, bool as_rest);
 // An array literal re-read as a tuple of its elements (tsc's checkArrayLiteral with forceTuple), from the elements'
 // memos

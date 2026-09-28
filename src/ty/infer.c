@@ -1468,14 +1468,14 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
             }
             free(literals);
         }
-        co = (param->priority & INFER_PRIORITY_RETURN_TYPE) ?
+        co = (param->priority & INFER_PRIORITY_IMPLIES_COMBINATION) ?
             ty_union(me, candidates, len, nullptr, (TyList){0}) :
             common_supertype(me, candidates, len);
         co = ty_widened_nullable(me, ty_widened_objects(me, co)); // (tsc's getWidenedType of the inference)
         free(candidates);
     }
-    // (Candidates of a priority that implies combining them are intersected: tsc's PriorityImpliesCombination)
-    Ty const* contra = !param->contra_len ? nullptr : (param->priority & INFER_PRIORITY_LITERAL_KEYOF) ?
+    // (Candidates of a priority that implies combining them are intersected)
+    Ty const* contra = !param->contra_len ? nullptr : (param->priority & INFER_PRIORITY_IMPLIES_COMBINATION) ?
         ty_intersection(me, param->contra, param->contra_len, nullptr, (TyList){0}) : common_subtype(me, param->contra, param->contra_len);
     if (co && contra) {
         // The covariant inference wins if it fits what the contravariant positions ask for

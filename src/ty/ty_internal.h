@@ -153,6 +153,10 @@ typedef enum InferPriority {
     INFER_PRIORITY_LITERAL_KEYOF = 1 << 8, // T from a string literal to `keyof T`
 } InferPriority;
 
+// The priorities whose candidates are combined (union of the covariant ones, intersection of the contravariant ones)
+// rather than reduced to a common supertype or subtype: tsc's PriorityImpliesCombination
+#define INFER_PRIORITY_IMPLIES_COMBINATION (INFER_PRIORITY_RETURN_TYPE | INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT | INFER_PRIORITY_LITERAL_KEYOF)
+
 #define INFER_MAX_DEPTH 24
 
 typedef struct Inference {

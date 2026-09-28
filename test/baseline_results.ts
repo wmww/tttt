@@ -20906,9 +20906,9 @@ const baselines = {
         types: true,
     },
     'mappedTypeMultiInference': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeNestedGenericInstantiation': {
         errors: true,
@@ -67421,8 +67421,8 @@ const baselines = {
         types: true,
     },
     'intraExpressionInferences': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'intraExpressionInferencesJsx': {

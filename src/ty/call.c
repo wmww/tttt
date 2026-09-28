@@ -367,6 +367,10 @@ typedef struct OuterInference {
     Inference* inf;
     TyMapper const* return_mapper; // What its own contextual type said, see infer_type_arguments()
     bool fixing; // Contextual signatures assigned now fix the type parameters their parameters mention
+    // The context-sensitive literal members checked since the last fixing, and their contextual types (tsc's
+    // intraExpressionInferenceSites), pairs
+    Ty const** sites;
+    u32 site_len, site_cap;
     // (Cache of the non-fixing mapper, valid while the candidate count is `cached_count`)
     TyMapper const* cached_mapper;
     u64 cached_count;
@@ -606,13 +610,41 @@ static bool assignment_mentions(Checker* me, FunctionImpl const* function, Signa
     return !this_declared && sig->this_type && ty_mentions_any(me, sig->this_type, &param, 1);
 }
 
+void ty_add_intra_expression_site(Checker* me, Ty const* type, Ty const* contextual) {
+    OuterInference* outer = my outer_inference;
+    if (!outer || !outer->fixing || !type || !contextual) return;
+    if (outer->site_len + 2 > outer->site_cap) {
+        outer->site_cap = outer->site_cap ? outer->site_cap * 2 : 8;
+        outer->sites = realloc(outer->sites, sizeof(Ty const*) * outer->site_cap);
+        panic_if(!outer->sites, "out of memory");
+    }
+    outer->sites[outer->site_len++] = type;
+    outer->sites[outer->site_len++] = contextual;
+}
+
+// Before a type parameter is fixed, the literal members checked so far are inferred from (tsc's fixing mapper calling
+// inferFromIntraExpressionSites): `{ produce: () => 0, consume: (n) => n }` against `{ produce: () => T; consume:
+// (n: T) => void }` infers T from produce before consume's `n` fixes it
+static void infer_from_intra_expression_sites(Checker* me, OuterInference* outer) {
+    u32 len = outer->site_len;
+    outer->site_len = 0;
+    for (u32 i = 0; i + 1 < len; i += 2) infer_types(me, outer->inf, outer->sites[i], outer->sites[i + 1], INFER_PRIORITY_NORMAL);
+}
+
+// What the type parameters about to be fixed are fixed to: the inferences so far, the sites included
+static TyMapper const* fixing_mapper(Checker* me, OuterInference* outer) {
+    if (outer->site_len) infer_from_intra_expression_sites(me, outer);
+    return inference_mapper(me, outer->sig, outer->inf, true);
+}
+
 Ty const* ty_instantiate_fixing(Checker* me, Ty const* type) {
     OuterInference* outer = my outer_inference;
     if (!type || !outer || !outer->fixing || !(type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return type;
     Inference* inf = outer->inf;
-    TyMapper const* so_far = inference_mapper(me, outer->sig, inf, true);
+    TyMapper const* so_far = nullptr;
     for (u32 j = 0; j < inf->len; j++) {
         if (!inf->params[j].fixed && ty_mentions_any(me, type, &outer->sig->type_params.data[j], 1)) {
+            if (!so_far) so_far = fixing_mapper(me, outer);
             inf->params[j].fixed = so_far->targets[j];
         }
     }
@@ -635,9 +667,10 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
         signature_resolve(me, instantiated);
         return instantiated;
     }
-    TyMapper const* so_far = inference_mapper(me, outer->sig, inf, true);
+    TyMapper const* so_far = nullptr;
     for (u32 j = 0; j < inf->len; j++) {
         if (!inf->params[j].fixed && assignment_mentions(me, function, sig, outer->sig->type_params.data[j])) {
+            if (!so_far) so_far = fixing_mapper(me, outer);
             inf->params[j].fixed = so_far->targets[j];
         }
     }
@@ -646,83 +679,6 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
     *fixed = (Signature){ .flags = sig->flags, .target = sig, .mapper = mapper };
     signature_resolve(me, fixed);
     return fixed;
-}
-
-// Whether an intra-expression pass checks `expr` on its own. HACK: only arrow functions (and nested literals). tsc takes
-// methods and function expressions too, but their `this` goes by the literal's contextual type, which isn't finished
-// while the pass runs, and tttt remembers the `this` it evaluated once (tsc recomputes it): thisTypeInObjectLiterals2
-static bool intra_expression_site(Expr const* expr) {
-    if (expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY) return true;
-    return expr->tag == EXPR_FUNCTION && span_valid(expr->function->arrow_span);
-}
-
-// The arrow functions an intra-expression pass would check one by one, nested literals included
-static u32 intra_expression_sites(Expr const* literal, u32 depth) {
-    u32 count = 0;
-    if (depth > 8) return 0;
-    if (literal->tag == EXPR_OBJECT) {
-        for_each (i, vec_object_expr_item, &literal->object) {
-            Expr const* value = &i->value;
-            if (i->tag != OBJECT_ITEM_PROPERTY || !ty_expr_is_context_sensitive(value)) continue;
-            bool nested = value->tag == EXPR_OBJECT || value->tag == EXPR_ARRAY;
-            count += nested ? intra_expression_sites(value, depth + 1) : intra_expression_site(value);
-        }
-    } else if (literal->tag == EXPR_ARRAY) {
-        for_each (i, vec_expr, &literal->array) {
-            if (!ty_expr_is_context_sensitive(i)) continue;
-            count += i->tag == EXPR_OBJECT || i->tag == EXPR_ARRAY ? intra_expression_sites(i, depth + 1) : intra_expression_site(i);
-        }
-    }
-    return count;
-}
-
-// tsc's intra-expression inference sites: the context-sensitive members of an object or array literal argument are
-// checked in order, each inferred from before the next one's parameters are fixed (react-query's
-// `{ queryFn: () => fetch(), getNextPageParam: (lastPage) => ... }` infers TData from queryFn first). Each function's
-// contextual signature sticks (assign_contextual_signature()), so checking the whole literal afterwards agrees.
-// `param_type` is the literal's uninstantiated contextual type
-static void infer_intra_expression(
-    Checker* me, Signature const* sig, Inference* inf, Expr const* literal, Ty const* param_type, TyMapper const* return_mapper,
-    u32 depth
-) {
-    if (depth == 0 && intra_expression_sites(literal, 0) < 2) return;
-    if (depth > 8) return;
-    u32 len = literal->tag == EXPR_OBJECT ? (u32)vec_object_expr_item_size(&literal->object) : (u32)vec_expr_size(&literal->array);
-    for (u32 n = 0; n < len; n++) {
-        Expr const* value;
-        Ty const* member_param;
-        if (literal->tag == EXPR_OBJECT) {
-            ObjectExprItem const* item = vec_object_expr_item_at(&literal->object, n);
-            if (item->tag == OBJECT_ITEM_SPREAD) {
-                // A spread literal has the literal's contextual type
-                if (item->value.tag == EXPR_OBJECT && ty_expr_is_context_sensitive(&item->value)) {
-                    infer_intra_expression(me, sig, inf, &item->value, param_type, return_mapper, depth + 1);
-                }
-                continue;
-            }
-            value = &item->value;
-            if (!ty_expr_is_context_sensitive(value) || item->computed_key || item->tag != OBJECT_ITEM_PROPERTY ||
-                !intra_expression_site(value)) {
-                continue;
-            }
-            member_param = ty_contextual_prop_type(me, param_type, ty_prop_name_literal(me, checker_atom(me, cstr_sv(&item->name_string))));
-        } else {
-            value = vec_expr_at(&literal->array, n);
-            if (value->tag == EXPR_SPREAD) break;
-            if (!ty_expr_is_context_sensitive(value) || !intra_expression_site(value)) continue;
-            member_param = ty_contextual_element_type(me, param_type, n);
-        }
-        if (!member_param) continue;
-        // (A nested literal's own sites come first, then it is one too)
-        if (value->tag == EXPR_OBJECT || value->tag == EXPR_ARRAY) {
-            infer_intra_expression(me, sig, inf, value, member_param, return_mapper, depth + 1);
-        }
-        OuterInference* outer = my outer_inference;
-        outer->fixing = true;
-        Ty const* type = ty_check_expr(me, value, member_param);
-        outer->fixing = false;
-        infer_types(me, inf, type, member_param, INFER_PRIORITY_NORMAL);
-    }
 }
 
 Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members) {
@@ -765,6 +721,8 @@ static bool contextual_rest_is_variadic(Signature const* contextual) {
 // isn't fixed: tsc's nonFixingMapper.) Returns the mapper of what is inferred so far
 static TyMapper const* fix_for_generic_function(Checker* me, Signature const* sig, Inference* inf, Signature const* contextual) {
     signature_resolve(me, contextual);
+    // (The literal's members before this one are inferred from first, see fixing_mapper())
+    if (my outer_inference && my outer_inference->inf == inf) fixing_mapper(me, my outer_inference);
     if (!contextual_rest_is_variadic(contextual)) {
         TyMapper const* so_far = inference_mapper(me, sig, inf, true);
         for (u32 j = 0; j < inf->len; j++) {
@@ -1062,11 +1020,6 @@ static TyMapper const* infer_type_arguments(
             }
         }
         for (u32 j = 0; j < inf.len && j < 64; j++) fixed_before |= (u64)(inf.params[j].fixed != nullptr) << j;
-        if (param_type && !arg->spread && !arg->part_of_spread) {
-            my outer_inference = &self;
-            infer_intra_expression(me, sig, &inf, arg->expr, param_type, return_mapper, 0);
-            my outer_inference = nullptr;
-        }
         // (Its contextual type is instantiated where it is looked at, see ty_instantiate_contextual_type(), and the
         // functions in it fix what their contextual signatures ask for, see ty_fix_contextual_signature())
         my outer_inference = &self;
@@ -1109,6 +1062,7 @@ static TyMapper const* infer_type_arguments(
         }
     }
     free(shape.types);
+    free(self.sites);
 
     TyMapper const* mapper = inference_mapper(me, sig, &inf, false);
     *inferred_out = ty_list_copy(me, inf.inferred_type_params, inf.inferred_type_param_count);

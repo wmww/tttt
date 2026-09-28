@@ -109,9 +109,12 @@ Start from `./realworld.py --corpus xstate` and the probes; each item is indepen
    addMemberForKeyTypeWorker; xstate 42 -> 40 on the base prototype, suite neutral). Its `object_literal_unchanged()`
    in instantiate.c is a second, separate idea (an object literal type a mapper doesn't touch stays itself); measure
    both on top of stage 1 separately.
-3. **xstate diagnostics stage 1 introduced** (at `--all-errors`, all 0 under tsc): input.test.ts:255 and
-   invoke.test.ts:1427 TS7031, interpreter.test.ts:1310 TS2728 + 1319 TS2322, types.test.ts:3034/3055/3847 TS2322.
-   Reduce each to a probe in `38_prototypes/`.
+3. **xstate diagnostics stage 1 introduced** (at `--all-errors`, all 0 under tsc): interpreter.test.ts:1310 TS2728 +
+   1319 TS2322, types.test.ts:3034/3055/3847 TS2322. Reduce each to a probe in `38_prototypes/`. Done: input.test.ts:255
+   and invoke.test.ts:1427 TS7031 (`xstate_intra_expression_raw_context.ts`: intra-expression sites are now tsc's,
+   recorded by the literal check and inferred from before the next fixing, instead of a pre-walk that checked each
+   arrow against the raw member type). Not the same cause: spawnChild.test.ts:107 TS7031 (`spawnChild(child, { id:
+   ({ context }) => ... })` nested in `entry: [...]`).
 4. **JSDoc `@template` fixed by a nested JSDoc function type** (below): webpack MultiCompiler.js 645/649 and
    FileSystemInfo.js 3859, still there.
 5. Replace the stand-ins stage 1 left (hacks.md "Inference" entries it names): the replay record, the probes that
