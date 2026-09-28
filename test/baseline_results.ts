@@ -42151,7 +42151,7 @@ const baselines = {
         types: true,
     },
     'missingAndExcessProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

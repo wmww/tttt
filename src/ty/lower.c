@@ -2248,6 +2248,9 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
             ret = ty_intrinsic(me, TY_UNDEFINED);
         }
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
+        // A property the object lacks (TS2339, binding_typecheck()) is the error type (tsc's getIndexedAccessType
+        // reporting it): a later `var` of the same name doesn't have to agree with it
+        if (!ret) ret = ty_intrinsic(me, TY_ERROR);
     }
     if (!ret) ret = ty_intrinsic(me, TY_ANY);
     // (An element of an unannotated pattern is widened itself: the pattern's source isn't, see initialized_binding's)
