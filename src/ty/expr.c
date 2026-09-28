@@ -2360,7 +2360,8 @@ void ty_check_object_literal_pattern(Checker* me, Expr const* expr, ErrorCtx* er
 Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* accessor, bool getter) {
     Signature const* sig = single_call_signature(me, ty_function_type(me, accessor));
     if (!sig) return any_type(me);
-    if (getter) return widen_literals(me, signature_return_type(me, sig));
+    // (An annotated getter's type is as written: `get s(): typeof S` stays the unique symbol)
+    if (getter) return accessor->ret_explicit ? signature_return_type(me, sig) : widen_literals(me, signature_return_type(me, sig));
     signature_resolve(me, sig);
     return sig->param_count ? sig->params[0].type : any_type(me);
 }
@@ -2384,7 +2385,10 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
     if (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) {
         Signature const* sig = single_call_signature(me, value);
         if (!sig) return any_type(me);
-        if (item->tag == OBJECT_ITEM_GETTER) return widen_literals(me, signature_return_type(me, sig));
+        if (item->tag == OBJECT_ITEM_GETTER) {
+            Ty const* ret = signature_return_type(me, sig);
+            return item->value.tag == EXPR_FUNCTION && item->value.function->ret_explicit ? ret : widen_literals(me, ret);
+        }
         return sig->param_count ? sig->params[0].type : any_type(me);
     }
     return widen_literals(me, value);

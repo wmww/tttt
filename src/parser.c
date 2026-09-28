@@ -3644,8 +3644,14 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
         }
         binding->explicit_type.from_jsdoc = true;
     }
-    // A `@type` that isn't a written signature: its signature is resolved by the checker
+    // A getter's `@type` is the property's, its return type (tsc's getAnnotatedAccessorType; a setter's isn't looked at)
     JsDocTag* type_tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
+    if (type_tag && function->accessor == 1 && !function->ret_explicit) {
+        function->ret = jsdoc_take_type(type_tag, &function->ret_span);
+        function->ret_explicit = true;
+        type_tag = nullptr;
+    }
+    // A `@type` that isn't a written signature: its signature is resolved by the checker
     if (type_tag && type_tag->type.tag != TYPE_CALLABLE && type_tag->type.tag != TYPE_INTERFACE && !function->jsdoc_signature_type) {
         function->jsdoc_signature_type = c_new(TypeNode, jsdoc_take_type(type_tag, nullptr));
     }
@@ -5181,7 +5187,9 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             // contextually typed by
             JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
             bool signature = tag && (tag->type.tag == TYPE_CALLABLE || tag->type.tag == TYPE_INTERFACE);
-            if (tag && !(function && signature)) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+            bool accessor = item.tag == OBJECT_ITEM_GETTER || item.tag == OBJECT_ITEM_SETTER; // (The function's, see below)
+            if (tag && !(function && signature) && !accessor) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+            if (function && accessor) function->accessor = item.tag == OBJECT_ITEM_GETTER ? 1 : 2; // (Set again by the resolve walk)
             if (function) jsdoc_apply_function(&tags, function);
         }
         vec_jsdoc_tag_drop(&tags);
@@ -5642,7 +5650,10 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
     if (modifiers & JSDOC_MODIFIER_OVERRIDE) item->is_override = true;
     switch (item->tag) {
         case CLASS_ITEM_CONSTRUCTOR: jsdoc_apply_function(&tags, &item->constructor.func); break;
-        case CLASS_ITEM_METHOD: jsdoc_apply_function(&tags, &item->method.func); break;
+        case CLASS_ITEM_METHOD:
+            item->method.func.accessor = (uint8_t)item->method.accessor; // (Set again by the resolve walk)
+            jsdoc_apply_function(&tags, &item->method.func);
+            break;
         case CLASS_ITEM_FIELD: {
             if (!item->field.has_explicit_type) {
                 JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);

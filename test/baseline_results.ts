@@ -51723,7 +51723,7 @@ const baselines = {
     'jsDeclarationsReusesExistingTypeAnnotations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsSubclassWithExplicitNoArgumentConstructor': {
         errors: true,
