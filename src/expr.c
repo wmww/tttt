@@ -2859,6 +2859,14 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                             "Private identifiers are only available when targeting ECMAScript 2015 and higher.");
                     }
                 }
+                if ((i->tag == OBJECT_ITEM_METHOD || i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) &&
+                    i->value.tag == EXPR_FUNCTION && !i->value.function->has_body
+                ) {
+                    // tsc's checkGrammarMethod/checkGrammarAccessor: at the member's last character
+                    char const* end = span_end_ptr(i->span);
+                    while (end > span_start_ptr(i->span) && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')) end--;
+                    error_ctx_grammar_error_d(errs, span_make(i->span.source, end - 1, end), 1005, "'{' expected.");
+                }
                 expr_typecheck(&i->value, errs);
                 if (i->jsdoc_type) {
                     type_typecheck(i->jsdoc_type, errs);

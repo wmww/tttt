@@ -1008,6 +1008,14 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             case CLASS_ITEM_METHOD:
                 if (i->method.computed_key) class_computed_key_typecheck(i, errs);
                 i->method.func.private_ambient = class_item_private_in_ambient(me, i);
+                if (i->method.accessor && !i->method.func.has_body && !i->method.is_abstract && !i->method.func.ambient) {
+                    // tsc's checkGrammarAccessor: at the accessor's last character (its `;` if it has one)
+                    Span full = i->method.func.full_span;
+                    while (full.sv.size && strchr(" \t\r\n", full.sv.buf[full.sv.size - 1])) full.sv.size--;
+                    full = span_with_semicolon(full);
+                    char const* end = span_end_ptr(full);
+                    error_ctx_grammar_error_d(errs, span_make(full.source, end - 1, end), 1005, "'{' expected.");
+                }
                 function_impl_typecheck(&i->method.func, errs);
                 function_impl_check_implicit_any_return(&i->method.func, i->method.name_span, i->method.name_span, errs);
                 break;

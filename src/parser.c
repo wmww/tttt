@@ -7797,7 +7797,14 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ExprCtx sub_ctx = ctx;
         sub_ctx.min_precedence = new_keyword_precedence;
         CallExpr call = { .uses_new = true };
-        expect_expr(&p, sub_ctx, &call.callable);
+        if (*p.pos == '<' && !p.shared->source->is_jsx) {
+            // A type assertion is no member expression (tsc's parseMemberExpressionOrHigher): `new <T>F()` is `new`
+            // of a missing expression, then `< T > F()`
+            expected_expression_error(&p);
+            call.callable = expr_implicit_any(span_from_pos(&p));
+        } else {
+            expect_expr(&p, sub_ctx, &call.callable);
+        }
         if (!parse_call_args(&p, &call.args)) {
             call.args = vec_expr_init();
         }
