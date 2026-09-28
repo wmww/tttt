@@ -1296,13 +1296,27 @@ u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out) 
 // of `module.exports =`), anything else is what is assigned
 static Ty const* merged_export_equals_type(Checker* me, Symbol const* clone) {
     Ty const* original = ty_type_of_symbol(me, clone->merged_export_equals_of);
-    if (!(original->flags & TYF_OBJECT) || (original->kind != TY_DECLARED && original->kind != TY_ANONYMOUS)) return original;
+    if (!(original->flags & TYF_OBJECT)) return original;
+    // A class or interface instance becomes an anonymous type with its members and the exports (tsc keeps the type's
+    // symbol only if nothing was added)
+    bool instance = original->kind == TY_REFERENCE || (original->kind == TY_DECLARED &&
+        (original->declared.kind == TY_DECLARED_CLASS_INSTANCE || original->declared.kind == TY_DECLARED_INTERFACE));
+    if (!instance && original->kind != TY_DECLARED && original->kind != TY_ANONYMOUS) return original;
     bool any = false;
     for (u32 i = 0; i < clone->exports->count && !any; i++) {
         Symbol const* value = symbol_for_meaning(clone->exports->entries[i].symbol, SYMBOL_VALUE);
         any = value && !value->is_placeholder;
     }
-    return any ? ty_merged_value_type(me, clone) : original;
+    if (!any) return original;
+    if (!instance) return ty_merged_value_type(me, clone);
+    u64 key[2] = { KEY_MERGED_EXPORT_EQUALS_INSTANCE, (u64)(uintptr_t)clone };
+    Ty const* existing = intern_get(&my links, key, 2);
+    if (existing) return existing;
+    Ty* ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT);
+    ret->anonymous.merged_value = clone;
+    ret->anonymous.state = arena_new(&my arena, TyObjectState);
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
 }
 
 static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {

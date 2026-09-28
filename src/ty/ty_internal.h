@@ -44,6 +44,7 @@ enum {
     KEY_TYPE_ONLY_EXPORT, // (namespace Symbol, export Symbol) -> Prop, see ty_namespace_type_only_prop()
     KEY_COMMONJS_EXPORTS, // Module symbol -> its namespace object as `module.exports`
     KEY_MERGED_VALUE,   // Symbol -> Ty, see ty_merged_value_type()
+    KEY_MERGED_EXPORT_EQUALS_INSTANCE, // Symbol -> Ty, see merged_export_equals_type()
     KEY_DEFERRED_OUTER, // TypeNode of a deferred reference -> TyConditionalOuter
     KEY_CALL_RESOLUTION, // CallExpr -> the contextual type of its last resolution, if that would report nothing
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE/TYPE_IDENTIFIER node, the pairs of the mapper it mentions) -> Ty

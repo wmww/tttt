@@ -51471,9 +51471,9 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsExportAssignedClassInstance3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsExportAssignedConstructorFunction': {
         errors: true,
@@ -60421,9 +60421,9 @@ const baselines = {
         types: false,
     },
     'moduleExportAssignment5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportAssignment6': {
         errors: true,
