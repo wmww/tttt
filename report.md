@@ -69,3 +69,18 @@ earlier type-core ports went, and they paid off.
 It also starts building parallelism. The design question was settled in favour of a fixed number of logical
 checkers, as tsgo does, so output doesn't depend on the thread count. Parallel checking comes first, since it is the
 big win (about 3x on webpack's check phase at 4 threads); parallel parsing follows later.
+
+## 2026-09-28 — insights (after the window of plans 36-37)
+Another clean window: ten sessions, all committed, nothing lost. The suite went 10215 -> 10543 of 13540 (78%), and JS
+tests went 519 -> 560. The gain is smaller than last time on purpose, because two sessions went into parallelism. tttt
+now checks on 4 threads, and its output doesn't depend on the thread count. It runs 2-6x faster than tsgo on every
+corpus (tsc's compiler 0.53 s vs 1.26 s, zod 0.45 s vs 2.92 s). Six tsc mechanisms tttt had been approximating were
+ported (plan 37), and each landed at exactly the gain its prototype measured. webpack went 107 -> 30 diagnostics, and
+zod's root config now reports exactly tsc's 55 errors.
+
+The next target is the same pattern one level deeper. Generic call inference (which type parameters get fixed when,
+and how callbacks get their contextual types) is now where approximations are stacked on each other. It is also
+webpack's largest remaining cause. So the window pins an inference-heavy real-world project first, then plans the port
+(plan 38) with prototypes. This port is riskier than plan 37: tsc re-checks arguments, and tttt memoizes per node. The
+planning session is allowed to conclude it needs groundwork first. The rest of the window works the long tail with
+parallel sub-agents (suite bugs, JS, parser, type printing), plus parallel file loading.
