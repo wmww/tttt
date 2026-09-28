@@ -2554,6 +2554,18 @@ static FlowType type_at_loop_label(FlowQuery* q, FlowNode const* flow, FlowList 
     return (FlowType){ result, false };
 }
 
+// A local `let x: T;` that nothing ever assigns (tsc's isNeverInitialized): a closure doesn't get to assume it is
+static bool never_initialized(Symbol const* symbol) {
+    if (!symbol || !symbol->is_local || symbol->is_const || symbol->is_definitely_assigned || !(symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE)) {
+        return false;
+    }
+    Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
+    if (!binding || binding->parent || binding->definitely_assigned || !binding->source) return false;
+    if (binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING) return false;
+    InitializedBinding const* declaration = c_container_of(binding->source, InitializedBinding, lazy_type);
+    return declaration->value.tag == EXPR_IMPLICIT_ANY;
+}
+
 // Whether narrowing of the reference survives the function boundary: a function expression sees the narrowed type
 // of what can't have changed by the time it runs (tsc's checkIdentifier())
 static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl const* function) {
@@ -2659,7 +2671,7 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
             // A variable of another container than the one the reference is in is assumed to be initialized. A
             // parameter's initial type is what it is assumed to be anyway (without the undefined its default rules out)
             bool is_outer = (q->left_container || (q->symbol && q->symbol->flow_start != flow)) &&
-                !(q->symbol && q->symbol->is_parameter);
+                !(q->symbol && q->symbol->is_parameter) && !never_initialized(q->symbol);
             type = (FlowType){ is_outer ? q->declared : q->initial, false };
         } else if (flags & FLOW_ARRAY_MUTATION) {
             if (!type_at_array_mutation(q, flow, &type)) {

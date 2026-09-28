@@ -13846,7 +13846,7 @@ const baselines = {
         types: true,
     },
     'forwardRefInTypeDeclaration(strict=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32586,7 +32586,7 @@ const baselines = {
         types: true,
     },
     'unusedLocalsInMethod4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -38001,7 +38001,7 @@ const baselines = {
         types: true,
     },
     'typeGuardsAsAssertions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

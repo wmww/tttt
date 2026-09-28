@@ -1410,6 +1410,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             my identifier.assignment_target = assignment_target;
             my identifier.compound_like_target = compound_like_target;
             my identifier.assume_initialized = flow->in_type_query;
+            // (tsc's isInAmbientOrTypeNode: `declare class C { [k]: T }`)
+            for (Scope const* i = names; i && !my identifier.assume_initialized; i = i->parent) {
+                my identifier.assume_initialized = i->ambient;
+            }
             if (flow->binding_root && my identifier.target) {
                 // `const { a = "0", b = +a } = obj`
                 Binding const* declared = symbol_find_node(my identifier.target, SYMBOL_DECL_VARIABLE);
