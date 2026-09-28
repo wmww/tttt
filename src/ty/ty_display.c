@@ -447,8 +447,15 @@ static Ty const* node_type(Checker* me, TyDisplay d, TypeNode const* node) {
 }
 
 // A part of an annotation that can't be reused prints its type
+static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty);
 static void display_node_fallback(Checker* me, TyDisplay d, TypeNode const* node) {
-    ty_display(me, reused_if(d, false), node_type(me, d, node));
+    bool element = d.array_element_node;
+    d.array_element_node = false;
+    Ty const* ty = node_type(me, d, node);
+    bool parens = element && needs_parens_in_array(me, d, ty);
+    if (parens) out(reused_if(d, false), c_sv("("));
+    ty_display(me, reused_if(d, false), ty);
+    if (parens) out(reused_if(d, false), c_sv(")"));
 }
 
 static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* args) {
@@ -792,25 +799,37 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
 // Prints an annotation as written, as reused
 static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
     d.reused = !node->synthesized;
+    // (Only a fallback of this very node, see display_node_identifier() and display_node_typeof(), is an element)
+    bool array_element = d.array_element_node && !node->parenthesized;
+    d.array_element_node = false;
     if (node->parenthesized) out_lit(d, "(");
     switch (node->tag) {
-        case TYPE_IDENTIFIER:
-            display_node_identifier(me, d, node);
+        case TYPE_IDENTIFIER: {
+            TyDisplay element_d = d;
+            element_d.array_element_node = array_element;
+            display_node_identifier(me, element_d, node);
             break;
-        case TYPE_TYPEOF:
-            display_node_typeof(me, d, node);
+        }
+        case TYPE_TYPEOF: {
+            TyDisplay element_d = d;
+            element_d.array_element_node = array_element;
+            display_node_typeof(me, element_d, node);
             break;
+        }
         case TYPE_CALLABLE:
             display_node_signature(me, d, node->callable->function, " => ");
             break;
         case TYPE_INTERFACE:
             display_node_interface(me, d, &node->interface);
             break;
-        case TYPE_ARRAY:
+        case TYPE_ARRAY: {
             if (node->array.readonly) out_lit(d, "readonly ");
-            display_node(me, d, node->array.element);
+            TyDisplay element_d = d;
+            element_d.array_element_node = true;
+            display_node(me, element_d, node->array.element);
             out_lit(d, "[]");
             break;
+        }
         case TYPE_TUPLE:
             if (node->tuple.readonly) out_lit(d, "readonly ");
             out_lit(d, "[");

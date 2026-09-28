@@ -11388,7 +11388,7 @@ const baselines = {
     'errorsForCallAndAssignmentAreSimilar': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorsInGenericTypeReference': {
         errors: true,

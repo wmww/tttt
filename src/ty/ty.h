@@ -1747,6 +1747,9 @@ typedef struct TyDisplay {
     // typeFromSingleReturnExpression): its parameter declarations are reused, `: ` and all
     struct FunctionImpl const* syntactic_function;
     TyParamNames* param_names; // Null: type parameters print as they're called
+    // The annotation being reprinted is an array's element type: a part of it that prints its type instead is
+    // parenthesized as needed (tsc's factory, parenthesizeElementTypeOfArrayType). Only for the node itself
+    bool array_element_node;
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
