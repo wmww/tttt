@@ -1362,11 +1362,10 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
 static void append_span_contents_without_newlines(cstr* target, Span span) {
     const char* start = span_start_ptr(span);
     const char* end = span_end_ptr(span);
+    // tsc's `sourceText.replace(/\r?\n/g, "")`: a lone \r stays
     for (const char* c = start; c < end; c++) {
-        switch (*c) {
-            case '\r': case '\n': break;
-            default: cstr_push(target, c);
-        }
+        if (*c == '\n' || (*c == '\r' && c + 1 < end && c[1] == '\n')) continue;
+        cstr_push(target, c);
     }
 }
 

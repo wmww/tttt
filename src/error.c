@@ -134,6 +134,7 @@ static char const* pretty_trim_end(char const* start, char const* end) {
         if (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f') end--;
         else if (end - start >= 2 && (unsigned char)end[-2] == 0xC2 && c == 0xA0) end -= 2; // U+00A0
         else if (end - start >= 3 && (unsigned char)end[-3] == 0xEF && (unsigned char)end[-2] == 0xBB && c == 0xBF) end -= 3;
+        else if (end - start >= 3 && (unsigned char)end[-3] == 0xE2 && (unsigned char)end[-2] == 0x80 && (c & 0xFE) == 0xA8) end -= 3;
         else break;
     }
     return end;

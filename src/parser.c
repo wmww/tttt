@@ -288,6 +288,12 @@ static bool parse_string_escape(Parser* p, cstr* str, EscapeErrors* errors) {
             append_code_point(str, code);
             return true;
         }
+        case '\xE2':
+            if ((unsigned char)p->pos[0] == 0x80 && ((unsigned char)p->pos[1] & 0xFE) == 0xA8) {
+                p->pos += 2;
+                return true; // Line continuation by U+2028/U+2029
+            }
+            break;
         default: break;
     }
     // Any other character stands for itself (`\'`, `\"`, `\\`, `\a`); a multi-byte one is copied whole
@@ -817,17 +823,17 @@ static inline bool hop_comment(Parser* parent) {
     return true;
 }
 
-// The byte length of the non-ASCII whitespace (JavaScript's WhiteSpace: NBSP, BOM and category Zs) at c, negated for
-// a line terminator (U+2028, U+2029), 0 if there is none
+// The byte length of the non-ASCII whitespace (tsc's isWhiteSpaceSingleLine: NBSP, NEL, BOM, category Zs and U+200B)
+// at c, negated for a line terminator (U+2028, U+2029), 0 if there is none
 static int unicode_whitespace_size(const char* c) {
     uint8_t b0 = (uint8_t)c[0];
     if (b0 < 0xC2) return 0;
-    if (b0 == 0xC2) return (uint8_t)c[1] == 0xA0 ? 2 : 0;
+    if (b0 == 0xC2) return (uint8_t)c[1] == 0xA0 || (uint8_t)c[1] == 0x85 ? 2 : 0;
     uint8_t b1 = (uint8_t)c[1];
     uint8_t b2 = b1 ? (uint8_t)c[2] : 0;
     if (b0 == 0xE1) return b1 == 0x9A && b2 == 0x80 ? 3 : 0; // U+1680
     if (b0 == 0xE2 && b1 == 0x80) {
-        if (b2 >= 0x80 && b2 <= 0x8A) return 3; // U+2000..U+200A
+        if (b2 >= 0x80 && b2 <= 0x8B) return 3; // U+2000..U+200B
         if (b2 == 0xA8 || b2 == 0xA9) return -3; // U+2028, U+2029
         if (b2 == 0xAF) return 3; // U+202F
         return 0;

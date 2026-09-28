@@ -31,8 +31,13 @@ SourceFile source_file_make(cstr canonical_path, cstr contents) {
     u32* line_starts = malloc(sizeof(u32) * cap);
     u32 line_count = 0;
     line_starts[line_count++] = 0;
-    for (const char* pos = start; (pos = memchr(pos, '\n', (size_t)(end - pos))); ) {
-        pos++;
+    // tsc's computeLineStarts: \r\n, \r, \n, U+2028 and U+2029 end a line
+    for (const char* pos = start; pos < end; ) {
+        unsigned char c = (unsigned char)*pos;
+        if (c == '\n') pos++;
+        else if (c == '\r') pos += pos + 1 < end && pos[1] == '\n' ? 2 : 1;
+        else if (c == 0xE2 && pos + 2 < end && (unsigned char)pos[1] == 0x80 && ((unsigned char)pos[2] & 0xFE) == 0xA8) pos += 3;
+        else { pos++; continue; }
         if (line_count == cap) {
             cap *= 2;
             line_starts = realloc(line_starts, sizeof(u32) * cap);

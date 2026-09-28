@@ -22,27 +22,27 @@ const char* span_line_start(Span me) {
     } else if (!me.source) {
         return me.sv.buf;
     } else {
-        // A span that starts on a newline character belongs to the line that newline ends
-        const char* pos = span_start_ptr(me);
-        while (pos > source_file_start(me.source) && *(pos - 1) != '\n') {
-            pos--;
-        }
-        return pos;
+        // A span that starts on a line break belongs to the line that line break ends
+        return source_file_start(me.source) + me.source->line_starts[span_line_index(me)];
     }
 }
 
+// Where the span's first line's text ends (before its line break)
 const char* span_line_end(Span me) {
     if (!span_valid(me)) {
         return nullptr;
     } else if (!me.source) {
         return me.sv.buf + me.sv.size;
     } else {
-        // Source files are null-terminated, so we can safely keep going until we hit null
-        const char* pos = span_start_ptr(me);
-        while (*pos && *pos != '\n') {
-            pos++;
-        }
-        return pos;
+        SourceFile const* source = me.source;
+        unsigned line = span_line_index(me);
+        const char* text = source_file_start(source);
+        if (line + 1 >= source->line_count) return text + cstr_size(&source->contents);
+        const char* end = text + source->line_starts[line + 1];
+        if (end[-1] == '\n') end -= end - 1 > text && end[-2] == '\r' ? 2 : 1;
+        else if (end[-1] == '\r') end--;
+        else end -= 3; // U+2028/9
+        return end;
     }
 }
 
