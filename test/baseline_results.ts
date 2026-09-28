@@ -3316,7 +3316,7 @@ const baselines = {
         types: true,
     },
     'checkTypePredicateForRedundantProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -30441,7 +30441,7 @@ const baselines = {
         types: true,
     },
     'thisPredicateInObjectLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
