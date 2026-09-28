@@ -618,7 +618,10 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   (wildcard instantiation of check and extends types) is exponential on zod's union-to-tuple types (`Exclude<Exclude<...,
   GetUnionLast<...>>, ...>`, 5M instantiations, TS2589), because tttt re-instantiates shared subterms of a type DAG under
   a fresh mapper (tsc caches conditional instantiations by their mapped outer type arguments and short-circuits a
-  wildcard check type). Fix the sharing, then add skipTrue.
+  wildcard check type). Fix the sharing, then add skipTrue. Knock-on HACK in `first_unfit_argument` (`call.c`): a call
+  with no argument for a generic non-array rest parameter doesn't check `[]` against it (tsc does), since xstate's
+  `...[options]: ConditionalRequired<[options?: ...], IsNotNever<...>>` only takes `[]` through skipTrue (tsc's
+  permissive `keyof T` is the wildcard, `[wildcard] extends [never]` holds, so the true branch is skipped).
 
 - `reduce_type_variable_intersection` (`checker.c`, tsc's constrained type variable reduction in getIntersectionType)
   only takes type parameters as the type variable, not indexed accesses like tsc: with them valibot's
