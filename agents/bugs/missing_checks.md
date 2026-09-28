@@ -25,6 +25,12 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   JS, `ty_check_element_implicit_any`'s TODO).
 
 ## Known missing checks
+- **Module resolution elaboration**: tsc's alternateResult TS2307/TS7016 chains ("There are types at '...', but this
+  result could not be resolved under your current 'moduleResolution' setting" / "...when respecting package.json
+  \"exports\"", moduleNameResolver.ts nodeModuleNameResolverWorker) and TS6504 for JS files a resolution put in the
+  program: 9 tests (node10AlternateResult_*, resolvesWithoutExportsDiagnostic1, nodeModulesExportsBlocksTypesVersions,
+  resolutionModeImportType1/TypeOnlyImport1(node10)).
+- `declare const B = -1n` under a pre-ES2020 target lacks TS2737.
 - **JS (seen in the 2026-09-28 corpus session)**: TS2565 for a property declared by a JS expression statement
   (`/** @type {F} */ C.prototype.m;`) read in the same flow container (tsc's getFlowTypeOfAccessExpression with
   assumeUninitialized: jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError); TS7032 (a setter without a parameter

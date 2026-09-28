@@ -22,7 +22,7 @@
 - The stdlib checks clean: a cheap regression check for lib-related changes (`./bench.sh`'s `lib_closure` lists the
   84 files to pass as roots; `--no-lib esnext.full.d.ts` alone ignores `/// <reference lib>`).
 - Dead-ish code: `display.c`'s syntax printer is only needed for `--print-ast` and written type names
-  (`DISPLAY_TYPE_MAX_DEPTH`, `BriefType` may be dead; `DisplayUnderlineTarget`/`underline_display()` is: delete it).
+  (`DISPLAY_TYPE_MAX_DEPTH`, `BriefType` may be dead).
   Nodes aren't cloned any more: collapse `owned_symbol`/`symbol_ref` (`GenericItem`, `InferredType`, mapped keys) and
   `key.expr.owned`/`ref` into one pointer each; drop `LAZY_TYPE_FUNCTION`.
 - The git stash list holds a foreign entry ("WIP on (no branch): 2d0b590", relate.c); worktree agents share the

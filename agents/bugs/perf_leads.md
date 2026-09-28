@@ -56,6 +56,10 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
   `expr_lookup_names_logical`, the checker, `expr_compile_test_info_inner` and `expr_drop`. Threads get smaller
   stacks: matters for parallelism.
 - The suite: the slowest tests left are the React-typings JSX ones (~1 s each: react16.d.ts per test).
+- **Thread startup per program** (plan 36 stage 3): `baseline_tests --checkers 4 --threads 4` takes 38 s against 24 s
+  at `--threads 1` (same output): ~1 ms per program for starting and joining 3 threads (8 MB stacks, glibc arenas).
+  Irrelevant for one CLI run; a persistent pool (stage 1's load pool) fixes it for a watch/LSP mode or a threaded
+  harness. With fewer checked files than checkers, the empty checkers still build their global types (~0.2 ms each).
 
 - **valibot +2.5% instructions** since the corpus session (todo entry 8): generic homomorphic mapped types get index
   signatures from their constraint, eagerly instantiated. tsc resolves them lazily; a lazy IndexInfo value (or the

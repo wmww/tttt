@@ -65,18 +65,6 @@ impl_display_no_drop(BriefType, brief_type) {
     return d;
 }
 
-#define display_set_underline(active) \
-    if (d.underline) { \
-        cstr_resize( \
-            &d.target_underline->underline, \
-            cstr_size(&d.target_underline->target), \
-            d.target_underline->chars[d.underline_active] \
-        ); \
-        d.underline_active = active; \
-    }
-
-#define display_finish_underline() display_set_underline(false)
-
 static void display_string_literal(Display d, csview sv) {
     display_lit(d, "\"");
     for (intptr_t i = 0; i < sv.size; i++) {
@@ -536,7 +524,6 @@ void display_type(Display d, TypeNode const* me) {
 }
 
 static void display_type_inner(Display d, TypeNode const* me) {
-    display_set_underline(true);
 
     switch (my tag) {
         case TYPE_ANY: display_colored(d, color_type, "any"); break;
@@ -681,7 +668,6 @@ static void display_type_inner(Display d, TypeNode const* me) {
         display_colored(d, color_error, " /* self-referential */");
     }
 
-    display_finish_underline();
 }
 
 static void display_function_impl(Display d, FunctionImpl const* me, bool include_arrow) {

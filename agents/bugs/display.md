@@ -48,6 +48,10 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   tsc keeps them (getObjectTypeInstantiation filters with isTypeParameterPossiblyReferenced). Display compensates
   (`mentions_mapped()`, hacks.md); doing it in `instantiate.c` would be correct and cheaper. Measure on valibot/type-fest.
 
+- **Order dependence of `Array<T>` vs `T[]`**: an annotation's display depended on when the global Array type was
+  first built (moot since plan 37 D builds Array at checker start), but the mechanism is still there for other global
+  generics: if `X<T>` vs another spelling flips with `-f` vs a full run or with `--checkers`, find what the printer keys on.
+
 ## Names and specifiers
 - **`import("…")` specifiers**: tsc prints some specifiers as absolute paths the harness then strips (`/.src/a` -> `a`),
   so the text matches but the `^^^` underline is 6 longer (e.g. `exports` inside its own CommonJS file,
@@ -67,6 +71,11 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 - `export default class {}` prints `typeof default` from other files where tsc names the importing alias (`import {
   default as b }` -> `typeof b`; importHelpersWithImportOrExportDefault, 10 configurations): getNameOfSymbolAsWritten.
 
+- JS corpus leftovers (probes in `test/probes/plan19/webpack/`): a `require("m").X` alias that resolves to nothing
+  prints `error` in tsc (tttt `any`); tsc lists a same-named `@typedef` as a second declaration of the alias symbol;
+  `module.exports = f` of a function declaration prints `typeof f` (require_property_value_only.ts); a JS `const S =
+  Symbol()` read through a `@type {typeof S}` const prints `symbol` in tsc (jsdoc_accessor_type.ts).
+
 ## Underlines (node reuse)
 - `() => 'foo' as const`: tsc's underline reuses the `"foo"` (`^^^^^^     `), tttt underlines the whole return type.
 - readonly_through_prettify.ts: `| undefined` of optional properties under exactOptional-less strict: tsc's
@@ -79,3 +88,6 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   property, tttt the first (mapped_over_intersection_readonly.ts); intersection_with_type_param.ts is the reverse
   (tttt misses a repeated Decl).
 - Duplicate class/interface members show as separate symbols (tsc: one merged symbol): the TS2687 tests.
+- A union property's symbol lists every member's declarations in tsc (`(A[] | B[]).filter` is `Symbol(Array.filter,
+  Decl x4)`, tttt x2: unionOfArraysFilterCall).
+- A local type merged with an exported value of the same name lists both declarations (importElisionExportNonExportAndDefault).

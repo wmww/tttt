@@ -61,30 +61,17 @@ static inline DisplayCtx display_ctx_take(DisplayCtx ctx, cstr* target) {
 #define cstr_append_d(target, ctx, ...) \
     (*(target) = display_into_cstr(display_sequence(display_ctx_take(ctx, target), __VA_ARGS__)))
 
-typedef struct DisplayUnderlineTarget {
-    cstr target;
-    cstr underline;
-    char chars[2];
-} DisplayUnderlineTarget;
-
 // tttt's own display context. It sits on the typechecker's hot path (every type comparison that produces a message
 // builds one of these), so it stays a thin wrapper around a borrowed cstr rather than an owning cleat DisplayCtx.
 // The declare_ast_display() bridge below is what connects it to cleat's display sequences.
 typedef struct Display {
-    union {
-        // The first element of all other union members is a cstr, so it is safe and well-defined to access target in
-        // all cases.
-        cstr* target;
-        DisplayUnderlineTarget* target_underline;
-    };
+    cstr* target;
     unsigned char indent;
     bool color : 1;
     bool debug : 1;
     bool brief : 1;
     bool parsed : 1;
     bool nested : 1;
-    bool underline : 1;
-    bool underline_active : 1;
 } Display;
 
 static inline Display debug_display(cstr* target) {
@@ -92,13 +79,6 @@ static inline Display debug_display(cstr* target) {
         .target = target,
         .color = true,
         .debug = true,
-    };
-}
-
-static inline Display underline_display(DisplayUnderlineTarget* target) {
-    return (Display) {
-        .target_underline = target,
-        .underline = true,
     };
 }
 

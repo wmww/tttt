@@ -164,6 +164,9 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 - abstractClassUnionInstantiation fails alone (`-f`) and passes in the full run: its TS2511 errors land on an invalid
   span (see `harness.md`); something order-dependent in the shared lib state.
 
+- In node16, a default import of a CommonJS file from ESM is `module.exports` (`obj2.default`:
+  nodeModulesTripleSlashReferenceModeDeclarationEmit7).
+
 ## Narrowing and flow
 - **Destructuring assignment flow order** (controlFlowAssignmentPatternOrder, 12 spurious TS2322;
   controlFlowBindingPatternOrder): assignments in a pattern's computed keys and defaults happen in tsc's evaluation
