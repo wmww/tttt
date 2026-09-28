@@ -3100,11 +3100,26 @@ static Ternary objects_identical(Checker* me, RelationState* st, Ty const* sourc
         return mapped_identical(me, st, source_members->mapped, target_members->mapped);
     }
     // Two references to one generic type (or tuples of one shape): their type arguments
-    if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE && source->reference.target == target->reference.target) {
+    // by the measured variances like the other relations, so an independent one doesn't count (tsc's relateVariances:
+    // `C<unknown>` and `C<{}>` are identical if C doesn't use its type parameter). Where a measurement was unreliable
+    // and they differ, structurally
+    if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE && source->reference.target == target->reference.target &&
+        !is_check_marker(me, source) && !is_check_marker(me, target)
+    ) {
         TyList source_args = ty_reference_args(me, source);
         TyList target_args = ty_reference_args(me, target);
+        Ty const* declared = source->reference.target;
+        bool list = is_array_target(me, declared) || declared->declared.kind == TY_DECLARED_TUPLE_TARGET;
+        Variances const* variances = list ? nullptr : get_variances(me, declared);
+        if (!list && !variances && !is_marker_reference(me, source) && !is_marker_reference(me, target)) return TERNARY_MAYBE;
         Ternary result = TERNARY_TRUE;
-        for (u32 i = 0; i < source_args.len && result; i++) result &= is_related_to(me, st, source_args.data[i], target_args.data[i], false);
+        if (variances) {
+            bool unreliable = false;
+            result = type_args_related(me, st, variances, source_args, target_args, false, &unreliable);
+            if (!result && unreliable) goto structural;
+        } else {
+            for (u32 i = 0; i < source_args.len && result; i++) result &= is_related_to(me, st, source_args.data[i], target_args.data[i], false);
+        }
         Ty const* source_this = source->reference.this_arg;
         Ty const* target_this = target->reference.this_arg;
         if (result && source_this != target_this) {
@@ -3112,6 +3127,7 @@ static Ternary objects_identical(Checker* me, RelationState* st, Ty const* sourc
         }
         return result;
     }
+structural:;
     bool source_tuple = is_tuple(source) || is_empty_tuple(source);
     bool target_tuple = is_tuple(target) || is_empty_tuple(target);
     if (source_tuple || target_tuple) {

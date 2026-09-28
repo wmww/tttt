@@ -47496,12 +47496,12 @@ const baselines = {
         types: true,
     },
     'newOperatorConformance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'newOperatorErrorCases': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -66041,7 +66041,7 @@ const baselines = {
         types: true,
     },
     'wrappedAndRecursiveConstraints2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
