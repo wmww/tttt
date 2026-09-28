@@ -87,8 +87,11 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   are matched by (tsc matches the late bound symbol, so `["a"]` and `a` pair there).
 - `EnumCase.name`/`full_name`: string-literal member names are the source text between the quotes (escapes not
   processed).
-- `EXPR_REGEX` carries only its span: flags are validated (`regex_check_flags`, in the checker's expression walk), the
-  pattern isn't; `parse_regex` fails where tsc reports TS1161.
+- `regex_check_literal()` (`regex_check.c`, tsc's checkGrammarRegularExpressionLiteral) converts each regex literal
+  to UTF-16 to port tsc's scanner 1:1. A position between the two surrogates of an astral character (errors on a lone
+  surrogate without the u flag) is the third byte of its UTF-8 sequence; `utf8_byte_utf16_units()` makes columns and
+  the test harness's squiggles count that. Group names with escapes are compared decoded but re-encoded as UTF-8, and
+  spelling suggestions measure UTF-8 bytes.
 - `await_is_operator`, `yield_is_operator_outside_generator`, `yield_await_is_keyword_here`: tsc's
   isAwaitExpression/isYieldExpression/isIdentifier from `ParserShared.in_async`/`in_generator`/`in_static_block`/
   `function_depth` plus a character peek (not a token). Parameter defaults inherit the enclosing function's context;

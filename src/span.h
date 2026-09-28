@@ -50,6 +50,14 @@ static inline const char* span_end_ptr(Span me) {
 bool span_is_written(Span me);
 unsigned span_line_index(Span me);
 unsigned span_col_index(Span me);
+// The UTF-16 code units (tsc's positions) the UTF-8 byte at c ends: 1 for a lead byte, and a 4-byte character's
+// second unit ends at its third byte, so a span can start or end between the two surrogates (the regular expression
+// checks, which see those separately without the u flag). c[-2] is readable for a continuation byte after another
+static inline unsigned utf8_byte_utf16_units(char const* c) {
+    unsigned char b = (unsigned char)*c;
+    if ((b & 0xC0) != 0x80) return 1;
+    return ((unsigned char)c[-1] & 0xC0) == 0x80 && (unsigned char)c[-2] >= 0xF0;
+}
 const char* span_line_start(Span me);
 const char* span_line_end(Span me);
 Span span_between(Span a, Span b);

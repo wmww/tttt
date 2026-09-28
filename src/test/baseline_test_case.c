@@ -558,6 +558,11 @@ static void format_error_tree(
         );
     }
 
+    if (indent_level > 0 && error->detached) {
+        cstr_append_d(file_target, DEFAULT_DISPLAY, "\r\n!!! related TS", error->ts_code, ": ", error->message);
+        return;
+    }
+
     // Add toplevel errors and non-related errors (sub-errors that don't have a valid span) to the global string
     if (indent_level == 0 || !span_valid(error->span)) {
         cstr_append_d(global_target, DEFAULT_DISPLAY, repeated_d("  ", indent_level), error->message, "\r\n");
@@ -638,12 +643,13 @@ static void process_errors(BaselineTestCase* me) {
             LineNumberedStr item = { .line = line, .str = cstr_null };
             const char* squiggle_start = start > line_start ? start : line_start;
             cstr_append_lit(&item.str, "    ");
+            // (in UTF-16 code units, like tsc's harness)
             for (const char* c = line_start; c < squiggle_start && c < line_end; c++) {
-                cstr_append_n(&item.str, *c == '\t' ? "\t" : " ", 1);
+                for (unsigned n = utf8_byte_utf16_units(c); n; n--) cstr_append_n(&item.str, *c == '\t' ? "\t" : " ", 1);
             }
             const char* squiggle_end = end < line_end ? end : line_end;
             for (const char* c = squiggle_start; c < squiggle_end; c++) {
-                cstr_append_lit(&item.str, "~");
+                for (unsigned n = utf8_byte_utf16_units(c); n; n--) cstr_append_lit(&item.str, "~");
             }
             bool finishes = is_last_line || next_line_start > end;
             if (finishes) format_error_tree(&my formatted_errors, &item.str, error, error, current_source, 0);

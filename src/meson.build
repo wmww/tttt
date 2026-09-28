@@ -32,6 +32,8 @@ core_files = files(
     'symbol_chain.c',
     'lib_features.c',
     'unicode_identifiers.c',
+    'regex_check.c',
+    'regex_tables.c',
     'unused.c',
     'flow.c',
     'engine.c',

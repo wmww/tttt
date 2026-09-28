@@ -97,6 +97,14 @@ void error_add_related_s(Error* me, Span span, unsigned ts_code, cstr message) {
     error_sub_error_s(me, span, ts_code, message);
 }
 
+void error_add_detached_related_s(Error* me, unsigned ts_code, cstr message) {
+    if (!me) {
+        cstr_drop(&message);
+        return;
+    }
+    vec_error_push(&my sub_errors, (Error){ .message = message, .ts_code = ts_code, .detached = true });
+}
+
 void error_ctx_drop(ErrorCtx* me) {
     vec_error_drop(&my errors);
 }

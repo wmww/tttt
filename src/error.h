@@ -21,6 +21,7 @@ typedef struct Error {
     Span span;
     unsigned ts_code;
     ErrorPhase phase;
+    bool detached; // Related information without a location (tsc's createDetachedDiagnostic)
     VecError sub_errors;
 } Error;
 
@@ -37,6 +38,9 @@ void error_sub_error_s(Error* me, Span span, unsigned ts_code, cstr message);
 void error_add_related_s(Error* me, Span span, unsigned ts_code, cstr message);
 #define error_add_related_d(me, span, ts_code, ...) \
     error_add_related_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+/// Related information without a location (tsc's detached diagnostics, like a regular expression's "Did you mean"
+/// suggestions). noop if me is null
+void error_add_detached_related_s(Error* me, unsigned ts_code, cstr message);
 
 #define g_class_key Error, error
 #define g_declared
