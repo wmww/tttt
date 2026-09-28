@@ -169,6 +169,10 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             return false;
         case TY_STRING_MAPPING:
             return mentions_type_variables(me, ty->string_mapping.type, walk, depth + 1);
+        case TY_SUBSTITUTION:
+            // (`NoInfer<A>` mentions A)
+            return mentions_type_variables(me, ty->substitution.base, walk, depth + 1) ||
+                mentions_type_variables(me, ty->substitution.constraint, walk, depth + 1);
         case TY_CONDITIONAL: {
             TyMapper const* mapper = ty->conditional.mapper;
             if (ty->conditional.root && mapper) {

@@ -14,8 +14,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   reports nothing, 286 other text, 243 only missing, 116+80 only spurious; 252 have a spurious parser diagnostic.
   Spurious TS2304 (414 in 116 tests) is spread thin, much of it downstream of parser recovery.
 - **Corpora** (all clean under tsc 5.8): tsc `src/compiler`, valibot, react, nest, type-fest, zod **0**; webpack
-  **17** (from 107; what's left is plan 38 and plan 26); **xstate 61** (pinned 2026-09-28 as the inference-heavy
-  corpus, 394 at pinning; most of the rest is plan 38); **zod-root** reports exactly tsc's 55.
+  **13** (from 107; what's left is plan 38 stage 2 and plan 26); **xstate 43** (pinned 2026-09-28 as the
+  inference-heavy corpus, 394 at pinning, 61 before plan 38 stage 1); **zod-root** reports exactly tsc's 55.
 - **Perf**: 4 checkers on up to 4 threads by default, output independent of the thread count. tsc corpus 0.53 s
   (tsgo 1.26), webpack 0.41 (0.67), zod 0.45 (2.92), valibot 0.39 (1.65) on 2 cores x 2 SMT. Variance measurements
   report unreliability like tsc and the `Prop`/`PropDecl` split cut the arena 20-31%; type counts are at or under
@@ -28,8 +28,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   tsconfig, iteration protocol, generators, `this` types, mixins, decorators as calls, the missing type, non-widening
   nullables, union origins, elaboration, JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos,
   parallel checking. ~83k lines of C. `documentation.md` describes it, `hacks.md` lists what is approximated.
-- **Absent or approximated tsc mechanisms**: tsc's inference flow in call resolution (lazy fixing, leaf-wise
-  contextual instantiation, anyFunctionType first pass: plan 38), lazy reverse mapped types, permissive instantiation,
+- **Absent or approximated tsc mechanisms**: parts of tsc's inference flow (lazy fixing and top-level contextual
+  instantiation landed in plan 38 stage 1; a call is still resolved several times, with a replay record standing in
+  for tsc's resolve-once; no anyFunctionType first pass), lazy reverse mapped types, permissive instantiation,
   intersection reduction by constraint. Out of scope: declaration emit. Not built: project references (`tsc -b`),
   parallel loading and name resolution.
 

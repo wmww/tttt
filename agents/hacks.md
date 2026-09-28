@@ -347,14 +347,13 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   inferred `any` (tsc's nonInferrableAnyType, which tttt lacks) and a pattern with a rest element gives none. Nested
   literals ask `ty_instantiate_contextual_type()` only in `check_for_mutable_location()` (tsc instantiates every
   contextual type lookup with the returnMapper).
-- Second pass contextual types (`infer_type_arguments`, HACK): a type parameter without candidates stays itself only
-  where it would be `unknown` (then `Checker.contextual_fixing_mapper` fixes it in contextual signatures); others are
-  substituted by the constraint/default as before, because tttt's contextual lookups don't go through a type
-  parameter's constraint (tsc's getApparentTypeOfContextualType).
-- `infer_type_arguments` second pass: a type parameter is fixed before a context-sensitive argument when the contextual
-  signature's parameter types mention it (`fixed_by_argument`, probed by instantiating with `unknown`; `fixed_by_expr`
-  for literals); tsc fixes lazily when a contextual parameter type is asked for. Inference from the contextual return
-  type only when it has no type variables.
+- Lazy fixing (plan 38 stage 1, call.c/expr.c): a call resolved again (error pass, outer rounds, overloads) replays
+  what checking each context-sensitive argument fixed the first time, and to what (`KEY_ARG_FIXES`/`ArgFixes`),
+  standing in for tsc resolving a call once. The signature view of a contextual type (`ExprCtx.sig_contextual`) is
+  only built where `may_want_signature()` says a function may ask. A function argument's return type is computed
+  right after its contextual signature is assigned (`ty_argument_return_type()` in compute()'s EXPR_FUNCTION) and
+  `KEY_CONTEXT_RETURN` is rewritten on every later check (`set_contextual_return()`). Generic function arguments
+  still fix by probing (`fixed_by_argument`/`fixed_by_type`, with the candidates gate).
 - `TYF_NON_INFERRABLE`: set on the silent never and `ty_any_function_type()`, propagated through unions,
   intersections, references, object literals and aliased anonymous instantiations.
 - Skip-sensitive first pass (`ExprCtx.skip_sensitive`): returnOnlyType (`return_only_type()`) gives generators
@@ -383,8 +382,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   is by name (`Promise`/`PromiseLike`), not any thenable.
 - Contextual `this` (`ty_contextual_this_type`): the literal's contextual type and enclosing literal are remembered
   when checked (`KEY_LITERAL_CONTEXT`/`KEY_LITERAL_PARENT`, last one wins; no parent pointers); an earlier `this`
-  falls back to the literal's own type. `ThisType<T>` recognised by name, not instantiated with the inference in
-  progress.
+  falls back to the literal's own type. `ThisType<T>` recognised by name; its T is instantiated with the fixing
+  mapper of the call inferring now (`ty_instantiate_fixing()`).
 - `ty_access`: `null`/`undefined` members of a union object are skipped silently (TS18047/18048 come from
   `check_access`).
 - `member_refs()` (check.c) duplicates the member walk of `access()` (access.c) to get `Prop`s; special-cases numeric
@@ -399,7 +398,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `LazyMemo.speculative` / `lazy_type_set_speculative()` (c1a53328): a call typed during an outer inference round
   doesn't replace the memo made against the instantiated contextual type, so the error pass doesn't re-resolve nested
   calls with a raw contextual type (xstate's `DoNotInfer<TContext>` leaking into enqueueActions). Stands in for tsc
-  caching a call's first resolved signature (links.resolvedSignature); plan 38's per-resolution scope should replace it.
+  caching a call's first resolved signature (links.resolvedSignature); plan 38 stage 2 item 5.
 
 ## Expressions (`ty/expr.c`), contextual typing
 - `intersection_prop_context` (`ty/expr.c`): tsc's getTypeOfPropertyOfContextualType over an intersection sees type

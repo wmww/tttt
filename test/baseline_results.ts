@@ -7056,7 +7056,7 @@ const baselines = {
         types: true,
     },
     'correlatedUnions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -13701,9 +13701,9 @@ const baselines = {
         types: false,
     },
     'fixingTypeParametersRepeatedly2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fixingTypeParametersRepeatedly3': {
         errors: true,
@@ -14983,7 +14983,7 @@ const baselines = {
     'genericFunctionInference2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericFunctionSpecializations1': {
         errors: true,
@@ -15543,7 +15543,7 @@ const baselines = {
     'getParameterNameAtPosition': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'getSetEnumerable': {
         errors: true,
@@ -17268,7 +17268,7 @@ const baselines = {
     'inferTupleFromBindingPattern': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferTypeArgumentsInSignatureWithRestParameters': {
         errors: true,
@@ -20398,7 +20398,7 @@ const baselines = {
     'lambdaParameterWithTupleArgsHasCorrectAssignability': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lambdaPropSelf': {
         errors: true,
@@ -20851,9 +20851,9 @@ const baselines = {
         types: true,
     },
     'mappedTypeContextualTypesApplied': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeGenericIndexedAccess': {
         errors: true,
@@ -27798,7 +27798,7 @@ const baselines = {
     'reverseMappedPartiallyInferableTypes': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'reverseMappedTupleContext': {
         errors: true,
@@ -45243,12 +45243,12 @@ const baselines = {
     'generatorTypeCheck45': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck46': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck47': {
         errors: true,
@@ -46688,7 +46688,7 @@ const baselines = {
     'arrayLiteralInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayLiterals': {
         errors: true,
@@ -67221,9 +67221,9 @@ const baselines = {
         types: true,
     },
     'discriminatedUnionInference': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallToOverloadedMethodWithOverloadedArguments': {
         errors: true,
@@ -67373,7 +67373,7 @@ const baselines = {
     'genericCallWithOverloadedFunctionTypedArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithOverloadedFunctionTypedArguments2': {
         errors: true,
@@ -67443,7 +67443,7 @@ const baselines = {
     'noInfer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noInferRedeclaration': {
         errors: true,

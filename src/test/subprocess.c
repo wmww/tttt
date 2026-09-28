@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
@@ -6,38 +7,25 @@
 
 #include "subprocess.h"
 
-static_failable write_sv(int fd, csview sv) {
-    if (write(fd, sv.buf, csview_size(sv)) < csview_size(sv)) {
-        return err_d("failed to write to pipe: ", strerror(errno));
+// Each side goes into an unlinked temporary file (a pipe would deadlock once a side is bigger than its buffer): the
+// subprocess inherits the descriptor and opens it through /dev/fd, which on Linux starts reading at the beginning
+static_failable write_temp(csview sv, FILE** out) {
+    *out = tmpfile();
+    if (!*out) return err_d("failed to create a temporary file: ", strerror(errno));
+    if (fwrite(sv.buf, 1, (size_t)csview_size(sv), *out) < (size_t)csview_size(sv) || fflush(*out) != 0) {
+        return err_d("failed to write a temporary file: ", strerror(errno));
     }
     return ok;
 }
 
-static void close_fd(int* fd) {
-    if (*fd >= 0) {
-        close(*fd);
-        *fd = -1;
-    }
-}
+// Does the actual work of run_diff_subprocess(). The files are owned by the caller, which closes whichever are open
+// however this ends up returning
+static_failable run_diff(csview a, csview b, FILE** a_file, FILE** b_file) {
+    try (write_temp(a, a_file)) bubble;
+    try (write_temp(b, b_file)) bubble;
 
-// Does the actual work of run_diff_subprocess(). The pipes are owned by the caller, which closes whichever ends are
-// still open however this ends up returning
-static_failable run_diff(csview a, csview b, int a_pipe[2], int b_pipe[2]) {
-    if (pipe(a_pipe) < 0 || pipe(b_pipe) < 0) {
-        return err_d("failed to open pipe: ", strerror(errno));
-    }
-
-    // NOTE: this will deadlock if either string is bigger than the pipe buffer (64KB by default). Test outputs have
-    // stayed well under that so far.
-    try (write_sv(a_pipe[1], a)) bubble;
-    try (write_sv(b_pipe[1], b)) bubble;
-
-    close_fd(&a_pipe[1]);
-    close_fd(&b_pipe[1]);
-
-    // The read ends of the pipes are inherited by the subprocess, which reads them through /dev/fd
-    cstr a_arg = cstr_d("/dev/fd/", a_pipe[0]);
-    cstr b_arg = cstr_d("/dev/fd/", b_pipe[0]);
+    cstr a_arg = cstr_d("/dev/fd/", fileno(*a_file));
+    cstr b_arg = cstr_d("/dev/fd/", fileno(*b_file));
 
     try (run_subproc((SubprocArgs){
         // Other commands that have been handy here:
@@ -54,13 +42,11 @@ static_failable run_diff(csview a, csview b, int a_pipe[2], int b_pipe[2]) {
 }
 
 void run_diff_subprocess(csview a, csview b) {
-    int a_pipe[2] = {-1, -1};
-    int b_pipe[2] = {-1, -1};
+    FILE* a_file = nullptr;
+    FILE* b_file = nullptr;
 
-    try (run_diff(a, b, a_pipe, b_pipe)) or_log(error);
+    try (run_diff(a, b, &a_file, &b_file)) or_log(error);
 
-    close_fd(&a_pipe[0]);
-    close_fd(&a_pipe[1]);
-    close_fd(&b_pipe[0]);
-    close_fd(&b_pipe[1]);
+    if (a_file) fclose(a_file);
+    if (b_file) fclose(b_file);
 }

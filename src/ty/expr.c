@@ -27,6 +27,9 @@ static const LowerCtx expr_lower_ctx = { .generic = true };
 
 typedef struct ExprCtx {
     Ty const* contextual; // may be null
+    // While a call infers: the contextual type as a contextual signature sees it (tsc's ContextFlags.Signature, which
+    // instantiates every level with the non-fixing mapper), when that differs from `contextual`
+    Ty const* sig_contextual;
     bool is_const; // inside `as const`
     bool template_context; // The index of an element access (a template literal there is a template type)
     // Context-sensitive functions are ty_any_function_type(), whatever contains one isn't remembered (tsc's
@@ -192,7 +195,52 @@ static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty 
     return type;
 }
 
+// Whether checking the expression may ask for a contextual signature: it is a function or has one where its contextual
+// type reaches (what tsc asks getApparentTypeOfContextualType with ContextFlags.Signature for)
+static bool may_want_signature(Expr const* expr) {
+    switch (expr->tag) {
+        case EXPR_FUNCTION: return true;
+        case EXPR_OBJECT:
+            for_each (i, vec_object_expr_item, &expr->object) {
+                if (may_want_signature(&i->value)) return true;
+            }
+            return false;
+        case EXPR_ARRAY:
+            for_each (i, vec_expr, &expr->array) {
+                if (may_want_signature(i)) return true;
+            }
+            return false;
+        case EXPR_TERNARY:
+            return may_want_signature(&expr->ternary->yes) || may_want_signature(&expr->ternary->no);
+        case EXPR_BINARY_OP:
+            return may_want_signature(&expr->binary_op->left) || may_want_signature(&expr->binary_op->right);
+        case EXPR_JSX_ATTRIBUTES:
+            for_each (i, vec_jsx_attribute, &expr->jsx_attributes) {
+                if (i->tag == JSX_ATTRIBUTE_EXPR && may_want_signature(&i->value)) return true;
+            }
+            for_each (i, vec_jsx_child, &jsx_attributes_element(expr)->children) {
+                if (i->tag == JSX_CHILD_EXPR && !i->spread && may_want_signature(&i->expr)) return true;
+            }
+            return false;
+        default:
+            return false;
+    }
+}
+
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
+    // (tsc's getApparentTypeOfContextualType: every node's contextual type is instantiated at its top level with what the
+    // call inferring now knows. The view a contextual signature sees only where one may be asked for: instantiating
+    // creates types, which tsc wouldn't have yet)
+    bool inferring = my outer_inference && ((ctx.contextual && (ctx.contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) ||
+        ctx.sig_contextual);
+    if (inferring) {
+        Ty const* raw_sig = ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
+        ctx.contextual = ty_instantiate_contextual_type(me, ctx.contextual);
+        Ty const* sig_view = may_want_signature(expr) ? ty_instantiate_contextual_type_for(me, raw_sig, true) : ctx.contextual;
+        ctx.sig_contextual = sig_view != ctx.contextual ? sig_view : nullptr;
+    } else {
+        ctx.sig_contextual = nullptr;
+    }
     ctx.is_const = in_const_context(me, expr, ctx);
     if (ctx.skip_sensitive) {
         if (ty_expr_is_context_sensitive(expr)) {
@@ -220,7 +268,7 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
             return memo->evaluated;
         }
     }
-    if (!ctx.contextual && !ctx.is_const && !ctx.template_context) return ty_expr_type(me, expr); // through the LazyType, which detects cycles
+    if (!ctx.contextual && !ctx.sig_contextual && !ctx.is_const && !ctx.template_context) return ty_expr_type(me, expr); // through the LazyType, which detects cycles
     Ty const* ret = compute(me, expr, ctx);
     if (my flow_uncached) return ret;
     // (What such a reference is while type arguments are inferred isn't what it is once they are)
@@ -417,7 +465,8 @@ static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty con
         }
         ignore_index = true;
         index_candidates.len = 0;
-        push_prop_context_part(me, &parts, ty_access(me, member, key));
+        // (Its members see the whole intersection as their `this`, tsc's getApparentTypeOfIntersectionType)
+        push_prop_context_part(me, &parts, ty_access(me, ty_with_this_arg(me, member, object), key));
     }
     for (u32 i = 0; i < index_candidates.len; i++) {
         IndexInfo const* info = ty_applicable_index_info(me, index_candidates.data[i], key);
@@ -763,6 +812,10 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
     return as_rest ? ty_signature_params_tuple(me, sig, index, nullptr) : nullptr;
 }
 
+Ty const* ty_contextual_signature_type_at(Checker* me, Signature const* sig, u32 index, bool as_rest) {
+    return signature_type_at(me, sig, index, as_rest);
+}
+
 // Whether the parameter whose pattern this is took its contextual type from the pattern, inference having given
 // `unknown`: to tsc's getSymbolAtLocation, which asks the contextual signature again, its properties are unknown's
 bool ty_contextual_parameter_is_pattern(Checker* me, Binding const* pattern) {
@@ -862,7 +915,8 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
             Ty const* outer_context = intern_get(&my links, key, 2);
             if (!outer_context) break;
             Ty const* marker = this_type_marker(me, ty_apparent_type(me, outer_context));
-            if (marker) return marker;
+            // (A ThisType<T> marker, and only that, fixes what it mentions: tsc's getContextualThisParameterType)
+            if (marker) return ty_instantiate_fixing(me, marker);
             u64 parent_key[2] = { KEY_LITERAL_PARENT, (u64)(uintptr_t)outer };
             outer = intern_get(&my links, parent_key, 2);
         }
@@ -895,7 +949,7 @@ Ty const* ty_return_expressions_context(Checker* me, FunctionImpl const* functio
 // A function expression meets a contextual type. Its unannotated parameters take their types from the contextual
 // signature, once: the first contextual signature decides (tsc's ContextChecked)
 Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual) {
-    return contextual_signature(me, contextual, function, 0);
+    return contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
 }
 
 Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function) {
@@ -903,20 +957,26 @@ Signature const* ty_function_assigned_contextual_signature(Checker* me, Function
     return intern_get(&my links, key, 2);
 }
 
+// The contextual type of a function's return expressions: its contextual signature's return type, as the last check of
+// the function saw it (tsc goes through the resolved signature of the call it is an argument of), instantiated where it
+// is looked at while the call infers (ty_instantiate_contextual_type())
+static void set_contextual_return(Checker* me, FunctionImpl const* function, Signature const* sig) {
+    if (function->ret_explicit) return;
+    Ty const* ret = signature_return_type(me, sig);
+    u64 key[2] = { KEY_CONTEXT_RETURN, (u64)(uintptr_t)function };
+    if (ret && !(ret->flags & (TYF_ANY | TYF_VOID))) *intern_slot(me, &my links, key, 2) = ret;
+}
+
 // `evaluating`: the parameter whose type evaluation asked for this, which takes its contextual type like the others
 static void assign_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual, InitializedBinding const* evaluating) {
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2)) return;
-    Signature const* sig = contextual_signature(me, contextual, function, 0);
+    Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
     if (!sig) return;
     // The type parameters of the generic call this is an argument of are fixed now (a contextual type that left them
     // generic because nothing was inferred for them: `unknown`)
-    if (my contextual_fixing_mapper) {
-        Signature* fixed = arena_new(&my arena, Signature);
-        *fixed = (Signature){ .flags = sig->flags, .target = sig, .mapper = my contextual_fixing_mapper };
-        signature_resolve(me, fixed);
-        sig = fixed;
-    }
+    Signature const* unfixed = sig;
+    sig = ty_fix_contextual_signature(me, sig, function);
     *intern_slot(me, &my links, done_key, 2) = sig;
     if (sig->this_type) {
         u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
@@ -955,13 +1015,7 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
         u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)&i->initializer };
         *intern_slot(me, &my links, key, 2) = type;
     }
-    if (!function->ret_explicit) {
-        Ty const* ret = signature_return_type(me, sig);
-        if (ret && !(ret->flags & (TYF_ANY | TYF_VOID))) {
-            u64 key[2] = { KEY_CONTEXT_RETURN, (u64)(uintptr_t)function };
-            *intern_slot(me, &my links, key, 2) = ret;
-        }
-    }
+    set_contextual_return(me, function, unfixed);
 }
 
 void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, InitializedBinding const* evaluating) {
@@ -2342,9 +2396,14 @@ static Ty const* apparent_literal_context(Checker* me, Ty const* contextual) {
 static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     ObjectExpr const* object = &expr->object;
     Ty const* written_context = ctx.contextual;
+    Ty const* written_sig_context = ctx.sig_contextual;
     if (ctx.contextual) ctx.contextual = apparent_literal_context(me, ctx.contextual);
     if (ctx.contextual && ctx.contextual->kind == TY_UNION) {
         ctx.contextual = discriminate_by_object_members(me, ctx.contextual, object);
+    }
+    if (ctx.sig_contextual) ctx.sig_contextual = apparent_literal_context(me, ctx.sig_contextual);
+    if (ctx.sig_contextual && ctx.sig_contextual->kind == TY_UNION) {
+        ctx.sig_contextual = discriminate_by_object_members(me, ctx.sig_contextual, object);
     }
     if (ctx.contextual && !ctx.skip_sensitive) {
         // What `this` in its methods goes by (ty_contextual_this_type()). Not while skipping context-sensitive
@@ -2371,7 +2430,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             literal_builder_drop(&builder);
             // (Its contextual type is the literal's as given: tsc's getContextualType of a SpreadAssignment)
             spread_acc_type(me, &spread, check_with(me, &i->value, (ExprCtx){
-                .contextual = written_context, .skip_sensitive = ctx.skip_sensitive,
+                .contextual = written_context, .sig_contextual = written_sig_context, .skip_sensitive = ctx.skip_sensitive,
             }));
             continue;
         }
@@ -2395,12 +2454,14 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         // (An accessor has none: asking for it would type the contextual type's same-named accessor, which is this
         // one again when inference rechecks the literal against what it inferred from it, `get sub() { return f(X) }`
         // in X's initializer)
-        if (ctx.contextual && !is_accessor) {
+        Ty const* member_sig_context = nullptr;
+        if ((ctx.contextual || ctx.sig_contextual) && !is_accessor) {
             Ty const* key = name ? ty_prop_name_literal(me, name) : key_type;
-            if (key) member_context = contextual_prop_type(me, ctx.contextual, key);
+            if (key && ctx.contextual) member_context = contextual_prop_type(me, ctx.contextual, key);
+            if (key && ctx.sig_contextual) member_sig_context = contextual_prop_type(me, ctx.sig_contextual, key);
         }
         ExprCtx member_ctx = {
-            .contextual = member_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
+            .contextual = member_context, .sig_contextual = member_sig_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
             .generic_mode = ctx.generic_mode,
         };
         Ty const* type = nullptr;
@@ -2600,8 +2661,9 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
     bool has_omitted = false;
     for_each (i, vec_expr, &expr->array) {
         Ty const* element_context = contextual_array_element_type(me, ctx.contextual, expr, (u32)i_index);
+        Ty const* element_sig_context = ctx.sig_contextual ? contextual_array_element_type(me, ctx.sig_contextual, expr, (u32)i_index) : nullptr;
         ExprCtx element_ctx = {
-            .contextual = element_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
+            .contextual = element_context, .sig_contextual = element_sig_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
             .generic_mode = ctx.generic_mode,
         };
         if (i->tag == EXPR_SPREAD) {
@@ -3322,9 +3384,21 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_CALL: return check_call(me, expr->call, ctx);
 
         case EXPR_FUNCTION: {
-            if (ctx.contextual) {
+            if (ctx.contextual || ctx.sig_contextual) {
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
-                assign_contextual_signature(me, expr->function, ctx.contextual, nullptr);
+                u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function };
+                bool assigned = intern_get(&my links, done_key, 2) != nullptr;
+                assign_contextual_signature(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr);
+                if (assigned) {
+                    Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0);
+                    if (sig) set_contextual_return(me, expr->function, sig);
+                }
+                // Its return type is decided at its first check with a contextual signature, which may be now, while the
+                // call it is an argument of infers (tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod)
+                if (my outer_inference && !expr->function->ret_explicit &&
+                    intern_get(&my links, done_key, 2)) {
+                    ty_argument_return_type(me, expr->function);
+                }
             }
             return ty_function_type(me, expr->function);
         }

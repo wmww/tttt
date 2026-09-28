@@ -9,13 +9,11 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 1. ~~Corpus: pin an inference-heavy corpus~~ done: xstate core (394 -> 61, three sub-agents), webpack 30 -> 17,
    suite 10543 -> 10554. Plan 38 has seven xstate/webpack repros in `plans/38_prototypes/`; plan 19 "xstate" lists
    the rest by cause.
-2. **Plan 38 planning** (`plans/38_inference_flow.md`, a brief): prototype tsc's inference flow in a worktree
-   (anyFunctionType first pass, leaf-wise instantiateContextualType, lazy fixing), measure against the suite, webpack,
-   zod and entry 1's corpus, write the stages. If the memoization question has no good answer, say so and stop:
-   that is a valid outcome.
-3. **Plan 38 stage 1** (execution).
-4. **Plan 38 stage 2** (execution; or the next plan 38 stage, or suite checker bugs 6 if planning found one stage is
-   enough).
+2. ~~Plan 38 planning~~ and 3. ~~Plan 38 stage 1~~ done in one session (the planning session died before writing
+   up; the next recovered its worktrees, fixed the last losses and landed it): suite 10554 -> 10565, 0 lost, xstate
+   61 -> 43, webpack 17 -> 13, others 0. Counts as two sessions.
+4. **Plan 38 stage 2** (execution, `plans/38_inference_flow.md` "Stage 2": generic mapped contextual types, the
+   one-step mapped template, the xstate diagnostics stage 1 introduced, the JSDoc `@template` quirk).
 5. **Suite checker bugs 6** (four Opus sub-agents in worktrees + the main tree, like entry 7 of the last window, +165):
    buckets from `./failstats.py`: the single-code tests (missing TS2322 12, TS2742 10, TS2538 8, TS7053 8; spurious
    TS2339 10), `./unimplemented_codes.sh`'s families (TS2774/TS2845 condition checks, TS17012, TS1147, TS2564...),

@@ -1036,8 +1036,13 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
     expr = skip_reference_wrappers(expr);
     if (expr->tag == EXPR_IDENTIFIER) {
         u32 keyword = expr->identifier.keyword;
-        if (keyword == KEYWORD_IDENTIFIER_THIS || keyword == KEYWORD_IDENTIFIER_SUPER) {
-            return ty_identifier_reference_type(me, &expr->identifier);
+        if (keyword == KEYWORD_IDENTIFIER_SUPER) return ty_identifier_reference_type(me, &expr->identifier);
+        if (keyword == KEYWORD_IDENTIFIER_THIS) {
+            // Only a declared `this`: a `this` parameter's or a class's (tsc's getExplicitThisType), not a contextual
+            // one, which may be what a call inferring now fixes
+            ThisKind kind = expr->identifier.this_kind;
+            bool is_explicit = kind == THIS_PARAMETER || kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC;
+            return is_explicit ? ty_identifier_reference_type(me, &expr->identifier) : nullptr;
         }
         Symbol const* symbol = expr->identifier.target;
         if (keyword || !symbol || !symbol_has_explicit_type(symbol)) return nullptr;

@@ -142,13 +142,13 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             ret = ty_intrinsic(me, TY_NEVER);
         } else if (!returned.len) {
             // `undefined` if that's what the context wants (tsc's getReturnTypeFromBody, TS 5.1)
-            Ty const* contextual = function->is_async ? nullptr : ty_contextual_return_type(me, function);
+            Ty const* contextual = function->is_async ? nullptr : ty_instantiate_contextual_type(me, ty_contextual_return_type(me, function));
             bool undefined = contextual && contextual->kind != TY_UNION && (contextual->flags & TYF_UNDEFINED);
             ret = ty_intrinsic(me, undefined ? TY_UNDEFINED : TY_VOID);
         } else {
             // An async function returns what its return expressions await to, and the context is about that too
             // (tsc's getPromisedTypeOfPromise of the contextual return type)
-            Ty const* contextual = ty_contextual_return_type(me, function);
+            Ty const* contextual = ty_instantiate_contextual_type(me, ty_contextual_return_type(me, function));
             if (function->is_async) {
                 for (u32 i = 0; i < returned.len; i++) returned.data[i] = ty_awaited_returned(me, returned.data[i]);
                 contextual = contextual ? promised_context(me, contextual) : nullptr;
@@ -210,7 +210,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     memo->state = LAZY_STATE_IN_FLIGHT;
     FlowIsolation isolation = ty_flow_isolate(me);
     // Unless the function is an argument of the call inferring now, nothing in its body is an argument of that call
-    struct OuterInference const* outer = my outer_inference;
+    struct OuterInference* outer = my outer_inference;
     if (!keep_outer) my outer_inference = nullptr;
     memo->type = infer_return_type(me, function);
     // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)

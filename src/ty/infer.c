@@ -1149,6 +1149,12 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         }
         return;
     }
+    if (target->kind == TY_INDEXED) {
+        // To the simplified form of an indexed access too, which may expose bare type parameters: `{ [P in K]: X<P> }[K]`
+        // is X<K> (tsc's inferFromTypes)
+        Ty const* simplified = ty_simplified(me, target, false);
+        if (simplified != target) infer_from(me, inf, source, simplified);
+    }
     if (source == target && (source->kind == TY_UNION || source->kind == TY_INTERSECTION)) {
         // The same union or intersection: each member to itself (a generic signature related to its own instantiation
         // infers `T` from `T | undefined`)

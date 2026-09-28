@@ -10,7 +10,7 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Suite (2026-09-28, suite checker bugs 5, a59b7355; plan 37 C + D brought it to 10513, todo entry 9 to 10516, triage (entry 10) to 10543: errors 11983, symbols 12594, types 11613)
+## Suite (2026-09-28, suite checker bugs 5, a59b7355; plan 37 C + D brought it to 10513, todo entry 9 to 10516, triage (entry 10) to 10543: errors 11983, symbols 12594, types 11613; the next window's corpus session to 10554, plan 38 stage 1 to 10565)
 **10477 / 13540** full pass (errors 11941, symbols 12590, types 11576). A suite run takes ~23 s. `./failstats.py`:
 errors component fails in 1599 tests: both missing and spurious 450, tsc reports errors and tttt nothing 382, **same
 codes+positions, other text 296**, only missing 248, tttt errors where tsc has none 119, only spurious 81. Top missing
@@ -31,9 +31,11 @@ TS1005 259/87, TS2339 229/60, TS2322 144/66. Single-code tests: missing TS2322 1
   M 31. Clusters: other:A 40, other:E 34, other:M 30, other:D 28, permissive:modifiers 22, recovery:list-context 14,
   lexical:identifiers 9, permissive:decorators 9, other:C 8, other:B 8, recovery:object-literal 6.
 
-## Corpora (2026-09-28, sixth window's corpus session, todo entry 1, c4b36dfa)
+## Corpora (2026-09-28, sixth window's corpus session, todo entry 1, c4b36dfa; diagnostics updated by plan 38 stage 1)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**0**, zod **0**, webpack **17** (was 30), **xstate 61** (new: 394 at pinning; plan 19 "xstate"). **zod-root** (not
+**0**, zod **0**, webpack **13** (17 before plan 38 stage 1), **xstate 43** (394 at pinning, 61 before plan 38 stage
+1; plan 19 "xstate"). Plan 38 stage 1's instructions (same method as below, vs 6475225b): tsc 5.046 -> 5.062 G, zod
+4.417 -> 4.423, xstate 2.773 -> 2.840 (+2.4%). **zod-root** (not
 clean under tsc, which reports 55): tttt's `file:line code` set equals tsc's 55. threadcheck.sh: every corpus identical
 at 1 and 4 threads; xstate still differs between `--checkers 1` and 4 in 5 diagnostics (triage).
 Instructions (`perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`), session start (b4651c90) ->

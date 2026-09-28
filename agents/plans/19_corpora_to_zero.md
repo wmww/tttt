@@ -29,7 +29,7 @@ Corpus notes worth keeping:
   deep-partial.test.ts alone is 745 MB, `bugs/perf_leads.md`).
 
 ## What is left
-### webpack (17)
+### webpack (13)
 Fixed 2026-09-28 (probes in `test/probes/plan19/webpack/`, one commit each): JSDoc `[T?]` optional tuple elements,
 overload groups of merged global functions (node's setTimeout before DOM's), parameter defaults removing undefined
 (contextual/JSDoc-typed parameters, closures), JSDoc casts as narrowable references, a declaration's `@type` tag
@@ -40,9 +40,9 @@ undefined, `{}` initializers with expandos unchecked, keyof `keyof T`, string-in
 constraint for TS2731, description backticks, constructor-declared JS members by flow type, `@this` types unchecked, exports through a
 `module.exports` alias not read-only.
 Left, every one reduced:
-- **Defaulted type parameters leaking into context-sensitive callbacks** (~9: PackFileCacheStrategy's LazyFunction and
-  `Promise<PackContainer | Pack>` chains, IdleFileCachePlugin:121, maxAge TS2339): bugs/type_core.md "Inference" first
-  bullet, probe `contextual_return_default_leak.ts`. Plan 38.
+- **PackFileCacheStrategy.js 931, 942, 1032, 1047, 1087** (TS2322, LazyFunction and `Promise<PackContainer | Pack>`
+  chains): plan 38 stage 1 fixed the reduced probe `contextual_return_default_leak.ts` (tsc's `B` now) and four of
+  the nine (IdleFileCachePlugin:121, PackFileCacheStrategy 1239/1367/1438), but not these: another cause, reduce again.
 - **A JSDoc `@template` fixed by a nested JSDoc function type** (MultiCompiler:645 x2 + 649, FileSystemInfo:3859): tsc
   infers `any` there. Plan 38 "JS: a JSDoc @template is fixed by any nested JSDoc function type".
 - `@template` on a variable statement (`@template T` + `@type {Record<string, (items: T[]) => X<T>>}`,
@@ -52,14 +52,15 @@ Left, every one reduced:
 - cleverMerge.js:355 `newFn[DYNAMIC_INFO] = ...`: late-bound expandos (plan 26 leftovers).
 
 
-### xstate (61)
+### xstate (43)
 Pinned 2026-09-28 (sixth window, todo entry 1) as the inference-heavy corpus: xstate core at f210b35 (last commit
 before TypeScript 6) with its vitest tests, through our `corpora-locks/xstate.overlay/packages/core/tsconfig.corpus.json`
 (lib es2024, src + test). tsc 5.8: 0 in 5.9 s. tttt went 394 -> 61 the same session (three sub-agents + main tree):
 unknown-like unions, instantiation expressions of functions, nested generic calls skipped in the first pass, the
 target-side isDeeplyNestedType(10) bail-out for conditionals (a TS2589 blowup whose memoized error types poisoned the
 test files and made the output checker-count dependent), `extends any`, x! as NonNullable<T>, speculative memos...
-Left, by cause (sub-agent reports in the commit messages; repros in `plans/38_prototypes/xstate_*.ts`):
+Plan 38 stage 1 took it to 43; plan 38 "Stage 2" lists what it knows is left. Before stage 1, by cause (sub-agent
+reports in the commit messages; repros in `plans/38_prototypes/xstate_*.ts`):
 - **Plan 38, most of it**: defaults leaking into the second pass's contextual type (setup.types 37-132, TS7006/7031),
   the return mapper applied to the whole parameter type (types 2006-2038), the contextual type instantiated whole
   instead of leaf-wise (`assign({ prop: ({ spawn }) => ... })`, 7 TS7031), fixing through the parameter walk

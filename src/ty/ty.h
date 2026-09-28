@@ -768,12 +768,8 @@ struct Checker {
     struct RelationState* relating; // The relation check in progress, if any (relate.c)
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null
-    struct OuterInference const* outer_inference;
+    struct OuterInference* outer_inference;
     u32 inferential_depth; // Arguments are being checked to infer type arguments from (tsc's CheckMode.Inferential)
-    // While a context-sensitive argument is checked in inference's second pass: what fixes the call's type parameters
-    // in the contextual signatures of the functions in it (tsc's assignContextualParameterTypes with the inference
-    // context's mapper), or null
-    TyMapper const* contextual_fixing_mapper;
     // Control flow (flow.c). While flow_uncached is set expressions are evaluated without reading unfinished memos or
     // writing any: what they evaluate to may depend on the incomplete types of a loop, see ty_flow_expr_type()
     u32 flow_uncached;
@@ -1265,6 +1261,11 @@ bool ty_is_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* conte
 // A contextual type inside an argument of a generic call, instantiated with what the call's own contextual type says
 // about its type parameters (tsc's instantiateContextualType with the returnMapper)
 Ty const* ty_instantiate_contextual_type(Checker* me, Ty const* contextual);
+Ty const* ty_instantiate_contextual_type_for(Checker* me, Ty const* contextual, bool signature);
+// tsc's getContextualThisParameterType: instantiated with the fixing mapper of the call inferring now
+Ty const* ty_instantiate_fixing(Checker* me, Ty const* type);
+Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, struct FunctionImpl const* function);
+Ty const* ty_contextual_signature_type_at(Checker* me, Signature const* sig, u32 index, bool as_rest);
 // An array literal re-read as a tuple of its elements (tsc's checkArrayLiteral with forceTuple), from the elements'
 // memos
 Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual);

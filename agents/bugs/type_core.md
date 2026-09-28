@@ -10,42 +10,20 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 @exactOptionalPropertyTypes thirdparty/tsc/tests/cases` is unsorted.
 
 ## Inference
-- **First pass skips context-sensitive arguments entirely** (mappedTypeContextualTypesApplied mapped2/mapped5,
-  correlatedUnions `processRecord({ kind: 'n', v: 42, f: v => ... })`): tsc checks them with their functions replaced
-  by anyFunctionType and still infers from the (non-inferrable) literal to anything but a naked type parameter (K from
-  `kind: 'n'` against `{ [P in K]: ... }[K]`), and in the second pass leaves the contextual type alone when *no*
-  inference has candidates (instantiateContextualType). tttt skips the argument, then instantiates with the defaults
-  (T's constraint), so `T extends { [P in keyof T]: F }` gives the literal `{}` as contextual type. Making only the
-  second half tsc-like (keep a candidate-less T as itself, fixed in signatures) regressed correlatedUnions and JSX
-  defaultProps tests, which relied on the defaults standing in for the first-pass inference. Do both together.
+- **First pass skips context-sensitive arguments entirely**: tsc checks them with their functions replaced by
+  anyFunctionType and still infers from the (non-inferrable) literal to anything but a naked type parameter. The tests
+  that showed it (mappedTypeContextualTypesApplied, correlatedUnions) pass since plan 38 stage 1 without it; look here
+  when one needs it.
 - **A contextually typed function's return type is computed eagerly** (conditionalTypeBasedContextualTypeReturnTypeWidening
   types): tsc resolves an inner arrow's return type only after the call is resolved, when its contextual signature is
   itself (S was inferred as the arrow), so `() => 0` keeps the literal; tttt widens to `number` during inference.
 - Still in the "spurious diagnostics" bucket, not investigated in depth: contextualTypeWithTuple (an array literal
   against `number[] & { length: 2 }` / an interface extending `[]` should be a tuple, tsc's isTupleLikeType of the
   contextual type), generatorReturnContextualType (async generator `return` against `{ x: 'x' }` TReturn widens),
-  discriminatedUnionInference, inferenceOfNullableObjectTypesWithCommonBase, contravariantOnlyInferenceFromAnnotatedFunction,
+  inferenceOfNullableObjectTypesWithCommonBase, contravariantOnlyInferenceFromAnnotatedFunction,
   optionalParameterInDestructuringWithInitializer, mappedTypeRecursiveInference2.
-- **Defaults leak into context-sensitive arguments' return types** (probe `plan19/webpack/contextual_return_default_leak.ts`,
-  ~9 webpack TS2322s on `.then` chains): the second pass in `infer_type_arguments()` instantiates a context-sensitive
-  argument's whole parameter type with the inferences so far (an uninferred `T = A` becomes A), tsc only the
-  instantiable types at the top (instantiateContextualType), leaving `(x) => P<T>` raw; the calls in the body then map T
-  to silentNever. Tried 2026-09-28 (instantiate_instantiable + fixing mapper = so_far + `outer_inference = &self`
-  around the check + the contextual return from the unfixed signature in assign_contextual_signature()): T leaked as
-  `B | T` and 8 tests were lost, apparently because the body's return expressions are evaluated later, outside the
-  outer inference's scope. Needs a look at when a context-sensitive function's return type is computed relative to
-  `my outer_inference`.
 - const type parameters with several candidates: `function f4<const T>(x: [T, T]): T; f4([[1, "x"], [2, "y"]])`
   gives TS2322s where tsc infers `readonly [1, "x"] | readonly [2, "y"]` (jsdocTemplateTag6, plain TS too).
-- **Fixing without candidates** (plan 30 stage 2): `mutate((a, b) => b)` with `callback: (a: NoInfer<T>, b: number)
-  => T` is `number`, tsc `unknown`: tsc fixes every type parameter a context-sensitive function's contextual
-  parameters mention, candidates or not; call.c's argument loop only fixes those with candidates. Dropping that gate
-  lost 16 tests (bindingPatternCannotBeOnlyInferenceSource, objectFreeze, thisTypeInObjectLiterals2...): the gate
-  stands in for something else (probably what a fixed parameter without candidates resolves to: its
-  default/constraint via getInferredType). noInfer.ts types only needs this.
-- **Generic rest with a binding pattern**: `wrap<Args extends unknown[]>(_: (...args: Args) => void)`, `wrap(({
-  cancelable } = {}) => {})`: tttt types the parameter `unknown` (the constraint's element), tsc the pattern's own type
-  `{ cancelable: any; }` (inferFromAnnotatedParameters with a generic rest): inferredRestTypeFixedOnce.
 - `unknown` where tsc infers a type: intraExpressionInferences, mappedTypeRecursiveInference; mappedTypeMultiInference
   (`K` of `...cssSets: { [P in K]?: Style }[]` inferred from the first rest argument only: spurious TS2353).
 - Reverse mapped types (plan 08) are eager (arrays/tuples included), cut at depth 4 (`reverse_mapped_type`); tsc's
@@ -57,7 +35,6 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   parameters and the rest arguments gets no TS2554 arity error.
 - contextuallyTypedOptionalProperty(exactOptionalPropertyTypes=true): `T` inferred from `match(y => y > 0)` for an
   optional property keeps `undefined` (tsc strips the missing type), so the operand check says TS18048.
-- `ThisType<T>` arguments aren't instantiated with the inference in progress (Vue-style `defineComponent` options).
 - Older tsc-corpus findings (a probe each): `visitNode(node, visitor, isExpression)` resolving to the overload without
   the predicate (`test/probes/plan05/visitNodeInference.ts`); literal widening in an object literal that has a
   contextual type.
