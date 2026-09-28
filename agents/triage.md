@@ -101,3 +101,8 @@ smaller leftovers to `bugs/*.md` and hacks.md.
   arrow); context-sensitive argument order.
 - restTuplesFromContextualTypes line 56: `(a, b, ...x) => {}` against `(x: number, ...args: T)` should fail (T vs
   `[b: T[0], ...x: T[number][]]`); tttt relates it.
+- `export = C.B` / `export default C.B` of a dotted entity name is a value (SYMBOL_DECL_EXPR) in tttt; tsc makes it an
+  alias (exportAssignmentIsAlias: isEntityNameExpression) resolved with every meaning, and since a class's statics are
+  in its exports the static `B` and a merged namespace's `interface B` are one symbol. Spurious TS2749 in
+  exportEqualsProperty(2), exportDefaultProperty2, commonJsImportClassExpression. Needs a dotted SymbolAlias whose
+  value half is the expression (value_target) and type half the namespace walk.
