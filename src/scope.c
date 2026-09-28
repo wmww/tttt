@@ -3186,6 +3186,7 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
         value = &value->binary_op->right;
     }
+    left->property->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_PROPERTY, .node = value, .name = left->outer_span,
         .full = left->outer_span, .jsdoc_type = jsdoc_type,
@@ -3260,6 +3261,7 @@ static void declare_assignment_member(
         member->parent = parent;
         member->exported = true;
     }
+    if (left->tag == EXPR_PROPERTY) left->property->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
         .name = left->outer_span, .full = left->outer_span, .jsdoc_type = jsdoc_type, .jsdoc_modifiers = jsdoc_modifiers,

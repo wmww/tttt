@@ -444,6 +444,8 @@ typedef struct PropertyExpr {
     // `a.#x`: the innermost class around it that declares `#x`, whose `#x` it names (null if none does)
     ClassDecl const* private_class;
     Symbol const* in_constructor_of;
+    // JavaScript: the member an assignment to this access declares (`this.x = v`, `ns.a = v`), set by the resolve walk
+    Symbol const* declares;
     // What `this` is where it is, if not a class: a `this` parameter, or a function with a contextual `this` (a
     // protected member is accessible when that is a derived class, tsc's getEnclosingClassFromThisParameter)
     Symbol const* this_parameter;

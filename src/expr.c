@@ -1637,7 +1637,10 @@ static bool is_container_declaration(BinaryOpExpr const* op) {
     SourceFile const* file = op->left.inner_span.source;
     if (op->op != BINARY_OP_EQUAL || !file || !file->is_js || op->left.tag != EXPR_PROPERTY) return false;
     Expr const* init = expando_initializer((Expr*)&op->right, span_null, true);
-    return init && init->tag == EXPR_OBJECT;
+    if (!init || init->tag != EXPR_OBJECT) return false;
+    // (Only if it does declare members: `symbol.exports.size`. Unknown for CommonJS exports, taken as yes)
+    Symbol const* declared = op->left.property->declares;
+    return !declared || (declared->exports && declared->exports->count);
 }
 
 static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs) {
