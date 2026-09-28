@@ -502,6 +502,7 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
 
 // `f<A, B>` outside of a call (there the type arguments are the call's business, ty/call.c)
 void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
+    expr_typecheck(&my expr, errs);
     for_each (i, vec_spanned_type, &my params) {
         type_typecheck(&i->type, errs);
     }
