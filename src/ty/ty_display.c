@@ -1695,6 +1695,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         return;
     }
     if (shows_alias(d, ty)) {
+        d.widen_literals = false; // (A union shown by its alias: its type arguments are as written)
         out_symbol_name(me, d, ty->alias, SYMBOL_TYPE);
         if (ty->alias_args.len) {
             out_lit(d, "<");
