@@ -229,6 +229,19 @@ static bool scope_has_arguments(Scope const* scope) {
     return false;
 }
 
+// A reference to `arguments` directly in the body of a JavaScript function (not its parameters, nor an arrow function in
+// it) gives its signature a rest parameter (tsc's containsArgumentsReference, maybeAddJsSyntheticRestParameter)
+static void note_arguments_reference(Scope const* names) {
+    if (!names->file || !names->file->is_js) return;
+    for (Scope const* scope = names; scope; scope = scope->parent) {
+        if (scope->parameters) return;
+        if (scope->kind == SCOPE_FUNCTION) {
+            if (scope->function && !span_valid(scope->function->arrow_span)) scope->function->uses_arguments = true;
+            return;
+        }
+    }
+}
+
 // TS1361/TS1362: a value that was imported or exported as a type only (tsc's
 // checkAndReportErrorForResolvingImportAliasToTypeOnlySymbol). Fine in `typeof x` types and ambient contexts
 static void check_type_only_value(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
@@ -407,6 +420,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     } else if (span_equals(my name, "arguments") && scope_has_arguments(names)) {
         // No symbol: ty_identifier_reference_type() makes it IArguments
         my is_arguments = true;
+        note_arguments_reference(names);
         FunctionImpl const* container = names->function;
         if (compiler_options()->target < SCRIPT_TARGET_ES2015 && container) {
             if (span_valid(container->arrow_span)) {

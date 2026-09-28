@@ -2519,6 +2519,23 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             if (counting_required) sig->min_args++;
         }
         if (function_is_untyped_js(function)) sig->min_args = 0;
+        // A JavaScript function that uses `arguments` takes a rest parameter `args` of any[] (or, replacing a last
+        // parameter tagged `@param {...T}`, of T[]): tsc's maybeAddJsSyntheticRestParameter
+        SourceFile const* file = function->full_span.source;
+        if (function->uses_arguments && file && file->is_js && !(count && params[count - 1].rest)) {
+            SigParam* grown = arena_new_n(&my arena, SigParam, count + 1);
+            memcpy(grown, params, sizeof(SigParam) * count);
+            params = grown;
+            Ty const* element = ty_intrinsic(me, TY_ANY);
+            if (count && params[count - 1].decl && params[count - 1].decl->jsdoc_variadic) {
+                element = params[count - 1].type;
+                count--;
+                if (sig->min_args > count) sig->min_args = count;
+            }
+            params[count++] = (SigParam){
+                .name = checker_atom(me, c_sv("args")), .type = ty_array(me, element, false), .rest = true,
+            };
+        }
         if (count && params[0].name == checker_atom(me, c_sv("this"))) {
             // `this: T` is about how the function is called, not an argument
             if (sig->min_args && !params[0].optional) sig->min_args--;

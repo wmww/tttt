@@ -961,9 +961,9 @@ const baselines = {
         types: true,
     },
     'argumentsObjectCreatesRestForJs': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsObjectIterator01_ES5': {
         errors: true,
@@ -1001,9 +1001,9 @@ const baselines = {
         types: true,
     },
     'argumentsPropertyNameInJsMode2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor1_Js': {
         errors: true,
@@ -1043,7 +1043,7 @@ const baselines = {
     'argumentsReferenceInFunction1_Js': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod1_Js': {
         errors: true,
@@ -1073,12 +1073,12 @@ const baselines = {
     'argumentsReferenceInMethod6_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod7_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInObjectLiteral_Js': {
         errors: true,
@@ -6623,7 +6623,7 @@ const baselines = {
     'contextuallyTypeArgumentsKeyword': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypeAsyncFunctionReturnTypeFromUnion': {
         errors: true,
@@ -19648,7 +19648,7 @@ const baselines = {
     'jsSelfReferencingArgumentsFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocAccessEnumType': {
         errors: true,
@@ -19751,7 +19751,7 @@ const baselines = {
         types: true,
     },
     'jsdocRestParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

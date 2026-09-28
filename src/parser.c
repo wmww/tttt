@@ -3661,6 +3661,7 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
             // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
             if (i->initializer.value.tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
         }
+        i->jsdoc_variadic = variadic && !i->rest;
         if (variadic && i->rest) {
             binding->explicit_type = type_array(c_new(TypeNode, binding->explicit_type), false);
             binding->explicit_type.parsed = true;

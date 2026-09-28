@@ -18,6 +18,7 @@ typedef struct FunctionArg {
     Span question_span; // `?`, invalid when the parameter has none (explicit_optional can come from JSDoc)
     Span rest_span;
     bool rest;
+    bool jsdoc_variadic; // JavaScript `@param {...T} x` of a parameter that isn't a rest parameter (x is T)
     VecExpr decorators; // TODO: only checked as expressions
     // `constructor(public x: T)`: also declares a property of the class
     bool is_parameter_property;
@@ -71,6 +72,8 @@ typedef struct FunctionImpl {
     // JavaScript: its JSDoc has `@param` or `@type` tags (tsc's hasJSDocParameterTags || getJSDocType), so it isn't an
     // untyped signature whose arguments are all optional
     bool jsdoc_typed;
+    // JavaScript: its body refers to `arguments` (set by the resolve walk): its signature has a rest parameter
+    bool uses_arguments;
     LazyType lazy_type;
     Symbol* symbol;
     Span arrow_span;
