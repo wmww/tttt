@@ -10301,7 +10301,7 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierRelatedSpans2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10311,7 +10311,7 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierRelatedSpans4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10326,7 +10326,7 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierRelatedSpans7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

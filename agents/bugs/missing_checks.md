@@ -53,10 +53,7 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
 - **Declarations**: `export function g() {}` + `function g() {}` is TS2395 here, TS2393 in tsc (re-probed). TS2300
   for a second `export =`. TS1319 (default export outside a module, TODO in `scope_export_default_expr`). TS1330-1335
   (misplaced `unique symbol`, silently `symbol`). TS2475 (const enum used as a value). TS18055/TS18056 (isolatedModules enum string/initializer rules; the enum
-  member value checks are in `enum_decl_typecheck`). TS6200 amalgamated cross-file
-  duplicates (8+ conflicting names between two files are one TS6200 per file with related TS6201, tsc's
-  `amalgamatedDuplicates`: duplicateIdentifierRelatedSpans2/4/7; the related spans below 8 are done, in scope.c's
-  report_conflicts and check.c's declare_symbol_flags, which is where a per-file-pair count would have to gather), and TS6203 related info on a static duplicated by a
+  member value checks are in `enum_decl_typecheck`). TS6203 related info on a static duplicated by a
   namespace export (duplicateIdentifiersAcrossFileBoundaries). TS2492 (`catch (x) { let x }`:
   catchClauseWithTypeAnnotation).
 - **Operators**: `void` operands/objects (UndefinedFacts in tsc: `v.x` with `v: void` is TS18048) aren't checked like
