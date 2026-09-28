@@ -806,6 +806,26 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
     return union_with_origin(me, types, len, alias, alias_args, nullptr);
 }
 
+// tsc's getUnionType with UnionReduction.None: flattened, sorted and deduplicated, never dropped, nothing absorbed
+// (`unknown | (() => T)` stays a union). Only contextual types are built this way (instantiateInstantiableTypes), so a
+// contextual signature is still found next to an `unknown` member
+Ty const* ty_union_unreduced(Checker* me, Ty const* const* types, u32 len) {
+    if (len == 1) return types[0];
+    TyBuf buf = {0};
+    ty_buf_add_flattened(&buf, TY_UNION, types, len);
+    sort_by_id(buf.data, buf.len);
+    u32 out = 0;
+    for (u32 i = 0; i < buf.len; i++) {
+        Ty const* t = buf.data[i];
+        if ((out && buf.data[out - 1] == t) || (t->kind == TY_INTRINSIC && (t->flags & TYF_NEVER))) continue;
+        buf.data[out++] = t;
+    }
+    Ty const* ret = out == 0 ? my intrinsics[TY_NEVER] : out == 1 ? buf.data[0] :
+        intern_composite(me, TY_UNION, buf.data, out, nullptr, (TyList){0});
+    ty_buf_drop(&buf);
+    return ret;
+}
+
 // Some members of `of`, in its order (narrowing's filters): they are sorted and reduced already, so there's only the
 // interning left to do. Rebuilding a filtered 300-member enum union through ty_union() is most of what narrowing an
 // enum by `===` costs

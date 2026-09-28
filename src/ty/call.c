@@ -483,8 +483,8 @@ static Ty const* instantiate_instantiable(Checker* me, Ty const* type, TyMapper 
         mapped[i] = instantiate_instantiable(me, parts.data[i], mapper);
         changed |= mapped[i] != parts.data[i];
     }
-    Ty const* ret = !changed ? type : type->kind == TY_UNION ?
-        ty_union(me, mapped, parts.len, nullptr, (TyList){0}) : ty_intersection(me, mapped, parts.len, nullptr, (TyList){0});
+    // (A union without reduction: tsc's UnionReduction.None, see ty_union_unreduced())
+    Ty const* ret = !changed ? type : type->kind == TY_UNION ? ty_union_unreduced(me, mapped, parts.len) : ty_intersection(me, mapped, parts.len, nullptr, (TyList){0});
     free(mapped);
     return ret;
 }

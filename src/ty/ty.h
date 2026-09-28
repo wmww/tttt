@@ -879,6 +879,7 @@ Atom const* ty_private_name(Checker* me, Symbol const* class_symbol, csview text
 Symbol const* ty_private_name_class(Checker* me, Atom const* name);
 Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 // The union of some of the members of the union `of`, in their order (a filter): no reductions to do
+Ty const* ty_union_unreduced(Checker* me, Ty const* const* types, u32 len);
 Ty const* ty_union_filtered(Checker* me, Ty const* of, Ty const* const* kept, u32 len);
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 // The same without dropping a `{}` next to a primitive: a written `string & {}` (tsc's NoSupertypeReduction)
