@@ -1712,7 +1712,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         TyMapper const* mapper = ty_mapper_new(
             me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &from->key, .len = 1 }
         );
-        Ty const* value = ty_instantiate(me, ty_mapped_template(me, mapped), mapper);
+        Ty const* value = ty_mapped_template_instantiated(me, mapped, mapper);
         if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
             Ty const* parts[2] = { value, ty_intrinsic(me, TY_UNDEFINED) };
             value = ty_union(me, parts, 2, nullptr, (TyList){0});
@@ -2035,7 +2035,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 ) {
                     continue;
                 }
-                Ty const* value = ty_instantiate(me, ty_mapped_template(me, mapped), mapper);
+                Ty const* value = ty_mapped_template_instantiated(me, mapped, mapper);
                 // `?` makes the index signature's values possibly undefined, even with exactOptionalPropertyTypes
                 // (tsc's getTemplateTypeFromMappedType adds optionality to the template: its missing type prints and
                 // relates as undefined in an index signature)
@@ -2389,7 +2389,9 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     if (prop->flags & (PROP_GETTER | PROP_SETTER) && !prop->target) {
         type = ty_object_literal_accessor_type(me, prop->decl->function, prop->flags & PROP_GETTER);
     } else if (prop->target) {
-        type = ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
+        MappedInfo const* template_of = prop->target->decl->template_of;
+        type = template_of && template_of->template_from ? ty_mapped_template_instantiated(me, template_of, prop->mapper) :
+            ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
         // (Only set with strictNullChecks. With exactOptionalPropertyTypes only the missing type goes: tsc's
         // removeMissingOrUndefinedType, `Required<{ a?: number | undefined }>` is `{ a: number | undefined }`)
         if (prop->flags & PROP_STRIP_UNDEFINED) {
@@ -3207,6 +3209,19 @@ Ty const* ty_param_default(Checker* me, Ty const* param) {
 static Ty const* compute_mapped_template(Checker* me, MappedInfo const* mapped) {
     return mapped->template_node ? ty_from_node(me, mapped->template_node, mapped->template_ctx) :
         ty_instantiate(me, ty_mapped_template(me, mapped->template_from), mapped->template_mapper);
+}
+
+// The template with the key parameter mapped (`mapper`): an instantiated mapped type's template is its declaration's
+// instantiated once, with every instantiation's mapper and the key's composed, like tsc's addMemberForKeyTypeWorker
+// (instantiateType(templateType, appendTypeMapping(type.mapper, typeParameter, keyType))). Instantiating in steps
+// resolves what the first step makes non-generic but incomplete: `GCK<T, "type", K>["params"]` with T a union and K
+// still generic reads `params` of every member (unknown) before K picks the one that has it
+Ty const* ty_mapped_template_instantiated(Checker* me, MappedInfo const* mapped, TyMapper const* mapper) {
+    while (mapped->template_from && !mapped->template_node) {
+        mapper = ty_compose_mappers(me, mapped->template_mapper, mapper);
+        mapped = mapped->template_from;
+    }
+    return ty_instantiate(me, ty_mapped_template(me, mapped), mapper);
 }
 
 Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped) {

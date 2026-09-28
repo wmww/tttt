@@ -556,6 +556,7 @@ typedef struct MappedInfo {
     signed char optional;
 } MappedInfo;
 Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped);
+Ty const* ty_mapped_template_instantiated(Checker* me, MappedInfo const* mapped, TyMapper const* mapper);
 
 struct Members {
     Prop* const* props; // declaration order
