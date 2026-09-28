@@ -23,6 +23,7 @@ typedef struct BlockTypecheckCtx {
     struct Ty const* unwrapped_return;
     bool await_returned;
     struct FunctionImpl const* function; // The function whose body it is in (null in a static block or at the top)
+    bool in_setter; // Returned values are TS2408
     bool break_allowed;
     bool continue_allowed;
     bool inside_label; // Labeled breaks are allowed

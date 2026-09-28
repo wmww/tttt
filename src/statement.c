@@ -2105,7 +2105,12 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
         case STATEMENT_RETURN_EXPR:
             ty_check_expr(current_checker, &my expr, current_checker->return_context);
             expr_typecheck(&my expr, errs);
-            if (ctx.constructed_class && !statement_is_bare_return(me)) {
+            if (ctx.in_setter) {
+                if (!statement_is_bare_return(me)) {
+                    error_ctx_error_d(errs, span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6), 2408,
+                        "Setters cannot return a value.");
+                }
+            } else if (ctx.constructed_class && !statement_is_bare_return(me)) {
                 // What a constructor returns replaces the instance (tsc's checkReturnStatement)
                 if (!return_typecheck(me, &my expr, ty_instance_type_of_class(current_checker, ctx.constructed_class), false, false, errs)) {
                     error_ctx_error_d(errs, span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6), 2409,
