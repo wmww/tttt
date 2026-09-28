@@ -942,6 +942,24 @@ static bool is_generic_with_union_constraint(Checker* me, Ty const* ty) {
 
 static bool is_generic_type(Checker* me, Ty const* ty);
 
+bool ty_is_generic_type(Checker* me, Ty const* ty) {
+    return is_generic_type(me, ty);
+}
+
+// tsc's shouldReportErrorsFromWideningWithContextualSignature for WideningKind.FunctionReturn: a function expression's
+// contextual signature, if it has one, has a generic return type
+bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function) {
+    Ty const* contextual = intern_get(&my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)function }, 2);
+    Signature const* sig = contextual ? ty_function_contextual_signature(me, function, contextual) : nullptr;
+    if (!sig) return true;
+    Ty const* ret = signature_return_type(me, sig);
+    if (function->is_async) {
+        Ty const* awaited = ty_awaited_no_alias(me, ret);
+        if (awaited) ret = awaited;
+    }
+    return is_generic_type(me, ret);
+}
+
 static Ty const* base_constraint_or_type(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION && is_generic_type(me, ty)) {
         // The intersection of its members' base constraints, without the members that have none (tsc's
@@ -2951,7 +2969,10 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_CALL: return check_call(me, expr->call, ctx);
 
         case EXPR_FUNCTION: {
-            if (ctx.contextual) assign_contextual_signature(me, expr->function, ctx.contextual);
+            if (ctx.contextual) {
+                *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
+                assign_contextual_signature(me, expr->function, ctx.contextual);
+            }
             return ty_function_type(me, expr->function);
         }
 

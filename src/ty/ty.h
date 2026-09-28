@@ -1251,6 +1251,8 @@ Ty const* ty_object_literal(
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
 // The return type of a function: its annotation, else inferred from the `return`s of its body
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
+// Without strictNullChecks: the inferred return type was null or undefined, widened to any (TS7010/TS7011)
+bool ty_function_return_widened_to_any(Checker* me, FunctionImpl const* function);
 // The return type of a function expression that is an argument of the generic call inferring now: the calls it returns
 // see what that call has inferred so far (tsc's getInferenceContext finds the call through the argument)
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function);
@@ -1418,6 +1420,9 @@ typedef enum JsxComponentCheck {
     JSX_COMPONENT_TYPE, // The tag's type against JSX.ElementType
 } JsxComponentCheck;
 bool ty_is_generic_object(Checker* me, Ty const* ty); // tsc's isGenericObjectType, roughly (check.c)
+bool ty_is_generic_type(Checker* me, Ty const* ty); // tsc's isGenericType (expr.c)
+// A function expression without a contextual signature, or one with a generic return type (TS7010/TS7011 from widening)
+bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function);
 bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Span tag_name, JsxComponentCheck kind, ErrorCtx* errs);
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
 Ty const* ty_of_node(TypeNode const* node); // A written type, by the current checker

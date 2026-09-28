@@ -15831,12 +15831,12 @@ const baselines = {
         types: true,
     },
     'implicitAnyCastedValue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'implicitAnyDeclareFunctionExprWithoutFormalType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15886,7 +15886,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyFunctionReturnNullOrUndefined': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23521,7 +23521,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyFunctions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30951,12 +30951,12 @@ const baselines = {
         types: true,
     },
     'typeCheckObjectLiteralMethodBody': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeCheckReturnExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42433,7 +42433,7 @@ const baselines = {
     'for-of35': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of36': {
         errors: true,
