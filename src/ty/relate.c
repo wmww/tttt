@@ -3445,13 +3445,35 @@ static Ternary structured_related_members(
 
         case TY_CONDITIONAL: {
             // Identical extends types, check types related one way or the other, and related branches (tsc's rule for
-            // two conditional types; not inferring the source's `infer` type parameters from the target's extends type)
-            if (source->kind == TY_CONDITIONAL && ty_is_related(me, source->conditional.extends, target->conditional.extends, TY_RELATION_IDENTITY)) {
-                Ternary related = is_related_to(me, st, source->conditional.check, target->conditional.check, false);
-                if (!related) related = is_related_to(me, st, target->conditional.check, source->conditional.check, false);
-                if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, true), ty_conditional_branch(me, target, true), false);
-                if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), ty_conditional_branch(me, target, false), false);
-                if (related) return related;
+            // two conditional types). The source's own `infer` type parameters are inferred from the target's extends
+            // type first: `HM extends Box<infer H> ? H : never` against another such alias
+            if (source->kind == TY_CONDITIONAL) {
+                Ty const* source_extends = source->conditional.extends;
+                TyMapper const* mapper = nullptr;
+                TyList infers = ty_conditional_own_infers(me, source->conditional.root ? source->conditional.root : source);
+                if (infers.len) {
+                    Inference inf;
+                    inference_init(&inf, infers);
+                    infer_types(me, &inf, target->conditional.extends, source_extends, INFER_PRIORITY_NORMAL);
+                    Ty const** results = arena_new_n(&my arena, Ty const*, inf.len);
+                    for (u32 i = 0; i < inf.len; i++) {
+                        results[i] = inference_conditional_result(me, &inf, i);
+                        if (!results[i]) results[i] = ty_intrinsic(me, TY_UNKNOWN_);
+                    }
+                    mapper = ty_mapper_new(me, infers, (TyList){ .data = results, .len = inf.len });
+                    inference_drop(&inf);
+                    source_extends = ty_instantiate(me, source_extends, mapper);
+                }
+                if (ty_is_related(me, source_extends, target->conditional.extends, TY_RELATION_IDENTITY)) {
+                    Ternary related = is_related_to(me, st, source->conditional.check, target->conditional.check, false);
+                    if (!related) related = is_related_to(me, st, target->conditional.check, source->conditional.check, false);
+                    if (related) {
+                        Ty const* source_true = ty_instantiate(me, ty_conditional_branch(me, source, true), mapper);
+                        related &= is_related_to(me, st, source_true, ty_conditional_branch(me, target, true), false);
+                    }
+                    if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), ty_conditional_branch(me, target, false), false);
+                    if (related) return related;
+                }
             }
             // Related to both branches is related to whichever gets picked. Not if a branch depends on what the check
             // type distributes over or infers, nor between two instantiations of one conditional type

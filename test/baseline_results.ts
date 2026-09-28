@@ -15716,7 +15716,7 @@ const baselines = {
         types: true,
     },
     'identicalGenericConditionalsWithInferRelated': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
