@@ -47331,7 +47331,7 @@ const baselines = {
         types: true,
     },
     'callWithMissingVoidUndefinedUnknownAnyInJs(strict=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

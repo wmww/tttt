@@ -184,6 +184,16 @@ static bool accepts_void(Ty const* ty) {
     return false;
 }
 
+static bool accepts_void_undefined_unknown_any(Ty const* ty) {
+    u32 const flags = TYF_VOID | TYF_UNDEFINED | TYF_UNKNOWN | TYF_ANY;
+    if (ty->flags & flags) return true;
+    if (ty->kind != TY_UNION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty->composite.types.data[i]->flags & flags) return true;
+    }
+    return false;
+}
+
 static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const* mapper) {
     signature_resolve(me, sig);
     ParamShape shape = { .min = sig->min_args };
@@ -1052,7 +1062,18 @@ static i32 first_unfit_argument(
 // The parameters a call's arguments are checked against. A JSX element has one argument, its attributes, which any
 // signature takes (tsc's hasCorrectArity: a class's argumentless constructor too), as the props of the signature
 static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper) {
-    if (!info->jsx) return param_shape(me, sig, mapper);
+    if (!info->jsx) {
+        ParamShape shape = param_shape(me, sig, mapper);
+        // A call in a JavaScript file without strictNullChecks can also leave out trailing parameters of type undefined,
+        // unknown or any (tsc's hasCorrectArity: acceptsVoidUndefinedUnknownOrAny)
+        SourceFile const* file = info->call_span.source;
+        if (file && file->is_js && !compiler_options()->strict_null_checks) {
+            while (shape.min > 0 && shape.min <= shape.count && accepts_void_undefined_unknown_any(shape.types[shape.min - 1])) {
+                shape.min--;
+            }
+        }
+        return shape;
+    }
     signature_resolve(me, sig);
     ParamShape shape = { .count = 1, .min = sig->min_args ? 1 : 0 };
     shape.types = malloc(sizeof(Ty const*));
