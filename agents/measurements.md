@@ -31,25 +31,20 @@ TS1005 259/87, TS2339 229/60, TS2322 144/66. Single-code tests: missing TS2322 1
   M 31. Clusters: other:A 40, other:E 34, other:M 30, other:D 28, permissive:modifiers 22, recovery:list-context 14,
   lexical:identifiers 9, permissive:decorators 9, other:C 8, other:B 8, recovery:object-literal 6.
 
-## Corpora (2026-09-28, corpus session, todo entry 6)
+## Corpora (2026-09-28, sixth window's corpus session, todo entry 1, c4b36dfa)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**0**, zod **0**, webpack **32** (was 107; plan 19 "webpack"). **zod-root** (zod's root tsconfig, not clean under
-tsc, which reports 55): tttt's `file:line code` set equals tsc's 55 (was 83).
-Corpus session instructions (`TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -p <realpath>`, start -> end): tsc 4.70 ->
-4.71 G, type-fest 3.30 -> 3.29, valibot 5.09 -> 5.13 (+0.8%), webpack 1.17 -> 1.20 (+2.6%, checks more now), zod
-4.25 -> 4.24.
-Instructions (`perf stat -e instructions:u`, stable like callgrind, much faster) at the end of the triage session:
-tsc 4.67 G, type-fest 3.30, valibot 5.06, react 1.91, nest 1.02, webpack 3.25, zod **4.26** (8.54 at the corpus
-session; bisected to 62d8c89, variance annotations taken as given: zod's `out` types were measured unreliable before,
-forcing structural comparisons; 932k -> 352k types, arena 975 -> 412 MB). Current walls: zod 0.73 s / 665 MB.
-After plan 37 B (union origins, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`): valibot 5.06 -> 5.09 G (+0.7%), zod
-4.28 -> 4.29 (+0.2%); valibot makes 0.6% more types (unions with an origin are distinct from their plain twins).
+**0**, zod **0**, webpack **17** (was 30), **xstate 61** (new: 394 at pinning; plan 19 "xstate"). **zod-root** (not
+clean under tsc, which reports 55): tttt's `file:line code` set equals tsc's 55. threadcheck.sh: every corpus identical
+at 1 and 4 threads; xstate still differs between `--checkers 1` and 4 in 5 diagnostics (triage).
+Instructions (`perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`), session start (b4651c90) ->
+end: tsc 4.993 -> 5.045 G (+1.0%; the unknown-like-union check alone was +2.8% before its flag gate), type-fest 3.367
+-> 3.385, valibot 5.336 -> 5.371, react 1.967 -> 1.942, nest 1.136 -> 1.139, webpack 3.446 -> 3.508 (+1.8%, checks more
+JS), zod 4.407 -> 4.433, xstate 3.800 -> 2.776 (-27%: the TS2589 blowup is gone). The "Memory and variances" table
+below is from todo entry 9 of the last window (tsc 4.822 then: the triage and insights in between added +3.5%).
+xstate walls (4 checkers): tttt 0.27 s / 370 MB, tsc 5.8 6.0 s / 572 MB, tsgo 7.0.2 1.00 s / 483 MB (tsgo reports 30
+errors there: TypeScript 7 places some errors differently, so `@ts-expect-error` directives go unused; its time is of
+a full check all the same).
 
-Suite checker bugs 5 (f0a9a80 -> a59b7355, `perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`):
-tsc 4.707 -> 4.804 G (+2.1%), valibot 5.134 -> 5.249 (+2.2%), zod 4.240 -> 4.323 (+2.0%), webpack 3.287 -> 3.332
-(+1.4%), nest +0.4%, type-fest -0.1%, react -2.0%. Spread over the merged buckets (tsc +1.1% by the flow bucket and
-the early main-tree commits, valibot +1.3% by the relations bucket, +0.7% by the inference one): a lead for todo entry
-9. webpack **30** now (the JS bucket), the rest unchanged.
 ## Memory and variances (2026-09-28, todo entry 9, f0dd10eb + 0c6b4a80)
 `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`, `perf stat -e instructions:u`, arena / types from `--time`:
 | corpus | before | after |
@@ -83,6 +78,7 @@ tttt 1 thread is `--checkers 1` (the previous numbers, re-measured for tsc and s
 | nest (2394 files) | 0.20 s / 251 MB | 0.19 s / 225 MB | 2.58 s | 0.40 s / 250 MB | 0.51 s / 213 MB |
 | webpack (1188 files, checkJs) | **0.40 s** / 461 MB | 0.56 s / 375 MB | 8.75 s | 0.67 s / 463 MB | 0.60 s / 308 MB |
 | zod (621 files) | **0.45 s** / 846 MB | 0.73 s / 665 MB | 10.74 s | 2.92 s / 1406 MB | 3.70 s / 1029 MB |
+| xstate (651 files; 2026-09-28 corpus session, not bench.sh) | **0.27 s** / 370 MB | | 6.0 s | 1.00 s / 483 MB | |
 
 tttt phases at K=4 (parse files / resolve / typecheck, ms): synthetic 836 / 728 / 2116; tsc corpus 110 / 90 / 281
 (slowest checker 281 ms: the one with checker.ts); type-fest 16 / 8 / 249 (one heavy test file); valibot 51 / 37 /

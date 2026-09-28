@@ -3398,7 +3398,7 @@ const baselines = {
     'circularInstantiationExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularMappedTypeConstraint': {
         errors: true,
@@ -6093,7 +6093,7 @@ const baselines = {
     'contextualOverloadListFromArrayUnion': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'contextualOverloadListFromUnionWithPrimitiveNoImplicitAny': {
         errors: false,
@@ -9201,7 +9201,7 @@ const baselines = {
         types: true,
     },
     'deepExcessPropertyCheckingWhenTargetIsIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15323,7 +15323,7 @@ const baselines = {
     'genericTupleWithSimplifiableElements': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericTypeArgumentInference1': {
         errors: true,
@@ -23716,7 +23716,7 @@ const baselines = {
         types: true,
     },
     'noInferUnionExcessPropertyCheck1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28273,7 +28273,7 @@ const baselines = {
     'simplifyingConditionalWithInteriorConditionalIsRelated': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'singletonLabeledTuple': {
         errors: true,
@@ -29263,12 +29263,12 @@ const baselines = {
     'strictNullNotNullIndexTypeNoLib': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictNullNotNullIndexTypeShouldWork': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictOptionalProperties1': {
         errors: true,
@@ -31293,7 +31293,7 @@ const baselines = {
     'typeParameterConstraints1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterDiamond1': {
         errors: true,
@@ -31656,8 +31656,8 @@ const baselines = {
         types: true,
     },
     'typeVariableTypeGuards': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typecheckCommaExpression': {
@@ -31748,7 +31748,7 @@ const baselines = {
     'typeofObjectInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofProperty': {
         errors: true,
@@ -37948,7 +37948,7 @@ const baselines = {
     'controlFlowTruthiness': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowTypeofObject': {
         errors: true,
@@ -47438,7 +47438,7 @@ const baselines = {
     'typeArgumentInferenceWithConstraints': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeArgumentInferenceWithObjectLiteral': {
         errors: true,
@@ -52261,9 +52261,9 @@ const baselines = {
         types: false,
     },
     'jsdocParseMatchingBackticks': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParseParenthesizedJSDocParameter': {
         errors: true,

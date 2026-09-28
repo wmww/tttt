@@ -14,7 +14,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   reports nothing, 286 other text, 243 only missing, 116+80 only spurious; 252 have a spurious parser diagnostic.
   Spurious TS2304 (414 in 116 tests) is spread thin, much of it downstream of parser recovery.
 - **Corpora** (all clean under tsc 5.8): tsc `src/compiler`, valibot, react, nest, type-fest, zod **0**; webpack
-  **30** (from 107; its largest remaining cause is inference, plan 38); **zod-root** reports exactly tsc's 55.
+  **17** (from 107; what's left is plan 38 and plan 26); **xstate 61** (pinned 2026-09-28 as the inference-heavy
+  corpus, 394 at pinning; most of the rest is plan 38); **zod-root** reports exactly tsc's 55.
 - **Perf**: 4 checkers on up to 4 threads by default, output independent of the thread count. tsc corpus 0.53 s
   (tsgo 1.26), webpack 0.41 (0.67), zod 0.45 (2.92), valibot 0.39 (1.65) on 2 cores x 2 SMT. Variance measurements
   report unreliability like tsc and the `Prop`/`PropDecl` split cut the arena 20-31%; type counts are at or under

@@ -6,11 +6,9 @@ numbers). A plan that overruns its entry takes its extra sessions out of this bu
 into plans or triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the corpus
 numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 
-1. **Corpus: pin an inference-heavy corpus.** The seven corpora are at 0 (webpack 30, zod-root = tsc) and out of
-   signal for plan 38. Pin a project whose types lean on generic call inference with callbacks (candidates: tRPC,
-   TanStack Query, Effect, xstate; clean under tsc 5.8, a few seconds under tsc at most) the way plan 31/33 did
-   (`thirdparty/ensure-corpora.sh`, `realworld.py --corpus`, a row in measurements.md), then drive it down by root
-   cause. Leftover time: webpack's non-inference causes (plan 19 "webpack").
+1. ~~Corpus: pin an inference-heavy corpus~~ done: xstate core (394 -> 61, three sub-agents), webpack 30 -> 17,
+   suite 10543 -> 10554. Plan 38 has seven xstate/webpack repros in `plans/38_prototypes/`; plan 19 "xstate" lists
+   the rest by cause.
 2. **Plan 38 planning** (`plans/38_inference_flow.md`, a brief): prototype tsc's inference flow in a worktree
    (anyFunctionType first pass, leaf-wise instantiateContextualType, lazy fixing), measure against the suite, webpack,
    zod and entry 1's corpus, write the stages. If the memoization question has no good answer, say so and stop:
