@@ -2833,7 +2833,7 @@ const baselines = {
     'callWithWrongNumberOfTypeArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callbackArgsDifferByOptionality': {
         errors: true,
@@ -5958,7 +5958,7 @@ const baselines = {
     'constructorInvocationWithTooFewTypeArgs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constructorOverloads1': {
         errors: false,
@@ -14403,7 +14403,7 @@ const baselines = {
     'functionTypeArgumentArityErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionTypeArgumentArrayAssignment': {
         errors: true,
@@ -14948,7 +14948,7 @@ const baselines = {
     'genericDefaultsErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericDefaultsJs': {
         errors: true,
@@ -30498,7 +30498,7 @@ const baselines = {
     'tooManyTypeParameters1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'topFunctionTypeNotCallable': {
         errors: false,
@@ -47408,7 +47408,7 @@ const baselines = {
     'overloadResolutionClassConstructors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadResolutionConstructors': {
         errors: false,
@@ -65948,7 +65948,7 @@ const baselines = {
     'callGenericFunctionWithIncorrectNumberOfTypeArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callGenericFunctionWithZeroTypeArguments': {
         errors: true,
@@ -65993,7 +65993,7 @@ const baselines = {
     'instantiateGenericClassWithWrongNumberOfTypeArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instantiateGenericClassWithZeroTypeArguments': {
         errors: true,
@@ -67381,7 +67381,7 @@ const baselines = {
         types: true,
     },
     'genericCallWithTupleType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

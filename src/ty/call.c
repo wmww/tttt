@@ -1253,7 +1253,9 @@ static TyMapper const* explicit_type_arguments(Checker* me, Signature const* sig
     for (u32 i = 0; i < params.len; i++) results[i] = i < info->type_args.len ? info->type_args.data[i] : params.data[i];
     TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
     for (u32 i = info->type_args.len; i < params.len; i++) {
+        // (tsc's getTypeArgumentsFromNodes: the default, else the constraint, else unknown)
         Ty const* fallback = ty_param_default(me, params.data[i]);
+        if (!fallback) fallback = ty_param_constraint(me, params.data[i]);
         results[i] = fallback ? ty_instantiate(me, fallback, mapper) : ty_intrinsic(me, TY_UNKNOWN_);
         mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
     }
@@ -1425,6 +1427,21 @@ static Resolution resolve_with_signatures(
             ret.ret = candidate_return_type(me, &fallback);
         } else if (count == 1 && !signatures[0]->type_params.len) {
             ret.ret = signature_return_type(me, signatures[0]);
+        } else if (info->type_arg_nodes && !type_argument_arity_ok) {
+            // tsc's pickLongestCandidateSignature with getTypeArgumentsFromNodes: the first candidate that takes the
+            // arguments (else the one with the most parameters), its type arguments cut or filled in
+            u32 best = 0;
+            u32 most = 0;
+            for (u32 i = 0; i < count; i++) {
+                u32 params = ty_signature_param_count(signatures[i]);
+                if (ty_signature_has_rest(signatures[i]) || params >= args->len) {
+                    best = i;
+                    break;
+                }
+                if (i == 0 || params > most) most = params, best = i;
+            }
+            Candidate candidate = { .sig = signatures[best], .mapper = explicit_type_arguments(me, signatures[best], info) };
+            ret.ret = candidate_return_type(me, &candidate);
         } else {
             Ty const** return_types = malloc(sizeof(Ty const*) * count);
             u32 len = 0;

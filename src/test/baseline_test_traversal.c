@@ -733,6 +733,13 @@ static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx, bool 
         }
         return;
     }
+    Symbol const* value = symbol_for_meaning(my symbol, SYMBOL_VALUE);
+    if (my tag == PORT_EXPORT_AS_NAMESPACE && (!value || value->is_placeholder)) {
+        // Not an import or export statement name to tsc's writer: an alias of no value is errorType (getTypeOfAlias)
+        ctx->any_keeps_underline = false;
+        baseline_test_case_add_type(ctx, my decl_name, ty_intrinsic(current_checker, TY_ERROR));
+        return;
+    }
     baseline_test_case_add_symbol_value(ctx, my decl_name, my symbol);
 }
 
