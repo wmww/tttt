@@ -1521,7 +1521,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         return members;
     }
     Members const* source = ty_members(me, apparent);
-    if (source->mapped || !source->prop_count) return members;
+    if (source->mapped || (!source->prop_count && !source->index_count)) return members;
     Prop* template = arena_new(&my arena, Prop);
     template->type = ty_mapped_template(me, mapped);
     template->type_state = LAZY_STATE_DONE;
@@ -1551,6 +1551,25 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
             prop->name_is_value = declared->name_is_value;
         }
         builder_push(&builder, props, prop);
+    }
+    // And an index signature per index signature of the constraint (tsc's addMemberForKeyTypeWorker)
+    for (u32 i = 0; i < source->index_count; i++) {
+        IndexInfo const* from = &source->index[i];
+        TyMapper const* mapper = ty_mapper_new(
+            me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &from->key, .len = 1 }
+        );
+        Ty const* value = ty_instantiate(me, ty_mapped_template(me, mapped), mapper);
+        if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
+            Ty const* parts[2] = { value, ty_intrinsic(me, TY_UNDEFINED) };
+            value = ty_union(me, parts, 2, nullptr, (TyList){0});
+        }
+        IndexInfo info = {
+            .key = from->key,
+            .value = value,
+            .param_name = checker_atom(me, c_sv("x")),
+            .readonly = mapped->readonly > 0 || (!mapped->readonly && from->readonly),
+        };
+        builder_push(&builder, index, info);
     }
     return builder_finish(me, &builder);
 }

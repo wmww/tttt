@@ -1364,7 +1364,14 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
     out_lit(d, "]");
     if (mapped->optional) out(d, mapped->optional > 0 ? c_sv("?") : c_sv("-?"));
     out_lit(d, ": ");
-    ty_display(me, d, ty_mapped_template(me, mapped));
+    // `?` adds undefined to the template (tsc's getTemplateTypeFromMappedType; the missing type under
+    // exactOptionalPropertyTypes isn't printed)
+    Ty const* template = ty_mapped_template(me, mapped);
+    if (mapped->optional > 0 && compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) {
+        Ty const* parts[2] = { template, ty_intrinsic(me, TY_UNDEFINED) };
+        template = ty_union(me, parts, 2, nullptr, (TyList){0});
+    }
+    ty_display(me, d, template);
     out_lit(d, "; }");
 }
 

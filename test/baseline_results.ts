@@ -25248,7 +25248,7 @@ const baselines = {
     'paramsOnlyHaveLiteralTypesWhenAppropriatelyContextualized': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'paramterDestrcuturingDeclaration': {
         errors: false,
@@ -64218,7 +64218,7 @@ const baselines = {
     'mappedTypesAndObjects': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypesArraysTuples': {
         errors: false,
