@@ -2450,7 +2450,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
 
         case TYPE_INDEXED: {
             Ty const* index = ty_from_node(me, &node->indexed->index, ctx);
-            Ty const* ret = ty_indexed(me, ty_from_node(me, &node->indexed->interface, ctx), index);
+            Ty const* ret = ty_indexed_written(me, ty_from_node(me, &node->indexed->interface, ctx), index);
             // `T["a"]` written as a type reads an optional property's missing as a real undefined (tsc's
             // getPropertyTypeForIndexType with an IndexedAccessTypeNode)
             if (ty_contains_missing(me, ret)) ret = ty_union(me, (Ty const*[]){ ret, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});

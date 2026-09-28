@@ -2092,7 +2092,7 @@ static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index)
 }
 
 // The access itself is ty_access() (access.c), the same lookup property access expressions get
-static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index) {
+static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index, bool written) {
     if ((object->flags & TYF_ANY) || (index->flags & TYF_ERROR)) return object->flags & TYF_ANY ? object : index;
     if (index->flags & TYF_NEVER) return index;
     // An element before the variadic part of a generic tuple is known (`[S, ...T][0]` is S, tsc's indexTypeLessThan
@@ -2101,13 +2101,16 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
         return ty_access(me, object, index);
     }
     if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return nullptr;
-    return ty_access_without_node(me, object, index); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
+    Ty const* ret = ty_access_without_node(me, object, index); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
+    // What isn't there is unknown, or the error type where it's written (tsc's getIndexedAccessType: the access node
+    // reported it)
+    return ret ? ret : my intrinsics[written ? TY_ERROR : TY_UNKNOWN_];
 }
 
-Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
+static Ty const* indexed(Checker* me, Ty const* object, Ty const* index, bool written) {
     if (object == my intrinsics[TY_WILDCARD] || index == my intrinsics[TY_WILDCARD]) return my intrinsics[TY_WILDCARD];
     index = ty_regular(me, index);
-    Ty const* resolved = try_resolve_indexed(me, object, index);
+    Ty const* resolved = try_resolve_indexed(me, object, index, written);
     if (resolved) return resolved;
     u64 key[3] = { KEY_INDEXED, object->id, index->id };
     Ty* fresh;
@@ -2118,6 +2121,9 @@ Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
     }
     return ret;
 }
+
+Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) { return indexed(me, object, index, false); }
+Ty const* ty_indexed_written(Checker* me, Ty const* object, Ty const* index) { return indexed(me, object, index, true); }
 
 static Ty const* make_substitution(Checker* me, Ty const* base, Ty const* constraint) {
     u64 key[3] = { KEY_SUBSTITUTION, base->id, constraint->id };

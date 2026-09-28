@@ -11268,7 +11268,7 @@ const baselines = {
     'errorForUsingPropertyOfTypeAsType03': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorForwardReferenceForwadingConstructor': {
         errors: true,
@@ -32083,7 +32083,7 @@ const baselines = {
     'unionPropertyOfProtectedAndIntersectionProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionReductionMutualSubtypes': {
         errors: true,
@@ -36858,7 +36858,7 @@ const baselines = {
     'privateNamesAndIndexedAccess': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNamesAndMethods(target=es2022)': {
         errors: true,
@@ -39186,9 +39186,9 @@ const baselines = {
         types: false,
     },
     'globalThisAmbientModules': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'globalThisBlockscopedProperties': {
         errors: true,

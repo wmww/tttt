@@ -909,6 +909,7 @@ bool ty_templates_definitely_unrelated(Ty const* source, Ty const* target);
 bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty const** out);
 Ty const* ty_template_literal_for_constraint(Checker* me, Ty const* source, Ty const* constraint);
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index);
+Ty const* ty_indexed_written(Checker* me, Ty const* object, Ty const* index); // An IndexedAccessTypeNode's: a missing property is the error type
 Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index);
 // tsc's getSubstitutionType: `base` itself if the constraint says nothing about it
 Ty const* ty_substitution(Checker* me, Ty const* base, Ty const* constraint);
