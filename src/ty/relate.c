@@ -2814,7 +2814,8 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
                 Ty const* base = base_constraint(me, ret, depth + 1);
                 return base ? base : ret;
             }
-            return ret->flags & TYF_DEFERRED ? base_constraint(me, ret, depth + 1) : ret;
+            // (tsc's computeBaseConstraint takes the base constraint of the access too: `[T][0]` is T's)
+            return ret->kind == TY_TYPE_PARAM || (ret->flags & TYF_DEFERRED) ? base_constraint(me, ret, depth + 1) : ret;
         }
         case TY_CONDITIONAL: {
             Ty const* distributive = distributive_constraint(me, ty, depth);

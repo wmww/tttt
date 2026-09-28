@@ -39,3 +39,14 @@ smaller leftovers to `bugs/*.md` and hacks.md.
 - tttt adds TS6500 related info on `NoInfer<{...}>` targets; tsc doesn't.
 - xstate meta.test.ts 270/434: elaboration stops one level too high (at `e2:`, tsc goes on to the `meta:` under the
   `@ts-expect-error`). Not reduced.
+
+## 2026-09-28, plan 38 stage 2 (todo entry 4)
+- JSDoc nodes and outer type parameters: tsc instantiates a JSDoc object/function type node for *every* outer type
+  parameter (isTypeParameterPossiblyReferenced never meets the `@template` tag), so `@template T @callback B` used as
+  `B<string>` prints `B<string>` (jsdocCallbackAndType, types only). tttt's lowering collects the node's real free
+  parameters, and `ty_anonymous_from_node()` can't enumerate the ones in scope; making JSDoc nodes free_params_unknown
+  gained that test but let lib's `then<TResult1>` count as mentioned by a JSDoc-typed T (webpack +2). The fixing side
+  is handled narrowly in `assignment_mentions()` (`meets_jsdoc_node_in()`). A real fix records the in-scope
+  `@template`s on the lowering context.
+- Sub-agents given a worktree share `thirdparty/corpora` through the symlink: a probe written into the corpus
+  (xstate's `test/zz_probe.ts`) shows up in every tree's corpus run. Tell sub-agents to keep probes out of it.

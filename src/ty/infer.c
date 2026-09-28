@@ -851,7 +851,12 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
     if (target_members->mapped) {
         MappedInfo const* mapped = target_members->mapped;
         Ty const* template = mapped->modifiers_type ? ty_mapped_template(me, mapped) : nullptr;
-        if (template && template->kind == TY_INDEXED &&
+        // (A `keyof X` constraint that stays deferred, like `Partial<T & {}>`'s `keyof (T & {})`, infers only to an X
+        // being inferred: tsc's inferToMappedType, see infer_to_mapped())
+        Ty const* constraint = mapped->constraint;
+        InferParam const* keyof_param = constraint->kind == TY_KEYOF ? inference_param(inf, constraint->keyof.operand) : nullptr;
+        bool keyof_blocked = constraint->kind == TY_KEYOF && (!keyof_param || keyof_param->fixed);
+        if (template && !keyof_blocked && template->kind == TY_INDEXED &&
             template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param
         ) {
             // A plain homomorphic `T[K]` template (Partial, Readonly...): the source itself is the candidate, as the
