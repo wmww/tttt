@@ -36586,9 +36586,9 @@ const baselines = {
         types: true,
     },
     'privateNameMethodAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameMethodAsync': {
         errors: true,
@@ -36786,9 +36786,9 @@ const baselines = {
         types: true,
     },
     'privateNameStaticMethodAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameStaticMethodAsync': {
         errors: true,

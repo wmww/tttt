@@ -343,6 +343,7 @@ static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_template_type(Parser* parent, TypeNode* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
+static bool expr_ends_with_arrow(Expr const* e);
 static bool jsx_generic_arrow_start(Parser* parent);
 static bool parse_binding_content(Parser* parent, Binding* ret);
 static bool is_reserved_word(csview word);
@@ -8141,11 +8142,26 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
     ret->lazy_type = (LazyType){0};
 
-    // An arrow function is a whole assignment expression: nothing continues it (`() => {} || a` is missing a `;`)
-    bool is_arrow = ret->tag == EXPR_FUNCTION && span_valid(ret->function->arrow_span) && !expr_is_perenthisized(ret);
-    while (!is_arrow && parse_expr_right_side(&p, ctx, ret)) {}
+    // An arrow function is a whole assignment expression: nothing continues it (`() => {} || a` is missing a `;`),
+    // nor what it ends as the right side of an assignment or the last branch of a conditional (`x = () => {}` and a
+    // `(` on the next line)
+    while (!expr_ends_with_arrow(ret) && parse_expr_right_side(&p, ctx, ret)) {}
 
     return parse_success(&p);
+}
+
+static bool expr_ends_with_arrow(Expr const* e) {
+    while (!expr_is_perenthisized(e)) {
+        if (e->tag == EXPR_FUNCTION) return span_valid(e->function->arrow_span);
+        if (e->tag == EXPR_BINARY_OP && binary_op_is_assignment(e->binary_op->op)) {
+            e = &e->binary_op->right;
+        } else if (e->tag == EXPR_TERNARY) {
+            e = &e->ternary->no;
+        } else {
+            return false;
+        }
+    }
+    return false;
 }
 
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {

@@ -370,6 +370,11 @@ typedef enum BinaryOp {
     BINARY_OP_COMMA,
 } BinaryOp;
 
+// `=`, `+=`, ... `??=`
+static inline bool binary_op_is_assignment(BinaryOp op) {
+    return op >= BINARY_OP_EQUAL && op <= BINARY_OP_EH_EH_EQUAL;
+}
+
 int binary_op_get_precedence(BinaryOp op);
 /// What tsc's getEffectiveCheckNode checks and reports at: `satisfies` skipped (and parentheses: use its inner_span)
 Expr const* expr_effective_check_node(Expr const* me);

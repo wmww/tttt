@@ -823,10 +823,6 @@ static bool binary_op_is_logical_assignment(BinaryOp op) {
     return op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_OR_OR_EQUAL || op == BINARY_OP_EH_EH_EQUAL;
 }
 
-static bool binary_op_is_assignment(BinaryOp op) {
-    return op >= BINARY_OP_EQUAL && op <= BINARY_OP_EH_EH_EQUAL;
-}
-
 // `a && b`, `!(a || b)`: binds its own condition nodes
 static bool expr_is_logical(Expr const* me) {
     while (my tag == EXPR_UNARY_OP && my unary_op->op == UNARY_OP_LEFT_BANG) me = &my unary_op->expr;
