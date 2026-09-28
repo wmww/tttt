@@ -1934,7 +1934,22 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                 } else if (i->tag == EXPR_LITERAL && i->outer_span.sv.size == 0) {
                     // A hole
                 } else {
-                    if (array_like) {
+                    // Past the end of a tuple (tsc's checkArrayLiteralDestructuringElementAssignment: TS2493, TS2339 for
+                    // a union of tuples), unless there's a default
+                    bool has_default = i->tag == EXPR_BINARY_OP && i->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(i);
+                    bool past_end = false;
+                    if (array_like && !has_default) {
+                        Value key = value_number(index);
+                        ErrorCtx found = error_ctx_init();
+                        ty_check_property_access(checker, source, ty_literal(checker, &key), span_null, i->outer_span, false,
+                            false, &found);
+                        past_end = !error_ctx_empty(&found);
+                        error_ctx_merge(errs, &found);
+                        error_ctx_drop(&found);
+                    }
+                    if (past_end) {
+                        element = ty_intrinsic(checker, TY_ERROR); // (tsc: getIndexedAccessTypeOrUndefined() || errorType)
+                    } else if (array_like) {
                         Value key = value_number(index);
                         // (Read like an expression: noUncheckedIndexedAccess's undefined)
                         element = ty_access_reading(checker, source, ty_literal(checker, &key));

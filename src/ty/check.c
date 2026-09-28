@@ -1226,6 +1226,19 @@ static cstr entity_name_text(Span span) {
     return ret;
 }
 
+// A union whose members are all tuples without a rest element
+static bool is_union_of_fixed_tuples(Ty const* ty) {
+    if (ty->kind != TY_UNION || (ty->flags & TYF_BOOLEAN)) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        TupleShape const* shape = ty_tuple_shape(ty->composite.types.data[i]);
+        if (!shape) return false;
+        for (u32 j = 0; j < shape->arity; j++) {
+            if (shape->flags[j] & TUPLE_ELEMENT_REST) return false;
+        }
+    }
+    return true;
+}
+
 static void check_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
     bool error_if_not_found, u32 depth, ErrorCtx* errs
@@ -1284,6 +1297,18 @@ static void check_access(
                     "Object is possibly '", what, "'."
                 );
             }
+            return;
+        }
+        // Past the end of every member of a union of tuples without rest elements (tsc's getPropertyTypeForIndexType:
+        // everyType(objectType, isTupleType), with or without noImplicitAny)
+        if (!opaque && is_union_of_fixed_tuples(object) && (index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) &&
+            !ty_access(me, object, index)
+        ) {
+            // (No elaboration naming a member)
+            cstr object_str = ty_to_cstr(me, object);
+            error_ctx_error_d(errs, index_span, 2339, "Property '", &index->literal.value, "' does not exist on type '",
+                object_str, "'.");
+            cstr_drop(&object_str);
             return;
         }
         if (opaque || !error_if_not_found) return;
@@ -1646,7 +1671,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
                 if (!(object->composite.types.data[i]->flags & (TYF_OBJECT | TYF_INTERSECTION))) return;
             }
         }
-        if (ty_is_tuple(object) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493
+        if ((ty_is_tuple(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
         if (object->flags & TYF_OBJECT) {
             // HACK: as in check_access(): no expando members, mapped types over something generic, unresolved bases
             Members const* members = ty_members(me, object);

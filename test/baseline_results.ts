@@ -10661,12 +10661,12 @@ const baselines = {
         types: true,
     },
     'emitCapturingThisInTupleDestructuring1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'emitCapturingThisInTupleDestructuring2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65806,7 +65806,7 @@ const baselines = {
         types: true,
     },
     'unionsOfTupleTypes1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
