@@ -936,10 +936,10 @@ static bool is_generic_with_union_constraint(Checker* me, Ty const* ty) {
     return constraint && constraint != ty && ((constraint->flags & TYF_NULLABLE) || constraint->kind == TY_UNION);
 }
 
-static bool is_generic_type(Ty const* ty);
+static bool is_generic_type(Checker* me, Ty const* ty);
 
 static Ty const* base_constraint_or_type(Checker* me, Ty const* ty) {
-    if (ty->kind == TY_INTERSECTION && is_generic_type(ty)) {
+    if (ty->kind == TY_INTERSECTION && is_generic_type(me, ty)) {
         // The intersection of its members' base constraints, without the members that have none (tsc's
         // computeBaseConstraint)
         TyList members = ty->composite.types;
@@ -968,14 +968,18 @@ static bool has_generic_with_union_constraint(Checker* me, Ty const* ty) {
     return false;
 }
 
-// tsc's isGenericType: a type variable at the top, or a union or intersection with one
-static bool is_generic_type(Ty const* ty) {
-    if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return true;
-    if (ty->kind != TY_UNION && ty->kind != TY_INTERSECTION) return false;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (is_generic_type(ty->composite.types.data[i])) return true;
+// tsc's isGenericType: a generic object type (a type variable, a mapped type over generic keys, a generic tuple) or a
+// generic index type (a type variable, `keyof`, a template or string mapping that isn't a pattern), at the top or in a
+// union or intersection
+static bool is_generic_type(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (is_generic_type(me, ty->composite.types.data[i])) return true;
+        }
+        return false;
     }
-    return false;
+    if (ty->kind == TY_TEMPLATE_LITERAL || ty->kind == TY_STRING_MAPPING) return !ty_is_pattern_literal(ty);
+    return ty_is_generic_object(me, ty);
 }
 
 // A binding pattern's implied type (TYF_BINDING_PATTERN) of a pattern with a rest element: an object one has an
@@ -997,9 +1001,10 @@ static Ty const* narrowable_type(Checker* me, bool constraint_position, Ty const
     // without the pattern as contextual type, so that the rest of a `T` stays generic. tttt has one type per
     // expression: a pattern with a rest element isn't a contextual type here
     if (contextual && (contextual->flags & TYF_BINDING_PATTERN) && pattern_type_has_rest(me, contextual)) contextual = nullptr;
+    if (!has_generic_with_union_constraint(me, type)) return type;
     bool substitute = constraint_position ||
-        (contextual && !my inferential_depth && !is_generic_type(contextual));
-    if (!substitute || !has_generic_with_union_constraint(me, type)) return type;
+        (contextual && !my inferential_depth && !is_generic_type(me, contextual));
+    if (!substitute) return type;
     Ty const* const* members = &type;
     u32 count = 1;
     if (type->kind == TY_UNION) {
