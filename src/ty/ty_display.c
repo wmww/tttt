@@ -607,6 +607,8 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
     for_each (i, vec_generic_item, &generic->items) {
         if (i_index) out_lit(d, ", ");
         if (i->is_const) out_lit(d, "const ");
+        if (i->is_in) out_lit(d, "in ");
+        if (i->is_out) out_lit(d, "out ");
         if (d.param_names && i->symbol_ref) out_type_param_name(me, d, ty_type_param(me, i->symbol_ref), true);
         else out(d, i->name.sv);
         if (i->extends_explicit) {
@@ -1056,6 +1058,8 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
         while (declared->kind == TY_TYPE_PARAM && declared->param.state->clone_of) declared = declared->param.state->clone_of;
         GenericItem const* item = declared->kind == TY_TYPE_PARAM ? declared->param.state->item : nullptr;
         if (item && item->is_const) out_lit(d, "const ");
+        if (item && item->is_in) out_lit(d, "in ");
+        if (item && item->is_out) out_lit(d, "out ");
         ty_display(me, reused_if(d, d.reused || item), params.data[i]);
         Ty const* constraint = ty_param_constraint(me, params.data[i]);
         if (constraint) {

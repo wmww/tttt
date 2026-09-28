@@ -11,6 +11,7 @@ static SpannedModifier const* first_illegal_modifier(ModifierList const* me, Mod
         case MODIFIED_PROPERTY_SIGNATURE: case MODIFIED_METHOD: case MODIFIED_METHOD_SIGNATURE:
         case MODIFIED_INDEX_SIGNATURE: case MODIFIED_MODULE: case MODIFIED_IMPORT: case MODIFIED_IMPORT_EQUALS:
         case MODIFIED_EXPORT_DECLARATION: case MODIFIED_EXPORT_ASSIGNMENT: case MODIFIED_PARAMETER:
+        case MODIFIED_TYPE_PARAMETER:
             return nullptr;
         case MODIFIED_CLASS_STATIC_BLOCK: case MODIFIED_NAMESPACE_EXPORT: case MODIFIED_MISSING_DECLARATION:
             return first;
@@ -56,9 +57,26 @@ bool modifier_list_check_grammar(ModifierList const* me, ModifiedNode const* nod
                 REPORT(s, 1071, "'", s, "' modifier cannot appear on an index signature.");
             }
         }
+        if (m->tag != MODIFIER_IN && m->tag != MODIFIER_OUT && m->tag != MODIFIER_CONST && node->kind == MODIFIED_TYPE_PARAMETER) {
+            REPORT(s, 1273, "'", s, "' modifier cannot appear on a type parameter");
+        }
         switch (m->tag) {
             case MODIFIER_CONST:
-                if (node->kind != MODIFIED_ENUM) REPORT(node->name, 1248, "A class member cannot have the 'const' keyword.");
+                if (node->kind != MODIFIED_ENUM && node->kind != MODIFIED_TYPE_PARAMETER) {
+                    REPORT(node->name, 1248, "A class member cannot have the 'const' keyword.");
+                }
+                if (node->kind == MODIFIED_TYPE_PARAMETER && node->type_param_owner == TYPE_PARAM_OF_TYPE) {
+                    REPORT(s, 1277, "'const' modifier can only appear on a type parameter of a function, method or class");
+                }
+                break;
+
+            case MODIFIER_IN:
+            case MODIFIER_OUT:
+                if (node->kind != MODIFIED_TYPE_PARAMETER || node->type_param_owner == TYPE_PARAM_OF_FUNCTION) {
+                    REPORT(s, 1274, "'", s, "' modifier can only appear on a type parameter of a class, interface or type alias");
+                }
+                if (HAS(m->tag)) ALREADY_SEEN();
+                if (m->tag == MODIFIER_IN && HAS(MODIFIER_OUT)) MUST_PRECEDE("in", "out");
                 break;
 
             case MODIFIER_OVERRIDE:

@@ -224,6 +224,7 @@ typedef struct TyParamState {
     Ty const* fallback;
     bool is_infer; // declared by `infer X` in the extends type of a conditional type
     bool is_this; // The `this` type of a class or interface (Ty.declared.this_param), prints as `this`
+    bool is_check_marker; // `sub-T`/`super-T` of a variance annotation check (ty_variance_check_instance())
     // A fresh copy made when a generic signature is instantiated (tsc's cloneTypeParameter): its constraint and default
     // are those of `clone_of` instantiated with `clone_mapper`
     Ty const* clone_of;
@@ -817,6 +818,21 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
 Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
 Ty const* ty_synthetic_type_param(Checker* me, csview name);
+// Variance annotations (relate.c)
+typedef enum VarianceModifiers {
+    VARIANCE_MODIFIER_IN = 1 << 0,
+    VARIANCE_MODIFIER_OUT = 1 << 1,
+} VarianceModifiers;
+/// tsc's getTypeParameterModifiers: the `in`/`out` of the type parameter at `index` (among its own, not the outer ones)
+/// of the class, interface or type alias, on all its declarations (merged interfaces unite them)
+unsigned ty_variance_modifiers(Symbol const* owner, u32 index);
+/// tsc's createMarkerType for checkTypeParameterDeferred: the class, interface or type alias with its own type parameter
+/// at `index` replaced by `sub-T` (`sub`) or `super-T`, named after it (`sub-T` extends `super-T`). Relations compare
+/// these structurally, never by variances. Null if there's no such parameter
+Ty const* ty_variance_check_instance(Checker* me, Symbol const* owner, u32 index, bool sub);
+/// tsc's checkTypeParameterDeferred for the type parameters of a class, interface or type alias: variance annotations
+/// on an alias that isn't an object type (TS2637), and that disagree with how the type uses the parameter (TS2636)
+void ty_check_variance_annotations(Checker* me, Symbol const* owner, Generic const* generic, bool is_alias, ErrorCtx* errs);
 // A fresh type parameter like `param` whose constraint and default are instantiated with `mapper` (set later if null),
 // named `name` (null: the same name)
 Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper, Atom const* name);

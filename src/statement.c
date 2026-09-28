@@ -223,6 +223,7 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     // A literal checked for its index signatures is the alias's type: named by the alias, which has to come first
     if (my symbol && type_literal_has_index_constraints(&my type)) ty_declared_type_of(current_checker, my symbol);
     generic_typecheck(&my generic, errs);
+    ty_check_variance_annotations(current_checker, my symbol, &my generic, true, errs);
     // tsc's checkTypeReferenceNode resolves every reference it walks. When the reference is the body, that is the alias's
     // own type, which lowers it in the alias's context (a deferred reference, the alias name)
     if (my symbol && my type.tag == TYPE_IDENTIFIER) {

@@ -19,6 +19,8 @@ typedef struct SpannedModifier {
         MODIFIER_PROTECTED,
         MODIFIER_PUBLIC,
         MODIFIER_CONST,
+        MODIFIER_IN, // Variance annotations: `in T`, `out T`
+        MODIFIER_OUT,
         MODIFIER_ENUM_CAP,
     } tag;
     Span span;
@@ -67,7 +69,15 @@ typedef enum ModifiedKind {
     MODIFIED_EXPORT_ASSIGNMENT,
     MODIFIED_NAMESPACE_EXPORT,
     MODIFIED_MISSING_DECLARATION,
+    MODIFIED_TYPE_PARAMETER,
 } ModifiedKind;
+
+// What declares a type parameter (MODIFIED_TYPE_PARAMETER): which of `in`, `out` and `const` it can have
+typedef enum TypeParamOwner {
+    TYPE_PARAM_OF_FUNCTION, // Functions, methods, signatures, function and constructor types: `const`
+    TYPE_PARAM_OF_CLASS, // `in`, `out` and `const`
+    TYPE_PARAM_OF_TYPE, // Interfaces and type aliases: `in` and `out`
+} TypeParamOwner;
 
 // What contains the modified node (tsc's node.parent.kind)
 typedef enum ModifiedParent {
@@ -86,6 +96,7 @@ typedef struct ModifiedNode {
     bool in_abstract_class; // The parent is a class declaration with `abstract`
     bool private_name;
     uint8_t using_kind; // 1 `using`, 2 `await using`
+    uint8_t type_param_owner; // MODIFIED_TYPE_PARAMETER: TypeParamOwner
     Span name; // Where errors on the node itself go (tsc's getErrorSpanForNode)
 } ModifiedNode;
 

@@ -4,6 +4,8 @@
 #include "error.h"
 #include "class_decl.h"
 #include "function_impl.h"
+#include "statement.h"
+#include "interface_decl.h"
 
 // Type relations (assignable, comparable) over Ty. The structure follows tsc's isTypeRelatedTo -> isRelatedTo ->
 // recursiveTypeRelatedTo -> structuredTypeRelatedTo, because what's observable (which errors, which elaboration lines)
@@ -647,7 +649,7 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
     Ty const* generalized = widen ? ty_base_type_of_literal(me, source) : source;
     cstr source_str, target_str;
     display_pair(me, generalized, widen, target, &source_str, &target_str);
-    if (target->kind == TY_TYPE_PARAM && !target->param.state->is_this) {
+    if (target->kind == TY_TYPE_PARAM && !target->param.state->is_this && !target->param.state->is_check_marker) {
         // What a type parameter target could be (tsc's reportRelationError), below the head reported next
         Ty const* constraint = target;
         for (u32 depth = 0; constraint && constraint->kind == TY_TYPE_PARAM && depth < 16; depth++) {
@@ -1856,21 +1858,83 @@ static Ty const* marker_instance(Checker* me, VarianceSubject subject, u32 index
     return ret;
 }
 
+Ty const* ty_variance_check_instance(Checker* me, Symbol const* owner, u32 index, bool sub) {
+    Ty const* declared = owner->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE) ? ty_declared_type_of(me, owner) : nullptr;
+    VarianceSubject subject = declared && declared->kind == TY_DECLARED ?
+        (VarianceSubject){ .declared = declared, .params = declared->declared.type_params } :
+        (VarianceSubject){ .alias = owner, .params = ty_alias_type_params(me, owner) };
+    if (subject.declared) index += declared->declared.outer_count;
+    if (index >= subject.params.len) return nullptr;
+    Atom const* name = subject.params.data[index]->param.name;
+    Ty const* markers[2];
+    for (u32 which = 0; which < 2; which++) {
+        u64 key[3] = { KEY_CHECK_MARKER, (u64)(uintptr_t)name, which };
+        markers[which] = intern_get(&my links, key, 3);
+        if (markers[which]) continue;
+        cstr marker_name = cstr_d(which ? "sub-" : "super-", atom_sv(name));
+        markers[which] = ty_synthetic_type_param(me, cstr_sv(&marker_name));
+        cstr_drop(&marker_name);
+        markers[which]->param.state->is_check_marker = true;
+        if (which == 1) {
+            markers[which]->param.state->constraint = markers[0];
+            markers[which]->param.state->constraint_state = LAZY_STATE_DONE;
+        }
+        *intern_slot(me, &my links, key, 3) = (void*)markers[which];
+    }
+    Ty const* ret = marker_instance(me, subject, index, markers[sub]);
+    u64 key[2] = { KEY_CHECK_MARKER_REF, ret->id };
+    *intern_slot(me, &my links, key, 2) = (void*)ret;
+    return ret;
+}
+
+// A reference made by ty_variance_check_instance(): related structurally, not by variances (tsc's isMarkerType)
+static bool is_check_marker(Checker* me, Ty const* ty) {
+    u64 key[2] = { KEY_CHECK_MARKER_REF, ty->id };
+    return intern_get(&my links, key, 2) != nullptr;
+}
+
 static bool is_alias_marker(Checker* me, Ty const* ty) {
     u64 key[2] = { KEY_ALIAS_MARKER, ty->id };
     return intern_get(&my links, key, 2) != nullptr;
+}
+
+unsigned ty_variance_modifiers(Symbol const* owner, u32 index) {
+    unsigned ret = 0;
+    for (u32 d = 0; owner && d < owner->decl_count; d++) {
+        Generic const* generic;
+        switch (owner->decls[d].kind) {
+            case SYMBOL_DECL_CLASS: generic = &((ClassDecl const*)owner->decls[d].node)->generic; break;
+            case SYMBOL_DECL_INTERFACE: generic = &((InterfaceDecl const*)owner->decls[d].node)->generic; break;
+            case SYMBOL_DECL_TYPE_ALIAS: generic = &((TypeDecl const*)owner->decls[d].node)->generic; break;
+            default: continue;
+        }
+        if (index >= (u32)vec_generic_item_size(&generic->items)) continue;
+        GenericItem const* item = vec_generic_item_at(&generic->items, index);
+        ret |= (item->is_in ? VARIANCE_MODIFIER_IN : 0) | (item->is_out ? VARIANCE_MODIFIER_OUT : 0);
+    }
+    return ret;
+}
+
+// The variance annotations of the subject's type parameter at `index`
+static unsigned subject_variance_modifiers(VarianceSubject subject, u32 index) {
+    Symbol const* owner = subject.declared ? subject.declared->declared.symbol : subject.alias;
+    u32 outer = subject.declared ? subject.declared->declared.outer_count : 0;
+    if (owner && index >= outer) return ty_variance_modifiers(owner, index - outer);
+    Ty const* param = subject.params.data[index];
+    GenericItem const* item = param->kind == TY_TYPE_PARAM && param->param.state ? param->param.state->item : nullptr;
+    return item ? (item->is_in ? VARIANCE_MODIFIER_IN : 0) | (item->is_out ? VARIANCE_MODIFIER_OUT : 0) : 0;
 }
 
 static void measure_variances(Checker* me, VarianceSubject subject, Variances* variances) {
     bool saved_unreliable = my variance_unreliable;
     my variance_depth++;
     for (u32 i = 0; i < variances->len; i++) {
-        // Variance annotations (`in T`, `out T`, `in out T`) are taken as they are (tsc's getVariancesWorker)
-        Ty const* param = subject.params.data[i];
-        GenericItem const* item = param->kind == TY_TYPE_PARAM && param->param.state ? param->param.state->item : nullptr;
-        if (item && (item->is_in || item->is_out)) {
-            variances->data[i] = (unsigned char)(item->is_in && item->is_out ? VARIANCE_INVARIANT :
-                item->is_out ? VARIANCE_COVARIANT : VARIANCE_CONTRAVARIANT);
+        // Variance annotations (`in T`, `out T`, `in out T`) are taken as they are (tsc's getVariancesWorker), those of
+        // every declaration of a merged interface together
+        unsigned modifiers = subject_variance_modifiers(subject, i);
+        if (modifiers) {
+            variances->data[i] = (unsigned char)(modifiers == (VARIANCE_MODIFIER_IN | VARIANCE_MODIFIER_OUT) ?
+                VARIANCE_INVARIANT : modifiers == VARIANCE_MODIFIER_OUT ? VARIANCE_COVARIANT : VARIANCE_CONTRAVARIANT);
             continue;
         }
         my variance_unreliable = false;
@@ -3166,7 +3230,7 @@ static Ternary structured_related_members(
     // fails with an unreliable variance, structurally
     if (((source->flags & TYF_OBJECT) || source->kind == TY_CONDITIONAL) && source->alias && source->alias_args.len &&
         source->alias == target->alias && source->alias_args.len == target->alias_args.len &&
-        !is_alias_marker(me, source) && !is_alias_marker(me, target)
+        !is_alias_marker(me, source) && !is_alias_marker(me, target) && use_variances
     ) {
         Variances const* variances = get_alias_variances(me, source->alias);
         if (!variances) return TERNARY_MAYBE;
@@ -3185,6 +3249,27 @@ static Ternary structured_related_members(
         if (!related && report && !unreliable) {
             report_truncate(st, saved);
             related = type_args_related(me, st, variances, source->alias_args, target->alias_args, true, &unreliable);
+            bool invariant = false;
+            for (u32 i = 0; i < variances->len; i++) {
+                invariant |= (variances->data[i] & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT)) == VARIANCE_INVARIANT;
+            }
+            if (!related && invariant) {
+                // Explained by the members, as for references below
+                VecTyReportLine variance_lines = {0};
+                while (vec_ty_report_line_size(&st->lines) > saved) {
+                    vec_ty_report_line_push(&variance_lines, vec_ty_report_line_pull(&st->lines));
+                }
+                u32 override_saved = st->override_next_head;
+                if (structured_related_impl(me, st, source, target, true, false)) {
+                    report_truncate(st, saved);
+                    st->override_next_head = override_saved;
+                    while (vec_ty_report_line_size(&variance_lines)) {
+                        vec_ty_report_line_push(&st->lines, vec_ty_report_line_pull(&variance_lines));
+                    }
+                }
+                vec_ty_report_line_drop(&variance_lines);
+                return TERNARY_FALSE;
+            }
         }
         if (related || !unreliable) return related;
         report_truncate(st, saved);
@@ -3487,7 +3572,7 @@ static Ternary structured_related_members(
     if ((source->kind == TY_REFERENCE || source_self) && (target->kind == TY_REFERENCE || target_self)) {
         Ty const* source_target = source_self ? source : source->reference.target;
         Ty const* target_target = target_self ? target : target->reference.target;
-        if (source_target == target_target && use_variances) {
+        if (source_target == target_target && use_variances && !is_check_marker(me, source) && !is_check_marker(me, target)) {
             Variances const* variances = get_variances(me, source_target);
             // A recursive measurement of the same variances: tsc assumes related (Ternary.Unknown), which measures
             // variance only from occurrences that aren't nested in recursive instantiations of the type

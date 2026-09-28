@@ -699,6 +699,35 @@ void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span sp
     check_assignable(me, HEAD_SATISFIES, source, target, span, expr, errs);
 }
 
+void ty_check_variance_annotations(Checker* me, Symbol const* owner, Generic const* generic, bool is_alias, ErrorCtx* errs) {
+    if (!owner || generic_empty(generic)) return;
+    for (u32 i = 0; i < (u32)vec_generic_item_size(&generic->items); i++) {
+        GenericItem const* item = vec_generic_item_at(&generic->items, i);
+        if (item->jsdoc) continue; // TODO: JSDoc `@template in T`
+        unsigned modifiers = ty_variance_modifiers(owner, i);
+        if (!modifiers) continue;
+        if (is_alias) {
+            // Only object types (literals, function, constructor and mapped types, and instantiations of them)
+            Ty const* declared = ty_declared_type_of(me, owner);
+            if (declared->kind != TY_ANONYMOUS || (declared->flags & TYF_ERROR)) {
+                error_ctx_error_d(errs, item->full_span, 2637, "Variance annotations are only supported in type aliases for "
+                    "object, function, constructor, and mapped types.");
+                continue;
+            }
+        }
+        if (modifiers == (VARIANCE_MODIFIER_IN | VARIANCE_MODIFIER_OUT)) continue;
+        bool out = modifiers == VARIANCE_MODIFIER_OUT;
+        Ty const* source = ty_variance_check_instance(me, owner, i, out);
+        Ty const* target = ty_variance_check_instance(me, owner, i, !out);
+        if (!source || !target || ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) continue;
+        cstr source_str, target_str;
+        ty_report_pair_cstr(me, source, target, &source_str, &target_str);
+        report_unassignable_with_head(me, source, target, 2636, cstr_d("Type '", source_str, "' is not assignable to type '",
+            target_str, "' as implied by variance annotation."), false, item->full_span, errs);
+        c_drop(cstr, &source_str, &target_str);
+    }
+}
+
 // A computed enum member's value is a number (tsc's computeEnumMemberValue for what it can't evaluate)
 void ty_check_enum_member_value(Checker* me, Ty const* source, Span span, ErrorCtx* errs) {
     Ty const* number = ty_intrinsic(me, TY_NUMBER);

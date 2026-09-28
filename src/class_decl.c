@@ -1260,6 +1260,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     class_check_emit_helpers(me, errs);
 
     generic_typecheck(&my generic, errs);
+    ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
 
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         expr_typecheck(&my extends, errs);

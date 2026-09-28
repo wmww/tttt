@@ -1830,6 +1830,10 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
             mod.tag = MODIFIER_PUBLIC;
         } else if (is_member && span_equals(mod.span, "const")) {
             mod.tag = MODIFIER_CONST;
+        } else if (is_member && span_equals(mod.span, "in")) {
+            mod.tag = MODIFIER_IN; // (Only on a type parameter: TS1274)
+        } else if (is_member && span_equals(mod.span, "out")) {
+            mod.tag = MODIFIER_OUT;
         } else {
             break;
         }
@@ -1931,29 +1935,53 @@ static inline bool expect_binary_op(Parser* parent, BinaryOp expected) {
     }
 }
 
-static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
+static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, GenericItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    // Modifiers: `const T`, `in T`, `out T`, `in out T`
-    bool is_const = false, is_in = false, is_out = false;
+    // Modifiers (tsc's parseModifiers with permitConstAsModifier): `const T`, `in T`, `out T`, `in out T`, and the
+    // others, which the grammar check rejects. A modifier keyword is the name when nothing that can be a name follows
+    // it on the same line
+    static const char* const words[] = {
+        "abstract", "accessor", "async", "const", "declare", "export", "in", "public", "private", "protected",
+        "readonly", "static", "out", "override", nullptr,
+    };
+    ModifierList modifiers = {0};
     while (true) {
         Parser modifier_p = parser(&p);
-        bool modifier_const = false, modifier_in = false, modifier_out = false;
-        if (((modifier_in = hop_start_if_ends_on_word_break(&modifier_p, "in")) ||
-             (modifier_out = hop_start_if_ends_on_word_break(&modifier_p, "out")) ||
-             (modifier_const = hop_start_if_ends_on_word_break(&modifier_p, "const"))) &&
-            (hop_whitespace(&modifier_p), identifier_char_size(modifier_p.pos, true))
-        ) {
-            is_const |= modifier_const;
-            is_in |= modifier_in;
-            is_out |= modifier_out;
-            parse_success(&modifier_p);
-        } else {
+        Span word;
+        bool is_modifier = parse_identifier_or_keyword(&modifier_p, &word);
+        if (is_modifier) {
+            is_modifier = false;
+            for (const char* const* w = words; *w && !is_modifier; w++) is_modifier = csview_equals(word.sv, *w);
+        }
+        if (is_modifier) {
+            hop_whitespace(&modifier_p);
+            is_modifier = (modifier_p.whitespace != WHITESPACE_NEWLINE || span_equals(word, "static")) &&
+                identifier_char_size(modifier_p.pos, true);
+        }
+        if (!is_modifier) {
             parse_fail(&modifier_p);
             break;
         }
+        SpannedModifier mod = { .span = word };
+        mod.tag = span_equals(word, "in") ? MODIFIER_IN : span_equals(word, "out") ? MODIFIER_OUT :
+            span_equals(word, "const") ? MODIFIER_CONST : span_equals(word, "readonly") ? MODIFIER_READONLY :
+            span_equals(word, "abstract") ? MODIFIER_ABSTRACT : span_equals(word, "static") ? MODIFIER_STATIC :
+            span_equals(word, "accessor") ? MODIFIER_ACCESSOR : span_equals(word, "export") ? MODIFIER_EXPORT :
+            span_equals(word, "async") ? MODIFIER_ASYNC : span_equals(word, "declare") ? MODIFIER_DECLARE :
+            span_equals(word, "override") ? MODIFIER_OVERRIDE : span_equals(word, "private") ? MODIFIER_PRIVATE :
+            span_equals(word, "protected") ? MODIFIER_PROTECTED : MODIFIER_PUBLIC;
+        vec_spanned_modifier_push(&modifiers.spanned, mod);
+        modifiers.includes[mod.tag] = true;
+        parse_success(&modifier_p);
     }
+    bool is_const = modifiers.includes[MODIFIER_CONST];
+    bool is_in = modifiers.includes[MODIFIER_IN];
+    bool is_out = modifiers.includes[MODIFIER_OUT];
+    check_modifiers(&p, &modifiers, (ModifiedNode){ .kind = MODIFIED_TYPE_PARAMETER, .parent = MODIFIED_IN_OTHER,
+        .type_param_owner = owner });
+    modifier_list_drop(&modifiers);
 
     Span name;
     if (!parse_identifier(&p, &name)) {
@@ -1995,7 +2023,7 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     return parse_success(&p);
 }
 
-static bool parse_generic_decl(Parser* parent, Generic* ret) {
+static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* ret) {
     Parser p = parser(parent);
     *ret = (Generic){0};
 
@@ -2006,7 +2034,7 @@ static bool parse_generic_decl(Parser* parent, Generic* ret) {
 
     while (*p.pos && *p.pos != '>') {
         GenericItem item;
-        if (parse_generic_decl_item(&p, &item)) {
+        if (parse_generic_decl_item(&p, owner, &item)) {
             vec_generic_item_push(&ret->items, item);
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
@@ -3981,7 +4009,7 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     hop_whitespace(&p);
 
     Generic generic;
-    if (!parse_generic_decl(&p, &generic)) {
+    if (!parse_generic_decl(&p, TYPE_PARAM_OF_TYPE, &generic)) {
         generic = (Generic){0};
     }
     hop_whitespace(&p);
@@ -4227,7 +4255,7 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
     hop_whitespace(&p);
 
     Generic generic;
-    if (!parse_generic_decl(&p, &generic)) {
+    if (!parse_generic_decl(&p, TYPE_PARAM_OF_TYPE, &generic)) {
         generic = (Generic){0};
     }
     hop_whitespace(&p);
@@ -4471,7 +4499,7 @@ static bool parse_function_args_inner(
         }
     }
 
-    if (parse_generic_decl(&p, &ret->generic)) {
+    if (parse_generic_decl(&p, TYPE_PARAM_OF_FUNCTION, &ret->generic)) {
         hop_whitespace(&p);
         is_definitely_function = true;
     } else {
@@ -5968,7 +5996,7 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
     }
     hop_whitespace(&p);
 
-    if (parse_generic_decl(&p, &ret->generic)) {
+    if (parse_generic_decl(&p, TYPE_PARAM_OF_CLASS, &ret->generic)) {
         hop_whitespace(&p);
         if (!generic_empty(&ret->generic)) {
             Span span = span_between(vec_generic_item_front(&ret->generic.items)->full_span,
@@ -10418,7 +10446,7 @@ static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
         1079, 1089, 1090, 1096, 1097, 1120, 1123, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
-        1248, 1253, 1255, 1275, 1276, 1319, 1491, 1495, 18010, 18019,
+        1248, 1253, 1255, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18019,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;
