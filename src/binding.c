@@ -318,11 +318,15 @@ static Ty const* element_parent_type(Binding const* me, Expr const* initializer)
 }
 
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
+    binding_typecheck_at(me, initializer, span_null, errs);
+}
+
+void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, ErrorCtx* errs) {
     if (my has_explicit_type) type_typecheck(&my explicit_type, errs);
     // (A catch variable's annotation isn't assigned anything: TS1196 is its only check)
     if (my has_explicit_type && (my parent || my source)) {
         ty_check_assignable_expr(current_checker, ty_binding_assigned_type(current_checker, me),
-            ty_of_node(&my explicit_type), my content_span, initializer, errs);
+            ty_of_node(&my explicit_type), span_valid(span) ? span : my content_span, initializer, errs);
     }
 
     if (my default_value) {
@@ -584,4 +588,22 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
     binding_typecheck(&my binding, my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value, errs);
+}
+
+void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
+    initialized_binding_check_value(me);
+    expr_typecheck(&my value, errs);
+    Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
+    binding_typecheck_at(&my binding, initializer, span, errs);
+    if (!initializer || my binding.has_explicit_type) return;
+    // An unannotated parameter typed by its contextual signature: the initializer is assigned to that type, unless it
+    // was the initializer's type instead (tsc's assignContextualParameterTypes: when the contextual type is assignable
+    // to the widened initializer but not the other way around)
+    Checker* checker = current_checker;
+    if (!ty_contextual_parameter_type(checker, me)) return;
+    Ty const* type = ty_binding_type(checker, &my binding, (LowerCtx){ .generic = true });
+    Ty const* value = ty_expr_type(checker, initializer);
+    if (ty_is_related(checker, value, type, TY_RELATION_ASSIGNABLE)) return;
+    if (ty_is_related(checker, type, ty_widened_for_declaration(checker, value, false), TY_RELATION_ASSIGNABLE)) return;
+    ty_check_assignable_expr(checker, value, type, span, initializer, errs);
 }

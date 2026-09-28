@@ -668,7 +668,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         for_each (decorator, vec_expr, &i->decorators) {
             expr_typecheck(decorator, errs);
         }
-        initialized_binding_typecheck(&i->initializer, errs);
+        initialized_binding_typecheck_parameter(&i->initializer, i->span, errs);
         if (i->initializer.binding.tag == BINDING_ARRAY && i->initializer.value.tag != EXPR_IMPLICIT_ANY &&
             !i->initializer.binding.has_explicit_type
         ) {

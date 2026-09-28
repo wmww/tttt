@@ -71,6 +71,8 @@ bool binding_is_parameter(Binding const* pattern);
 void binding_collect_names(Binding const* me, VecSpan* out);
 /// `initializer`: what the binding is initialized with, if anything (a failed check is elaborated into it)
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs);
+// `span`: where the initializer's check reports (a parameter's is the whole parameter, tsc's getErrorSpanForNode)
+void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
 
@@ -107,6 +109,8 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
 void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, ErrorCtx* errs);
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
+// A parameter (`span`: all of it)
+void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs);
 
 #define g_class_key InitializedBinding, initialized_binding
 #define g_no_clone
