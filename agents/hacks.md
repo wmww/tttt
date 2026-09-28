@@ -46,20 +46,40 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   per directory + name + mode; not visible in profiles so far).
 
 ## Parser
-- `is_identifier_char` is ASCII-only (plan 27 stage 3), so `invalid_char_size()` treats every non-ASCII,
-  non-whitespace character as invalid (TS1127); narrow it when identifiers become unicode aware. Escaped identifiers
-  (incl. JSX names `<a>`: `jsx_name_value`, `jsx_element_is_intrinsic`) are compared by value but *resolved* by
-  their raw text.
-- `parse_identifier` excludes keywords by a chain of `span_equals`; `parse_binary_op` is an if/else chain.
+- Escaped identifiers (`\u0061`) are scanned (`identifier_char_size()`) but named by their raw text: `\u0061` and `a`
+  are different names (`bugs/escaped_identifiers.md`), and escaped keywords are identifiers (no TS1260). JSX names
+  are compared by value (`jsx_name_value`) but resolved by raw text too.
+- Two notions of "reserved": `parse_identifier()` refuses only the words of `is_reserved_identifier()` (return,
+  throw, typeof, this, case, in, super, default) because it's also what parses identifier *names* and keyword types in
+  many places; `parse_binding_identifier()` (bindings, class names) and the enum name refuse all of
+  `is_reserved_word()`. Making `parse_identifier()` refuse them all broke 68 tests (`as const`, ...): each caller
+  would have to say whether it wants tsc's parseIdentifier, parseIdentifierName or parseBindingIdentifier.
+  `parse_binary_op` is an if/else chain.
+- Conflict markers (TS1185) are only looked for after a `\n` in `hop_whitespace_slow()` and at the file's start
+  (`parse_file()`): anything else that consumes a newline (a string, template, comment, JSX text) is where tsc's
+  scanner wouldn't look either, but a lone `\r` line ending isn't a newline to `hop_whitespace`. `Decl()` positions in
+  symbols don't skip back over a marker (conflictMarkerTrivia1: tsc's full start is before it).
+- Source text containing a NUL character ends the file (`const char*` everywhere): scannerUnexpectedNullCharacter1,
+  scannerStringLiteralWithContainingNullCharacter1.
+- `parse_error_in_literal()`: escape errors skip `parse_error()`'s "an error at an invalid character is TS1127"
+  conversion (a `\` inside a string isn't a token start); TS1490 (binary file) uses it for the file's start.
+- `parse_throw()`'s missing expression (a line break after `throw`) is a zero-width implicit any, and the checker's
+  TS1142 finds the keyword's end as `statement span + strlen("throw")`.
+- `written_name()` (symbol_chain.c) prints `(Missing)` for a symbol whose written name is empty and zero-width
+  (tsc's missing identifier); tttt has no missing-identifier node, bindings use `BINDING_NOOP` (no symbol) where tsc
+  declares `(Missing)` (objectBindingPatternKeywordIdentifiers0x symbols).
+- Object literals and accessors: a missing `}` makes the literal end at its last token by walking back over ASCII
+  whitespace (not comments) in `parse_object_literal`; the TS1005 `'{' expected` of a bodyless accessor/method finds
+  its last character the same way (`class_decl_typecheck`, the `EXPR_OBJECT` typecheck).
 - Error recovery (plan 27): `list_abort_or_skip()` skips a token that starts an element of the current list instead
   of ending it (right while tttt element parsers fail where tsc's commit). The fail cache ignores
   `ParserShared.parsing_context` (a failure under one mask can replay under another; only affects invalid code).
   `parse_list_member()` asks the member-start predicate only when the member had errors (`errors_attempted`). The
-  declarator loop of `parse_variable_statement` sets the VariableDeclarations bit but isn't a real list;
-  `parse_binding_content()` patterns stop at the first bad element. A committed arrow function
+  declarator loop of `parse_variable_statement` uses `list_abort_or_skip()` but checks its terminators itself after
+  each declarator; `parse_binding_content()` patterns stop at the first bad element. A committed arrow function
   (`arrow_function_tristate()` TRUE) whose parameters still fail falls back to a parenthesized expression.
-- `tok_scan_end()` is a second, cheap notion of a token next to `hop_token()` (templates are one backtick, `>`
-  sequences scanned greedily).
+- `tok_scan_end()` is a second, cheap notion of a token next to `hop_token()` (`>` sequences scanned greedily; a
+  template is scanned to its end or its first `${`).
 - `parse_jsx_attributes` approximates tsc's `isInSomeParsingContext` as "inside JSX children always, elsewhere when the
   token could start a statement" (`jsx_children_depth` + a character list); JSX attributes/children should become
   ParsingContext lists.

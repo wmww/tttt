@@ -38,3 +38,17 @@ non-widening undefined, `infer X extends C` scope), `bugs/display.md` (object li
   TS18042/TS18043 (types in JS import/export: jsDeclarationsInterfaces, elidedJSImport1,
   jsxCheckJsxNoTypeArgumentsAllowed); TS7029 (jsFileCompilationBindReachabilityErrors), TS2393 duplicate function
   implementation in JS; ~25 are types-only (`./displaydiff.py -f` on them).
+- **Tagged templates aren't checked as calls** (`EXPR_TEMPLATE` with a tag in ty/expr.c: only a plain function's
+  return type is used). ~25 failing tests: TS2349 on a non-callable tag (templateStringInPropertyName*,
+  taggedTemplateWithConstructableTag01/02), TS2345 argument checks (taggedTemplateStringsWithIncompatibleTypedTags*,
+  taggedTemplatesWithIncompleteTemplateExpressions3/6), overloads TS2769/TS2554 (taggedTemplateStringsWithOverload
+  Resolution*), generic inference (taggedTemplateStringsTypeArgumentInference*), explicit type arguments
+  (taggedTemplatesWithTypeArguments1/2). tsc resolves them with resolveCall like a call whose first argument is the
+  TemplateStringsArray. Worth a plan: it's a checker feature, not a parser one. Found at plan 27 stage 3.
+- `interface void {}` / `type void = I` (interfacesWithPredefinedTypesAsNames, reservedNamesInAliases): tsc gives both
+  TS2304 "Cannot find name 'interface'" and TS2427 at `void`, i.e. its statement-start lookahead refuses the declaration
+  but something still declares it; tttt reports only TS2427. Not understood.
+- TransportStream (a binary file: `G@` then bytes): tsc's TS1128 is at 1:4 with a span over the rest of the file,
+  tttt's at 1:2; binary-file recovery (TS1490 is right). corrupted.ts passes.
+- `string_to_double()` (string_helpers.c) is only used by value.c now and accumulates decimals digit by digit (not
+  correctly rounded for long mantissas); the parser uses strtod on the separator-free digits.

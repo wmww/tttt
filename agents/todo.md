@@ -23,8 +23,10 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 5. ~~**Plan 26**~~ done: stage 3 leftovers, the JS TS2339 gate removed, TS8xxx syntax errors, `@implements`,
    JSDoc modifier tags, typed property declarations, CommonJS aliases. JS tests 408 -> 470, suite 9667 -> 9729,
    webpack 118 -> 116, other corpora unchanged. Left: plan 26 Status and hacks.md "JavaScript".
-6. **Plan 27 stage 3**: lexical diagnostics (`syntaxstats.py` lexical clusters; tsc 5.5's regex literal checks,
-   TS1497-TS1535, are unimplemented entirely: `./unimplemented_codes.sh`).
+6. ~~**Plan 27 stage 3**~~ done: numbers, templates, unicode identifiers and UTF-16 columns, file decoding (UTF-16,
+   binary), escapes, conflict markers, regex validation (`regex_check.c`, a sub-agent's port), and an `other:M` sweep.
+   Parser diffs 402 -> 263 tests, suite 9729 -> 9833, corpora unchanged, tsc-corpus parse 104 -> 109 ms. Left:
+   escaped identifier names (`bugs/escaped_identifiers.md`); tagged templates as calls went to triage.
 7. **Plan 35 stage 2**: the next items of its queue.
 8. **Corpus session**: plan 32 stage C (mixin classes, type-fest 4 -> 0), then zod's 15 (plan 19).
 9. **Suite checker bugs 4**: `bugs/missing_checks.md` buckets; 656 tests where tsc reports errors and tttt none.

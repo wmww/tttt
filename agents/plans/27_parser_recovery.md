@@ -3,6 +3,12 @@
 Written 2026-09-26 (planning session, todo entry 5).
 
 ## Status
+**Stage 3 done (2026-09-28, todo entry 6, one session + one sub-agent for the regex port)**: 402 -> 263 tests whose
+parser diagnostics differ (lexical clusters 92 -> 11; M 78 -> 31 with a sweep of `other:M`), suite 9729 -> 9833,
+corpora unchanged, parse time on the tsc corpus 104 -> 109 ms (after clawing back a 116 ms regression, see
+measurements.md). What's left of stage 3 is escaped identifier *names* (`bugs/escaped_identifiers.md`, with TS1260)
+and NUL characters in source (hacks.md "Parser"); the stage 3 section says what was built. Tagged templates aren't
+checked as calls (triage.md), which is what several template tests still need.
 **Stage 2 mostly done (2026-09-27, todo entry 8, one session with four sub-agents)**: 544 -> 402 tests whose parser
 diagnostics differ (TS: A 175 -> 83, B 36 -> 25, C 58 -> 40, M 87 -> 78); permissive clusters 172 -> 44 (modifiers
 60 -> 21, yield/await 22 -> 7, heritage 22 -> 0, index signatures 24 -> 4, `with` 17 -> 0, private names 17 -> 3,
@@ -168,27 +174,27 @@ has parse errors: `hasParseDiagnostics`, see how `SourceFile.has_parse_errors` i
 - Decorators: TS1436 (`public @dec m()`) done. Left: decorators before expressions (`var F = @dec () => {}`: tsc's
   TS1109 position), enum members, import statements (above).
 - `other:M` parser checks: TS2754/TS1034 (super) done; superWithTypeArgument{,2,3} still get a spurious TS2348 (tsc's
-  `super<T>()` callee is an ExpressionWithTypeArguments and reports nothing else). Left: postfix `++`/`--` results
-  aren't left-hand side expressions (`x++ = 4`, `a++ ++`, `a--.toString()`: TS1005 `';' expected`, 5 tests), TS1136
-  for template literal property names (6), TS1359 reserved words as binding/enum names (`{while}`, `enum void`), TS1433,
-  TS1146, `class void {}`, accessors without bodies (TS1005 `'{' expected`, giant, accessorWithoutBody*).
+  `super<T>()` callee is an ExpressionWithTypeArguments and reports nothing else). Done at the stage 3 session:
+  postfix updates, templates as property names, TS1477, reserved words as bindings/class/enum names, `new <T>F()`,
+  bodyless accessors, `throw` + line break. Left (`./syntaxstats.py --list other:M`, 30): TS1433 (decorators/modifiers
+  on `this` parameters), TS1453 (`resolution-mode` in triple-slash references), TS2819 (`declare module debugger`),
+  TS1146, TS1005 for `function* gen {`, `a = () => { } || a`, `a / finally`, `class C { public constructor; }`.
 
-## Stage 3: lexical diagnostics
-Scanner errors, done in the helpers that read each literal (`parse_string`, `parse_template`, `parse_number`,
-`parse_regex`, `parse_identifier`), at tsc's positions:
-- Identifiers: `\uXXXX` / `\u{...}` escapes anywhere in an identifier (identifier_escape_size exists for JSX), escaped
-  keywords (TS1260 when used as a keyword), non-ASCII ID_Start/ID_Continue (a generated table, like tsc's
-  `unicodeESNextIdentifierStart`), invalid escapes (TS1127).
-- UTF-16 LE/BE files (BOM) decoded to UTF-8 at load (program.c), keeping spans valid (spans point into the decoded
-  buffer; the harness prints the decoded text like tsc does).
-- Strings/templates: extended escapes (TS1198 out of range, TS1199 unterminated, TS1125 hex digit expected, at the
-  digit tsc points at), unterminated templates (TS1160), `"\` at EOF (TS1126), octal escapes (TS1487/TS1489 by target).
-- Numbers: separators (TS6188/TS6189), `1.toString()` / `3a` (TS1351), `0b2` (TS1177), exponent (TS1124 position),
-  bigint forms.
-- Conflict markers (TS1185, tsc skips the other side of the conflict as trivia), binary files (TS1490), `#!` not at
-  the start (TS18026).
-- Regex validation (tsc 5.5+ `scanRegularExpressionWorker`: TS1499-TS1537, flags by target) is its own chunk; ~10
-  tests. Do it last or leave it in triage.
+## Stage 3: lexical diagnostics (done)
+What was built, for whoever touches the scanner-level code next:
+- Numbers: `scan_numeric_literal()` is tsc's scanNumber (separators TS6188/TS6189, TS1351/1352/1353 for what follows,
+  TS1177/1178/1125 for empty `0b`/`0o`/`0x`, TS1124 after the exponent sign, legacy octal TS1121, leading zeros
+  TS1489); the value is strtod of the separator-free digits.
+- Identifiers: `identifier_char_size()` (ASCII table first, then `unicode_identifiers.c`, generated from scanner.ts'
+  tables by `unicode_identifiers.py`, by target; unicode escapes of either). Escaped names stay raw
+  (`bugs/escaped_identifiers.md`). Columns count UTF-16 code units (`utf8_byte_utf16_units()`, `span_col_index`).
+- Files: `text_decode()` at load (program.c and the harness): UTF-16 BOM files decoded, bytes that aren't UTF-8
+  replaced by U+FFFD like node; a U+FFFD at a token start is TS1490 and the rest of the file trivia.
+- Strings/templates: TS1160 unterminated templates, templates commit at `${` (a missing `}` ends them like tsc's
+  missing template tail), TS1487/TS1488 octal and `\8` escapes, TS1126 `\` at EOF (`parse_error_in_literal()`).
+- Trivia: conflict markers TS1185 (after a newline or at the file start), `#!` mid-file TS18026.
+- Regex: `parse_regex()` TS1161 with tsc's end guess; everything else is `regex_check.c` (tsc's
+  checkGrammarRegularExpressionLiteral, a checker grammar check, with `regex_tables.c` from `regex_tables.py`).
 
 ## Stage 4: positions
 Whatever of `other:B/D/E` is left after stage 1: errors at the right token. Sample them; expect mostly per-construct
@@ -224,10 +230,8 @@ Parser items that were in triage.md; fold them into whichever stage they fit.
 - Recovery fidelity where the harness typechecks next to parse errors: parserGreaterThanTokenAmbiguity12-14/17-19
   (`1 >> = 2` parses as an assignment and gets TS2364); arrow functions in `?:` recovery (`(a?) => {} ? b : c`) give
   TS1005 where tsc's tokens may differ; spurious TS2300/TS2304 after bad recovery (`with`, `await`, `yield`, `public`).
-- Lexical (stage 3): TS1161 for an unterminated regex (`parse_regex` just fails); `a` escapes in identifiers
-  (duplicateObjectLiteralProperty); non-ASCII identifiers (`is_identifier_char` is ASCII only: jsxEsprimaFbTestSuite);
-  merge conflict markers (TS1185, conflictMarkerTrivia3); unicode escape string errors
-  (unicodeExtendedEscapesInStrings24/25 TS1002); regex patterns (TS1487 etc., `missing_checks.md`).
+- Lexical (stage 3): done but for escaped identifier names (duplicateObjectLiteralProperty,
+  `bugs/escaped_identifiers.md`) and conflictMarkerTrivia3/4 (a marker inside JSX).
 - JSX long tail (plan 22 left it; `./failstats.py --jsx --syntax`): jsxInvalidEsprimaTestSuite,
   jsxNamespacePrefixInName(React) (`<:a>`, `<a:>`), tsxAttributeInvalidNames (`32data`: TS1351 and a number token), an
   unclosed fragment's TS17014 span (tsc starts it at the previous token's end: tsxFragmentErrors), jsxAndTypeAssertion
