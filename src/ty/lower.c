@@ -1608,39 +1608,63 @@ Ty const* ty_tuple_rest_slice(Checker* me, Ty const* source, u32 start) {
     return ret;
 }
 
-// `const { a } = x.y` after `if (x.y.a)`: an element of a top-level object pattern whose initializer is a reference
-// has the flow type of `x.y.a` there (tsc's getFlowTypeOfDestructuring, through a synthetic access made once)
-static Ty const* destructured_flow_type(Checker* me, Binding const* binding, Ty const* declared) {
+// tsc's getSyntheticElementAccess: `x.y.a` for the `a` of `const { a } = x.y`, and `x.b.c` / `x[0]` for the elements of
+// nested patterns (`const { b: { c } } = x`, `const [d] = x`), made once per binding. Null if the initializer isn't a
+// reference with a flow node. `flow` is set to that node
+static Expr const* synthetic_element_access(Checker* me, Binding const* binding, FlowNode** flow) {
     Binding const* parent = binding->parent;
-    ObjectBindingItem const* item = binding->parent_item;
-    if (parent->parent || parent->tag != BINDING_OBJECT || binding->rest || item->computed_key || !item) return declared;
-    if (item->source.tag != VALUE_STRING || !parent->source || parent->source->tag != LAZY_TYPE_INITIALIZED_BINDING) {
-        return declared;
+    if (!parent || binding->rest) return nullptr;
+    Value key;
+    Span key_span;
+    if (parent->tag == BINDING_OBJECT) {
+        ObjectBindingItem const* item = binding->parent_item;
+        if (!item || item->computed_key) return nullptr;
+        if (item->source.tag != VALUE_STRING && item->source.tag != VALUE_NUMBER) return nullptr;
+        key = item->source;
+        key_span = item->source_span;
+    } else if (parent->tag == BINDING_ARRAY) {
+        key = value_number(binding->parent_index);
+        key_span = binding->element_span;
+    } else {
+        return nullptr;
     }
-    InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
-    Expr const* object = &initialized->value;
-    FlowNode* flow = object->tag == EXPR_IDENTIFIER ? object->identifier.flow :
-        object->tag == EXPR_PROPERTY ? object->property->flow : nullptr;
-    if (!flow) return declared;
-    u64 key[2] = { KEY_SYNTHETIC_ACCESS, (u64)(uintptr_t)binding };
-    Expr const* access = intern_get(&my links, key, 2);
-    if (!access) {
-        PropertyExpr* property = arena_new(&my arena, PropertyExpr);
-        *property = (PropertyExpr){
-            .expr = *object,
-            .prop = expr_literal(item->source_span, item->source),
-            .form = PROPERTY_EXPR_DOT,
-            .flow = flow,
-        };
-        Expr* synthetic = arena_new(&my arena, Expr);
-        *synthetic = (Expr){
-            .tag = EXPR_PROPERTY, .property = property, .inner_span = item->source_span, .outer_span = item->source_span,
-            .lazy_type.tag = LAZY_TYPE_EXPR,
-        };
-        *intern_slot(me, &my links, key, 2) = synthetic;
-        access = synthetic;
+    Expr const* object;
+    if (parent->parent) {
+        object = synthetic_element_access(me, parent, flow);
+        if (!object) return nullptr;
+    } else {
+        if (!parent->source || parent->source->tag != LAZY_TYPE_INITIALIZED_BINDING) return nullptr;
+        InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
+        object = &initialized->value;
+        *flow = object->tag == EXPR_IDENTIFIER ? object->identifier.flow :
+            object->tag == EXPR_PROPERTY ? object->property->flow : nullptr;
+        if (!*flow) return nullptr;
     }
-    return ty_flow_type(me, access, declared, declared, flow);
+    u64 memo_key[2] = { KEY_SYNTHETIC_ACCESS, (u64)(uintptr_t)binding };
+    Expr const* access = intern_get(&my links, memo_key, 2);
+    if (access) return access;
+    PropertyExpr* property = arena_new(&my arena, PropertyExpr);
+    *property = (PropertyExpr){
+        .expr = *object,
+        .prop = expr_literal(key_span, key),
+        .form = key.tag == VALUE_STRING ? PROPERTY_EXPR_DOT : PROPERTY_EXPR_BRACKET,
+        .flow = *flow,
+    };
+    Expr* synthetic = arena_new(&my arena, Expr);
+    *synthetic = (Expr){
+        .tag = EXPR_PROPERTY, .property = property, .inner_span = key_span, .outer_span = key_span,
+        .lazy_type.tag = LAZY_TYPE_EXPR,
+    };
+    *intern_slot(me, &my links, memo_key, 2) = synthetic;
+    return synthetic;
+}
+
+// `const { a } = x.y` after `if (x.y.a)`: an element of a pattern whose initializer is a reference has the flow type of
+// `x.y.a` there (tsc's getFlowTypeOfDestructuring)
+static Ty const* destructured_flow_type(Checker* me, Binding const* binding, Ty const* declared) {
+    FlowNode* flow = nullptr;
+    Expr const* access = synthetic_element_access(me, binding, &flow);
+    return access ? ty_flow_type(me, access, declared, declared, flow) : declared;
 }
 
 
@@ -2070,6 +2094,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         bool has_rest = false;
         for (u32 i = 0; shape && i < shape->arity; i++) has_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
         if (shape && !has_rest && binding->parent_index >= shape->arity) ret = ty_intrinsic(me, TY_UNDEFINED);
+        if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
     } else {
         ObjectBindingItem const* item = binding->parent_item;
         ret = ty_access(me, object, item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));

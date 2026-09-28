@@ -9671,9 +9671,9 @@ const baselines = {
         types: false,
     },
     'destructuringTypeGuardFlow': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringUnspreadableIntoRest': {
         errors: false,
