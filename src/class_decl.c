@@ -1056,6 +1056,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             case CLASS_ITEM_FIELD: {
                 if (i->field.computed_key) class_computed_key_typecheck(i, errs);
                 if (i->field.has_explicit_type) type_typecheck(&i->field.explicit_type, errs);
+                if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY) {
+                    // The initializer has the annotation as its contextual type (like a variable's)
+                    Ty const* contextual = ty_from_node(current_checker, &i->field.explicit_type, (LowerCtx){ .generic = true });
+                    ty_check_expr(current_checker, &i->field.value, contextual->flags & TYF_ANY ? nullptr : contextual);
+                }
                 expr_typecheck(&i->field.value, errs);
                 class_field_check_implicit_any(me, i, errs);
                 if (i->field.has_explicit_type) {

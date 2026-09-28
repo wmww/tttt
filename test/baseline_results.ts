@@ -3946,9 +3946,9 @@ const baselines = {
         types: true,
     },
     'classPropertyErrorOnNameOnly': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classReferencedInContextualParameterWithinItsOwnBaseExpression': {
         errors: true,
@@ -6338,7 +6338,7 @@ const baselines = {
     'contextualTyping14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping15': {
         errors: true,
@@ -11783,7 +11783,7 @@ const baselines = {
     'es6ClassTest5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ClassTest7': {
         errors: true,
@@ -15523,7 +15523,7 @@ const baselines = {
     'getAndSetAsMemberNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'getAndSetNotIdenticalType': {
         errors: true,
@@ -26573,7 +26573,7 @@ const baselines = {
     'reactDefaultPropsInferenceSuccess': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactHOCSpreadprops': {
         errors: true,
@@ -30233,7 +30233,7 @@ const baselines = {
     'templateLiteralsAndDecoratorMetadata': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralsInTypes': {
         errors: true,
@@ -36891,12 +36891,12 @@ const baselines = {
         types: false,
     },
     'privateNamesAssertion(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'privateNamesAssertion(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47251,9 +47251,9 @@ const baselines = {
         types: false,
     },
     'generatedContextualTyping': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'getSetAccessorContextualTyping': {
         errors: false,
@@ -65761,9 +65761,9 @@ const baselines = {
         types: false,
     },
     'readonlyArraysAndTuples2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restTupleElements1': {
         errors: false,
