@@ -4,6 +4,7 @@
 #include "scope.h"
 #include "binding.h"
 #include "expr.h"
+#include "error.h"
 #include <math.h>
 
 // Enums. The type of an enum is the union of the types of its members (with the enum as the union's alias, which is
@@ -184,6 +185,50 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
 
         default:
             return enum_value_unknown;
+    }
+}
+
+// The reference checks of tsc's evaluateEnumMember, for the members an initializer of `member` names directly (the
+// evaluation doesn't go into other members' initializers): itself (TS2565) or one declared after it in the file (TS2651)
+static void check_enum_reference(EnumCase const* member, Symbol const* referenced, Span at, ErrorCtx* errs) {
+    if (!referenced || !(referenced->flags & SYMBOL_ENUM_MEMBER)) return;
+    if (referenced == member->symbol) {
+        error_ctx_error_d(errs, at, 2565, "Property '", referenced->name_span, "' is used before being assigned.");
+    } else if (referenced->name_span.source == member->name.source &&
+        span_start_ptr(referenced->name_span) > span_start_ptr(member->name)
+    ) {
+        error_ctx_error_d(errs, at, 2651, "A member initializer in a enum declaration cannot reference members declared "
+            "after it, including members defined in other enums.");
+    }
+}
+
+void ty_check_enum_initializer_references(Checker* me, EnumCase const* member, Expr const* expr, ErrorCtx* errs) {
+    switch (expr->tag) {
+        case EXPR_UNARY_OP:
+            ty_check_enum_initializer_references(me, member, &expr->unary_op->expr, errs);
+            break;
+        case EXPR_BINARY_OP:
+            ty_check_enum_initializer_references(me, member, &expr->binary_op->left, errs);
+            ty_check_enum_initializer_references(me, member, &expr->binary_op->right, errs);
+            break;
+        case EXPR_TEMPLATE:
+            if (expr->template_->tag) break;
+            for_each (i, vec_expr, &expr->template_->substitutions) ty_check_enum_initializer_references(me, member, i, errs);
+            break;
+        case EXPR_IDENTIFIER:
+            check_enum_reference(member, expr->identifier.target, expr->outer_span, errs);
+            break;
+        case EXPR_PROPERTY: {
+            PropertyExpr const* property = expr->property;
+            Symbol const* enum_decl = entity_symbol(&property->expr);
+            if (!enum_decl || !(enum_decl->flags & SYMBOL_ENUM)) break;
+            if (property->prop.tag != EXPR_LITERAL || property->prop.literal.tag != VALUE_STRING) break;
+            check_enum_reference(member, symbol_get_export(enum_decl, cstr_sv(&property->prop.literal.string)),
+                expr->outer_span, errs);
+            break;
+        }
+        default:
+            break;
     }
 }
 

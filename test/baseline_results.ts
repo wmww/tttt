@@ -11121,7 +11121,7 @@ const baselines = {
         types: true,
     },
     'enumPropertyAccessBeforeInitalisation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13836,7 +13836,7 @@ const baselines = {
         types: true,
     },
     'forwardRefInEnum': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
