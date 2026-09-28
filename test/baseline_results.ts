@@ -6193,7 +6193,7 @@ const baselines = {
     'contextualTupleTypeParameterReadonly': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeAny': {
         errors: true,
@@ -28191,7 +28191,7 @@ const baselines = {
         types: true,
     },
     'signatureCombiningRestParameters2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -63638,7 +63638,7 @@ const baselines = {
     'partiallyAnnotatedFunctionInferenceWithTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'partiallyAnnotatedFunctionWitoutTypeParameter': {
         errors: true,
@@ -65098,7 +65098,7 @@ const baselines = {
     'restTuplesFromContextualTypes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesWithPredefinedTypesAsName': {
         errors: true,
@@ -65746,7 +65746,7 @@ const baselines = {
         types: true,
     },
     'partiallyNamedTuples3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

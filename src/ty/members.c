@@ -2603,6 +2603,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         u32 count = (u32)vec_function_arg_size(&function->args);
         SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
         bool counting_required = true;
+        u32 iife_arg_count = function->is_iife ? ty_iife_effective_arg_count(me, function) : 0;
         for_each (i, vec_function_arg, &function->args) {
             SigParam* param = &params[i_index];
             param->name = checker_atom(me, i->initializer.binding.content_span.sv);
@@ -2612,9 +2613,11 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             param->type = ty_binding_type(me, &i->initializer.binding, ctx);
             if (param->optional || param->rest) counting_required = false;
             // (tsc's isOptionalParameter: an immediately invoked function's parameter past the arguments)
-            if (function->is_iife && !i->initializer.binding.has_explicit_type && i_index >= function->iife_arg_count) {
-                counting_required = false;
-                if (!i->rest) param->optional = true;
+            // (the minimum argument count goes by the arguments as written, getSignatureFromDeclaration; whether it's
+            // optional by the effective ones, tuple spreads expanded)
+            if (function->is_iife && !i->initializer.binding.has_explicit_type) {
+                if (i_index >= function->iife_arg_count) counting_required = false;
+                if (i_index >= iife_arg_count && !i->rest) param->optional = true;
             }
             if (counting_required) sig->min_args++;
         }

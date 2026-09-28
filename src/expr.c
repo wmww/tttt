@@ -1668,6 +1668,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 flow->next_function_is_iife = !callee->function->is_async && !callee->function->is_generator;
                 callee->function->is_iife = true;
                 callee->function->iife_arg_count = (u32)vec_expr_size(&my call->args);
+                callee->function->iife_call = my call;
                 expr_lookup_names(&my call->callable, names, errs);
                 flow->next_function_is_iife = false;
                 break;

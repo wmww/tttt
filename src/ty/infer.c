@@ -142,15 +142,32 @@ Ty const* ty_optional_param_type(Checker* me, Ty const* type) {
 // The parameters of `sig` from `from` on, as the tuple a rest parameter in that position would receive (tsc's
 // getRestTypeAtPosition, less its shortcut for a lone rest parameter)
 Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper) {
-    u32 arity = sig->param_count > from ? sig->param_count - from : 0;
+    u32 count = sig->param_count > from ? sig->param_count - from : 0;
+    // A rest parameter of a tuple type is its elements (tsc's createTupleType normalizing a variadic tuple element)
+    Ty const* rest_tuple = nullptr;
+    if (count && sig->params[sig->param_count - 1].rest) {
+        Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
+        if (ty_is_tuple(rest) && !ty_is_generic_tuple(me, rest)) rest_tuple = rest;
+    }
+    TupleShape const* rest_shape = rest_tuple ? ty_tuple_shape(rest_tuple) : nullptr;
+    u32 arity = rest_shape ? count - 1 + rest_shape->arity : count;
     unsigned char* flags = calloc(arity ? arity : 1, 1);
     Atom const** names = calloc(arity ? arity : 1, sizeof(Atom const*));
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
-    for (u32 j = 0; j < arity; j++) {
+    for (u32 j = 0; j < (rest_shape ? count - 1 : count); j++) {
         SigParam const* param = &sig->params[from + j];
         flags[j] = (param->optional ? TUPLE_ELEMENT_OPTIONAL : 0) | (param->rest ? TUPLE_ELEMENT_REST : 0);
         names[j] = param->name;
         elements[j] = ty_instantiate(me, param->optional ? ty_optional_param_type(me, param->type) : param->type, mapper);
+    }
+    if (rest_shape) {
+        TyList rest_args = ty_reference_args(me, rest_tuple);
+        for (u32 k = 0; k < rest_shape->arity; k++) {
+            u32 j = count - 1 + k;
+            flags[j] = rest_shape->flags[k];
+            names[j] = rest_shape->names ? rest_shape->names[k] : nullptr;
+            elements[j] = rest_args.data[k];
+        }
     }
     TupleShape shape = { .arity = arity, .flags = flags, .names = names };
     Ty const* target = ty_tuple_target(me, &shape);

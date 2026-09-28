@@ -109,6 +109,7 @@ typedef struct FunctionImpl {
     // parameters past the call's argument count are optional
     bool is_iife;
     u32 iife_arg_count;
+    struct CallExpr const* iife_call; // The call it is the callee of, when is_iife
     // Inside a call expression or an annotated declaration's initializer (FlowBuilder.contextual_depth): the types
     // baseline doesn't type its single returned expression syntactically
     bool syntactically_contextual;

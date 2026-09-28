@@ -789,6 +789,26 @@ Signature const* ty_contextual_signature(Checker* me, Ty const* contextual, Func
     return contextual_signature(me, contextual, function, 0);
 }
 
+// The elements of a tuple from `from` on (tsc's getRestTypeAtPosition of a rest tuple parameter): its rest element's
+// array when that's all that's left
+static Ty const* tuple_slice(Checker* me, Ty const* tuple, u32 from) {
+    TupleShape const* shape = ty_tuple_shape(tuple);
+    TyList args = ty_reference_args(me, tuple);
+    u32 arity = shape->arity;
+    if (from >= arity) {
+        bool rest_last = arity && (shape->flags[arity - 1] & TUPLE_ELEMENT_REST);
+        if (rest_last) return args.data[arity - 1];
+        from = arity;
+    }
+    if (from == arity - 1 && (shape->flags[from] & TUPLE_ELEMENT_REST)) return args.data[from];
+    u32 len = arity - from;
+    TupleShape sliced = {
+        .arity = len, .readonly = false, .flags = shape->flags + from, .names = shape->names ? shape->names + from : nullptr,
+    };
+    Ty const* target = ty_tuple_target(me, &sliced);
+    return len ? ty_reference(me, target, (TyList){ .data = args.data + from, .len = len }) : target;
+}
+
 static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index, bool as_rest) {
     for (u32 i = 0; i < sig->param_count; i++) {
         SigParam const* param = &sig->params[i];
@@ -796,8 +816,18 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
             if (i == index && !as_rest) return param->optional ? ty_optional_param_type(me, param->type) : param->type;
             continue;
         }
-        if (index < i) return nullptr;
+        if (index < i) return as_rest ? ty_signature_params_tuple(me, sig, index, nullptr) : nullptr;
         if (as_rest && i == index) return param->type;
+        if (as_rest && ty_is_tuple(param->type) && !ty_is_generic_tuple(me, param->type)) {
+            return tuple_slice(me, param->type, index - i);
+        }
+        // A type variable: `T[0]` where it's by position, `T[number][]` for a rest past it (tsc's tryGetTypeAtPosition /
+        // getRestTypeAtPosition)
+        if (param->type->kind == TY_TYPE_PARAM) {
+            if (as_rest) return ty_array(me, ty_indexed(me, param->type, ty_intrinsic(me, TY_NUMBER)), false);
+            Value value = value_number(index - i);
+            return ty_indexed(me, param->type, ty_literal(me, &value));
+        }
         if (ty_is_tuple(param->type)) {
             Value value = value_number(index - i);
             return ty_access(me, param->type, ty_literal(me, &value));
@@ -993,7 +1023,12 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
         if (param_memo && param_memo->evaluation_started && &i->initializer != evaluating) continue;
         Ty const* type = signature_type_at(me, sig, at, i->rest);
         if (!type) continue;
-        if (i->rest && !ty_is_array(me, type) && !ty_is_tuple(type) && !(type->flags & TYF_TYPE_PARAM)) type = ty_array(me, type, false);
+        // (A rest parameter's contextual type is array-like already when it's the rest parameter's, a union of tuples too)
+        if (i->rest && !ty_is_array(me, type) && !ty_tuple_shape(type) && !(type->flags & TYF_TYPE_PARAM) &&
+            !(type->kind == TY_UNION && !(type->flags & TYF_ANY) && ty_extends_array(me, type))
+        ) {
+            type = ty_array(me, type, false);
+        }
         if (i->initializer.value.tag != EXPR_IMPLICIT_ANY) {
             // An initializer that doesn't fit the contextual type but is wider than it wins (tsc's
             // assignContextualParameterTypes): `(max = 3) => {}` against `(max: 1 | 2) => void` takes a number
@@ -3027,13 +3062,77 @@ static bool is_symbol_call(Checker* me, CallExpr const* call) {
     return global && binder_redirect(my binder, callee->identifier.target) == global;
 }
 
+// An argument of a call as tsc's getEffectiveCallArguments has it: the spread of a tuple is its elements (a rest
+// element being a spread of its array)
+typedef struct EffectiveArg {
+    Expr const* expr; // A written argument, else an element of a spread tuple
+    Ty const* type; // The element's type (the array's, for a rest element)
+    bool spread; // A spread: of `expr` (a spread of something else than a tuple) or of the array `type`
+} EffectiveArg;
+
+// Null if a spread tuple has generic elements: where the arguments go isn't known then
+static EffectiveArg* effective_call_args(Checker* me, CallExpr const* call, u32* count_out) {
+    u32 arg_count = (u32)vec_expr_size(&call->args);
+    u32 cap = arg_count + 8;
+    EffectiveArg* ret = malloc(sizeof(EffectiveArg) * cap);
+    panic_if(!ret, "out of memory");
+    u32 count = 0;
+    for (u32 a = 0; a < arg_count; a++) {
+        Expr const* arg = vec_expr_at(&call->args, a);
+        if (arg->tag != EXPR_SPREAD) {
+            if (count == cap) ret = realloc(ret, sizeof(EffectiveArg) * (cap *= 2));
+            ret[count++] = (EffectiveArg){ .expr = arg };
+            continue;
+        }
+        Ty const* spread = ty_expr_type(me, arg->spread);
+        if (!ty_tuple_shape(spread)) {
+            if (count == cap) ret = realloc(ret, sizeof(EffectiveArg) * (cap *= 2));
+            ret[count++] = (EffectiveArg){ .expr = arg, .type = spread, .spread = true };
+            continue;
+        }
+        TupleShape const* shape = ty_tuple_shape(spread);
+        TyList elements = shape->arity ? ty_reference_args(me, spread) : (TyList){0};
+        for (u32 i = 0; i < shape->arity && i < elements.len; i++) {
+            bool rest = shape->flags[i] & TUPLE_ELEMENT_REST;
+            if (rest && (elements.data[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+                free(ret);
+                return nullptr;
+            }
+            if (count == cap) ret = realloc(ret, sizeof(EffectiveArg) * (cap *= 2));
+            ret[count++] = (EffectiveArg){
+                .type = elements.data[i], // (a rest element's is its array)
+                .spread = rest,
+            };
+        }
+    }
+    *count_out = count;
+    return ret;
+}
+
+// How many arguments an immediately invoked function gets (tsc's getEffectiveCallArguments(iife).length): past them its
+// unannotated parameters are optional
+u32 ty_iife_effective_arg_count(Checker* me, FunctionImpl const* function) {
+    CallExpr const* call = function->iife_call;
+    if (!call) return function->iife_arg_count;
+    bool spread = false;
+    for_each (i, vec_expr, &call->args) spread |= i->tag == EXPR_SPREAD;
+    if (!spread) return function->iife_arg_count;
+    u32 count = 0;
+    EffectiveArg* args = effective_call_args(me, call, &count);
+    if (!args) return function->iife_arg_count;
+    free(args);
+    return count;
+}
+
 // tsc's getContextuallyTypedParameterType of an immediately invoked function expression: its unannotated parameters
-// are the widened types of the arguments, a rest parameter the tuple of those left, a missing argument undefined
-// (widening to any without strictNullChecks) unless the parameter has an initializer
+// are the widened types of the (effective) arguments, a rest parameter the tuple of those left (getSpreadArgumentType),
+// a missing argument undefined (widening to any without strictNullChecks) unless the parameter has an initializer
 static void assign_iife_parameter_types(Checker* me, FunctionImpl const* function, CallExpr const* call) {
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2)) return;
-    u32 arg_count = (u32)vec_expr_size(&call->args);
+    u32 arg_count = 0;
+    EffectiveArg* args = effective_call_args(me, call, &arg_count);
+    if (!args) return;
     u32 index = 0;
     for_each (i, vec_function_arg, &function->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
@@ -3042,27 +3141,52 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
         if (i->initializer.binding.has_explicit_type) continue;
         LazyMemo* param_memo = lazy_type_state_peek((LazyType*)&i->initializer.lazy_type);
         if (param_memo && param_memo->evaluation_started) continue;
-        // (From a spread argument on, what goes where isn't known)
-        bool spread = false;
-        for (u32 a = 0; a < arg_count && a <= at; a++) spread |= vec_expr_at(&call->args, a)->tag == EXPR_SPREAD;
-        if (spread) return;
         Ty const* type = nullptr;
+        // (What a spread of something else than an array-like type gives a parameter isn't done, nor a spread's
+        // element to a parameter that isn't a rest)
+        bool unknown = false;
+        for (u32 a = at; a < arg_count && (i->rest || a == at); a++) {
+            unknown |= args[a].expr && args[a].spread && (!i->rest || !ty_extends_array(me, args[a].type));
+        }
+        if (unknown) continue;
         if (i->rest) {
             u32 arity = arg_count > at ? arg_count - at : 0;
-            for (u32 a = at; a < arg_count; a++) {
-                if (vec_expr_at(&call->args, a)->tag == EXPR_SPREAD) return;
+            if (arg_count && args[arg_count - 1].spread && at >= arg_count - 1) {
+                // Both the parameter and the last argument are a rest: its array (tsc's getMutableArrayOrTupleType,
+                // which keeps a type variable constrained to a mutable array)
+                type = args[arg_count - 1].type;
+                if (ty_is_tuple(type) && ty_tuple_shape(type)->readonly) {
+                    unknown = true; // (TODO: the mutable copy)
+                } else if (!ty_is_tuple(type) && !ty_is_array(me, type) && type->kind != TY_TYPE_PARAM) {
+                    unknown = true;
+                }
+                if (unknown) continue;
+            } else {
+                unsigned char* flags = calloc(arity ? arity : 1, 1);
+                Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
+                for (u32 a = 0; a < arity; a++) {
+                    EffectiveArg const* arg = &args[at + a];
+                    if (arg->spread) {
+                        // (a variadic element when it's a type variable)
+                        elements[a] = arg->type;
+                        flags[a] = TUPLE_ELEMENT_REST;
+                    } else {
+                        elements[a] = ty_widened_literal(me, arg->expr ? ty_expr_type(me, arg->expr) : arg->type);
+                    }
+                }
+                TupleShape shape = { .arity = arity, .flags = flags };
+                Ty const* target = ty_tuple_target(me, &shape);
+                type = arity ? ty_reference(me, target, (TyList){ .data = elements, .len = arity }) : target;
+                free(flags);
+                free(elements);
             }
-            unsigned char* flags = calloc(arity ? arity : 1, 1);
-            Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
-            for (u32 a = 0; a < arity; a++) elements[a] = ty_widened_literal(me, ty_expr_type(me, vec_expr_at(&call->args, at + a)));
-            TupleShape shape = { .arity = arity, .flags = flags };
-            Ty const* target = ty_tuple_target(me, &shape);
-            type = arity ? ty_reference(me, target, (TyList){ .data = elements, .len = arity }) : target;
-            free(flags);
-            free(elements);
         } else if (at < arg_count) {
-            // (then widened like a declaration's type: null is any without strictNullChecks)
-            type = ty_widened_for_declaration(me, ty_expr_type(me, vec_expr_at(&call->args, at)), true);
+            // (then widened like a declaration's type: null is any without strictNullChecks). A spread element is
+            // what it spreads (tsc's checkSyntheticExpression)
+            EffectiveArg const* arg = &args[at];
+            Ty const* arg_type = arg->expr ? ty_expr_type(me, arg->expr) :
+                arg->spread ? ty_reference_args(me, arg->type).data[0] : arg->type;
+            type = ty_widened_for_declaration(me, arg_type, true);
         } else if (i->initializer.value.tag == EXPR_IMPLICIT_ANY) {
             type = ty_intrinsic(me, compiler_options()->strict_null_checks ? TY_UNDEFINED : TY_ANY);
         }
@@ -3071,6 +3195,7 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
         void const** slot = intern_slot(me, &my links, key, 2);
         if (!*slot) *slot = type;
     }
+    free(args);
 }
 
 static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {

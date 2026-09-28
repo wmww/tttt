@@ -1409,6 +1409,7 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
 // The return type of a function: its annotation, else inferred from the `return`s of its body
 bool ty_is_recursive_return(Checker* me, Expr const* returned); // `return f()` in f: not part of f's return type
 Ty const* ty_jsdoc_tag_return_type(Checker* me, FunctionImpl const* function); // members.c
+u32 ty_iife_effective_arg_count(Checker* me, FunctionImpl const* function); // expr.c
 bool ty_function_return_circular(Checker* me, FunctionImpl const* function); // TS7023/TS7024
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
 // Without strictNullChecks: the inferred return type was null or undefined, widened to any (TS7010/TS7011)
