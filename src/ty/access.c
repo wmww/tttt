@@ -175,11 +175,11 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         return include_undefined ? with_undefined(me, info->value) : info->value;
     }
     if (index->flags & TYF_ANY) {
-        // What a string index signature says, if there is one (tsc's getPropertyTypeForIndexType: any is assignable to
-        // string)
+        // What the index signatures say (any is assignable to every key type: the specific ones, else a string one,
+        // tsc's getPropertyTypeForIndexType with getApplicableIndexInfo)
         Ty const* apparent = ty_apparent_type(me, object);
-        IndexInfo const* info = (apparent->flags & TYF_OBJECT) ? ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_STRING)) : nullptr;
-        if (!info || !(info->key->flags & TYF_STRING)) return ty_intrinsic(me, TY_ANY);
+        IndexInfo const* info = (apparent->flags & TYF_OBJECT) ? ty_applicable_index_info(me, apparent, index) : nullptr;
+        if (!info) return ty_intrinsic(me, TY_ANY);
         return include_undefined ? with_undefined(me, info->value) : info->value;
     }
     bool simple = (ty_key_flags(index) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
