@@ -111,6 +111,62 @@ static void apply_compiler_options(ConfigLoad* me, csview dir, JsonValue const* 
     }
 }
 
+// A package's `exports` target for a condition-less or node/require/types/default condition: a string, else the first
+// matching condition's
+static JsonValue const* exports_target(JsonValue const* target) {
+    for (u32 depth = 0; target && target->tag == JSON_OBJECT && depth < 8; depth++) {
+        JsonValue const* next = nullptr;
+        for (isize i = 0; i < target->count && !next; i++) {
+            csview key = cstr_sv(&target->members[i].key);
+            if (csview_equals(key, "node") || csview_equals(key, "require") || csview_equals(key, "types") ||
+                csview_equals(key, "default")
+            ) {
+                next = &target->members[i].value;
+            }
+        }
+        target = next;
+    }
+    return target && target->tag == JSON_STRING ? target : nullptr;
+}
+
+// `"extends": "pkg/sub"` through the package's `exports` (tsc resolves it like a module import: an exact subpath or
+// a `./x/*` pattern). False if the package has no exports or they don't have it
+static bool resolve_extends_exports(ConfigLoad* me, JsonValue const* package_json, csview package_dir, csview subpath, cstr* out) {
+    JsonValue const* exports = json_get_tagged(package_json, "exports", JSON_OBJECT);
+    if (!exports) return false;
+    for (isize i = 0; i < exports->count; i++) {
+        csview key = cstr_sv(&exports->members[i].key);
+        isize star = csview_find_sv(key, c_sv("*"));
+        csview middle = {0};
+        if (star == c_NPOS) {
+            if (!csview_equals_sv(key, subpath)) continue;
+        } else {
+            csview prefix = csview_slice(key, 0, star);
+            csview suffix = csview_slice(key, star + 1, key.size);
+            if (subpath.size < prefix.size + suffix.size ||
+                !csview_equals_sv(csview_slice(subpath, 0, prefix.size), prefix) ||
+                !csview_equals_sv(csview_slice(subpath, subpath.size - suffix.size, subpath.size), suffix)
+            ) {
+                continue;
+            }
+            middle = csview_slice(subpath, prefix.size, subpath.size - suffix.size);
+        }
+        JsonValue const* target = exports_target(&exports->members[i].value);
+        if (!target) return false;
+        csview pattern = cstr_sv(&target->string);
+        isize target_star = csview_find_sv(pattern, c_sv("*"));
+        cstr relative = star != c_NPOS && target_star != c_NPOS ?
+            cstr_d(csview_slice(pattern, 0, target_star), middle, csview_slice(pattern, target_star + 1, pattern.size)) :
+            cstr_from_sv(pattern);
+        *out = path_join(package_dir, cstr_sv(&relative));
+        cstr_drop(&relative);
+        if (fs_is_reg_file(my fs, cstr_sv(out))) return true;
+        cstr_drop(out);
+        return false;
+    }
+    return false;
+}
+
 // What `"extends": "name"` names: a path, or a package (its `tsconfig` field, a file in it, or its tsconfig.json)
 static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) {
     bool is_path = name.size && (name.buf[0] == '/' || name.buf[0] == '.');
@@ -132,8 +188,42 @@ static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) 
         cstr_drop(&base);
         return false;
     }
+    // The package's name and the subpath in it (`@scope/pkg/sub`)
+    isize name_end = csview_find_sv(name, c_sv("/"));
+    if (name_end != c_NPOS && name.buf[0] == '@') {
+        isize second = csview_find_sv(csview_slice(name, name_end + 1, name.size), c_sv("/"));
+        name_end = second == c_NPOS ? c_NPOS : name_end + 1 + second;
+    }
+    csview package_name = name_end == c_NPOS ? name : csview_slice(name, 0, name_end);
+    cstr subpath = name_end == c_NPOS ? cstr_lit(".") : cstr_d(".", csview_slice(name, name_end, name.size));
     cstr at = cstr_from_sv(dir);
     while (true) {
+        // Through the package's exports first
+        cstr package_dir = cstr_d(at, "/node_modules/", package_name);
+        cstr exports_json_path = cstr_d(package_dir, "/package.json");
+        bool exported = false;
+        if (fs_is_reg_file(my fs, cstr_sv(&exports_json_path))) {
+            cstr text = cstr_null;
+            bool readable = true;
+            try (fs_read_file(my fs, cstr_sv(&exports_json_path), &text)) if_err (e) {
+                ignore e;
+                current_error_destroy();
+                readable = false;
+            }
+            JsonValue json = {0};
+            if (readable && json_parse(cstr_sv(&text), &json)) {
+                exported = resolve_extends_exports(me, &json, cstr_sv(&package_dir), cstr_sv(&subpath), out);
+            }
+            json_drop(&json);
+            if (readable) cstr_drop(&text);
+        }
+        cstr_drop(&exports_json_path);
+        cstr_drop(&package_dir);
+        if (exported) {
+            cstr_drop(&at);
+            cstr_drop(&subpath);
+            return true;
+        }
         cstr package = cstr_d(at, "/node_modules/", name);
         const char* const suffixes[] = { "", ".json", "/tsconfig.json" };
         for (isize i = 0; i < (isize)c_arraylen(suffixes); i++) {
@@ -141,6 +231,7 @@ static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) 
             if (fs_is_reg_file(my fs, cstr_sv(&candidate))) {
                 cstr_drop(&package);
                 cstr_drop(&at);
+                cstr_drop(&subpath);
                 *out = candidate;
                 return true;
             }
@@ -172,6 +263,7 @@ static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) 
         cstr_drop(&package);
         if (found) {
             cstr_drop(&at);
+            cstr_drop(&subpath);
             return true;
         }
         if (cstr_size(&at) <= 1) break;
@@ -179,6 +271,7 @@ static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) 
         cstr_take(&at, parent);
     }
     cstr_drop(&at);
+    cstr_drop(&subpath);
     return false;
 }
 
