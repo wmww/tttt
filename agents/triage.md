@@ -56,4 +56,8 @@ duplicated webpack), hacks.md (`string_to_double`).
   gives 37 diagnostics with `--checkers 1` and 30 with 4 (the default, what `./realworld.py` reports), 11 differing:
   IdleFileCachePlugin.js 157/158/208/220 (TS2322, TS18048) and PackFileCacheStrategy.js:163 only with 1 checker,
   cleverMerge.js:355 only with 4. An evaluation-order dependence in JS checking (webpack went 107 -> 30 in entries 6-7:
-  bisect those commits with checkerdiff first). tsc reports none of them, so K=1 is the worse one.
+  bisect those commits with checkerdiff first). tsc reports none of them, so K=1 is the worse one. The main one:
+  `/** @type {ReturnType<typeof setTimeout> | undefined} */ let idleTimer; idleTimer = setTimeout(f, 0)` says
+  `Type 'number' is not assignable to type 'Timeout'` at K=1 only: lib.dom's and @types/node's merged `setTimeout`
+  overloads (their order, or which one `ReturnType` / the call picks) depend on what was checked before. Reproduce
+  with `./release/tttt -q --keep-going --all-errors --checkers 1 -p thirdparty/corpora/webpack`.
