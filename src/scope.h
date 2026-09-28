@@ -452,6 +452,8 @@ typedef struct Binder {
     struct PendingNotFound* pending_not_found; // malloc'd
     u32 pending_not_found_count;
     u32 pending_not_found_cap;
+    // Where the errors of what is resolved but never checked go (binder_discarded_errs()), owned
+    ErrorCtx* discarded_errs;
     // Globals JavaScript expandos of another file declared or added to (`Outer.Inner = v` where the file doesn't
     // declare Outer), for binder_link_global_expandos()
     Symbol** global_expandos; // malloc'd
@@ -460,6 +462,9 @@ typedef struct Binder {
 } Binder;
 
 Binder* binder_new(ErrorCtx* errs);
+// An ErrorCtx that lives as long as the binder and whose errors nobody reports: names resolved only for the
+// baselines (a static block's decorators)
+ErrorCtx* binder_discarded_errs(Binder* me);
 void binder_destroy(Binder* me);
 // Makes the globals of `parent` (which must outlive me and not change anymore) visible, without copying them
 void binder_set_parent(Binder* me, Binder const* parent);

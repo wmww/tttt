@@ -7288,9 +7288,8 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
         parsed_commas = true;
         hop_whitespace(&p);
 
-        if (!expect_expr(&p, expr_ctx_null, &expr)) {
-            return parse_success(&p);
-        }
+        // (A missing operand is still the right side, like tsc's missing identifier: `(a, )` checks `a`)
+        bool missing = !expect_expr(&p, expr_ctx_null, &expr);
 
         expr_mark_binary_operand(left_and_ret);
         expr_mark_binary_operand(&expr);
@@ -7302,6 +7301,7 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
                 .right = expr,
             })
         );
+        if (missing) return parse_success(&p);
     }
     return parsed_commas ? parse_success(&p) : parse_fail(&p);
 }

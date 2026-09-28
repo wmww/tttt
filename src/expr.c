@@ -2322,6 +2322,7 @@ static bool is_side_effect_free(Expr const* me) {
         case EXPR_OBJECT:
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT:
+        case EXPR_IMPLICIT_ANY: // A missing operand, tsc's missing identifier
             return true;
         case EXPR_TERNARY:
             return is_side_effect_free(&my ternary->yes) && is_side_effect_free(&my ternary->no);

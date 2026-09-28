@@ -56838,12 +56838,12 @@ const baselines = {
     'TypeArgumentList1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserX_TypeArgumentList1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_VariableList1': {
         errors: true,

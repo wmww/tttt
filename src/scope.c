@@ -113,12 +113,21 @@ Binder* binder_new(ErrorCtx* errs) {
     return me;
 }
 
+ErrorCtx* binder_discarded_errs(Binder* me) {
+    if (!my discarded_errs) my discarded_errs = c_new(ErrorCtx, error_ctx_init());
+    return my discarded_errs;
+}
+
 void binder_destroy(Binder* me) {
     if (!me) return;
     free(my symbols);
     free(my pattern_modules);
     free(my augmentations);
     free(my pending_not_found);
+    if (my discarded_errs) {
+        error_ctx_drop(my discarded_errs);
+        free(my discarded_errs);
+    }
     free(my global_expandos);
     free(my overlays.keys);
     free(my overlays.values);
