@@ -27,7 +27,9 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    binary), escapes, conflict markers, regex validation (`regex_check.c`, a sub-agent's port), and an `other:M` sweep.
    Parser diffs 402 -> 263 tests, suite 9729 -> 9833, corpora unchanged, tsc-corpus parse 104 -> 109 ms. Left:
    escaped identifier names (`bugs/escaped_identifiers.md`); tagged templates as calls went to triage.
-7. **Plan 35 stage 2**: the next items of its queue.
+7. ~~**Plan 35 stage 2**~~ done: stage 1's queue 1-9 (constructor-typed fields, tagged templates as calls, ...)
+   plus heritage names, contextually typed field initializers (a spurious TS7006), non-strict null subtyping. Suite
+   9833 -> 9951, corpora unchanged. The new queue (non-widening null/undefined first) is in plan 35.
 8. **Corpus session**: plan 32 stage C (mixin classes, type-fest 4 -> 0), then zod's 15 (plan 19).
 9. **Suite checker bugs 4**: `bugs/missing_checks.md` buckets; 656 tests where tsc reports errors and tttt none.
    If time is left, plan 34's queue (error text, 311 tests).

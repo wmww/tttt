@@ -39,40 +39,44 @@ type` names show the declared type; `import X = N` of an uninstantiated N is err
 the arguments. we-any 127 -> 93, tsc-any 102 -> 32, line-extra 118 -> 20 (TS tests fixed alone); `other` (393 + 39)
 barely moved: it is many small mechanisms.
 
-## Queue
-TS tests by the kind of their first differing line after stage 1 (`./displaydiff.py --fine`): underlines/order 105
-(display, not this plan: 45 of them are the `import()` +6 underline, `bugs/display.md`), **we-any/declaration 95**,
-line-missing 73, shape-other/declaration 58, union-order 57 (display), signature-differs/declaration 48,
-object-differs/declaration 46, union-differs/declaration 44. Mechanisms seen in them, roughly by size:
-1. **Class property types inferred from the constructor / static block** under noImplicitAny (`x;` or `accessor x;`
-   assigned in the constructor: tsc 4.0's getWidenedTypeForAssignmentDeclaration for class members):
-   classPropInitializationInferenceWithElementAccess, classAttributeInferenceTemplate, classStaticBlockUseBeforeDef1
-   (2 configs), classStaticBlockUseBeforeDef4, controlFlowAutoAccessor1, classAccessorInitializationInference*. A real
-   feature, ~7 tests; check it on the corpora (a wrong `any` there hides errors).
-2. **Tagged template calls** resolve like calls (overloads, return type): taggedTemplateStringsWithOverloadResolution2
-   (+ES6), taggedTemplateStringsWithManyCallAndMemberExpressions (+ES6), importHelpers, taggedTemplateWithoutDeclaredHelper
-   (`TemplateStringsArray`), parenthesizedContexualTyping3. ~7 tests.
-3. **Out-of-range tuple index / empty-object index** is `undefined` (TS2493 recovery): bestCommonTypeOfTuple(2),
-   castingTuple, tupleLengthCheck, noImplicitAnyIndexing(Suppressed), augmentedTypeBracketAccessIndexSignature. ~7.
-4. `export as namespace X` of a module whose X is not a value is errorType (`React : error`): jsxNamespaceImplicit*
-   (3), reactTransitiveImportHasValidDeclaration, verbatimModuleSyntaxDeclarationFile. ~5.
-5. `new C<T>()` with too few/many type arguments still instantiates (`D<number, unknown>`, `C<number>`):
-   constructorInvocationWithTooFewTypeArgs, instantiateGenericClassWithWrongNumberOfTypeArguments,
-   callGenericFunctionWithIncorrectNumberOfTypeArguments. ~3.
-6. Default import of a CommonJS/`export =` module under allowSyntheticDefaultImports/esModuleInterop (`typeof
-   Namespace`): allowSyntheticDefaultImports1/2, esModuleInteropEnablesSyntheticDefaultImports,
-   nodeNextImportModeImplicitIndexResolution2; `import type * as types` (implementsClause, extendsClause). ~6.
-7. Generators: IIFE generators' yields (generatorTypeCheck27/29/30), `Generator<never...>` vs number
-   (generatorTypeCheck58), IterableIterator's TNext (generatorReturnTypeFallback.4).
-8. Numeric property names: `1.1` prints `"1.1"` (objectTypeWithNumericProperty) and the reverse (numericIndexingResults);
-   duplicate numeric index signatures kept (multipleNumericIndexers); octal keys (octalIntegerLiteral(ES6)).
-9. Duplicate overloads/members merged into one signature list where tsc keeps the first (duplicatePropertyNames,
-   overloadsWithinClasses).
-10. Union/keyof origins and alias names lost (keyofIntersection, doubleUnderscoreMappedTypes, typeInferenceLiteralUnion):
-   plan 21 decided "not now" (display.md).
-line-missing (73) is mostly parser recovery spans (`>1 + : any` vs `>1 +      : any`: tttt's span of a recovered
-expression keeps trailing whitespace) — plan 27's territory; a quick look at how recovered binary expressions end
-their span may fix a dozen.
+## Stage 2 (done, 2026-09-28): suite 9833 -> 9951
+The queue below from stage 1, worked top to bottom, and what the buckets showed on the way:
+- Done: (1) TS fields typed by the constructor / static blocks' flow (`field_type_from_assignments()`); (2) tagged
+  templates resolve as calls (`CallInfo.tagged_template`, see hacks.md), which exposed two general bugs: non-strict
+  null/undefined weren't subtypes of anything (relate.c `is_simple_related`) and inferred type arguments didn't widen
+  null/undefined; (3) past-the-end tuple elements are undefined; (4) `export as namespace` of no value is errorType;
+  (5) wrong type-argument counts instantiate tsc's longest candidate; (6) synthetic default imports of declaration
+  files, node_modules files get their package.json format; (7) IIFE generators yield into the call's context;
+  (8) property names print like tsc (`1.1` unquoted, `"1"` quoted when string-named); (9) `m() {} m(x) {}` has one
+  signature. Beyond the queue: heritage names are property accesses to the type writer (+21), `(null)` has a line,
+  signature parameter initializers are walked, namespaces with `;` are instantiated, `catch {}` blocks are walked,
+  **class field initializers are contextually typed by their annotation** (a real bug: spurious TS7006 on
+  `f: (a: number) => number = (a) => a`), missing destructured properties with defaults are undefined.
+- we-any/declaration (first differing line) 95 -> 50; line-missing 73 -> 72 (the heritage/null/catch fixes moved tests
+  into other buckets as much as out); `./displaydiff.py` fixed-by-one: other 383 + 54, we-any 65 + 41.
+
+## Queue (after stage 2)
+TS tests by the kind of their first differing line: underlines/order 106 (display), line-missing 72, shape-other/
+declaration 59, union-order 56 (display), we-any/declaration 50, signature-differs/declaration 50, union-differs/
+declaration 44, our-typeof 42, object-differs/declaration 38. Mechanisms seen, roughly by size:
+1. **Non-widening null/undefined** (~25 non-strict tests, 11 fixed by it alone: bestCommonTypeOfTuple(2),
+   tupleLengthCheck, castingTuple, indexerWithTuple, noImplicitAnyIndexing...): tsc has undefinedWideningType /
+   nullWideningType for the `undefined`/`null` expressions, `void`, `[]`; only those widen to any. tttt widens every
+   null/undefined (`widen_nullable()` HACK, and now inference too). Needs two more intrinsics (non-strict only,
+   printing the same) that `widen_nullable` alone widens, union/intersection construction treating both as nullable,
+   and the `== ty_intrinsic(TY_UNDEFINED)` comparisons (~47 in ty/) checked. Medium, risky; measure first.
+2. **Decorators contextually typed as calls** (esDecorators-contextualTypes, legacyDecorators-contextualTypes: `t`,
+   `c : ClassDecoratorContext<...>`): a decorator expression is checked like a call with the decorated thing's
+   arguments (tsc's getEffectiveCallArguments for Decorator). A feature, ~2 big tests plus whatever the corpora use.
+3. **BigInt literals are doubles** (`Value.bigint`): parseBigInt, localesObjectArgument print rounded values.
+4. **Dynamic import of CommonJS under node16+** is `{ default: typeof import(...) }` (nodeModulesDeclarationEmit
+   DynamicImportWithPackageExports, nodeModulesSynchronousCallErrors, esModuleIntersectionCrash).
+5. JS `Outer.Inner` vs `Inner` naming (typeFromPropertyAssignment13/14/16), `Array<T>` written in JSDoc prints `T[]`.
+6. Parser-side line-missing: `interface\nI` ASI (asiPreventsParsingAsInterface01-04), `export * from Aaa` in a namespace,
+   `-(3` recovery spans, `for ()` missing expressions.
+7. Generators: TNext from the yields' contextual types (generatorReturnTypeFallback.4, needs a parent-context lookup),
+   a `yield` in a class static initializer still counts for the generator (generatorTypeCheck58).
+8. From stage 1, not done: union/keyof origins and alias names (display.md says not now).
 
 ## Validation
 `./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an

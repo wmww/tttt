@@ -14,18 +14,19 @@ there than a clean run.
 **9666 / 13540** full pass (errors 11180, symbols 12356, types 11049); 9667 after the 09-28 perf session, **9729**
 after the 09-28 plan 26 session (errors 11242, symbols 12407, types 11090; errors component: 2298 failing, tsc
 reports errors and tttt nothing 578), **9833** after the plan 27 stage 3 session (errors 11365, symbols 12453, types
-11151; errors component 2175 failing; 252 tests with a spurious TS1xxx), whose other numbers below weren't
-re-measured unless marked. A suite run takes ~23 s
+11151; errors component 2175 failing; 252 tests with a spurious TS1xxx), **9951** after the plan 35 stage 2
+session (errors 11395, symbols 12496, types 11261; errors component 2145 failing, tsc reports errors and tttt
+nothing 541), whose other numbers below weren't re-measured unless marked. A suite run takes ~23 s
 (was 50: relationComplexityError alone took 27). `./failstats.py`: errors component fails in
 2360 tests: tsc reports errors and tttt nothing 654, both missing and spurious 585, only missing 389, **same
 codes+positions, other text 311**, tttt errors where tsc has none 254, only spurious 137, column differs 30. 323 tests
 have a spurious TS1xxx (42 of them expect no errors). Checker log_error output: 27 lines, all in one test (invalid
 spans of the silent call resolutions). The lines below the displaydiff ones are from the triage before (9409).
-- `./displaydiff.py`, tests fixed by one kind (TS, JS): other 393 + 39, we-any 93 + 41, underlines/order only
-  105 + 21, union-order 47 + 3, tsc-any 32 + 2, line-missing 28 + 4, line-extra 20 + 0.
-- `./displaydiff.py --fine`, TS tests by the kind of their first differing line: underlines/order 105,
-  we-any/declaration 95, line-missing 73, shape-other/declaration 58, union-order 57, signature-differs/declaration
-  48, object-differs/declaration 46, union-differs/declaration 44, our-typeof 42 (plan 35's queue).
+- `./displaydiff.py` (2026-09-28, plan 35 stage 2), tests fixed by one kind (TS, JS): other 383 + 54, underlines/
+  order only 106 + 22, we-any 65 + 41, union-order 47 + 3, tsc-any 33 + 5, line-missing 23 + 4.
+- `./displaydiff.py --fine` (same), TS tests by the kind of their first differing line: underlines/order 106,
+  line-missing 72, shape-other/declaration 59, union-order 56, we-any/declaration 50, signature-differs/declaration
+  50, union-differs/declaration 44, our-typeof 42, object-differs/declaration 38 (plan 35's queue).
 - `./errtextdiff.py --coarse` (311 tests): fixed by one part: chain 95, header 78, underline 60, related 46, outside
   diagnostics 15.
 - `./jsstats.py` (2026-09-28, plan 26 session, 7236285): 1049 JS tests, **470 pass**. Failing by category (only /
@@ -41,7 +42,7 @@ Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, 
 **4** (mixin classes, plan 32 stage C), webpack **116** (JSDoc, plan 26; 130 -> 118 at the perf session: union
 inference with circularity; 118 -> 116 at the plan 26 session, which also turned on TS2339 in JS: 3 of those left),
 zod **13** (plan 19; its 2 TS2589s went with the inference depth fix). Re-checked 2026-09-28 (plan 27 stage 3):
-unchanged, no regex or lexical diagnostics anywhere.
+unchanged, no regex or lexical diagnostics anywhere. Re-checked after plan 35 stage 2: unchanged.
 
 ## Perf (2026-09-28, perf session, `./bench.sh --runs 2`)
 Best wall / peak RSS. tttt now re-executes itself with glibc's malloc on transparent huge pages and madvises its
