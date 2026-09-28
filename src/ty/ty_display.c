@@ -1644,7 +1644,8 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
                 }
             }
         }
-        bool parens = is_function_like(me, d, t) || (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION));
+        bool parens = is_function_like(me, d, t) || (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION ||
+            (t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_INTERSECTION)));
         display_parenthesized_if(me, d, t, parens);
     }
     if (nullable & TYF_NULL) {
@@ -1856,6 +1857,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         }   break;
 
         case TY_UNION:
+            // What it was made from (tsc's typeToTypeNodeHelper prints a union's origin)
+            if (ty->composite.origin) {
+                Ty const* origin = ty->composite.origin;
+                if (origin->kind == TY_UNION) display_union(me, d, origin);
+                else ty_display(me, d, origin);
+                break;
+            }
             display_union(me, d, ty);
             break;
 

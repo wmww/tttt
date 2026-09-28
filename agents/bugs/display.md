@@ -66,11 +66,6 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   bundledDtsLateExportRenaming, declarationEmitTopLevelNodeFromCrossFile2, declarationsForInferredTypeFromOtherFile.
 - `export default class {}` prints `typeof default` from other files where tsc names the importing alias (`import {
   default as b }` -> `typeof b`; importHelpersWithImportOrExportDefault, 10 configurations): getNameOfSymbolAsWritten.
-- **Union/keyof origins** (~25 tests: stringLiteralTypesInUnionTypes01, partiallyDiscriminantedUnions,
-  flowControlTypeGuardThenSwitch, intlNumberFormatES2023, reactTagNameComponentWithPropsNoOOM(2),
-  partialOfLargeAPIIsAbleToBeWorkedWith, privateNameStaticMethodAsync, doNotInferUnrelatedTypes, trackedSymbolsNoCrash,
-  spreadBooleanRespectsFreshness, literalFreshnessPropagationOnNarrowing). **Decided (plan 21): not now**; a type-core
-  feature (unions carry an origin through narrowing and filtering, keyof keeps its operand).
 
 ## Underlines (node reuse)
 - `() => 'foo' as const`: tsc's underline reuses the `"foo"` (`^^^^^^     `), tttt underlines the whole return type.

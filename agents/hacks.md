@@ -460,10 +460,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   `X | undefined` where tsc holds `X | missing`. `exact_missing_flag()` (members.c HACK) compensates: an optional mapped
   property whose modifiers property is optional strips undefined (tsc's non-missing view drops only the missing), even
   an undefined the property declares.
-- Relation budget (`recursive_related`, `check_related`): tsc's relationCount, but without union origins tttt spends
-  it where tsc takes a shortcut: `T1 & T2` (distributed into a 20k-member union) against `T1` is true at once in tsc
-  (the union's origin is an intersection containing T1) and TS2859 in tttt (relationComplexityError's f1). Union
-  origins are the fix; so far only that test is known to reach the budget.
 - Relation error reporting (`relate.c`, plan 34): `flush_incompatible()` reads a property's name back out of its
   pending "Types of property 'NAME' are incompatible." message (fixed prefix length) instead of storing it. tsc's
   `headMessage` is approximated by `RelationState.at_top` (the first `is_related_to()` call): a suppressed top-level
@@ -476,7 +472,12 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   ${number}`) isn't done. `mentions_type_variables` treats a substitution as "unsure" (precision sent react-hook-form
   into relation overflows, bugs/type_core.md).
 - `renames` in `lower` (TYPE_IDENTIFIER): whether a generic alias instance keeps the alias name is approximated
-  syntactically. Unions have no tsc `origin` (`P & ("a" | "b")` prints distributed).
+  syntactically.
+- Union origins (`Ty.composite.origin`, plan 37 B): not instantiated (instantiating a union with an origin makes a
+  plain union), and `ty_map`-style helpers rebuild unions without them (tsc's mapType keeps `IteratorResult<...>`
+  through `await`/narrowing); stage 2 in plan 37. `dedupe_unions` (checker.c) treats two unions of the same members
+  as one in an intersection even when their origins differ, where tsc distributes (display only, saves a quadratic
+  cross product on `keyof (A | B)`).
 - `ty_realias`: a renamed object type is a second `Ty` with the same target + mapper (members resolved twice); renamed
   deferred types are copies interned by (type, alias, args), related to their twin structurally. tsc's "local alias"
   exception isn't applied.

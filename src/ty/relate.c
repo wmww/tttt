@@ -3159,6 +3159,18 @@ static Ternary structured_related_members(
 
     // Unions and intersections
     if (source->kind == TY_UNION) {
+        if (target->kind == TY_UNION) {
+            // tsc's unionOrIntersectionRelatedTo: `A & B` (distributed) is related to the named union A, and a named
+            // union to a union of unions it is written in
+            Ty const* so = source->composite.origin;
+            if (so && so->kind == TY_INTERSECTION && target->alias) {
+                for (u32 i = 0; i < so->composite.types.len; i++) if (so->composite.types.data[i] == target) return TERNARY_TRUE;
+            }
+            Ty const* to = target->composite.origin;
+            if (to && to->kind == TY_UNION && source->alias) {
+                for (u32 i = 0; i < to->composite.types.len; i++) if (to->composite.types.data[i] == source) return TERNARY_TRUE;
+            }
+        }
         if (comparable) {
             if (union_has_member(source, target)) return TERNARY_TRUE; // (tsc's someTypeRelatedToType)
             return some_related(me, st, source->composite.types, target);
@@ -4261,6 +4273,13 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
+    // Unions of the same members (differing in alias or origin only)
+    if (source->kind == TY_UNION && target->kind == TY_UNION &&
+        source->composite.types.len == target->composite.types.len &&
+        !memcmp(source->composite.types.data, target->composite.types.data,
+            sizeof(Ty const*) * source->composite.types.len)) {
+        return TERNARY_TRUE;
+    }
     // A class or interface that adds nothing to its one base is that base (getNormalizedType)
     if (source->kind == TY_DECLARED || source->kind == TY_REFERENCE) {
         Ty const* base;

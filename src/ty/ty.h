@@ -325,6 +325,9 @@ struct Ty {
         struct {
             TyList types; // sorted by id, no duplicates
             TyObjectState* state; // Intersections: their signatures and index infos (see ty_members())
+            // Unions: what it was written/built as, for display (tsc's UnionType.origin): a union of named unions and
+            // other members, an intersection it was distributed from, or a `keyof` (TY_KEYOF). Not interned. Null if none
+            Ty const* origin;
         } composite;
         struct {
             Ty const* operand;

@@ -34,7 +34,7 @@ length: n}, (_, i) => ...)` must stay clean. Measured gain +1: revisit when a co
 types, not now**: arrays/tuples are reverse mapped already (bugs/type_core.md's note was stale, fixed), only
 reverseMappedTypeRecursiveInference plausibly needs laziness.
 
-**Landed**: A stage 1 (+48) and F (+1) in todo entry 4.
+**Landed**: A stage 1 (+48) and F (+1) in todo entry 4, B stage 1 (+37) in todo entry 5.
 
 ## A. Non-widening null/undefined (landed at stage 1; stage 2 open)
 tsc, non-strict only: `undefinedWideningType`/`nullWideningType` print as `undefined`/`null`, carry
@@ -58,25 +58,18 @@ variables (`for_each_loop_statement_evaluate_var_type`), the object of a called/
   Literal1: spread copies lose `literal_own`), `extends null` vs nullWideningType (classExtendsNull3), `export {
   undefined }` (reExportUndefined1), IIFE missing arguments.
 
-## B. Union and keyof origins (`union_origins.patch`, `union_origins_gained.txt`)
-Prototype: `Ty.composite.origin` (a non-interned `Ty`: union of named unions + members, an intersection, or a
-`keyof`); `intern_composite_origin` keys on it (tsc: same members, different origins = different types);
-`union_with_origin` = old `ty_union` + tsc's named-union handling (`add_named_unions`: `A | <A's members>` is `A`);
-`ty_union_filtered`/`filtered_origin` keep the origin through narrowing (`Animal | undefined` -> `Animal`); `ty_keyof`
-keeps `keyof X` for aliased/class/interface/reference operands; `intersection()` does tsc's flat
-getCrossProductIntersections with the intersection as origin; relate.c `structured_related_members` gets tsc's two
-origin shortcuts; `ty_display.c` prints origins. Also changed `malloc` -> `calloc` in `ty_non_nullable`: check why.
-- **Stage 1 (1 session)**: land it; **recover valibot's +3%**: skip the named-union pass when no input union has an
-  alias/origin, compact the origin in the interning key (target: valibot/zod within +1%; the prototype's getenv
-  switches in hot paths measured +6%, keep them out); grep for union pointer comparisons meaning "same member set"
-  (caches, "did narrowing change it"); run `./threadcheck.sh` and `./checkerdiff.py` (not done by the prototype).
-  Delete hacks.md "Relation budget" (relationComplexityError's f1 is gone; f2 reports TS2859 once, tsc twice) and the
-  "Unions have no tsc `origin`" sentence, bugs/display.md "Union/keyof origins".
+## B. Union and keyof origins (landed at stage 1; stage 2 open)
+Landed as the prototype described (`Ty.composite.origin`, documentation.md "Union origins"), +37 tests, 0 components
+lost, corpora and threadcheck/checkerdiff unchanged. The perf cost (valibot +3% in the prototype) came from two
+places, fixed: `U & U` was cheap in the old first-union distribution (it replaced every occurrence of the union at
+once) but a |U|^2 cross product in tsc's flat one, and `keyof (A | B)` intersects `keyof A & keyof B`, which have
+different origins now even with the same keys. `dedupe_unions()` drops a union whose members another union in the
+intersection has (a display-only departure from tsc, hacks.md). Left: valibot +0.7%, zod +0.2% instructions.
 - **Stage 2 (optional, ~5-15 tests, a guess)**: origins semantically: instantiate the origin in `instantiate_inner`'s
   union case (re-intersect for intersection origins: reverseMappedTupleContext, keyofIntersection,
   checkJsxChildrenProperty3), map over origin members in the union-mapping helper (tsc's mapType: `await`/narrowing keep
   `IteratorResult<number, void>`: privateNameMethodAsync), `keyof (A & B)` per getIndexType. Remaining list:
-  `union_origins_remaining.txt`. Not origins (triage): type-predicate narrowing should return the candidate unchanged
+  `37_prototypes/union_origins_remaining.txt`. Not origins (triage): type-predicate narrowing should return the candidate unchanged
   (tsc's getNarrowedType: flowControlTypeGuardThenSwitch, partiallyDiscriminantedUnions, stringLiteralCheckedInIf02).
 
 ## C. Decorators checked as calls (`decorators.patch`, `decorators_gained.txt`)

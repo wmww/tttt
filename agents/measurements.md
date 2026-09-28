@@ -39,6 +39,8 @@ Instructions (`perf stat -e instructions:u`, stable like callgrind, much faster)
 tsc 4.67 G, type-fest 3.30, valibot 5.06, react 1.91, nest 1.02, webpack 3.25, zod **4.26** (8.54 at the corpus
 session; bisected to 62d8c89, variance annotations taken as given: zod's `out` types were measured unreliable before,
 forcing structural comparisons; 932k -> 352k types, arena 975 -> 412 MB). Current walls: zod 0.73 s / 665 MB.
+After plan 37 B (union origins, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`): valibot 5.06 -> 5.09 G (+0.7%), zod
+4.28 -> 4.29 (+0.2%); valibot makes 0.6% more types (unions with an origin are distinct from their plain twins).
 
 ## Perf (2026-09-28, plan 36 stage 3, `./bench.sh`, tttt at its new defaults: 4 checkers on 4 threads)
 Best wall / peak RSS. **The machine is 2 physical cores x 2 SMT threads** (KVM, `lscpu`): 4 busy threads run ~55%

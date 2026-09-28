@@ -495,10 +495,33 @@ static void ty_buf_add_flattened(TyBuf* me, TyKind kind, Ty const* const* types,
     }
 }
 
-static Ty const* intern_composite(
-    Checker* me, TyKind kind, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args
+// What a union is built as (Ty.composite.origin) before it is interned: a union or intersection of `types`, or
+// (TY_KEYOF) `keyof types[0]`. The origin Ty is only made when the union is new
+typedef struct {
+    TyKind kind;
+    Ty const* const* types;
+    u32 len;
+} OriginSpec;
+
+static Ty const* make_origin(Checker* me, OriginSpec const* spec) {
+    Ty* ret = arena_new(&my arena, Ty);
+    ret->kind = spec->kind;
+    if (spec->kind == TY_KEYOF) {
+        ret->keyof.operand = spec->types[0];
+    } else {
+        ret->flags = spec->kind == TY_UNION ? TYF_UNION : TYF_INTERSECTION;
+        ret->composite.types = ty_list_copy(me, spec->types, spec->len);
+    }
+    return ret;
+}
+
+static Ty const* intern_composite_origin(
+    Checker* me, TyKind kind, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args,
+    OriginSpec const* origin
 ) {
-    u32 count = 3 + alias_args.len + len;
+    // tsc's getUnionTypeFromSortedList: an origin is part of the identity. It goes last, after a marker no type id
+    // can equal, so keys with and without one can't collide
+    u32 count = 3 + alias_args.len + len + (origin ? 1 + origin->len : 0);
     u64 stack_key[64];
     u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
     key[0] = kind == TY_UNION ? KEY_UNION : KEY_INTERSECTION;
@@ -506,6 +529,11 @@ static Ty const* intern_composite(
     key[2] = alias_args.len;
     for (u32 i = 0; i < alias_args.len; i++) key[3 + i] = alias_args.data[i]->id;
     for (u32 i = 0; i < len; i++) key[3 + alias_args.len + i] = types[i]->id;
+    if (origin) {
+        u64* okey = key + 3 + alias_args.len + len;
+        okey[0] = ((u64)origin->kind << 32) | UINT32_MAX;
+        for (u32 i = 0; i < origin->len; i++) okey[1 + i] = origin->types[i]->id;
+    }
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
     if (!*slot) {
@@ -527,10 +555,66 @@ static Ty const* intern_composite(
         ret->alias = alias;
         ret->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
         ret->composite.types = ty_list_copy(me, types, len);
+        if (origin) ret->composite.origin = make_origin(me, origin);
         if (kind == TY_INTERSECTION) ret->composite.state = arena_new(&my arena, TyObjectState);
         *slot = ret;
     }
     return *slot;
+}
+
+static Ty const* intern_composite(
+    Checker* me, TyKind kind, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args
+) {
+    return intern_composite_origin(me, kind, types, len, alias, alias_args, nullptr);
+}
+
+// tsc's getConstituentCount
+static u32 constituent_count_of(Ty const* const* types, u32 len);
+static u32 constituent_count(Ty const* t) {
+    if ((t->kind != TY_UNION && t->kind != TY_INTERSECTION) || t->alias) return 1;
+    if (t->kind == TY_UNION && t->composite.origin) {
+        Ty const* o = t->composite.origin;
+        return o->kind == TY_KEYOF ? 1 : constituent_count_of(o->composite.types.data, o->composite.types.len);
+    }
+    return constituent_count_of(t->composite.types.data, t->composite.types.len);
+}
+static u32 constituent_count_of(Ty const* const* types, u32 len) {
+    u32 n = 0;
+    for (u32 i = 0; i < len; i++) n += constituent_count(types[i]);
+    return n;
+}
+
+// tsc's isNamedUnionType/addNamedUnions
+static void add_named_unions(TyBuf* named, Ty const* const* types, u32 len) {
+    for (u32 i = 0; i < len; i++) {
+        Ty const* t = types[i];
+        if (t->kind != TY_UNION) continue;
+        Ty const* origin = t->composite.origin;
+        if (t->alias || (origin && origin->kind != TY_UNION)) {
+            bool seen = false;
+            for (u32 j = 0; j < named->len && !seen; j++) seen = named->data[j] == t;
+            if (!seen) ty_buf_push(named, t);
+        } else if (origin) {
+            add_named_unions(named, origin->composite.types.data, origin->composite.types.len);
+        }
+    }
+}
+
+static bool sorted_list_contains(TyList list, Ty const* t) {
+    u32 lo = 0, hi = list.len;
+    while (lo < hi) {
+        u32 mid = lo + (hi - lo) / 2;
+        if (list.data[mid] == t) return true;
+        if (list.data[mid]->id < t->id) lo = mid + 1; else hi = mid;
+    }
+    return false;
+}
+
+static void insert_by_id(TyBuf* buf, Ty const* t) {
+    ty_buf_push(buf, t);
+    u32 j = buf->len - 1;
+    for (; j && buf->data[j - 1]->id > t->id; j--) buf->data[j] = buf->data[j - 1];
+    buf->data[j] = t;
 }
 
 // String literals that a pattern in the same union already has (tsc's removeStringLiteralsMatchedByTemplateLiterals):
@@ -558,7 +642,11 @@ static u32 remove_literals_matched_by_patterns(Checker* me, Ty const** types, u3
 
 // Only the cheap reductions: flatten, dedupe, absorb any/unknown/never, drop literals next to their primitive.
 // Subtype reduction is a separate operation (TODO, the legacy type_composite() does its own through the relation).
-Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
+// `origin` is what the union was built as (see Ty.composite.origin); without one, a union made of named unions gets
+// them as its origin
+static Ty const* union_with_origin(
+    Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, OriginSpec const* origin
+) {
     if (len == 1) return types[0];
     for (u32 i = 0; i < len; i++) {
         if (types[i] == my intrinsics[TY_WILDCARD]) return types[i];
@@ -627,11 +715,47 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
         } else if (out == 1) {
             ret = buf.data[0];
         } else {
-            ret = intern_composite(me, TY_UNION, buf.data, out, alias, alias_args);
+            bool has_named = false;
+            for (u32 i = 0; i < len && !has_named; i++) {
+                has_named = types[i]->kind == TY_UNION && (types[i]->alias || types[i]->composite.origin);
+            }
+            if (!origin && has_named) {
+                // tsc's getUnionTypeWorker: made of named unions (aliased, or with an origin themselves)
+                TyBuf named = {0};
+                add_named_unions(&named, types, len);
+                if (named.len) {
+                    TyBuf reduced = {0};
+                    for (u32 i = 0; i < out; i++) {
+                        bool in_named = false;
+                        for (u32 j = 0; j < named.len && !in_named; j++) {
+                            in_named = sorted_list_contains(named.data[j]->composite.types, buf.data[i]);
+                        }
+                        if (!in_named) ty_buf_push(&reduced, buf.data[i]);
+                    }
+                    if (!alias && named.len == 1 && reduced.len == 0) {
+                        ret = named.data[0];
+                    } else {
+                        u32 named_count = 0;
+                        for (u32 j = 0; j < named.len; j++) named_count += named.data[j]->composite.types.len;
+                        if (named_count + reduced.len == out) {
+                            for (u32 j = 0; j < named.len; j++) insert_by_id(&reduced, named.data[j]);
+                            OriginSpec spec = { TY_UNION, reduced.data, reduced.len };
+                            ret = intern_composite_origin(me, TY_UNION, buf.data, out, alias, alias_args, &spec);
+                        }
+                    }
+                    ty_buf_drop(&reduced);
+                }
+                ty_buf_drop(&named);
+            }
+            if (!ret) ret = intern_composite_origin(me, TY_UNION, buf.data, out, alias, alias_args, origin);
         }
     }
     ty_buf_drop(&buf);
     return ret;
+}
+
+Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
+    return union_with_origin(me, types, len, alias, alias_args, nullptr);
 }
 
 // Some members of `of`, in its order (narrowing's filters): they are sorted and reduced already, so there's only the
@@ -642,7 +766,28 @@ Ty const* ty_union_filtered(Checker* me, Ty const* of, Ty const* const* kept, u3
     if (len == of->composite.types.len) return of;
     if (len == 0) return my intrinsics[TY_NEVER];
     if (len == 1) return kept[0];
-    return intern_composite(me, TY_UNION, kept, len, nullptr, (TyList){0});
+    Ty const* origin = of->composite.origin;
+    if (!origin || origin->kind != TY_UNION) return intern_composite(me, TY_UNION, kept, len, nullptr, (TyList){0});
+    // tsc's filterType: the origin loses the same members, if it can (named unions in it stay)
+    TyList from = origin->composite.types;
+    TyList kept_list = { .data = kept, .len = len };
+    TyBuf filtered = {0};
+    for (u32 i = 0; i < from.len; i++) {
+        if (from.data[i]->kind == TY_UNION || sorted_list_contains(kept_list, from.data[i])) {
+            ty_buf_push(&filtered, from.data[i]);
+        }
+    }
+    Ty const* ret;
+    if (from.len - filtered.len != of->composite.types.len - len) {
+        ret = intern_composite(me, TY_UNION, kept, len, nullptr, (TyList){0});
+    } else if (filtered.len == 1) {
+        ret = filtered.data[0];
+    } else {
+        OriginSpec spec = { TY_UNION, filtered.data, filtered.len };
+        ret = intern_composite_origin(me, TY_UNION, kept, len, nullptr, (TyList){0}, &spec);
+    }
+    ty_buf_drop(&filtered);
+    return ret;
 }
 
 // Which disjoint family of primitives a type belongs to, 0 if none
@@ -665,10 +810,7 @@ static bool is_primitive_union(Ty const* t) {
 }
 
 static bool union_contains(Ty const* u, Ty const* t) {
-    for (u32 i = 0; i < u->composite.types.len; i++) {
-        if (u->composite.types.data[i] == t) return true;
-    }
-    return false;
+    return sorted_list_contains(u->composite.types, t);
 }
 
 // `("a" | "b") & ("b" | "c")` is `"b"`: unions of primitives are intersected as sets rather than distributed over, which
@@ -936,6 +1078,28 @@ static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const
     return size >= 100000 ? my intrinsics[TY_ERROR] : nullptr;
 }
 
+static bool same_members(Ty const* a, Ty const* b) {
+    TyList x = a->composite.types, y = b->composite.types;
+    return x.len == y.len && !memcmp(x.data, y.data, sizeof(Ty const*) * x.len);
+}
+
+// The same union twice in an intersection is once (tsc's typeSet is a set): `U & U` must not be a cross product.
+// Unlike tsc, also two unions of the same members that differ in origin or alias, like `keyof A & keyof B` from
+// `keyof (A | B)` when A and B have the same keys: tsc distributes those (`"a" | "b" | ("a" & keyof T) | ...` when
+// they have a generic member, the same set of values), a quadratic cross product for nothing
+static void dedupe_unions(TyBuf* buf) {
+    u32 out = 0;
+    for (u32 i = 0; i < buf->len; i++) {
+        Ty const* t = buf->data[i];
+        bool seen = false;
+        if (t->kind == TY_UNION) {
+            for (u32 j = 0; j < out && !seen; j++) seen = buf->data[j]->kind == TY_UNION && same_members(buf->data[j], t);
+        }
+        if (!seen) buf->data[out++] = t;
+    }
+    buf->len = out;
+}
+
 static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object) {
     if (len == 1) return types[0];
     for (u32 i = 0; i < len; i++) {
@@ -946,6 +1110,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
     // The members of an intersection are regular (freshLiteralTypesInIntersections)
     for (u32 i = 0; i < buf.len; i++) buf.data[i] = ty_regular(me, buf.data[i]);
     intersect_unions_of_primitives(me, &buf);
+    dedupe_unions(&buf);
     if (buf.len == 1) {
         Ty const* only = buf.data[0];
         ty_buf_drop(&buf);
@@ -973,17 +1138,35 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
     } else if (first_union && (ret = intersect_unions(me, &buf, len, alias, alias_args))) {
         // (Handled)
     } else if (first_union) {
-        // A & (B | C) is (A & B) | (A & C)
+        // tsc's getCrossProductIntersections: A & (B | C) & (D | E) is A & B & D | A & B & E | A & C & D | A & C & E,
+        // remembering the intersection it came from when that is shorter (the origin)
+        u32 combos = 1;
+        for (u32 j = 0; j < buf.len; j++) if (buf.data[j]->kind == TY_UNION) combos *= buf.data[j]->composite.types.len;
         TyBuf results = {0};
-        for (u32 i = 0; i < first_union->composite.types.len; i++) {
-            TyBuf parts = {0};
-            for (u32 j = 0; j < buf.len; j++) {
-                ty_buf_push(&parts, buf.data[j] == first_union ? first_union->composite.types.data[i] : buf.data[j]);
+        TyBuf parts = {0};
+        bool any_intersection = false;
+        for (u32 i = 0; i < combos; i++) {
+            parts.len = 0;
+            for (u32 j = 0; j < buf.len; j++) ty_buf_push(&parts, buf.data[j]);
+            u32 n = i;
+            for (u32 j = buf.len; j-- > 0;) {
+                Ty const* t = buf.data[j];
+                if (t->kind != TY_UNION) continue;
+                u32 l = t->composite.types.len;
+                parts.data[j] = t->composite.types.data[n % l];
+                n /= l;
             }
-            ty_buf_push(&results, ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}));
-            ty_buf_drop(&parts);
+            Ty const* r = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+            if (r->flags & TYF_NEVER) continue;
+            any_intersection |= r->kind == TY_INTERSECTION;
+            ty_buf_push(&results, r);
         }
-        ret = ty_union(me, results.data, results.len, alias, alias_args);
+        ty_buf_drop(&parts);
+        OriginSpec spec = { TY_INTERSECTION, buf.data, buf.len };
+        bool use_origin = any_intersection &&
+            constituent_count_of(results.data, results.len) > constituent_count_of(buf.data, buf.len);
+        ret = results.len == 0 ? my intrinsics[TY_NEVER] :
+            union_with_origin(me, results.data, results.len, alias, alias_args, use_origin ? &spec : nullptr);
         ty_buf_drop(&results);
     } else {
         // Insertion order is kept (it's observable in how tsc prints), duplicates and `unknown` go
@@ -1653,7 +1836,12 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
                     ty_buf_push(&parts, my intrinsics[TY_NUMBER]);
                 }
             }
-            Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+            // tsc's getLiteralTypeFromProperties: keyof a class, interface or reference, or of an aliased type,
+            // remembers it (prints `keyof X`)
+            bool named = operand->alias || operand->kind == TY_REFERENCE || (operand->kind == TY_DECLARED &&
+                (operand->declared.kind == TY_DECLARED_INTERFACE || operand->declared.kind == TY_DECLARED_CLASS_INSTANCE));
+            OriginSpec spec = { TY_KEYOF, &operand, 1 };
+            Ty const* ret = union_with_origin(me, parts.data, parts.len, nullptr, (TyList){0}, named ? &spec : nullptr);
             ty_buf_drop(&parts);
             return ret;
         }
@@ -1839,7 +2027,8 @@ Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
     }
     if (ty->kind != TY_UNION) return ty;
     TyList members = ty->composite.types;
-    Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+    // (calloc: with ty_union_filtered inlined, gcc's -Wmaybe-uninitialized can't tell kept[0] is written when len is 1)
+    Ty const** kept = calloc(members.len, sizeof(Ty const*));
     u32 len = 0;
     for (u32 i = 0; i < members.len; i++) {
         if (!(members.data[i]->flags & TYF_NULLABLE)) kept[len++] = members.data[i];
