@@ -889,10 +889,10 @@ static bool is_literal_like(Ty const* t) {
 static bool prop_judgeable(Checker* me, Prop const* prop) {
     while (prop->type_state == LAZY_STATE_NOT_STARTED && prop->target) prop = prop->target;
     if (prop->type_state == LAZY_STATE_IN_FLIGHT) return false;
-    if (prop->type_state == LAZY_STATE_DONE || !prop->node || prop->lazy || prop->function || prop->overload_count || prop->symbol) {
+    if (prop->type_state == LAZY_STATE_DONE || !prop->decl->node || prop->decl->lazy || prop->decl->function || prop->decl->overload_count || prop->decl->symbol) {
         return true;
     }
-    return !ty_node_reaches_alias_in_flight(me, prop->node);
+    return !ty_node_reaches_alias_in_flight(me, prop->decl->node);
 }
 
 // Whether resolving the members of a type literal would lower an index signature (they're lowered eagerly, see hacks.md)
@@ -1843,9 +1843,9 @@ static Ty const* intern_deferred(Checker* me, u64 const* key, u32 count, TyKind 
 // literal, others by the name's string literal (or unique symbol)
 Ty const* ty_prop_key_literal(Checker* me, Prop const* prop) {
     Prop const* declared = prop;
-    while (declared->target && !declared->decl_span_count) declared = declared->target;
-    csview text = declared->name_span.sv;
-    if (declared->name_is_value && span_valid(declared->name_span) && text.size &&
+    while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
+    csview text = declared->decl->name_span.sv;
+    if (declared->decl->name_is_value && span_valid(declared->decl->name_span) && text.size &&
         ((text.buf[0] >= '0' && text.buf[0] <= '9') || text.buf[0] == '.' || text.buf[0] == '[')
     ) {
         // (A computed name is a value when its type is a number literal: tsc's nameType)

@@ -1795,10 +1795,10 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding c
                 .name = name,
                 .flags = found.flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR),
                 .type = found.type,
-                .name_span = origin ? origin->name_span : (Span){0},
-                .decl_spans = origin ? origin->decl_spans : nullptr,
-                .decl_span_count = origin ? origin->decl_span_count : 0,
-                .name_is_value = origin && origin->name_is_value,
+                .name_span = origin ? origin->decl->name_span : (Span){0},
+                .decl_spans = origin ? origin->decl->decl_spans : nullptr,
+                .decl_span_count = origin ? origin->decl->decl_span_count : 0,
+                .name_is_value = origin && origin->decl->name_is_value,
             };
         }
     }
@@ -1841,15 +1841,15 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
             continue;
         }
         Prop const* declared = prop;
-        while (declared->target && !declared->decl_span_count) declared = declared->target;
+        while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
             .flags = prop->flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR),
             .type = prop_type(me, prop),
-            .name_span = declared->name_span,
-            .decl_spans = declared->decl_spans,
-            .decl_span_count = declared->decl_span_count,
-            .name_is_value = declared->name_is_value,
+            .name_span = declared->decl->name_span,
+            .decl_spans = declared->decl->decl_spans,
+            .decl_span_count = declared->decl->decl_span_count,
+            .name_is_value = declared->decl->name_is_value,
         };
     }
     Ty const* ret = ty_object_literal(me, props, count, members->index, members->index_count, OBJECT_SYNTHETIC);

@@ -1070,11 +1070,11 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
         error = error_ctx_error_d(errs, span, 2551, "Property '", name, "' does not exist on type '", object_str,
             "'. Did you mean '", atom_sv(suggestion->name), "'?");
         Prop const* declared = suggestion;
-        while (declared->target && !declared->decl_span_count) declared = declared->target;
-        if (error && declared->decl_span_count) {
+        while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
+        if (error && declared->decl->decl_span_count) {
             // (tsc's error span of the declaration: its name)
             Span name_span = ty_prop_decl_span(suggestion);
-            Span at = span_contains_span(declared->decl_spans[0], name_span) ? name_span : declared->decl_spans[0];
+            Span at = span_contains_span(declared->decl->decl_spans[0], name_span) ? name_span : declared->decl->decl_spans[0];
             error_add_related_d(error, at, 2728, "'", atom_sv(suggestion->name), "' is declared here.");
         }
     } else {
@@ -2491,10 +2491,10 @@ static Span with_member_separator(Span span) {
 // Where tsc reports a property: the name of a property or method declaration, a whole method signature
 static Span prop_error_span(Prop const* prop) {
     while (prop->target) prop = prop->target;
-    if ((prop->flags & PROP_METHOD) && !prop->function && !prop->overloads && prop->decl_span_count) {
-        return with_member_separator(prop->decl_spans[0]);
+    if ((prop->flags & PROP_METHOD) && !prop->decl->function && !prop->decl->overloads && prop->decl->decl_span_count) {
+        return with_member_separator(prop->decl->decl_spans[0]);
     }
-    return prop->name_span;
+    return prop->decl->name_span;
 }
 
 // tsc's symbolToString of a property: as written if that was a string literal
@@ -2509,10 +2509,10 @@ void ty_check_index_constraints(
         Prop const* prop = members->props[p];
         Prop const* root = prop;
         while (root->target) root = root->target;
-        if (span_valid(root->name_span) && root->name_span.sv.buf[0] == '#') continue;
+        if (span_valid(root->decl->name_span) && root->decl->name_span.sv.buf[0] == '#') continue;
         if (is_static && csview_equals(atom_sv(prop->name), "prototype")) continue;
         Ty const* key = ty_prop_name_literal(me, prop->name);
-        bool local_prop = is_local_span(owner, root->name_span);
+        bool local_prop = is_local_span(owner, root->decl->name_span);
         Ty const* prop_ty = nullptr;
         for (u32 i = 0; i < members->index_count; i++) {
             IndexInfo const* info = &members->index[i];
@@ -2583,7 +2583,7 @@ void ty_check_index_constraints(
 // reading it through `this` (`this.m()` in m). `access` is null for a destructuring, which always reads
 static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr const* access) {
     while (prop->target) prop = prop->target;
-    bool private_name = span_valid(prop->name_span) && prop->name_span.sv.buf[0] == '#';
+    bool private_name = span_valid(prop->decl->name_span) && prop->decl->name_span.sv.buf[0] == '#';
     if (!(prop->flags & PROP_PRIVATE) && !private_name) return;
     if (access && access->assignment_target == FLOW_TARGET_DEFINITE && !(prop->flags & PROP_ACCESSOR)) return;
     Expr const* object = access ? &access->expr : nullptr;
@@ -2591,10 +2591,10 @@ static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr c
         (object->tag == EXPR_IDENTIFIER && prop->parent && object->identifier.target == prop->parent));
     FunctionImpl const* function = access ? access->containing_function : nullptr;
     char const* at = function ? span_start_ptr(function->member_name) : nullptr;
-    for (u32 i = 0; self_type && at && i < prop->decl_span_count; i++) {
-        if (at >= span_start_ptr(prop->decl_spans[i]) && at < span_end_ptr(prop->decl_spans[i])) return;
+    for (u32 i = 0; self_type && at && i < prop->decl->decl_span_count; i++) {
+        if (at >= span_start_ptr(prop->decl->decl_spans[i]) && at < span_end_ptr(prop->decl->decl_spans[i])) return;
     }
-    for (u32 i = 0; i < prop->decl_span_count; i++) ty_mark_member_referenced(me, prop->decl_spans[i]);
+    for (u32 i = 0; i < prop->decl->decl_span_count; i++) ty_mark_member_referenced(me, prop->decl->decl_spans[i]);
 }
 
 void ty_mark_destructured_member(Checker* me, Ty const* object, csview name) {
@@ -2645,14 +2645,14 @@ static bool span_contains(Span outer, char const* at) {
 // counts, class members have more rules
 static void check_used_before_initialization(Checker* me, PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
     while (prop->target) prop = prop->target;
-    if (!span_valid(prop->name_span) || prop->name_span.source != access->prop.outer_span.source) return;
+    if (!span_valid(prop->decl->name_span) || prop->decl->name_span.source != access->prop.outer_span.source) return;
     // A JavaScript assignment declaration (`this.x = v` declares x from where it starts)
-    if (prop->symbol && prop->symbol->decl_count && prop->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) return;
+    if (prop->decl->symbol && prop->decl->symbol->decl_count && prop->decl->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) return;
     ClassDecl* class_decl = prop->parent && (prop->parent->flags & SYMBOL_CLASS) ? (ClassDecl*)class_decl_of(prop->parent) : nullptr;
     // A class member's declaration: a field, method or accessor, or a parameter property
     ClassItem* item = nullptr;
     FunctionArg const* parameter = nullptr;
-    char const* name_at = span_start_ptr(prop->name_span);
+    char const* name_at = span_start_ptr(prop->decl->name_span);
     for_each (i, vec_class_item, class_decl ? &class_decl->items : &(VecClassItem){0}) {
         if ((i->tag == CLASS_ITEM_FIELD || i->tag == CLASS_ITEM_METHOD) && span_contains(i->span, name_at)) item = i;
         if (i->tag != CLASS_ITEM_CONSTRUCTOR) continue;
@@ -2668,7 +2668,7 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
     bool emit_standard = options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022;
     if (class_decl && !options->use_define_for_class_fields && declared_in_base_class(me, class_decl, prop->name)) return;
 
-    Span declaration = item ? item->span : parameter ? parameter->span : prop->name_span;
+    Span declaration = item ? item->span : parameter ? parameter->span : prop->decl->name_span;
     char const* declared_at = span_start_ptr(declaration);
     char const* used_at = span_start_ptr(access->expr.outer_span);
     bool same_class = class_decl && access->enclosing_class == class_decl;
@@ -2702,7 +2702,7 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
     Span name = access->prop.inner_span;
     Error* error = error_ctx_error_d(errs, name, 2729, "Property '", name, "' is used before its initialization.");
     // (tsc's error span of the declaration: the name, but all of a parameter)
-    error_add_related_d(error, parameter ? parameter->span : prop->name_span, 2728, "'", name, "' is declared here.");
+    error_add_related_d(error, parameter ? parameter->span : prop->decl->name_span, 2728, "'", name, "' is declared here.");
 }
 
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {

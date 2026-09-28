@@ -317,7 +317,7 @@ cstr ty_prop_written_name(Checker* me, Prop const* prop) {
     Prop const* root = prop;
     while (root->target) root = root->target;
     // (a mapped type's properties are instantiations of its template, under other names)
-    Span name = root->name == prop->name ? root->name_span : span_null;
+    Span name = root->name == prop->name ? root->decl->name_span : span_null;
     // (tsc's getNameOfSymbolAsWritten: a name that isn't an identifier as written, `"a"`, `2.0`, `["a"]`)
     if (span_valid(name) && name.sv.size >= 2 && (name.sv.buf[0] == '"' || name.sv.buf[0] == '\'' || name.sv.buf[0] == '[')) {
         return cstr_from_sv(name.sv);
@@ -336,9 +336,9 @@ static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
         return;
     }
     // (Every declaration: `{ 1: a, "1": b }` is a number)
-    bool string_named = span_valid(root->name_span) && !root->numeric_redeclared;
-    Span const* spans = root->decl_span_count ? root->decl_spans : &root->name_span;
-    u32 count = root->decl_span_count ? root->decl_span_count : 1;
+    bool string_named = span_valid(root->decl->name_span) && !root->decl->numeric_redeclared;
+    Span const* spans = root->decl->decl_span_count ? root->decl->decl_spans : &root->decl->name_span;
+    u32 count = root->decl->decl_span_count ? root->decl->decl_span_count : 1;
     for (u32 i = 0; i < count && string_named; i++) {
         string_named = span_valid(spans[i]) && spans[i].sv.size >= 2 && (spans[i].sv.buf[0] == '"' || spans[i].sv.buf[0] == '\'');
     }
@@ -1494,16 +1494,16 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // still says the same), or the type assertion of an object literal's
         Prop const* origin = prop;
         while (origin->target) origin = origin->target;
-        TypeNode const* annotation = prop->asserted;
-        if (origin->node && origin->node->parsed && !origin->lazy && !origin->function && !origin->overload_count &&
-            !origin->symbol
+        TypeNode const* annotation = prop->decl->asserted;
+        if (origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function && !origin->decl->overload_count &&
+            !origin->decl->symbol
         ) {
-            annotation = origin->node;
+            annotation = origin->decl->node;
         }
         // An object literal's accessor: the getter's return annotation, else the setter's parameter's (tsc's
         // typeFromAccessor)
-        if ((origin->flags & (PROP_GETTER | PROP_SETTER)) && origin->function) {
-            FunctionImpl const* accessor = origin->function;
+        if ((origin->flags & (PROP_GETTER | PROP_SETTER)) && origin->decl->function) {
+            FunctionImpl const* accessor = origin->decl->function;
             Binding const* param = vec_function_arg_size(&accessor->args) ?
                 &vec_function_arg_at(&accessor->args, 0)->initializer.binding : nullptr;
             if ((origin->flags & PROP_GETTER) && accessor->ret_explicit) annotation = &accessor->ret;

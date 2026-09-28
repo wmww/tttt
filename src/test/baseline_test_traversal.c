@@ -187,26 +187,26 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         return;
     }
     Prop const* root = prop;
-    while (root->target && !root->decl_span_count) root = root->target;
-    Span first_declaration = root->decl_span_count ? root->decl_spans[0] : span_null;
+    while (root->target && !root->decl->decl_span_count) root = root->target;
+    Span first_declaration = root->decl->decl_span_count ? root->decl->decl_spans[0] : span_null;
     if (!info->found) {
         info->found = true;
         info->parent = prop->parent;
         if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE) {
             info->namespace = object->declared.namespace_symbol;
         }
-        info->member_symbol = root->symbol;
-        info->name_span = root->name_span;
-        info->name_is_value = root->name_is_value;
+        info->member_symbol = root->decl->symbol;
+        info->name_span = root->decl->name_span;
+        info->name_is_value = root->decl->name_is_value;
         info->first_declaration = first_declaration;
     } else if (!span_eq(info->first_declaration, first_declaration)) {
         info->non_uniform = true;
     }
     info->member_count++;
-    for (u32 j = 0; j < root->decl_span_count; j++) {
+    for (u32 j = 0; j < root->decl->decl_span_count; j++) {
         bool seen = false;
-        for_each (k, vec_span, &info->declarations) seen |= span_cmp(*k, root->decl_spans[j]) == 0 && k->sv.size == root->decl_spans[j].sv.size;
-        if (!seen) vec_span_push(&info->declarations, root->decl_spans[j]);
+        for_each (k, vec_span, &info->declarations) seen |= span_cmp(*k, root->decl->decl_spans[j]) == 0 && k->sv.size == root->decl->decl_spans[j].sv.size;
+        if (!seen) vec_span_push(&info->declarations, root->decl->decl_spans[j]);
     }
 }
 
@@ -414,11 +414,11 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             if (my key.name_is_member_function && ctx->member_owner) {
                 Checker* checker = current_checker;
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
-                if (prop && prop->decl_span_count > 1 && (prop->flags & PROP_METHOD)) merged = prop;
+                if (prop && prop->decl->decl_span_count > 1 && (prop->flags & PROP_METHOD)) merged = prop;
             }
             VecSpan declarations = vec_span_init();
             if (merged) {
-                for (u32 i = 0; i < merged->decl_span_count; i++) vec_span_push(&declarations, merged->decl_spans[i]);
+                for (u32 i = 0; i < merged->decl->decl_span_count; i++) vec_span_push(&declarations, merged->decl->decl_spans[i]);
             } else {
                 declarations = vec_span_clone(my declarations);
             }

@@ -867,7 +867,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
             stack_buf[len++] = part.type;
             // Only class members (properties, methods, accessors) have a say: a variable of a namespace or of
             // `typeof globalThis` is neither optional nor required (tsc's createUnionOrIntersectionProperty)
-            bool class_member = !part.prop || !part.prop->symbol;
+            bool class_member = !part.prop || !part.prop->decl->symbol;
             if (class_member) all_optional &= (part.flags & PROP_OPTIONAL) != 0;
             any_member |= class_member;
             flags |= part.flags & ~(u32)PROP_OPTIONAL;
@@ -1535,11 +1535,11 @@ static Ternary props_related_impl(
         // The same accessor of the same object literal, typed or not (tsc's `sourceProp !== targetProp`: the literal's
         // types share the declaration's symbol). Not typing it matters when the literal is rechecked against what was
         // inferred from it, in the initializer its getter refers back to
-        if ((target_prop->flags & (PROP_GETTER | PROP_SETTER)) && target_prop->function && !target_prop->target &&
+        if ((target_prop->flags & (PROP_GETTER | PROP_SETTER)) && target_prop->decl->function && !target_prop->target &&
             (source->flags & TYF_OBJECT)
         ) {
             Prop const* same = ty_get_object_prop(me, source, target_prop->name);
-            if (same && same->function == target_prop->function && !same->target && same->flags == target_prop->flags) continue;
+            if (same && same->decl->function == target_prop->decl->function && !same->target && same->flags == target_prop->flags) continue;
         }
         FoundProp source_prop = find_prop(me, source, target_prop->name, 0);
         if (optionals_only && (!source_prop.found || source_prop.prop == target_prop)) continue;
@@ -4442,7 +4442,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
     Members const* members = ty_members(me, source);
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
-        if (!prop->literal_own) continue;
+        if (!prop->decl->literal_own) continue;
         // A hyphenated JSX attribute (`data-x`) is never excess (tsc's isIgnoredJsxProperty)
         if (is_jsx && csview_contains(atom_sv(prop->name), "-")) continue;
         if (!is_known_property(me, reduced, prop->name)) {
@@ -4461,8 +4461,8 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                 vec_ty_report_line_push(&st->lines, (TyReportLine){
                     .ts_code = suggestion.size ? 2551 : 2339,
                     .message = message,
-                    .span = prop->name_span,
-                    .relocates = span_valid(prop->name_span), // (not the children, which aren't an attribute)
+                    .span = prop->decl->name_span,
+                    .relocates = span_valid(prop->decl->name_span), // (not the children, which aren't an attribute)
                 });
                 c_drop(cstr, &name, &target_str);
             } else if (report) {
@@ -4471,7 +4471,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                 report_line_at(st, 2353, cstr_d(
                     "Object literal may only specify known properties, and '", name, "' does not exist in type '",
                     target_str, "'."
-                ), prop->name_span);
+                ), prop->decl->name_span);
                 c_drop(cstr, &name, &target_str);
                 st->override_next_head++; // (tsc's reportParentSkippedError)
             }

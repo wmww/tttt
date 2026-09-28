@@ -10,6 +10,35 @@
 
 static const Members empty_members = {0};
 
+PropDecl const ty_prop_decl_none = {0};
+
+// What an instantiation or a synthetic property says about its declaration: nothing (read-only: writing to it faults)
+static PropDecl* prop_decl_none(void) {
+    return (PropDecl*)&ty_prop_decl_none;
+}
+
+// A property without a declaration of its own
+static Prop* prop_new(Checker* me) {
+    Prop* prop = arena_new(&my arena, Prop);
+    prop->decl = prop_decl_none();
+    return prop;
+}
+
+// A property that says where and how it was declared
+static Prop* prop_new_declared(Checker* me) {
+    struct { Prop prop; PropDecl decl; }* both = arena_alloc(&my arena, sizeof(*both));
+    both->prop.decl = &both->decl;
+    return &both->prop;
+}
+
+// `*to = *from`, with a declaration of its own to add to
+static void prop_copy_into(Checker* me, Prop* to, Prop const* from) {
+    *to = *from;
+    if (from->decl == prop_decl_none()) return;
+    to->decl = arena_new(&my arena, PropDecl);
+    *to->decl = *from->decl;
+}
+
 typedef struct MembersBuilder {
     Prop** props;
     u32 props_count, props_cap;
@@ -92,11 +121,12 @@ static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, Fun
 
 static void prop_add_decl_spans(Checker* me, Prop* prop, Span const* spans, u32 count) {
     if (!count) return;
-    Span* all = arena_new_n(&my arena, Span, prop->decl_span_count + count);
-    if (prop->decl_span_count) memcpy(all, prop->decl_spans, sizeof(Span) * prop->decl_span_count);
-    memcpy(all + prop->decl_span_count, spans, sizeof(Span) * count);
-    prop->decl_spans = all;
-    prop->decl_span_count += count;
+    if (prop->decl == prop_decl_none()) prop->decl = arena_new(&my arena, PropDecl);
+    Span* all = arena_new_n(&my arena, Span, prop->decl->decl_span_count + count);
+    if (prop->decl->decl_span_count) memcpy(all, prop->decl->decl_spans, sizeof(Span) * prop->decl->decl_span_count);
+    memcpy(all + prop->decl->decl_span_count, spans, sizeof(Span) * count);
+    prop->decl->decl_spans = all;
+    prop->decl->decl_span_count += count;
 }
 
 // tsc's isThislessType: types that syntactically can't mention `this` (keywords, literals, arrays of those, names
@@ -188,10 +218,10 @@ static void builder_add_interface_member(
                     // The other accessor of `get [k]()` / `set [k](v)`: the getter's type is read, the setter's written
                     // (tsc's getWriteTypeOfSymbol)
                     if (i->computed_accessor == 2) {
-                        if (i->type.tag != TYPE_ANY || i->type.parsed) existing->write_node = &i->type;
+                        if (i->type.tag != TYPE_ANY || i->type.parsed) existing->decl->write_node = &i->type;
                     } else {
-                        existing->write_node = existing->node;
-                        existing->node = &i->type;
+                        existing->decl->write_node = existing->decl->node;
+                        existing->decl->node = &i->type;
                     }
                     existing->flags &= ~(u32)PROP_READONLY;
                     prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
@@ -199,36 +229,36 @@ static void builder_add_interface_member(
                 }
                 if (existing) {
                     // Overloads are separate members in the legacy interface and one method with several signatures here
-                    if (is_method && (existing->flags & PROP_METHOD) && existing->node) {
-                        u32 count = existing->overload_count ? existing->overload_count : 1;
+                    if (is_method && (existing->flags & PROP_METHOD) && existing->decl->node) {
+                        u32 count = existing->decl->overload_count ? existing->decl->overload_count : 1;
                         FunctionImpl const** functions = arena_new_n(&my arena, FunctionImpl const*, count + 1);
-                        if (existing->overload_count) {
-                            memcpy(functions, existing->overloads, sizeof(FunctionImpl const*) * count);
+                        if (existing->decl->overload_count) {
+                            memcpy(functions, existing->decl->overloads, sizeof(FunctionImpl const*) * count);
                         } else {
-                            functions[0] = existing->node->callable->function;
+                            functions[0] = existing->decl->node->callable->function;
                         }
                         functions[count] = i->type.callable->function;
-                        existing->overloads = functions;
-                        existing->overload_count = count + 1;
+                        existing->decl->overloads = functions;
+                        existing->decl->overload_count = count + 1;
                         existing->thisless &= function_is_thisless(i->type.callable->function);
                         prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
                     }
                     break;
                 }
-                Prop* prop = arena_new(&my arena, Prop);
+                Prop* prop = prop_new_declared(me);
                 prop->name = name;
                 prop->parent = i->origin_interface ? i->origin_interface : parent;
-                prop->node = &i->type;
-                if (i->has_write_type) prop->write_node = &i->write_type;
-                prop->ctx = ctx;
-                prop->ctx.method = is_method;
+                prop->decl->node = &i->type;
+                if (i->has_write_type) prop->decl->write_node = &i->write_type;
+                prop->decl->ctx = ctx;
+                prop->decl->ctx.method = is_method;
                 prop->thisless = i->type.tag == TYPE_CALLABLE ?
                     function_is_thisless(i->type.callable->function) : type_node_is_thisless(&i->type);
                 if (i->optional) prop->flags |= PROP_OPTIONAL;
                 if (i->readonly || (i->computed_accessor == 1 && i->key.tag == INTERFACE_KEY_EXPR)) prop->flags |= PROP_READONLY;
                 if (is_method) prop->flags |= PROP_METHOD;
-                prop->name_span = i->key.span;
-                prop->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
+                prop->decl->name_span = i->key.span;
+                prop->decl->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
                 prop_add_decl_spans(me, prop, i->declarations.data, (u32)vec_span_size(&i->declarations));
                 builder_push(builder, props, prop);
             }   break;
@@ -319,7 +349,7 @@ static void builder_add_intersection_members(Checker* me, MembersBuilder* builde
                 Prop* merged = arena_new(&my arena, Prop);
                 *merged = (Prop){
                     .name = prop->name, .flags = found.flags, .parent = prop->parent, .target = prop,
-                    .type = found.type, .type_state = LAZY_STATE_DONE,
+                    .type = found.type, .type_state = LAZY_STATE_DONE, .decl = prop_decl_none(),
                 };
                 prop = merged;
             }
@@ -350,8 +380,8 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
         Prop* derived = builder_find_prop(builder, members->props[i]->name);
         if (!derived) {
             builder_push(builder, props, members->props[i]);
-        } else if (derived->symbol && derived->symbol->decl_count && derived->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
-            !ty_is_constructor_declared(derived->symbol)
+        } else if (derived->decl->symbol && derived->decl->symbol->decl_count && derived->decl->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
+            !ty_is_constructor_declared(derived->decl->symbol)
         ) {
             // A JavaScript `this.x = v` outside of the constructor doesn't override (tsc's addInheritedMembers)
             for (u32 j = 0; j < builder->props_count; j++) {
@@ -647,12 +677,12 @@ static Prop* builder_add_class_prop(
     }
     Prop* existing = builder_find_prop(builder, name);
     if (existing) return nullptr;
-    Prop* prop = arena_new(&my arena, Prop);
+    Prop* prop = prop_new_declared(me);
     prop->name = name;
     prop->parent = parent;
-    prop->ctx = ctx;
-    prop->name_span = item->tag == CLASS_ITEM_FIELD ? item->field.name_span : item->method.name_span;
-    prop->name_is_value = item->tag == CLASS_ITEM_FIELD ? item->field.name_is_value : item->method.name_is_value;
+    prop->decl->ctx = ctx;
+    prop->decl->name_span = item->tag == CLASS_ITEM_FIELD ? item->field.name_span : item->method.name_span;
+    prop->decl->name_is_value = item->tag == CLASS_ITEM_FIELD ? item->field.name_is_value : item->method.name_is_value;
     prop->flags = access_prop_flags(item->access) | (class_item_is_static((ClassItem*)item) ? PROP_STATIC : 0);
     prop_add_decl_spans(me, prop, &item->span, 1);
     builder_push(builder, props, prop);
@@ -672,12 +702,12 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
         Prop* existing = builder_find_prop(builder, name);
         // (One the class body declares has no assignment declarations: tsc's declareSymbol with isReplaceableByMethod)
         if (!existing) {
-            Prop* prop = arena_new(&my arena, Prop);
+            Prop* prop = prop_new_declared(me);
             prop->name = name;
-            prop->symbol = member;
+            prop->decl->symbol = member;
             prop->parent = symbol;
-            prop->ctx = (LowerCtx){ .generic = true };
-            prop->name_span = member->name_span;
+            prop->decl->ctx = (LowerCtx){ .generic = true };
+            prop->decl->name_span = member->name_span;
             prop_add_decl_spans(me, prop, spans.data, (u32)vec_span_size(&spans));
             // `/** @private */ this.x = v` (tsc's getDeclarationModifierFlagsFromSymbol: the value declaration's)
             uint8_t modifiers = member->decl_count ? member->decls[0].jsdoc_modifiers : 0;
@@ -775,9 +805,9 @@ static void builder_add_class_items(
                 Prop* prop = builder_add_class_prop(me, builder, &i->field.name_string, parent, ctx, i);
                 if (!prop) break;
                 if (i->field.has_explicit_type) {
-                    prop->node = &i->field.explicit_type;
+                    prop->decl->node = &i->field.explicit_type;
                 } else {
-                    prop->lazy = &i->field.lazy_type;
+                    prop->decl->lazy = &i->field.lazy_type;
                 }
                 prop->thisless = binding_is_thisless(i->field.has_explicit_type, &i->field.explicit_type,
                     i->field.value.tag != EXPR_IMPLICIT_ANY);
@@ -792,7 +822,7 @@ static void builder_add_class_items(
                     if (i->method.accessor_first != i) break; // The second half of a get/set pair
                     Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, ctx, i);
                     if (!prop) break;
-                    prop->lazy = &i->method.accessor_type;
+                    prop->decl->lazy = &i->method.accessor_type;
                     prop->flags |= PROP_ACCESSOR;
                     // Reads go by the getter's accessibility, writes by the setter's
                     bool has_setter = false, has_getter = false;
@@ -816,7 +846,7 @@ static void builder_add_class_items(
                     prop->flags = (prop->flags & ~(u32)(PROP_PRIVATE | PROP_PROTECTED)) | get_access |
                         (set_access & PROP_PRIVATE ? PROP_SET_PRIVATE : 0) | (set_access & PROP_PROTECTED ? PROP_SET_PROTECTED : 0);
                     if (!has_setter) prop->flags |= PROP_READONLY;
-                    if (has_getter) prop->write_node = setter_type; // Writes go by the setter's parameter type
+                    if (has_getter) prop->decl->write_node = setter_type; // Writes go by the setter's parameter type
                     break;
                 }
                 // With overload signatures around, the implementation's own signature isn't visible
@@ -885,15 +915,15 @@ static void builder_add_class_items(
                     method_ctx.method = true;
                     Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, method_ctx, i);
                     if (!prop) break;
-                    prop->function = functions[0];
+                    prop->decl->function = functions[0];
                     prop->flags |= PROP_METHOD;
                     prop->thisless = true;
                     for (u32 f = 0; f < count; f++) prop->thisless &= function_is_thisless(functions[f]);
                     prop_add_decl_spans(me, prop, spans, span_count);
                     if (i->method.is_optional) prop->flags |= PROP_OPTIONAL;
                     if (count > 1) {
-                        prop->overloads = functions;
-                        prop->overload_count = count;
+                        prop->decl->overloads = functions;
+                        prop->decl->overload_count = count;
                     }
                 }
             }   break;
@@ -912,17 +942,17 @@ static void builder_add_class_items(
                     if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
                     Atom const* name = checker_atom(me, binding->content_span.sv);
                     if (builder_find_prop(builder, name)) continue;
-                    Prop* prop = arena_new(&my arena, Prop);
+                    Prop* prop = prop_new_declared(me);
                     prop->name = name;
                     prop->parent = parent;
-                    prop->ctx = ctx;
+                    prop->decl->ctx = ctx;
                     prop->flags = access_prop_flags(arg->access);
-                    prop->name_span = binding->content_span;
+                    prop->decl->name_span = binding->content_span;
                     prop_add_decl_spans(me, prop, &arg->span, 1);
                     if (binding->has_explicit_type) {
-                        prop->node = &binding->explicit_type;
+                        prop->decl->node = &binding->explicit_type;
                     } else {
-                        prop->lazy = &arg->initializer.lazy_type;
+                        prop->decl->lazy = &arg->initializer.lazy_type;
                     }
                     prop->thisless = binding_is_thisless(binding->has_explicit_type, &binding->explicit_type,
                         arg->initializer.value.tag != EXPR_IMPLICIT_ANY);
@@ -959,7 +989,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     LowerCtx ctx = { .generic = instance->declared.type_params.len > 0 };
 
     // `prototype` is the instance type with `any` for every type parameter
-    Prop* prototype = arena_new(&my arena, Prop);
+    Prop* prototype = prop_new(me);
     prototype->name = checker_atom(me, c_sv("prototype"));
     prototype->parent = instance_decl;
     prototype->flags = PROP_STATIC; // Not readonly: tsc's prototype symbol is a plain property
@@ -1094,9 +1124,9 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     Symbol const* symbol = entry->symbol;
     Symbol const* member = symbol_for_meaning(symbol, SYMBOL_VALUE);
     if (!member || member->is_placeholder) return nullptr;
-    Prop* prop = arena_new(&my arena, Prop);
+    Prop* prop = prop_new_declared(me);
     prop->name = checker_atom(me, entry->name);
-    prop->symbol = member;
+    prop->decl->symbol = member;
     if (member->is_const) prop->flags |= PROP_READONLY; // tsc's isReadonlySymbol: a `const` variable
     // An expando assigned a function is a method (bindPotentiallyNewExpandoMemberToNamespace)
     if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && member->parent &&
@@ -1104,8 +1134,8 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     ) {
         prop->flags |= PROP_METHOD;
     }
-    prop->ctx = (LowerCtx){ .generic = true };
-    prop->name_span = symbol->name_span;
+    prop->decl->ctx = (LowerCtx){ .generic = true };
+    prop->decl->name_span = symbol->name_span;
     // `N.p` in the symbols baseline
     if (symbol->parent && !symbol->parent->is_module) prop->parent = symbol->parent;
     VecSpan spans = symbol_declaration_spans(symbol);
@@ -1127,14 +1157,14 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
             if (existing && existing->parent && existing->parent != decl && members->props[j]->parent == decl) {
                 // The symbol's own export (a JavaScript class's expando `C.x = v`) hides a static the class inherits
                 // (tsc: the class's exports come before the base constructor's members). The props here are copies
-                *existing = *members->props[j];
+                prop_copy_into(me, existing, members->props[j]);
                 if (existing->type_state != LAZY_STATE_DONE) existing->type_state = LAZY_STATE_NOT_STARTED;
             } else if (existing) {
-                prop_add_decl_spans(me, existing, members->props[j]->decl_spans, members->props[j]->decl_span_count);
+                prop_add_decl_spans(me, existing, members->props[j]->decl->decl_spans, members->props[j]->decl->decl_span_count);
             } else {
                 // A copy: decl spans are added to it
                 Prop* prop = arena_new(&my arena, Prop);
-                *prop = *members->props[j];
+                prop_copy_into(me, prop, members->props[j]);
                 if (prop->type_state != LAZY_STATE_DONE) prop->type_state = LAZY_STATE_NOT_STARTED;
                 builder_push(builder, props, prop);
             }
@@ -1176,14 +1206,14 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
         if (!i->symbol) continue;
         Atom const* name = checker_atom(me, i->name.sv);
         if (builder_find_prop(builder, name)) continue;
-        Prop* prop = arena_new(&my arena, Prop);
+        Prop* prop = prop_new_declared(me);
         prop->name = name;
         prop->parent = enum_decl->symbol;
         prop->flags = PROP_READONLY;
         prop->type = ty_declared_type_of(me, i->symbol);
         prop->type_state = LAZY_STATE_DONE;
-        prop->name_span = i->full_name;
-        prop->name_is_value = i->name_is_value;
+        prop->decl->name_span = i->full_name;
+        prop->decl->name_is_value = i->name_is_value;
         prop_add_decl_spans(me, prop, &i->full_name, 1);
         any_numeric |= !(prop->type->flags & TYF_STRING_LITERAL);
         builder_push(builder, props, prop);
@@ -1535,6 +1565,7 @@ static Members const* instantiate_members(
             .parent = source->props[i]->parent,
             .target = source->props[i],
             .mapper = mapper,
+            .decl = prop_decl_none(),
         };
         builder_push(&builder, props, prop);
     }
@@ -1642,7 +1673,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     }
     Members const* source = ty_members(me, apparent);
     if (source->mapped || (!source->prop_count && !source->index_count)) return members;
-    Prop* template = arena_new(&my arena, Prop);
+    Prop* template = prop_new(me);
     template->type = ty_mapped_template(me, mapped);
     template->type_state = LAZY_STATE_DONE;
     MembersBuilder builder = { .mapped = mapped };
@@ -1661,14 +1692,15 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         if (mapped->readonly > 0) flags |= PROP_READONLY;
         if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
         Prop* prop = arena_new(&my arena, Prop);
-        *prop = (Prop){ .name = from->name, .flags = flags, .target = template, .mapper = mapper };
+        *prop = (Prop){ .name = from->name, .flags = flags, .target = template, .mapper = mapper, .decl = prop_decl_none() };
         Prop const* declared = from;
-        while (declared && declared->target && !declared->decl_span_count) declared = declared->target;
+        while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
         if (declared) {
-            prop->name_span = declared->name_span;
-            prop->decl_spans = declared->decl_spans;
-            prop->decl_span_count = declared->decl_span_count;
-            prop->name_is_value = declared->name_is_value;
+            prop->decl = arena_new(&my arena, PropDecl);
+            prop->decl->name_span = declared->decl->name_span;
+            prop->decl->decl_spans = declared->decl->decl_spans;
+            prop->decl->decl_span_count = declared->decl->decl_span_count;
+            prop->decl->name_is_value = declared->decl->name_is_value;
         }
         builder_push(&builder, props, prop);
     }
@@ -1728,7 +1760,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
             if (mapped->readonly > 0) flags |= PROP_READONLY;
             if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
             if (!template) {
-                template = arena_new(&my arena, Prop);
+                template = prop_new(me);
                 template->type = ty_mapped_template(me, mapped);
                 template->type_state = LAZY_STATE_DONE;
             }
@@ -1737,14 +1769,15 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
                 me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
             );
             Prop* prop = arena_new(&my arena, Prop);
-            *prop = (Prop){ .name = from->name, .flags = flags, .target = template, .mapper = mapper };
+            *prop = (Prop){ .name = from->name, .flags = flags, .target = template, .mapper = mapper, .decl = prop_decl_none() };
             Prop const* declared = from;
-            while (declared && declared->target && !declared->decl_span_count) declared = declared->target;
+            while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
             if (declared) {
-                prop->name_span = declared->name_span;
-                prop->decl_spans = declared->decl_spans;
-                prop->decl_span_count = declared->decl_span_count;
-                prop->name_is_value = declared->name_is_value;
+                prop->decl = arena_new(&my arena, PropDecl);
+                prop->decl->name_span = declared->decl->name_span;
+                prop->decl->decl_spans = declared->decl->decl_spans;
+                prop->decl->decl_span_count = declared->decl->decl_span_count;
+                prop->decl->name_is_value = declared->decl->name_is_value;
             }
             builder_push(&builder, props, prop);
         }
@@ -1926,8 +1959,8 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     }
     // The template as a property to instantiate per key (lowered when a property's type is first asked for, like tsc's
     // getTypeOfMappedSymbol: the members can be there before the template can be lowered)
-    Prop* template = arena_new(&my arena, Prop);
-    template->template_of = mapped;
+    Prop* template = prop_new_declared(me);
+    template->decl->template_of = mapped;
 
     MembersBuilder builder = { .mapped = generic ? mapped : nullptr };
     for (u32 i = 0; i < key_count; i++) {
@@ -1974,16 +2007,18 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     .target = template,
                     .mapper = mapper,
                     .mapped_type = ty,
+                    .decl = prop_decl_none(),
                 };
                 // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers), unless
                 // the `as` clause renamed it (tsc: a remapping rather than a filtering `as` clause; approximated per key)
                 Prop const* declared = prop_name == key ? from : nullptr;
-                while (declared && declared->target && !declared->decl_span_count) declared = declared->target;
+                while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
                 if (declared) {
-                    prop->name_span = declared->name_span;
-                    prop->decl_spans = declared->decl_spans;
-                    prop->decl_span_count = declared->decl_span_count;
-                    prop->name_is_value = declared->name_is_value;
+                    prop->decl = arena_new(&my arena, PropDecl);
+                    prop->decl->name_span = declared->decl->name_span;
+                    prop->decl->decl_spans = declared->decl->decl_spans;
+                    prop->decl->decl_span_count = declared->decl->decl_span_count;
+                    prop->decl->name_is_value = declared->decl->name_is_value;
                 }
                 builder_push(&builder, props, prop);
             } else {
@@ -2050,13 +2085,13 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         bool optional = (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL) != 0;
         if (!optional) min_length = i + 1;
         cstr name = cstr_d(i);
-        Prop* prop = arena_new(&my arena, Prop);
+        Prop* prop = prop_new_declared(me);
         prop->name = checker_atom(me, cstr_sv(&name));
         cstr_drop(&name);
         prop->flags = (optional ? PROP_OPTIONAL : 0) | (shape->readonly ? PROP_READONLY : 0);
         prop->type = elements.data[i];
         prop->type_state = LAZY_STATE_DONE;
-        prop->name_is_value = true;
+        prop->decl->name_is_value = true;
         builder_push(&builder, props, prop);
     }
     Ty const* length;
@@ -2073,7 +2108,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         length = ty_union(me, lengths, count, nullptr, (TyList){0});
         free(lengths);
     }
-    Prop* length_prop = arena_new(&my arena, Prop);
+    Prop* length_prop = prop_new(me);
     length_prop->name = checker_atom(me, c_sv("length"));
     length_prop->flags = shape->readonly ? PROP_READONLY : 0; // Like tsc's, a mutable tuple's length can be assigned
     length_prop->type = length;
@@ -2325,16 +2360,16 @@ Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name) {
 }
 
 Span ty_prop_decl_span(Prop const* prop) {
-    while (prop && !span_valid(prop->name_span)) prop = prop->target;
+    while (prop && !span_valid(prop->decl->name_span)) prop = prop->target;
     if (!prop) return (Span){0};
     // An assignment declaration (`this.x = v`) is the whole access (tsc's getErrorSpanForNode of the declaration)
-    Symbol const* symbol = prop->symbol;
+    Symbol const* symbol = prop->decl->symbol;
     if (symbol && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && span_valid(symbol->decls[0].name) &&
-        span_contains_span(symbol->decls[0].name, prop->name_span)
+        span_contains_span(symbol->decls[0].name, prop->decl->name_span)
     ) {
         return symbol->decls[0].name;
     }
-    return prop->name_span;
+    return prop->decl->name_span;
 }
 
 Ty const* prop_type(Checker* me, Prop const* const_prop) {
@@ -2349,7 +2384,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     prop->type_state = LAZY_STATE_IN_FLIGHT;
     Ty const* type;
     if (prop->flags & (PROP_GETTER | PROP_SETTER) && !prop->target) {
-        type = ty_object_literal_accessor_type(me, prop->function, prop->flags & PROP_GETTER);
+        type = ty_object_literal_accessor_type(me, prop->decl->function, prop->flags & PROP_GETTER);
     } else if (prop->target) {
         type = ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
         // (Only set with strictNullChecks. With exactOptionalPropertyTypes only the missing type goes: tsc's
@@ -2359,18 +2394,18 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         }
         // (An optional property's declared-type view: tsc's getNonMissingTypeOfSymbol)
         type = ty_remove_missing(me, type, prop->flags & PROP_OPTIONAL);
-    } else if (prop->overload_count) {
-        type = ty_anonymous_from_overloads(me, prop->overloads, prop->overload_count, prop->ctx);
-    } else if (prop->symbol) {
-        type = ty_type_of_symbol(me, prop->symbol);
-    } else if (prop->function) {
-        type = ty_function_type(me, prop->function);
-    } else if (prop->lazy) {
-        type = lazy_type_get((LazyType*)prop->lazy);
-    } else if (prop->template_of) {
-        type = ty_mapped_template(me, prop->template_of);
+    } else if (prop->decl->overload_count) {
+        type = ty_anonymous_from_overloads(me, prop->decl->overloads, prop->decl->overload_count, prop->decl->ctx);
+    } else if (prop->decl->symbol) {
+        type = ty_type_of_symbol(me, prop->decl->symbol);
+    } else if (prop->decl->function) {
+        type = ty_function_type(me, prop->decl->function);
+    } else if (prop->decl->lazy) {
+        type = lazy_type_get((LazyType*)prop->decl->lazy);
+    } else if (prop->decl->template_of) {
+        type = ty_mapped_template(me, prop->decl->template_of);
     } else {
-        type = ty_from_node(me, prop->node, prop->ctx);
+        type = ty_from_node(me, prop->decl->node, prop->decl->ctx);
     }
     if (prop->circular && prop->mapped_type) {
         // tsc's getTypeOfMappedSymbol when popTypeResolution fails
@@ -2392,8 +2427,8 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // Resolved lazily like the type
     if (prop->write_type) return prop->write_type;
     Ty const* type = nullptr;
-    if (prop->write_node) {
-        type = ty_from_node(me, prop->write_node, prop->ctx);
+    if (prop->decl->write_node) {
+        type = ty_from_node(me, prop->decl->write_node, prop->decl->ctx);
     } else if (prop->target) {
         type = prop_write_type(me, prop->target);
         if (type) type = ty_instantiate(me, type, prop->mapper);
@@ -2713,17 +2748,17 @@ Ty const* ty_object_literal(
                 builder_push(&builder, props, (Prop*)props[i].reuse);
                 continue;
             }
-            Prop* prop = arena_new(&my arena, Prop);
+            Prop* prop = prop_new_declared(me);
             prop->name = props[i].name;
             prop->flags = props[i].flags;
             prop->type = props[i].type;
             prop->type_state = props[i].type ? LAZY_STATE_DONE : LAZY_STATE_NOT_STARTED;
-            prop->function = props[i].accessor;
-            prop->name_span = props[i].name_span;
-            prop->name_is_value = props[i].name_is_value;
-            prop->literal_own = props[i].own;
-            prop->numeric_redeclared = props[i].numeric_redeclared;
-            prop->asserted = props[i].asserted;
+            prop->decl->function = props[i].accessor;
+            prop->decl->name_span = props[i].name_span;
+            prop->decl->name_is_value = props[i].name_is_value;
+            prop->decl->literal_own = props[i].own;
+            prop->decl->numeric_redeclared = props[i].numeric_redeclared;
+            prop->decl->asserted = props[i].asserted;
             prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
             flags |= props[i].type ? props[i].type->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_NON_INFERRABLE) :
@@ -2789,7 +2824,7 @@ static TyBuf const* context_siblings(Checker* me, WideningCtx* ctx) {
     for (u32 i = 0; i < parent->len; i++) {
         if (!is_object_literal_type(parent->data[i])) continue;
         Prop const* prop = ty_get_prop(me, parent->data[i], ctx->name);
-        if (prop && !prop->function) push_members(&ctx->siblings, prop_type(me, prop));
+        if (prop && !prop->decl->function) push_members(&ctx->siblings, prop_type(me, prop));
     }
     return &ctx->siblings;
 }
@@ -2798,7 +2833,7 @@ static TyBuf const* context_siblings(Checker* me, WideningCtx* ctx) {
 static bool contains_spread(Checker* me, Ty const* literal) {
     Members const* members = ty_members(me, literal);
     for (u32 i = 0; i < members->prop_count; i++) {
-        if (!members->props[i]->literal_own) return true;
+        if (!members->props[i]->decl->literal_own) return true;
     }
     return false;
 }
@@ -2845,25 +2880,25 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
         Ty const* type = nullptr;
-        if (!prop->function && ctx) {
+        if (!prop->decl->function && ctx) {
             WideningCtx child = { .parent = ctx, .name = prop->name };
             type = widen_with_context(me, prop_type(me, prop), &child);
             widening_ctx_drop(&child);
-        } else if (!prop->function) {
+        } else if (!prop->decl->function) {
             type = ty_widened_objects(me, prop_type(me, prop));
         }
         props[i] = (ObjectLiteralProp){
             .name = prop->name,
             .flags = prop->flags,
             .type = type,
-            .accessor = prop->function,
-            .name_span = prop->name_span,
-            .decl_spans = prop->decl_spans,
-            .decl_span_count = prop->decl_span_count,
-            .name_is_value = prop->name_is_value,
-            .asserted = prop->asserted,
-            .own = prop->literal_own,
-            .numeric_redeclared = prop->numeric_redeclared,
+            .accessor = prop->decl->function,
+            .name_span = prop->decl->name_span,
+            .decl_spans = prop->decl->decl_spans,
+            .decl_span_count = prop->decl->decl_span_count,
+            .name_is_value = prop->decl->name_is_value,
+            .asserted = prop->decl->asserted,
+            .own = prop->decl->literal_own,
+            .numeric_redeclared = prop->decl->numeric_redeclared,
         };
     }
     u32 count = members->prop_count;
@@ -2881,10 +2916,10 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .name = prop->name,
             .flags = PROP_OPTIONAL,
             .type = ty_intrinsic(me, exact ? TY_NEVER : TY_UNDEFINED),
-            .name_span = prop->name_span,
-            .decl_spans = prop->decl_spans,
-            .decl_span_count = prop->decl_span_count,
-            .name_is_value = prop->name_is_value,
+            .name_span = prop->decl->name_span,
+            .decl_spans = prop->decl->decl_spans,
+            .decl_span_count = prop->decl->decl_span_count,
+            .name_is_value = prop->decl->name_is_value,
         };
     }
     IndexInfo index[8] = {0};
@@ -2999,21 +3034,21 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
         bool changed = false;
         for (u32 i = 0; i < members->prop_count; i++) {
             Prop const* prop = members->props[i];
-            Ty const* type = prop->function ? nullptr : prop_type(me, prop);
+            Ty const* type = prop->decl->function ? nullptr : prop_type(me, prop);
             Ty const* widened = type ? widen_nullable(me, type, depth + 1) : type;
             changed |= widened != type;
             props[i] = (ObjectLiteralProp){
                 .name = prop->name,
                 .flags = prop->flags,
                 .type = widened,
-                .accessor = prop->function,
-                .name_span = prop->name_span,
-                .decl_spans = prop->decl_spans,
-                .decl_span_count = prop->decl_span_count,
-                .name_is_value = prop->name_is_value,
-                .asserted = prop->asserted,
-                .own = prop->literal_own,
-                .numeric_redeclared = prop->numeric_redeclared,
+                .accessor = prop->decl->function,
+                .name_span = prop->decl->name_span,
+                .decl_spans = prop->decl->decl_spans,
+                .decl_span_count = prop->decl->decl_span_count,
+                .name_is_value = prop->decl->name_is_value,
+                .asserted = prop->decl->asserted,
+                .own = prop->decl->literal_own,
+                .numeric_redeclared = prop->decl->numeric_redeclared,
             };
         }
         IndexInfo index[8] = {0};

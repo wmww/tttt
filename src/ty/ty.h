@@ -418,12 +418,9 @@ typedef enum PropFlags {
 } PropFlags;
 
 // A property of an object type. Deliberately the seed of plan 03's persistent symbol.
-struct Prop {
-    Atom const* name;
-    u32 flags;
-    Symbol const* parent; // the declared type it was declared in, may be null
-    // Its declaration can't mention `this` (tsc's isThisless*): instantiating only `this` leaves it as it is
-    bool thisless;
+// What a declared property knows about its declaration. Instantiations (which follow `target`) and synthetic
+// properties share ty_prop_decl_none, all zero and read-only: a property is 80 bytes, not 200
+typedef struct PropDecl {
     // Exactly one source of the type (or it is known from the start): a node to lower, what the AST evaluates lazily
     // (an inferred class field, an accessor), a method, the overloads of a method, a symbol, a target to instantiate
     TypeNode const* node;
@@ -433,14 +430,9 @@ struct Prop {
     Symbol const* symbol; // A member of a namespace: the type of the symbol as a value
     u32 overload_count;
     LowerCtx ctx;
-    Prop const* target;
-    TyMapper const* mapper;
-    LazyState type_state;
-    Ty const* type;
     // A divergent accessor's setter parameter type (tsc's write type), lowered with `ctx`; instantiations follow
     // `target`. See prop_write_type()
     TypeNode const* write_node;
-    Ty const* write_type;
     // Where it was declared, for the symbols baseline (not copied to instantiations, follow `target`)
     Span name_span;
     Span const* decl_spans;
@@ -451,8 +443,24 @@ struct Prop {
     bool numeric_redeclared;
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
     TypeNode const* asserted;
-    Ty const* mapped_type; // A property of this mapped type (the resolved one): for TS2615, see prop_type()
     struct MappedInfo const* template_of; // The template of this mapped type, as a property its properties instantiate
+} PropDecl;
+
+extern PropDecl const ty_prop_decl_none;
+
+struct Prop {
+    Atom const* name;
+    u32 flags;
+    LazyState type_state;
+    Symbol const* parent; // the declared type it was declared in, may be null
+    Prop const* target;
+    TyMapper const* mapper;
+    Ty const* type;
+    Ty const* write_type; // See prop_write_type()
+    Ty const* mapped_type; // A property of this mapped type (the resolved one): for TS2615, see prop_type()
+    PropDecl* decl; // Never null (ty_prop_decl_none)
+    // Its declaration can't mention `this` (tsc's isThisless*): instantiating only `this` leaves it as it is
+    bool thisless;
     bool circular; // Its type needed its type (a mapped type property: TS2615 when done)
 };
 

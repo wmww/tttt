@@ -606,14 +606,14 @@ static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, Error
         Members const* members = ty_members(checker, ty);
         for (u32 i = 0; i < members->prop_count; i++) {
             Prop const* prop = members->props[i];
-            if (prop->function) continue;
+            if (prop->decl->function) continue;
             Ty const* t = prop_type(checker, prop);
             if (!(t->xflags & TYX_CONTAINS_WIDENING)) continue;
             bool inner = report_widening_errors_in_type(checker, t, errs, depth + 1);
-            if (!inner && prop->literal_own && prop->name_span.source) {
+            if (!inner && prop->decl->literal_own && prop->decl->name_span.source) {
                 cstr name = ty_prop_name_cstr(checker, prop->name);
                 cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, t));
-                error_ctx_error_d(errs, prop->name_span, 7018, "Object literal's property '", name, "' implicitly has an '", type, "' type.");
+                error_ctx_error_d(errs, prop->decl->name_span, 7018, "Object literal's property '", name, "' implicitly has an '", type, "' type.");
                 c_drop(cstr, &name, &type);
                 inner = true;
             }

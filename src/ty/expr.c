@@ -1831,7 +1831,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
     for (u32 j = 0; j < members->prop_count; j++) {
         Prop const* prop = members->props[j];
         if (!ty_is_spreadable_prop(me, prop)) continue;
-        if ((prop->flags & PROP_METHOD) && prop->function) continue; // (a class method)
+        if ((prop->flags & PROP_METHOD) && prop->decl->function) continue; // (a class method)
         Prop const* origin = prop;
         while (origin->target) origin = origin->target;
         // (A set-only accessor spreads as undefined: tsc's getSpreadSymbol)
@@ -1843,17 +1843,17 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
             if (compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) type = optional_type(me, type);
         }
         // The annotation of the property it comes from still says what it is, unless instantiated
-        TypeNode const* annotation = !partial && origin->node && origin->node->parsed && !origin->lazy && !origin->function &&
-            !origin->overload_count && !origin->symbol && type == prop_type(me, origin) ? origin->node : nullptr;
+        TypeNode const* annotation = !partial && origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function &&
+            !origin->decl->overload_count && !origin->decl->symbol && type == prop_type(me, origin) ? origin->decl->node : nullptr;
         literal_builder_add(out, (ObjectLiteralProp){
             .name = prop->name,
             .flags = flags,
             .type = type,
             .asserted = annotation,
-            .name_span = origin->name_span,
-            .decl_spans = origin->decl_spans,
-            .decl_span_count = origin->decl_span_count,
-            .name_is_value = origin->name_is_value,
+            .name_span = origin->decl->name_span,
+            .decl_spans = origin->decl->decl_spans,
+            .decl_span_count = origin->decl->decl_span_count,
+            .name_is_value = origin->decl->name_is_value,
         });
     }
     for (u32 j = 0; j < members->index_count && out->index_count < c_arraylen(out->index); j++) {
@@ -2551,8 +2551,8 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
     }
     Prop const* prop = name && (type->flags & TYF_OBJECT) ? ty_get_prop(me, type, name) : nullptr;
     // (Unless a later spread replaced it)
-    bool own = prop && (!prop->decl_span_count || span_eq(prop->decl_spans[0], item->span) ||
-        (prop->decl_span_count == 2 && span_eq(prop->decl_spans[1], item->span)));
+    bool own = prop && (!prop->decl->decl_span_count || span_eq(prop->decl->decl_spans[0], item->span) ||
+        (prop->decl->decl_span_count == 2 && span_eq(prop->decl->decl_spans[1], item->span)));
     if (prop && own) return prop_type(me, prop);
     // A computed key that made no property
     Ty const* value = ty_expr_type(me, &item->value);
@@ -2769,7 +2769,7 @@ Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, JsxAttribut
     Ty const* type = ty_expr_type(me, attributes);
     Prop const* prop = type->flags & TYF_OBJECT ? ty_get_prop(me, type, checker_atom(me, attribute->name.sv)) : nullptr;
     // (Unless a later spread replaced it)
-    if (prop && prop->decl_span_count == 1 && span_eq(prop->decl_spans[0], attribute->span)) return prop_type(me, prop);
+    if (prop && prop->decl->decl_span_count == 1 && span_eq(prop->decl->decl_spans[0], attribute->span)) return prop_type(me, prop);
     return widen_literals(me, ty_expr_type(me, &attribute->value));
 }
 
