@@ -361,6 +361,7 @@ void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, Error
             Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
             // (The same diagnostic twice is one)
             ErrorCtx quiet = error_ctx_init();
+            quiet.phase = errs->phase;
             u32 again = ty_check_non_null_non_void_at(current_checker, type, at, true, &quiet);
             if (again && again != reported) error_ctx_merge(errs, &quiet);
             error_ctx_drop(&quiet);

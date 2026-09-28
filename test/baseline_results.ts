@@ -47923,7 +47923,7 @@ const baselines = {
     'propertyAccessWidening': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'errorSuperCalls': {
         errors: true,

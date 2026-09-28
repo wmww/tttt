@@ -1941,6 +1941,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                     if (array_like && !has_default) {
                         Value key = value_number(index);
                         ErrorCtx found = error_ctx_init();
+                        found.phase = errs->phase;
                         ty_check_property_access(checker, source, ty_literal(checker, &key), span_null, i->outer_span, false,
                             false, &found);
                         past_end = !error_ctx_empty(&found);
@@ -3067,6 +3068,14 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             ) {
                 break;
             }
+            // (Written to or called, the object is widened: tsc's checkPropertyAccessExpressionOrQualifiedName. What a
+            // property access lacks is said about the type as it was)
+            Ty const* unwidened = expr_type;
+            if (my property->method_call || my property->assignment_target) {
+                expr_type = ty_widened_objects(current_checker, ty_widened_nullable(current_checker, expr_type));
+            }
+            ErrorCtx found = error_ctx_init();
+            found.phase = errs->phase;
             ty_check_property_access(
                 current_checker,
                 expr_type,
@@ -3075,8 +3084,17 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 my property->prop.outer_span,
                 expr_is_entity_name(&my property->expr),
                 error_if_not_found,
-                errs
+                &found
             );
+            if (unwidened != expr_type && error_if_not_found && error_ctx_find(&found, my property->prop.outer_span, 2339)) {
+                error_ctx_clear(&found);
+                cstr shown = ty_to_cstr(current_checker, unwidened);
+                error_ctx_error_d(errs, my property->prop.outer_span, 2339, "Property '", my property->prop.outer_span,
+                    "' does not exist on type '", shown, "'.");
+                cstr_drop(&shown);
+            }
+            error_ctx_merge(errs, &found);
+            error_ctx_drop(&found);
             ty_check_element_implicit_any(current_checker, my property, expr_type, my inner_span, errs);
             ty_check_generic_element_access(current_checker, my property, expr_type, my inner_span, errs);
             ty_check_member_modifiers(current_checker, my property, expr_type, my inner_span, errs);

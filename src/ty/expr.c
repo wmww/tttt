@@ -3526,7 +3526,10 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (in_constructor) return in_constructor;
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
-            if (expr->property->method_call || expr->property->assignment_target) object = ty_widened_nullable(me, object);
+            // (tsc's getWidenedType: an object literal isn't one any more, a fresh literal widens)
+            if (expr->property->method_call || expr->property->assignment_target) {
+                object = ty_widened_objects(me, ty_widened_nullable(me, object));
+            }
             // An incomplete `never` of control flow is like any (tsc's silentNeverType)
             if (object == ty_intrinsic(me, TY_SILENT_NEVER)) return object;
             // `never` has no properties (TS2339), `never[k]` is never
