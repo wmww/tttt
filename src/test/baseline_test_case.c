@@ -533,7 +533,9 @@ static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* sourc
 }
 
 static const char* error_file_name(SourceFile const* source) {
-    return source->display_path_override ? source->display_path_override : cstr_str(&source->canonical_path);
+    char const* ret = source->display_path_override ? source->display_path_override : cstr_str(&source->canonical_path);
+    // (`// @filename: ./b.ts` is `b.ts` in the diagnostics, the file's normalized name, and `./b.ts` in its header)
+    return strncmp(ret, "./", 2) == 0 ? ret + 2 : ret;
 }
 
 static void format_error_tree(
