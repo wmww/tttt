@@ -19,6 +19,7 @@ typedef struct ClassItem {
         CLASS_ITEM_STATIC_BLOCK,
     } tag;
     AccessModifier access;
+    bool is_override; // `override`, or in JavaScript a JSDoc `@override` (fields, methods, accessors)
     bool interface_member_static; // CLASS_ITEM_INTERFACE_MEMBER: `static [k: string]: T`
     Span span;
     VecExpr decorators; // TODO: only checked as expressions, not as decorators of this member

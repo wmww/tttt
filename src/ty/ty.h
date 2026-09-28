@@ -897,6 +897,8 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
 Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name); // relate.c, with Function/Object members
+/// tsc's getPropertyOfType of any type (an intersection's from its first part that has it), null if none. relate.c
+Prop const* ty_property_of_type(Checker* me, Ty const* ty, Atom const* name);
 // A namespace's (or module's) type-only export, which isn't among the members of its value but is what the entity name
 // `typeof ns.A` names (tsc's getPropertyOfType with includeTypeOnlyMembers). Null if that's not what `name` is
 Prop const* ty_namespace_type_only_prop(Checker* me, Ty const* object, Atom const* name); // members.c

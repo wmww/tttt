@@ -4501,6 +4501,7 @@ static bool parse_function_args_inner(
                 ModifierList modifier_list;
                 parse_modifier_list(&p, true, &modifier_list);
                 bool is_readonly_property = modifier_list.includes[MODIFIER_READONLY];
+                bool is_override_property = modifier_list.includes[MODIFIER_OVERRIDE];
                 bool is_parameter_property = is_readonly_property || modifier_list.includes[MODIFIER_PUBLIC] ||
                     modifier_list.includes[MODIFIER_PROTECTED] || modifier_list.includes[MODIFIER_PRIVATE] ||
                     modifier_list.includes[MODIFIER_OVERRIDE];
@@ -4575,6 +4576,7 @@ static bool parse_function_args_inner(
                     .decorators = decorators,
                     .is_parameter_property = is_parameter_property,
                     .is_readonly_property = is_readonly_property,
+                    .is_override_property = is_override_property,
                     .access = access,
                 });
 
@@ -5573,6 +5575,7 @@ static uint8_t jsdoc_modifiers(VecJsDocTag const* tags) {
         if (i->kind == JSDOC_TAG_PRIVATE) ret |= JSDOC_MODIFIER_PRIVATE;
         if (i->kind == JSDOC_TAG_PROTECTED) ret |= JSDOC_MODIFIER_PROTECTED;
         if (i->kind == JSDOC_TAG_READONLY) ret |= JSDOC_MODIFIER_READONLY;
+        if (i->kind == JSDOC_TAG_OVERRIDE) ret |= JSDOC_MODIFIER_OVERRIDE;
     }
     return ret;
 }
@@ -5587,6 +5590,7 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
         else if (modifiers & JSDOC_MODIFIER_PROTECTED) item->access = ACCESS_MODIFIER_PROTECTED;
     }
     if (item->tag == CLASS_ITEM_FIELD && (modifiers & JSDOC_MODIFIER_READONLY)) item->field.is_readonly = true;
+    if (modifiers & JSDOC_MODIFIER_OVERRIDE) item->is_override = true;
     switch (item->tag) {
         case CLASS_ITEM_CONSTRUCTOR: jsdoc_apply_function(&tags, &item->constructor.func); break;
         case CLASS_ITEM_METHOD: jsdoc_apply_function(&tags, &item->method.func); break;
@@ -5845,6 +5849,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 }
             }
         }
+        ret->is_override = modifiers.includes[MODIFIER_OVERRIDE];
         ret->access = modifiers.includes[MODIFIER_PRIVATE] ?
             ACCESS_MODIFIER_PRIVATE :
             (modifiers.includes[MODIFIER_PROTECTED] ?

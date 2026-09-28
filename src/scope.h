@@ -140,6 +140,7 @@ typedef enum JsDocModifiers {
     JSDOC_MODIFIER_PRIVATE = 1 << 0,
     JSDOC_MODIFIER_PROTECTED = 1 << 1,
     JSDOC_MODIFIER_READONLY = 1 << 2,
+    JSDOC_MODIFIER_OVERRIDE = 1 << 3,
 } JsDocModifiers;
 
 typedef struct SymbolDecl {

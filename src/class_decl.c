@@ -609,6 +609,169 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
     cstr_drop(&missing);
 }
 
+// The property of a member in the class or its base: an intersection's (a mixin's) comes from its parts
+static Prop const* override_find_prop(Checker* checker, Ty const* type, Atom const* name) {
+    if (!type || !name) return nullptr;
+    return ty_property_of_type(checker, ty_apparent_type(checker, type), name);
+}
+
+// tsc's getSuggestedSymbolForNonexistentClassMember: a close name among the base's properties
+static Atom const* override_suggestion(Checker* checker, Ty const* base, Atom const* name) {
+    base = ty_apparent_type(checker, base);
+    TyList parts = base->kind == TY_INTERSECTION ? base->composite.types : (TyList){ .data = &base, .len = 1 };
+    u32 count = 0;
+    for (u32 i = 0; i < parts.len; i++) count += ty_members(checker, ty_apparent_type(checker, parts.data[i]))->prop_count;
+    if (!count) return nullptr;
+    csview* names = malloc(sizeof(csview) * count);
+    Atom const** atoms = malloc(sizeof(Atom const*) * count);
+    panic_if(!names || !atoms, "out of memory");
+    u32 n = 0;
+    for (u32 i = 0; i < parts.len; i++) {
+        Members const* members = ty_members(checker, ty_apparent_type(checker, parts.data[i]));
+        for (u32 j = 0; j < members->prop_count; j++) {
+            atoms[n] = members->props[j]->name;
+            names[n++] = atom_sv(members->props[j]->name);
+        }
+    }
+    isize best = spelling_suggestion(atom_sv(name), names, n);
+    Atom const* ret = best >= 0 ? atoms[best] : nullptr;
+    free(names);
+    free(atoms);
+    return ret;
+}
+
+// Whether a declaration of the base's member is abstract
+static bool override_base_abstract(Checker* checker, Prop const* base_prop) {
+    if (!base_prop || (base_prop->flags & PROP_STATIC)) return false;
+    ClassDecl const* base_class = class_of_prop(base_prop);
+    return base_class && class_instance_member(checker, base_class, base_prop->name).is_abstract;
+}
+
+typedef struct OverrideCtx {
+    ClassDecl const* class_decl;
+    Ty const* type; // The class's instance type
+    Ty const* static_type;
+    Ty const* base; // Its base's instance type (tsc's baseWithThis), null if it extends nothing, `any` for `extends any`
+    Ty const* base_static;
+    bool base_any; // It extends `any`: its base has no properties
+    bool is_js;
+} OverrideCtx;
+
+// tsc's checkMemberForOverrideModifier for one member (a parameter property when `parameter`)
+static void check_member_override(OverrideCtx const* ctx, Atom const* name, bool dynamic_name, bool has_override,
+    bool is_abstract, bool is_static, bool parameter, Span at, ErrorCtx* errs
+) {
+    Checker* checker = current_checker;
+    bool js = ctx->is_js;
+    if (has_override && dynamic_name) {
+        if (js) {
+            error_ctx_error_d(errs, at, 4128, "This member cannot have a JSDoc comment with an 'override' tag because its name is dynamic.");
+        } else {
+            error_ctx_error_d(errs, at, 4127, "This member cannot have an 'override' modifier because its name is dynamic.");
+        }
+        return;
+    }
+    if (!name) return;
+    bool no_implicit = compiler_options()->no_implicit_override;
+    if (ctx->base) {
+        if (!has_override && !no_implicit) return;
+        Prop const* prop = override_find_prop(checker, is_static ? ctx->static_type : ctx->type, name);
+        Ty const* base_type = is_static ? ctx->base_static : ctx->base;
+        Prop const* base_prop = ctx->base_any ? nullptr : override_find_prop(checker, base_type, name);
+        if (prop && !base_prop && has_override) {
+            Atom const* suggestion = ctx->base_any ? nullptr : override_suggestion(checker, base_type, name);
+            if (suggestion && js) {
+                error_ctx_error_d(errs, at, 4123, "This member cannot have a JSDoc comment with an 'override' tag because it is "
+                    "not declared in the base class '", ctx->base, "'. Did you mean '", atom_sv(suggestion), "'?");
+            } else if (suggestion) {
+                error_ctx_error_d(errs, at, 4117, "This member cannot have an 'override' modifier because it is not declared in "
+                    "the base class '", ctx->base, "'. Did you mean '", atom_sv(suggestion), "'?");
+            } else if (js) {
+                error_ctx_error_d(errs, at, 4122, "This member cannot have a JSDoc comment with an '@override' tag because it is "
+                    "not declared in the base class '", ctx->base, "'.");
+            } else {
+                error_ctx_error_d(errs, at, 4113, "This member cannot have an 'override' modifier because it is not declared in "
+                    "the base class '", ctx->base, "'.");
+            }
+        } else if (prop && base_prop && no_implicit && !ctx->class_decl->is_ambient && !has_override) {
+            bool base_abstract = override_base_abstract(checker, base_prop);
+            if (!base_abstract) {
+                if (parameter && js) {
+                    error_ctx_error_d(errs, at, 4120, "This parameter property must have a JSDoc comment with an '@override' tag "
+                        "because it overrides a member in the base class '", ctx->base, "'.");
+                } else if (parameter) {
+                    error_ctx_error_d(errs, at, 4115, "This parameter property must have an 'override' modifier because it "
+                        "overrides a member in base class '", ctx->base, "'.");
+                } else if (js) {
+                    error_ctx_error_d(errs, at, 4119, "This member must have a JSDoc comment with an '@override' tag because it "
+                        "overrides a member in the base class '", ctx->base, "'.");
+                } else {
+                    error_ctx_error_d(errs, at, 4114, "This member must have an 'override' modifier because it overrides a member "
+                        "in the base class '", ctx->base, "'.");
+                }
+            } else if (is_abstract) {
+                error_ctx_error_d(errs, at, 4116, "This member must have an 'override' modifier because it overrides an abstract "
+                    "method that is declared in the base class '", ctx->base, "'.");
+            }
+        }
+    } else if (has_override) {
+        if (js) {
+            error_ctx_error_d(errs, at, 4121, "This member cannot have a JSDoc comment with an '@override' tag because its "
+                "containing class '", ctx->type, "' does not extend another class.");
+        } else {
+            error_ctx_error_d(errs, at, 4112, "This member cannot have an 'override' modifier because its containing class '",
+                ctx->type, "' does not extend another class.");
+        }
+    }
+}
+
+// tsc's checkMembersForOverrideModifier: `override` where a member overrides nothing (TS4112, TS4113, TS4117) and,
+// under noImplicitOverride, where it's missing (TS4114-TS4116), with JSDoc `@override` in JavaScript (TS4119-TS4123)
+static void class_check_override_modifiers(ClassDecl* me, Ty const* base, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    if (!my symbol) return;
+    OverrideCtx ctx = {
+        .class_decl = me,
+        .type = ty_declared_type_of(checker, my symbol),
+        .static_type = ty_static_type_of(checker, my symbol),
+        .base = base,
+        .is_js = my full_span.source && my full_span.source->is_js,
+    };
+    Expr const* extends = &my extends;
+    if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+    if (extends->tag != EXPR_IMPLICIT_ANY) {
+        Ty const* constructor = ty_expr_type(checker, extends);
+        if (base) ctx.base_static = constructor;
+        else if ((constructor->flags & TYF_ANY) && !(constructor->flags & TYF_ERROR)) {
+            ctx.base_any = true;
+            ctx.base = ctx.base_static = constructor;
+        }
+    }
+    for_each (i, vec_class_item, &my items) {
+        switch (i->tag) {
+            case CLASS_ITEM_CONSTRUCTOR:
+                for_each (arg, vec_function_arg, &i->constructor.func.args) {
+                    if (!arg->is_parameter_property || arg->initializer.binding.tag != BINDING_IDENTIFIER) continue;
+                    Atom const* name = checker_atom(checker, arg->initializer.binding.content_span.sv);
+                    check_member_override(&ctx, name, false, arg->is_override_property, false, false, true, arg->span, errs);
+                }
+                break;
+            case CLASS_ITEM_FIELD:
+                if (i->field.is_declare) break;
+                // fallthrough
+            case CLASS_ITEM_METHOD: {
+                bool is_field = i->tag == CLASS_ITEM_FIELD;
+                Expr const* computed_key = is_field ? i->field.computed_key : i->method.computed_key;
+                Atom const* name = item_member_name(checker, me, i);
+                check_member_override(&ctx, name, computed_key && !name, i->is_override,
+                    is_field ? i->field.is_abstract : i->method.is_abstract, class_item_is_static(i), false,
+                    is_field ? i->field.name_span : i->method.name_span, errs);
+            }   break;
+            default: break;
+        }
+    }
+}
+
 // tsc's isMixinConstructorType: one construct signature without type parameters, whose only parameter is `...args: any[]`
 static bool is_mixin_constructor_type(Checker* checker, Ty const* type) {
     Members const* members = ty_members(checker, type);
@@ -676,6 +839,7 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
         base = nullptr;
     }
     class_check_mixin(me, errs);
+    class_check_override_modifiers(me, base && (base->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? base : nullptr, errs);
     if (base && (base->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
         class_check_member_overrides(me, declared, base, errs);
         bool fits = ty_check_heritage(checker, type_with_this, ty_with_this_arg(checker, base, this_param), members, count,

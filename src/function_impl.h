@@ -22,6 +22,7 @@ typedef struct FunctionArg {
     // `constructor(public x: T)`: also declares a property of the class
     bool is_parameter_property;
     bool is_readonly_property;
+    bool is_override_property; // `constructor(override x: T)`
     uint8_t access; // AccessModifier (class_decl.h) of a parameter property
     bool jsdoc_this; // The `this` parameter a JSDoc `@this {T}` declares (not in the baselines' walk)
 } FunctionArg;
