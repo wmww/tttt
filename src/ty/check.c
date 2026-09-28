@@ -512,8 +512,10 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
 static bool elaborate_did_you_mean_to_call(
     Checker* me, AssignHead head, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs
 ) {
-    if (!(source->flags & TYF_OBJECT)) return false;
-    Members const* members = ty_members(me, ty_apparent_type(me, source));
+    // (getSignaturesOfType, of an intersection too)
+    Ty const* apparent = ty_apparent_type(me, source);
+    if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION)) || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+    Members const* members = ty_members(me, apparent);
     for (u32 pass = 0; pass < 2; pass++) {
         bool construct = pass == 0;
         Signature* const* sigs = construct ? members->construct : members->call;
@@ -699,8 +701,19 @@ bool ty_check_heritage(
     return false;
 }
 
-// tsc's getTypeWithoutSignatures(): the properties of a type (index signatures go too)
+// tsc's getTypeWithoutSignatures(): the properties of a type (index signatures go too), of each member of an
+// intersection
 static Ty const* type_without_signatures(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_INTERSECTION) {
+        TyList types = ty->composite.types;
+        Ty const** parts = malloc(sizeof(Ty const*) * types.len);
+        panic_if(!parts, "out of memory");
+        for (u32 i = 0; i < types.len; i++) parts[i] = type_without_signatures(me, types.data[i]);
+        Ty const* ret = ty_intersection(me, parts, types.len, nullptr, (TyList){0});
+        free(parts);
+        return ret;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return ty;
     Members const* members = ty_members(me, ty);
     if (!members->call_count && !members->construct_count) return ty;
     ObjectLiteralProp* props = malloc(sizeof(ObjectLiteralProp) * (members->prop_count ? members->prop_count : 1));
@@ -711,14 +724,44 @@ static Ty const* type_without_signatures(Checker* me, Ty const* ty) {
     return ret;
 }
 
+// How TS2417 names (part of) the base static side, `without` being it without signatures (tsc names the type without
+// signatures, which keeps the symbol: a class's static side still says `typeof Base`)
+static Ty const* static_side_for_display(Ty const* part, Ty const* without) {
+    Ty const* declared = part->kind == TY_REFERENCE ? part->reference.target : part;
+    return declared->kind == TY_DECLARED ? part : without;
+}
+
 bool ty_check_static_heritage(Checker* me, Ty const* static_type, Ty const* base_static, Span span, ErrorCtx* errs) {
-    if (!(static_type->flags & TYF_OBJECT) || !(base_static->flags & TYF_OBJECT)) return true;
+    if (!(static_type->flags & TYF_OBJECT) || !(base_static->flags & (TYF_OBJECT | TYF_INTERSECTION))) return true;
+    TyList parts = base_static->kind == TY_INTERSECTION ? base_static->composite.types : (TyList){ .data = &base_static, .len = 1 };
+    // HACK: a class whose base constructor is `X & K` (K a type variable) has the static type `typeof C & K` in tsc
+    // (getBaseTypeVariableOfClass in getTypeOfFuncClassEnumModule); tttt's static types don't, so it's added here
+    if (parts.len > 1) {
+        Ty const** with = malloc(sizeof(Ty const*) * (parts.len + 1));
+        panic_if(!with, "out of memory");
+        u32 len = 0;
+        with[len++] = static_type;
+        for (u32 i = 0; i < parts.len; i++) {
+            if (parts.data[i]->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) with[len++] = parts.data[i];
+        }
+        if (len > 1) static_type = ty_intersection(me, with, len, nullptr, (TyList){0});
+        free(with);
+    }
     Ty const* target = type_without_signatures(me, base_static);
     u32 limit_hits = my instantiation_limit_hits;
     if (ty_is_related(me, static_type, target, TY_RELATION_ASSIGNABLE)) return true;
     if (my instantiation_limit_hits != limit_hits) return false;
+    // tsc relates to each member of an intersection on its own (typeRelatedToEachType): the one that fails is named
+    Ty const* shown = static_side_for_display(base_static, target);
+    for (u32 i = 0; i < parts.len && parts.len > 1; i++) {
+        Ty const* part_target = type_without_signatures(me, parts.data[i]);
+        if (ty_is_related(me, static_type, part_target, TY_RELATION_ASSIGNABLE)) continue;
+        target = part_target;
+        shown = static_side_for_display(parts.data[i], part_target);
+        break;
+    }
     cstr derived_str = ty_to_cstr(me, static_type);
-    cstr base_str = ty_to_cstr(me, base_static);
+    cstr base_str = ty_to_cstr(me, shown);
     report_unassignable_with_head(me, static_type, target, 2417, cstr_d("Class static side '", derived_str,
         "' incorrectly extends base class static side '", base_str, "'."), false, span, errs);
     c_drop(cstr, &derived_str, &base_str);
@@ -1023,24 +1066,44 @@ static Prop const* suggested_property(Checker* me, Ty const* object, csview name
     for (u32 i = 0; i < parts.len && !first; i++) {
         if (!(parts.data[i]->flags & TYF_NULLABLE)) first = ty_apparent_type(me, parts.data[i]);
     }
-    if (!first || !(first->flags & TYF_OBJECT)) return nullptr;
-    Members const* members = ty_members(me, first);
-    if (!members->prop_count) return nullptr;
-    csview* names = malloc(sizeof(csview) * members->prop_count);
+    if (!first || !(first->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
+    // (tsc's getPropertiesOfType: an intersection's are those of all of its members, each name once)
+    TyList holders = first->kind == TY_INTERSECTION ? first->composite.types : (TyList){ .data = &first, .len = 1 };
+    Prop const** props = nullptr;
+    u32 count = 0;
+    for (u32 h = 0; h < holders.len; h++) {
+        Ty const* holder = ty_apparent_type(me, holders.data[h]);
+        if (!(holder->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, holder);
+        props = realloc(props, sizeof(Prop const*) * (count + members->prop_count + 1));
+        panic_if(!props, "out of memory");
+        for (u32 i = 0; i < members->prop_count; i++) {
+            bool seen = false;
+            for (u32 k = 0; k < count && !seen; k++) seen = props[k]->name == members->props[i]->name;
+            if (!seen) props[count++] = members->props[i];
+        }
+    }
+    if (!count) {
+        free(props);
+        return nullptr;
+    }
+    csview* names = malloc(sizeof(csview) * count);
     panic_if(!names, "out of memory");
-    for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
+    for (u32 i = 0; i < count; i++) {
+        Prop const* prop = props[i];
         csview candidate = atom_sv(prop->name);
         bool everywhere = candidate.size && candidate.buf[0] != '#' && !(prop->flags & PROP_STATIC);
         for (u32 j = 0; j < parts.len && everywhere; j++) {
             if (parts.data[j]->flags & TYF_NULLABLE) continue;
-            everywhere = ty_get_prop(me, ty_apparent_type(me, parts.data[j]), prop->name) != nullptr;
+            everywhere = ty_prop_type_of(me, ty_apparent_type(me, parts.data[j]), prop->name) != nullptr;
         }
         names[i] = everywhere ? candidate : (csview){0};
     }
-    isize best = spelling_suggestion(name, names, members->prop_count);
+    isize best = spelling_suggestion(name, names, count);
+    Prop const* ret = best >= 0 ? props[best] : nullptr;
     free(names);
-    return best >= 0 ? members->props[best] : nullptr;
+    free(props);
+    return ret;
 }
 
 static void report_no_property(Checker* me, Ty const* object, Ty const* index, unsigned ts_code, Span span, ErrorCtx* errs) {
