@@ -418,6 +418,11 @@ typedef struct Binder {
     struct PendingNotFound* pending_not_found; // malloc'd
     u32 pending_not_found_count;
     u32 pending_not_found_cap;
+    // Globals JavaScript expandos of another file declared or added to (`Outer.Inner = v` where the file doesn't
+    // declare Outer), for binder_link_global_expandos()
+    Symbol** global_expandos; // malloc'd
+    u32 global_expando_count;
+    u32 global_expando_cap;
 } Binder;
 
 Binder* binder_new(ErrorCtx* errs);
@@ -427,6 +432,9 @@ void binder_set_parent(Binder* me, Binder const* parent);
 // Merges module augmentations, resolves every alias, so that nothing writes to a symbol afterwards, and reports
 // import conflicts
 void binder_link(Binder* me);
+// Once every file's names are declared: the initializers of the variables global expandos went to get their members
+// (the variable may be declared by a file bound after the expando's)
+void binder_link_global_expandos(Binder* me);
 // A `declare module "m" {}` in a module, whose declarations binder_link() merges into "m"
 void binder_add_augmentation(Binder* me, NamespaceDecl* decl);
 Symbol* binder_new_symbol(Binder* me, csview name, u32 flags);

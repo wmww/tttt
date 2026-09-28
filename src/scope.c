@@ -119,6 +119,7 @@ void binder_destroy(Binder* me) {
     free(my pattern_modules);
     free(my augmentations);
     free(my pending_not_found);
+    free(my global_expandos);
     free(my overlays.keys);
     free(my overlays.values);
     arena_drop(&my arena);
@@ -726,7 +727,11 @@ static Symbol* declare_symbol(
         }
     }
     if (existing) {
-        if (existing->flags & excludes) {
+        // A global namespace JavaScript expandos of another file made merges with anything (tsc's mergeSymbol: the
+        // Assignment flag)
+        bool expando_only = existing->decl_count > 0;
+        for (u32 i = 0; i < existing->decl_count && expando_only; i++) expando_only = existing->decls[i].kind == SYMBOL_DECL_EXPANDO;
+        if (existing->flags & excludes && !(expando_only && table == &binder->globals)) {
             if (default_export && existing->decl_count) report_multiple_defaults(scope->errs, existing, name_span);
             else report_conflicts(scope->errs, existing, name_span, includes, false);
             return binder_new_symbol(binder, name, includes);
@@ -2744,48 +2749,147 @@ static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
     return nullptr;
 }
 
-// What `f` of `f.x = v` names, if it can have expandos: tsc's isExpandoSymbol, and in TypeScript isFunctionSymbol.
-// `init_ret`: a variable's expando initializer
+// Whether a symbol can have expandos (tsc's isExpandoSymbol, and in TypeScript isFunctionSymbol). `init_ret`: a
+// variable's (or JavaScript member's) expando initializer
+static bool symbol_is_expando_host(Symbol const* found, bool js, Expr** init_ret) {
+    *init_ret = nullptr;
+    SymbolDecl const* value = nullptr;
+    for (u32 i = 0; i < found->decl_count && !value; i++) {
+        if (found->decls[i].flags & SYMBOL_VALUE) value = &found->decls[i];
+    }
+    if (!value) return false;
+    switch (value->kind) {
+        case SYMBOL_DECL_FUNCTION: return true;
+        case SYMBOL_DECL_CLASS:
+        case SYMBOL_DECL_NAMESPACE:
+        case SYMBOL_DECL_ENUM:
+        case SYMBOL_DECL_EXPANDO: // A global namespace a JavaScript expando declared
+            return js;
+        case SYMBOL_DECL_VARIABLE: {
+            Binding const* binding = value->node;
+            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
+            InitializedBinding* initialized = (InitializedBinding*)binding;
+            Expr* init = expando_initializer(&initialized->value, binding->content_span, js);
+            if (!init) return false;
+            // (An annotated variable has the type it says, but its initializer gets the members all the same)
+            *init_ret = init;
+            return true;
+        }
+        case SYMBOL_DECL_ASSIGNMENT: {
+            // JavaScript `ns.a = {}` (or a function, a class): `ns.a.b = v` declares b in it
+            if (!js) return false;
+            Expr* init = expando_initializer((Expr*)value->node, span_null, js);
+            if (!init) return false;
+            *init_ret = init;
+            return true;
+        }
+        default: return false;
+    }
+}
+
+static void set_expando_initializer_host(Expr* init, Symbol* host) {
+    if (init && init->tag == EXPR_FUNCTION) init->function->expando_host = host;
+    if (init && init->tag == EXPR_CLASS_DECL) init->class_decl->expando_host = host;
+}
+
+// What `f` of `f.x = v` names, if it can have expandos. `init_ret`: a variable's expando initializer
 static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
     *init_ret = nullptr;
     SourceFile const* file = my file;
     bool js = file && file->is_js;
     Symbol* found = lookup_for_property_access(me, entity);
     if (!found || found->is_placeholder || (found->flags & SYMBOL_ALIAS)) return nullptr;
-    // A global declared in another file isn't this file's to extend (tsc looks in the file's locals)
+    // A global declared in another file isn't this file's to extend (tsc looks in the file's locals): see
+    // global_expando_namespace()
     bool here = false;
     for (u32 i = 0; i < found->decl_count && !here; i++) here = found->decls[i].full.source == file;
     if (!here) return nullptr;
-    SymbolDecl const* value = nullptr;
-    for (u32 i = 0; i < found->decl_count && !value; i++) {
-        if (found->decls[i].flags & SYMBOL_VALUE) value = &found->decls[i];
+    return symbol_is_expando_host(found, js, init_ret) ? found : nullptr;
+}
+
+// Whether the entity name of a top-level JavaScript `a.b.x = v` starts with a name the file doesn't declare, which
+// makes it a global namespace (tsc's bindPotentiallyMissingNamespaces: file.jsGlobalAugmentations)
+static bool is_global_expando_entity(Scope* me, Expr const* target) {
+    Expr const* entity = target;
+    Expr const* second = nullptr;
+    while (entity->tag == EXPR_PROPERTY && !expr_is_perenthisized(entity)) {
+        if (!span_valid(expr_static_property_name(entity))) return false;
+        second = entity;
+        entity = &entity->property->expr;
     }
-    if (!value) return nullptr;
-    switch (value->kind) {
-        case SYMBOL_DECL_FUNCTION: return found;
-        case SYMBOL_DECL_CLASS:
-        case SYMBOL_DECL_NAMESPACE:
-        case SYMBOL_DECL_ENUM:
-            return js ? found : nullptr;
-        case SYMBOL_DECL_VARIABLE: {
-            Binding const* binding = value->node;
-            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
-            InitializedBinding* initialized = (InitializedBinding*)binding;
-            Expr* init = expando_initializer(&initialized->value, binding->content_span, js);
-            if (!init) return nullptr;
-            // (An annotated variable has the type it says, but its initializer gets the members all the same)
-            *init_ret = init;
-            return found;
+    if (expr_is_perenthisized(entity) || entity->tag != EXPR_IDENTIFIER || entity->identifier.keyword) return false;
+    csview name = entity->identifier.name.sv;
+    // `exports.x =`, `module.exports =`, `module.exports.x =` are CommonJS exports (or nothing outside a CommonJS
+    // module: tsc's getAssignmentDeclarationKind)
+    if (csview_equals(name, "exports")) return false;
+    if (csview_equals(name, "module") && second && span_equals(expr_static_property_name(second), "exports")) return false;
+    Symbol const* found = lookup_name_for_property_access(me, name);
+    if (!found) return true;
+    if (found->is_placeholder || (found->flags & SYMBOL_ALIAS)) return false;
+    for (u32 i = 0; i < found->decl_count; i++) {
+        if (found->decls[i].full.source == my file) return false;
+    }
+    return true;
+}
+
+// Each name of `a.b` of a top-level JavaScript `a.b.x = v` is a global namespace declared here, merged with the
+// globals of that name (tsc's jsGlobalAugmentations, merged into the globals by initializeTypeChecker)
+static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
+    Symbol* parent = nullptr;
+    SymbolTable* table = &my binder->globals;
+    Span name;
+    if (entity->tag == EXPR_PROPERTY) {
+        parent = global_expando_namespace(me, &entity->property->expr);
+        if (!parent) return nullptr;
+        symbol_ensure_exports(parent);
+        table = parent->exports;
+        name = expr_static_property_name(entity);
+    } else {
+        name = entity->identifier.name;
+    }
+    bool merged;
+    Symbol* symbol = declare_symbol(me, table, name.sv, name, SYMBOL_VALUE_MODULE, 0, false, &merged);
+    if (!merged) {
+        symbol->name = name.sv;
+        symbol->name_span = name;
+        symbol->parent = parent;
+        symbol->exported = parent != nullptr;
+    }
+    if (symbol->flags & SYMBOL_ALIAS) return nullptr;
+    symbol_ensure_exports(symbol);
+    Span decl_name = entity->tag == EXPR_PROPERTY ? entity->property->prop.outer_span : entity->outer_span;
+    symbol_add_decl(symbol, (SymbolDecl){
+        .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = entity, .name = decl_name, .full = decl_name,
+    });
+    Binder* binder = my binder;
+    if (binder->global_expando_count == binder->global_expando_cap) {
+        binder->global_expando_cap = binder->global_expando_cap ? binder->global_expando_cap * 2 : 8;
+        binder->global_expandos = realloc(binder->global_expandos, sizeof(Symbol*) * binder->global_expando_cap);
+        panic_if(!binder->global_expandos, "out of memory");
+    }
+    binder->global_expandos[binder->global_expando_count++] = symbol;
+    return symbol;
+}
+
+void binder_link_global_expandos(Binder* me) {
+    for (u32 i = 0; i < my global_expando_count; i++) {
+        Symbol* symbol = my global_expandos[i];
+        for (u32 j = 0; j < symbol->decl_count; j++) {
+            SymbolDecl const* decl = &symbol->decls[j];
+            if (!decl->full.source || !decl->full.source->is_js) continue;
+            Expr* init = nullptr;
+            if (decl->kind == SYMBOL_DECL_VARIABLE) {
+                Binding const* binding = decl->node;
+                if (binding->parent || binding->tag != BINDING_IDENTIFIER) break;
+                init = expando_initializer(&((InitializedBinding*)binding)->value, binding->content_span, true);
+            } else if (decl->kind == SYMBOL_DECL_ASSIGNMENT) {
+                init = expando_initializer((Expr*)decl->node, span_null, true);
+            } else if (decl->kind == SYMBOL_DECL_EXPANDO) {
+                continue;
+            }
+            set_expando_initializer_host(init, symbol);
+            break;
         }
-        case SYMBOL_DECL_ASSIGNMENT: {
-            // JavaScript `ns.a = {}` (or a function, a class): `ns.a.b = v` declares b in it
-            if (!js) return nullptr;
-            Expr* init = expando_initializer((Expr*)value->node, span_null, js);
-            if (!init) return nullptr;
-            *init_ret = init;
-            return found;
-        }
-        default: return nullptr;
     }
 }
 
@@ -2848,10 +2952,15 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     if (span_equals(name, "prototype") && op->right.tag == EXPR_OBJECT && !(my file && my file->is_js)) return;
     Expr* init;
     Symbol* host = expando_host(me, object, &init);
-    if (!host) return;
-    if (init && init->tag == EXPR_FUNCTION) init->function->expando_host = host;
-    if (init && init->tag == EXPR_CLASS_DECL) init->class_decl->expando_host = host;
-    add_expando_namespace_decls(me, object, top_level);
+    if (host) {
+        set_expando_initializer_host(init, host);
+        add_expando_namespace_decls(me, object, top_level);
+    } else if (top_level && my file->is_js && is_global_expando_entity(me, left)) {
+        host = global_expando_namespace(me, object);
+        if (!host) return;
+    } else {
+        return;
+    }
     // The member (bindPotentiallyNewExpandoMemberToNamespace)
     bool merged;
     Symbol* member = declare_symbol(me, host->exports, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);

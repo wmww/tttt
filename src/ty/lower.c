@@ -427,21 +427,24 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     }
     // A value in JSDoc means its type (tsc's getTypeFromJSDocValueReference)
     if (identifier->jsdoc && !(decl->flags & SYMBOL_TYPE) && (decl->flags & SYMBOL_VALUE)) {
-        // A bare `import("./m")` whose `module.exports =` is a class expression or a constructor function is the
-        // class (tsc's resolveImportSymbolType: the declared type of the resolved symbol, which is a class)
-        if (span_valid(identifier->import_span) && !span_valid(identifier->name) && decl->decl_count &&
-            decl->decls[0].kind == SYMBOL_DECL_ASSIGNMENT
-        ) {
-            Expr const* value = decl->decls[0].node;
-            Symbol const* class_symbol = value->tag == EXPR_CLASS_DECL ? value->class_decl->symbol :
-                value->tag == EXPR_FUNCTION ? ty_js_constructor_class(value->function) : nullptr;
-            if (class_symbol) return ty_class_instance_type(me, class_symbol);
+        // A JavaScript variable or assignment declaration whose value is a class expression or a constructor function
+        // is the class (tsc's getExpandoSymbol: the initializer's symbol merged in, which is a class). A bare
+        // `import("./m")` whose `module.exports =` is one, `exports.C = class {}` too
+        Expr* init = nullptr;
+        SymbolDecl const* first = decl->decl_count ? &decl->decls[0] : nullptr;
+        if (first && first->full.source && first->full.source->is_js && !(decl->flags & SYMBOL_TYPE_ALIAS)) {
+            if (first->kind == SYMBOL_DECL_ASSIGNMENT) {
+                init = expando_initializer((Expr*)first->node, span_null, true);
+            } else if (first->kind == SYMBOL_DECL_VARIABLE) {
+                Binding const* binding = first->node;
+                if (!binding->parent && binding->tag == BINDING_IDENTIFIER) {
+                    init = expando_initializer(&((InitializedBinding*)binding)->value, binding->content_span, true);
+                }
+            }
         }
-        // `exports.C = class {}` declares an alias of the class (tsc's isAliasableExpression), which is a type
-        if (decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && decl->parent && decl->parent->is_module &&
-            ((Expr const*)decl->decls[0].node)->tag == EXPR_CLASS_DECL
-        ) {
-            Symbol const* class_symbol = ((Expr const*)decl->decls[0].node)->class_decl->symbol;
+        if (init) {
+            Symbol const* class_symbol = init->tag == EXPR_CLASS_DECL ? init->class_decl->symbol :
+                init->tag == EXPR_FUNCTION ? ty_js_constructor_class(init->function) : nullptr;
             if (class_symbol) return ty_class_instance_type(me, class_symbol);
         }
         for (u32 i = 0; i < my jsdoc_values_in_flight_count; i++) {
@@ -921,12 +924,16 @@ static bool decl_contributes_value(Symbol const* symbol, u32 index) {
         case SYMBOL_DECL_ASSIGNMENT:
             // An expando of a namespace's variable (`namespace N { export var x }` and `N.x = 1`) is assigned to it
             for (u32 i = 0; i < symbol->decl_count; i++) {
-                if (symbol->decls[i].kind != SYMBOL_DECL_ASSIGNMENT && (symbol->decls[i].flags & SYMBOL_VALUE)) return false;
+                SymbolDeclKind kind = symbol->decls[i].kind;
+                if (kind != SYMBOL_DECL_ASSIGNMENT && kind != SYMBOL_DECL_EXPANDO && (symbol->decls[i].flags & SYMBOL_VALUE)) return false;
             }
             break;
         case SYMBOL_DECL_EXPANDO:
-            // A variable's expandos are members of its initializer
+            // A variable's or an assignment's expandos are members of its initializer
             if (symbol->flags & SYMBOL_VARIABLE) return false;
+            for (u32 i = 0; i < symbol->decl_count; i++) {
+                if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT) return false;
+            }
             once = SYMBOL_VALUE_MODULE;
             break;
         default: break;

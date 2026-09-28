@@ -246,8 +246,9 @@ void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initial
 static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
     SymbolDecl const* first = nullptr;
+    // (The namespace an expando makes of a name isn't its value declaration: tsc's setValueDeclaration)
     for (u32 i = 0; i < symbol->decl_count && !first; i++) {
-        if (symbol->decls[i].flags & SYMBOL_VALUE) first = &symbol->decls[i];
+        if (symbol->decls[i].flags & SYMBOL_VALUE && symbol->decls[i].kind != SYMBOL_DECL_EXPANDO) first = &symbol->decls[i];
     }
     if (!first || first->node == me) return;
     Checker* checker = current_checker;
