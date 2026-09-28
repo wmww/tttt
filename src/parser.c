@@ -2943,6 +2943,7 @@ typedef struct JsDocTag {
     bool variadic; // `{...T}`
     Span name; // `@param {T} name`, `@typedef {T} Name`, `@template T`: the name (maybe dotted: `o.a`)
     bool bracketed; // `[name]`, `[name=default]`: optional
+    bool name_first; // `@param name {T}` or no type at all (tsc's isNameFirst)
     bool is_const; // `@template const T`
     bool is_in, is_out; // `@template in T`, `@template out T`
     // A `@param`/`@returns` of a `@callback`, a `@property` of a `@typedef`: part of that, not about the host
@@ -3097,6 +3098,7 @@ static const char* parse_jsdoc_param_like(Parser* parent, const char* c, const c
     } else {
         c = jsdoc_parse_name(c, end, &tag->name, source);
     }
+    tag->name_first = !tag->has_type;
     if (!tag->has_type) {
         const char* after = jsdoc_skip_space(c, end);
         if (after < end && *after == '{') {
@@ -3603,7 +3605,55 @@ static void jsdoc_apply_class(VecJsDocTag* tags, ClassDecl* class_decl) {
 }
 
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
+// The `@param` tags that name no parameter (see FunctionImpl.jsdoc_param_issues). A dotted tag right after the tag of
+// its object (`{Object}`/`{object}`, maybe an array) is part of that object's type (tsc's parseNestedTypeLiteral),
+// any other is a tag of its own
+static void jsdoc_find_param_issues(VecJsDocTag const* tags, FunctionImpl* function) {
+    if (function->jsdoc_params_checked) return;
+    function->jsdoc_params_checked = true;
+    Span objects[8]; // The chain of object tags the next child may be under
+    u32 depth = 0;
+    isize index = 0;
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind != JSDOC_TAG_PARAM || i->nested || i->earlier || !span_valid(i->name)) continue;
+        csview name = i->name.sv;
+        char const* dot = nullptr;
+        for (isize k = name.size; k-- > 0 && !dot;) if (name.buf[k] == '.') dot = name.buf + k;
+        bool array;
+        bool object = i->has_type && jsdoc_is_object_type(i, &array);
+        if (dot) {
+            csview left = csview_from_range(name.buf, dot);
+            while (depth && !csview_equals_sv(objects[depth - 1].sv, left)) depth--;
+            if (depth) {
+                if (object && depth < c_arraylen(objects)) objects[depth++] = i->name;
+                continue;
+            }
+        }
+        depth = 0;
+        if (object) objects[depth++] = i->name;
+        isize at = index++;
+        // (A pattern parameter goes by the tag at its position)
+        if (at < vec_function_arg_size(&function->args) && function->args.data[at].initializer.binding.tag != BINDING_IDENTIFIER) continue;
+        Span left = span_null;
+        if (dot) {
+            left = span_make(i->name.source, name.buf, dot);
+        } else {
+            bool found = i->name_first;
+            for_each (a, vec_function_arg, &function->args) {
+                Binding const* binding = &a->initializer.binding;
+                found |= binding->tag == BINDING_IDENTIFIER && csview_equals_sv(binding->content_span.sv, name);
+            }
+            if (found) continue;
+        }
+        function->jsdoc_param_issues = realloc(function->jsdoc_param_issues,
+            sizeof(JsDocParamIssue) * (function->jsdoc_param_issue_count + 1));
+        panic_if(!function->jsdoc_param_issues, "out of memory");
+        function->jsdoc_param_issues[function->jsdoc_param_issue_count++] = (JsDocParamIssue){ i->name, left };
+    }
+}
+
 static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
+    jsdoc_find_param_issues(tags, function);
     // `@overload` tags (of every comment before the host), each a signature of their own: the function's, whose
     // implementation isn't one (tsc's getSignaturesOfSymbol). The comment's `@template`s are the overload's
     // (getEffectiveTypeParameterDeclarations of a JSDocSignature)

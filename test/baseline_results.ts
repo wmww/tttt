@@ -19716,7 +19716,7 @@ const baselines = {
         types: true,
     },
     'jsdocParamTagInvalid': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52526,22 +52526,22 @@ const baselines = {
         types: true,
     },
     'paramTagNestedWithoutTopLevelObject': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'paramTagNestedWithoutTopLevelObject2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'paramTagNestedWithoutTopLevelObject3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'paramTagNestedWithoutTopLevelObject4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

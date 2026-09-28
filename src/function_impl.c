@@ -32,6 +32,7 @@ void function_impl_drop(FunctionImpl* me) {
     }
     for (u32 i = 0; i < my jsdoc_overload_count; i++) type_drop(&my jsdoc_overloads[i]);
     free(my jsdoc_overloads);
+    free(my jsdoc_param_issues);
 }
 
 void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted, bool declared) {
@@ -741,6 +742,17 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     if (my ret_explicit) type_typecheck(&my ret, errs);
     ty_check_async_return_annotation(current_checker, me, errs);
     function_check_arguments_collision(me, errs);
+    // (tsc's checkUnmatchedJSDocParameters; a body that uses `arguments` may take more, TS8029 isn't reported)
+    for (u32 i = 0; i < my jsdoc_param_issue_count && !my uses_arguments; i++) {
+        JsDocParamIssue const* issue = &my jsdoc_param_issues[i];
+        if (span_valid(issue->left)) {
+            error_ctx_error_d(errs, issue->name, 8032, "Qualified name '", issue->name,
+                "' is not allowed without a leading '@param {object} ", issue->left, "'.");
+        } else {
+            error_ctx_error_d(errs, issue->name, 8024, "JSDoc '@param' tag has name '", issue->name,
+                "', but there is no parameter with that name.");
+        }
+    }
 
     if (my newline_before_arrow) {
         error_ctx_error_d(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");

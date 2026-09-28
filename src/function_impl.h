@@ -9,6 +9,11 @@
 #include "lazy_type.h"
 #include "flow.h"
 
+typedef struct JsDocParamIssue {
+    Span name;
+    Span left; // The object a qualified name needs a tag of, invalid for a plain name
+} JsDocParamIssue;
+
 typedef struct FunctionArg {
     Span span;
     // Declared by a JSDoc `@type` signature of the function: that parameter (where messages point, like tsc's)
@@ -101,6 +106,11 @@ typedef struct FunctionImpl {
     bool has_bare_return; // A reachable `return;`
     struct Expr const** yields; // Generators: every `yield` of the body, in source order (malloc'd, owned)
     u32 yield_count;
+    // JavaScript: the `@param` tags that name no parameter (tsc's checkUnmatchedJSDocParameters): TS8024 for a name,
+    // TS8032 for a qualified name without its object (`left` valid). Found by the parser, reported when checking
+    struct JsDocParamIssue* jsdoc_param_issues; // Owned
+    u32 jsdoc_param_issue_count;
+    bool jsdoc_params_checked;
     Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
     Span variable_name; // A function expression or arrow function that initializes a variable: its name (display)
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
