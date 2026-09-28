@@ -63,6 +63,9 @@ typedef struct RelationState {
     u32 depth;
     unsigned expanding; // 1: source is deeply nested, 2: target is
     bool overflow;
+    // What's left of the budget of structured results (tsc's relationCount: (16M - cached) / 8, one per result
+    // cached). Running out is an overflow too, reported as TS2859 rather than a depth one
+    i64 relation_count;
     // The relation whose "not assignable" line the last incompatible step stood in for (tsc's lastSkippedInfo)
     Ty const* skipped_source;
     Ty const* skipped_target;
@@ -3489,8 +3492,8 @@ static Ty const* recursion_identity(Ty const* ty) {
 
 // tsc's isDeeplyNestedType: `ty` (about to go on the stack) and at least two types further up with the same recursion
 // identity, each newer (a higher id) than the previous one
-bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth) {
-    return is_deeply_nested_max(ty, stack, depth, 3);
+bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
+    return is_deeply_nested_max(ty, stack, depth, max);
 }
 
 static bool is_deeply_nested_max(Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
@@ -3556,7 +3559,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
         relation_cache_put(cache, key, CACHE_FAILED);
         return TERNARY_FALSE;
     }
-    if (st->depth == MAX_RELATION_DEPTH) {
+    if (st->relation_count <= 0 || st->depth == MAX_RELATION_DEPTH) {
         st->overflow = true;
         return TERNARY_FALSE;
     }
@@ -3568,8 +3571,8 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     }
     st->maybe_keys[st->maybe_count++] = key;
     unsigned saved_expanding = st->expanding;
-    if (!(st->expanding & 1) && ty_is_deeply_nested(source, st->source_stack, st->depth)) st->expanding |= 1;
-    if (!(st->expanding & 2) && ty_is_deeply_nested(target, st->target_stack, st->depth)) st->expanding |= 2;
+    if (!(st->expanding & 1) && ty_is_deeply_nested(source, st->source_stack, st->depth, 3)) st->expanding |= 1;
+    if (!(st->expanding & 2) && ty_is_deeply_nested(target, st->target_stack, st->depth, 3)) st->expanding |= 2;
     st->source_stack[st->depth] = source;
     st->target_stack[st->depth] = target;
     st->depth++;
@@ -3596,10 +3599,12 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
             for (u32 i = maybe_start; i < st->maybe_count; i++) {
                 relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable);
             }
+            st->relation_count -= st->maybe_count - maybe_start;
             st->maybe_count = maybe_start;
         }
     } else {
         if (!st->overflow) relation_cache_put(cache, key, CACHE_FAILED | unreliable);
+        st->relation_count--;
         st->maybe_count = maybe_start;
     }
     return result;
@@ -4145,6 +4150,7 @@ static bool check_related(
     st->depth = 0;
     st->expanding = 0;
     st->overflow = false;
+    st->relation_count = ((i64)16000000 - (i64)my relations[relation].len) >> 3;
     st->head_reported = false;
     st->skipped_source = st->skipped_target = nullptr;
     st->at_top = true;
@@ -4161,7 +4167,17 @@ static bool check_related(
     my relating = st;
     Ternary result = is_related_to(me, st, source, target, st->reporting);
     my relating = st->outer;
-    if (st->overflow) {
+    if (st->overflow && st->relation_count <= 0) {
+        // (tsc reports it at the error node, else the current node)
+        cstr source_str = ty_to_cstr(me, source);
+        cstr target_str = ty_to_cstr(me, target);
+        ty_error_at_current_node_d(me, 2859, "Excessive complexity comparing types '", source_str, "' and '", target_str, "'.");
+        c_drop(cstr, &source_str, &target_str);
+        // (A limit like the instantiation ones: what it cut short says nothing more)
+        my instantiation_limit_hits++;
+        my relation_complexity_hits++;
+        result = TERNARY_FALSE;
+    } else if (st->overflow) {
         // HACK: tsc says TS2321 "Excessive stack depth comparing types" here (at the error node, else the current node);
         // tttt's relation depth runs out where tsc's instantiations do
         ty_instantiation_limit_reached(me);

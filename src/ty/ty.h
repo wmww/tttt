@@ -696,6 +696,7 @@ struct Checker {
     u32 aliases_in_flight_len;
     u32 aliases_in_flight_cap;
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
+    u32 relation_complexity_hits; // How many relations ran out of their budget (TS2859, counted in the above too)
     // The typecheck walk inside the true branches of conditional types: `A` is `A & X` in `A extends X ? A['k'] : ...`
     // where indexed access types are checked (tsc's substitution types, see ty_check_indexed_access_type())
     RelationCache relations[TY_RELATION_COUNT];

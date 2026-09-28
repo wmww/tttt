@@ -540,9 +540,18 @@ static bool check_assignable(
     // to `never`
     if (source->flags & TYF_ANY) return true;
     u32 limit_hits = my instantiation_limit_hits;
+    u32 complexity_hits = my relation_complexity_hits;
     if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return true;
     // (What ran into the instantiation limits has been reported as that, TS2589)
-    if (my instantiation_limit_hits != limit_hits) return false;
+    if (my instantiation_limit_hits != limit_hits) {
+        if (errs && my relation_complexity_hits != complexity_hits) {
+            // tsc's explaining pass runs out of budget too, which reports TS2859 a second time, and nothing else
+            VecTyReportLine lines = {0};
+            ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
+            vec_ty_report_line_drop(&lines);
+        }
+        return false;
+    }
     if (errs && elaborate_error(me, head, expr, source, target, errs)) return false;
     // (The head is about the target as relations see it: a substitution type's base, getNormalizedType)
     while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;

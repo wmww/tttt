@@ -168,11 +168,14 @@ typedef struct Inference {
     u32 visited_cap;
     u32 visited_len;
     // tsc's invokeOnce: the object pairs being walked, and whether each side is expanding (the same recursion identity
-    // three times, ever newer: an infinitely expanding generic). With both expanding, inference stops going deeper
+    // twice, ever newer: an infinitely expanding generic). With both expanding, inference stops going deeper
     Ty const* object_sources[INFER_MAX_DEPTH];
     Ty const* object_targets[INFER_MAX_DEPTH];
     u32 object_depth;
     unsigned expanding;
+    // A walk was cut short since the flag was last cleared: both sides expanding, or a pair met again while it is being
+    // walked (tsc's InferencePriority.Circularity). A union target then doesn't know which sources went unmatched
+    bool circularity;
 } Inference;
 
 void inference_init(Inference* inf, TyList params);
@@ -203,7 +206,7 @@ Ty const* ty_check_literal_argument(
 );
 Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* contextual, GenericFunctionMode* mode);
 // tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
-bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth);
+bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth, u32 max); // tsc's maxDepth: 3 for relations, 2 for inference
 void inference_drop(Inference* inf);
 void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority);
 // What a call infers for parameter i: common supertype of the candidates, widened unless `keep_literals`. Null if

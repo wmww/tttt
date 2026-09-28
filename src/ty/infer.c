@@ -670,21 +670,51 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
     }
 }
 
+// tsc's getUnmatchedProperty, optional properties not required: a required property of `target` that `source` doesn't
+// have, or with `discriminants` one of a unit type that `source` has another type for
+static bool has_unmatched_prop(Checker* me, Ty const* source, Ty const* target, bool discriminants) {
+    Members const* members = ty_members(me, target);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* target_prop = members->props[i];
+        if (target_prop->flags & PROP_OPTIONAL) continue;
+        Prop const* source_prop = ty_get_object_prop(me, source, target_prop->name);
+        if (!source_prop) return true;
+        if (!discriminants) continue;
+        Ty const* target_type = prop_type(me, target_prop);
+        bool unit = (target_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE)) && target_type->kind != TY_UNION;
+        if (!unit) continue;
+        Ty const* source_type = prop_type(me, source_prop);
+        if (!(source_type->flags & TYF_ANY) && ty_regular(me, source_type) != ty_regular(me, target_type)) return true;
+    }
+    return false;
+}
+
+// tsc's typesDefinitelyUnrelated: each has a property the other lacks (or a discriminant it disagrees on), so there's
+// nothing to infer from their members (ZodOptional<X> against ZodObject<infer S>: no walk through all their methods)
+static bool types_definitely_unrelated(Checker* me, Ty const* source, Ty const* target) {
+    return has_unmatched_prop(me, source, target, true) && has_unmatched_prop(me, target, source, false);
+}
+
+// Two references to the same generic type: by type argument, with its variances
+static void infer_from_type_args(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
+    TyList source_args = ty_reference_args(me, source);
+    TyList target_args = ty_reference_args(me, target);
+    for (u32 i = 0; i < source_args.len && i < target_args.len; i++) {
+        if (!(target_args.data[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        bool flip = ty_type_param_is_contravariant(me, target->reference.target, i);
+        if (flip) inf->contravariant = !inf->contravariant;
+        infer_from(me, inf, source_args.data[i], target_args.data[i]);
+        if (flip) inf->contravariant = !inf->contravariant;
+    }
+}
+
 static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if ((ty_is_tuple(source) || is_empty_tuple(source) || ty_is_array(me, source)) && ty_is_tuple(target)) {
         infer_to_tuple(me, inf, source, target);
         return;
     }
     if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE && source->reference.target == target->reference.target) {
-        TyList source_args = ty_reference_args(me, source);
-        TyList target_args = ty_reference_args(me, target);
-        for (u32 i = 0; i < source_args.len && i < target_args.len; i++) {
-            if (!(target_args.data[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
-            bool flip = ty_type_param_is_contravariant(me, target->reference.target, i);
-            if (flip) inf->contravariant = !inf->contravariant;
-            infer_from(me, inf, source_args.data[i], target_args.data[i]);
-            if (flip) inf->contravariant = !inf->contravariant;
-        }
+        infer_from_type_args(me, inf, source, target);
         return;
     }
     if (ty_is_array(me, target) && (ty_is_tuple(source) || ty_is_array(me, source))) {
@@ -741,6 +771,7 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         }
         return;
     }
+    if (!(ty_is_tuple(source) && ty_is_tuple(target)) && types_definitely_unrelated(me, source, target)) return;
     for (u32 i = 0; i < target_members->prop_count; i++) {
         Prop const* target_prop = target_members->props[i];
         FoundProp source_prop = ty_find_prop(me, source, target_prop->name);
@@ -869,6 +900,8 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
     // sources that used up for the naked type parameter
     bool* used_up = calloc(sources.len, sizeof(bool));
     panic_if(!used_up, "out of memory");
+    bool outer_circularity = inf->circularity;
+    inf->circularity = false;
     u32 naked_count = 0;
     Ty const* naked = nullptr;
     for (u32 t = 0; t < targets.len; t++) {
@@ -888,15 +921,18 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
             if (saved < inf->hit_priority) inf->hit_priority = saved;
         }
     }
+    bool circularity = inf->circularity;
+    inf->circularity |= outer_circularity;
     if (naked_count) {
         Ty const** unmatched = malloc(sizeof(Ty const*) * sources.len);
         u32 unmatched_len = 0;
         for (u32 s = 0; s < sources.len; s++) {
             if (!source_done[s] && !used_up[s]) unmatched[unmatched_len++] = sources.data[s];
         }
-        if (naked_count == 1) {
+        if (naked_count == 1 && !circularity) {
             if (unmatched_len) infer_from(me, inf, ty_union(me, unmatched, unmatched_len, nullptr, (TyList){0}), naked);
         } else {
+            // (A walk above was cut short, so which sources were used up isn't known: the whole source, less directly)
             for (u32 t = 0; t < targets.len; t++) {
                 if (!target_done[t] && inference_param(inf, targets.data[t])) {
                     infer_with_priority(me, inf, source, targets.data[t], INFER_PRIORITY_NAKED_TYPE_VARIABLE);
@@ -1053,16 +1089,29 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             Ty const* apparent = ty_apparent_type(me, source);
             if (apparent != source && !(source->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) source = apparent;
         }
-        if ((source->flags & (TYF_OBJECT | TYF_INTERSECTION)) && visited_add(inf, source, target)) {
+        bool same_reference = source->kind == TY_REFERENCE && target->kind == TY_REFERENCE &&
+            source->reference.target == target->reference.target && !(source->reference.deferred && target->reference.deferred);
+        if (same_reference) {
+            // By type argument without going on the stack below: nested references to one type (`Box<Box<T>>`) aren't
+            // deeply nested objects (tsc's inferFromTypes; only two deferred references go through invokeOnce)
+            infer_from_type_args(me, inf, source, target);
+        } else if ((source->flags & (TYF_OBJECT | TYF_INTERSECTION)) && !visited_add(inf, source, target)) {
+            for (u32 i = 0; i < inf->object_depth && !inf->circularity; i++) {
+                inf->circularity = inf->object_sources[i] == source && inf->object_targets[i] == target;
+            }
+        } else if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
             unsigned saved_expanding = inf->expanding;
-            if (!(inf->expanding & 1) && ty_is_deeply_nested(source, inf->object_sources, inf->object_depth)) inf->expanding |= 1;
-            if (!(inf->expanding & 2) && ty_is_deeply_nested(target, inf->object_targets, inf->object_depth)) inf->expanding |= 2;
+            // (Two of a kind already stop an inference walk, where relations take three: tsc's invokeOnce)
+            if (!(inf->expanding & 1) && ty_is_deeply_nested(source, inf->object_sources, inf->object_depth, 2)) inf->expanding |= 1;
+            if (!(inf->expanding & 2) && ty_is_deeply_nested(target, inf->object_targets, inf->object_depth, 2)) inf->expanding |= 2;
             if (inf->expanding != 3) {
                 inf->object_sources[inf->object_depth] = source;
                 inf->object_targets[inf->object_depth] = target;
                 inf->object_depth++;
                 infer_from_objects(me, inf, source, target);
                 inf->object_depth--;
+            } else {
+                inf->circularity = true;
             }
             inf->expanding = saved_expanding;
         }

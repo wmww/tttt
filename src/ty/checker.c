@@ -1,3 +1,5 @@
+// madvise(), which strict -std=c2x hides
+#define _DEFAULT_SOURCE
 #include "ty/ty_internal.h"
 #include <math.h>
 #include <sys/mman.h>
@@ -7,7 +9,7 @@
 
 // Arena
 
-#define ARENA_CHUNK_SIZE (1024 * 1024)
+#define ARENA_CHUNK_SIZE (8 * 1024 * 1024)
 
 struct ArenaChunk {
     ArenaChunk* next;
@@ -27,6 +29,9 @@ void* arena_alloc(Arena* me, size_t size) {
         size_t mapped = sizeof(ArenaChunk) + cap;
         void* memory = mmap(nullptr, mapped, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         panic_if(memory == MAP_FAILED, "out of memory");
+        // Transparent huge pages where the system allows them: a few hundred MB of types page faulted 4 KB at a time
+        // is a tenth of a big project's time (see main.c's reexec_with_huge_pages() for malloc's part)
+        madvise(memory, mapped, MADV_HUGEPAGE);
         ArenaChunk* chunk = memory;
         chunk->cap = cap;
         chunk->mapped = mapped;

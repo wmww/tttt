@@ -23186,9 +23186,9 @@ const baselines = {
         types: true,
     },
     'nestedTypeVariableInfersLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedUnaryExpressionHang': {
         errors: false,
@@ -27988,7 +27988,7 @@ const baselines = {
     'setMethods': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'setterBeforeGetter': {
         errors: true,
@@ -66696,7 +66696,7 @@ const baselines = {
         types: true,
     },
     'recursiveTypeReferences1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
