@@ -49036,17 +49036,17 @@ const baselines = {
         types: true,
     },
     'exportNonInitializedVariablesAMD': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exportNonInitializedVariablesCommonJS': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exportNonInitializedVariablesES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49066,12 +49066,12 @@ const baselines = {
         types: false,
     },
     'exportNonInitializedVariablesSystem': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exportNonInitializedVariablesUMD': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56851,7 +56851,7 @@ const baselines = {
         types: true,
     },
     'parserInvalidIdentifiersInVariableStatements1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61356,7 +61356,7 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarationsInForAwaitOf.3(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
