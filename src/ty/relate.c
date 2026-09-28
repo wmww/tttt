@@ -2256,11 +2256,10 @@ static Ty const* substitute_indexed_mapped(Checker* me, Ty const* object, Mapped
     return ret;
 }
 
-// The contextual type of property `key` in a generic mapped type without an `as` clause (tsc's
-// getTypeOfPropertyOfContextualType): the template with the key for the type parameter, if the constraint allows the
-// key. Null if it isn't such a mapped type or the key isn't one of its keys
+// tsc's getActualTypeVariable: what a substitution type stands for
 static Ty const* actual_type_variable(Ty const* ty) {
-    return ty->kind == TY_SUBSTITUTION ? ty->substitution.base : ty;
+    while (ty->kind == TY_SUBSTITUTION) ty = ty->substitution.base;
+    return ty;
 }
 
 // tsc's isExcludedMappedPropertyName: a conditional type pretending to be a negated type (`Exclude<keyof P, "a">`)
@@ -2279,6 +2278,9 @@ static bool is_excluded_mapped_name(Checker* me, Ty const* constraint, Ty const*
     return false;
 }
 
+// The contextual type of property `key` in a generic mapped type without an `as` clause (tsc's
+// getTypeOfPropertyOfContextualType): the template with the key for the type parameter, if the constraint allows the
+// key. Null if it isn't such a mapped type or the key isn't one of its keys
 Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const* key) {
     if (!(object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
     bool generic = false;
@@ -2343,12 +2345,6 @@ static Ty const* compute_simplified(Checker* me, Ty const* ty, bool writing) {
         free(parts);
         return ret;
     }
-    return ty;
-}
-
-// tsc's getActualTypeVariable: what a substitution type stands for
-static Ty const* actual_type_variable(Ty const* ty) {
-    while (ty->kind == TY_SUBSTITUTION) ty = ty->substitution.base;
     return ty;
 }
 
