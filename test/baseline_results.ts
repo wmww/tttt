@@ -60401,14 +60401,14 @@ const baselines = {
         types: false,
     },
     'moduleExportAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'moduleExportAssignment2': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleExportAssignment3': {
         errors: true,

@@ -1359,6 +1359,8 @@ static void add_commonjs_export(Scope* me, BinaryOpExpr* op, Span statement) {
             break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
             Expr* value = rightmost_assigned(&op->right);
+            // `module.exports = exports` declares nothing (tsc's bindModuleExportsAssignment)
+            if (is_exports_alias(me, value)) break;
             if (value->tag == EXPR_OBJECT) {
                 // `module.exports = {}` declares nothing, `{ a, b }` its shorthands (tsc's
                 // bindExportAssignedObjectMemberAlias)
@@ -1390,6 +1392,18 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
             if (nested) {
                 Expr* assignment = &statement->expr;
                 while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL) {
+                    add_commonjs_export(module, assignment->binary_op, statement->span);
+                    assignment = &assignment->binary_op->right;
+                }
+            }
+            break;
+        case STATEMENT_DECL_VARIABLE:
+            // `var npm = module.exports = f`
+            for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
+                Expr* assignment = &i->value;
+                while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL &&
+                    !expr_is_perenthisized(assignment)
+                ) {
                     add_commonjs_export(module, assignment->binary_op, statement->span);
                     assignment = &assignment->binary_op->right;
                 }
