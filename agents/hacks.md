@@ -833,3 +833,10 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip them when bisecting.
 - `string_to_double()` (string_helpers.c) is only used by value.c and accumulates decimals digit by digit (not
   correctly rounded for long mantissas); the parser uses strtod on the separator-free digits.
+
+## Test harness: `/// <reference lib>` added to the lib list up front (`load_test_source`)
+The harness's libs are a cached program keyed by the lib list, which a test's file can't add to, so
+`load_test_source` scans the test text for `<reference lib="x"` and appends x to the list. Not with
+`@libReplacement: true` (text match), which tttt doesn't implement: tsc then takes `lib.dom.d.ts` from
+`node_modules/@typescript/lib-dom` (libTypeScriptOverrideSimple, libTypeScriptSubfileResolving and their Config
+variants fail on it).

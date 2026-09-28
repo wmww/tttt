@@ -491,6 +491,24 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         cstr_drop(&lib_contents);
         cstr_drop(&path);
     }
+    // `/// <reference lib="dom" />` in a test's file adds that lib to the program (tsc's processLibReferenceDirectives).
+    // The libs are a cached program of their own that a file can't add to (program_follow_lib_references() is off),
+    // so the harness adds them to the list up front. Not with libReplacement, which tttt doesn't have (the lib comes
+    // from node_modules/@typescript/lib-*)
+    cstr referenced_libs = cstr_null;
+    bool lib_replacement = csview_find_sv(contents_sv, c_sv("@libReplacement: true")) != c_NPOS;
+    for (csview rest = contents_sv; !lib_replacement;) {
+        isize at = csview_find_sv(rest, c_sv("<reference lib=\""));
+        if (at == c_NPOS) break;
+        rest = csview_slice(rest, at + (isize)strlen("<reference lib=\""), INTPTR_MAX);
+        isize end = csview_find_sv(rest, c_sv("\""));
+        if (end == c_NPOS) break;
+        cstr name = cstr_from_sv(csview_slice(rest, 0, end));
+        cstr_lowercase(&name);
+        if (cstr_size(&referenced_libs)) cstr_append_lit(&referenced_libs, ",");
+        cstr_append_s(&referenced_libs, name);
+        cstr_drop(&name);
+    }
     cstr_drop(&unparsed_contents);
 
     for (isize i = 0; i + 1 < vec_cstr_size(&my links); i += 2) {
@@ -529,6 +547,18 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     }
     compiler_options_resolve(program_options(my program));
     cstr_take(&my lib_list, no_default_lib ? cstr_null : compiler_options_lib_files(program_options(my program)));
+    for (csview rest = cstr_sv(&referenced_libs); rest.size && cstr_size(&my lib_list);) {
+        isize end = csview_find_sv(rest, c_sv(","));
+        csview single = csview_slice(rest, 0, end);
+        rest = end == c_NPOS ? c_sv("") : csview_slice(rest, end + 1, INTPTR_MAX);
+        // (Once: the list is the cache's key)
+        cstr listed = cstr_d(",", my lib_list, ",");
+        cstr needle = cstr_d(",", single, ",");
+        if (cstr_find(&listed, cstr_str(&needle)) == c_NPOS) { cstr_append_lit(&my lib_list, ","); cstr_append_sv(&my lib_list, single); }
+        cstr_drop(&listed);
+        cstr_drop(&needle);
+    }
+    cstr_drop(&referenced_libs);
 
     my did_run = true;
     return ok;

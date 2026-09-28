@@ -38041,13 +38041,13 @@ const baselines = {
         types: true,
     },
     'libReferenceDeclarationEmit': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'libReferenceDeclarationEmitBundle': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'libReferenceNoLib': {
