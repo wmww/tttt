@@ -10,14 +10,14 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Suite (2026-09-28, insights, 9352ec1)
-**10215 / 13540** full pass (errors 11709, symbols 12530, types 11353). A suite run takes ~23 s. `./failstats.py`:
-errors component fails in 1831 tests: both missing and spurious 510, tsc reports errors and tttt nothing 400, **same
-codes+positions, other text 297**, only missing 252, tttt errors where tsc has none 219, only spurious 132, column
-differs 21. 253 tests have a spurious TS1xxx (29 of them expect no errors). Checker log_error output: 29 lines in 2
-tests (invalid spans, `bugs/harness.md`). Top missing codes: TS1005 157 in 84 tests, TS2322 99/53, TS2339 98/28,
-TS2304 90/56; top spurious: TS2304 484 in 164 tests, TS2339 347/99, TS1005 260/88, TS2322 246/107. Single-code
-tests: spurious TS2339 40, spurious TS2322 39, spurious TS2304 35. The tool lines below are from 7aef64e (10189).
+## Suite (2026-09-28, suite checker bugs 5, a59b7355)
+**10477 / 13540** full pass (errors 11941, symbols 12590, types 11576). A suite run takes ~23 s. `./failstats.py`:
+errors component fails in 1599 tests: both missing and spurious 450, tsc reports errors and tttt nothing 382, **same
+codes+positions, other text 296**, only missing 248, tttt errors where tsc has none 119, only spurious 81. Top missing
+codes: TS1005 157 in 84 tests, TS2339 97/27, TS2322 94/52, TS2304 87/53; top spurious: TS2304 414 in 116 tests,
+TS1005 259/87, TS2339 229/60, TS2322 144/66. Single-code tests: missing TS2322 15, missing TS2742 10, spurious TS2339
+10, missing TS2304 9, missing TS2538 8, missing TS7053 8 (the spurious side was drained from 40/39/35). `./jsstats.py`:
+**556** of 1049 JS tests pass. The tool lines below are from 7aef64e (10189).
 - `./displaydiff.py`, tests fixed by one kind (TS, JS): other 390 + 53, underlines/order only 110 + 22, we-any 65 +
   37, union-order 48 + 3, tsc-any 34 + 5, names-only 28 + 5, tsc-typeof 24 + 9, line-missing 23 + 4.
 - `./displaydiff.py --fine`, TS tests by the kind of their first differing line: underlines/order 110, line-missing
@@ -45,6 +45,11 @@ forcing structural comparisons; 932k -> 352k types, arena 975 -> 412 MB). Curren
 After plan 37 B (union origins, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`): valibot 5.06 -> 5.09 G (+0.7%), zod
 4.28 -> 4.29 (+0.2%); valibot makes 0.6% more types (unions with an origin are distinct from their plain twins).
 
+Suite checker bugs 5 (f0a9a80 -> a59b7355, `perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`):
+tsc 4.707 -> 4.804 G (+2.1%), valibot 5.134 -> 5.249 (+2.2%), zod 4.240 -> 4.323 (+2.0%), webpack 3.287 -> 3.332
+(+1.4%), nest +0.4%, type-fest -0.1%, react -2.0%. Spread over the merged buckets (tsc +1.1% by the flow bucket and
+the early main-tree commits, valibot +1.3% by the relations bucket, +0.7% by the inference one): a lead for todo entry
+9. webpack **30** now (the JS bucket), the rest unchanged.
 ## Perf (2026-09-28, plan 36 stage 3, `./bench.sh`, tttt at its new defaults: 4 checkers on 4 threads)
 Best wall / peak RSS. **The machine is 2 physical cores x 2 SMT threads** (KVM, `lscpu`): 4 busy threads run ~55%
 slower each (4 independent single-threaded processes do too), so 4 threads buy ~2.4x on the check phase, not ~3.7x.

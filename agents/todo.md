@@ -23,8 +23,11 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    55 (arktype's DSL: interfaces extending type parameters, const type parameters behind conditionals, `infer X
    extends C` constraints; execa's instantiation expression; an Opus sub-agent). Suite +6. Left: plan 19 "webpack",
    the biggest cause being defaulted type parameters leaking into context-sensitive callbacks (bugs/type_core.md).
-7. **Suite checker bugs 5, spurious side**: the single-code buckets are now mostly spurious (TS2339 40, TS2322 39,
-   TS2304 35, `bugs/missing_checks.md`); sample, group by cause, parallel Opus sub-agents in worktrees like session 4.
+7. ~~Suite checker bugs 5~~ done: 10312 -> 10477 (+165, 0 lost); four Opus sub-agents on the spurious buckets
+   (narrowing +15, relations +16, JS +19, inference +18), the main tree did missing-check families (TS2708/2709/2689,
+   TS2497 + reportNonExportedMember, TS2721-2723, TS6200 amalgamation, `--pretty` output, triple-slash
+   resolution-mode...). Single-code spurious buckets drained (TS2339 38 -> 10, TS2322 36 -> 5, TS2304 35 -> 7); webpack
+   30; instructions +2% on tsc/valibot/zod (measurements.md: a lead for entry 9).
 8. **Plan 37 C + D**: decorators checked as calls (+14, nest must stay 0) and evolving arrays (+8), both
    stage 1 from their prototypes (replaces the plan 35 queue here: its head items 1-2 were plan 37 A and C).
 9. **Perf: memory and types**: `perf_leads.md` "Unreliable variance measurements" first (zod without its `out`

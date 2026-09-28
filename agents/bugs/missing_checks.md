@@ -4,12 +4,14 @@ Each is small (one check, a few tests). Find fresh buckets with `./failstats.py`
 one code alone in `build/failstats/tests.tsv`) and `./unimplemented_codes.sh` (codes `src/` never mentions). Test
 statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (suite checker bugs 4).
 
-## Buckets (tests whose errors fail on this one code, 2026-09-28, after suite checker bugs 4, suite 10188)
-- The single-code tests are now mostly *spurious*: spurious TS2339 40, TS2322 35, TS2304 35, TS2345 12, TS2300 10,
-  TS2403 9, TS1005 9, TS2349 8, TS2554 7; missing TS2322 13 (the leftovers: relation-engine cases that accept what tsc
-  rejects, deepComparisons, genericRestTypes, invariantGenericErrorElaboration...; evolving arrays; mappedTypeErrors2's
-  key constraint check), missing TS2304 9, TS2538 8. The next checker-bugs session should start from the spurious side
-  (sample, don't assume one cause). Errors component: 421 tests where tsc reports errors and tttt none (was 656).
+## Buckets (tests whose errors fail on this one code, 2026-09-28, after suite checker bugs 5, suite 10477)
+- Single-code tests: missing TS2322 15, missing TS2742 10 (declaration emit: out of scope), spurious TS2339 10,
+  missing TS2304 9, missing TS2538 8, missing TS7053 8, spurious TS1005 7, spurious TS2304 7 (escaped identifiers,
+  `bugs/escaped_identifiers.md`), spurious TS2307 6 (APISample_*, harness), missing TS7023/TS2344/TS2300/TS2774 5 each.
+  The spurious side is drained; the next checker-bugs session should start from the missing side (missing TS2322's
+  relation-engine leftovers, TS2538/TS7053 below) or from `./unimplemented_codes.sh` (TS2774 59 in 5 tests, TS7059,
+  TS1497, TS9007-9013 isolatedDeclarations, TS17012 in importMeta, TS2564 strictPropertyInitialization...).
+  Errors component: 382 tests where tsc reports errors and tttt none.
 - Module resolution / emit: TS8002 9 (JS, plan 26), TS2742 10 (declaration emit: out of scope); spurious TS2307 14 (APISample_*: resolving
   `typescript` from the harness).
 - Checker: TS2538 8 (below), TS7023 5, TS2344 5 (import types' arguments aren't checked against constraints:
