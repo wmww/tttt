@@ -636,6 +636,17 @@ static Error* report_unassignable_with_head(
     return report_unrelated_with_head(me, TY_RELATION_ASSIGNABLE, source, target, ts_code, head, keep_natural_head, span, errs);
 }
 
+// tsc's checkTypeComparableTo without a head message: TS2678 and why, or what replaces it (an excess property)
+void ty_check_comparable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
+    if (ty_is_related(me, source, target, TY_RELATION_COMPARABLE)) return;
+    cstr source_str = ty_to_cstr(me, source);
+    cstr target_str = ty_to_cstr(me, target);
+    report_unrelated_with_head(me, TY_RELATION_COMPARABLE, source, target, 2678, cstr_d(
+        "Type '", source_str, "' is not comparable to type '", target_str, "'."
+    ), false, span, errs);
+    c_drop(cstr, &source_str, &target_str);
+}
+
 // tsc's checkTypePredicate: `x is T` needs T assignable to x's type (TS2677, the usual explanation under it)
 void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param, Span span, ErrorCtx* errs) {
     if (ty_is_related(me, predicate, param, TY_RELATION_ASSIGNABLE)) return;

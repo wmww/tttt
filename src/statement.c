@@ -2030,11 +2030,11 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 if (i->is_pattern) {
                     expr_typecheck(&i->pattern, errs);
                     Ty const* pattern_type = expr_get_type(&i->pattern);
-                    // tsc's isTypeEqualityComparableTo: a nullable case type is always fine
+                    // tsc's isTypeEqualityComparableTo: a nullable case type is always fine, else the switch's type
+                    // comparable to the case's, or else the case's to the switch's (checkTypeComparableTo, reported)
                     if (!(pattern_type->flags & TYF_NULLABLE)
                         && !ty_is_comparable_either_way(current_checker, needle_type, pattern_type)) {
-                        error_ctx_error_d(errs, i->pattern.outer_span, 2678,
-                            "Type '", pattern_type, "' is not comparable to type '", needle_type, "'.");
+                        ty_check_comparable(current_checker, pattern_type, needle_type, i->pattern.outer_span, errs);
                     }
                 } else {
                     default_count++;

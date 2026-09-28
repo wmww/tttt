@@ -63406,7 +63406,7 @@ const baselines = {
         types: true,
     },
     'switchStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
