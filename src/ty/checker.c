@@ -862,7 +862,8 @@ Ty const* ty_union_filtered(Checker* me, Ty const* of, Ty const* const* kept, u3
 static u32 primitive_family(Ty const* t) {
     if (t->kind != TY_INTRINSIC && t->kind != TY_LITERAL) return 0;
     if (t->flags & (TYF_STRING | TYF_STRING_LITERAL)) return TYF_STRING;
-    if (t->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL)) return TYF_NUMBER;
+    // (A computed enum member, or an enum without members, is number-like: tsc's TypeFlags.Enum in NumberLike)
+    if (t->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) return TYF_NUMBER;
     if (t->flags & (TYF_BIGINT | TYF_BIGINT_LITERAL)) return TYF_BIGINT;
     if (t->flags & TYF_BOOLEAN_LITERAL) return TYF_BOOLEAN_LITERAL;
     if (t->flags & TYF_UNIQUE_ES_SYMBOL) return TYF_ES_SYMBOL;

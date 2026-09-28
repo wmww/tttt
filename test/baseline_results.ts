@@ -48083,7 +48083,7 @@ const baselines = {
     'typeGuardNarrowsPrimitiveIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsToLiteralType': {
         errors: true,
