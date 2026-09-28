@@ -2710,6 +2710,17 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
 
 Ty const* ty_base_constraint(Checker* me, Ty const* ty) { return base_constraint(me, ty, 0); }
 
+// tsc's getConstraintOfConditionalType: the distributive constraint, else the default one, the union of the branches
+// (an `any` branch counting as never)
+Ty const* ty_conditional_constraint(Checker* me, Ty const* conditional) {
+    Ty const* distributive = distributive_constraint(me, conditional, 0);
+    if (distributive) return distributive;
+    Ty const* parts[2] = { inferred_true_branch(me, conditional), ty_conditional_branch(me, conditional, false) };
+    if (parts[0]->flags & TYF_ANY) return parts[1];
+    if (parts[1]->flags & TYF_ANY) return parts[0];
+    return ty_union(me, parts, 2, nullptr, (TyList){0});
+}
+
 static Ternary target_each_related(Checker* me, RelationState* st, Ty const* source, TyList targets, bool report) {
     Ternary result = TERNARY_TRUE;
     bool saved = st->intersection_target;

@@ -2635,7 +2635,7 @@ bool as_type_is_const(AsTypeExpr const* as_type) {
 
 // `Bar<string>` as a value: the object type with the type arguments applied to its generic signatures. Returns the
 // type itself if the mapper isn't about any of them
-static Ty const* apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper) {
+Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper) {
     Members const* members = ty_members(me, ty);
     bool relevant = false;
     for (u32 pass = 0; pass < 2 && !relevant; pass++) {
@@ -2700,7 +2700,7 @@ Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
     }
     if (!len) return ty;
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
-    return apply_type_arguments_mapper(me, ty, mapper);
+    return ty_apply_type_arguments_mapper(me, ty, mapper);
 }
 
 // The type of the object of `object?.x` / `object.x` (or the callee of a call) as the access sees it. `optional`: the

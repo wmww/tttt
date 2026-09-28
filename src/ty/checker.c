@@ -1327,6 +1327,34 @@ bool ty_is_const_type_variable(Checker* me, Ty const* ty, u32 depth) {
             return false;
         case TY_INDEXED:
             return ty_is_const_type_variable(me, ty->indexed.object, depth + 1);
+        case TY_CONDITIONAL:
+            // `[T] extends [never] ? T : X` (of its constraint: the branches, or the distributive constraint)
+            return ty_is_const_type_variable(me, ty_conditional_constraint(me, ty), depth + 1);
+        case TY_SUBSTITUTION:
+            return ty_is_const_type_variable(me, ty->substitution.base, depth);
+        case TY_ANONYMOUS: {
+            // A homomorphic mapped type over one (tsc's isConstMappedType). (Syntax first, as members are lazy)
+            if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+            Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+            TypeNode const* node = root->anonymous.node;
+            if (!node || node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return false;
+            if (vec_interface_member_at(&node->interface.members, 0)->key.tag != INTERFACE_KEY_MAPPED) return false;
+            MappedInfo const* mapped = ty_members(me, ty)->mapped;
+            if (!mapped || mapped->constraint->kind != TY_KEYOF) return false;
+            Ty const* variable = ty_actual_type_variable(me, mapped->constraint->keyof.operand);
+            return variable->kind == TY_TYPE_PARAM && ty_is_const_type_variable(me, variable, depth);
+        }
+        case TY_REFERENCE: {
+            // A generic tuple with a variadic element of one: `[...T]`
+            if (!ty_is_generic_tuple(me, ty)) return false;
+            TupleShape const* shape = ty_tuple_shape(ty);
+            TyList args = ty_reference_args(me, ty);
+            for (u32 i = 0; i < shape->arity && i < args.len; i++) {
+                if ((shape->flags[i] & TUPLE_ELEMENT_REST) && args.data[i]->kind == TY_TYPE_PARAM &&
+                    ty_is_const_type_variable(me, args.data[i], depth)) return true;
+            }
+            return false;
+        }
         default:
             return false;
     }
@@ -2116,7 +2144,7 @@ Ty const* ty_conditional(
     Ty const* root, TyMapper const* mapper, bool distributive, TyList infers
 ) {
     if (check_type == my intrinsics[TY_WILDCARD] || extends == my intrinsics[TY_WILDCARD]) return my intrinsics[TY_WILDCARD];
-    Ty const* resolved = ty_conditional_resolve(me, ty_actual_type_variable(me, check_type), extends, infers, if_true, if_false);
+    Ty const* resolved = ty_conditional_resolve(me, ty_actual_type_variable(me, check_type), extends, infers, if_true, if_false, mapper);
     if (resolved) return resolved;
     u64 stack_key[64];
     u32 key_len = 5 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);

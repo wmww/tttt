@@ -328,9 +328,29 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
 }
 
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
-    // HACK: instantiation expressions only exist for the legacy checker's `new Bar<T>()`, whose result it
-    // substitutes itself; they aren't instantiated further
-    if (ty->anonymous.applies_type_args) return ty;
+    if (ty->anonymous.applies_type_args) {
+        // An instantiation expression whose type arguments mention the type parameters: `typeof C<O>` in `type R<O>`
+        // is `typeof C<string>` for R<string>. HACK: one whose object type mentions them too isn't instantiated (its
+        // signatures' type parameters would be others)
+        TyMapper const* args = ty->anonymous.mapper;
+        Ty const* stack_targets[16];
+        Ty const** targets = args->len <= c_arraylen(stack_targets) ? stack_targets : malloc(sizeof(Ty const*) * args->len);
+        panic_if(!targets, "out of memory");
+        bool changed = false;
+        for (u32 i = 0; i < args->len; i++) {
+            targets[i] = ty_instantiate(me, args->targets[i], mapper);
+            changed |= targets[i] != args->targets[i];
+        }
+        Ty const* ret = ty;
+        if (changed && ty_instantiate(me, ty->anonymous.target, mapper) == ty->anonymous.target) {
+            TyMapper const* applied = ty_mapper_new(
+                me, (TyList){ .data = args->sources, .len = args->len }, (TyList){ .data = targets, .len = args->len }
+            );
+            ret = ty_apply_type_arguments_mapper(me, ty->anonymous.target, applied);
+        }
+        if (targets != stack_targets) free(targets);
+        return ret;
+    }
     Ty const* as_list = instantiate_mapped_over_list(me, ty, mapper);
     if (as_list) return as_list;
     // A mapped type whose constraint becomes the wildcard is the wildcard (tsc's instantiateMappedType)

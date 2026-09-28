@@ -1327,6 +1327,37 @@ Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* com
 }
 
 static Members const* resolve_tuple_members(Checker* me, Ty const* tuple);
+static Members const* declared_raw_members(Checker* me, Ty const* declared);
+
+// Whether the members a base contributes depend on type arguments, so can't be resolved once and instantiated: a type
+// parameter, an intersection with one, or a class or interface with such a base (tsc resolves the bases of every
+// instantiation, resolveObjectTypeMembers)
+static bool base_is_dynamic(Checker* me, Ty const* base, u32 depth) {
+    if (depth > 16) return false;
+    if (base->kind == TY_TYPE_PARAM) return true;
+    if (base->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < base->composite.types.len; i++) {
+            if (base_is_dynamic(me, base->composite.types.data[i], depth + 1)) return true;
+        }
+        return false;
+    }
+    Ty const* target = base->kind == TY_REFERENCE ? base->reference.target : base;
+    if (target->kind != TY_DECLARED || !target->declared.raw) return false;
+    if (base->kind == TY_REFERENCE && base->reference.deferred) return false;
+    return declared_raw_members(me, target)->base_count > 0;
+}
+
+// Raw members with their bases' (Members.bases) added as they are
+static Members const* complete_members(Checker* me, Members const* raw) {
+    if (!raw->base_count) return raw;
+    MembersBuilder builder = {0};
+    for (u32 i = 0; i < raw->prop_count; i++) builder_push(&builder, props, raw->props[i]);
+    for (u32 i = 0; i < raw->call_count; i++) builder_push(&builder, call, raw->call[i]);
+    for (u32 i = 0; i < raw->construct_count; i++) builder_push(&builder, construct, raw->construct[i]);
+    for (u32 i = 0; i < raw->index_count; i++) builder_push(&builder, index, raw->index[i]);
+    for (u32 i = 0; i < raw->base_count; i++) builder_add_inherited(me, &builder, raw->bases[i]);
+    return builder_finish(me, &builder);
+}
 
 // The members as declared: own members, then what the bases add. For a type with a `this` type these mention it, and
 // the bases are taken with the this-argument being it (tsc's resolveDeclaredMembers + the base part of
@@ -1356,24 +1387,46 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 }
             }
             builder_add_assignment_members(me, &builder, decl);
+            TyBuf bases = {0};
+            bool dynamic = false;
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
                 if (node->kind == SYMBOL_DECL_CLASS) {
                     Ty const* base = nullptr;
                     Symbol const* base_decl = nullptr;
                     if (class_base(me, node->node, ctx, &base, &base_decl) && base != ty) {
-                        builder_add_inherited(me, &builder, this_param ? ty_with_this_arg(me, base, this_param) : base);
+                        ty_buf_push(&bases, this_param ? ty_with_this_arg(me, base, this_param) : base);
+                        dynamic |= base_is_dynamic(me, base, 0);
                     }
                 } else if (node->kind == SYMBOL_DECL_INTERFACE) {
                     InterfaceDecl const* interface_decl = node->node;
                     for_each (extends, vec_spanned_type, &interface_decl->extends) {
                         Ty const* base = ty_from_node(me, &extends->type, ctx);
-                        // An object type or an intersection of them (tsc's isValidBaseType)
-                        if (base != ty && (base->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
-                            builder_add_inherited(me, &builder, this_param ? ty_with_this_arg(me, base, this_param) : base);
+                        // An object type, a type parameter constrained to one or an intersection of them (tsc's
+                        // isValidBaseType)
+                        if (base == ty) continue;
+                        if (base->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+                            ty_buf_push(&bases, this_param ? ty_with_this_arg(me, base, this_param) : base);
+                            dynamic |= base_is_dynamic(me, base, 0);
+                        } else if (base->kind == TY_TYPE_PARAM && is_valid_base_type(me, base, 0)) {
+                            ty_buf_push(&bases, base);
+                            dynamic = true;
                         }
                     }
                 }
             }
+            if (dynamic) {
+                // Members that depend on the type arguments: whoever instantiates these adds the bases' (see
+                // Members.bases)
+                Members* ret = (Members*)builder_finish(me, &builder);
+                Ty const** copy = arena_new_n(&my arena, Ty const*, bases.len);
+                memcpy(copy, bases.data, sizeof(Ty const*) * bases.len);
+                ret->bases = copy;
+                ret->base_count = bases.len;
+                ty_buf_drop(&bases);
+                return ret;
+            }
+            for (u32 i = 0; i < bases.len; i++) builder_add_inherited(me, &builder, bases.data[i]);
+            ty_buf_drop(&bases);
         }   break;
 
         case TY_DECLARED_CLASS_STATIC:
@@ -1487,6 +1540,7 @@ static Members const* instantiate_members(
         builder_push(&builder, index, info);
     }
     if (source->mapped) builder.mapped = instantiate_mapped_info(me, source->mapped, mapper);
+    for (u32 i = 0; i < source->base_count; i++) builder_add_inherited(me, &builder, ty_instantiate(me, source->bases[i], mapper));
     Members* ret = (Members*)builder_finish(me, &builder);
     if (source->expanded_from) ret->expanded_from = instantiate_mapped_info(me, source->expanded_from, mapper);
     return ret;
@@ -1496,7 +1550,7 @@ static Members const* resolve_instantiated_members(Checker* me, Ty const* target
     return instantiate_members(me, ty_members(me, target), mapper, applies_type_args, false);
 }
 
-// The raw members of a declared type with a `this` type (see resolve_declared_members()), memoised in Ty.declared.raw
+// The raw members of a class or interface (see resolve_declared_members()), memoised in Ty.declared.raw
 static Members const* declared_raw_members(Checker* me, Ty const* declared) {
     TyObjectState* state = declared->declared.raw;
     switch (state->members_state) {
@@ -2024,6 +2078,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 Ty const* self = ty->declared.type_params.len ? ty_reference(me, ty, ty->declared.type_params) : ty;
                 return resolve_members_with_this(me, ty, ty->declared.type_params, self);
             }
+            if (ty->declared.raw) return complete_members(me, declared_raw_members(me, ty));
             return resolve_declared_members(me, ty);
 
         case TY_REFERENCE: {
@@ -2034,6 +2089,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 return resolve_members_with_this(me, target, ty_reference_args(me, ty), this_arg);
             }
             TyMapper const* mapper = ty_mapper_new(me, target->declared.type_params, ty_reference_args(me, ty));
+            if (target->declared.raw) return instantiate_members(me, declared_raw_members(me, target), mapper, false, false);
             return resolve_instantiated_members(me, target, mapper, false);
         }
 

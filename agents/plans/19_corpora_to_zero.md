@@ -33,22 +33,16 @@ the assignment should narrow), and `watching.running` after `if (compiler.watchi
 (MultiCompiler.js:645, `watching` is `_runGraph`'s inferred SetupResult: a plain TS probe of the shape passes, so the
 difference is in the JS inference). Both need a probe inside webpack's program.
 
-### zod-root (tsc 55, tttt 83: 28 spurious, 0 missing)
+### zod-root (tsc 55, tttt 55: the same set)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
 **not clean under tsc**: 55 diagnostics of its own (26 TS2307 for bench deps the workspace doesn't install, 14 TS6133,
 8 TS6196, ...), so compare, don't count: `node thirdparty/tsc/lib/tsc.js --noEmit --pretty false -p
-thirdparty/corpora/zod` and diff `file:line code` sets (triage 2026-09-28 did it with `comm`). It crashed tttt until
-that triage session (deferred reference args in `reverse_mapped_array_like`) and had 5 TS1005 (`string.submodule`, a
-namespace named after a primitive keyword). Left, tttt only:
-- 28 in `packages/bench/` against arktype's types: TS2349 "not callable" on `type(...)` results (17), TS2322 +
-  TS6500 on `validateObjectLiteral<...>` properties (6). arktype is the heaviest type-level library we
-  have; worth a probe. Root: `type({ name: "string", age: "number" })` is `Type<{ name: never; age: never }, {}>`
-  (tsc: `{ name: string; age: number }`): arktype's type-level parser of its string DSL fails; start from
-  `type("string")` in a probe in `packages/bench/` (all 28 are probably this one cause).
-- execa 9's `result.stderr` (`ResultStdioNotAll<'2', OptionsType>`) is `any` in tttt, `string` in tsc: TS7006 on
-  the `.split("\n").filter((line) => ...)` callbacks (attw.test.ts:39/181). A probe file placed in
-  `packages/resolution/` and checked with `-p thirdparty/corpora/zod` reaches execa's types.
-- (The one missing diagnostic, TS2412 at scripts/triage-signal.ts:676, came with plan 37 E's missing type.)
+thirdparty/corpora/zod` and diff `file:line code` sets with `comm`. tttt's set now equals tsc's. The arktype (bench)
+ones were three causes: interfaces extending a type parameter (`DynamicBase<t> extends t`, Members.bases), `const`
+type parameters behind conditional/mapped types (ty_is_const_type_variable), and `infer X extends keyof $ & string`
+constraints not instantiated (ty_conditional_resolve); execa's `result.stderr` was an instantiation expression in an
+alias (`typeof CommonResult<false, O>`) left uninstantiated. Probes in `test/probes/plan19/zod/ark_*.ts` and
+`instantiation_expression_in_alias.ts`.
 
 ### HACKs the zod fixes left (hacks.md "Inference" and "Mapped types")
 - No missing type: `exact_missing_flag()` strips undefined from optional mapped properties read off optional ones;

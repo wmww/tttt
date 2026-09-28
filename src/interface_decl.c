@@ -139,7 +139,9 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         InterfaceDecl const* decl = symbol->decls[d].node;
         for_each (extends, vec_spanned_type, &decl->extends) {
             Ty const* base = ty_from_node(checker, &extends->type, ctx);
-            if (!(base->flags & TYF_OBJECT) || base == declared) continue;
+            // (An object type, or a type parameter: `interface I<T extends object> extends T`)
+            if (!(base->flags & TYF_OBJECT) && base->kind != TY_TYPE_PARAM) continue;
+            if (base == declared) continue;
             if (base_count == base_cap) {
                 base_cap *= 2;
                 HeritageBase* grown = malloc(sizeof(HeritageBase) * base_cap);

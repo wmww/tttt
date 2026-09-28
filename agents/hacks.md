@@ -440,7 +440,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `compute`: Bigint values are doubles (`Value.bigint`). `satisfies`
   doesn't narrow its result.
 - `ty_apply_type_arguments` (instantiation expressions): maps every signature taking at least that many type arguments;
-  ill-fitting ones aren't dropped. `instantiate_anonymous` never instantiates them again (instantiate.c HACK).
+  ill-fitting ones aren't dropped. `instantiate_anonymous` instantiates their type arguments (`typeof C<O>` in `type
+  R<O>`), but not one whose object type mentions the type parameters too (instantiate.c HACK). Their display is the
+  expanded object type (`{ new (): D<string>; ... }` where tsc prints `typeof D<string>`).
 - `ty_non_nullable` of a type parameter/deferred type whose constraint allows nullish returns the stripped
   *constraint* (tsc: `T & {}`), losing `T` (checker.c HACK).
 - Fresh literals: literal ids follow tsc only where tttt makes literals in the same order (`1 | 0` vs `0 | 1`).
@@ -461,6 +463,11 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   head is only kept when a pending incompatible step suppressed it, because the callers of `ty_explain_unrelated()`
   rely on other overrides (TS2741...) dropping the natural head. `skipped_source/target` (tsc's lastSkippedInfo) and
   `override_next_head` aren't restored by `report_truncate()` (tsc's resetErrorInfo restores both).
+- `ty_conditional_resolve`: an `infer X extends C` whose inference doesn't satisfy C falls back to C (instantiated with
+  the conditional type's mapper and the other inferences, tsc's nonFixingMapper) only when C is then free of type
+  variables; tsc falls back to a generic C too. Doing that leaked LazyPath's own `TValue` into valibot's `forward()`
+  (deferred conditional types don't keep their inferences: `inferred_true_branch()` recomputes them). Probe
+  `test/probes/plan19/zod/ark_infer_constraint.ts`.
 - Substitution types (TY_SUBSTITUTION): the true-branch chain around a node is `TypeNode.flow`, set by the resolve
   walk; it flips at function parameters and index signature keys and stops only at function bodies (setter write types,
   `typeof` operands, arrow functions in type queries not special). The homomorphic mapped key rule (`number |

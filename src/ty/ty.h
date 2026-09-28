@@ -278,9 +278,10 @@ struct Ty {
             u32 outer_count;
             OuterGenerics const* outer; // Where the outer ones come from (display: `f<number>.C`)
             // Classes, and interfaces that mention `this` (tsc's isThislessInterface): the polymorphic `this` type, a
-            // type parameter constrained to the type itself. `state` has the members with `this` = the type itself,
-            // `raw` the members as declared (mentioning this_param), what references instantiate. Null otherwise
+            // type parameter constrained to the type itself. Null otherwise
             Ty const* this_param;
+            // Classes and interfaces: the members as declared (mentioning this_param), what references instantiate
+            // (`state` has the members with `this` = the type itself). See Members.bases
             TyObjectState* raw;
             TupleShape const* tuple;
             TyObjectState* state;
@@ -552,6 +553,12 @@ struct Members {
     // generic: a property per property of T's constraint (see expand_generic_homomorphic())
     MappedInfo const* mapped;
     MappedInfo const* expanded_from; // The mapped type these are the members of, once its keys are known
+    // Only in the raw members of a class or interface (declared_raw_members()) with a base whose members depend on the
+    // type arguments (`interface I<T extends object> extends T`, or extending such a type): the bases, in order, with
+    // the `this` type as this-argument. The members above are then only the type's own, and whoever instantiates or
+    // uses them adds each base's (instantiated) members (tsc's resolveObjectTypeMembers)
+    Ty const* const* bases;
+    u32 base_count;
 };
 
 // sources[i] -> targets[i]. Always flat in stage 1 (composition builds a new flat mapper).
@@ -1056,6 +1063,7 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param); // Of an `i
 Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing);
 Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const* key); // tsc's getSimplifiedType, relate.c
 Ty const* ty_base_constraint(Checker* me, Ty const* ty); // of a type parameter or deferred type, null if there's none
+Ty const* ty_conditional_constraint(Checker* me, Ty const* conditional); // tsc's getConstraintOfConditionalType, relate.c
 Ty const* ty_param_default(Checker* me, Ty const* param); // null if none
 
 // instantiate.c
@@ -1167,10 +1175,11 @@ Ty const* ty_widened_literal(Checker* me, Ty const* ty);
 void ty_report_pair_cstr(Checker* me, Ty const* source, Ty const* target, cstr* source_out, cstr* target_out); // Both, as a message shows them
 void relation_cache_drop(RelationCache* me);
 // conditional.c
-// Null while the conditional type has to stay deferred
+// Null while the conditional type has to stay deferred. `mapper`: what instantiated the conditional type (the constraints
+// of its `infer X extends C` are the root's)
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
-    TyCondBranch const* if_false
+    TyCondBranch const* if_false, TyMapper const* mapper
 );
 // Assignable whatever the type parameters in either side turn out to be (tsc's check on their restrictive instantiations)
 bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target);
@@ -1273,6 +1282,8 @@ Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, struct JsxA
 
 // `f<A, B>` as a value: the type arguments applied to the signatures that take that many
 Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args);
+// The same with the mapper from its signatures' type parameters built (the type itself if it's about none of them)
+Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper);
 
 typedef struct ObjectLiteralProp {
     Atom const* name;

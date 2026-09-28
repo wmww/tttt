@@ -161,8 +161,8 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
         }
         if (kind == TY_DECLARED_CLASS_INSTANCE || interface_has_this(symbol, 0)) {
             ret->declared.this_param = ty_this_type_param(me, ret);
-            ret->declared.raw = arena_new(&my arena, TyObjectState);
         }
+        ret->declared.raw = arena_new(&my arena, TyObjectState);
     }
     return ret;
 }
