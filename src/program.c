@@ -827,6 +827,165 @@ static void program_validate_options(Program* me) {
     }
 }
 
+// tsc's getOutputExtension and getDeclarationEmitExtensionForPath
+static const char* emit_js_extension(Program const* me, csview path) {
+    if (csview_ends_with(path, ".json")) return ".json";
+    if (my options.jsx == JSX_PRESERVE && (csview_ends_with(path, ".jsx") || csview_ends_with(path, ".tsx"))) return ".jsx";
+    if (csview_ends_with(path, ".mts") || csview_ends_with(path, ".mjs")) return ".mjs";
+    if (csview_ends_with(path, ".cts") || csview_ends_with(path, ".cjs")) return ".cjs";
+    return ".js";
+}
+
+static const char* emit_declaration_extension(csview path) {
+    if (csview_ends_with(path, ".mts") || csview_ends_with(path, ".mjs")) return ".d.mts";
+    if (csview_ends_with(path, ".cts") || csview_ends_with(path, ".cjs")) return ".d.cts";
+    if (csview_ends_with(path, ".json")) return ".d.json.ts";
+    return ".d.ts";
+}
+
+// tsc's changeExtension: the source extensions are replaced, anything else is appended to
+static cstr emit_change_extension(csview path, const char* extension) {
+    static const char* const known[] = { ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs", ".json" };
+    for (isize i = 0; i < c_countof(known); i++) {
+        if (csview_ends_with(path, known[i])) {
+            path = csview_slice(path, 0, path.size - (isize)strlen(known[i]));
+            break;
+        }
+    }
+    return cstr_d(path, extension);
+}
+
+// Where tsc writes `path`'s output (getOwnEmitOutputFilePath): next to it, or at the same place relative to
+// `common_dir` (an absolute directory) under `out_dir`
+static cstr emit_output_path(Program const* me, csview path, csview out_dir, csview common_dir, const char* extension) {
+    if (!out_dir.size) return emit_change_extension(path, extension);
+    cstr cwd = cstr_null;
+    try (fs_get_cwd(my fs, &cwd)) or_panic;
+    cstr absolute = absolute_path_of(cstr_sv(&cwd), path);
+    csview rest = cstr_sv(&absolute);
+    if (rest.size >= common_dir.size && !memcmp(rest.buf, common_dir.buf, (size_t)common_dir.size)) rest = csview_slice(rest, common_dir.size, rest.size);
+    while (rest.size && rest.buf[0] == '/') rest = csview_slice(rest, 1, rest.size);
+    cstr joined = cstr_d(out_dir, out_dir.buf[out_dir.size - 1] == '/' ? "" : "/", rest);
+    cstr ret = emit_change_extension(cstr_sv(&joined), extension);
+    c_drop(cstr, &cwd, &absolute, &joined);
+    return ret;
+}
+
+// tsc's sourceFileMayBeEmitted
+static bool emit_source_may_be_emitted(Program const* me, SourceFile const* source) {
+    if (source->is_declaration || source->is_stdlib) return false;
+    csview path = cstr_sv(&source->canonical_path);
+    if (csview_starts_with(path, "node_modules/") || csview_contains(path, "/node_modules/")) return false;
+    if (!source->is_json) return true;
+    return cstr_size(&my options.out_file) || cstr_size(&my options.out_dir);
+}
+
+// Reports one output path (tsc's verifyEmitFilePath): TS5055 if it is an input file, TS5056 the second time
+static void emit_verify_path(Program* me, cstr output, hmap_source_file_ptr* seen) {
+    if (program_find_source(me, cstr_sv(&output))) {
+        Error* error = error_ctx_global_error_d(
+            my errs, 5055, "Cannot write file '", output, "' because it would overwrite input file."
+        );
+        if (!cstr_size(&my options.config_dir)) {
+            error_sub_error_d(error, span_null, TS_CODE_NONE,
+                "Adding a tsconfig.json file will help organize projects that contain both TypeScript and JavaScript "
+                "files. Learn more at https://aka.ms/tsconfig.");
+        }
+    }
+    cstr cwd = cstr_null;
+    try (fs_get_cwd(my fs, &cwd)) or_panic;
+    cstr key = relative_path_of(cstr_sv(&cwd), cstr_sv(&output));
+    cstr_drop(&cwd);
+    if (hmap_source_file_ptr_get(seen, cstr_sv(&key))) {
+        error_ctx_global_error_d(
+            my errs, 5056, "Cannot write file '", output, "' because it would be overwritten by multiple input files."
+        );
+        cstr_drop(&key);
+    } else {
+        hmap_source_file_ptr_insert(seen, key, nullptr);
+    }
+    cstr_drop(&output);
+}
+
+// The end of tsc's verifyCompilerOptions: no output file may overwrite an input file or another output file
+static void program_verify_emit_paths(Program* me) {
+    CompilerOptions const* o = &my options;
+    if (o->no_emit || o->suppress_output_path_check) return;
+    bool declarations = o->declaration || o->composite;
+    hmap_source_file_ptr seen = {0};
+    if (cstr_size(&o->out_file)) {
+        // One bundle: of the scripts, and of modules too with AMD/System (tsc's getSourceFilesToEmit)
+        bool modules = o->emit_declaration_only || o->module == MODULE_KIND_AMD || o->module == MODULE_KIND_SYSTEM;
+        bool any = false;
+        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+            any |= emit_source_may_be_emitted(me, *i) && (modules || !(*i)->is_module);
+        }
+        if (any) {
+            if (!o->emit_declaration_only) emit_verify_path(me, cstr_clone(o->out_file), &seen);
+            if (declarations) {
+                emit_verify_path(me, emit_change_extension(cstr_sv(&o->out_file), ".d.ts"), &seen);
+            }
+        }
+        hmap_source_file_ptr_drop(&seen);
+        return;
+    }
+    // tsc's getCommonSourceDirectory, only needed with an outDir or declarationDir
+    cstr common_dir = cstr_null;
+    if (cstr_size(&o->out_dir) || cstr_size(&o->declaration_dir)) {
+        cstr cwd = cstr_null;
+        try (fs_get_cwd(my fs, &cwd)) or_panic;
+        if (cstr_size(&o->root_dir)) {
+            common_dir = absolute_path_of(cstr_sv(&cwd), cstr_sv(&o->root_dir));
+        } else if (o->composite && cstr_size(&o->config_dir)) {
+            common_dir = cstr_clone(o->config_dir);
+        } else {
+            bool first = true;
+            for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+                if (!emit_source_may_be_emitted(me, *i)) continue;
+                cstr absolute = absolute_path_of(cstr_sv(&cwd), cstr_sv(&(*i)->canonical_path));
+                csview dir = dirname_of(cstr_sv(&absolute));
+                if (first) {
+                    cstr_assign_sv(&common_dir, dir);
+                    first = false;
+                } else {
+                    // The longest common prefix of whole components
+                    csview common = cstr_sv(&common_dir);
+                    isize n = 0, last_sep = 0;
+                    while (n < common.size && n < dir.size && common.buf[n] == dir.buf[n]) {
+                        if (common.buf[n] == '/') last_sep = n;
+                        n++;
+                    }
+                    bool whole = (n == common.size || common.buf[n] == '/') && (n == dir.size || dir.buf[n] == '/');
+                    cstr_resize(&common_dir, whole ? n : last_sep ? last_sep : 1, '\0');
+                }
+                cstr_drop(&absolute);
+            }
+        }
+        cstr_drop(&cwd);
+    }
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile const* source = *i;
+        if (!emit_source_may_be_emitted(me, source)) continue;
+        csview path = source_file_display_path(source);
+        if (!o->emit_declaration_only) {
+            cstr js = emit_output_path(me, path, cstr_sv(&o->out_dir), cstr_sv(&common_dir), emit_js_extension(me, path));
+            // A JSON file that would be written over itself isn't written
+            if (source->is_json && program_find_source(me, cstr_sv(&js)) == source) {
+                cstr_drop(&js);
+            } else {
+                emit_verify_path(me, js, &seen);
+            }
+        }
+        if (declarations && !source->is_json) {
+            csview dir = cstr_size(&o->declaration_dir) ? cstr_sv(&o->declaration_dir) : cstr_sv(&o->out_dir);
+            cstr dts = emit_output_path(me, path, dir, cstr_sv(&common_dir), emit_declaration_extension(path));
+            emit_verify_path(me, dts, &seen);
+        }
+    }
+    cstr_drop(&common_dir);
+    hmap_source_file_ptr_drop(&seen);
+}
+
 // tsc's getDiagnosticsWithPrecedingDirectives: a semantic diagnostic (of `phase`, resolving names or typechecking) that
 // a @ts-expect-error/@ts-ignore precedes isn't reported. Starting from the line before the diagnostic's, lines that
 // are blank or only a `//` comment are passed over on the way up to the directive. Parse errors stay
@@ -895,6 +1054,7 @@ static void program_report_unused_expect_errors(Program* me) {
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     program_validate_options(me);
+    program_verify_emit_paths(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     set_compiler_options(&my options);
 

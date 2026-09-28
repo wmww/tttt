@@ -85,10 +85,12 @@ static void apply_compiler_options(ConfigLoad* me, csview dir, JsonValue const* 
                 compiler_options_add_path(my options, cstr_sv(&value->members[j].key), list);
             }
             my options->paths_set = true;
-        } else if (!strcmp(name, "baseUrl")) {
+        } else if (!strcmp(name, "baseUrl") || !strcmp(name, "outDir") || !strcmp(name, "outFile") ||
+            !strcmp(name, "rootDir") || !strcmp(name, "declarationDir")) {
+            // Relative to the config that has them, which may be one this one extends
             if (value->tag != JSON_STRING) continue;
             cstr absolute = config_path(me, dir, cstr_sv(&value->string));
-            ignore compiler_options_set(my options, c_sv("baseUrl"), cstr_sv(&absolute));
+            ignore compiler_options_set(my options, csview_from(name), cstr_sv(&absolute));
             cstr_drop(&absolute);
         } else if (!strcmp(name, "rootDirs") || !strcmp(name, "typeRoots")) {
             if (value->tag == JSON_ARRAY) set_path_list(me, dir, name, value);

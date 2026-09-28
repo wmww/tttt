@@ -79,8 +79,10 @@ typedef enum ModuleDetectionKind {
     X(allow_umd_global_access, "allowumdglobalaccess", false) \
     X(allow_importing_ts_extensions, "allowimportingtsextensions", false) \
     X(allow_arbitrary_extensions, "allowarbitraryextensions", false) \
+    X(composite, "composite", false) \
     X(declaration, "declaration", false) \
     X(downlevel_iteration, "downleveliteration", false) \
+    X(emit_declaration_only, "emitdeclarationonly", false) \
     X(emit_decorator_metadata, "emitdecoratormetadata", false) \
     X(erasable_syntax_only, "erasablesyntaxonly", false) \
     X(es_module_interop, "esmoduleinterop", false) \
@@ -113,6 +115,7 @@ typedef enum ModuleDetectionKind {
     X(skip_lib_check, "skiplibcheck", false) \
     X(suppress_excess_property_errors, "suppressexcesspropertyerrors", false) \
     X(suppress_implicit_any_index_errors, "suppressimplicitanyindexerrors", false) \
+    X(suppress_output_path_check, "suppressoutputpathcheck", false) \
     X(use_define_for_class_fields, "usedefineforclassfields", false) \
     X(verbatim_module_syntax, "verbatimmodulesyntax", false)
 
@@ -158,6 +161,12 @@ typedef struct CompilerOptions {
     cstr jsx_fragment_factory;
     cstr jsx_import_source;
     cstr react_namespace;
+    // Emit paths, only for tsc's output path checks (TS5055/TS5056): tttt doesn't emit. Relative to config_dir like
+    // the module resolution ones below
+    cstr out_dir;
+    cstr out_file;
+    cstr root_dir;
+    cstr declaration_dir;
 
     // Module resolution (src/module_resolution.h reads these). Paths are as written: relative ones are relative to
     // config_dir (the directory of the tsconfig they came from), or to the current directory when that is empty

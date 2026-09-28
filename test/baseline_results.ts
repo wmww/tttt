@@ -8836,12 +8836,12 @@ const baselines = {
         types: true,
     },
     'declarationFileOverwriteError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationFileOverwriteErrorWithOut': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13651,7 +13651,7 @@ const baselines = {
         types: true,
     },
     'filesEmittingIntoSameOutput': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19236,12 +19236,12 @@ const baselines = {
         types: false,
     },
     'jsFileCompilationAbstractModifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationAmbientVarDeclarationSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19336,12 +19336,12 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationEnumSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationErrorOnDeclarationsWithJsFileReferenceWithNoOut': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19356,7 +19356,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationExportAssignmentSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19371,17 +19371,17 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationHeritageClauseSyntaxOfClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationImportEqualsSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationInterfaceSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19406,12 +19406,12 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationModuleSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationNoErrorWithoutDeclarationsWithJsFileReferenceWithNoOut': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19426,22 +19426,22 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationOptionalClassElementSyntaxOfClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationOptionalParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationPublicMethodSyntaxOfClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationPublicParameterModifier': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19456,7 +19456,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationReturnTypeSyntaxOfFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19466,12 +19466,12 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationSyntaxError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationTypeAliasSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19486,12 +19486,12 @@ const baselines = {
         types: false,
     },
     'jsFileCompilationTypeOfParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationTypeParameterSyntaxOfClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19501,17 +19501,17 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationTypeParameterSyntaxOfFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationTypeSyntaxOfVar': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationWithDeclarationEmitPathSameAsInput': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19546,12 +19546,12 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationWithOutDeclarationFileNameSameAsInputJsFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationWithOutFileNameSameAsInputJsFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19561,7 +19561,7 @@ const baselines = {
         types: undefined,
     },
     'jsFileCompilationWithoutOut': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60171,12 +60171,12 @@ const baselines = {
         types: true,
     },
     'exportDefaultInJsFile01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'exportDefaultInJsFile02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
