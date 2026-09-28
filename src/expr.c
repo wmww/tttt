@@ -1659,6 +1659,9 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                 Ty const* declared = ty_type_of_symbol(checker, target->identifier.target);
                 if (target->identifier.compound_like_target) declared = ty_base_type_of_literal(checker, declared);
                 ty_check_assignable_expr(checker, source, declared, target->outer_span, source_expr, errs);
+            } else if (source && target->identifier.is_arguments) {
+                // `arguments = x` in a function: the arguments object (IArguments)
+                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), target->outer_span, source_expr, errs);
             }
             return;
 
