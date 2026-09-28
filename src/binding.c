@@ -585,6 +585,56 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     return ret;
 }
 
+// tsc's reportWideningErrorsInType: TS7018 on the object literal properties whose null/undefined widen to any
+static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, ErrorCtx* errs, u32 depth) {
+    if (depth > 8 || !(ty->xflags & TYX_CONTAINS_WIDENING)) return false;
+    bool reported = false;
+    if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) reported |= report_widening_errors_in_type(checker, ty->composite.types.data[i], errs, depth + 1);
+    } else if (ty->kind == TY_REFERENCE && (ty_is_array(checker, ty) || ty_tuple_shape(ty))) {
+        TyList args = ty_reference_args(checker, ty);
+        for (u32 i = 0; i < args.len; i++) reported |= report_widening_errors_in_type(checker, args.data[i], errs, depth + 1);
+    } else if (ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal) {
+        Members const* members = ty_members(checker, ty);
+        for (u32 i = 0; i < members->prop_count; i++) {
+            Prop const* prop = members->props[i];
+            if (prop->function) continue;
+            Ty const* t = prop_type(checker, prop);
+            if (!(t->xflags & TYX_CONTAINS_WIDENING)) continue;
+            bool inner = report_widening_errors_in_type(checker, t, errs, depth + 1);
+            if (!inner && prop->literal_own && prop->name_span.source) {
+                cstr name = ty_prop_name_cstr(checker, prop->name);
+                cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, t));
+                error_ctx_error_d(errs, prop->name_span, 7018, "Object literal's property '", name, "' implicitly has an '", type, "' type.");
+                c_drop(cstr, &name, &type);
+                inner = true;
+            }
+            reported |= inner;
+        }
+    }
+    return reported;
+}
+
+static void report_errors_from_widening(InitializedBinding* me, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    if (!compiler_options()->no_implicit_any || compiler_options()->strict_null_checks) return;
+    if (my binding.has_explicit_type || my value.tag == EXPR_IMPLICIT_ANY || my binding.tag != BINDING_IDENTIFIER) return;
+    if (is_auto_typed(me) || my is_rest_parameter) return;
+    Symbol const* symbol = my binding.symbol;
+    if (!symbol) return;
+    if (symbol->is_parameter && ty_contextual_parameter_type(checker, me)) return;
+    // `let x = []` is an evolving array (see initialized_binding_evaluate_assigned_type)
+    if (!symbol->is_parameter && my value.tag == EXPR_ARRAY && !vec_expr_size(&my value.array) && !symbol->is_ambient &&
+        (symbol->flags & SYMBOL_VARIABLE)) return;
+    Ty const* ty = ty_expr_type(checker, &my value);
+    if (!(ty->xflags & TYX_CONTAINS_WIDENING)) return;
+    if (report_widening_errors_in_type(checker, ty, errs, 0)) return;
+    cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty));
+    error_ctx_error_d(errs, my binding.content_span, symbol->is_parameter ? 7006 : 7005, symbol->is_parameter ? "Parameter '" : "Variable '",
+        my binding.content_span, "' implicitly has an '", type, "' type.");
+    cstr_drop(&type);
+}
+
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     // `const x = require("m")`, `const x = require("m").a`: an alias, which is all tsc checks
     // (checkVariableLikeDeclaration: checkAliasSymbol and return)
@@ -592,6 +642,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
     binding_typecheck(&my binding, my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value, errs);
+    report_errors_from_widening(me, errs);
 }
 
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
@@ -599,6 +650,7 @@ void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, 
     expr_typecheck(&my value, errs);
     Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
     binding_typecheck_at(&my binding, initializer, span, errs);
+    report_errors_from_widening(me, errs);
     if (!initializer || my binding.has_explicit_type) return;
     // An unannotated parameter typed by its contextual signature: the initializer is assigned to that type, unless it
     // was the initializer's type instead (tsc's assignContextualParameterTypes: when the contextual type is assignable

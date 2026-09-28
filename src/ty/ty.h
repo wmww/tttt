@@ -235,6 +235,7 @@ struct Ty {
     u32 id;
     u32 kind; // TyKind
     u32 flags; // TyFlags
+    u32 xflags; // TYX_*: flags that propagate like tsc's ObjectFlags.PropagatingFlags
     // How to print the type if it was made by a type alias (tsc's aliasSymbol/aliasTypeArguments)
     Symbol const* alias;
     TyList alias_args;
@@ -624,6 +625,8 @@ static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message = 
 #define g_class_key TyReportLine, ty_report_line
 #include <cleat/generic/vec.h>
 
+enum { TYX_CONTAINS_WIDENING = 1 }; // tsc's ObjectFlags.ContainsWideningType
+
 typedef enum TyIntrinsic {
     // Creation order copies tsc's, since union members print in id order
     TY_ANY,
@@ -651,6 +654,10 @@ typedef enum TyIntrinsic {
     TY_IMPLICIT_NEVER, // The element type of `[]` under strictNullChecks (tsc's implicitNeverType)
     TY_UNREACHABLE_NEVER, // Control flow: after a call that never returns. A reference there has its declared type
     TY_NON_PRIMITIVE,
+    // Without strictNullChecks, what the `null`/`undefined` expressions, `void e` and `[]`'s element are (tsc's
+    // nullWideningType/undefinedWideningType): only these widen to any. The regular ones under strictNullChecks
+    TY_UNDEFINED_WIDENING,
+    TY_NULL_WIDENING,
     TY_INTRINSIC_COUNT,
 } TyIntrinsic;
 
@@ -803,8 +810,8 @@ static inline bool ty_is_fresh_object(Ty const* ty) { return ty->kind == TY_ANON
 // properties of the regular twin) become regular. What declarations, inferred return types and inferences hold
 Ty const* ty_widened_objects(Checker* me, Ty const* ty);
 // tsc's getWidenedType for null and undefined without strictNullChecks: any, also inside the elements of arrays and
-// tuples, the properties of object literals and the members of unions. HACK: tsc only widens the types of the `null`
-// and `undefined` expressions, tttt can't tell them from written ones (hacks.md)
+// tuples, the properties of object literals and the members of unions. Only the widening ones (TY_NULL_WIDENING,
+// TY_UNDEFINED_WIDENING: what TYX_CONTAINS_WIDENING marks) widen, a written `undefined` type stays
 Ty const* ty_widened_nullable(Checker* me, Ty const* ty);
 Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl); // `symbol` if decl->key is null
 Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty); // A unique symbol at a mutable location is `symbol`

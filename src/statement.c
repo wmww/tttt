@@ -493,8 +493,8 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
             return ty_for_in_key_type(checker, iterable);
 
         case FOR_EACH_LOOP_OF:
-            return ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable,
-                my iterable.outer_span, nullptr);
+            return ty_widened_nullable(checker, ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable,
+                my iterable.outer_span, nullptr));
     }
     impossible;
 }

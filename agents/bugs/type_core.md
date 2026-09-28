@@ -94,8 +94,6 @@ property reads, relations, `removeMissingType`, display), then the messages are 
   moduleAugmentationDoesInterfaceMergeOfReexport; umd-augmentation-1..4 and augmentExportEquals6_1 fail symbols/types).
   moduleAssignmentCompat1-4: `Symbol(A)` without a Decl for a non-instantiated namespace used as a value.
 
-- tsc's non-widening `undefined`: `{}["hi"]` under noImplicitAny is `undefined` and `var x = {}["hi"]` stays
-  `undefined`; tttt widens it to any (noImplicitAnyIndexing(Suppressed) fail types on it only). hacks.md `widen_nullable`.
 - `infer X extends C`: C is resolved in the scope of the whole extends type (`type_lookup_names`), so another `infer`
   of the same clause isn't visible (tsc: TS2304, inferTypesWithExtends2 passes); unchecked: an `infer` of an *outer*
   conditional's extends type in C.

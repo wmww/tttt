@@ -219,7 +219,19 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_CIRCULAR] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_UNKNOWN_] = make_intrinsic(me, "unknown", TYF_UNKNOWN);
     my intrinsics[TY_UNDEFINED] = make_intrinsic(me, "undefined", TYF_UNDEFINED);
+    my intrinsics[TY_UNDEFINED_WIDENING] = my intrinsics[TY_UNDEFINED];
+    if (!compiler_options()->strict_null_checks) {
+        Ty* widening = (Ty*)make_intrinsic(me, "undefined", TYF_UNDEFINED);
+        widening->xflags = TYX_CONTAINS_WIDENING;
+        my intrinsics[TY_UNDEFINED_WIDENING] = widening;
+    }
     my intrinsics[TY_NULL] = make_intrinsic(me, "null", TYF_NULL);
+    my intrinsics[TY_NULL_WIDENING] = my intrinsics[TY_NULL];
+    if (!compiler_options()->strict_null_checks) {
+        Ty* widening = (Ty*)make_intrinsic(me, "null", TYF_NULL);
+        widening->xflags = TYX_CONTAINS_WIDENING;
+        my intrinsics[TY_NULL_WIDENING] = widening;
+    }
     my intrinsics[TY_STRING] = make_intrinsic(me, "string", TYF_STRING);
     my intrinsics[TY_NUMBER] = make_intrinsic(me, "number", TYF_NUMBER);
     my intrinsics[TY_BIGINT] = make_intrinsic(me, "bigint", TYF_BIGINT);
@@ -497,8 +509,11 @@ static Ty const* intern_composite(
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
     if (!*slot) {
-        u32 flags = 0;
-        for (u32 i = 0; i < len; i++) flags |= types[i]->flags;
+        u32 flags = 0, xflags = 0;
+        for (u32 i = 0; i < len; i++) {
+            flags |= types[i]->flags;
+            xflags |= types[i]->xflags;
+        }
         u32 member_flags = flags;
         flags = (flags | ty_list_flags(alias_args)) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
         flags |= kind == TY_UNION ? TYF_UNION | (member_flags & (TYF_FRESH_LITERAL | TYF_FRESH_OBJECT)) : TYF_INTERSECTION;
@@ -508,6 +523,7 @@ static Ty const* intern_composite(
             flags |= TYF_BOOLEAN;
         }
         Ty* ret = ty_alloc(me, kind, flags);
+        ret->xflags = xflags;
         ret->alias = alias;
         ret->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
         ret->composite.types = ty_list_copy(me, types, len);
@@ -551,9 +567,10 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
     ty_buf_add_flattened(&buf, TY_UNION, types, len);
 
     u32 includes = 0;
-    bool includes_error = false;
+    bool includes_error = false, includes_non_widening = false;
     for (u32 i = 0; i < buf.len; i++) {
         includes |= buf.data[i]->flags;
+        if ((buf.data[i]->flags & TYF_NULLABLE) && !(buf.data[i]->xflags & TYX_CONTAINS_WIDENING)) includes_non_widening = true;
         includes_error |= buf.data[i]->kind == TY_INTRINSIC && (buf.data[i]->flags & TYF_ERROR);
     }
     Ty const* ret = nullptr;
@@ -602,7 +619,10 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
         if (out == 0) {
             // Nothing but null and undefined (without strictNullChecks): null wins, like in tsc's getUnionType
             TyIntrinsic only = TY_NEVER;
-            if (!strict_null_checks) only = includes & TYF_NULL ? TY_NULL : includes & TYF_UNDEFINED ? TY_UNDEFINED : TY_NEVER;
+            if (!strict_null_checks) {
+                only = includes & TYF_NULL ? (includes_non_widening ? TY_NULL : TY_NULL_WIDENING) :
+                    includes & TYF_UNDEFINED ? (includes_non_widening ? TY_UNDEFINED : TY_UNDEFINED_WIDENING) : TY_NEVER;
+            }
             ret = my intrinsics[only];
         } else if (out == 1) {
             ret = buf.data[0];
@@ -1189,6 +1209,9 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
         ret->reference.target = target;
         ret->reference.args = ty_list_copy(me, args.data, args.len);
         ret->reference.this_arg = this_arg;
+        if (!compiler_options()->strict_null_checks) {
+            for (u32 i = 0; i < args.len; i++) ret->xflags |= args.data[i]->xflags;
+        }
         ret->reference.state = arena_new(&my arena, TyObjectState);
         *slot = ret;
     }

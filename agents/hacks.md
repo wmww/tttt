@@ -308,10 +308,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `ty_merged_value_type`: the merged type copies the first named entry's `declared` struct and gets all entries'
   members; a second `Ty` next to the unmerged one (`ty_static_type_of`, what `this` in a static member sees).
 - `variable_statement_typecheck` TS1254: any identifier or property access counts as a "literal enum reference".
-- `widen_nullable` (members.c; ty.h HACK): non-strict widening to `any` of null/undefined is shallow (top level and
-  array elements), tttt has one null type (tsc only widens its widening null/undefined), spread properties are exempt.
-  Inference results (`ty_widened_nullable` in infer.c) widen every null/undefined candidate the same way, a written
-  `undefined` type too. Real fix: tsc's nullWideningType/undefinedWideningType.
 - `contains_spread` (members.c HACK, tsc's ObjectFlags.ContainsSpread): "a property came from a spread" (`{ ...{} }`
   doesn't count). The widened literal stays an object literal type.
 

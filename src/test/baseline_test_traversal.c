@@ -1795,25 +1795,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     }
 }
 
-static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
-    for_each (i, vec_expr, me) {
-        if (i->tag != EXPR_LITERAL || i->literal.tag != VALUE_UNDEFINED) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
-    // Without strictNullChecks `[]` and `[undefined]` are undefined[] before widening (tsc's undefinedWideningType),
-    // unless they're tuples (a tuple context, a destructuring pattern)
-    if (my tag == EXPR_ARRAY && !compiler_options()->strict_null_checks &&
-        !vec_expr_contains_elements_other_than_undefined(&my array) && ty_is_array(current_checker, expr_get_type(me))
-    ) {
-        Checker* checker = current_checker;
-        Ty const* undefined_array = ty_array(checker, ty_intrinsic(checker, TY_UNDEFINED), false);
-        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, undefined_array);
-    } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
+    if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
         // `null` itself has no line, `(null)` does
         const char* start = span_start_ptr(my inner_span);
         const char* end = span_end_ptr(my inner_span);

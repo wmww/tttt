@@ -2625,6 +2625,12 @@ Ty const* ty_object_literal(
             builder_push(&builder, index, index[i]);
         }
         Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
+        if (kind != OBJECT_SYNTHETIC && !compiler_options()->strict_null_checks) {
+            for (u32 i = 0; i < count; i++) {
+                if (!props[i].reuse && props[i].type) fresh->xflags |= props[i].type->xflags;
+            }
+            for (u32 i = 0; i < index_count; i++) fresh->xflags |= index[i].value->xflags;
+        }
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         fresh->anonymous.free_params_unknown = true;
         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
@@ -2831,7 +2837,7 @@ static Ty const* widen_objects(Checker* me, Ty const* ty) {
 }
 
 static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
-    if (depth > 16) return ty;
+    if (depth > 16 || !(ty->xflags & TYX_CONTAINS_WIDENING)) return ty;
     if (ty->kind != TY_UNION && (ty->flags & TYF_NULLABLE)) return ty_intrinsic(me, TY_ANY);
     u64 key[2] = { KEY_WIDENED_NULLABLE, (u64)(uintptr_t)ty };
     void const* known = intern_get(&my links, key, 2);
@@ -2884,10 +2890,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
         for (u32 i = 0; i < members->prop_count; i++) {
             Prop const* prop = members->props[i];
             Ty const* type = prop->function ? nullptr : prop_type(me, prop);
-            // HACK: tsc only widens its widening null and undefined (what the `null` and `undefined` expressions are),
-            // which tttt doesn't tell from written ones: a spread property (`{ ...x }` with `x: { a: undefined }`) keeps
-            // its type
-            Ty const* widened = type && prop->literal_own ? widen_nullable(me, type, depth + 1) : type;
+            Ty const* widened = type ? widen_nullable(me, type, depth + 1) : type;
             changed |= widened != type;
             props[i] = (ObjectLiteralProp){
                 .name = prop->name,

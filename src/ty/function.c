@@ -47,7 +47,7 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
         ty_expr_type(me, function->yields[i]); // Checks the operand with the contextual type it gets from there
         Ty const* type;
         if (yield->expr.tag == EXPR_IMPLICIT_ANY) {
-            type = ty_intrinsic(me, TY_UNDEFINED); // A bare `yield`
+            type = ty_intrinsic(me, TY_UNDEFINED_WIDENING); // A bare `yield`
         } else if (yield->op == UNARY_OP_YIELD_STAR) {
             u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
             Ty const* delegate = ty_expr_type(me, &yield->expr);

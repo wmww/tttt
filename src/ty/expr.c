@@ -1437,7 +1437,7 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
             for (u32 i = 0; i < c_arraylen(names); i++) types[i] = ty_string_literal(me, csview_from(names[i]));
             return ty_union(me, types, c_arraylen(names), nullptr, (TyList){0});
         }
-        case UNARY_OP_VOID: return ty_intrinsic(me, TY_UNDEFINED);
+        case UNARY_OP_VOID: return ty_intrinsic(me, TY_UNDEFINED_WIDENING);
         case UNARY_OP_TILDE: return unary_result_type(me, ty_expr_type(me, operand));
         case UNARY_OP_DELETE: return ty_intrinsic(me, TY_BOOLEAN);
         case UNARY_OP_AWAIT: return ty_awaited(me, ty_expr_type(me, operand));
@@ -2350,10 +2350,10 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (kept) {
             element = ty_union_subtype_reduced(me, elements, kept);
         } else if (count) {
-            element = elements[0];
+            element = ty_union(me, elements, count, nullptr, (TyList){0});
         } else {
             // `[]` (an unannotated variable initialized with it is an evolving array in tsc, see binding.c)
-            element = compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_IMPLICIT_NEVER) : any_type(me);
+            element = compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_IMPLICIT_NEVER) : ty_intrinsic(me, TY_UNDEFINED_WIDENING);
         }
         ret = ty_array(me, element, false);
     }
@@ -2903,7 +2903,10 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return any_type(me);
-        case EXPR_LITERAL: return ty_fresh_literal(me, ty_literal(me, &expr->literal));
+        case EXPR_LITERAL:
+            if (expr->literal.tag == VALUE_NULL) return ty_intrinsic(me, TY_NULL_WIDENING);
+            if (expr->literal.tag == VALUE_UNDEFINED) return ty_intrinsic(me, TY_UNDEFINED_WIDENING);
+            return ty_fresh_literal(me, ty_literal(me, &expr->literal));
         case EXPR_IDENTIFIER: {
             IdentifierFlowIssue issue = IDENTIFIER_FLOW_OK; // Reported by the typecheck walk
             return identifier_flow_type(me, expr, ctx.contextual, &issue, false);
@@ -2934,6 +2937,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (is_constructor_declared_target(me, expr->property)) return any_type(me);
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
+            if (expr->property->method_call || expr->property->assignment_target) object = ty_widened_nullable(me, object);
             // `never` has no properties (TS2339), `never[k]` is never
             if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
             Ty const* key = ty_access_key_type(me, expr->property);

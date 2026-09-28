@@ -3573,6 +3573,12 @@ static Ternary structured_related_members(
         Ty const* source_target = source_self ? source : source->reference.target;
         Ty const* target_target = target_self ? target : target->reference.target;
         if (source_target == target_target && use_variances && !is_check_marker(me, source) && !is_check_marker(me, target)) {
+            // `[]` to `never[]` without strictNullChecks (tsc's isEmptyArrayLiteralType)
+            if (!source_self && is_array_target(me, source_target) && !compiler_options()->strict_null_checks &&
+                ty_reference_args(me, source).len == 1 && ty_reference_args(me, source).data[0] == ty_intrinsic(me, TY_UNDEFINED_WIDENING)
+            ) {
+                return TERNARY_TRUE;
+            }
             Variances const* variances = get_variances(me, source_target);
             // A recursive measurement of the same variances: tsc assumes related (Ternary.Unknown), which measures
             // variance only from occurrences that aren't nested in recursive instantiations of the type

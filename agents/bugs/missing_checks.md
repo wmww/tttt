@@ -60,11 +60,12 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   (re-probed).
 - **Type predicates**: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion
   callee without explicit types), TS1225 (no such parameter), a predicate function returning non-boolean.
-- **Implicit any**: widening inside a return type (tsc's reportWideningErrorsInType: TS7018 on an object literal's
-  property) and of generator yield/next types; TS7023 through indirect self-references in return expressions
+- **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; plan 37 A stage 2: TS7031 on
+  binding elements, TS7010/7011/7025 on widened inferred returns, TS7008 class fields, TS7018 through a spread) and of
+  generator yield/next types; TS7023 through indirect self-references in return expressions
   (simpleRecursionWithBaseCase1 `[fn5][0]()`, thisInObjectLiterals, trivialSubtypeReductionNoStructuralCheck);
   TS7031/TS7006 from widening of binding pattern defaults (`function
-  f([a1] = [undefined])`, noImplicitAnyDestructuring*: tsc's reportErrorsFromWidening, hacks.md `widen_nullable`);
+  f([a1] = [undefined])`, noImplicitAnyDestructuring*);
   TS7051 (a parameter named like a type); TS7041 (`this` captured by a top-level arrow); TS7017 (`typeof globalThis` has
   no index signature); TS7055/TS7057 (generators).
 - **Target/module-gated**: TS2705/TS2468 (async function needs the `Promise` constructor): tsc reports it from

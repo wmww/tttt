@@ -437,6 +437,7 @@ typedef struct PropertyExpr {
     bool qualified_name;
     uint8_t assignment_target; // FlowAssignmentKind
     bool compound_like_target; // Like IdentifierExpr.compound_like_target
+    bool method_call; // The callee of a call or new (tsc's isMethodAccessForCall): the object widens
     FlowNode* flow; // Like IdentifierExpr.flow
     // The innermost class it is in (member accessibility, see ClassDecl.outer_class for the others), and the class
     // whose constructor is the function it is directly in (where `this.x = ` may write a readonly x)
