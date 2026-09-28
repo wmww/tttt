@@ -72,6 +72,10 @@ typedef struct RelationState {
     Ty const* source_stack[MAX_RELATION_DEPTH];
     Ty const* target_stack[MAX_RELATION_DEPTH];
     u32 depth;
+    // The stacks deep nesting looks at (tsc's sourceStack/targetStack): a relation to a member of a union or intersection
+    // pushes only the side that changes (tsc's RecursionFlags), see is_related_to_side()
+    u32 source_depth, target_depth;
+    unsigned skip_push; // For the next recursive_related(): 1 don't push the source, 2 don't push the target
     unsigned expanding; // 1: source is deeply nested, 2: target is
     bool overflow;
     // What's left of the budget of structured results (tsc's relationCount: (16M - cached) / 8, one per result
@@ -2298,10 +2302,20 @@ static Ternary type_args_related(
 
 // Structured relation
 
+// A relation that pushes only one side on the deep nesting stacks: `skip` 1 leaves the source (a member of a union or
+// intersection target against the same source, tsc's RecursionFlags.Target), 2 the target (RecursionFlags.Source)
+static Ternary is_related_to_side(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, unsigned skip) {
+    unsigned saved = st->skip_push;
+    st->skip_push = skip;
+    Ternary ret = is_related_to(me, st, source, target, report);
+    st->skip_push = saved;
+    return ret;
+}
+
 static Ternary each_related(Checker* me, RelationState* st, TyList sources, Ty const* target, bool report) {
     Ternary result = TERNARY_TRUE;
     for (u32 i = 0; i < sources.len; i++) {
-        Ternary related = is_related_to(me, st, sources.data[i], target, report);
+        Ternary related = is_related_to_side(me, st, sources.data[i], target, report, 2);
         if (!related) return TERNARY_FALSE;
         result &= related;
     }
@@ -2322,7 +2336,7 @@ static bool union_has_member(Ty const* u, Ty const* t) {
 
 static Ternary some_related(Checker* me, RelationState* st, TyList sources, Ty const* target) {
     for (u32 i = 0; i < sources.len; i++) {
-        Ternary related = is_related_to(me, st, sources.data[i], target, false);
+        Ternary related = is_related_to_side(me, st, sources.data[i], target, false, 2);
         if (related) return related;
     }
     return TERNARY_FALSE;
@@ -2338,7 +2352,7 @@ static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source,
     Ty const* key_type = key ? ty_prop_type_of(me, source, key) : nullptr;
     Ty const* match = key_type ? ty_union_member_for_key(me, target, key_type) : nullptr;
     if (match) {
-        Ternary related = is_related_to(me, st, source, match, false);
+        Ternary related = is_related_to_side(me, st, source, match, false, 1);
         if (related) return related;
     }
     // A unit type is only ever related to a union member by identity (above) or through a non-unit member
@@ -2358,13 +2372,13 @@ static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source,
         ) {
             continue;
         }
-        Ternary related = is_related_to(me, st, source, targets.data[i], false);
+        Ternary related = is_related_to_side(me, st, source, targets.data[i], false, 1);
         if (related) return related;
     }
     if (report) {
         // tsc elaborates on the member that's the likely intent
         Ty const* best = best_matching_type(me, st, source, target);
-        if (best) is_related_to(me, st, source, best, true);
+        if (best) is_related_to_side(me, st, source, best, true, 1);
     }
     return TERNARY_FALSE;
 }
@@ -3016,7 +3030,7 @@ static Ternary target_each_related(Checker* me, RelationState* st, Ty const* sou
     bool saved = st->intersection_target;
     st->intersection_target = true;
     for (u32 i = 0; i < targets.len && result; i++) {
-        Ternary related = is_related_to(me, st, source, targets.data[i], report);
+        Ternary related = is_related_to_side(me, st, source, targets.data[i], report, 1);
         result = related ? result & related : TERNARY_FALSE;
     }
     st->intersection_target = saved;
@@ -3573,7 +3587,7 @@ static Ternary structured_related_members(
         // A generic source can still be related through its constraint, further down. The members of the union don't
         // check excess properties, the union as a whole did (tsc relates the regular object literal)
         isize_t saved = vec_ty_report_line_size(&st->lines);
-        Ternary related = related_to_some(me, st, ty_widened_objects(me, source), target, report && !source_is_generic);
+        Ternary related = related_to_some(me, st, ty_regular_object_literal(me, source), target, report && !source_is_generic);
         if (!related && (source->flags & TYF_OBJECT)) {
             related = related_to_discriminated(me, st, source, target);
             if (related) report_truncate(st, saved);
@@ -3796,7 +3810,7 @@ static Ternary structured_related_members(
         case TY_CONDITIONAL: {
             // Ten instantiations of this conditional type on the target stack: an infinitely expanding recursive
             // conditional type, assumed related (tsc's isDeeplyNestedType(target, targetStack, targetDepth, 10))
-            if (st->depth && is_deeply_nested_max(target, st->target_stack, st->depth - 1, 10)) return TERNARY_MAYBE;
+            if (st->target_depth && is_deeply_nested_max(target, st->target_stack, st->target_depth - 1, 10)) return TERNARY_MAYBE;
             // Identical extends types, check types related one way or the other, and related branches (tsc's rule for
             // two conditional types). The source's own `infer` type parameters are inferred from the target's extends
             // type first: `HM extends Box<infer H> ? H : never` against another such alias
@@ -3952,7 +3966,7 @@ static Ternary structured_related_members(
         case TY_CONDITIONAL: {
             // Already checking this conditional type as a source further up: don't recurse (tsc's
             // isDeeplyNestedType(source, sourceStack, sourceDepth, 10); it is on the stack already)
-            if (st->depth && is_deeply_nested_max(source, st->source_stack, st->depth - 1, 10)) return TERNARY_MAYBE;
+            if (st->source_depth && is_deeply_nested_max(source, st->source_stack, st->source_depth - 1, 10)) return TERNARY_MAYBE;
             // Through the default constraint, the union of the branches (an any branch counts as never)
             Ty const* true_branch = inferred_true_branch(me, source);
             Ty const* false_branch = ty_conditional_branch(me, source, false);
@@ -4289,10 +4303,16 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     }
     st->maybe_keys[st->maybe_count++] = key;
     unsigned saved_expanding = st->expanding;
-    if (!(st->expanding & 1) && ty_is_deeply_nested(source, st->source_stack, st->depth, 3)) st->expanding |= 1;
-    if (!(st->expanding & 2) && ty_is_deeply_nested(target, st->target_stack, st->depth, 3)) st->expanding |= 2;
-    st->source_stack[st->depth] = source;
-    st->target_stack[st->depth] = target;
+    bool push_source = !(st->skip_push & 1), push_target = !(st->skip_push & 2);
+    st->skip_push = 0;
+    if (push_source) {
+        if (!(st->expanding & 1) && ty_is_deeply_nested(source, st->source_stack, st->source_depth, 3)) st->expanding |= 1;
+        st->source_stack[st->source_depth++] = source;
+    }
+    if (push_target) {
+        if (!(st->expanding & 2) && ty_is_deeply_nested(target, st->target_stack, st->target_depth, 3)) st->expanding |= 2;
+        st->target_stack[st->target_depth++] = target;
+    }
     st->depth++;
 
     unsigned char saved_reports = my variance_reports;
@@ -4308,6 +4328,8 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     }
     my variance_reports |= saved_reports;
     st->depth--;
+    if (push_source) st->source_depth--;
+    if (push_target) st->target_depth--;
     st->expanding = saved_expanding;
 
     if (result) {
@@ -4928,6 +4950,8 @@ static bool check_related(
     st->maybe_keys = nullptr;
     st->maybe_count = st->maybe_cap = 0;
     st->depth = 0;
+    st->source_depth = st->target_depth = 0;
+    st->skip_push = 0;
     st->expanding = 0;
     st->overflow = false;
     st->relation_count = ((i64)16000000 - (i64)my relations[relation].len) >> 3;

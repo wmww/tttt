@@ -23156,7 +23156,7 @@ const baselines = {
         types: true,
     },
     'nestedRecursiveArraysOrObjectsError01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
