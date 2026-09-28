@@ -2316,16 +2316,42 @@ static Ty const* compute_simplified(Checker* me, Ty const* ty, bool writing) {
     return ty;
 }
 
-// A simpler form of an indexed access type, or the type itself (tsc's getSimplifiedType; conditional types aren't
-// simplified yet). `writing`: the target of an assignment, where a union of keys is the intersection of their properties
+// tsc's getActualTypeVariable: what a substitution type stands for
+static Ty const* actual_type_variable(Ty const* ty) {
+    while (ty->kind == TY_SUBSTITUTION) ty = ty->substitution.base;
+    return ty;
+}
+
+// `T extends U ? T : never` is T when T is always a U, never when it never is, and `T extends U ? never : T` the other
+// way around (tsc's getSimplifiedConditionalType)
+static Ty const* compute_simplified_conditional(Checker* me, Ty const* ty, bool writing) {
+    Ty const* check = ty->conditional.check;
+    Ty const* extends = ty->conditional.extends;
+    Ty const* if_true = ty_conditional_branch(me, ty, true);
+    Ty const* if_false = ty_conditional_branch(me, ty, false);
+    Ty const* both[2] = { check, extends };
+    if ((if_false->flags & TYF_NEVER) && actual_type_variable(if_true) == actual_type_variable(check)) {
+        if ((check->flags & TYF_ANY) || ty_definitely_assignable(me, check, extends)) return ty_simplified(me, if_true, writing);
+        if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) return ty_intrinsic(me, TY_NEVER);
+    } else if ((if_true->flags & TYF_NEVER) && actual_type_variable(if_false) == actual_type_variable(check)) {
+        if (!(check->flags & TYF_ANY) && ty_definitely_assignable(me, check, extends)) return ty_intrinsic(me, TY_NEVER);
+        if ((check->flags & TYF_ANY) || (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER)) {
+            return ty_simplified(me, if_false, writing);
+        }
+    }
+    return ty;
+}
+
+// A simpler form of an indexed access or conditional type, or the type itself (tsc's getSimplifiedType). `writing`:
+// the target of an assignment, where a union of keys is the intersection of their properties
 Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
-    if (ty->kind != TY_INDEXED) return ty;
+    if (ty->kind != TY_INDEXED && ty->kind != TY_CONDITIONAL) return ty;
     u64 key[3] = { KEY_SIMPLIFIED, ty->id, writing };
     Ty const* cached = intern_get(&my links, key, 3);
     if (cached) return cached;
     // (Itself while in flight, like tsc's circularConstraintType marker)
     *intern_slot(me, &my links, key, 3) = ty;
-    Ty const* ret = compute_simplified(me, ty, writing);
+    Ty const* ret = ty->kind == TY_CONDITIONAL ? compute_simplified_conditional(me, ty, writing) : compute_simplified(me, ty, writing);
     *intern_slot(me, &my links, key, 3) = ret;
     return ret;
 }
@@ -2409,8 +2435,14 @@ static TyMapper const* mapped_key_param_mapper(Checker* me, MappedInfo const* ma
 // tsc's mappedTypeRelatedTo: two mapped types whose keys aren't known relate by their modifiers (the target at least as
 // optional), constraints (the other way around), name types (the same) and templates, once the source's key type
 // parameter is the target's
+static int combined_mapped_info_optionality(Checker* me, MappedInfo const* mapped) {
+    if (mapped->optional) return mapped->optional;
+    return mapped->modifiers_type ? combined_mapped_optionality(me, mapped->modifiers_type, 1) : 0;
+}
+
 static Ternary mapped_related(Checker* me, RelationState* st, MappedInfo const* source, MappedInfo const* target, bool report) {
-    bool modifiers_related = st->relation == TY_RELATION_COMPARABLE || source->optional <= target->optional;
+    bool modifiers_related = st->relation == TY_RELATION_COMPARABLE ||
+        combined_mapped_info_optionality(me, source) <= combined_mapped_info_optionality(me, target);
     if (!modifiers_related) return TERNARY_FALSE;
     Ternary result = is_related_to(me, st, target->constraint, source->constraint, report);
     if (!result) return TERNARY_FALSE;
@@ -2419,7 +2451,12 @@ static Ternary mapped_related(Checker* me, RelationState* st, MappedInfo const* 
     Ty const* source_name = source->name_type ? ty_instantiate(me, source->name_type, mapper) : nullptr;
     Ty const* target_name = target->name_type ? ty_instantiate(me, target->name_type, mapper) : nullptr;
     if (source_name != target_name) return TERNARY_FALSE;
-    return result & is_related_to(me, st, ty_instantiate(me, ty_mapped_template(me, source), mapper), ty_mapped_template(me, target), report);
+    // (Templates with `?` include undefined: tsc's getTemplateTypeFromMappedType)
+    Ty const* source_template = ty_mapped_template(me, source);
+    if (source->optional > 0) source_template = ty_optional_prop_type(me, source_template);
+    Ty const* target_template = ty_mapped_template(me, target);
+    if (target->optional > 0) target_template = ty_optional_prop_type(me, target_template);
+    return result & is_related_to(me, st, ty_instantiate(me, source_template, mapper), target_template, report);
 }
 
 static Ternary generic_mapped_target_related(
@@ -3517,6 +3554,12 @@ static Ternary structured_related_members(
     // A mapped type whose keys aren't known yet (target side first, like in tsc)
     MappedInfo const* target_mapped = target->kind == TY_ANONYMOUS ? ty_members(me, target)->mapped : nullptr;
     if (target_mapped && my variance_depth) my variance_unreliable = true;
+    // An empty object type is related to any mapped type with `?` (tsc's isPartialMappedType)
+    if (target_mapped && target_mapped->optional > 0 && st->relation != TY_RELATION_SUBTYPE &&
+        st->relation != TY_RELATION_STRICT_SUBTYPE && is_empty_object_type(me, source)
+    ) {
+        return TERNARY_TRUE;
+    }
     if (target_mapped && source->kind == TY_ANONYMOUS && (source->flags & TYF_OBJECT) && ty_members(me, source)->mapped) {
         // Two mapped types whose keys aren't known yet: by constraint and template (tsc's mappedTypeRelatedTo)
         return mapped_related(me, st, ty_members(me, source)->mapped, target_mapped, report);
@@ -4384,14 +4427,14 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     Ty const* original_target = target;
     if (deferred) {
         // (And simplified indexed accesses: the target as written to)
-        while (source->kind == TY_INDEXED || source->kind == TY_SUBSTITUTION) {
-            Ty const* next = source->kind == TY_INDEXED ? ty_regular(me, ty_simplified(me, source, false)) :
+        while (source->kind == TY_INDEXED || source->kind == TY_CONDITIONAL || source->kind == TY_SUBSTITUTION) {
+            Ty const* next = source->kind != TY_SUBSTITUTION ? ty_regular(me, ty_simplified(me, source, false)) :
                 ty_substitution_intersection(me, source);
             if (next == source) break;
             source = next;
         }
-        while (target->kind == TY_INDEXED || target->kind == TY_SUBSTITUTION) {
-            Ty const* next = target->kind == TY_INDEXED ? ty_regular(me, ty_simplified(me, target, true)) :
+        while (target->kind == TY_INDEXED || target->kind == TY_CONDITIONAL || target->kind == TY_SUBSTITUTION) {
+            Ty const* next = target->kind != TY_SUBSTITUTION ? ty_regular(me, ty_simplified(me, target, true)) :
                 target->substitution.base;
             if (next == target) break;
             target = next;

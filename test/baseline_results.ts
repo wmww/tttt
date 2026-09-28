@@ -5556,7 +5556,7 @@ const baselines = {
         types: false,
     },
     'conditionalTypesSimplifyWhenTrivial': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64206,7 +64206,7 @@ const baselines = {
         types: false,
     },
     'mappedTypes5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64216,7 +64216,7 @@ const baselines = {
         types: true,
     },
     'mappedTypesAndObjects': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
