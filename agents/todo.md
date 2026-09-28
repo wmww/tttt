@@ -32,8 +32,9 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    and evolving arrays (+21: +7 from the port, +14 from making Array at checker start; an Opus sub-agent), 10477 ->
    10513, 0 lost, corpora byte-identical; tsc/webpack +0.3% instructions. Found: webpack gives other diagnostics
    with `--checkers 1` than with 4 (triage.md, already at 8eab3851).
-9. **Perf: memory and types**: `perf_leads.md` "Unreliable variance measurements" first (zod without its `out`
-   annotations costs 2x: is tttt marking more measurements unreliable than tsc?), then "Memory" (the `Prop` split, why
-   tttt makes more types than tsc), with the K=4 RSS from entry 2 as the baseline (`measurements.md` Perf: zod 846 MB, react 335 vs 228 at K=1); then plan 36 stage 1 (parallel loading) if the session has room.
+9. ~~Perf: memory and types~~ done: variance measurements report unreliability like tsc (zod with its `in`/`out`
+   stripped 7.8 -> 4.65 G and now reports tsc's 26 errors; +3 tests incl. an indexed-access relation fix), the
+   `Prop`/`PropDecl` split (arena -20..-31%, zod K=4 RSS 846 -> 675 MB), `./arenasites.sh`. Type counts are at or
+   under tsc's: that lead is closed. Plan 36 stage 1 not started (walls unmeasurable that day: machine at load 10).
 10. **Triage.**
 11. **Insights.**

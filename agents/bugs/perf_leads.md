@@ -9,14 +9,14 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
 `/tmp/relg` binary run under `setarch -R`, as the 09-28 perf session did).
 
 ## Memory (the weak side now: every corpus is faster than single-threaded tsgo, several use more memory)
-- **Instantiated `Prop`s are 200 bytes** and most of that is the declaration source (node, lazy, function,
-  overloads, ctx, write_node, spans, asserted...), which an instantiation never uses (it follows `target`). zod's
-  deep-partial.test.ts makes 1.56 M of them (297 MB of its 607 MB arena). Split `Prop` into the core (name, flags,
-  parent, target, mapper, type state, type) and a `PropDecl const*` for declared ones: ~200 references to the
-  declaration fields, mostly `ty/members.c`. Then `Signature` the same way (`instantiate_members`' second site).
-- **tttt makes 3.5x the types tsc does** on deep-partial.test.ts (587k vs 168k) and type-fest has 575k for 0.3 s of
-  work: find which kinds (a histogram of `ty_alloc` by kind and caller) and which tsc doesn't create (tsc's
-  instantiations of anonymous types are cached by the outer type parameters they mention; members resolve lazily).
+- **Arena by call site**: `./arenasites.sh -p <corpus>` (a `-DTTTT_ARENA_SITES` build in /tmp). zod after the
+  `Prop`/`PropDecl` split (09-28, 431 -> 298 MB): instantiated `Prop`s (80 bytes, `instantiate_members`) 86 MB, types
+  52 MB (instantiated anonymous types 19, references 10), `intern_slot` keys 24, `builder_finish`'s member arrays 36,
+  instantiated `Signature`s (192 bytes, same split possible: `instantiate_members`' second site) 14, scopes/symbols of
+  name resolution ~38. Next steps if memory matters again: `Signature` split; `Prop` to 56 bytes (`write_type` into a
+  side table, `mapped_type` into `PropDecl`, `type_state` a byte); instantiating props lazily per name (tsc doesn't).
+- **Type counts are not the problem**: tsc makes 718k types on type-fest (tttt 578k), 589k on zod (tttt 361k), 332k
+  on valibot (tttt 385k). The old "3.5x on deep-partial.test.ts" was the variance bug below, fixed.
 - **The AST**: after the parser's shrink_to_fit (09-28), webpack's parse heap is ~198 MB live plus ~100 MB of malloc
   per-block overhead: millions of small `c_new` nodes. Node arenas (per file) would take the overhead and most of the
   malloc time (`_int_malloc` is ~9% of parsing), but every `*_drop` of the AST and every backtracking path frees
@@ -27,13 +27,13 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
 - Name resolution adds ~60 MB on webpack (scopes 248 B, symbols 192 B).
 
 ## Time
-- **Unreliable variance measurements** (found bisecting zod's halving, 2026-09-28): before 62d8c89, measuring zod's
-  unannotated-equivalent interfaces (`ZodType<O, I, Internals>`, `ZodObject`, `$ZodObjectInternals`...) gave
-  "unreliable" (8/9/12 in `TTTT_DUMP_VARIANCES=1`), so every comparison of two instantiations fell back to a full
-  structural walk (half of zod's instructions, 580k extra types). zod is fast now only because it annotates `out`.
-  Unannotated libraries of that shape still pay it. Check whether tsc marks the same measurements unreliable (its
-  `reportUnreliableMarkers` sites); if tttt marks more, that is a perf bug and possibly a correctness one. Probe:
-  strip zod's `out`/`in` annotations and compare variance dumps and instructions.
+- **Variance measurements** match tsc's reporting now (09-28: only where the marker occurs in the source, at tsc's
+  four sites; Unmeasurable separate). Probe: zod with its `in`/`out` annotations stripped (sed over a /tmp copy of
+  `packages/zod/src`, `.configs/` and `vitest.config.ts` alongside) costs 4.65 G vs 4.33 annotated (was 7.8). To compare
+  variances with tsc, patch a copy of `thirdparty/tsc/lib` (`_tsc.js`, after `links.variances = variances;` in
+  getVariancesWorker print `symbol.escapedName` and the flags; tsc's Unmeasurable is 8, Unreliable 16, tttt's
+  `TTTT_DUMP_VARIANCES` the other way round). ~25 of ~250 zod variances still differ in reliability, both ways
+  (ordering of cached comparisons; `ZodTransform`, `ZodTuple`: tsc unreliable, tttt not).
 - **Parser** (13% of the tsc corpus, ~25% of webpack, half of nest): no single function stands out. What's left is
   structural: a `Parser` copy per attempt, identifiers scanned again by each alternative that fails, one malloc per
   node. A real token (scan the identifier or punctuator once per position) and node arenas.
@@ -47,7 +47,7 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
 - **Checker hot spots** (tsc corpus): `check_related` setup, `ty_union` rebuilding small unions (`access`,
   `identifier_flow_type`), `intern_slot`, `checker_atom` (`ty_member_name` atomizes every member name of every
   resolved declaration: ~3% of webpack; atomize at bind time instead).
-- **zod** (9.1 G): with deep-partial fixed, re-profile. valibot: `infer_from_returns` over schema objects' `~run`/
+- **zod** (4.3 G): re-profile. valibot: `infer_from_returns` over schema objects' `~run`/
   `~standard` members and `ty_conditional_resolve`'s `infer X` walks.
 - `find_prop`'s intersection memo caches whatever depth it was computed at (`depth > 8` gives "not found").
   `ty_intersection` distributes over non-primitive unions with no size limit (tsc: TS2590 at 100k).

@@ -246,6 +246,9 @@ static_failable check_files(Options const* opts, returns int) {
                 eprintln("time: checker ", i, ": ", checker->check_ms, " ms, arena ", (i64)(checker->arena.total >> 20),
                     " MB, ", checker->next_type_id, " types");
             }
+#ifdef TTTT_ARENA_SITES
+            arena_sites_print();
+#endif
         }
     }
 

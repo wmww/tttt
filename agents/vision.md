@@ -48,7 +48,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   files dealt round robin; the harness runs 1), any thread count gives byte-identical output (`./threadcheck.sh`),
   TSan clean on every corpus. K=4 differs from K=1 only in union member order inside messages. Next: parallel loading
   (stage 1, now a bigger share since checking shrank) and parallel name resolution (binder per-file arenas). Memory
-  grows with K: the `Prop` split (`perf_leads.md`) is the counterweight if needed.
+  grows with K; the `Prop`/`PropDecl` split (todo entry 9) took the arena down 20-31% (zod 431 -> 298 MB at K=1), and
+  variance measurements now report unreliability like tsc (unannotated libraries of zod's shape were 1.8x slower and
+  missed tsc's errors).
 - Corpora: webpack's 107 and zod-root's 28 have named causes; one corpus session.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
@@ -113,5 +115,4 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    leftovers, lexical diagnostics (27 stage 3)~~ done.
 5. **Now**: parallel checking (36 stages 2-3), tsc mechanism ports (37: planning, then the top two), webpack and
    zod-root, the spurious-diagnostic long tail.
-6. Then: the rest of plan 37 (decorators, union origins, ...), parallel loading (36 stage 1), memory (`Prop` split,
-   type counts), plan 35/34 queues, a token cache / node arenas in the parser, parallel name resolution.
+6. Then: the rest of plan 37 (decorators, union origins, ...), parallel loading (36 stage 1), plan 35/34 queues, a token cache / node arenas in the parser, parallel name resolution.

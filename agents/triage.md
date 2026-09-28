@@ -67,3 +67,9 @@ duplicated webpack), hacks.md (`string_to_double`).
   `{}[]` in both). (2) Without strictNullChecks, `let x = []; x.push(null); return x` should get TS7010 "implicitly
   has an 'any[]' return type": `function_check_widened_return` only knows returns that are only null/undefined, not
   arrays of widening types (tsc's reportErrorsFromWidening walks into them).
+- **zod without variance annotations** (todo entry 9 probe: `perf_leads.md` "Variance measurements" says how to make
+  it): tsc reports 27 errors there (the annotations are load-bearing), tttt now the same lines, but (1) at
+  deep-partial.test.ts:94/97/111 and object.test.ts:214/232/274 tsc says TS2344 on expect-type's `toExtend<X>()` (the
+  type argument fails the constraint of the overload tsc picks) where tttt says TS2554 + TS6236 (it picked the rest
+  `...MISMATCH` overload): overload choice with a failed constraint; (2) recursive-types.test.ts:17/35: tsc's head is
+  TS2375 (the exactOptionalPropertyTypes variant of TS2322) at the top level, tttt only uses it one level down.

@@ -10,7 +10,7 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Suite (2026-09-28, suite checker bugs 5, a59b7355; plan 37 C + D brought it to 10513, errors 11959, symbols 12591, types 11599)
+## Suite (2026-09-28, suite checker bugs 5, a59b7355; plan 37 C + D brought it to 10513, todo entry 9 to 10516, errors 11962, symbols 12591, types 11601)
 **10477 / 13540** full pass (errors 11941, symbols 12590, types 11576). A suite run takes ~23 s. `./failstats.py`:
 errors component fails in 1599 tests: both missing and spurious 450, tsc reports errors and tttt nothing 382, **same
 codes+positions, other text 296**, only missing 248, tttt errors where tsc has none 119, only spurious 81. Top missing
@@ -50,6 +50,23 @@ tsc 4.707 -> 4.804 G (+2.1%), valibot 5.134 -> 5.249 (+2.2%), zod 4.240 -> 4.323
 (+1.4%), nest +0.4%, type-fest -0.1%, react -2.0%. Spread over the merged buckets (tsc +1.1% by the flow bucket and
 the early main-tree commits, valibot +1.3% by the relations bucket, +0.7% by the inference one): a lead for todo entry
 9. webpack **30** now (the JS bucket), the rest unchanged.
+## Memory and variances (2026-09-28, todo entry 9, f0dd10eb + 0c6b4a80)
+`TTTT_NO_REEXEC=1 --checkers 1 --threads 1`, `perf stat -e instructions:u`, arena / types from `--time`:
+| corpus | before | after |
+|---|---|---|
+| tsc | 4.822 G, 61 MB, 94k | 4.822 G, 55 MB |
+| type-fest | 3.285 G, 415 MB, 578k | 3.287 G, 396 MB |
+| valibot | 5.252 G, 304 MB, 384k | 5.280 G, 249 MB |
+| react | 1.893 G, 57 MB | 1.876 G, 42 MB |
+| nest | 1.029 G, 15 MB | 1.029 G, 13 MB |
+| webpack | 3.342 G, 94 MB | 3.342 G, 77 MB |
+| zod | 4.328 G, 432 MB, 361k | 4.330 G, 298 MB, 361k |
+| zod, `in`/`out` stripped | 7.812 G, 1004 MB, 940k | 4.654 G, 320 MB, 393k |
+tsc for comparison (`--extendedDiagnostics`): type-fest 718k types / 915 MB, valibot 332k / 686 MB, zod 589k.
+Peak RSS at the defaults (4 checkers, 4 threads), before (Perf table below) -> after: tsc 409 -> 395 MB, type-fest 494 ->
+476, valibot 536 -> 489, react 335 -> 302, nest 251 -> 249, webpack 461 -> 434, zod **846 -> 675** (zod-root 1008 ->
+812). Walls not re-measured: the machine ran other jobs at load 10 that day (tttt's walls came out ~1.8x the table's).
+
 ## Perf (2026-09-28, plan 36 stage 3, `./bench.sh`, tttt at its new defaults: 4 checkers on 4 threads)
 Best wall / peak RSS. **The machine is 2 physical cores x 2 SMT threads** (KVM, `lscpu`): 4 busy threads run ~55%
 slower each (4 independent single-threaded processes do too), so 4 threads buy ~2.4x on the check phase, not ~3.7x.

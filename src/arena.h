@@ -11,5 +11,8 @@ typedef struct Arena {
 
 void* arena_alloc(Arena* me, size_t size); // zeroed, 8 byte aligned
 void arena_drop(Arena* me);
+#ifdef TTTT_ARENA_SITES
+void arena_sites_print(void);
+#endif
 #define arena_new(arena, T) ((T*)arena_alloc(arena, sizeof(T)))
 #define arena_new_n(arena, T, n) ((T*)arena_alloc(arena, sizeof(T) * (size_t)(n)))

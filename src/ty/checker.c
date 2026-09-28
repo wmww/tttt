@@ -20,8 +20,36 @@ struct ArenaChunk {
     char data[];
 };
 
+#ifdef TTTT_ARENA_SITES
+// Arena bytes and types by the code that allocates them, for ./arenasites.sh (a build with -DTTTT_ARENA_SITES; one
+// table for the process, so run it with --threads 1). Sites are printed relative to arena_alloc()
+#define ARENA_SITES 8192
+static void* arena_sites[2][ARENA_SITES];
+static u64 arena_site_bytes[2][ARENA_SITES];
+
+static void arena_site_count(u32 table, void* site, size_t size) {
+    u32 h = (u32)(((uintptr_t)site * 0x9e3779b97f4a7c15ull) >> 40) & (ARENA_SITES - 1);
+    while (arena_sites[table][h] && arena_sites[table][h] != site) h = (h + 1) & (ARENA_SITES - 1);
+    arena_sites[table][h] = site;
+    arena_site_bytes[table][h] += size;
+}
+
+void arena_sites_print(void) {
+    for (u32 table = 0; table < 2; table++) {
+        for (u32 i = 0; i < ARENA_SITES; i++) {
+            if (!arena_sites[table][i]) continue;
+            eprintln(table ? "type-site " : "arena-site ", (i64)((uintptr_t)arena_sites[table][i] - (uintptr_t)&arena_alloc),
+                " ", arena_site_bytes[table][i]);
+        }
+    }
+}
+#endif
+
 void* arena_alloc(Arena* me, size_t size) {
     size = (size + 7) & ~(size_t)7;
+#ifdef TTTT_ARENA_SITES
+    arena_site_count(0, __builtin_return_address(0), size);
+#endif
     my total += size;
     if (!my head || my head->used + size > my head->cap) {
         size_t cap = size > ARENA_CHUNK_SIZE ? size : ARENA_CHUNK_SIZE;
@@ -173,7 +201,13 @@ Atom const* checker_atom(Checker* me, csview sv) {
 
 // Types
 
+#ifdef TTTT_ARENA_SITES
+__attribute__((noinline))
+#endif
 Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
+#ifdef TTTT_ARENA_SITES
+    arena_site_count(1, __builtin_return_address(0), sizeof(Ty));
+#endif
     Ty* ret = arena_new(&my arena, Ty);
     ret->id = my next_type_id++;
     ret->kind = kind;
