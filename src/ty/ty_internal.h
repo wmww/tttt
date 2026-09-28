@@ -72,6 +72,7 @@ enum {
     KEY_PRIVATE_NAME,   // (class symbol, `#x` atom) -> the class's own `#x` atom, see ty_private_name()
     KEY_PRIVATE_NAME_CLASS, // Private name atom -> its class symbol
     KEY_WIDENED_NULLABLE, // type -> ty_widened_nullable() of it
+    KEY_CHECKED_ONCE,   // AST node -> non-null once ty_first_check() saw it
     KEY_REFERENCED_MEMBER, // Start of a class member's declaration span -> non-null once read (noUnusedLocals)
     KEY_FUNCTION_CONTEXT, // Function expression's FunctionImpl -> the contextual type it was last checked with
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widened null/undefined to any

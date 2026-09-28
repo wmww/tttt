@@ -1,0 +1,15 @@
+--- cleat/include/cleat/failable.h
++++ cleat/include/cleat/failable.h
+@@ -59,8 +59,10 @@
+ // but type errors if the function logically returns a different type (trivial) or nothing (_OUTPUT_PARAM is a global
+ // that points to a FailableResult, which hopefully isn't the type of foo).
+ 
+-static FailableResult _GLOBAL_RETURNED_VALUE_TARGET = {nullptr};
+-static FailableResult* const _OUTPUT_PARAM = &_GLOBAL_RETURNED_VALUE_TARGET;
++// Patched (cleat-failable-patch.txt): one per thread, several threads `return ok;` at once (a data race on a shared
++// global otherwise). A one-element array, because the address of a thread-local isn't a constant to initialize a
++// pointer with: `*(_OUTPUT_PARAM)` is still a FailableResult lvalue, and a parameter of that name still shadows it
++[[maybe_unused]] static thread_local FailableResult _OUTPUT_PARAM[1];
+ static FailableResult const _OK_INTERNAL = {nullptr};
+ #define ok *(_OUTPUT_PARAM) = _OK_INTERNAL // if changing, don't forget to update generic/hmap.h and generic/set.h
+ #define _OK_INTERNAL(...) (__VA_ARGS__), (FailableResult){nullptr}

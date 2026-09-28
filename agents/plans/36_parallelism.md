@@ -114,28 +114,24 @@ numbers in `measurements.md`.
    automatic types up front.
 Expected: load phase roughly halves on 4 cores (nest may do better with 5), whole runs 5-12% faster.
 
-### Stage 2: check-phase readiness, still single-threaded (one session)
-Make K>1 checkers correct and deterministic while still running them one after the other (the `TTTT_CHECKERS`
-prototype, made real as `--checkers K`, default 1 until stage 3). The audit (below) lists what to fix:
-- Diagnostics: one `ErrorCtx` per checker, merged by `error_cmp` after the join. Resolve the tie order in
-  `insertion_index_for_span` (equal span/code/message, different chains: order by the chain text, not by insertion)
-  so merging is order-independent. Duplicate reports of memoised evaluations (TS2589, circularity, TS2318 via
-  `iterable_iterator_reported`, TS2354) from several checkers must dedupe to what one checker would report: check
-  each with K=2 on the suite (`baseline_tests --checkers 2`: errors component must not change except union order;
-  make the harness normalise nothing, just report the diff so it can be read).
-- `set_compiler_options` once before checking (not per checker); the `static int enabled = -1` getenv caches
-  initialised at startup.
-- `merged_export_equals` (scope.c, called at check time via `module_export_equals`, allocates binder symbols):
-  compute it in `binder_link` for every module that needs it. Assert `SYMBOL_ALIAS` state is resolved at check time
-  (link resolves all aliases already).
-- `unused_report` -> `mark_jsdoc_links` writes `Symbol.referenced` of possibly shared script globals: move the
-  JSDoc link marking to the resolve phase, or keep it per checker (`Checker.links`) like `KEY_REFERENCED_MEMBER`.
-- `CommentDirective.used` (`program_apply_comment_directives`): run after the merge, once.
-- `ClassDecl.has_typechecked` (class_decl.c): a per-checker bit (links), or drop it if nothing reaches a class twice.
-- Partition: a function of the checkable file list only (round robin by index, like tsgo). Try "by size, greedy"
-  too, but only if it is deterministic.
-Validation: `--checkers 2` and `4` on every corpus give the same diagnostics as `--checkers 1` modulo union order
-(write the comparison: strip quoted types or compare codes+positions), suite unchanged at the default of 1.
+### Stage 2: check-phase readiness: **done** (2026-09-28)
+`--checkers K` (tttt and `baseline_tests`; default 1), files dealt round robin by index among the checked files,
+checkers run one after the other in `program_typecheck()`. Each checker reports into its own `ErrorCtx`
+(`Checker.errs`, parent = the program's for `error_ctx_find()`), merged after the loop; `error_ctx_sort_and_dedupe()`
+then does tsc's sortAndDeduplicateDiagnostics (ties ordered by message chain and related information, same head
+message deduped), so the order no longer depends on report order (also +2 tests at K=1). Memoised "once per program"
+reports: `Error.once_key` (only the emit helper checks needed it). `merged_export_equals` precomputed in
+`binder_link`, block-level aliases resolved at the end of name resolution, JSDoc `@link` marking moved to the resolve
+phase, `ClassDecl.has_typechecked` became a checker link (`ty_first_check()`), getenv caches read at startup
+(`debug_env`), cleat's `return ok;` sink is thread-local (`thirdparty/cleat-failable-patch.txt`), threads linked.
+Runtime guards (`log_error`): reports into the frozen program ctx, new binder symbols, first alias resolutions while
+checking; none fire on the suite or the corpora.
+Validation tools: `./checkerdiff.py [-k K] [corpora]` (K vs 1, modulo quoted text, and K twice byte-identical), and
+`baseline_tests --checkers K --dump DIR` against a K=1 dump. State at the end of stage 2: every corpus identical
+modulo quoted text at K=2/4 (webpack 2 and zod-root 12 diagnostics differ in union order); the suite's errors at
+K=2/4 differ from K=1 in one test (reactDefaultPropsInferenceSuccess, and only inside quotes: a K=1 order dependence
+in how TS2769 prints overload signatures, see triage.md). `tttt --time` prints each checker's time: round robin
+balances well (webpack 4 x ~100 ms vs 345 at K=1, zod 137-193 ms vs 572), so "by size" partitioning wasn't tried.
 
 ### Stage 3: parallel checking (one session, after the decision above)
 Run the K checkers on the pool's threads (thread-local `current_checker`/`current_lazy_slots`/`current_flow`/

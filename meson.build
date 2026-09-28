@@ -16,6 +16,8 @@ endif
 # add_project_arguments() because by this point cleat has already declared its own build targets, so each of our
 # targets passes it as c_args instead.
 subdir('thirdparty')
+# (Not in thirdparty/meson.build, which refresh.sh writes)
+deps = thirdparty_deps + [dependency('threads')]
 
 subdir('src')
 
@@ -23,7 +25,7 @@ executable(
     'tttt',
     main_files,
     include_directories: src_inc,
-    dependencies: thirdparty_deps,
+    dependencies: deps,
     c_args: cleat_c_args,
     link_args: '-lm',
 )
@@ -32,7 +34,7 @@ executable(
     'baseline_tests',
     baseline_test_files,
     include_directories: src_inc,
-    dependencies: thirdparty_deps,
+    dependencies: deps,
     c_args: cleat_c_args + ['-DDEBUG_ALLOCATOR'],
     link_args: '-lm',
 )
@@ -41,7 +43,7 @@ executable(
     'diffapp_runner',
     diffapp_runner_files,
     include_directories: src_inc,
-    dependencies: thirdparty_deps,
+    dependencies: deps,
     c_args: cleat_c_args + ['-DDEBUG_ALLOCATOR'],
     link_args: '-lm',
     build_by_default: false,

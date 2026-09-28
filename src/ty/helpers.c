@@ -89,15 +89,21 @@ void ty_check_emit_helpers(Checker* me, Span at, u32 helpers, ErrorCtx* errs) {
         for (u32 n = 0; n < 2 && names[n]; n++) {
             Symbol* symbol = symbol_get_export(module, csview_from(names[n]));
             if (symbol && symbol->flags & SYMBOL_ALIAS) symbol = symbol_resolve_alias(symbol);
+            Error* error = nullptr;
             if (!symbol || !(symbol->flags & SYMBOL_VALUE)) {
-                error_ctx_error_d(errs, at, 2343,
+                error = error_ctx_error_d(errs, at, 2343,
                     "This syntax requires an imported helper named '", names[n],
                     "' which does not exist in 'tslib'. Consider upgrading your version of 'tslib'.");
             } else if (helper_min_params(helper) && !has_signature_with_more_params(me, symbol, helper_min_params(helper))) {
-                error_ctx_error_d(errs, at, 2807,
+                error = error_ctx_error_d(errs, at, 2807,
                     "This syntax requires an imported helper named '", names[n], "' with ",
                     helper_min_params(helper) + 1, " parameters, which is not compatible with the one in 'tslib'. "
                     "Consider upgrading your version of 'tslib'.");
+            }
+            // (Every checker asks: the program reports it once)
+            if (error) {
+                error->once_key = ((u64)(uintptr_t)module << 8) ^ (bit * 2 + n + 1);
+                error->once_order = my file_order;
             }
         }
     }

@@ -112,7 +112,6 @@ typedef struct ClassDecl {
     bool is_expression; // A class expression, which legacy decorators can't decorate the members of
     bool is_ambient; // `declare class`, or in an ambient context
     uint8_t named_evaluation; // ClassNamedEvaluation
-    bool has_typechecked;
     VecExpr decorators; // TODO: only checked as expressions, not as decorators of this class
     Generic generic;
     OuterGenerics const* outer_generics; // The type parameters it captures (set by the resolve walk)

@@ -17,7 +17,7 @@ Span ty_current_node_span(Checker* me) {
 }
 
 void ty_error_at(Checker* me, Span span, unsigned ts_code, cstr message) {
-    ErrorCtx* errs = program_errors(my program);
+    ErrorCtx* errs = my errs;
     if (errs->phase != ERROR_PHASE_TYPECHECK) {
         cstr_drop(&message);
     } else if (span_valid(span)) {

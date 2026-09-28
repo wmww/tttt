@@ -37,11 +37,19 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   file's own persistent scopes; `Symbol.referenced` (noUnused*) is written also on script globals other files share
   (a data race once files resolve in parallel); `scope_add_expandos()`/`scope_add_this_property()` (see JavaScript)
   write file-level symbols; `jsx_lookup_factory` writes `SourceFile.jsx_fragment_factory_looked_up` through a const
-  cast (`ModuleRef.jsx_runtime_reported` likewise). Check phase: the thread-local `current_checker`, and what plan
-  36's audit lists (shared `ErrorCtx`, `merged_export_equals` allocating binder symbols at check time,
-  `Symbol.referenced` from `mark_jsdoc_links`, `CommentDirective.used`, `ClassDecl.has_typechecked`, getenv
-  `static int` caches). Everywhere: cleat's `return ok;` writes the global `_GLOBAL_RETURNED_VALUE_TARGET`
-  (`failable.h`), a data race under threads (TSan flags it; plan 36 stage 1 makes it `thread_local` by a patch).
+  cast (`ModuleRef.jsx_runtime_reported` likewise). Check phase (plan 36 stage 2 fixed the audit's list): each
+  checker reports into its own `ErrorCtx` (`Checker.errs`); the program's is `frozen` and `Binder.frozen` is set while
+  checking, and a report into the frozen ctx, a new binder symbol or a first alias resolution then `log_error()`s
+  (none on the suite or the corpora). These are runtime guards, not a proof: a path the suite doesn't reach can still
+  write shared state; TSan on the corpora (stage 3) is the other net. cleat's `return ok;` sink is a thread-local
+  (`thirdparty/cleat-failable-patch.txt`).
+- **Once-per-program diagnostics under K checkers** (`Error.once_key`, `error_ctx_keep_first_once()`): tsc reports
+  some diagnostics once per program, from whichever file asks first (a checker-wide memo). With K checkers each one
+  reports it; the merge keeps the report made while checking the earliest file. Only the emit helper checks
+  (TS2343/TS2807, `ty_check_emit_helpers`) are tagged, because only they showed up (`baseline_tests --checkers 2/4`
+  against K=1, dumps compared modulo quoted text). Other memoised reports (TS2589, circularity, TS2318) are either
+  global (deduped by the merge) or reported where the memo is evaluated, which the suite didn't show differing. A new
+  "said once" memo in the checker must be tagged too.
 - The resolver's caches (`ModuleResolver`, per `Program`) are unsynchronised; no cache of resolutions themselves (tsc:
   per directory + name + mode; not visible in profiles so far).
 

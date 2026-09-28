@@ -675,6 +675,11 @@ typedef struct CurrentNode {
 struct Checker {
     Program* program;
     struct Binder const* binder;
+    // Where its diagnostics go (ty_error_at()): its own while it checks its files (program_typecheck() merges them into
+    // the program's), the program's otherwise. Only reported in the typecheck phase
+    struct ErrorCtx* errs;
+    double check_ms; // How long program_typecheck() spent checking its files (tttt --time)
+    u32 file_order; // The index (among the checked files) of the file it checks, for Error.once_order
     LazySlots lazy; // The memos of every LazyType in the AST, see lazy_type.h
     Arena arena;
     u32 next_type_id;
@@ -767,6 +772,9 @@ void checker_make_current(Checker* me); // null for none
 // member symbol, see ty_check_member_modifiers()). Only tracked under noUnusedLocals/noUnusedParameters
 bool ty_member_is_referenced(Checker* me, Span declaration);
 void ty_mark_member_referenced(Checker* me, Span declaration);
+// True the first time this checker asks about the node: for checks that must run once per node (a class reached by
+// the statement walk and by the expression walk)
+bool ty_first_check(Checker* me, void const* node);
 // `const { name } = object` reads the member (check.c)
 void ty_mark_destructured_member(Checker* me, Ty const* object, csview name);
 Atom const* checker_atom(Checker* me, csview sv);

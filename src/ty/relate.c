@@ -1953,7 +1953,7 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
     my variance_depth--;
     my variance_unreliable = saved_unreliable;
     variances->state = LAZY_STATE_DONE;
-    if (getenv("TTTT_DUMP_VARIANCES")) {
+    if (debug_env.dump_variances) {
         cstr name = subject.declared ? ty_to_cstr(me, subject.declared) : cstr_from_sv(subject.alias->name);
         for (u32 i = 0; i < variances->len; i++) log_info("variance of ", name, " #", i, ": ", (u32)variances->data[i]);
         cstr_drop(&name);
@@ -3776,9 +3776,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     my variance_unreliable = false;
     Ternary result = st->expanding == 3 ? TERNARY_MAYBE : structured_related(me, st, source, target, report);
     unsigned unreliable = my variance_unreliable ? CACHE_UNRELIABLE : 0;
-    static int debug_nested = -1;
-    if (debug_nested < 0) debug_nested = getenv("TTTT_DEBUG_RELATE_NESTED") != nullptr;
-    if (debug_nested) {
+    if (debug_env.debug_relate_nested) {
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
         log_info("nested ", st->depth, ": '", source_str, "' -> '", target_str, "': ", (u32)result, unreliable ? " (unreliable)" : "");
@@ -4403,9 +4401,7 @@ static bool check_related(
     }
     vec_ty_report_line_drop(&st->lines);
     free(st->maybe_keys);
-    static int debug = -1;
-    if (debug < 0) debug = getenv("TTTT_DEBUG_RELATE") != nullptr;
-    if (debug) {
+    if (debug_env.debug_relate) {
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
         log_info("relation ", (u32)relation, ": '", source_str, "' #", source->id, " -> '", target_str, "' #", target->id, ": ",

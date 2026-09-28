@@ -210,6 +210,7 @@ Checker* checker_new(Program* program) {
     panic_if(!me, "out of memory");
     my program = program;
     my binder = program_get_binder(program);
+    my errs = program_errors(program);
     my next_type_id = 1;
     my intrinsics[TY_ANY] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_AUTO] = make_intrinsic(me, "any", TYF_ANY);
@@ -1498,6 +1499,14 @@ void ty_mark_member_referenced(Checker* me, Span declaration) {
     if (!span_valid(declaration)) return;
     u64 key[2] = { KEY_REFERENCED_MEMBER, (u64)(uintptr_t)declaration.sv.buf };
     *intern_slot(me, &my links, key, 2) = me;
+}
+
+bool ty_first_check(Checker* me, void const* node) {
+    u64 key[2] = { KEY_CHECKED_ONCE, (u64)(uintptr_t)node };
+    void const** slot = intern_slot(me, &my links, key, 2);
+    if (*slot) return false;
+    *slot = me;
+    return true;
 }
 
 Atom const* ty_private_name(Checker* me, Symbol const* class_symbol, csview text) {

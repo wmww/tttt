@@ -1152,10 +1152,7 @@ static void class_check_static_name_conflicts(ClassDecl const* me, ErrorCtx* err
 }
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
-    if (my has_typechecked) {
-        return;
-    }
-    my has_typechecked = true;
+    if (!ty_first_check(current_checker, me)) return;
 
     // tsc's checkClassNameCollisionWithObject (named by the module option, not the file's format)
     if (!my is_ambient && span_valid(my name) && csview_equals(my name.sv, "Object") && my name.source &&

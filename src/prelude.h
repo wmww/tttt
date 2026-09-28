@@ -21,6 +21,17 @@
 
 #define MUST_USE __attribute__((warn_unused_result))
 
+// The TTTT_* debugging environment variables (see CLAUDE.md), read once at startup: checkers on several threads read
+// them, so nothing may cache them lazily
+typedef struct DebugEnv {
+    bool debug_cycle;          // TTTT_DEBUG_CYCLE
+    bool dump_flow;            // TTTT_DUMP_FLOW
+    bool dump_variances;       // TTTT_DUMP_VARIANCES
+    bool debug_relate;         // TTTT_DEBUG_RELATE
+    bool debug_relate_nested;  // TTTT_DEBUG_RELATE_NESTED
+} DebugEnv;
+extern DebugEnv debug_env;
+
 // These are used in debugging, DBG should not appear in committed code. Other debugging logic can be tagged with // DBG
 #define PANIC_DBG panic("AAaaa")
 #define PANIC_AFTER_DBG(count, ...) do { \

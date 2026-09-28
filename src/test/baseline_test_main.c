@@ -1,4 +1,5 @@
 #include "baseline_test_suite.h"
+#include "baseline_test_case.h"
 #include "string_helpers.h"
 
 #include <cleat/filesystem.h>
@@ -29,6 +30,8 @@ static void show_help(FILE* target) {
         "                            (default = ", default_results_path, ")\n\n"
         "  --dump [DIR]              write tttt's rendered errors/symbols/types for every test into DIR and\n"
         "                            leave checker log output on (used by ./failstats.py)\n\n"
+        "  --checkers [K]            check every test with K checkers (files dealt round robin; tsc's\n"
+        "                            baselines are one checker's, the default)\n\n"
         "  -d, --diffs               if to show all diffs for failing tests\n\n"
         "  --err                     show errors diffs for failing tests\n\n"
         "  --sym                     show symbols diffs for failing tests\n\n"
@@ -78,6 +81,10 @@ static_failable parse_args(int argc, const char** argv) {
         } else if (streq(argv[i], "--dump")) {
             try (const char* dir, next_arg_value(argc, argv, &i, &dir)) bubble;
             dump_dir = csview_from(dir);
+        } else if (streq(argv[i], "--checkers")) {
+            try (const char* count, next_arg_value(argc, argv, &i, &count)) bubble;
+            if (atoi(count) < 1) return err_d("--checkers takes a positive number, not ", count);
+            baseline_test_checkers = (u32)atoi(count);
         } else if (streq(argv[i], "-s") || streq(argv[i], "--save")) {
             save_results = true;
         } else {

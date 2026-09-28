@@ -10,9 +10,7 @@ FlowNode flow_unreachable = { .flags = FLOW_UNREACHABLE };
 FlowNode flow_reported_unreachable = { .flags = FLOW_UNREACHABLE };
 
 bool flow_dump_enabled(void) {
-    static int enabled = -1;
-    if (enabled < 0) enabled = getenv("TTTT_DUMP_FLOW") != nullptr;
-    return enabled;
+    return debug_env.dump_flow;
 }
 
 static void dump_record(FlowBuilder* me, FlowNode const* node, Span reference) {

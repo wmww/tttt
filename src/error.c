@@ -186,7 +186,174 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
     return 0;
 }
 
+// The lines of the message chain directly under e (tsc's `next` array) are its sub errors without a location, the rest
+// is related information
+static bool error_is_chain(Error const* e) {
+    return !span_valid(e->span) && !e->detached;
+}
+
+static isize chain_count(Error const* e) {
+    isize n = 0;
+    for_each (i, vec_error, &e->sub_errors) n += error_is_chain(i);
+    return n;
+}
+
+static Error const* chain_at(Error const* e, isize index) {
+    for_each (i, vec_error, &e->sub_errors) {
+        if (error_is_chain(i) && index-- == 0) return i;
+    }
+    return nullptr;
+}
+
+// tsc's compareMessageChainSize, of the chains under a and b: more elaboration is less
+static int chain_size_cmp(Error const* a, Error const* b) {
+    isize na = chain_count(a), nb = chain_count(b);
+    if (!na && !nb) return 0;
+    if (!na) return 1;
+    if (!nb) return -1;
+    if (na != nb) return na > nb ? -1 : 1;
+    for (isize i = 0; i < na; i++) {
+        int ret = chain_size_cmp(chain_at(a, i), chain_at(b, i));
+        if (ret) return ret;
+    }
+    return 0;
+}
+
+// tsc's compareMessageChainContent (the shapes are the same)
+static int chain_content_cmp(Error const* a, Error const* b) {
+    isize n = chain_count(a);
+    for (isize i = 0; i < n; i++) {
+        Error const* ai = chain_at(a, i);
+        Error const* bi = chain_at(b, i);
+        int ret = cstr_cmp(&ai->message, &bi->message);
+        if (ret) return ret > 0 ? 1 : -1;
+        ret = chain_content_cmp(ai, bi);
+        if (ret) return ret;
+    }
+    return 0;
+}
+
+static int error_full_cmp(Error const* a, Error const* b);
+
+// tsc's compareRelatedInformation: more of it is less
+static int related_cmp(Error const* a, Error const* b) {
+    isize na = vec_error_size(&a->sub_errors) - chain_count(a);
+    isize nb = vec_error_size(&b->sub_errors) - chain_count(b);
+    if (!na && !nb) return 0;
+    if (!na || !nb) return na ? -1 : 1;
+    if (na != nb) return na > nb ? -1 : 1;
+    Error const* ai = vec_error_begin(&a->sub_errors).ref;
+    Error const* bi = vec_error_begin(&b->sub_errors).ref;
+    for (isize i = 0; i < na; i++, ai++, bi++) {
+        while (error_is_chain(ai)) ai++;
+        while (error_is_chain(bi)) bi++;
+        int ret = error_full_cmp(ai, bi);
+        if (ret) return ret;
+    }
+    return 0;
+}
+
+// tsc's compareDiagnostics (the order its harness prints diagnostics in): error_cmp(), then the message chain, then the
+// related information
+static int error_full_cmp(Error const* a, Error const* b) {
+    if (span_valid(a->span) != span_valid(b->span)) return span_valid(a->span) ? 1 : -1;
+    int ret = span_cmp(a->span, b->span);
+    if (ret) return ret;
+    if (a->ts_code != b->ts_code) return a->ts_code > b->ts_code ? 1 : -1;
+    ret = cstr_cmp(&a->message, &b->message);
+    if (ret) return ret > 0 ? 1 : -1;
+    ret = chain_size_cmp(a, b);
+    if (ret) return ret;
+    ret = chain_content_cmp(a, b);
+    if (ret) return ret;
+    return related_cmp(a, b);
+}
+
+// Same location, code and head message
+static bool error_same_head(Error const* a, Error const* b) {
+    return span_valid(a->span) == span_valid(b->span) && !span_cmp(a->span, b->span) && a->ts_code == b->ts_code &&
+        cstr_eq(&a->message, &b->message);
+}
+
+void error_ctx_merge(ErrorCtx* me, ErrorCtx* from) {
+    for_each (i, vec_error, &from->errors) {
+        if (span_valid(i->span)) {
+            error_ctx_append_error(me, *i);
+            continue;
+        }
+        // (Several checkers may each report the same global diagnostic)
+        bool seen = false;
+        for_each (j, vec_error, &my errors) {
+            if (span_valid(j->span)) break;
+            if (error_same_head(i, j)) seen = true;
+        }
+        if (seen) {
+            error_drop(i);
+        } else {
+            Error* global = error_ctx_global_error_s(me, i->ts_code, i->message);
+            global->sub_errors = i->sub_errors;
+        }
+    }
+    from->errors.size = 0;
+}
+
+void error_ctx_keep_first_once(ErrorCtx* ctxs, isize count) {
+    for (isize c = 0; c < count; c++) {
+        for_each (i, vec_error, &ctxs[c].errors) {
+            if (!i->once_key) continue;
+            for (isize d = 0; d < count; d++) {
+                for_each (j, vec_error, &ctxs[d].errors) {
+                    if (j->once_key == i->once_key && j != i && j->once_order < i->once_order) i->once_key = UINT64_MAX;
+                }
+            }
+        }
+    }
+    // (Marked first, dropped after: the comparison above needs every candidate)
+    for (isize c = 0; c < count; c++) {
+        VecError* errors = &ctxs[c].errors;
+        isize kept = 0;
+        for (isize i = 0; i < vec_error_size(errors); i++) {
+            if (errors->data[i].once_key == UINT64_MAX) error_drop(&errors->data[i]);
+            else errors->data[kept++] = errors->data[i];
+        }
+        errors->size = kept;
+    }
+}
+
+void error_ctx_sort_and_dedupe(ErrorCtx* me) {
+    isize n = vec_error_size(&my errors);
+    Error* data = my errors.data;
+    // The errors are sorted by error_cmp() already: order each run of equal ones by the rest of compareDiagnostics
+    for (isize start = 0; start < n;) {
+        isize end = start + 1;
+        while (end < n && span_valid(data[start].span) && !error_cmp(&data[start], &data[end]) &&
+            !(data[start].phase == ERROR_PHASE_PARSE && data[end].phase == ERROR_PHASE_PARSE)
+        ) {
+            end++;
+        }
+        for (isize i = start + 1; i < end; i++) {
+            Error moved = data[i];
+            isize j = i;
+            for (; j > start && error_full_cmp(&data[j - 1], &moved) > 0; j--) data[j] = data[j - 1];
+            data[j] = moved;
+        }
+        start = end;
+    }
+    // tsc's sortAndDeduplicateDiagnostics: of the diagnostics with the same location, code and head message only the
+    // first (the most elaborate) stays
+    isize kept = 0;
+    for (isize i = 0; i < n; i++) {
+        if (kept && data[i].phase != ERROR_PHASE_PARSE && error_same_head(&data[kept - 1], &data[i])) {
+            error_drop(&data[i]);
+        } else {
+            data[kept++] = data[i];
+        }
+    }
+    my errors.size = kept;
+}
+
 Error* error_ctx_append_error(ErrorCtx* me, Error error) {
+    if (my frozen) log_error("Reported into a frozen ErrorCtx (a checker's diagnostic that bypasses its own): TS", error.ts_code, ": ", error.message);
     intptr_t insertion_index = insertion_index_for_span(me, &error);
     if (insertion_index >= 0) {
         return vec_error_insert_n(&my errors, insertion_index, &error, 1).ref;
@@ -201,6 +368,7 @@ Error* error_ctx_global_error_s(ErrorCtx* me, unsigned ts_code, cstr message) {
         cstr_drop(&message);
         return nullptr;
     }
+    if (my frozen) log_error("Reported into a frozen ErrorCtx (a checker's diagnostic that bypasses its own): TS", ts_code, ": ", message);
     // tsc sorts diagnostics without a file by code, then by message
     intptr_t index = 0;
     while (index < vec_error_size(&my errors)) {
@@ -218,7 +386,7 @@ Error* error_ctx_find(ErrorCtx* me, Span span, unsigned ts_code) {
         Error* error = vec_error_at_mut(&my errors, i - 1);
         if (error->ts_code == ts_code && span_eq(error->span, span)) return error;
     }
-    return nullptr;
+    return me && my parent ? error_ctx_find(my parent, span, ts_code) : nullptr;
 }
 
 void error_ctx_remove_unchecked(ErrorCtx* me) {

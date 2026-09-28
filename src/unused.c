@@ -354,7 +354,8 @@ static bool is_identifier_char(char c) {
 // HACK: tsc resolves the names of JSDoc `{@link X}` tags, which makes them uses. tttt doesn't parse JSDoc, so the
 // source is scanned for the tags and their first names are looked up from the file's scope (not from where the
 // comment is: a local only a link names still counts as unused)
-static void mark_jsdoc_links(SourceFile const* file) {
+void unused_mark_jsdoc_links(SourceFile const* file) {
+    if (!unused_enabled()) return;
     char const* text = cstr_str(&file->contents);
     for (char const* at = strstr(text, "@link"); at; at = strstr(at + 1, "@link")) {
         char const* name = at + 5;
@@ -401,7 +402,6 @@ static void report_class_members(Reporter const* r, ClassDecl const* me) {
 
 void unused_report(SourceFile const* file, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
-    mark_jsdoc_links(file);
     Reporter r = { .errs = errs, .locals = options->no_unused_locals, .parameters = options->no_unused_parameters };
     for (u32 i = 0; i < file->unused_count; i++) {
         UnusedCandidate const* candidate = &file->unused[i];

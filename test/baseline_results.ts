@@ -19321,7 +19321,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationEmitBlockedCorrectly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19521,7 +19521,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationWithJsEmitPathSameAsInput': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

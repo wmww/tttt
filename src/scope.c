@@ -170,6 +170,7 @@ Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol) {
 }
 
 Symbol* binder_new_symbol(Binder* me, csview name, u32 flags) {
+    if (my frozen) log_error("Symbol '", name, "' made while typechecking: the checkers share the binder");
     Symbol* ret = arena_new(&my arena, Symbol);
     ret->name = name;
     ret->flags = flags;
@@ -2120,6 +2121,7 @@ Symbol* symbol_resolve_alias(Symbol* me) {
             return nullptr;
         case ALIAS_UNRESOLVED: break;
     }
+    if (my binder->frozen) log_error("Alias '", my name, "' resolved while typechecking: the checkers share it");
     my alias->state = ALIAS_IN_FLIGHT;
     Symbol* target = resolve_alias_target(me);
     // (`export default x` looks its name up in a scope that has it)
@@ -2354,6 +2356,13 @@ static void merge_augmentations(Binder* me) {
     }
 }
 
+void binder_resolve_remaining_aliases(Binder* me) {
+    for (u32 i = 0; i < my symbol_count; i++) {
+        Symbol* symbol = my symbols[i];
+        if (symbol->flags & SYMBOL_ALIAS && symbol->alias->state == ALIAS_UNRESOLVED) symbol_resolve_alias(symbol);
+    }
+}
+
 void binder_link(Binder* me) {
     merge_augmentations(me);
     // Resolving makes placeholder symbols: by index
@@ -2395,6 +2404,10 @@ void binder_link(Binder* me) {
             error_ctx_error_d(errs, at, 2440,
                 "Import declaration conflicts with local declaration of '", item->decl_name, "'.");
         }
+    }
+    // What module_export_equals() makes: now, not by whichever checker asks first
+    for (u32 i = 0, count = my symbol_count; i < count; i++) {
+        if (my symbols[i]->is_module) module_export_equals(my symbols[i]);
     }
 }
 

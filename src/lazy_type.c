@@ -95,9 +95,7 @@ static void cycle_trace_print(LazyType* lazy) {
 static Ty const* lazy_type_evaluate_inner(LazyType* me);
 
 Ty const* lazy_type_evaluate(LazyType* me) {
-    static int enabled = -1;
-    if (enabled < 0) enabled = getenv("TTTT_DEBUG_CYCLE") != nullptr;
-    if (!enabled || cycle_trace.len == c_arraylen(cycle_trace.stack)) return lazy_type_evaluate_inner(me);
+    if (!debug_env.debug_cycle || cycle_trace.len == c_arraylen(cycle_trace.stack)) return lazy_type_evaluate_inner(me);
     LazyMemo* state = my tag == LAZY_TYPE_EVALUATED ? nullptr : lazy_type_state(me);
     if (state && state->evaluation_started && !state->done && my tag != LAZY_TYPE_EXPR && !state->is_self_referential) {
         log_warn("cycle:");

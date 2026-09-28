@@ -6,9 +6,8 @@ numbers). A plan that overruns its entry takes its extra sessions out of this bu
 into plans or triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the corpus
 numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 
-1. **Plan 36 stage 2**: check-phase readiness, single-threaded `--checkers K` (the audit's fixes, deterministic
-   partition, a comparison script for K=1 vs K), plus the cleat `thread_local` patch and linking threads. The
-   union-order decision is made (plan 36: fixed logical count, default 4 once stage 3 lands).
+1. ~~Plan 36 stage 2~~ done: `--checkers K`, per-checker ErrorCtx + tsc's sortAndDeduplicate (+2 tests),
+   `./checkerdiff.py`; suite and corpora identical to K=1 modulo quoted text (plan 36 stage 2 section).
 2. **Plan 36 stage 3**: parallel checking on threads (`--threads`), `./threadcheck.sh` byte-identical across thread
    counts, TSan clean on webpack/nest/tsc, `./bench.sh` into `measurements.md`. Report RSS growth; if zod's peak
    is a problem, note it for the memory session.

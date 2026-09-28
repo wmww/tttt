@@ -22,6 +22,11 @@ typedef struct Error {
     unsigned ts_code;
     ErrorPhase phase;
     bool detached; // Related information without a location (tsc's createDetachedDiagnostic)
+    // A diagnostic tsc reports once per program, from whichever file asks first (a checker-wide memo): non-zero, what
+    // it is about. Each checker reports it once; error_ctx_keep_first_once() keeps the one with the lowest once_order
+    // (the index of the file being checked), which is the one a single checker reports
+    u64 once_key;
+    u32 once_order;
     VecError sub_errors;
 } Error;
 
@@ -49,6 +54,11 @@ void error_add_detached_related_s(Error* me, unsigned ts_code, cstr message);
 typedef struct ErrorCtx {
     ErrorPhase phase;
     VecError errors;
+    // A checker's own diagnostics go into a context of their own, merged into the program's after checking: the
+    // program's (frozen meanwhile) is its parent, which error_ctx_find() looks in too
+    struct ErrorCtx* parent;
+    // Nothing may be reported into it: every checker reports into its own (a report is log_error()ed)
+    bool frozen;
 } ErrorCtx;
 
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
@@ -67,7 +77,16 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
 Error* error_ctx_global_error_s(ErrorCtx* me, unsigned ts_code, cstr message);
 #define error_ctx_global_error_d(me, ts_code, ...) \
     error_ctx_global_error_s(me, ts_code, cstr_d(__VA_ARGS__))
-/// The error with this span and code, if there is one
+/// Moves the diagnostics of from into me (from's global diagnostics that me has already are dropped)
+void error_ctx_merge(ErrorCtx* me, ErrorCtx* from);
+/// Of the diagnostics of the count contexts with the same Error.once_key, drops all but the one with the lowest
+/// once_order
+void error_ctx_keep_first_once(ErrorCtx* ctxs, isize count);
+/// What tsc's sortAndDeduplicateDiagnostics does to the diagnostics its harness prints: equal locations, codes and head
+/// messages are ordered by the message chain and the related information, then only the first of those with the same
+/// head message stays. Afterwards the order doesn't depend on the order the diagnostics were reported in
+void error_ctx_sort_and_dedupe(ErrorCtx* me);
+/// The error with this span and code, if there is one (also in the parent)
 Error* error_ctx_find(ErrorCtx* me, Span span, unsigned ts_code);
 /// Semantic diagnostics (name resolution and typecheck) are not reported inside files that are SourceFile.unchecked
 void error_ctx_remove_unchecked(ErrorCtx* me);

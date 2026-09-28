@@ -39,5 +39,7 @@ void unused_register(Scope const* scope, UnusedKind kind, void const* node, Span
 // isUse): it is referenced unless the use is inside its own declaration (tsc's isSelfReferenceLocation: a recursive
 // function, `class C { m() { C } }`, see Scope.self)
 void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning);
+// The names of the file's JSDoc `{@link X}` tags are uses. Part of name resolution, before checking
+void unused_mark_jsdoc_links(SourceFile const* file);
 // Everything registered in the file that nothing referenced
 void unused_report(SourceFile const* file, ErrorCtx* errs);

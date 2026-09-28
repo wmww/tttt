@@ -650,7 +650,7 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
         // (Reported once, without a position: tsc's getGlobalIterableIteratorType(/*reportErrors*/ true))
         if (!my iterable_iterator_reported[async]) {
             my iterable_iterator_reported[async] = true;
-            error_ctx_global_error_d(program_errors(my program), 2318, "Cannot find global type '",
+            error_ctx_global_error_d(my errs, 2318, "Cannot find global type '",
                 async ? "AsyncIterableIterator" : "IterableIterator", "'.");
         }
         return ty_empty_object_type(me);

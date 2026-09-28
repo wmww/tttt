@@ -52,6 +52,11 @@ void program_resolve_names(Program* me);
 // Typechecks the loaded file and all imports, does not typecheck libraries loaded with program_load_lib()
 void program_typecheck(Program* me);
 
+// How many checkers program_typecheck() deals the files to (tsgo's --checkers; 0 is the default, 1). The diagnostics
+// depend on it (only in the order of union members inside messages: type ids are per checker), not on anything else.
+// Call it while loading
+void program_set_checkers(Program* me, u32 count);
+
 // Makes this program's checker (created on first use) the one that types get evaluated in, until another program is
 // made current or this one is destroyed. program_typecheck() does this, call it yourself to look at types of a program
 // that isn't typechecked
@@ -61,6 +66,10 @@ struct Binder const* program_get_binder(Program const* me);
 
 // Null before program_make_current()
 struct Checker* program_get_checker(Program const* me);
+
+// The checkers program_typecheck() used (the first is program_get_checker()'s), 0 before
+u32 program_checker_count(Program const* me);
+struct Checker* program_checker_at(Program const* me, u32 index);
 
 // A global by name and meaning (SymbolFlags), null if there is none
 struct Symbol const* program_get_global(Program const* me, csview name, u32 meaning);

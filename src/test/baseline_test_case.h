@@ -128,6 +128,10 @@ void baseline_test_case_leave_generic(BaselineTestCase* me, u32 saved);
 struct TyList;
 u32 baseline_test_case_enter_type_params(BaselineTestCase* me, struct TyList params);
 
+// How many checkers every test program is checked with (baseline_tests --checkers, program_set_checkers()). tsc's
+// baselines come from one checker
+extern u32 baseline_test_checkers;
+
 BaselineTestCase run_baseline_test_case(
     BaselineTestCache* cache,
     csview source_path,

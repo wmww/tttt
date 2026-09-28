@@ -11,3 +11,16 @@ __attribute__((constructor))
 static void configure_logger() {
     logger_config.file_line = true;
 }
+
+DebugEnv debug_env;
+
+__attribute__((constructor))
+static void read_debug_env() {
+    debug_env = (DebugEnv){
+        .debug_cycle = getenv("TTTT_DEBUG_CYCLE") != nullptr,
+        .dump_flow = getenv("TTTT_DUMP_FLOW") != nullptr,
+        .dump_variances = getenv("TTTT_DUMP_VARIANCES") != nullptr,
+        .debug_relate = getenv("TTTT_DEBUG_RELATE") != nullptr,
+        .debug_relate_nested = getenv("TTTT_DEBUG_RELATE_NESTED") != nullptr,
+    };
+}

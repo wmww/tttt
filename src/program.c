@@ -14,6 +14,7 @@
 #include "source_file.h"
 #include "ty/ty.h"
 #include "module_resolution.h"
+#include <time.h>
 
 #define g_class_key SourceFile, source_file
 #define g_no_clone
@@ -76,7 +77,10 @@ typedef struct Program {
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
     HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
-    Checker* checker; // Created by program_make_current()
+    Checker* checker; // Created by program_make_current(), checks the first share of the files
+    Checker** checkers; // malloc'd, checker_count of them once typechecked: checker and the others
+    u32 checker_count;
+    u32 requested_checkers; // program_set_checkers()
     CompilerOptions options;
 } Program;
 
@@ -130,6 +134,8 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
 
 static void program_drop(Program* me) {
     // First, its memos point into the AST and the scopes
+    for (u32 i = 1; i < my checker_count; i++) checker_drop(my checkers[i]);
+    free(my checkers);
     checker_drop(my checker);
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
@@ -1197,7 +1203,10 @@ void program_resolve_names(Program* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         block_lookup_names_container(&source->ast, false, c_sv("file"), span_null, source->scope, my errs);
+        if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_mark_jsdoc_links(source);
     }
+
+    binder_resolve_remaining_aliases(my binder);
 
     error_ctx_remove_unchecked(my errs);
     program_apply_comment_directives(me, ERROR_PHASE_RESOLVE_NAMES);
@@ -1213,6 +1222,11 @@ void program_make_current(Program* me) {
     checker_make_current(my checker);
 }
 
+void program_set_checkers(Program* me, u32 count) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    my requested_checkers = count;
+}
+
 Binder const* program_get_binder(Program const* me) {
     return my binder;
 }
@@ -1223,6 +1237,14 @@ ErrorCtx* program_errors(Program const* me) {
 
 Checker* program_get_checker(Program const* me) {
     return my checker;
+}
+
+u32 program_checker_count(Program const* me) {
+    return my checker_count;
+}
+
+Checker* program_checker_at(Program const* me, u32 index) {
+    return my checkers[index];
 }
 
 Symbol const* program_get_global(Program const* me, csview name, u32 meaning) {
@@ -1251,22 +1273,56 @@ void program_typecheck(Program* me) {
 
     scope_report_missing_prefixes(my binder);
     program_report_missing_global_types(me);
-    ty_init_global_types(my checker);
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        SourceFile* source = *i;
-        if (!source->is_stdlib && !source->unchecked) {
-            if (source->is_declaration) block_check_required_declare(&source->ast, my errs);
-            block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, my errs);
+    // The files are dealt to the checkers round robin: which checker checks a file depends only on the file list, so
+    // the output depends only on the checker count. Each reports into its own ErrorCtx; nothing may write to the
+    // program's or make symbols meanwhile (they will run on threads of their own)
+    u32 count = my requested_checkers ? my requested_checkers : 1;
+    my checkers = c_new_n(Checker*, count);
+    my checker_count = count;
+    ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);
+    my binder->frozen = true;
+    my errs->frozen = true;
+    for (u32 c = 0; c < count; c++) {
+        struct timespec start, end;
+        timespec_get(&start, TIME_UTC);
+        Checker* checker = my checkers[c] = c ? checker_new(me) : my checker;
+        checker_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
+        checker->errs = &checker_errs[c];
+        checker_make_current(checker);
+        ty_init_global_types(checker);
+        u32 index = 0;
+        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+            SourceFile* source = *i;
+            if (source->is_stdlib || source->unchecked || index++ % count != c) continue;
+            checker->file_order = index - 1;
+            if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
+            block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
         }
+        // After its files are checked: the checker marks members it reads
+        index = 0;
+        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+            SourceFile* source = *i;
+            if (source->is_stdlib || source->unchecked || index++ % count != c) continue;
+            if (!source->is_declaration) unused_report(source, checker->errs);
+        }
+        timespec_get(&end, TIME_UTC);
+        checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
     }
-    // After everything is checked: the checker marks members it reads
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        SourceFile* source = *i;
-        if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_report(source, my errs);
+    my binder->frozen = false;
+    my errs->frozen = false;
+    error_ctx_keep_first_once(checker_errs, count);
+    for (u32 c = 0; c < count; c++) {
+        error_ctx_merge(my errs, &checker_errs[c]);
+        error_ctx_drop(&checker_errs[c]);
+        my checkers[c]->errs = my errs;
     }
+    free(checker_errs);
+    checker_make_current(my checker);
+
     error_ctx_remove_unchecked(my errs);
     program_apply_comment_directives(me, ERROR_PHASE_TYPECHECK);
     program_report_unused_expect_errors(me);
+    error_ctx_sort_and_dedupe(my errs);
 
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;

@@ -431,6 +431,8 @@ typedef struct Binder {
     // What `require` is in `require("m")` in a JavaScript file where nothing else is called that (tsc's requireSymbol:
     // any). Made when first needed
     Symbol* require_symbol;
+    // Set while the program is typechecked: nothing makes symbols anymore (several checkers share them)
+    bool frozen;
     u32 suggestion_count; // Names not found so far: only the first ones get spelling suggestions (tsc's suggestionCount)
     // Values not found in class members, reported once types are known (scope_report_missing_prefixes())
     struct PendingNotFound* pending_not_found; // malloc'd
@@ -450,6 +452,9 @@ void binder_set_parent(Binder* me, Binder const* parent);
 // Merges module augmentations, resolves every alias, so that nothing writes to a symbol afterwards, and reports
 // import conflicts
 void binder_link(Binder* me);
+// The aliases the resolve walk declared after binder_link() (`import I = M` in a block): resolved at the end of name
+// resolution, so the checkers (which share them) never write to them
+void binder_resolve_remaining_aliases(Binder* me);
 // Once every file's names are declared: the initializers of the variables global expandos went to get their members
 // (the variable may be declared by a file bound after the expando's)
 void binder_link_global_expandos(Binder* me);

@@ -697,6 +697,8 @@ static int tsconfig_file_rank(BaselineTestCase const* test, MockFs* fs, Baseline
     return ret;
 }
 
+u32 baseline_test_checkers = 0;
+
 BaselineTestCase run_baseline_test_case(
     BaselineTestCache* cache,
     csview source_path,
@@ -714,6 +716,7 @@ BaselineTestCase run_baseline_test_case(
     MockFs* fs = mock_fs_new();
     Program* program = program_new(errs, mock_fs_get_fs(fs));
     program_set_realpath(program, mock_fs_realpath, fs);
+    program_set_checkers(program, baseline_test_checkers);
 
     BaselineTestCase ret = {
         .source_path = source_path,
