@@ -2229,8 +2229,8 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         Ty const* types[2] = { non_undefined_type(me, ret), nullptr };
         if (root->has_explicit_type) {
             Ty const* default_type = ty_pad_initializer_type(me, ty_binding_default_type(me, binding), binding);
-            if (compiler_options()->strict_null_checks && !(default_type->flags & (TYF_ANY | TYF_UNKNOWN)) &&
-                ty_without_undefined(me, default_type) == default_type) {
+            // (any and unknown can't be undefined either: tsc's UnknownFacts lack IsUndefined)
+            if (compiler_options()->strict_null_checks && ty_without_undefined(me, default_type) == default_type) {
                 ret = types[0];
             }
             return ret;
