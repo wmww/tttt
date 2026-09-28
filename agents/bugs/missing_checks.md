@@ -86,15 +86,10 @@ statuses checked 2026-09-27 (triage, suite 8952).
   still bound as a global ambient module (tsc: a local namespace). TS2846 (import of a `.d.ts` by name),
   TS2877/TS2876 (`rewriteRelativeImportExtensions`), TS2688 where tsc can't resolve a type reference directive and tttt
   can (typingsLookup3). TS6046 (unknown lib name), TS6278 and TS7016's "npm i @types" elaboration (need package ids).
-- **TS2303 through namespace imports** (15+ node-modules tests miss only this: nodeModulesPackageExports,
-  nodeModules*PatternExports*, nodeModulesConditionalPackageExports, x3 module kinds): `import * as cjs from
-  "inner/cjs/index"` resolving to the importing file itself plus `export { cjs }`. tsc's resolveESModuleSymbol calls
-  getTypeOfSymbol on the module for namespace imports, which resolves every export alias, so the chain re-enters `cjs`;
-  tttt's alias cycle detection (ALIAS_CIRCULAR, `symbol_resolve_alias`) only sees direct chains. Find the smallest rule
-  that doesn't compute module types in the binder. Same area: recursiveExportAssignmentAndFindAliasedType6 wants the
-  TS2303 span to be the whole import-equals statement (`PortItem.full_span` of `import x = require()` ends before the
-  name: `parse_import_equals()` takes the caller's anchor; check TS2440's tests before changing it), and a circular
-  `import self = require(...)` / `export = self` types `self` as `Window & typeof globalThis` (tsc: any).
+- **TS2303 leftovers**: pushTypeGetTypeOfAlias (`exports.blah = exports.someProp`: tsc's isAliasableExpression takes
+  dotted names, `declare_commonjs_export` only identifiers; the TS2303 there is getTypeOfAlias's type circularity
+  through the module's type, not alias resolution), declarationEmitUnknownImport(2) (`import Foo = Missing` +
+  `export {Foo}`), exportAsNamespaceConflict (tttt says TS2484).
 - **Templates**: TS1125/TS1121 for escapes in template literal types, TS2590 (union too complex), `${symbol}` not
   rejected (templateLiteralTypes1/3/4).
 - **Misc**: TS2311 (`await` as a callee) and TS2663 in class computed names (need tsc's

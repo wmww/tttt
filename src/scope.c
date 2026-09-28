@@ -1928,6 +1928,27 @@ static bool esm_imports_cjs(PortItem const* item, SourceFile const* target) {
     return esm && source_file_implied_format_for_emit(target) == MODULE_KIND_COMMONJS;
 }
 
+// tsc resolves the members of a module's object type (resolveAnonymousTypeMembers -> getNamedMembers) with
+// symbolIsValue() on each export, which resolves every export alias. A module's type is resolved once: a visit while
+// it is being resolved sees it as done, but the aliases the first visit still has in flight are circular (TS2303)
+static void resolve_module_type_members(Symbol* module) {
+    if (!module->is_module || module->module->type_members_resolved) return;
+    module->module->type_members_resolved = true;
+    u32 count = 0;
+    SymbolEntry* entries = symbol_collect_exports(module, &count);
+    for (u32 i = 0; i < count; i++) symbol_resolved_flags(entries[i].symbol);
+    free(entries);
+}
+
+// tsc's resolveESModuleSymbol for `import * as ns`: with esModuleInterop, or when an ES module imports a CommonJS
+// one, it looks for call and construct signatures on the module's type, resolving its members
+static bool namespace_import_resolves_type_members(PortItem const* item) {
+    if (item->tag != PORT_IMPORT_GATHER) return false;
+    if (compiler_options()->es_module_interop) return true;
+    SourceFile const* target = item->module_ref ? item->module_ref->file : nullptr;
+    return target && esm_imports_cjs(item, target);
+}
+
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = my alias->scope->errs;
@@ -2069,6 +2090,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
         case PORT_IMPORT_GATHER:
         case PORT_REEXPORT_GATHER:
             if (assigned) return assigned;
+            if (namespace_import_resolves_type_members(item)) resolve_module_type_members(module);
             return make_gather_target(me, module);
 
         case PORT_IMPORT_ALIAS:
@@ -2102,7 +2124,9 @@ Symbol* symbol_resolve_alias(Symbol* me) {
     Symbol* target = resolve_alias_target(me);
     // (`export default x` looks its name up in a scope that has it)
     if (my alias->state == ALIAS_CIRCULAR && my alias->item) {
-        Span at = my alias->item->tag == PORT_IMPORT_ALIAS ? my alias->item->full_span : my alias->item->decl_name;
+        // (Import-equals declarations are reported on the whole statement)
+        PortItem const* item = my alias->item;
+        Span at = item->tag == PORT_IMPORT_ALIAS || item->is_require ? span_with_semicolon(item->full_span) : item->decl_name;
         error_ctx_error_d(my alias->scope->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
     }
     if (!target) {
@@ -2124,7 +2148,9 @@ static u32 resolved_flags(Symbol const* me, int depth) {
     if (!me) return 0;
     u32 flags = my flags & ~(u32)SYMBOL_ALIAS;
     if (my flags & SYMBOL_ALIAS && depth < ALIAS_CHAIN_MAX) {
-        flags |= resolved_flags(symbol_resolve_alias((Symbol*)me), depth + 1);
+        Symbol const* target = symbol_resolve_alias((Symbol*)me);
+        // An alias still being resolved (a circular one) has every meaning, like tsc's unknownSymbol in getSymbolFlags
+        flags |= target ? resolved_flags(target, depth + 1) : SYMBOL_ANY_MEANING;
         if (my alias->value_target) flags |= my alias->value_target->flags;
     }
     return flags;

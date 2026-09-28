@@ -198,6 +198,9 @@ typedef struct SymbolModule {
     u32 type_only_star_cap;
     // What `export =` assigns merged with the module's other exports, see module_export_equals()
     struct Symbol* merged_export_equals;
+    // Every export's alias chain was resolved, as tsc does when it resolves the members of the module's type (see
+    // resolve_module_type_members()): later visits see the members as resolved, not in flight
+    bool type_members_resolved;
 } SymbolModule;
 
 typedef struct Symbol {
