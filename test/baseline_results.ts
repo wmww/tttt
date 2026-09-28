@@ -49126,17 +49126,17 @@ const baselines = {
         types: true,
     },
     'invalidSyntaxNamespaceImportWithAMD': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'invalidSyntaxNamespaceImportWithCommonjs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'invalidSyntaxNamespaceImportWithSystem': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

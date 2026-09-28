@@ -8691,7 +8691,13 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 statement.target_path = cstr_move(&path_expr.literal.string);
                 statement.target_path_span = path_expr.inner_span;
             } else {
-                parse_error(&p, path_expr.inner_span, 1141, "String literal expected.");
+                // (tsc's checker reports it, checkExternalImportOrExportDeclaration: not after another error there)
+                add_error_to_parser(&p, (Error){
+                    .message = cstr_lit("String literal expected."),
+                    .span = path_expr.inner_span,
+                    .ts_code = 1141,
+                    .phase = ERROR_PHASE_TYPECHECK,
+                });
             }
             expr_drop(&path_expr);
             statement.attributes = parse_import_attributes(&p);
