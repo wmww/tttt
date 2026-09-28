@@ -1981,6 +1981,12 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
 
                 case FOR_EACH_LOOP_EXPR:
                     expr_typecheck(&my for_each_loop->variable.expr, errs);
+                    if (!my for_each_loop->variable.expr.assignment_pattern) {
+                        bool in = my for_each_loop->keyword == FOR_EACH_LOOP_IN;
+                        expr_check_reference_not_optional(&my for_each_loop->variable.expr, in ? 2780 : 2781, in ?
+                            "The left-hand side of a 'for...in' statement may not be an optional property access." :
+                            "The left-hand side of a 'for...of' statement may not be an optional property access.", errs);
+                    }
                     if (my for_each_loop->variable.expr.assignment_pattern) {
                         // Destructured element by element (tsc's checkDestructuringAssignment). A for..in pattern is
                         // TS2491 and nothing else

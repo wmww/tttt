@@ -47781,7 +47781,7 @@ const baselines = {
         types: true,
     },
     'elementAccessChain.3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47886,7 +47886,7 @@ const baselines = {
         types: true,
     },
     'propertyAccessChain.3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

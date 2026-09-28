@@ -1857,6 +1857,7 @@ Expr const* expr_effective_check_node(Expr const* me) {
 // `source_expr`: the right-hand side of a plain assignment, which a failure is elaborated into
 static bool is_written_undefined(Expr const* me);
 static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs);
+static Expr const* skip_outer_expressions(Expr const* me);
 
 void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx* errs) {
     assignment_target_typecheck(target, source, nullptr, errs);
@@ -1874,8 +1875,22 @@ static bool is_container_declaration(BinaryOpExpr const* op) {
     return !declared || (declared->exports && declared->exports->count);
 }
 
+// The optional chain part of tsc's checkReferenceExpression: `a?.b = 1` (through assertions). Reports it with the
+// message given, false if so
+bool expr_check_reference_not_optional(Expr const* target, unsigned code, char const* message, ErrorCtx* errs) {
+    Expr const* reference = skip_outer_expressions(target);
+    if (reference->tag != EXPR_PROPERTY || !expr_is_optional_chain(reference)) return true;
+    error_ctx_error_d(errs, target->outer_span, code, message);
+    return false;
+}
+
 static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs) {
     Checker* checker = current_checker;
+    if (!expr_check_reference_not_optional(target, 2779,
+        "The left-hand side of an assignment expression may not be an optional property access.", errs)
+    ) {
+        return;
+    }
     if (source && (source->flags & TYF_ANY)) source = nullptr;
     switch (target->tag) {
         case EXPR_LITERAL:
@@ -2016,7 +2031,11 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                     property = ty_access_reading(checker, source, key);
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD) {
-                    assignment_target_typecheck(&i->value, nullptr, nullptr, errs); // TODO: the rest of the object
+                    if (expr_check_reference_not_optional(&i->value, 2778,
+                        "The target of an object rest assignment may not be an optional property access.", errs)
+                    ) {
+                        assignment_target_typecheck(&i->value, nullptr, nullptr, errs); // TODO: the rest of the object
+                    }
                 } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
                     // `{ a = 1 } = o`: the default is assigned to `a` (checked with a's type as its contextual type),
                     // and so is the property, without undefined unless the default can be undefined too (tsc's
