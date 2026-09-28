@@ -3368,8 +3368,19 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
             !(my file->is_commonjs && is_commonjs_root(object))
         ) {
             add_expando_namespace_decls(me, object, true);
+            // Which makes each name of it a namespace, an expando host (tsc's bindPotentiallyMissingNamespaces, then
+            // isExpandoSymbol: SymbolFlags.NamespaceModule), whatever the other files that declare it say
+            host = lookup_for_property_access(me, object);
+            // (Declared in another file: its class expression or function initializer there gets the members)
+            for (u32 i = 0; host && i < host->decl_count; i++) {
+                SourceFile const* other = host->decls[i].full.source;
+                Expr* other_init;
+                if (other && other != my file && symbol_is_expando_host(host, other, other->is_js, &other_init)) {
+                    set_expando_initializer_host(other_init, host);
+                }
+            }
         }
-        return;
+        if (!host) return;
     }
     // The member (bindPotentiallyNewExpandoMemberToNamespace)
     bool merged;

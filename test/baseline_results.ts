@@ -60866,8 +60866,8 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment35': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment36': {
