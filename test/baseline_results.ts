@@ -35926,12 +35926,12 @@ const baselines = {
         types: true,
     },
     'superInStaticMembers1(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'superInStaticMembers1(target=es2021)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

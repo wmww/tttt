@@ -43,6 +43,65 @@ static bool check_before_super(IdentifierExpr const* me, Scope const* names, uns
     return false;
 }
 
+// Whether a declaration of a `Reflect` symbol emits a runtime binding (tsc's needCollisionCheckForIdentifier)
+static bool reflect_decl_is_runtime(Scope const* scope, SymbolDecl const* decl) {
+    if (scope->ambient) return false;
+    switch (decl->kind) {
+        case SYMBOL_DECL_VARIABLE: return !((Binding const*)decl->node)->ambient;
+        case SYMBOL_DECL_FUNCTION: return !((FunctionImpl const*)decl->node)->ambient;
+        case SYMBOL_DECL_CLASS: return !((ClassDecl const*)decl->node)->is_ambient;
+        case SYMBOL_DECL_NAMESPACE: { // (Even an uninstantiated one)
+            Scope const* inner = ((NamespaceDecl const*)decl->node)->inner_scope;
+            return !inner || !inner->ambient;
+        }
+        case SYMBOL_DECL_ENUM:
+            return true;
+        case SYMBOL_DECL_ALIAS: {
+            PortItem const* item = decl->node;
+            return !item->type_only && !port_item_is_export(item);
+        }
+        default:
+            return false;
+    }
+}
+
+// tsc's checkReflectCollision: `super.x` in a static initializer is emitted through `Reflect` for targets ES2015 to
+// ES2021, so a runtime declaration named `Reflect` in any block scope around it collides (tsc marks every enclosing
+// block scope container with ContainsSuperPropertyInStaticInitializer). A script's top level is exempt. Each `super`
+// reports again, the diagnostics dedupe
+static void check_reflect_collisions(Scope const* names) {
+    CompilerOptions const* options = compiler_options();
+    if (options->target < SCRIPT_TARGET_ES2015 || options->target > SCRIPT_TARGET_ES2021 || options->no_emit) return;
+    for (Scope const* scope = names; scope; scope = scope->parent) {
+        if (scope->kind == SCOPE_GLOBAL || scope->kind == SCOPE_SCRIPT) break;
+        Symbol const* found = symbol_table_get(&scope->locals, csview_from("Reflect"));
+        if (!found && (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE) && scope->container) {
+            found = symbol_table_get(scope->container->exports, csview_from("Reflect"));
+        }
+        if (!found) continue;
+        for (u32 i = 0; i < found->decl_count; i++) {
+            SymbolDecl const* decl = &found->decls[i];
+            if (!reflect_decl_is_runtime(scope, decl)) continue;
+            // A `var` in a nested block is in that block's block scope container, which isn't around the `super`
+            if (decl->block && decl->block != scope) {
+                bool around = false;
+                for (Scope const* s = names; s && !around; s = s->parent) around = s == decl->block;
+                if (!around) continue;
+            }
+            // (tsc reports an import specifier, `{ A as Reflect }`, at the whole specifier)
+            Span at = decl->name;
+            if (decl->kind == SYMBOL_DECL_ALIAS) {
+                PortItem const* item = decl->node;
+                if (item->tag == PORT_IMPORT_SPECIFIC && span_valid(item->source_name)) {
+                    at = span_between(item->source_name, item->decl_name);
+                }
+            }
+            error_ctx_error_d(scope->errs, at, 2818, "Duplicate identifier 'Reflect'. Compiler reserves name ",
+                "'Reflect' when emitting 'super' references in static initializers.");
+        }
+    }
+}
+
 // tsc's checkSuperExpression up to its type: the member `super` is in (getSuperContainer: through arrow functions,
 // except for `super(...)`) decides whether it may be used there (isLegalUsageOfSuperExpression). A legal `super` of a
 // derived class targets that class, anything else is an error and any (an object literal's `super` is any too)
@@ -84,6 +143,9 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
             scope->this_ref.kind == THIS_CLASS_STATIC
         ) {
             legal = !is_call;
+            if (legal && (scope->kind == SCOPE_STATIC_BLOCK || scope->this_ref.kind == THIS_CLASS_STATIC)) {
+                check_reflect_collisions(names);
+            }
             break;
         }
     }
