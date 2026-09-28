@@ -1515,11 +1515,11 @@ static void union_members(Ty const* const* ty_ref, Ty const* const** out, u32* c
 // is the apparent type): `Mutable<T>` with `T extends Node` has `pos: T["pos"]`
 // Under exactOptionalPropertyTypes, what `T[K]` reads of an optional property of T adds is tsc's missing type, which
 // an optional property of the mapped type doesn't have in its declared-type view (getNonMissingTypeOfSymbol): HACK,
-// without a missing type the undefined is taken out (PROP_STRIP_UNDEFINED) unless the property declares one
-static u32 exact_missing_flag(Checker* me, u32 flags, u32 from_flags, Prop const* from) {
+// without a missing type the undefined is taken out (PROP_STRIP_UNDEFINED), even one the property declares (tsc
+// keeps that one: `x?: string | undefined`). Not looked at here: forcing the property's type costs valibot 4%
+static u32 exact_missing_flag(u32 flags, u32 from_flags) {
     if (!compiler_options()->exact_optional_property_types || !compiler_options()->strict_null_checks) return 0;
-    if (!(flags & PROP_OPTIONAL) || !(from_flags & PROP_OPTIONAL) || !from) return 0;
-    return ty_can_be_undefined(me, prop_type(me, from)) ? 0 : PROP_STRIP_UNDEFINED;
+    return (flags & PROP_OPTIONAL) && (from_flags & PROP_OPTIONAL) ? PROP_STRIP_UNDEFINED : 0;
 }
 
 static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members);
@@ -1551,7 +1551,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
             flags &= ~(u32)PROP_OPTIONAL;
             if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
         }
-        flags |= exact_missing_flag(me, flags, from_flags, from);
+        flags |= exact_missing_flag(flags, from_flags);
         if (mapped->readonly > 0) flags |= PROP_READONLY;
         if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
         Prop* prop = arena_new(&my arena, Prop);
@@ -1620,7 +1620,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
                 flags &= ~(u32)PROP_OPTIONAL;
                 if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
             }
-            flags |= exact_missing_flag(me, flags, from_flags, from);
+            flags |= exact_missing_flag(flags, from_flags);
             if (mapped->readonly > 0) flags |= PROP_READONLY;
             if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
             if (!template) {
@@ -1862,7 +1862,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     flags &= ~(u32)PROP_OPTIONAL;
                     if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
                 }
-                flags |= exact_missing_flag(me, flags, from_flags, from);
+                flags |= exact_missing_flag(flags, from_flags);
                 if (mapped->readonly > 0) flags |= PROP_READONLY;
                 if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
                 Prop* prop = arena_new(&my arena, Prop);

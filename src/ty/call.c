@@ -289,6 +289,10 @@ static Signature const* last_call_signature(Checker* me, Ty const* ty) {
     return members->call_count ? members->call[members->call_count - 1] : nullptr;
 }
 
+static bool has_candidates_or_fixed(InferParam const* param) {
+    return param->co_len || param->contra_len || param->fixed;
+}
+
 // A generic call inferring from its arguments, as the calls nested in them see it (tsc's getInferenceContext)
 typedef struct OuterInference {
     Signature const* sig;
@@ -712,6 +716,8 @@ static TyMapper const* infer_type_arguments(
     // inferred so far stands in for them
     OuterInference const* outer = my outer_inference;
     my outer_inference = nullptr;
+    TyMapper const* outer_fixing = my contextual_fixing_mapper;
+    my contextual_fixing_mapper = nullptr;
     Ty const* uninferred_contextual = contextual;
     if (contextual && outer && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         contextual = ty_instantiate(me, contextual, outer_inference_mapper(me, outer));
@@ -926,14 +932,38 @@ static TyMapper const* infer_type_arguments(
         }
         // Until something is inferred, what the contextual type of the call said stands in (tsc's
         // instantiateContextualType: the nonFixingMapper if any inference has candidates, else the returnMapper)
+        // A type parameter nothing is inferred for stays itself in the contextual type (so that `Mapped<T>` still has
+        // the literal's properties, tsc's instantiateContextualType) and is fixed in the contextual signatures of the
+        // functions in it
         TyMapper const* context_mapper = !any_candidates && return_mapper ? return_mapper : so_far;
+        TyMapper const* fixing = nullptr;
+        if (context_mapper == so_far) {
+            Ty const** targets = arena_new_n(&my arena, Ty const*, so_far->len ? so_far->len : 1);
+            bool partial = false;
+            for (u32 j = 0; j < so_far->len; j++) {
+                // (HACK: only where it would be `unknown`: tttt's contextual types don't look through a type
+                // parameter to its constraint the way tsc's getApparentTypeOfContextualType does)
+                bool unknown = j < inf.len && !has_candidates_or_fixed(&inf.params[j]) &&
+                    (so_far->targets[j]->flags & TYF_UNKNOWN) && so_far->targets[j]->kind == TY_INTRINSIC;
+                targets[j] = unknown ? so_far->sources[j] : so_far->targets[j];
+                partial |= unknown;
+            }
+            if (partial) {
+                context_mapper = ty_mapper_new(me, (TyList){ .data = so_far->sources, .len = so_far->len },
+                    (TyList){ .data = targets, .len = so_far->len });
+                fixing = so_far;
+            }
+        }
         Ty const* context = param_type ? ty_instantiate(me, param_type, context_mapper) : nullptr;
+        TyMapper const* saved_fixing = my contextual_fixing_mapper;
+        my contextual_fixing_mapper = fixing;
         if (arg->nested_generic && !skip_generic) {
             GenericFunctionMode mode = { .sig = sig, .inf = &inf };
             arg->type = ty_check_literal_argument(me, arg->expr, context, false, false, &mode);
         } else {
             arg->type = ty_check_expr(me, arg->expr, context);
         }
+        my contextual_fixing_mapper = saved_fixing;
         infer_from_arg(me, &inf, &shape, args, i);
     }
     // A variadic rest parameter takes the remaining arguments as a tuple
@@ -960,6 +990,7 @@ static TyMapper const* infer_type_arguments(
     *inferred_out = ty_list_copy(me, inf.inferred_type_params, inf.inferred_type_param_count);
     inference_drop(&inf);
     my outer_inference = outer;
+    my contextual_fixing_mapper = outer_fixing;
     my inferential_depth--;
     return mapper;
 }

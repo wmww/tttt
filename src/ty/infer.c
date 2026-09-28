@@ -475,8 +475,34 @@ static Ty const* reverse_mapped_array_like(Checker* me, Ty const* source, Mapped
     return ret;
 }
 
+// tsc's isPartiallyInferableType: not made non-inferrable by a context-sensitive function left out of the first pass,
+// or an object literal with a property (a tuple with an element) that is partially inferable
+static bool is_partially_inferable(Checker* me, Ty const* ty, u32 depth) {
+    if (!(ty->flags & TYF_NON_INFERRABLE)) return true;
+    if (depth > 8) return false;
+    if (ty_tuple_shape(ty)) {
+        TyList elements = ty_reference_args(me, ty);
+        for (u32 i = 0; i < ty_tuple_shape(ty)->arity && i < elements.len; i++) {
+            if (is_partially_inferable(me, elements.data[i], depth + 1)) return true;
+        }
+        return false;
+    }
+    if (ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, ty);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (is_partially_inferable(me, prop_type(me, members->props[i]), depth + 1)) return true;
+    }
+    return false;
+}
+
 static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
     if (!(source->flags & TYF_OBJECT)) return nullptr;
+    // Reverse mappable: a string index signature, or properties and partially inferable (tsc's createReverseMappedType)
+    if (!ty_applicable_index_info(me, source, ty_intrinsic(me, TY_STRING)) &&
+        (!ty_members(me, source)->prop_count || !is_partially_inferable(me, source, 0))
+    ) {
+        return nullptr;
+    }
     if (ty_is_array(me, source) || ty_tuple_shape(source)) {
         if (my reverse_mapped_depth >= 4) return nullptr;
         my reverse_mapped_depth++;

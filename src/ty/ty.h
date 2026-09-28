@@ -712,6 +712,10 @@ struct Checker {
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null
     struct OuterInference const* outer_inference;
     u32 inferential_depth; // Arguments are being checked to infer type arguments from (tsc's CheckMode.Inferential)
+    // While a context-sensitive argument is checked in inference's second pass: what fixes the call's type parameters
+    // in the contextual signatures of the functions in it (tsc's assignContextualParameterTypes with the inference
+    // context's mapper), or null
+    TyMapper const* contextual_fixing_mapper;
     // Control flow (flow.c). While flow_uncached is set expressions are evaluated without reading unfinished memos or
     // writing any: what they evaluate to may depend on the incomplete types of a loop, see ty_flow_expr_type()
     u32 flow_uncached;

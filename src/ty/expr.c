@@ -734,6 +734,14 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
     if (intern_get(&my links, done_key, 2)) return;
     Signature const* sig = contextual_signature(me, contextual, function, 0);
     if (!sig) return;
+    // The type parameters of the generic call this is an argument of are fixed now (a contextual type that left them
+    // generic because nothing was inferred for them: `unknown`)
+    if (my contextual_fixing_mapper) {
+        Signature* fixed = arena_new(&my arena, Signature);
+        *fixed = (Signature){ .flags = sig->flags, .target = sig, .mapper = my contextual_fixing_mapper };
+        signature_resolve(me, fixed);
+        sig = fixed;
+    }
     *intern_slot(me, &my links, done_key, 2) = sig;
     if (sig->this_type) {
         u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };

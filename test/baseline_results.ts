@@ -6248,7 +6248,7 @@ const baselines = {
     'contextualTypeFunctionObjectPropertyIntersection': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeIterableUnions': {
         errors: true,
