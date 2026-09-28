@@ -1163,7 +1163,7 @@ const baselines = {
     'arrayBestCommonTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayBindingPatternOmittedExpressions': {
         errors: true,
@@ -1222,8 +1222,8 @@ const baselines = {
     },
     'arrayFilter': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'arrayFind': {
         errors: true,
@@ -15898,7 +15898,7 @@ const baselines = {
     'implicitAnyGenerics': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implicitAnyGetAndSetAccessorWithAnyReturnType': {
         errors: false,
@@ -16173,7 +16173,7 @@ const baselines = {
     'importHelpers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersAmd': {
         errors: true,
@@ -17432,8 +17432,8 @@ const baselines = {
     },
     'inferentialTypingWithObjectLiteralProperties': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'inferentiallyTypingAnEmptyArray': {
         errors: true,
@@ -30073,7 +30073,7 @@ const baselines = {
     'taggedTemplateWithoutDeclaredHelper': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplatesInDifferentScopes': {
         errors: true,
@@ -30083,7 +30083,7 @@ const baselines = {
     'taggedTemplatesInModuleAndGlobal': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplatesWithIncompleteNoSubstitutionTemplate1': {
         errors: true,
@@ -30106,7 +30106,7 @@ const baselines = {
         types: true,
     },
     'taggedTemplatesWithIncompleteTemplateExpressions3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30121,7 +30121,7 @@ const baselines = {
         types: false,
     },
     'taggedTemplatesWithIncompleteTemplateExpressions6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30863,7 +30863,7 @@ const baselines = {
     'typeArgInference2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeArgInference2WithError': {
         errors: true,
@@ -30873,7 +30873,7 @@ const baselines = {
     'typeArgInferenceWithNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeArgumentConstraintResolution1': {
         errors: false,
@@ -31348,7 +31348,7 @@ const baselines = {
     'typeParameterFixingWithConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterFixingWithContextSensitiveArguments': {
         errors: true,
@@ -31898,7 +31898,7 @@ const baselines = {
     'undefinedArgumentInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'undefinedAsDiscriminantWithUnknown(strictnullchecks=false)': {
         errors: true,
@@ -41768,7 +41768,7 @@ const baselines = {
     'destructuringParameterProperties3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterProperties4': {
         errors: true,
@@ -43301,22 +43301,22 @@ const baselines = {
         types: true,
     },
     'taggedTemplateStringsTypeArgumentInference': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsTypeArgumentInferenceES6': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithIncompatibleTypedTags': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'taggedTemplateStringsWithIncompatibleTypedTagsES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43333,26 +43333,26 @@ const baselines = {
     'taggedTemplateStringsWithOverloadResolution1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithOverloadResolution1_ES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithOverloadResolution2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithOverloadResolution2_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithOverloadResolution3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'taggedTemplateStringsWithOverloadResolution3_ES6': {
@@ -43406,12 +43406,12 @@ const baselines = {
         types: true,
     },
     'taggedTemplateWithConstructableTag01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'taggedTemplateWithConstructableTag02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43646,12 +43646,12 @@ const baselines = {
         types: true,
     },
     'templateStringInObjectLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInObjectLiteralES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43676,22 +43676,22 @@ const baselines = {
         types: true,
     },
     'templateStringInPropertyName1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInPropertyName2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInPropertyNameES6_1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInPropertyNameES6_2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43706,12 +43706,12 @@ const baselines = {
         types: true,
     },
     'templateStringInTaggedTemplate': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'templateStringInTaggedTemplateES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47283,7 +47283,7 @@ const baselines = {
     'parenthesizedContexualTyping3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superCallParameterContextualTyping1': {
         errors: true,
@@ -47301,14 +47301,14 @@ const baselines = {
         types: true,
     },
     'taggedTemplateContextualTyping1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateContextualTyping2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'letIdentifierInElementAccess01': {
         errors: true,
@@ -48213,7 +48213,7 @@ const baselines = {
     'typeGuardTypeOfUndefined': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardsDefeat': {
         errors: true,
@@ -65658,7 +65658,7 @@ const baselines = {
     'thisTypeInTaggedTemplateCall': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisTypeInTuples': {
         errors: true,
@@ -65828,7 +65828,7 @@ const baselines = {
     'wideningTuples1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'wideningTuples2': {
         errors: true,
@@ -67248,7 +67248,7 @@ const baselines = {
     'genericCallWithConstraintsTypeArgumentInference2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithConstructorTypedArguments5': {
         errors: true,
@@ -67323,17 +67323,17 @@ const baselines = {
     'genericCallWithObjectTypeArgsAndConstraints2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithObjectTypeArgsAndConstraints3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithObjectTypeArgsAndConstraints4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithObjectTypeArgsAndConstraints5': {
         errors: true,
@@ -67471,7 +67471,7 @@ const baselines = {
         types: false,
     },
     'arrayLiteralWidened': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

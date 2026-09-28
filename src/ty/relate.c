@@ -379,8 +379,11 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     if ((sf & TYF_UNIQUE_ES_SYMBOL) && (tf & TYF_ES_SYMBOL)) return true;
     if ((sf & TYF_UNDEFINED) && (tf & (TYF_UNDEFINED | TYF_VOID))) return true;
     if ((sf & TYF_NULL) && (tf & TYF_NULL)) return true;
+    // (tsc's isSimpleTypeRelatedTo: in every relation, but a subtype of a union or intersection has to be a subtype
+    // of its members; tttt's `boolean` isn't taken apart)
     if ((sf & TYF_NULLABLE) && !compiler_options()->strict_null_checks &&
-        st->relation != TY_RELATION_ASSIGNABLE_STRICT_NULLS && !is_subtype_relation(st->relation)
+        st->relation != TY_RELATION_ASSIGNABLE_STRICT_NULLS && st->relation != TY_RELATION_IDENTITY &&
+        (!is_subtype_relation(st->relation) || (tf & TYF_BOOLEAN) || !(tf & (TYF_UNION | TYF_INTERSECTION)))
     ) {
         return true;
     }

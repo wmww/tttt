@@ -2883,10 +2883,9 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_TEMPLATE: {
             if (!expr->template_->tag) return check_template(me, expr, ctx);
-            // TODO: a tagged template is a call (overloads, generics, argument checks). For now only the return type
-            // of a plain function is used
-            Signature const* sig = single_call_signature(me, ty_apparent_type(me, ty_expr_type(me, expr->template_->tag)));
-            return sig && !sig->type_params.len ? signature_return_type(me, sig) : any_type(me);
+            Expr const* tag = expr->template_->tag;
+            if (tag->tag == EXPR_GENERIC_PARAMS) tag = &tag->generic_params->expr; // call.c applies the type arguments
+            return ty_tagged_template_return_type(me, ty_expr_type(me, tag), expr, ctx.contextual);
         }
 
         case EXPR_SPREAD: {

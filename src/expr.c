@@ -2902,6 +2902,13 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     ty_check_emit_helpers(current_checker, my inner_span, EMIT_HELPER_MAKE_TEMPLATE_OBJECT, errs);
                 }
                 expr_typecheck(my template_->tag, errs);
+                // Resolving the call gives the substitutions their contextual types, so it comes before checking them
+                Checker* checker = current_checker;
+                LazyMemo* memo = lazy_type_state_peek((LazyType*)&my lazy_type);
+                Ty const* contextual = memo && memo->done ? memo->context : nullptr;
+                Expr const* tag = my template_->tag;
+                if (tag->tag == EXPR_GENERIC_PARAMS) tag = &tag->generic_params->expr;
+                ty_tagged_template_typecheck(checker, ty_expr_type(checker, tag), me, contextual, errs);
             }
             for_each (i, vec_expr, &my template_->substitutions) {
                 expr_typecheck(i, errs);

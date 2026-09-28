@@ -1449,6 +1449,9 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
 // `contextual`: the contextual type of the call expression (return type inference), may be null
 Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual);
 void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs);
+// A tagged template `` tag`a${x}` ``, the EXPR_TEMPLATE: a call of the tag with a TemplateStringsArray and the substitutions
+Ty const* ty_tagged_template_return_type(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual);
+void ty_tagged_template_typecheck(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual, ErrorCtx* errs);
 Ty const* ty_awaited(Checker* me, Ty const* ty);
 Ty const* ty_promise_like_of(Checker* me, Ty const* ty);
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);

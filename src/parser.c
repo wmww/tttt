@@ -6900,6 +6900,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 .template_span = span_from(template_a),
                 .substitutions = parsed.args,
                 .plain_string = plain_string,
+                .incomplete = p.pos - 1 <= template_a.start || p.pos[-1] != '`',
             })
         );
         return parse_success(&p);

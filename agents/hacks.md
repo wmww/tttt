@@ -421,8 +421,14 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `ty_unresolved`: an unresolved type name is a `TY_INTRINSIC` with `TYF_ANY | TYF_ERROR` printing as the written name,
   interned by name in the literal table.
 - `check_array`: tuples only from a tuple-like contextual type, a destructuring pattern or `as const`.
-- `compute`: tagged templates take the return type of a lone non-generic signature (TODO: no call resolution; generic
-  tags are `any`, substitutions not contextually typed). Bigint values are doubles (`Value.bigint`). `satisfies`
+- `tagged_template_call()` (call.c): a tagged template resolves through a stand-in CallExpr whose callee is a shallow
+  copy of the tag Expr (spans and syntax only; typing the copy would make a second memo) and whose args are the
+  substitutions; `CallInfo.tagged_template` adds the TemplateStringsArray. A real TaggedTemplate node kind, or call
+  resolution over an argument list abstraction, would avoid the copy.
+- Inference widens null/undefined candidates to any without strictNullChecks (`ty_widened_nullable` in infer.c), all
+  of them: tsc only widens the *widening* null/undefined of expressions, not a written `undefined` type (same
+  approximation as widen_nullable's HACK).
+- `compute`: Bigint values are doubles (`Value.bigint`). `satisfies`
   doesn't narrow its result.
 - `ty_apply_type_arguments` (instantiation expressions): maps every signature taking at least that many type arguments;
   ill-fitting ones aren't dropped. `instantiate_anonymous` never instantiates them again (instantiate.c HACK).

@@ -1307,7 +1307,7 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
         co = (param->priority & INFER_PRIORITY_RETURN_TYPE) ?
             ty_union(me, candidates, len, nullptr, (TyList){0}) :
             common_supertype(me, candidates, len);
-        co = ty_widened_objects(me, co); // (tsc's getWidenedType of the inference)
+        co = ty_widened_nullable(me, ty_widened_objects(me, co)); // (tsc's getWidenedType of the inference)
         free(candidates);
     }
     Ty const* contra = param->contra_len ? common_subtype(me, param->contra, param->contra_len) : nullptr;

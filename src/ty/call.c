@@ -19,7 +19,9 @@
 typedef struct Arg {
     Expr const* expr; // For a spread tuple, the spread expression every element came from
     Ty const* type; // As last checked, see check_args()
-    bool part_of_spread; // An element of a spread tuple: `type` is all there is, `expr` is the whole spread
+    // `type` is all there is: an element of a spread tuple (`expr` is the whole spread), or the TemplateStringsArray of a
+    // tagged template (`expr` is the template)
+    bool part_of_spread;
     bool spread; // `...xs` of something that isn't a fixed tuple: stands for any number of arguments of this type
     Ty const* variadic; // `...args` of a generic array type (`T extends unknown[]`): the type spread, kept as `[...T]`
     bool context_sensitive;
@@ -37,6 +39,7 @@ typedef struct Args {
     Arg* data;
     u32 len;
     i32 spread_index; // first `spread` argument, -1 if none
+    bool incomplete; // An incomplete tagged template: too few arguments are fine (tsc's callIsIncomplete)
 } Args;
 
 // The parameters of a signature as a call sees them: a rest parameter of tuple type is spread out
@@ -62,6 +65,9 @@ typedef struct Resolution {
 // What a call brings besides its arguments
 typedef struct CallInfo {
     CallExpr const* call; // Null for a JSX element
+    // A tagged template (tsc's TaggedTemplateExpression): `call` is a stand-in with the tag as callee and the
+    // substitutions as arguments, which come after the TemplateStringsArray (see tagged_template_call())
+    Expr const* tagged_template;
     // A JSX element whose tag is resolved like a call (tsc's JsxCallLike): its one argument is its attributes, checked
     // against what each signature takes as props (ty_jsx_signature_props())
     JsxElement const* jsx;
@@ -107,8 +113,15 @@ static bool calls_generic_function_returning_function(Checker* me, Expr const* e
     return false;
 }
 
-static Args collect_args(Checker* me, CallExpr const* call) {
+static Args collect_args(Checker* me, CallInfo const* info) {
+    CallExpr const* call = info->call;
     Args args = { .spread_index = -1 };
+    if (info->tagged_template) {
+        Symbol const* strings = program_get_global(my program, c_sv("TemplateStringsArray"), SYMBOL_TYPE);
+        Ty const* type = strings ? ty_declared_type_of(me, strings) : ty_empty_object_type(me);
+        args_push(&args, (Arg){ .expr = info->tagged_template, .type = type, .part_of_spread = true });
+        args.incomplete = info->tagged_template->template_->incomplete;
+    }
     for_each (i, vec_expr, &call->args) {
         if (i->tag == EXPR_SPREAD) {
             Ty const* operand = ty_expr_type(me, i->spread);
@@ -243,7 +256,7 @@ static bool has_correct_arity(ParamShape const* shape, Args const* args) {
     if (args->spread_index >= 0) {
         return (u32)args->spread_index >= shape->min && (shape_has_rest(shape) || (u32)args->spread_index < shape->count);
     }
-    return args->len >= shape->min && (shape_has_rest(shape) || args->len <= shape->count);
+    return (args->incomplete || args->len >= shape->min) && (shape_has_rest(shape) || args->len <= shape->count);
 }
 
 // The arguments from `from` on, as the tuple a variadic rest parameter receives
@@ -1616,7 +1629,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
             cstr rendered = ty_to_cstr(me, apparent);
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no construct signatures.");
             cstr_drop(&rendered);
-        } else if (other_count) {
+        } else if (other_count && !info->tagged_template) { // (tsc's resolveCallExpression only)
             cstr rendered = ty_to_cstr(me, callee);
             error_ctx_error_d(errs, call->callable.outer_span, 2348,
                 "Value of type '", rendered, "' is not callable. Did you mean to include 'new'?");
@@ -1662,7 +1675,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
         if (any_this) with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);
     }
     reorder_candidates(me, signatures, count);
-    Args args = collect_args(me, call);
+    Args args = collect_args(me, info);
     Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &with_this, call_span, errs);
     ret = resolution.ret;
     if (info->chosen_out) *info->chosen_out = resolution.chosen;
@@ -1808,11 +1821,12 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
 }
 
 static Ty const* resolve_into(
-    Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs,
-    Candidate* chosen_out, bool* would_report
+    Checker* me, Ty const* callee, CallExpr const* call, Expr const* tagged_template, Ty const* contextual,
+    Span call_span, ErrorCtx* errs, Candidate* chosen_out, bool* would_report
 ) {
     CallInfo info = {
-        .call = call, .contextual = contextual, .chosen_out = chosen_out, .call_span = call_span, .would_report = would_report,
+        .call = call, .tagged_template = tagged_template, .contextual = contextual, .chosen_out = chosen_out,
+        .call_span = call_span, .would_report = would_report,
     };
     Ty const* type_args[32];
     // `super(x)` in `class A extends B<T>`: B's constructors with the type arguments of the heritage clause (tsc's
@@ -1861,7 +1875,7 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
         bool some = false;
         for (u32 i = 0; i < members->call_count && !some; i++) some = has_predicate_or_declared_never(me, members->call[i]);
         if (!some) return none;
-        resolve_into(me, callee, call, nullptr, span_null, nullptr, &chosen, nullptr);
+        resolve_into(me, callee, call, nullptr, nullptr, span_null, nullptr, &chosen, nullptr);
     }
     if (!chosen.sig || !has_predicate_or_declared_never(me, chosen.sig)) return none;
     CallEffects ret = { .returns_never = signature_declared_never(chosen.sig) };
@@ -1901,18 +1915,18 @@ static Ty const* require_type(Checker* me, CallExpr const* call) {
     return ty_type_of_symbol(me, module_export_equals(ref->module));
 }
 
-Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual) {
-    Ty const* imported = dynamic_import_type(me, call);
-    if (imported) return imported;
-    Ty const* required = require_type(me, call);
-    if (required) return required;
+// `node`: what the resolution is remembered by, the call or the tagged template
+static Ty const* call_return_type(
+    Checker* me, Ty const* callee, CallExpr const* call, Expr const* tagged_template, void const* node, Ty const* contextual
+) {
     // Outside of inference and control flow, this is what the call's memo will say it is: the typecheck walk won't
     // resolve it again if that would report nothing (tsc resolves once, getResolvedSignature)
     bool settled = !my inferential_depth && !my outer_inference && !my flow_uncached;
     bool would_report = false;
-    Ty const* ret = resolve_into(me, callee, call, contextual, span_null, nullptr, nullptr, settled ? &would_report : nullptr);
+    Ty const* ret = resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr,
+        settled ? &would_report : nullptr);
     if (settled) {
-        u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
+        u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)node };
         // The contextual type of a resolution that would report nothing (the checker itself for none), else null
         *intern_slot(me, &my links, key, 2) = would_report ? nullptr : contextual ? (void const*)contextual : (void const*)me;
     }
@@ -1920,12 +1934,44 @@ Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* cal
 }
 
 // Resolves the call again with `errs`, unless its type came from a resolution under the same contextual type that
-// would report nothing (see ty_call_return_type()). `call` may be a temporary (`class A extends B`), never recorded
-void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs) {
-    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
-    void const* clean = call->is_extends ? nullptr : intern_get(&my links, key, 2);
+// would report nothing (see call_return_type())
+static void call_typecheck(
+    Checker* me, Ty const* callee, CallExpr const* call, Expr const* tagged_template, void const* node, Ty const* contextual,
+    Span call_span, ErrorCtx* errs
+) {
+    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)node };
+    void const* clean = node ? intern_get(&my links, key, 2) : nullptr;
     if (clean && clean == (contextual ? (void const*)contextual : (void const*)me)) return;
-    resolve_into(me, callee, call, contextual, call_span, errs, nullptr, nullptr);
+    resolve_into(me, callee, call, tagged_template, contextual, call_span, errs, nullptr, nullptr);
+}
+
+Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual) {
+    Ty const* imported = dynamic_import_type(me, call);
+    if (imported) return imported;
+    Ty const* required = require_type(me, call);
+    if (required) return required;
+    return call_return_type(me, callee, call, nullptr, call, contextual);
+}
+
+// `call` may be a temporary (`class A extends B`), never recorded
+void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs) {
+    call_typecheck(me, callee, call, nullptr, call->is_extends ? nullptr : call, contextual, call_span, errs);
+}
+
+// The stand-in call of a tagged template (see CallInfo.tagged_template). HACK: the callee is a shallow copy of the
+// tag, which is only looked at for its spans and syntax (never typed: its memo is the tag's)
+static CallExpr tagged_template_call(Expr const* template) {
+    return (CallExpr){ .callable = *template->template_->tag, .args = template->template_->substitutions };
+}
+
+Ty const* ty_tagged_template_return_type(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual) {
+    CallExpr call = tagged_template_call(template);
+    return call_return_type(me, callee, &call, template, template, contextual);
+}
+
+void ty_tagged_template_typecheck(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual, ErrorCtx* errs) {
+    CallExpr call = tagged_template_call(template);
+    call_typecheck(me, callee, &call, template, template, contextual, template->outer_span, errs);
 }
 
 static Symbol const* awaited_alias(Checker* me) {

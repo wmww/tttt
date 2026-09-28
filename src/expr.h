@@ -502,6 +502,7 @@ typedef struct TemplateExpr {
     Span template_span; // Without the tag
     VecExpr substitutions;
     cstr plain_string; // The contents, if there are no substitutions (which only happens for tagged templates)
+    bool incomplete; // Tagged: unterminated, or ends in a `${` without its `}` (tsc's callIsIncomplete, no minimum arity)
     VecCStr texts; // Untagged: the cooked texts around the substitutions
 } TemplateExpr;
 
