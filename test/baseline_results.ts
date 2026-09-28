@@ -26403,7 +26403,7 @@ const baselines = {
     'pushTypeGetTypeOfAlias': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'qualifiedModuleLocals': {
         errors: true,
@@ -60378,7 +60378,7 @@ const baselines = {
     'moduleExportAlias5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleExportAliasElementAccessExpression': {
         errors: true,
@@ -60396,9 +60396,9 @@ const baselines = {
         types: false,
     },
     'moduleExportAliasUnknown': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleExportAssignment': {
         errors: true,
@@ -60778,7 +60778,7 @@ const baselines = {
     'typeFromPropertyAssignment19': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment2': {
         errors: true,

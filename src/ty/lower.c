@@ -890,6 +890,9 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
     Ty const* exports;
     if (assigned != module) {
         exports = ty_type_of_symbol(me, assigned);
+    } else if (symbol_table_get(module->exports, c_sv("export="))) {
+        // `module.exports = window.nonprop`: an alias that resolves to nothing (tsc's unknownSymbol)
+        exports = ty_intrinsic(me, TY_ERROR);
     } else {
         // The module's namespace object under the name `module.exports` (tsc gives `module` a copy of the file's
         // symbol by that name)

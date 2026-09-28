@@ -989,6 +989,14 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     ) {
         return ty_intrinsic(me, TY_ERROR);
     }
+    // `exports` of a CommonJS module that assigns `module.exports` is what it assigns (tsc's
+    // getTypeOfFuncClassEnumModuleWorker of the file's symbol)
+    SourceFile const* file = identifier->name.source;
+    if (decl->is_module && file && file->is_commonjs && file->scope && file->scope->container == decl &&
+        decl->exports && symbol_table_get(decl->exports, c_sv("export="))
+    ) {
+        return ty_commonjs_exports_type(me, file);
+    }
     return ty_type_of_symbol(me, decl);
 }
 
