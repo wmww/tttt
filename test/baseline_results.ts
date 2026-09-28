@@ -17346,7 +17346,7 @@ const baselines = {
         types: true,
     },
     'inferenceOfNullableObjectTypesWithCommonBase': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

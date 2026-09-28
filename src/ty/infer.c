@@ -1378,37 +1378,61 @@ static bool is_literal_of_same_base(TyList types) {
     return types.len > 0;
 }
 
-// tsc's getCommonSupertype: the leftmost candidate that every other one is a subtype of. null and undefined stay out
-// of the contest and are added back
+// tsc's getCommonSupertype: the leftmost candidate that every other one is a subtype of. Under strictNullChecks null and
+// undefined (whole candidates or members of union ones) stay out of the contest and are added back
 static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) {
     if (len == 1) return types[0];
-    Ty const** primary = malloc(sizeof(Ty const*) * len * 2);
-    Ty const** nullable = primary + len;
-    u32 primary_len = 0;
-    u32 nullable_len = 0;
-    for (u32 i = 0; i < len; i++) {
-        if (types[i]->flags & TYF_NULLABLE) nullable[nullable_len++] = types[i]; else primary[primary_len++] = types[i];
+    if (!compiler_options()->strict_null_checks) {
+        if (is_literal_of_same_base((TyList){ .data = types, .len = len })) return ty_union(me, types, len, nullptr, (TyList){0});
+        Ty const* ret = types[0];
+        for (u32 i = 1; i < len; i++) {
+            if (ret != types[i] && ty_is_related(me, ret, types[i], TY_RELATION_SUBTYPE)) ret = types[i];
+        }
+        return ret;
     }
-    Ty const* ret;
-    if (!primary_len) {
-        ret = ty_union(me, types, len, nullptr, (TyList){0});
-    } else {
-        if (is_literal_of_same_base((TyList){ .data = primary, .len = primary_len })) {
-            ret = ty_union(me, primary, primary_len, nullptr, (TyList){0});
-        } else {
-            ret = primary[0];
-            for (u32 i = 1; i < primary_len; i++) {
-                if (ret != primary[i] && ty_is_related(me, ret, primary[i], TY_RELATION_SUBTYPE)) {
-                    ret = primary[i];
+    Ty const** primary = calloc(len, sizeof(Ty const*));
+    panic_if(!primary, "out of memory");
+    u32 nullable_flags = 0;
+    for (u32 i = 0; i < len; i++) {
+        Ty const* t = types[i];
+        nullable_flags |= t->flags & TYF_NULLABLE;
+        if (t->kind == TY_UNION && !(t->flags & TYF_BOOLEAN)) {
+            TyBuf kept = {0};
+            bool dropped = false;
+            for (u32 j = 0; j < t->composite.types.len; j++) {
+                Ty const* member = t->composite.types.data[j];
+                if (member->flags & TYF_NULLABLE) {
+                    nullable_flags |= member->flags & TYF_NULLABLE;
+                    dropped = true;
+                } else {
+                    ty_buf_push(&kept, member);
                 }
             }
+            if (dropped) t = ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
+            ty_buf_drop(&kept);
+        } else if (t->flags & TYF_NULLABLE) {
+            t = ty_intrinsic(me, TY_NEVER);
         }
-        if (nullable_len && compiler_options()->strict_null_checks) {
-            nullable[nullable_len++] = ret; // there's room: at least one slot of `primary` isn't nullable
-            ret = ty_union(me, nullable, nullable_len, nullptr, (TyList){0});
+        primary[i] = t;
+    }
+    Ty const* ret;
+    if (is_literal_of_same_base((TyList){ .data = primary, .len = len })) {
+        ret = ty_union(me, primary, len, nullptr, (TyList){0});
+    } else {
+        ret = primary[0];
+        for (u32 i = 1; i < len; i++) {
+            if (ret != primary[i] && ty_is_related(me, ret, primary[i], TY_RELATION_SUBTYPE)) ret = primary[i];
         }
     }
     free(primary);
+    // (tsc's getNullableType with the flags of all of them)
+    if (nullable_flags) {
+        Ty const* parts[3] = { ret };
+        u32 count = 1;
+        if (nullable_flags & TYF_UNDEFINED) parts[count++] = ty_intrinsic(me, TY_UNDEFINED);
+        if (nullable_flags & TYF_NULL) parts[count++] = ty_intrinsic(me, TY_NULL);
+        ret = ty_union(me, parts, count, nullptr, (TyList){0});
+    }
     return ret;
 }
 
