@@ -2193,6 +2193,37 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     return ret;
 }
 
+// tsc's checkObjectLiteral: a literal contextually typed by the implied type of an object binding pattern (`{ a } =
+// { a: 1, b: 2 }`) may only have the pattern's properties, unless the pattern has a rest element or a computed name
+void ty_check_object_literal_pattern(Checker* me, Expr const* expr, ErrorCtx* errs) {
+    u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)expr };
+    Ty const* contextual = intern_get(&my links, context_key, 2);
+    if (!contextual || !(contextual->flags & TYF_BINDING_PATTERN) || !(contextual->flags & TYF_OBJECT)) return;
+    if (ty_is_tuple(contextual) || pattern_type_has_rest(me, contextual)) return;
+    if (intern_get(&my links, (u64[]){ KEY_PATTERN_COMPUTED, contextual->id }, 2)) return;
+    for_each (i, vec_object_expr_item, &expr->object) {
+        if (i->tag != OBJECT_ITEM_PROPERTY && i->tag != OBJECT_ITEM_SHORTHAND && i->tag != OBJECT_ITEM_METHOD) continue;
+        if (object_item_is_private_name(i)) continue;
+        Atom const* name = nullptr;
+        if (i->computed_key) {
+            bool is_number = false;
+            name = ty_property_name_of_key(me, ty_expr_type(me, i->computed_key), &is_number);
+        } else {
+            name = checker_atom(me, cstr_sv(&i->name_string));
+        }
+        if (name && ty_get_prop(me, contextual, name)) continue;
+        // (tsc's symbolToString of the member: a name that isn't an identifier as written)
+        csview written = i->name_span.sv;
+        bool as_written = !name || (written.size && (written.buf[0] == '"' || written.buf[0] == '\'' ||
+            written.buf[0] == '[' || (written.buf[0] >= '0' && written.buf[0] <= '9')));
+        cstr name_str = as_written ? cstr_from_sv(written) : ty_prop_name_cstr(me, name);
+        cstr target = ty_to_cstr(me, contextual);
+        error_ctx_error_d(errs, i->name_span, 2353, "Object literal may only specify known properties, and '", name_str,
+            "' does not exist in type '", target, "'.");
+        c_drop(cstr, &name_str, &target);
+    }
+}
+
 Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* accessor, bool getter) {
     Signature const* sig = single_call_signature(me, ty_function_type(me, accessor));
     if (!sig) return any_type(me);

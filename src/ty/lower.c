@@ -1864,6 +1864,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
         u32 count = 0;
         IndexInfo index = {0};
         u32 index_count = 0;
+        bool has_computed = false;
         for_each (item, vec_object_binding_item, &pattern->object) {
             if (item->target.rest) {
                 index = (IndexInfo){ .key = ty_intrinsic(me, TY_STRING), .value = ty_intrinsic(me, TY_ANY),
@@ -1871,7 +1872,10 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
                 index_count = 1;
                 continue;
             }
-            if (item->computed_key) continue;
+            if (item->computed_key) {
+                has_computed = true;
+                continue;
+            }
             bool is_number = false;
             Atom const* name = ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number);
             if (!name) continue;
@@ -1885,7 +1889,11 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
         }
         Ty const* ret = ty_object_literal(me, props, count, index_count ? &index : nullptr, index_count, OBJECT_SYNTHETIC);
         free(props);
-        return include_pattern ? ty_pattern_clone(me, ret) : ret;
+        if (!include_pattern) return ret;
+        ret = ty_pattern_clone(me, ret);
+        // (tsc's ObjectLiteralPatternWithComputedProperties: its literal gets no excess property check)
+        if (has_computed) *intern_slot(me, &my links, (u64[]){ KEY_PATTERN_COMPUTED, ret->id }, 2) = ret;
+        return ret;
     }
     if (pattern->tag != BINDING_ARRAY) return ty_intrinsic(me, TY_ANY);
     u32 len = (u32)vec_binding_size(&pattern->array);

@@ -3121,7 +3121,7 @@ const baselines = {
         types: false,
     },
     'checkDestructuringShorthandAssigment2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7956,12 +7956,12 @@ const baselines = {
         types: true,
     },
     'declarationEmitDestructuringObjectLiteralPattern': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitDestructuringObjectLiteralPattern1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
