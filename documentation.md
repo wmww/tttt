@@ -293,7 +293,6 @@ In JavaScript, `this.x = v` in a class declares x in the class symbol's `members
 ### Function context
 Whether `await` and `yield` are operators or plain identifiers depends on the function being parsed. `ParserShared` keeps `in_async`, `in_generator` and `function_depth`; `function_ctx_enter()`/`function_ctx_leave()` wrap the parsing of every function's parameters and body (see `parse_non_arrow_function()` and `parse_arrow_function()`), and `FunctionFlags` carries `async`/`*` from whoever saw the keyword to the function parser. Since a source position is always inside the same function, this doesn't conflict with the fail cache. The parser tags each `await` expression and `for await` with where it is (`AwaitPlace`: allowed, in a non-async function, at the top level); the resolve walk reports what isn't allowed there (`await_check_grammar()`, shared with `await using`), since that needs the containing function (for TS1356) and the file's module status.
 
-
 ### Lexical level
 There is no scanner, but the scanner's decisions live in a few helpers. A file's text is first made what tsc sees
 (`text_decode()` at load: UTF-16 files decoded, invalid UTF-8 replaced by U+FFFD, which at a token start means a binary
