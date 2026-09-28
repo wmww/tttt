@@ -1206,9 +1206,9 @@ const baselines = {
         types: false,
     },
     'arrayDestructuringInSwitch2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'arrayEvery': {
         errors: true,
@@ -6846,9 +6846,9 @@ const baselines = {
         types: true,
     },
     'controlFlowAliasedDiscriminants': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowAnalysisOnBareThisKeyword': {
         errors: true,
@@ -37751,9 +37751,9 @@ const baselines = {
         types: true,
     },
     'controlFlowAliasing': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowAliasingCatchVariables(useunknownincatchvariables=false)': {
         errors: true,
@@ -39773,7 +39773,7 @@ const baselines = {
     'sharedMemory': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'transferableArrayBuffer': {
         errors: true,

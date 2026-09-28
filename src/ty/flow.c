@@ -113,6 +113,9 @@ typedef struct FlowQuery {
     Checker* me;
     Expr const* reference;
     Symbol const* symbol; // Identifier references: the variable
+    // A binding pattern as a pseudo reference (reference is then a placeholder that matches nothing): what its sibling
+    // elements' discriminants say about the destructured value (tsc's getNarrowedTypeOfSymbol)
+    Binding const* pattern;
     Ty const* declared;
     Ty const* initial;
     u32 key; // 0: none (not computed, or the reference has none)
@@ -1439,6 +1442,21 @@ typedef struct DiscriminantAccess {
     Atom const* name;
 } DiscriminantAccess;
 
+// The property an element of `pattern` destructures, if `symbol` is one without a default or `...`
+static Atom const* pattern_element_name(Checker* me, Binding const* pattern, Symbol const* symbol) {
+    if (!symbol || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) return nullptr;
+    Binding const* binding = symbol->decls[0].node;
+    if (binding->parent != pattern || binding->default_value || binding->rest) return nullptr;
+    if (pattern->tag == BINDING_ARRAY) {
+        char buf[16];
+        int n = snprintf(buf, sizeof buf, "%u", (unsigned)binding->parent_index);
+        return checker_atom(me, csview_from_n(buf, n));
+    }
+    ObjectBindingItem const* item = binding->parent_item;
+    if (!item || item->computed_key || item->source.tag != VALUE_STRING) return nullptr;
+    return checker_atom(me, cstr_sv(&item->source.string));
+}
+
 // `const { kind } = x`, `const { kind: k } = x.y`: a const element of an unannotated variable's object pattern,
 // without a default, whose initializer is the reference (tsc's getCandidateDiscriminantPropertyAccess). The name
 static Atom const* destructured_alias_name(FlowQuery* q, Expr const* expr) {
@@ -1466,6 +1484,11 @@ static DiscriminantAccess discriminant_access(FlowQuery* q, Expr const* expr, Ty
     DiscriminantAccess none = {0};
     if (q->declared->kind != TY_UNION && computed->kind != TY_UNION) return none;
     expr = skip_reference_wrappers(expr);
+    if (q->pattern) {
+        // An element of the pattern, without a default (tsc's getCandidateDiscriminantPropertyAccess)
+        Atom const* name = expr->tag == EXPR_IDENTIFIER ? pattern_element_name(me, q->pattern, expr->identifier.target) : nullptr;
+        return name && is_discriminant_property(me, computed, name) ? (DiscriminantAccess){ nullptr, name } : none;
+    }
     Expr const* aliased = aliased_access(expr);
     Atom const* destructured = aliased ? nullptr : destructured_alias_name(q, expr);
     if (aliased) expr = aliased;
@@ -2155,7 +2178,10 @@ static Expr const* aliased_condition(FlowQuery* q, Expr const* condition) {
         return nullptr;
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-    if (initialized->value.tag == EXPR_IMPLICIT_ANY || !is_constant_reference(q->me, q->reference)) return nullptr;
+    // (A pattern pseudo reference is constant: ty_destructured_narrowed_type() only asks for one that is)
+    if (initialized->value.tag == EXPR_IMPLICIT_ANY || (!q->pattern && !is_constant_reference(q->me, q->reference))) {
+        return nullptr;
+    }
     return &initialized->value;
 }
 
@@ -2745,6 +2771,69 @@ Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, T
     }
     if (ret == ty_intrinsic(me, TY_UNREACHABLE_NEVER)) return declared;
     return ret;
+}
+
+// Whether a symbol of a parameter's pattern (nested ones too) is assigned somewhere (tsc's isSomeSymbolAssigned)
+static bool some_pattern_symbol_assigned(Binding const* binding) {
+    switch (binding->tag) {
+        case BINDING_IDENTIFIER: return binding->symbol && binding->symbol->is_assigned;
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &binding->array) {
+                if (some_pattern_symbol_assigned(i)) return true;
+            }
+            return false;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &binding->object) {
+                if (some_pattern_symbol_assigned(&i->target)) return true;
+            }
+            return false;
+        default: return false;
+    }
+}
+
+static Ty const* map_base_constraint(Checker* me, Ty const* ty, void const* arg) {
+    (void)arg;
+    Ty const* constraint = ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED) ? ty_base_constraint(me, ty) : nullptr;
+    return constraint ? constraint : ty;
+}
+
+Ty const* ty_destructured_narrowed_type(Checker* me, Binding const* binding, FlowNode const* flow) {
+    Binding const* pattern = binding->parent;
+    if (!flow || !pattern || binding->default_value || binding->rest) return nullptr;
+    u32 elements = pattern->tag == BINDING_OBJECT ? (u32)vec_object_binding_item_size(&pattern->object) :
+        (u32)vec_binding_size(&pattern->array);
+    if (elements < 2) return nullptr;
+    Binding const* root = pattern;
+    while (root->parent) root = root->parent;
+    bool parameter = root->source && root->source->tag == LAZY_TYPE_INITIALIZED_BINDING && binding->symbol &&
+        binding->symbol->is_parameter;
+    if (!parameter && !(binding->symbol && binding->symbol->is_const)) return nullptr;
+    if (parameter && some_pattern_symbol_assigned(root)) return nullptr;
+    Ty const* parent = map_type(me, ty_binding_type(me, pattern, (LowerCtx){ .generic = true }), map_base_constraint, nullptr);
+    if (parent->kind != TY_UNION || (parent->flags & TYF_BOOLEAN)) return nullptr;
+    static Expr const placeholder = { .tag = EXPR_IMPLICIT_ANY };
+    FlowQuery q = {
+        .me = me,
+        .reference = &placeholder,
+        .pattern = pattern,
+        .declared = parent,
+        .initial = parent,
+        .shared_start = my flow_shared_count,
+    };
+    FlowType result = type_at_flow_node(&q, flow);
+    my flow_shared_count = q.shared_start;
+    Ty const* narrowed = result.type;
+    if (narrowed == ty_intrinsic(me, TY_UNREACHABLE_NEVER) || narrowed == parent) return nullptr;
+    if (narrowed->flags & TYF_NEVER) return ty_intrinsic(me, TY_NEVER);
+    Ty const* key;
+    if (pattern->tag == BINDING_ARRAY) {
+        Value index = value_number(binding->parent_index);
+        key = ty_literal(me, &index);
+    } else {
+        ObjectBindingItem const* item = binding->parent_item;
+        key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+    }
+    return ty_access_reading(me, narrowed, key);
 }
 
 // Inferred type predicates (tsc's getTypePredicateFromBody): `x => x !== undefined` is `(x: T | undefined) => x is T`

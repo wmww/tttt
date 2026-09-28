@@ -1422,6 +1422,11 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         identifier->assume_initialized ||
         includes_undefined(type);
     if (issue_only && assume_initialized) return nullptr;
+    // What the pattern's other elements say about the value destructured (tsc's getNarrowedTypeOfSymbol)
+    if (binding && binding->parent) {
+        Ty const* narrowed = ty_destructured_narrowed_type(me, binding, identifier->flow);
+        if (narrowed) type = narrowed;
+    }
     Ty const* initial = symbol->is_parameter ? parameter_initial_type(me, binding, type) : type;
     if (!assume_initialized) {
         Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
