@@ -1694,7 +1694,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
 
         case EXPR_ARRAY: {
             if (expr_is_perenthisized(target)) break;
-            bool array_like = source && ty_extends_array(checker, source);
+            bool array_like = source && !(source->flags & TYF_NEVER) && ty_extends_array(checker, source);
             // What isn't an array has to be iterable (tsc's checkArrayLiteralAssignment)
             Ty const* iterated = source && !array_like ?
                 ty_iterated_type(checker, ITERATION_DESTRUCTURING, source, target->outer_span, errs) : nullptr;
