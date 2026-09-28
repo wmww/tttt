@@ -10123,7 +10123,11 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .namespace = ret->decl.namespace,
             },
         };
-    } else if (decl_props.exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {
+    } else if (decl_props.exported == DECL_EXPORTED_YES_DEFAULT && (parse_expr(&p, expr_ctx_null, &parsed.expr) ||
+        // (`export default;`: TS1109 at the `;` and an export of nothing, like tsc)
+        ((tok_is(tok_peek(&p), ";") || tok_is(tok_peek(&p), "}") || tok_is_eof(tok_peek(&p))) &&
+            (expect_expr(&p, expr_ctx_null, &parsed.expr), true)))
+    ) {
         modified.kind = MODIFIED_EXPORT_ASSIGNMENT;
         mark_named_evaluation(&parsed.expr, false);
         *ret = (Statement){
