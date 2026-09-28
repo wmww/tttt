@@ -1368,6 +1368,37 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i) {
 
 // Inferred type arguments
 
+typedef struct ConstraintPass {
+    Signature const* sig;
+    Inference* inf;
+    Ty const** results;
+    bool const* inferred;
+    uint8_t* state; // Per type parameter: 0 not yet, 1 in progress, 2 done
+    TyMapper const* mapper; // What the results say so far
+} ConstraintPass;
+
+// The constraint check of inference_mapper() for type parameter i, after those of the others (a constraint that
+// mentions one of them is instantiated with its final result; one in progress, a circular constraint, stays as is)
+static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
+    if (pass->state[i]) return;
+    pass->state[i] = 1;
+    TyList params = pass->sig->type_params;
+    Ty const* constraint = ty_param_constraint(me, params.data[i]);
+    if (constraint && constraint != params.data[i]) {
+        if (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+            for (u32 j = 0; j < params.len; j++) if (j != i) constraint_pass_resolve(me, pass, j);
+        }
+        Ty const* instantiated = ty_instantiate(me, constraint, pass->mapper);
+        bool fits = pass->inferred[i] && (pass->inf->within_relation ? ty_is_related_within(me, pass->results[i], instantiated) :
+            ty_is_related(me, pass->results[i], instantiated, TY_RELATION_ASSIGNABLE));
+        if (!fits) {
+            pass->results[i] = instantiated;
+            pass->mapper = ty_mapper_new(me, params, (TyList){ .data = pass->results, .len = params.len });
+        }
+    }
+    pass->state[i] = 2;
+}
+
 // The mapper for what has been inferred so far: common supertypes of the candidates, then defaults, then constraints
 // `fixing`: for the contextual type of a context-sensitive argument, which decides the type parameters it mentions
 TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing) {
@@ -1399,20 +1430,13 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
         mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
     }
     // An inference that doesn't satisfy the constraint is replaced by it, and the argument check reports the rest. So
-    // is a type parameter without inferences or a default (tsc's getInferredType: `!inferredType`)
-    bool changed = false;
-    for (u32 i = 0; i < params.len; i++) {
-        Ty const* constraint = ty_param_constraint(me, params.data[i]);
-        if (!constraint || constraint == params.data[i]) continue;
-        Ty const* instantiated = ty_instantiate(me, constraint, mapper);
-        bool fits = inferred[i] && (inf->within_relation ? ty_is_related_within(me, results[i], instantiated) :
-            ty_is_related(me, results[i], instantiated, TY_RELATION_ASSIGNABLE));
-        if (!fits) {
-            results[i] = instantiated;
-            changed = true;
-        }
-    }
-    if (changed) mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+    // is a type parameter without inferences or a default (tsc's getInferredType: `!inferredType`). The constraint
+    // sees the other type parameters as they end up (tsc instantiates it with the non-fixing mapper, which infers them
+    // on demand): `<U extends T, T extends A>` without inferences is U = T = A
+    uint8_t* state = calloc(params.len ? params.len : 1, 1);
+    ConstraintPass pass = { .sig = sig, .inf = inf, .results = results, .inferred = inferred, .state = state, .mapper = mapper };
+    for (u32 i = 0; i < params.len; i++) constraint_pass_resolve(me, &pass, i);
+    free(state);
     free(inferred);
-    return mapper;
+    return pass.mapper;
 }
