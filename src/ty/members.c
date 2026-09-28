@@ -681,13 +681,24 @@ static void builder_add_class_items(
                     if (abstract_only) has_overloads = false;
                     FunctionImpl const** functions = arena_new_n(&my arena, FunctionImpl const*, visible);
                     u32 count = 0;
+                    ClassItem const* previous = nullptr; // The class item before `other`
                     for_each (other, vec_class_item, &class_decl->items) {
+                        ClassItem const* before = previous;
+                        previous = other;
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
                             !cstr_eq(&other->method.name_string, &i->method.name_string)
                         ) {
                             continue;
                         }
                         if (has_overloads && other->method.func.has_body) continue;
+                        // A body right after a declaration of the same method is its implementation, even after another
+                        // body (tsc's getSignaturesOfSymbol: `m() {} m(x) {}` has one signature)
+                        if (count && other->method.func.has_body && before && before->tag == CLASS_ITEM_METHOD &&
+                            !before->method.accessor && before->method.is_static == static_side &&
+                            cstr_eq(&before->method.name_string, &i->method.name_string)
+                        ) {
+                            continue;
+                        }
                         functions[count++] = &other->method.func;
                     }
                     // JSDoc `@overload`s instead of the method's own signature

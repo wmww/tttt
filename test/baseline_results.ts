@@ -24638,7 +24638,7 @@ const baselines = {
     'optionalParamArgsTest': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalParamAssignmentCompat': {
         errors: true,
@@ -25123,7 +25123,7 @@ const baselines = {
     'overloadsWithinClasses': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overrideBaseIntersectionMethod': {
         errors: true,
@@ -64273,7 +64273,7 @@ const baselines = {
     'duplicatePropertyNames': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicateStringIndexers': {
         errors: true,
