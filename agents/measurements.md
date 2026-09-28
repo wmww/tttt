@@ -10,41 +10,33 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Suite (2026-09-27, plan 35 stage 1, bef38cb)
-**9666 / 13540** full pass (errors 11180, symbols 12356, types 11049); 9667 after the 09-28 perf session, **9729**
-after the 09-28 plan 26 session (errors 11242, symbols 12407, types 11090; errors component: 2298 failing, tsc
-reports errors and tttt nothing 578), **9833** after the plan 27 stage 3 session (errors 11365, symbols 12453, types
-11151; errors component 2175 failing; 252 tests with a spurious TS1xxx), **9951** after the plan 35 stage 2
-session (errors 11395, symbols 12496, types 11261; errors component 2145 failing, tsc reports errors and tttt
-nothing 541), **9978** after the corpus session (todo entry 8: mixins), **10188** after suite checker bugs 4 (errors 11681, symbols 12527, types 11348; errors component 1859 failing: tsc reports errors and tttt nothing 421, both missing and spurious 514, same codes+positions other text 298, all spurious 220), whose other numbers below weren't re-measured unless marked. A suite run takes ~23 s
-(was 50: relationComplexityError alone took 27). `./failstats.py`: errors component fails in
-2360 tests: tsc reports errors and tttt nothing 654, both missing and spurious 585, only missing 389, **same
-codes+positions, other text 311**, tttt errors where tsc has none 254, only spurious 137, column differs 30. 323 tests
-have a spurious TS1xxx (42 of them expect no errors). Checker log_error output: 27 lines, all in one test (invalid
-spans of the silent call resolutions). The lines below the displaydiff ones are from the triage before (9409).
-- `./displaydiff.py` (2026-09-28, plan 35 stage 2), tests fixed by one kind (TS, JS): other 383 + 54, underlines/
-  order only 106 + 22, we-any 65 + 41, union-order 47 + 3, tsc-any 33 + 5, line-missing 23 + 4.
-- `./displaydiff.py --fine` (same), TS tests by the kind of their first differing line: underlines/order 106,
-  line-missing 72, shape-other/declaration 59, union-order 56, we-any/declaration 50, signature-differs/declaration
-  50, union-differs/declaration 44, our-typeof 42, object-differs/declaration 38 (plan 35's queue).
-- `./errtextdiff.py --coarse` (311 tests): fixed by one part: chain 95, header 78, underline 60, related 46, outside
-  diagnostics 15.
-- `./jsstats.py` (2026-09-28, plan 26 session, 7236285): 1049 JS tests, **470 pass**. Failing by category (only /
-  involved): other 78 / 78, CommonJS 67 / 151, expandos 41 / 160, advanced JSDoc 8 / 86, JSDoc 73 / 262, leniency
-  2 / 17, syntax 20 / 88, emit 34 / 39, `.ts`-only 14 / 23.
-- `./syntaxstats.py` (2026-09-28, plan 27 stage 3): **263** tests whose parser diagnostics differ (42 JS; was 402).
-  TS tests: A 62, B 18, C 17, D 31, E 62, M 31. Clusters: other:A 41, other:E 34, other:M 30, other:D 27,
-  permissive:modifiers 22, recovery:list-context 14, lexical:identifiers 9, other:B 9, permissive:decorators 9,
-  other:C 8, recovery:object-literal 6, yield-await 4, index-signature 4, lexical:literals 2, private-names 2.
+## Suite (2026-09-28, triage session, 7aef64e)
+**10189 / 13540** full pass (errors 11682, symbols 12528, types 11350). A suite run takes ~23 s. `./failstats.py`:
+errors component fails in 1858 tests: both missing and spurious 513, tsc reports errors and tttt nothing 421, **same
+codes+positions, other text 298**, only missing 256, tttt errors where tsc has none 219, only spurious 130, column
+differs 21. 254 tests have a spurious TS1xxx (29 of them expect no errors). Checker log_error output: 29 lines in 2
+tests (invalid spans, `bugs/harness.md`). Top missing codes: TS1005 157 in 84 tests, TS2322 100/54, TS2339 98/28,
+TS2304 90/56; top spurious: TS2304 484 in 164 tests, TS2339 347/99, TS1005 261/89, TS2322 246/107.
+- `./displaydiff.py`, tests fixed by one kind (TS, JS): other 390 + 53, underlines/order only 110 + 22, we-any 65 +
+  37, union-order 48 + 3, tsc-any 34 + 5, names-only 28 + 5, tsc-typeof 24 + 9, line-missing 23 + 4.
+- `./displaydiff.py --fine`, TS tests by the kind of their first differing line: underlines/order 110, line-missing
+  73, shape-other/declaration 62, union-order 57, we-any/declaration 50, signature-differs/declaration 50,
+  union-differs/declaration 43, object-differs/declaration 40, names-only 39, our-typeof 32 (plan 35's queue).
+- `./errtextdiff.py --coarse` (298 tests): fixed by one part: chain 93, header 75, underline 61, related 46.
+- `./jsstats.py`: 1049 JS tests, **519 pass**. Failing by category (only / involved): other 64 / 64, CommonJS 67 /
+  150, expandos 39 / 157, advanced JSDoc 8 / 82, JSDoc 71 / 253, leniency 2 / 17, syntax 18 / 83, emit 10 / 11,
+  `.ts`-only 17 / 26.
+- `./syntaxstats.py`: **262** tests whose parser diagnostics differ (42 JS). TS tests: A 61, B 17, C 17, D 32, E 62,
+  M 31. Clusters: other:A 40, other:E 34, other:M 30, other:D 28, permissive:modifiers 22, recovery:list-context 14,
+  lexical:identifiers 9, permissive:decorators 9, other:C 8, other:B 8, recovery:object-literal 6.
 
-## Corpora (2026-09-28, corpus session, todo entry 8)
+## Corpora (2026-09-28, triage session)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**0** (4 -> 0: mixin classes, plan 32 stage C), zod **0** (13 -> 0: mapped index signatures from the constraint,
-returnMapper literals, `this` free parameters, generic intersection homomorphic mapped types, the exactOptional
-missing-type HACK, partially inferable reverse mapping), webpack **115** (JSDoc, plan 26).
-Instructions (`perf stat -e instructions:u`, stable like callgrind, much faster) at the session's start -> end:
-zod 8.87 -> 8.54 G, valibot 4.93 -> 5.07 G (index signatures of generic homomorphic mapped types, eagerly
-instantiated), type-fest 3.29 -> 3.29 G, tsc 4.60 -> 4.64 G, webpack 3.22 -> 3.23 G.
+**0**, zod **0**, webpack **115** (JSDoc, plan 26). **zod-root** (new: zod's root tsconfig, not clean under tsc,
+which reports 55): tttt 91, of which 37 spurious and 1 missing (plan 19).
+Instructions (`perf stat -e instructions:u`, stable like callgrind, much faster) at the end of the triage session:
+tsc 4.67 G, type-fest 3.30, valibot 5.06, react 1.91, nest 1.02, webpack 3.25, zod **4.26** (8.54 at the corpus
+session: the drop came with suite checker bugs 4, probably the TS2322 sub-agent's relation work; not investigated).
 
 ## Perf (2026-09-28, perf session, `./bench.sh --runs 2`)
 Best wall / peak RSS. tttt now re-executes itself with glibc's malloc on transparent huge pages and madvises its
@@ -71,11 +63,6 @@ Parsing the tsc corpus after plan 27 stage 3 (2026-09-28): 104 -> 109 ms, callgr
 - **tttt beats single-threaded tsgo on every corpus now**, webpack included (0.56 vs 0.60; was 0.69).
 - Memory is the weak side: zod 1.3 GB (deep-partial.test.ts alone is 745 MB, 587k types where tsc makes 168k),
   type-fest 476 MB for 575k types. `perf_leads.md`.
-
-## Instructions (2026-09-28, perf session, callgrind `-q --keep-going -p DIR`)
-At the session's start (028246a) -> end: tsc corpus 5.100 -> 4.661 G, type-fest 3.348 -> 3.276, valibot 5.262 -> 5.012,
-react 1.929 -> 1.934, nest 1.008 -> 1.022 (the parser's shrink_to_fit reallocs), webpack 3.383 -> 3.282,
-zod 10.889 -> 9.057. (valgrind runs don't re-exec, so huge pages aren't in these.)
 
 ## Parallelism prototypes (2026-09-28, plan 36 planning, 0746971 + `plans/36_prototype.patch`)
 Parallel loading at 4 workers, whole run best of 5: tsc 661 -> 631 ms, webpack 564 -> 527, nest 201 -> 180, react
