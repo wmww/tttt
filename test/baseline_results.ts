@@ -40186,7 +40186,7 @@ const baselines = {
         types: true,
     },
     'symbolType14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43322,13 +43322,13 @@ const baselines = {
     },
     'taggedTemplateStringsWithManyCallAndMemberExpressions': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'taggedTemplateStringsWithManyCallAndMemberExpressionsES6': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'taggedTemplateStringsWithOverloadResolution1': {
         errors: false,
@@ -65121,7 +65121,7 @@ const baselines = {
         types: true,
     },
     'arrayTypeOfFunctionTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66001,7 +66001,7 @@ const baselines = {
         types: true,
     },
     'instantiateNonGenericTypeWithTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -81,6 +81,8 @@ typedef struct CallInfo {
     Span call_span; // The whole call expression
     // Set when the resolution would report something given an ErrorCtx (see ty_call_typecheck()), may be null
     bool* would_report;
+    // `new f()` on something with call signatures only, resolved as a call (tsc's resolveNewExpression)
+    bool new_as_call;
 } CallInfo;
 
 static void mark_would_report(CallInfo const* info) {
@@ -1638,7 +1640,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     }
 
     bool super_call = is_super_call(call);
-    bool construct = call->uses_new || call->is_extends || super_call;
+    bool construct = (call->uses_new && !info->new_as_call) || call->is_extends || super_call;
     // A union is called through the signatures its members have in common (tsc's getUnionSignatures)
     Signature* const* union_sigs = nullptr;
     u32 union_count = 0;
@@ -1718,6 +1720,19 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
             if (compiler_options()->no_implicit_any) {
                 error_ctx_error_d(errs, call_span, 7009,
                     "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.");
+            } else if (!info->new_as_call && !info->tagged_template && !info->jsx) {
+                // Resolved as a call, whose result has to be void if it has a declaration (TS2350); the new is any
+                // either way
+                CallInfo as_call = *info;
+                Candidate chosen = {0};
+                as_call.new_as_call = true;
+                as_call.chosen_out = &chosen;
+                resolve_call(me, callee, &as_call, call_span, errs);
+                Signature const* root = chosen.sig;
+                while (root && !root->function && root->target) root = root->target;
+                if (root && root->function && !(signature_return_type(me, chosen.sig)->flags & TYF_VOID)) {
+                    error_ctx_error_d(errs, call_span, 2350, "Only a void function can be called with the 'new' keyword.");
+                }
             }
         } else if (call->uses_new) {
             Error* e = error_ctx_error_d(errs, call->callable.outer_span, 2351, "This expression is not constructable.");
@@ -1762,7 +1777,8 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     }
 
     CallInfo with_this = *info;
-    if (!construct) {
+    // (tsc's getSignatureApplicabilityError doesn't check `this` of a new expression)
+    if (!construct && !info->new_as_call) {
         bool any_this = false;
         for (u32 i = 0; i < count && !any_this; i++) {
             signature_resolve(me, signatures[i]);

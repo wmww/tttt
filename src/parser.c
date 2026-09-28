@@ -6927,7 +6927,8 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && *p.pos == '`') {
+    // (A tagged template is part of a member expression, `new` included: tsc's parseMemberExpressionRest)
+    if (!ctx.entity_name && new_keyword_precedence >= ctx.min_precedence && *p.pos == '`') {
         Anchor template_a = anchor(&p);
         cstr plain_string = cstr_null;
         if (!parse_template(&p, &parsed.args, nullptr)) {
