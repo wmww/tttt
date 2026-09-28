@@ -3729,8 +3729,15 @@ static Ternary structured_related_members(
                 if (target->flags & TYF_NON_PRIMITIVE) return TERNARY_FALSE;
                 return is_related_to(me, st, global_type(me, GLOBAL_EMPTY_OBJECT), target, false);
             }
-            // (from one type parameter to another, the constraint's failure doesn't explain anything)
-            return is_related_to(me, st, constraint, target, report && target->kind != TY_TYPE_PARAM);
+            // The constraint as it is first, then with the type parameter as its `this` (tsc: raw `this` types from
+            // base classes need it, subclassWithPolymorphicThisIsAssignable). From one type parameter to another, the
+            // constraint's failure doesn't explain anything
+            bool report_constraint = report && target->kind != TY_TYPE_PARAM;
+            Ty const* with_this = ty_with_this_arg(me, constraint, source);
+            if (with_this == constraint) return is_related_to(me, st, constraint, target, report_constraint);
+            Ternary related = is_related_to(me, st, constraint, target, false);
+            if (related) return related;
+            return is_related_to(me, st, with_this, target, report_constraint);
         }
 
         case TY_KEYOF: {

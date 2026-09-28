@@ -1443,25 +1443,28 @@ static void report_type_argument_arity(
     }
 }
 
-// TS2344 for explicit type arguments. Returns false if one was reported
+// tsc's checkTypeArguments: whether explicit type arguments satisfy their constraints (instantiated with all of the
+// arguments). With `errs`, TS2344 for the first one that doesn't
 static bool check_type_argument_constraints(
     Checker* me, Signature const* sig, TyMapper const* mapper, CallInfo const* info, ErrorCtx* errs
 ) {
-    bool satisfied = true;
     for (u32 i = 0; i < info->type_args.len && i < sig->type_params.len; i++) {
         Ty const* constraint = ty_param_constraint(me, sig->type_params.data[i]);
         if (!constraint) continue;
-        constraint = ty_instantiate(me, constraint, mapper);
-        if (ty_is_related(me, info->type_args.data[i], constraint, TY_RELATION_ASSIGNABLE)) continue;
-        satisfied = false;
-        if (!errs) continue;
-        cstr arg_str = ty_to_cstr(me, info->type_args.data[i]);
-        cstr constraint_str = ty_to_cstr(me, constraint);
-        error_ctx_error_d(errs, vec_spanned_type_at(info->type_arg_nodes, i)->span, 2344,
-            "Type '", arg_str, "' does not satisfy the constraint '", constraint_str, "'.");
-        c_drop(cstr, &arg_str, &constraint_str);
+        Ty const* arg = info->type_args.data[i];
+        constraint = ty_with_this_arg(me, ty_instantiate(me, constraint, mapper), arg);
+        if (ty_is_related(me, arg, constraint, TY_RELATION_ASSIGNABLE)) continue;
+        if (errs) {
+            cstr arg_str, constraint_str;
+            ty_report_pair_cstr(me, arg, constraint, &arg_str, &constraint_str);
+            ty_report_unassignable_with_head(me, arg, constraint, 2344, cstr_d(
+                "Type '", arg_str, "' does not satisfy the constraint '", constraint_str, "'."
+            ), vec_spanned_type_at(info->type_arg_nodes, i)->span, errs);
+            c_drop(cstr, &arg_str, &constraint_str);
+        }
+        return false;
     }
-    return satisfied;
+    return true;
 }
 
 // `skip_generic`: generic function arguments aren't inferred from either (tsc's SkipGenericFunctions)
@@ -1484,6 +1487,7 @@ static Resolution resolve_with_signatures(
     u32 unfit_count = 0;
     bool type_argument_arity_ok = false;
     Candidate arity_candidate = {0}; // tsc's candidateForArgumentArityError
+    Signature const* type_arg_candidate = nullptr; // tsc's candidateForTypeArgumentError
     TyRelation rounds[2] = { TY_RELATION_SUBTYPE, TY_RELATION_ASSIGNABLE };
     // With a choice to make, candidates are first tried without their context-sensitive arguments, which are only
     // checked (and typed for good) against the first candidate the rest fit (tsc's argCheckMode)
@@ -1493,6 +1497,8 @@ static Resolution resolve_with_signatures(
     }
     for (u32 round = count > 1 ? 0 : 1; round < 2 && !ret.chosen.sig; round++) {
         unfit_count = 0;
+        arity_candidate = (Candidate){0};
+        type_arg_candidate = nullptr;
         for (u32 i = 0; i < count && !ret.chosen.sig; i++) {
             Signature const* sig = signatures[i];
             signature_resolve(me, sig);
@@ -1504,6 +1510,12 @@ static Resolution resolve_with_signatures(
             free(uninstantiated.types);
             if (!arity_ok) continue;
             Candidate candidate = make_candidate(me, sig, args, info, skip_sensitive, false);
+            if (info->type_arg_nodes && candidate.mapper &&
+                !check_type_argument_constraints(me, sig, candidate.mapper, info, nullptr)
+            ) {
+                type_arg_candidate = sig;
+                continue;
+            }
             if (generic_rest && candidate.mapper) {
                 // A rest parameter of a generic type may have a different arity once instantiated (tsc's second
                 // hasCorrectArity for getNonArrayRestType): `...m: T extends true ? [] : [X]`
@@ -1540,11 +1552,6 @@ static Resolution resolve_with_signatures(
     }
 
     if (ret.chosen.sig) {
-        if (info->type_arg_nodes && ret.chosen.mapper &&
-            !check_type_argument_constraints(me, ret.chosen.sig, ret.chosen.mapper, info, errs)
-        ) {
-            mark_would_report(info);
-        }
         ret.ret = candidate_return_type(me, &ret.chosen);
     } else {
         mark_would_report(info);
@@ -1556,6 +1563,9 @@ static Resolution resolve_with_signatures(
             } else if (arity_candidate.sig) {
                 Signature* sig = (Signature*)arity_candidate.sig;
                 report_arity(me, &sig, 1, args, info, arity_candidate.mapper, errs);
+            } else if (type_arg_candidate) {
+                check_type_argument_constraints(me, type_arg_candidate,
+                    explicit_type_arguments(me, type_arg_candidate, info), info, errs);
             } else {
                 report_arity(me, signatures, count, args, info, nullptr, errs);
             }
