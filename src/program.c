@@ -536,8 +536,10 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     bool node_formats = (my options.module >= MODULE_KIND_NODE16 && my options.module <= MODULE_KIND_NODENEXT) ||
         my options.module_resolution == MODULE_RESOLUTION_NODE16 ||
         my options.module_resolution == MODULE_RESOLUTION_NODENEXT;
-    // (A JSON file has no module format of its own: tsc's getImpliedNodeFormatForFile)
-    if (node_formats && !my loading_stdlib && !source_file->is_json) {
+    // (A JSON file has no module format of its own: tsc's getImpliedNodeFormatForFile, which also looks at the
+    // package.json of anything in node_modules)
+    bool in_node_modules = csview_contains(cstr_sv(&source_file->canonical_path), "/node_modules/");
+    if ((node_formats || in_node_modules) && !my loading_stdlib && !source_file->is_json) {
         FileFormat format = module_resolver_file_format(program_resolver(me), cstr_sv(&source_file->canonical_path));
         source_file->is_esm = format.mode == RESOLUTION_MODE_ESM;
         source_file->package_has_type = format.package_has_type;

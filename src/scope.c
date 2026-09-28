@@ -1909,6 +1909,16 @@ static void report_non_local_export(ErrorCtx* errs, Span name) {
     error_ctx_error_d(errs, name, 2661, "Cannot export '", name, "'. Only local declarations can be exported from a module.");
 }
 
+// An ES module's import of a file sure to be an ES module: no synthetic default (tsc's canHaveSyntheticDefault with
+// getEmitSyntaxForUsageLocation)
+static bool esm_imports_esm(PortItem const* item, SourceFile const* target) {
+    SourceFile const* importer = item->decl_name.source;
+    if (!importer || item->is_require) return false;
+    ModuleKind usage = source_file_emit_module_kind(importer);
+    bool esm = usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
+    return esm && source_file_implied_format_for_emit(target) == MODULE_KIND_ESNEXT;
+}
+
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = my alias->scope->errs;
@@ -1989,8 +1999,10 @@ static Symbol* resolve_alias_target(Symbol* me) {
                     // A CommonJS JavaScript module's synthetic default is the module (tsc's canHaveSyntheticDefault)
                     return module;
                 }
-                if (compiler_options()->allow_synthetic_default_imports && (!file || file->is_declaration)) {
-                    return nullptr;
+                if (compiler_options()->allow_synthetic_default_imports && (!file || file->is_declaration) &&
+                    !symbol_get_export(module, c_sv("__esModule")) && !(file && esm_imports_esm(item, file))
+                ) {
+                    return module; // So is a declaration file's (tsc's canHaveSyntheticDefault)
                 }
                 cstr module_name = module_name_for_error(module, item->module_ref, false);
                 Error* error = error_ctx_error_d(errs, item->decl_name, 1192, "Module '", module_name, "' has no default export.");

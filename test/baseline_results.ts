@@ -512,8 +512,8 @@ const baselines = {
     },
     'allowSyntheticDefaultImports1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'allowSyntheticDefaultImports10': {
         errors: true,
@@ -522,8 +522,8 @@ const baselines = {
     },
     'allowSyntheticDefaultImports2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'allowSyntheticDefaultImports3': {
         errors: true,
@@ -12277,8 +12277,8 @@ const baselines = {
     },
     'esModuleInteropEnablesSyntheticDefaultImports': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'esModuleInteropImportCall': {
         errors: true,
@@ -12351,12 +12351,12 @@ const baselines = {
         types: false,
     },
     'esmNoSynthesizedDefault(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esmNoSynthesizedDefault(module=preserve)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19892,8 +19892,8 @@ const baselines = {
     },
     'jsxDeclarationsWithEsModuleInteropNoCrash': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsxElementClassTooManyParams': {
         errors: true,
@@ -23883,7 +23883,7 @@ const baselines = {
     'nodeNextImportModeImplicitIndexResolution2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeNextModuleResolution1': {
         errors: true,
@@ -51687,7 +51687,7 @@ const baselines = {
     },
     'jsDeclarationsReactComponents': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsReexportAliases': {
