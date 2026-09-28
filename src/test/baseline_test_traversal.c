@@ -318,7 +318,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                     Ty const* object = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
                     Atom const* name = ty_literal_name(checker, ty_literal(checker, &i->source));
                     PropSymbolInfo info = { .strict_union = true };
-                    if (name) collect_prop_symbol(checker, object, name, &info, 0);
+                    if (name && !ty_contextual_parameter_is_pattern(checker, me)) collect_prop_symbol(checker, object, name, &info, 0);
                     if (info.found) {
                         baseline_test_case_add_symbol(ctx, (BaselineSym){
                             .declarations = vec_span_clone(info.declarations),

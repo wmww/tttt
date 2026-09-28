@@ -666,6 +666,14 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
     return as_rest ? ty_signature_params_tuple(me, sig, index, nullptr) : nullptr;
 }
 
+// Whether the parameter whose pattern this is took its contextual type from the pattern, inference having given
+// `unknown`: to tsc's getSymbolAtLocation, which asks the contextual signature again, its properties are unknown's
+bool ty_contextual_parameter_is_pattern(Checker* me, Binding const* pattern) {
+    while (pattern->parent) pattern = pattern->parent;
+    u64 key[2] = { KEY_CONTEXT_PARAM_PATTERN, (u64)(uintptr_t)pattern };
+    return intern_get(&my links, key, 2) != nullptr;
+}
+
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter) {
     u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)parameter };
     return intern_get(&my links, key, 2);
@@ -837,6 +845,15 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
                 Ty const* widened = ty_widened_for_declaration(me, initializer, true);
                 if (ty_is_related(me, type, widened, TY_RELATION_ASSIGNABLE)) type = widened;
             }
+        }
+        // A destructured parameter inference gave nothing but `unknown` falls back to its pattern's type (tsc's
+        // assignParameterType)
+        if (type == ty_intrinsic(me, TY_UNKNOWN_) &&
+            (i->initializer.binding.tag == BINDING_OBJECT || i->initializer.binding.tag == BINDING_ARRAY)
+        ) {
+            type = ty_binding_pattern_type(me, &i->initializer.binding, false);
+            u64 pattern_key[2] = { KEY_CONTEXT_PARAM_PATTERN, (u64)(uintptr_t)&i->initializer.binding };
+            *intern_slot(me, &my links, pattern_key, 2) = type;
         }
         u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)&i->initializer };
         *intern_slot(me, &my links, key, 2) = type;

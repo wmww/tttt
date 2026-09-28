@@ -13566,9 +13566,9 @@ const baselines = {
         types: true,
     },
     'fallbackToBindingPatternForTypeInference': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fatArrowSelf': {
         errors: true,
@@ -17456,9 +17456,9 @@ const baselines = {
         types: false,
     },
     'inferredRestTypeFixedOnce': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferredReturnTypeIncorrectReuse1': {
         errors: true,
