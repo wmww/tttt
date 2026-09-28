@@ -149,7 +149,11 @@ static Span type_decl_span(Checker* me, Ty const* ty) {
     }
     while (ty->kind == TY_ANONYMOUS && ty->anonymous.target) ty = ty->anonymous.target;
     if (ty->kind != TY_ANONYMOUS) return (Span){0};
-    if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_CALLABLE) return ty->anonymous.node->callable->function->full_span;
+    if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_CALLABLE) {
+        // (A method signature is its name, a function type the whole type)
+        FunctionImpl const* function = ty->anonymous.node->callable->function;
+        return span_valid(function->member_name) ? function->member_name : function->full_span;
+    }
     if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_INTERFACE) return ty->anonymous.node->interface.span;
     FunctionImpl const* function = ty->anonymous.function;
     if (function) return span_valid(function->name) ? function->name : function->full_span;

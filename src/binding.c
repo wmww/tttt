@@ -329,6 +329,17 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
         Ty const* default_type = ty_binding_default_type(current_checker, me);
         expr_typecheck(my default_value, errs);
         if (my tag == BINDING_ARRAY && binding_is_parameter(me)) binding_add_padded_implicit_any_errors(me, default_type, errs);
+        // An element's default is assigned to the element (tsc's checkVariableLikeDeclaration: the initializer of the
+        // symbol's value declaration, or of a pattern, against its widened type). Only a written type on the root can
+        // make that fail: else the element's type is the union of its property and the default
+        if (my parent) {
+            Binding const* root = my parent;
+            while (root->parent) root = root->parent;
+            if (root->has_explicit_type) {
+                Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
+                ty_check_assignable_expr(current_checker, default_type, type, my content_span, my default_value, errs);
+            }
+        }
     }
 
     switch (my tag) {

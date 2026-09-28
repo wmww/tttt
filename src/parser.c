@@ -3877,6 +3877,8 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         }
                         break;
                     }
+                    // (What a method signature is reported at, like a class method: its name)
+                    item.method.func.member_name = item.method.name_span;
                     InterfaceMember member = interface_member_make(
                         item.span,
                         nullptr,
