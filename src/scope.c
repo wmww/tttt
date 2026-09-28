@@ -2082,6 +2082,15 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
 
 // tsc's getTargetofModuleDefault: `import d from "m"`, `import { default as d }`, `export { default } from "m"`
 static Symbol* resolve_default_target(Symbol* me, PortItem* item, Symbol* module, Symbol* assigned, ErrorCtx* errs) {
+    // In Node.js a CommonJS module imported into an ES module always has a synthetic default, which overrides a real
+    // `default` export (tsc's canHaveSyntheticDefault, getTargetofModuleDefault)
+    ModuleKind module_kind = compiler_options()->module;
+    SourceFile const* target_file = item->module_ref ? item->module_ref->file : nullptr;
+    if (target_file && module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT &&
+        esm_imports_cjs(item, target_file)
+    ) {
+        return assigned ? assigned : module;
+    }
     Symbol* found = symbol_get_export(module, c_sv("default"));
     if (!found && assigned) {
         // The default import is what `export =` names, with allowSyntheticDefaultImports or where an ES module

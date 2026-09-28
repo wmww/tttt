@@ -12266,7 +12266,7 @@ const baselines = {
         types: false,
     },
     'esModuleInteropDefaultImports': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -21211,7 +21211,7 @@ const baselines = {
         types: true,
     },
     'methodChainError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -21931,19 +21931,19 @@ const baselines = {
         types: true,
     },
     'moduleNodeDefaultImports(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleNodeDefaultImports(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleNodeDefaultImports(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleNodeImportRequireEmit(target=es2016)': {
         errors: true,
@@ -55446,19 +55446,19 @@ const baselines = {
         types: true,
     },
     'nodeModulesTripleSlashReferenceModeDeclarationEmit7(module=node16)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeModulesTripleSlashReferenceModeDeclarationEmit7(module=node18)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeModulesTripleSlashReferenceModeDeclarationEmit7(module=nodenext)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeModulesTripleSlashReferenceModeOverride1(module=node16)': {
         errors: true,
@@ -67551,7 +67551,7 @@ const baselines = {
         types: true,
     },
     'unionTypeCallSignatures6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

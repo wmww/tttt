@@ -1148,6 +1148,20 @@ static Span callee_span(CallInfo const* info) {
     return callee->inner_span;
 }
 
+// Where tsc's invocationError reports TS2349/TS2351: the callee, but a call's (not `new`'s) is at the method name like
+// getDiagnosticSpanForCallNode's
+static Span invocation_error_span(CallInfo const* info) {
+    Expr const* callee = &info->call->callable;
+    if (info->jsx || info->tagged_template || info->decorator || info->call->uses_new || info->call->is_extends) {
+        return callee->outer_span;
+    }
+    while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
+    if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
+        return callee->property->prop.inner_span;
+    }
+    return info->call->callable.outer_span;
+}
+
 static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) {
     Ty const* ret = ty_instantiate(me, signature_return_type(me, candidate->sig), candidate->mapper);
     if (candidate->inferred_type_params.len) {
@@ -1817,7 +1831,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
             mark_would_report(info);
             if (errs) {
                 cstr rendered = ty_to_cstr(me, callee);
-                Error* e = error_ctx_error_d(errs, call->callable.outer_span, construct ? 2351 : 2349,
+                Error* e = error_ctx_error_d(errs, invocation_error_span(info), construct ? 2351 : 2349,
                     construct ? "This expression is not constructable." : "This expression is not callable.");
                 error_sub_error_d(e, span_null, TS_CODE_NONE, "Each member of the union type '", rendered, "' has ",
                     construct ? "construct " : "", "signatures, but none of those signatures are compatible with each other.");
@@ -1908,7 +1922,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
                 "Value of type '", rendered, "' is not callable. Did you mean to include 'new'?");
             cstr_drop(&rendered);
         } else {
-            Error* e = error_ctx_error_d(errs, call->callable.outer_span, 2349, "This expression is not callable.");
+            Error* e = error_ctx_error_d(errs, invocation_error_span(info), 2349, "This expression is not callable.");
             // (tsc's invocationErrorDetails: about the apparent type, `{}` for unknown)
             cstr rendered = ty_to_cstr(me, callee->flags & TYF_UNKNOWN ? ty_empty_object_type(me) : apparent);
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no call signatures.");
