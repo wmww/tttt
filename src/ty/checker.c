@@ -591,6 +591,7 @@ static Ty const* intern_composite_origin(
         if (kind == TY_UNION && len == 2 && (types[0]->flags & types[1]->flags & TYF_BOOLEAN_LITERAL)) {
             flags |= TYF_BOOLEAN;
         }
+        if (kind == TY_UNION && (member_flags & TYF_UNDEFINED) && (member_flags & TYF_NULL)) xflags |= TYX_UNDEFINED_AND_NULL;
         Ty* ret = ty_alloc(me, kind, flags);
         ret->xflags = xflags;
         ret->alias = alias;

@@ -663,6 +663,9 @@ enum {
     // ObjectFlags.IsConstrainedTypeVariable): unions of them that cover T's constraint are T. Only read on the
     // intersection itself (it propagates like the others, meaninglessly)
     TYX_CONSTRAINED_TYPE_VARIABLE = 2,
+    // A union with both undefined and null among its members, which is_unknown_like_union() (relate.c) then looks at
+    // more closely. Only read on the union itself
+    TYX_UNDEFINED_AND_NULL = 4,
 };
 
 typedef enum TyIntrinsic {

@@ -386,15 +386,14 @@ static bool is_simple_related_enum(Checker* me, RelationState const* st, Ty cons
 
 // tsc's isUnknownLikeUnionType: `undefined | null | {}` (with strictNullChecks), to which anything is assignable
 static bool is_unknown_like_union(Checker* me, Ty const* t) {
-    if (t->kind != TY_UNION || t->composite.types.len < 3 || !compiler_options()->strict_null_checks) return false;
-    bool undefined = false, null = false;
-    for (u32 i = 0; i < t->composite.types.len; i++) {
-        undefined |= (t->composite.types.data[i]->flags & TYF_UNDEFINED) != 0;
-        null |= (t->composite.types.data[i]->flags & TYF_NULL) != 0;
+    if (t->kind != TY_UNION || !(t->xflags & TYX_UNDEFINED_AND_NULL) || t->composite.types.len < 3 ||
+        !compiler_options()->strict_null_checks
+    ) {
+        return false;
     }
-    if (!undefined || !null) return false;
     for (u32 i = 0; i < t->composite.types.len; i++) {
-        if (ty_is_empty_anonymous_object(me, t->composite.types.data[i])) return true;
+        Ty const* member = t->composite.types.data[i];
+        if (member->kind == TY_ANONYMOUS && ty_is_empty_anonymous_object(me, member)) return true;
     }
     return false;
 }
