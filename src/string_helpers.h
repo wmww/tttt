@@ -29,3 +29,6 @@ const char* file_start_excluding_bom(const char* contents);
 // A file that starts with a UTF-16 byte order mark (either endianness) is decoded to UTF-8 without it, like tsc's
 // sys.readFile. Anything else is left alone
 void text_decode_utf16_bom(cstr* contents);
+// A source file's text as tsc sees it: UTF-16 decoded (above), and bytes that aren't UTF-8 replaced with U+FFFD like
+// node's decoder does (the scanner takes that character for a binary file)
+void text_decode(cstr* contents);

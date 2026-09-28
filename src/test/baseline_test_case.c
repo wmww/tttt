@@ -400,7 +400,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     cstr source_contents = cstr_null;
 
     try (fs_read_file(fs, my source_path, &unparsed_contents)) bubble;
-    text_decode_utf16_bom(&unparsed_contents);
+    text_decode(&unparsed_contents);
 
     // Like tsc's harness: relative file names are in /.src, which is the current directory unless the test says
     // otherwise. So `/node_modules` is found from every file but isn't below the sources

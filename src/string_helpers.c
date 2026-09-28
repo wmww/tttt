@@ -141,6 +141,51 @@ const char* file_start_excluding_bom(const char* contents) {
     return contents;
 }
 
+// The length of the well-formed UTF-8 character at b (at most `left` bytes), or of the maximal prefix of one that is
+// ill-formed, negated (the WHATWG decoder replaces that prefix with one U+FFFD)
+static int utf8_well_formed_size(const unsigned char* b, intptr_t left) {
+    unsigned char c = b[0];
+    if (c < 0x80) return 1;
+    int size;
+    unsigned char lo = 0x80, hi = 0xBF;
+    if (c >= 0xC2 && c <= 0xDF) size = 2;
+    else if (c >= 0xE0 && c <= 0xEF) { size = 3; if (c == 0xE0) lo = 0xA0; if (c == 0xED) hi = 0x9F; }
+    else if (c >= 0xF0 && c <= 0xF4) { size = 4; if (c == 0xF0) lo = 0x90; if (c == 0xF4) hi = 0x8F; }
+    else return -1;
+    for (int i = 1; i < size; i++) {
+        if (i >= left || b[i] < lo || b[i] > hi) return -i;
+        lo = 0x80, hi = 0xBF;
+    }
+    return size;
+}
+
+static void text_replace_invalid_utf8(cstr* contents) {
+    const unsigned char* b = (const unsigned char*)cstr_str(contents);
+    intptr_t size = cstr_size(contents);
+    intptr_t i = 0;
+    for (int n; i < size && (n = utf8_well_formed_size(b + i, size - i)) > 0; i += n) {}
+    if (i == size) return;
+    cstr out = cstr_with_capacity(size + 16);
+    cstr_append_n(&out, (const char*)b, i);
+    while (i < size) {
+        int n = utf8_well_formed_size(b + i, size - i);
+        if (n > 0) {
+            cstr_append_n(&out, (const char*)b + i, n);
+            i += n;
+        } else {
+            cstr_append_lit(&out, "\xEF\xBF\xBD");
+            i += -n;
+        }
+    }
+    cstr_drop(contents);
+    *contents = out;
+}
+
+void text_decode(cstr* contents) {
+    text_decode_utf16_bom(contents);
+    text_replace_invalid_utf8(contents);
+}
+
 void text_decode_utf16_bom(cstr* contents) {
     const unsigned char* b = (const unsigned char*)cstr_str(contents);
     intptr_t size = cstr_size(contents);

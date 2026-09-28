@@ -165,11 +165,11 @@ static void append_code_point(cstr* str, u32 code) {
 // The errors of an invalid escape (tsc's scanEscapeSequence), which the caller reports unless it's in a tagged template
 typedef struct EscapeErrors {
     u32 count;
-    struct { u32 code; const char* at; u32 len; } errors[2];
+    struct { u32 code; const char* at; u32 len; u32 value; } errors[2];
 } EscapeErrors;
 
 static void escape_error(EscapeErrors* errors, u32 code, const char* at, u32 len) {
-    if (errors->count < c_arraylen(errors->errors)) errors->errors[errors->count++] = (typeof(errors->errors[0])){ code, at, len };
+    if (errors->count < c_arraylen(errors->errors)) errors->errors[errors->count++] = (typeof(errors->errors[0])){ code, at, len, 0 };
 }
 
 // After the backslash. An invalid escape stands for its own text (`\u{` in "\u{-1}", like tsc's) and fills `errors`
@@ -185,9 +185,26 @@ static bool parse_string_escape(Parser* p, cstr* str, EscapeErrors* errors) {
         case 'f': cstr_append_lit(str, "\f"); return true;
         case 'v': cstr_append_lit(str, "\v"); return true;
         case '0':
-            if (*p->pos >= '0' && *p->pos <= '9') break; // Legacy octal, tsc reports it; the value is the digits
-            cstr_append_n(str, "\0", 1);
-            return true;
+            if (!(*p->pos >= '0' && *p->pos <= '9')) {
+                cstr_append_n(str, "\0", 1);
+                return true;
+            }
+            // (`\08` is `\0` and `8`, but still a legacy octal escape)
+            [[fallthrough]];
+        case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
+            // A legacy octal escape (TS1487): `\1`, `\17`, `\177`, but `\47` not `\477`
+            u32 value = (u32)(c - '0');
+            if (c <= '3' && *p->pos >= '0' && *p->pos <= '7') value = value * 8 + (u32)(*p->pos++ - '0');
+            if (*p->pos >= '0' && *p->pos <= '7' && p->pos - start < 4) value = value * 8 + (u32)(*p->pos++ - '0');
+            escape_error(errors, 1487, start, (u32)(p->pos - start));
+            errors->errors[errors->count - 1].value = value;
+            append_code_point(str, value);
+            return false;
+        }
+        case '8': case '9':
+            escape_error(errors, 1488, start, 2);
+            cstr_append_n(str, &c, 1);
+            return false;
         case '\r':
             if (*p->pos == '\n') p->pos++;
             return true; // Line continuation
@@ -439,13 +456,22 @@ static int invalid_char_size(const char* c);
 // tsc's parseErrorAtPosition: an error that starts where the previous one does is dropped (the first error at a
 // position is the one that explains it; whatever recovery reports there next is noise). An error at a character no
 // token starts with is TS1127, which tsc's scanner reports before the parser gets to say anything there
-static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
+static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr message, bool in_literal) {
     my shared->errors_attempted++;
-    int invalid = span.source ? invalid_char_size(span_start_ptr(span)) : 0;
+    int invalid = span.source && !in_literal ? invalid_char_size(span_start_ptr(span)) : 0;
     if (invalid && ts_code != 1127) {
         cstr_drop(&message);
-        return parse_error_s(me, span_make(my shared->source, span_start_ptr(span), span_start_ptr(span) + invalid),
-            1127, cstr_lit("Invalid character."));
+        return parse_error_inner(me, span_make(my shared->source, span_start_ptr(span), span_start_ptr(span) + invalid),
+            1127, cstr_lit("Invalid character."), false);
+    }
+    // Likewise a `#!` anywhere but at the start of the file (the scanner's TS18026 comes first)
+    const char* at = span_start_ptr(span);
+    if (span.source && !in_literal && ts_code != 18026 && at && at[0] == '#' && at[1] == '!' &&
+        at != cstr_str(&my shared->source->contents)
+    ) {
+        cstr_drop(&message);
+        return parse_error_inner(me, span_make(my shared->source, at, at + 2), 18026,
+            cstr_lit("'#!' can only be used at the start of a file."), false);
     }
     if (last_error_starts_at(me, span)) {
         cstr_drop(&message);
@@ -466,8 +492,14 @@ static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr messag
     });
 }
 
+static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
+    return parse_error_inner(me, span, ts_code, message, false);
+}
+
 /// Builds the message from a display sequence
 #define parse_error(me, span, ts_code, ...) parse_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+// An error inside a literal (an escape sequence): whatever character it starts at, it's not a token
+#define parse_error_in_literal(me, span, ts_code, ...) parse_error_inner(me, span, ts_code, cstr_d(__VA_ARGS__), true)
 
 // TypeScript-only syntax in a JavaScript file (tsc's getJSSyntacticDiagnosticsForFile: TS8002-TS8017, TS8037). They're
 // syntactic diagnostics of their own: not parse errors (grammar errors are still reported), reported whether or not
@@ -562,12 +594,18 @@ static void report_escape_errors(Parser* me, EscapeErrors const* errors) {
     for (u32 i = 0; i < errors->count; i++) {
         Span at = span_make(my shared->source, errors->errors[i].at, errors->errors[i].at + errors->errors[i].len);
         switch (errors->errors[i].code) {
-            case 1125: parse_error(me, at, 1125, "Hexadecimal digit expected."); break;
-            case 1126: parse_error(me, at, 1126, "Unexpected end of text."); break;
+            case 1125: parse_error_in_literal(me, at, 1125, "Hexadecimal digit expected."); break;
+            case 1126: parse_error_in_literal(me, at, 1126, "Unexpected end of text."); break;
             case 1198:
-                parse_error(me, at, 1198, "An extended Unicode escape value must be between 0x0 and 0x10FFFF inclusive.");
+                parse_error_in_literal(me, at, 1198, "An extended Unicode escape value must be between 0x0 and 0x10FFFF inclusive.");
                 break;
-            case 1199: parse_error(me, at, 1199, "Unterminated Unicode escape sequence."); break;
+            case 1199: parse_error_in_literal(me, at, 1199, "Unterminated Unicode escape sequence."); break;
+            case 1487: {
+                char hex[8];
+                snprintf(hex, sizeof(hex), "\\x%02x", errors->errors[i].value);
+                parse_error_in_literal(me, at, 1487, "Octal escape sequences are not allowed. Use the syntax '", hex, "'.");
+            }   break;
+            case 1488: parse_error_in_literal(me, at, 1488, "Escape sequence '", at.sv, "' is not allowed."); break;
             default: impossible;
         }
     }
@@ -847,6 +885,11 @@ static int invalid_char_size(const char* c) {
 static void hop_jsdoc_optional(Parser* parent, TypeNode* type);
 static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newlines);
 
+// U+FFFD, which is also what bytes that aren't UTF-8 become when the file is loaded (text_decode())
+static bool is_replacement_char(const char* c) {
+    return (unsigned char)c[0] == 0xEF && (unsigned char)c[1] == 0xBF && (unsigned char)c[2] == 0xBD;
+}
+
 // tsc's isConflictMarkerTrivia: seven `<`, `=`, `>` or `|` at the start of a line, then a space (`=======` needs
 // none)
 static bool is_conflict_marker(Parser* parent, const char* c) {
@@ -936,6 +979,14 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
 
             default: {
                 int size = unicode_whitespace_size(parent->pos);
+                if (!size && is_replacement_char(parent->pos)) {
+                    // tsc's NonTextFileMarkerTrivia: the rest of the file is trivia
+                    const char* file_start = cstr_str(&parent->shared->source->contents);
+                    parse_error_inner(parent, span_make(parent->shared->source, file_start, file_start), 1490,
+                        cstr_lit("File appears to be binary."), true);
+                    parent->pos += strlen(parent->pos);
+                    break;
+                }
                 if (!size) goto ws_end;
                 if (size < 0) {
                     // U+2028/U+2029 are line terminators
@@ -6533,9 +6584,13 @@ static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escape
     while (true) {
         if (!*p.pos || *p.pos == quote) {
             break;
-        } else if (*p.pos == '\n' && quote != '`') {
+        } else if ((*p.pos == '\n' || *p.pos == '\r') && quote != '`') {
             break;
-        } else if (*p.pos == '\\' && *(p.pos + 1)) {
+        } else if (*p.pos == '\\' && !p.pos[1]) {
+            p.pos++;
+            parse_error(&p, span_from_pos(&p), 1126, "Unexpected end of text."); // (in a tagged template too)
+            break;
+        } else if (*p.pos == '\\') {
             p.pos++;
             EscapeErrors errors = {0};
             if (!parse_string_escape(&p, &str, &errors) && report_escapes) report_escape_errors(&p, &errors);
@@ -6675,7 +6730,10 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
     cstr text = cstr_null;
     bool missing_tail = false; // As in parse_template()
     while (*p.pos && *p.pos != '`') {
-        if (*p.pos == '\\' && p.pos[1]) {
+        if (*p.pos == '\\' && !p.pos[1]) {
+            p.pos++;
+            parse_error(&p, span_from_pos(&p), 1126, "Unexpected end of text.");
+        } else if (*p.pos == '\\') {
             p.pos++;
             EscapeErrors errors = {0};
             if (!parse_string_escape(&p, &text, &errors)) report_escape_errors(&p, &errors);
@@ -6996,7 +7054,10 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
     // A missing `}` ends the template (tsc's parseTemplateSpan: a missing template tail)
     bool missing_tail = false;
     while (*p.pos && *p.pos != '`') {
-        if (*p.pos == '\\' && p.pos[1]) {
+        if (*p.pos == '\\' && !p.pos[1]) {
+            p.pos++;
+            parse_error(&p, span_from_pos(&p), 1126, "Unexpected end of text.");
+        } else if (*p.pos == '\\') {
             p.pos++;
             EscapeErrors errors = {0};
             // (An invalid escape is fine in a tagged template)
