@@ -2003,9 +2003,20 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             statement_check_jump(me, ctx, errs);
             break;
 
+        case STATEMENT_THROW_EXPR:
+            if (my expr.tag == EXPR_IMPLICIT_ANY && span_valid(my expr.inner_span) && !my expr.inner_span.sv.size &&
+                span_valid(my span)
+            ) {
+                // tsc's checkThrowStatement: `throw` then a line break (the parser's missing expression), right after
+                // the keyword
+                char const* at = span_start_ptr(my span) + strlen("throw");
+                error_ctx_grammar_error_d(errs, span_make(my span.source, at, at), 1142, "Line break not permitted here.");
+            }
+            expr_typecheck(&my expr, errs);
+            break;
+
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-        case STATEMENT_THROW_EXPR:
             expr_typecheck(&my expr, errs);
             break;
 

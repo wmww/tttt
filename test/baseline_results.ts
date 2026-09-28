@@ -30476,14 +30476,14 @@ const baselines = {
         types: true,
     },
     'throwWithoutNewLine1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'throwWithoutNewLine2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'toStringOnPrimitives': {
         errors: true,
@@ -34931,9 +34931,9 @@ const baselines = {
         types: true,
     },
     'classWithPredefinedTypesAsNames2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classWithSemicolonClassElement1': {
         errors: true,
@@ -56501,9 +56501,9 @@ const baselines = {
         types: true,
     },
     'parserEnumDeclaration4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEnumDeclaration5': {
         errors: true,
@@ -63411,9 +63411,9 @@ const baselines = {
         types: true,
     },
     'invalidThrowStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'throwInEnclosingStatements': {
         errors: true,
@@ -65106,9 +65106,9 @@ const baselines = {
         types: true,
     },
     'objectTypesWithPredefinedTypesAsName2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'arrayLiteral': {
         errors: true,

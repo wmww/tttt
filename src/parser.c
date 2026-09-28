@@ -331,6 +331,7 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool jsx_generic_arrow_start(Parser* parent);
 static bool parse_binding_content(Parser* parent, Binding* ret);
 static bool is_reserved_word(csview word);
+static bool parse_binding_identifier(Parser* parent);
 static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, u32 code, char const* message);
 static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
 static bool parse_binding_element(Parser* parent, Binding* ret);
@@ -4210,15 +4211,28 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     hop_whitespace(&p);
 
     Span name;
-    expect_identifier(&p, &name);
+    Span word;
+    Parser probe = parser(&p);
+    bool reserved = parse_identifier_or_keyword(&probe, &word) && is_reserved_word(word.sv);
+    parse_fail(&probe);
+    if (reserved) {
+        // tsc's parseIdentifier: TS1359, and a missing name (the word stays for what follows to trip over)
+        parse_error(&p, word, 1359, "Identifier expected. '", word, "' is a reserved word that cannot be used here.");
+        name = span_from_pos(&p);
+    } else {
+        expect_identifier(&p, &name);
+    }
     hop_whitespace(&p);
 
-    expect_char(&p, '{');
+    // (Without its `{` the enum has no members: tsc's createMissingList)
+    const char* before_body = p.pos;
+    bool has_body = expect_char(&p, '{');
     hop_whitespace(&p);
 
     VecEnumCase cases = vec_enum_case_init();
     u32 saved_context = list_enter(&p, PARSING_ENUM_MEMBERS);
-    while (*p.pos && *p.pos != '}') {
+    if (!has_body) p.pos = before_body;
+    while (has_body && *p.pos && *p.pos != '}') {
         Tok t = tok_peek(&p);
         if (!list_is_element(&p, PARSING_ENUM_MEMBERS, t)) {
             if (list_abort_or_skip(&p, PARSING_ENUM_MEMBERS)) break;
@@ -4291,7 +4305,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     }
     list_leave(&p, saved_context);
 
-    expect_char(&p, '}');
+    if (has_body) expect_char(&p, '}');
 
     *ret = (EnumDecl) {
         .name = name,
@@ -5875,11 +5889,15 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
         }
         starts_with_implements_clause = identifier_char_size(c, true);
     }
+    // (tsc's isBindingIdentifier: `class void {}` has no name, and then no `{`)
+    const char* name_start = p.pos;
     if (starts_with_followed_by_word_break(&p, "extends") ||
         starts_with_implements_clause ||
-        !parse_identifier(&p, &ret->name)
+        !parse_binding_identifier(&p)
     ) {
         ret->name = span_null;
+    } else {
+        ret->name = span_make(p.shared->source, name_start, p.pos);
     }
     hop_whitespace(&p);
 
@@ -9700,17 +9718,20 @@ static bool parse_return(Parser* parent, Expr* ret) {
 
 static bool parse_throw(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
-    Anchor a = anchor(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "throw")) {
         return parse_fail(&p);
     }
+    const char* keyword_end = p.pos;
     hop_whitespace(&p);
 
-    if (parse_expr(&p, expr_ctx_null, ret)) {
+    if (p.whitespace == WHITESPACE_NEWLINE) {
+        // tsc's parseThrowStatement: no line break after `throw`, the expression is missing (zero-width, where the next
+        // token starts: the checker's TS1142 goes after the keyword)
+        *ret = expr_implicit_any(span_make(p.shared->source, p.pos, p.pos));
+        p.pos = keyword_end;
+    } else if (expect_expr(&p, expr_ctx_null, ret)) {
         parse_comma_ops_right_side(&p, ret);
-    } else {
-        *ret = expr_undefined(span_from(a));
     }
 
     return parse_success(&p);

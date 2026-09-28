@@ -534,6 +534,8 @@ static csview written_name(Scope const* enclosing, Symbol const* symbol, bool fi
     ) {
         return c_sv("default");
     }
+    // A declaration whose name is missing (`enum void {}`: tsc's missing identifier)
+    if (!name.size && span_valid(symbol->name_span) && !symbol->name_span.sv.size) return c_sv("(Missing)");
     return name;
 }
 
