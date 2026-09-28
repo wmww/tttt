@@ -19526,17 +19526,17 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationWithMapFileAsJs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationWithMapFileAsJsWithInlineSourceMap': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsFileCompilationWithMapFileAsJsWithOutDir': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

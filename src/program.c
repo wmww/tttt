@@ -764,6 +764,24 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 failable program_load(Program* me, csview path, returns SourceFile*) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
+    // tsc's getSourceFileFromReferenceWorker for a root: an extension that isn't a script's (a `.map`, a `.txt`)
+    static const char* const scripts[] = { ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs", ".json" };
+    bool script = false;
+    for (isize i = 0; i < c_countof(scripts) && !script; i++) script = csview_ends_with(path, scripts[i]);
+    if (!script) {
+        if (!fs_is_reg_file(my fs, path)) return err_d("File '", path, "' not found.");
+        cstr shown = program_path_for_message(me, path);
+        Error* error = error_ctx_global_error_d(my errs, 6054, "File '", shown, "' has an unsupported extension. The ",
+            "only supported extensions are ", my options.allow_js ?
+                "'.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'." :
+                "'.ts', '.tsx', '.d.ts', '.cts', '.d.cts', '.mts', '.d.mts'.");
+        error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
+        error_sub_error_d(
+            vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, "Root file specified for compilation"
+        );
+        cstr_drop(&shown);
+        return ok(nullptr);
+    }
     if (path_is_js(path) && !my options.allow_js) {
         // Not part of the program. tsc still wants the file to exist, so does the caller
         if (!fs_is_reg_file(my fs, path)) return err_d("File '", path, "' not found.");

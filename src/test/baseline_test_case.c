@@ -843,7 +843,8 @@ BaselineTestCase run_baseline_test_case(
             cstr_drop(&absolute);
             cstr_drop(&cwd);
         }
-        if (!path_is_script(cstr_sv(&i->path)) || !is_root) continue;
+        // (tsc's harness makes every file but a .json a root: a `.map` or `.txt` one is TS6054)
+        if (!is_root || csview_ends_with(cstr_sv(&i->path), ".json")) continue;
         // These were all just written into our mock filesystem, so failing to load one is a bug on our end
         try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
         i->source = source;
