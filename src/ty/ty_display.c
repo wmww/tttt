@@ -1238,7 +1238,9 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     d.widen_literals = false;
     signature_resolve(me, sig);
     if (with_new) {
-        if (sig->flags & SIGNATURE_ABSTRACT) out_lit(d, "abstract ");
+        // (Only a constructor type is: tsc's signatureToSignatureDeclarationHelper gives a construct signature member,
+        // which is what `: ` prints, no modifiers)
+        if ((sig->flags & SIGNATURE_ABSTRACT) && strcmp(separator, ": ") != 0) out_lit(d, "abstract ");
         out_lit(d, "new ");
     }
     // tsc reuses the parameter names of any signature with declarations, and the annotations of its declaration where
