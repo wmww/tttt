@@ -144,11 +144,17 @@ static Args collect_args(Checker* me, CallInfo const* info) {
             }
             Ty const* element = ty_is_array(me, operand) || ty_is_tuple(operand) ?
                 ty_rest_element_type(me, operand) : ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr);
-            // A generic array-like stays itself, a variadic element (tsc's getSpreadArgumentType)
+            // A generic array-like stays itself, a variadic element (tsc's getSpreadArgumentType, isArrayLikeType: its
+            // constraint is assignable to `readonly any[]`, `AsArray<T> = T extends any[] ? T : [T]` included)
             Ty const* variadic = nullptr;
             if (operand->kind == TY_TYPE_PARAM || (operand->flags & TYF_DEFERRED)) {
                 Ty const* constraint = ty_base_constraint(me, operand);
-                if (constraint && (ty_is_array(me, constraint) || ty_is_tuple(constraint))) variadic = operand;
+                if (constraint && (ty_is_array(me, constraint) || ty_is_tuple(constraint) ||
+                    (!(constraint->flags & TYF_NULLABLE) &&
+                        ty_is_related(me, constraint, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE)))
+                ) {
+                    variadic = operand;
+                }
             }
             if (args.spread_index < 0) args.spread_index = (i32)args.len;
             args_push(&args, (Arg){ .expr = i, .type = element, .spread = true, .variadic = variadic });
