@@ -42,6 +42,12 @@ void generic_typecheck(Generic const* me, ErrorCtx* errs) {
     for_each (i, vec_generic_item, &my items) {
         type_typecheck(&i->extends, errs);
         type_typecheck(&i->fallback, errs);
+        // tsc's checkTypeParameter: hasNonCircularBaseConstraint
+        if (i->extends_explicit && span_valid(i->extends_span) && i->symbol_ref &&
+            ty_param_constraint_is_circular(current_checker, ty_type_param(current_checker, i->symbol_ref))
+        ) {
+            error_ctx_error_d(errs, i->extends_span, 2313, "Type parameter '", i->name, "' has a circular constraint.");
+        }
         if (found_optional && !i->fallback_explicit) {
             error_ctx_error_d(
                 errs, i->full_span, 2706,

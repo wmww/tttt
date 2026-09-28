@@ -163,6 +163,11 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
 
         case INTERFACE_KEY_MAPPED:
             type_typecheck(&my key.mapped.in_type, errs);
+            if (span_valid(my key.mapped.in_type_span) && my key.mapped.symbol_ref &&
+                ty_param_constraint_is_circular(current_checker, ty_type_param(current_checker, my key.mapped.symbol_ref))
+            ) {
+                error_ctx_error_d(errs, my key.mapped.in_type_span, 2313, "Type parameter '", my key.mapped.type_name, "' has a circular constraint.");
+            }
             type_typecheck(&my key.mapped.as_type, errs);
             break;
 

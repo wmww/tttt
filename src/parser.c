@@ -2007,10 +2007,13 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
 
     TypeNode extends = type_any;
     bool extends_explicit = false;
+    Span extends_span = span_null;
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         extends_explicit = true;
         hop_whitespace(&p);
+        Anchor extends_a = anchor(&p);
         parse_type_or_set_to_default(&p, TYPE_PRECEDENCE_NULL, &extends);
+        extends_span = span_from(extends_a);
         hop_whitespace(&p);
     }
 
@@ -2033,6 +2036,7 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
         .is_out = is_out,
         .extends_explicit = extends_explicit,
         .extends = extends,
+        .extends_span = extends_span,
         .fallback_explicit = fallback_explicit,
         .fallback = fallback,
     };
@@ -5395,7 +5399,9 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     }
     hop_whitespace(&p);
 
+    Anchor in_type_a = anchor(&p);
     expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.in_type);
+    ret->key.mapped.in_type_span = span_from(in_type_a);
     hop_whitespace(&p);
 
     if (hop_start_if_ends_on_word_break(&p, "as")) {

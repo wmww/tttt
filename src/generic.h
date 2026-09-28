@@ -12,6 +12,7 @@ typedef struct GenericItem {
     bool is_out; // `out T`
     bool extends_explicit;
     TypeNode extends;
+    Span extends_span; // Null for a JSDoc `@template`
     bool fallback_explicit;
     TypeNode fallback;
     Symbol* owned_symbol;

@@ -47,6 +47,7 @@ typedef struct InterfaceMember {
             struct {
                 Span type_name;
                 TypeNode in_type;
+                Span in_type_span;
                 TypeNode as_type;
                 bool has_as_type;
                 signed char readonly; // -1 for remove, +1 for add

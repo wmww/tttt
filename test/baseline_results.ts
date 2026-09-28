@@ -1863,7 +1863,7 @@ const baselines = {
     'assignmentToAnyArrayRestParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentToExpandingArrayType': {
         errors: true,
@@ -9858,7 +9858,7 @@ const baselines = {
     'discriminatedUnionJsxElement': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminatedUnionWithIndexSignature': {
         errors: true,
@@ -31376,9 +31376,9 @@ const baselines = {
         types: true,
     },
     'typeParameterHasSelfAsConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterInConstraint1': {
         errors: true,
@@ -31401,7 +31401,7 @@ const baselines = {
         types: true,
     },
     'typeParameterWithInvalidConstraintType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63843,7 +63843,7 @@ const baselines = {
     'circularIndexedAccessErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'keyofAndForIn': {
         errors: true,
@@ -66121,14 +66121,14 @@ const baselines = {
         types: true,
     },
     'typeParameterDirectlyConstrainedToItself': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterIndirectlyConstrainedToItself': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterUsedAsConstraint': {
         errors: true,

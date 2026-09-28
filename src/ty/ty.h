@@ -233,6 +233,9 @@ typedef struct TyParamState {
     // are those of `clone_of` instantiated with `clone_mapper`
     Ty const* clone_of;
     TyMapper const* clone_mapper;
+    // Whether the declared constraint reaches the parameter itself (tsc's getResolvedBaseConstraint returning
+    // circularConstraintType, TS2313): then it has none. 0 not known yet, 1 no, 2 yes
+    unsigned char circular;
 } TyParamState;
 
 struct Ty {
@@ -809,6 +812,11 @@ struct Checker {
     Ty const* disposable_targets[2];
     bool disposable_looked_up[2];
     bool iterable_iterator_reported[2]; // TS2318 for a missing IterableIterator / AsyncIterableIterator (sync, async)
+    // The types whose base constraints are being resolved for circularity (members.c, tsc's pushTypeResolution with
+    // ImmediateBaseConstraint), and whether the walk came back to each
+    Ty const* constraint_walk[50];
+    bool constraint_walk_circular[50];
+    u32 constraint_walk_len;
 };
 
 // checker.c
@@ -1118,7 +1126,8 @@ typedef struct CallEffects {
 } CallEffects;
 CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call);
 TyList ty_reference_args(Checker* me, Ty const* reference);
-Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained
+Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained (or circularly constrained)
+bool ty_param_constraint_is_circular(Checker* me, Ty const* param); // TS2313
 Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param); // Of an `infer X` without `extends`, from its position
 Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing);
 Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const* key); // tsc's getSimplifiedType, relate.c

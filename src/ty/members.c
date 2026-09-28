@@ -3158,7 +3158,8 @@ Ty const* ty_signature_type(Checker* me, Signature const* sig) {
     return ret;
 }
 
-Ty const* ty_param_constraint(Checker* me, Ty const* param) {
+// The constraint as declared (tsc's getConstraintFromTypeParameter)
+static Ty const* declared_param_constraint(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
     if (state->constraint_state == LAZY_STATE_NOT_STARTED && state->clone_of) {
@@ -3185,6 +3186,86 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
     }
     // In flight means the constraint is circular (`T extends T`), tsc reports TS2313 and carries on without one
     return state->constraint_state == LAZY_STATE_DONE ? state->constraint : nullptr;
+}
+
+
+static void walk_base_constraint(Checker* me, Ty const* ty);
+
+// Walks what tsc's getResolvedBaseConstraint goes through to find its base constraint, pushing each type on the walk
+// stack: coming back to a type that's on it makes that one and everything pushed after it circular
+static void walk_base_constraint_parts(Checker* me, Ty const* ty) {
+    switch ((TyKind)ty->kind) {
+        case TY_TYPE_PARAM: {
+            if (ty->param.state->is_this) return;
+            Ty const* constraint = declared_param_constraint(me, ty);
+            if (constraint) walk_base_constraint(me, constraint);
+            return;
+        }
+        case TY_UNION:
+        case TY_INTERSECTION:
+            if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+            for (u32 i = 0; i < ty->composite.types.len; i++) walk_base_constraint(me, ty->composite.types.data[i]);
+            return;
+        case TY_INDEXED: {
+            Ty const* simple = ty_simplified(me, ty, false);
+            if (simple != ty) {
+                walk_base_constraint_parts(me, simple);
+                return;
+            }
+            walk_base_constraint(me, ty->indexed.object);
+            walk_base_constraint(me, ty->indexed.index);
+            return;
+        }
+        case TY_SUBSTITUTION:
+            walk_base_constraint(me, ty->substitution.base);
+            return;
+        case TY_TEMPLATE_LITERAL:
+            for (u32 i = 0; i < ty->template_literal.types.len; i++) walk_base_constraint(me, ty->template_literal.types.data[i]);
+            return;
+        case TY_STRING_MAPPING:
+            walk_base_constraint(me, ty->string_mapping.type);
+            return;
+        default:
+            return;
+    }
+}
+
+static void walk_base_constraint(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_TYPE_PARAM && !(ty->flags & (TYF_UNION | TYF_INTERSECTION | TYF_DEFERRED))) return;
+    if (ty->kind == TY_TYPE_PARAM && ty->param.state->circular) return; // Known (circular: its base is none)
+    for (u32 i = 0; i < my constraint_walk_len; i++) {
+        if (my constraint_walk[i] != ty) continue;
+        for (u32 j = i; j < my constraint_walk_len; j++) my constraint_walk_circular[j] = true;
+        return;
+    }
+    if (my constraint_walk_len == 50) return; // (tsc's safety stop)
+    u32 at = my constraint_walk_len++;
+    my constraint_walk[at] = ty;
+    my constraint_walk_circular[at] = false;
+    walk_base_constraint_parts(me, ty);
+    my constraint_walk_len--;
+    if (ty->kind == TY_TYPE_PARAM) ty->param.state->circular = my constraint_walk_circular[at] ? 2 : 1;
+}
+
+// tsc's getConstraintOfTypeParameter: none if the base constraint is circular (`T extends T`, `T extends U, U extends
+// T`, `T extends Foo | T["k"]`). A copy made by instantiation is circular when its original is
+bool ty_param_constraint_is_circular(Checker* me, Ty const* param) {
+    check(param->kind == TY_TYPE_PARAM);
+    TyParamState* state = param->param.state;
+    if (!state->circular) {
+        if (state->clone_of) {
+            state->circular = ty_param_constraint_is_circular(me, state->clone_of) ? 2 : 1;
+        } else {
+            walk_base_constraint(me, param);
+        }
+    }
+    return state->circular == 2;
+}
+
+Ty const* ty_param_constraint(Checker* me, Ty const* param) {
+    Ty const* constraint = declared_param_constraint(me, param);
+    if (!constraint || param->param.state->circular == 1) return constraint;
+    return ty_param_constraint_is_circular(me, param) ? nullptr : constraint;
 }
 
 Ty const* ty_param_default(Checker* me, Ty const* param) {
