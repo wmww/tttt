@@ -411,7 +411,7 @@ const baselines = {
         types: false,
     },
     'aliasInstantiationExpressionGenericIntersectionNoCrash2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -9568,7 +9568,7 @@ const baselines = {
     'destructuredLateBoundNameHasCorrectTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuredMaappedTypeIsNotImplicitlyAny': {
         errors: true,
@@ -12328,7 +12328,7 @@ const baselines = {
     'esModuleIntersectionCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'esNextWeakRefs_IterableWeakMap': {
         errors: true,
@@ -13641,9 +13641,9 @@ const baselines = {
         types: true,
     },
     'fileWithNextLine2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fileWithNextLine3': {
         errors: false,
@@ -13723,7 +13723,7 @@ const baselines = {
     'flowControlTypeGuardThenSwitch': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'flowInFinally1': {
         errors: true,
@@ -14891,7 +14891,7 @@ const baselines = {
         types: true,
     },
     'genericConstraint2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16871,7 +16871,7 @@ const baselines = {
         types: true,
     },
     'incorrectNumberOfTypeArgumentsDuringErrorReporting': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18611,7 +18611,7 @@ const baselines = {
         types: false,
     },
     'invalidConstraint1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22487,8 +22487,8 @@ const baselines = {
     },
     'module_augmentUninstantiatedModule2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduledecl': {
         errors: true,
@@ -24471,7 +24471,7 @@ const baselines = {
         types: true,
     },
     'objectLiteralPropertyImplicitlyAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25111,7 +25111,7 @@ const baselines = {
         types: false,
     },
     'overloadsWithConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25508,7 +25508,7 @@ const baselines = {
     'partiallyDiscriminantedUnions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'pathMappingBasedModuleResolution1_amd': {
         errors: false,
@@ -25768,7 +25768,7 @@ const baselines = {
     'primitiveMembers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'primitiveTypeAsClassName': {
         errors: true,
@@ -28326,9 +28326,9 @@ const baselines = {
         types: true,
     },
     'sourceMap-LineBreaks': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'sourceMap-NewLine1': {
         errors: true,
@@ -28851,7 +28851,7 @@ const baselines = {
         types: true,
     },
     'spellingSuggestionJSXAttribute': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30876,7 +30876,7 @@ const baselines = {
         types: true,
     },
     'typeArgumentConstraintResolution1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31966,7 +31966,7 @@ const baselines = {
         types: true,
     },
     'underscoreTest1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -39182,8 +39182,8 @@ const baselines = {
     },
     'allowUnescapedParagraphAndLineSeparatorsInStringLiteral': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'globalThisAmbientModules': {
         errors: true,
@@ -41526,7 +41526,7 @@ const baselines = {
         types: true,
     },
     'declarationsAndAssignments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47138,7 +47138,7 @@ const baselines = {
     'logicalOrOperatorWithTypeParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commaOperatorInvalidAssignmentType': {
         errors: true,
@@ -47406,7 +47406,7 @@ const baselines = {
         types: false,
     },
     'overloadResolutionClassConstructors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52766,7 +52766,7 @@ const baselines = {
         types: true,
     },
     'checkJsxChildrenCanBeTupleType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53356,7 +53356,7 @@ const baselines = {
         types: true,
     },
     'tsxElementResolution9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53856,7 +53856,7 @@ const baselines = {
         types: true,
     },
     'tsxTypeArgumentResolution': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61301,7 +61301,7 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarations.5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61586,7 +61586,7 @@ const baselines = {
         types: true,
     },
     'usingDeclarations.5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62866,7 +62866,7 @@ const baselines = {
         types: true,
     },
     'usingDeclarationsWithObjectLiterals2(noimplicitany=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65383,7 +65383,7 @@ const baselines = {
     'stringLiteralCheckedInIf02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralMatchedInSwitch01': {
         errors: true,
@@ -65856,7 +65856,7 @@ const baselines = {
         types: true,
     },
     'wideningTuples7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66533,7 +66533,7 @@ const baselines = {
     'bestCommonTypeOfConditionalExpressions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bestCommonTypeOfConditionalExpressions2': {
         errors: true,
@@ -67226,7 +67226,7 @@ const baselines = {
         types: false,
     },
     'genericCallToOverloadedMethodWithOverloadedArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

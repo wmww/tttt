@@ -93,7 +93,7 @@ finding is in too: the checker makes Array + the auto array when it starts (tsc'
 what 14 of the gained tests needed. **+21 tests, 0 lost** (10477 -> 10498); every corpus byte-identical;
 instructions (K=1) tsc +0.33%, webpack +0.29% (mostly layout: the evolving work itself is ~0.03%). IdentifierExpr's
 rarer flags became bit fields: Expr went from 152 to 144 bytes (static_assert in expr.c). Probes in
-`test/probes/plan37/evolving/` (all pass). Leftovers in triage.md ("Evolving arrays leftovers") and hacks.md.
+`test/probes/plan37/evolving/` (all pass). Leftovers fixed in triage 2026-09-28 (regular object literals, TS7010 on widened arrays); the rest is in hacks.md.
 Out of scope still: yieldExpressionInControlFlow (TS7005 from a nested evaluation).
 
 ## E. The missing type (landed at stage 1; stage 2 open)

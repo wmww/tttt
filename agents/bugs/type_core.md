@@ -62,6 +62,18 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   the predicate (`test/probes/plan05/visitNodeInference.ts`); literal widening in an object literal that has a
   contextual type.
 
+- **Contextual types are instantiated eagerly** (probes `test/probes/plan37/contextual_instantiation.ts`,
+  `return_only.ts`; triage 2026-09-28): `f(() => ({ a: true, b: x => x }))` and `k2(() => () => ({ a: true }))`: tsc
+  gives the arrow the return type `{ a: boolean }` while the literal node prints `{ a: true }`; tttt the other way
+  round. tsc fixes a function's return type at its first contextual check, and instantiateContextualType only replaces
+  *instantiable leaves* (with the returnMapper's inferences, not earlier arguments'), so `true` meets raw `T` and
+  widens; the final check against the resolved signature keeps the literal. tttt instantiates the whole parameter type
+  with the inferences so far (`ty_instantiate(me, param_type, context_mapper)` in call.c's second pass) and memoizes
+  the contextual return (`KEY_CONTEXT_RETURN`). Same root as the two bullets above (defaults leaking, eager return
+  types) and as `k3(y => () => ...)` being `boolean` where tsc fixes T without candidates (`unknown`): a plan-sized
+  port of leaf-wise contextual instantiation, together with plan 37's "fixing without candidates".
+- Reverse mapped types refuse generic intersection sources (`T & {...}`), which tsc accepts (tttt's are eager).
+
 ## Relations, instantiation, reduction
 - **Intersection reduction by constraint**: `T & P` for a type parameter T with a primitive constraint is reduced
   (`reduce_type_variable_intersection`, and `(T & "a") | (T & "b")` back to T), but not for indexed access type
@@ -137,6 +149,24 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 - **`awaitedTypeStrictNull` overflows the stack** in `instantiate_mapped_over_list` under the debug build + valgrind
   (8MB main stack; the release build passes). Deep but maybe not infinite recursion; worth checking whether the
   recursion is bounded.
+
+- **No general property list for intersections** (tsc's getPropertiesOfType): `ty_has_exact_optional_unassignable`
+  (relate.c, takes the first member's properties for unions now), jsx.c `container_prop_name`, members.c
+  `builder_add_intersection_members` and the member loop in class_decl.c (~line 509) take each member's apparent type
+  and require `TYF_OBJECT`, so a type parameter constrained to an intersection is skipped. `spreads_into_nothing`
+  (expr.c) ignores intersections (tsc: empty when every member is). `with_synthetic_default` (lower.c) keeps index
+  signatures and private/readonly members that tsc's getSpreadType drops. check.c's `number_index` check and the
+  private-name check are still object-only gates (low value).
+- **Spurious TS2589 on zod without variance annotations** (deep-partial.test.ts:111, since the explicit type argument
+  constraint check of triage 2026-09-28): `toExtend<z.ZodObject>` against expect-type's recursive `MismatchInfo` goes
+  >100 levels (`props_related_impl` -> `prop_type` -> `ty_indexed_instantiated` -> `find_prop` ->
+  `conditional_from_root` -> ~135 `instantiate_inner`). tttt's order of `MismatchInfo`'s key union starts with `array,
+  nonoptional, _zod...`, tsc's with `default`, which fails at once. Union order again; the TS2344 text there also
+  differs (property order, tsc's `... 62 more ...` truncation). `perf_leads.md` "Variance measurements" says how to
+  build that zod variant (strip `in`/`out` both after `<`/`,` and at line starts inside multi-line lists).
+- Loading webpack through a symlinked path loads its files twice, and then two diagnostics still depend on the checker
+  count (`explicit-vendor-chunk/webpack.config.js:7` TS2859 at K=1 / TS2589 at K=4, `lazy-compilation/webpack.config.js`):
+  another depth-limit order dependence. The real path (what the scripts use) is identical at every K.
 
 ## Circularity (plan 29 stage 3 leftovers)
 - recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the

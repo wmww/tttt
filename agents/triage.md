@@ -2,74 +2,12 @@
 Uninvestigated items: dump here what you don't want to deal with now. Triage sessions drain this into `bugs/*.md`,
 plans, or fixes.
 
-Last drained 2026-09-28 (triage session, todo entry 10 of the third window). Fixed: the zod root-config segfault
-(deferred reference args in reverse mapped inference), object rest with computed keys, `export default;`, the
-webpack-in-worktree numbers (a symlinked corpus path loads webpack twice; realworld.py uses real paths now), and
-the override and variance annotation checks (a sub-agent; leftovers in `bugs/missing_checks.md`). Routed:
-plan 27 leftovers (rest element grammar, `interface void`, tagged template parsing, TransportStream, reservedWords3),
-plan 26 leftovers (JS `0other`), `bugs/type_core.md` (const type parameters with several candidates, plan 32's
-anyBaseTypeIndexInfo), `bugs/display.md` (`shows_alias`, `undefined[]`), `bugs/missing_checks.md` (TS2507/TS2735),
-`bugs/harness.md` (`port_item_add_alias`, lib-file log_errors), `bugs/perf_leads.md` (valibot +2.5%, the 89 s
-duplicated webpack), hacks.md (`string_to_double`).
-
-- **TS2769 overload signatures print differently depending on whether a `.d.ts` was checked first**
-  (found by plan 36 stage 2): reactDefaultPropsInferenceSuccess passes, but with `// @skipLibCheck: true` added (or
-  `baseline_tests --checkers 2`, where another checker checks react16.d.ts) tttt prints the candidate as
-  `'new <P extends Props = BaseProps>(props: Readonly<P>): FieldFeedback<P>'` instead of tsc's instantiated
-  `'(props: Readonly<Props>): FieldFeedback<Props>'`. Some memo that checking the lib file fills changes what the
-  overload error reports: an evaluation-order dependence, and the only one K checkers show on the suite.
-- **Thread startup per program** (plan 36 stage 3): `baseline_tests --checkers 4 --threads 4` takes 38 s against
-  24 s at `--threads 1` (same output): ~1 ms per program for starting and joining 3 threads (8 MB stacks, glibc arenas;
-  most suite tests have one file, so there is nothing to overlap). Irrelevant for one CLI run; a persistent pool
-  (which stage 1's load pool would be) fixes it if a watch/LSP mode or a threaded harness ever wants it. Also, with
-  fewer checked files than checkers, the empty checkers still build their global types (~0.2 ms each).
-- **`Array<T>` annotation display depended on when the global Array type was first built**: moot since plan 37 D
-  builds Array when the checker starts (like tsc; +14 tests), but the order dependence (`Array<T>` vs `T[]`) is still
-  there for other global generics: find what the printer keys on if it shows up again.
-- **Type-predicate narrowing should return the candidate unchanged** (tsc's getNarrowedType; plan 37 B finding):
-  tttt prints `A | B` where tsc has `Both` (flowControlTypeGuardThenSwitch, partiallyDiscriminantedUnions,
-  stringLiteralCheckedInIf02).
-- `test/probes/plan37/return_only.ts` (plan 37 F): `k(() => () => ({ a: true, b: x => x }))` with `k<T>(g: () => () =>
-  { a: T, b: (x: T) => void }): T` types both arrows as returning `{ a: true; ... }` where tsc widens their return
-  types to `{ a: boolean; ... }` (the object literal itself is `a: true` in both): the inner arrow's inferred return
-  type isn't widened in the return-only/final check the way tsc's getReturnTypeFromBody does.
-- Corpus session 2026-09-28 leftovers (display, from probes in `test/probes/plan19/webpack/`): a `require("m").X`
-  alias that resolves to nothing prints `error` in tsc (tttt `any`), tsc lists a same-named `@typedef` as a second
-  declaration of the alias symbol, and `module.exports = f` of a function declaration prints `typeof f`
-  (require_property_value_only.ts); a JS `const S = Symbol()` read through a `@type {typeof S}` const prints `symbol`
-  in tsc (jsdoc_accessor_type.ts). Also: `declare const B = -1n` under a pre-ES2020 target lacks TS2737.
-- Suite checker bugs 5 (flow bucket) found the same bug twice: code that reads signatures/members only when
-  `apparent->flags & TYF_OBJECT`, skipping intersections whose `ty_members()` are well defined
-  (`constructor_instance_type` in flow.c, `call_signatures_of` in call.c). Grep for other `TYF_OBJECT ? ty_members`
-  gates and check whether tsc's counterpart (getSignaturesOfType etc.) accepts intersections there.
-- Suite checker bugs 5 (main tree) leftovers: (1) a union property's symbol lists every member's declarations in tsc
-  (`(A[] | B[]).filter` is `Symbol(Array.filter, Decl x4)`, tttt x2: unionOfArraysFilterCall symbols); (2) tsc's
-  alternateResult TS2307/TS7016 elaboration ("There are types at '...', but this result could not be resolved under
-  your current 'moduleResolution' setting" / "...when respecting package.json \"exports\"", moduleNameResolver.ts
-  nodeModuleNameResolverWorker) and TS6504 for JS files a resolution put in the program: 9 tests
-  (node10AlternateResult_*, resolvesWithoutExportsDiagnostic1, nodeModulesExportsBlocksTypesVersions,
-  resolutionModeImportType1/TypeOnlyImport1(node10)); (3) a default import of a CommonJS file from ESM in node16 is
-  `module.exports` (`obj2.default`: nodeModulesTripleSlashReferenceModeDeclarationEmit7); (4) the symbols of a local
-  type merged with an exported value of one name list both declarations (importElisionExportNonExportAndDefault);
-  (5) tsc's pretty output splits lines on `\r` and U+2028/9 too, error_format_pretty() only on `\n`.
-- **webpack depends on the checker count** (found in todo entry 8, already at 8eab3851): `./checkerdiff.py webpack`
-  gives 37 diagnostics with `--checkers 1` and 30 with 4 (the default, what `./realworld.py` reports), 11 differing:
-  IdleFileCachePlugin.js 157/158/208/220 (TS2322, TS18048) and PackFileCacheStrategy.js:163 only with 1 checker,
-  cleverMerge.js:355 only with 4. An evaluation-order dependence in JS checking (webpack went 107 -> 30 in entries 6-7:
-  bisect those commits with checkerdiff first). tsc reports none of them, so K=1 is the worse one. The main one:
-  `/** @type {ReturnType<typeof setTimeout> | undefined} */ let idleTimer; idleTimer = setTimeout(f, 0)` says
-  `Type 'number' is not assignable to type 'Timeout'` at K=1 only: lib.dom's and @types/node's merged `setTimeout`
-  overloads (their order, or which one `ReturnType` / the call picks) depend on what was checked before. Reproduce
-  with `./release/tttt -q --keep-going --all-errors --checkers 1 -p thirdparty/corpora/webpack`.
-- Evolving arrays leftovers (plan 37 D): (1) `x.push("s"); x.push({})` finalizes to `(string | {})[]` in tsc but
-  `{}[]` in tttt: tsc's subtype reduction keeps a primitive next to that `{}` (its element is the context-free
-  type of the object literal; find out which rule of removeSubtypes/strictSubtypeRelation spares it, `["s", {}]` is
-  `{}[]` in both). (2) Without strictNullChecks, `let x = []; x.push(null); return x` should get TS7010 "implicitly
-  has an 'any[]' return type": `function_check_widened_return` only knows returns that are only null/undefined, not
-  arrays of widening types (tsc's reportErrorsFromWidening walks into them).
-- **zod without variance annotations** (todo entry 9 probe: `perf_leads.md` "Variance measurements" says how to make
-  it): tsc reports 27 errors there (the annotations are load-bearing), tttt now the same lines, but (1) at
-  deep-partial.test.ts:94/97/111 and object.test.ts:214/232/274 tsc says TS2344 on expect-type's `toExtend<X>()` (the
-  type argument fails the constraint of the overload tsc picks) where tttt says TS2554 + TS6236 (it picked the rest
-  `...MISMATCH` overload): overload choice with a failed constraint; (2) recursive-types.test.ts:17/35: tsc's head is
-  TS2375 (the exactOptionalPropertyTypes variant of TS2322) at the top level, tttt only uses it one level down.
+Last drained 2026-09-28 (triage session, todo entry 10 of the fourth window; suite 10516 -> 10543). Fixed: webpack's
+checker-count dependence (overload groups keyed by block only; webpack 30 at every K), the baseline walk typing each
+file with its own checker, TS2769 candidates printed instantiated, type-predicate narrowing keeping the candidate
+(map_type), ~20 `TYF_OBJECT` gates that skipped intersections, explicit type arguments failing a constraint
+(candidateForTypeArgumentError, TS2344), TS2375 against union targets, regular object literals (evolving arrays of
+objects, the `literal_lacks_prop_of` HACK gone), TS7010/7011/7018 from reportErrorsFromWidening, tsc's line breaks
+(`\r`, U+2028/9) and whitespace (NEL, U+200B). Routed: eager contextual instantiation (plan 37 F's return_only probe)
+to `bugs/type_core.md`, the zod-without-variance TS2589, intersection property lists, spread identity, and the
+smaller leftovers to `bugs/*.md` and hacks.md.

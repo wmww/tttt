@@ -1715,8 +1715,8 @@ static bool signature_has_literal_types(Signature const* sig) {
     return false;
 }
 
-// Overloads with a literal parameter are tried first, in their order (tsc's reorderCandidates, "specialized
-// signatures"). TODO: tsc also orders the groups of merged declarations
+// The (merged symbol, declaration block) group of a signature, which reorder_candidates() orders by (tsc's
+// reorderCandidates)
 static TyDeclGroup const* signature_decl_group(Checker* me, Signature const* sig) {
     while (sig->target) sig = sig->target;
     return sig->function ? ty_decl_group(me, sig->function) : nullptr;

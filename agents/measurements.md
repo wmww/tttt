@@ -10,7 +10,7 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Suite (2026-09-28, suite checker bugs 5, a59b7355; plan 37 C + D brought it to 10513, todo entry 9 to 10516, errors 11962, symbols 12591, types 11601)
+## Suite (2026-09-28, suite checker bugs 5, a59b7355; plan 37 C + D brought it to 10513, todo entry 9 to 10516, triage (entry 10) to 10543: errors 11983, symbols 12594, types 11613)
 **10477 / 13540** full pass (errors 11941, symbols 12590, types 11576). A suite run takes ~23 s. `./failstats.py`:
 errors component fails in 1599 tests: both missing and spurious 450, tsc reports errors and tttt nothing 382, **same
 codes+positions, other text 296**, only missing 248, tttt errors where tsc has none 119, only spurious 81. Top missing

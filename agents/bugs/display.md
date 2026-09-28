@@ -52,6 +52,12 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   first built (moot since plan 37 D builds Array at checker start), but the mechanism is still there for other global
   generics: if `X<T>` vs another spelling flips with `-f` vs a full run or with `--checkers`, find what the printer keys on.
 
+- tttt interns every empty `{}` literal as one type, so an earlier `{}` in a file changes union member order compared
+  with tsc (`test/probes/plan37/evolving/objects.ts` puts the affected case first).
+- A conditional type as a constraint prints parenthesized: `<Expected extends (Extends<A, Expected>) extends true ?
+  ...>`, tsc without the parentheses (expect-type).
+- reactDefaultPropsInferenceSuccess: the TS6500 related info prints `keyof Props` where tsc prints `"when" | "error"`.
+
 ## Names and specifiers
 - **`import("…")` specifiers**: tsc prints some specifiers as absolute paths the harness then strips (`/.src/a` -> `a`),
   so the text matches but the `^^^` underline is 6 longer (e.g. `exports` inside its own CommonJS file,
@@ -88,6 +94,11 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   property, tttt the first (mapped_over_intersection_readonly.ts); intersection_with_type_param.ts is the reverse
   (tttt misses a repeated Decl).
 - Duplicate class/interface members show as separate symbols (tsc: one merged symbol): the TS2687 tests.
+- **Spread doesn't keep the property's identity**: tsc's getSpreadSymbol returns the same symbol when readonly-ness
+  doesn't change, so `{ ...x }.a` with `x: N.A` shows `Symbol(N.A.a)` and reuse carets in the types baseline; tttt
+  `Symbol(a)`. Setting `.reuse` in `spread_props_of` (ty/expr.c) did it but lost 14 tests: `spread_into`, excess
+  property checks and JSX spread attributes read the builder's other fields (and object literal widening may rebuild
+  the properties).
 - A union property's symbol lists every member's declarations in tsc (`(A[] | B[]).filter` is `Symbol(Array.filter,
   Decl x4)`, tttt x2: unionOfArraysFilterCall).
 - A local type merged with an exported value of the same name lists both declarations (importElisionExportNonExportAndDefault).

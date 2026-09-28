@@ -25,6 +25,11 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   JS, `ty_check_element_implicit_any`'s TODO).
 
 ## Known missing checks
+- TS2510 ("Base constructors must all have the same return type") for an intersection base whose construct
+  signatures return different types.
+- TS2344 on type references (`ty_check_type_reference_constraints`, check.c): 7 spurious in unknownType2
+  (`AssertTrue<false>`), one missing each in instantiationExpressions:163 and typeGuardFunctionErrors:152 with generic
+  arguments (`U`, `T | "d"`): the HACK there skips generic arguments.
 - **Module resolution elaboration**: tsc's alternateResult TS2307/TS7016 chains ("There are types at '...', but this
   result could not be resolved under your current 'moduleResolution' setting" / "...when respecting package.json
   \"exports\"", moduleNameResolver.ts nodeModuleNameResolverWorker) and TS6504 for JS files a resolution put in the

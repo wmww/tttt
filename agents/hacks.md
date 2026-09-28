@@ -468,6 +468,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   properties of a renaming `as` clause lose their declarations.
 
 ## Type core (`src/ty/`)
+- Object literal states (fresh, regular = `OBJECT_LITERAL_REGULAR`, widened; triage 2026-09-28): JSX attribute types
+  still skip the regular state (they widen as before), and `structured_related_members` (relate.c) relates a union
+  target's members against `ty_widened_objects(source)` where tsc only regularizes the source.
 - Relation error reporting (`relate.c`, plan 34): `flush_incompatible()` reads a property's name back out of its
   pending "Types of property 'NAME' are incompatible." message (fixed prefix length) instead of storing it. tsc's
   `headMessage` is approximated by `RelationState.at_top` (the first `is_related_to()` call): a suppressed top-level
@@ -607,6 +610,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   per type variable). The real fix is a cheaper conditional base constraint (bugs/perf_leads.md).
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`, `ty/helpers.c`)
+- `ty_check_static_heritage` (HACK): tsc gives a class extending `X & K` (K a type variable) the static type `typeof
+  C & K`; tttt's `ty_static_type_of` doesn't, so the check adds `& K` to the source itself (else
+  mixinIntersectionIsValidbaseType gets a false TS2417). Model it in `ty_static_type_of`.
 - `check_access` (TS2339, HACKs): lets through generic mapped types (`Pick<T, K>`: members
   only via the constraint) and classes with bases `class_base()` can't see (`ty_has_unresolved_base()`). Bracket access
   never reports a missing property. Generic TS2536 (`ty_indexed_access_index_ok`) lacks tsc's TS4105 case (a

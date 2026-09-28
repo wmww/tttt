@@ -36,5 +36,7 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    stripped 7.8 -> 4.65 G and now reports tsc's 26 errors; +3 tests incl. an indexed-access relation fix), the
    `Prop`/`PropDecl` split (arena -20..-31%, zod K=4 RSS 846 -> 675 MB), `./arenasites.sh`. Type counts are at or
    under tsc's: that lead is closed. Plan 36 stage 1 not started (walls unmeasurable that day: machine at load 10).
-10. **Triage.**
+10. ~~Triage~~ done: 10516 -> 10543 (+27, 0 lost; four Opus sub-agents + the main tree), webpack no longer depends on
+   the checker count (30 at K=1 and 4), corpora otherwise unchanged. Found: tsc's leaf-wise contextual instantiation
+   is the common root of three type_core.md inference bullets (plan-sized; next to plan 37's fixing without candidates).
 11. **Insights.**
