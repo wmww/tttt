@@ -1527,6 +1527,35 @@ Ty const* ty_unique_symbol_of_name(Checker* me, Atom const* name) {
     return intern_get(&my links, key, 2);
 }
 
+// `keyof` without the key types of index signatures (tsc's getIndexType with IndexFlags.NoIndexSignatures): the
+// property names of an object type. Anything generic, or a mapped type, is its ordinary keyof
+Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand) {
+    if (operand->kind == TY_UNION || operand->kind == TY_INTERSECTION) {
+        if (operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return ty_keyof(me, operand);
+        TyBuf parts = {0};
+        for (u32 i = 0; i < operand->composite.types.len; i++) {
+            ty_buf_push(&parts, ty_keyof_without_index_signatures(me, operand->composite.types.data[i]));
+        }
+        Ty const* ret = operand->kind == TY_UNION ? ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}) :
+            ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+        ty_buf_drop(&parts);
+        return ret;
+    }
+    if (!(operand->flags & TYF_OBJECT) || (ty_is_tuple(operand) && (operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES))) {
+        return ty_keyof(me, operand);
+    }
+    Members const* members = ty_members(me, operand);
+    if (members->mapped || members->expanded_from) return ty_keyof(me, operand);
+    TyBuf parts = {0};
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (ty_private_name_class(me, members->props[i]->name)) continue;
+        ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
+    }
+    Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret;
+}
+
 Ty const* ty_keyof(Checker* me, Ty const* operand) {
     if (ty_is_no_infer(operand)) return ty_no_infer(me, ty_keyof(me, operand->substitution.base));
     if (operand->flags & TYF_ANY) {

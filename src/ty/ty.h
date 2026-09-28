@@ -839,6 +839,7 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
 // The shape of a tuple type, the empty tuple (its own target) included. Null if it isn't one
 TupleShape const* ty_tuple_shape(Ty const* ty);
 Ty const* ty_keyof(Checker* me, Ty const* operand);
+Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand);
 // template.c: template literal types and string mappings (tsc's getTemplateLiteralType, getStringMappingType)
 Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* const* types, u32 len);
 Ty const* ty_string_mapping(Checker* me, TyStringMapping mapping, Symbol const* symbol, Ty const* type);

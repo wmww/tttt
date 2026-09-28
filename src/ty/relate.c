@@ -1593,6 +1593,13 @@ static Ternary index_signatures_related(
         ) {
             continue;
         }
+        // A generic mapped type's template stands for all of its values (tsc's indexSignaturesRelatedTo)
+        if (source_members->mapped && target_has_string_index) {
+            Ternary related = is_related_to(me, st, ty_mapped_template(me, source_members->mapped), target_info->value, report);
+            if (!related) return TERNARY_FALSE;
+            result &= related;
+            continue;
+        }
         // The source's signature for the same key, else one that applies (a string index covers numbers)
         IndexInfo const* source_info = nullptr;
         for (u32 j = 0; j < source_members->index_count && !source_info; j++) {
@@ -2310,7 +2317,8 @@ static Ternary generic_mapped_target_related(
     }
     if (mapped->optional < 0 || (source->kind == TY_ANONYMOUS && ty_members(me, source)->mapped)) return TERNARY_FALSE;
     Ty const* target_keys = mapped->name_type ? mapped->name_type : mapped->constraint;
-    Ty const* source_keys = ty_keyof(me, source);
+    // (The source's property names: its index signatures don't make it have every key, IndexFlags.NoIndexSignatures)
+    Ty const* source_keys = ty_keyof_without_index_signatures(me, source);
     TyMapper const* keyed = nullptr;
     if (mapped->name_type) {
         // The key as a type parameter constrained by what it iterates over (tsc's mapped type parameter): `T[P]
@@ -3315,6 +3323,9 @@ static Ternary structured_related_impl(
         // members passes: it stands in for tsc's rules between two generic mapped types (mappedTypeRelatedTo), a
         // homomorphic Readonly<T> and T, and the like, which don't exist here yet
         if (related || !(source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return related;
+        // (An object type that isn't a mapped type is done, whatever it mentions: tsc's structuredTypeRelatedToWorker
+        // returns False for a generic mapped target unless the source is a mapped type too)
+        if ((source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && !ty_members(me, source)->mapped) return related;
     }
 
     // Generic sources
