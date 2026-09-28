@@ -37752,7 +37752,7 @@ const baselines = {
     },
     'controlFlowAliasing': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowAliasingCatchVariables(useunknownincatchvariables=false)': {
@@ -65453,7 +65453,7 @@ const baselines = {
     'stringLiteralTypesInUnionTypes04': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesInVariableDeclarations01': {
         errors: true,
@@ -67513,7 +67513,7 @@ const baselines = {
     'discriminatedUnionTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminatedUnionTypes2': {
         errors: true,

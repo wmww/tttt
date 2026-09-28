@@ -1432,20 +1432,51 @@ bool ty_is_discriminant_property(Checker* me, Ty const* type, Atom const* name) 
     return is_discriminant_property(me, type, name);
 }
 
-// tsc's getDiscriminantPropertyAccess(): `expr` if it is `reference.name` for a discriminant property, or a const alias
-// of that
-// TODO: destructured discriminants (`const { kind } = x`)
-static PropertyExpr const* discriminant_access(FlowQuery* q, Expr const* expr, Ty const* computed) {
+// What names a discriminant property of the reference: an access `reference.name` (null for a destructured one), and
+// the name (null if nothing does)
+typedef struct DiscriminantAccess {
+    PropertyExpr const* access;
+    Atom const* name;
+} DiscriminantAccess;
+
+// `const { kind } = x`, `const { kind: k } = x.y`: a const element of an unannotated variable's object pattern,
+// without a default, whose initializer is the reference (tsc's getCandidateDiscriminantPropertyAccess). The name
+static Atom const* destructured_alias_name(FlowQuery* q, Expr const* expr) {
     Checker* me = q->me;
-    if (q->declared->kind != TY_UNION && computed->kind != TY_UNION) return nullptr;
+    if (expr->tag != EXPR_IDENTIFIER || expr->identifier.keyword) return nullptr;
+    Symbol const* symbol = expr->identifier.target;
+    if (!symbol || !symbol->is_const || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) return nullptr;
+    Binding const* binding = symbol->decls[0].node;
+    Binding const* pattern = binding->parent;
+    if (!pattern || pattern->tag != BINDING_OBJECT || pattern->parent || binding->default_value || binding->rest) return nullptr;
+    if (pattern->has_explicit_type || !pattern->source || pattern->source->tag != LAZY_TYPE_INITIALIZED_BINDING) return nullptr;
+    ObjectBindingItem const* item = binding->parent_item;
+    if (!item || item->computed_key || item->source.tag != VALUE_STRING) return nullptr;
+    InitializedBinding const* initialized = c_container_of(pattern->source, InitializedBinding, lazy_type);
+    Expr const* init = &initialized->value;
+    if (init->tag != EXPR_IDENTIFIER && init->tag != EXPR_PROPERTY) return nullptr;
+    if (!is_matching_reference(me, q->reference, init)) return nullptr;
+    return checker_atom(me, cstr_sv(&item->source.string));
+}
+
+// tsc's getDiscriminantPropertyAccess(): `expr` if it is `reference.name` for a discriminant property, or a const alias
+// of that (`const k = x.kind`, `const { kind } = x`)
+static DiscriminantAccess discriminant_access(FlowQuery* q, Expr const* expr, Ty const* computed) {
+    Checker* me = q->me;
+    DiscriminantAccess none = {0};
+    if (q->declared->kind != TY_UNION && computed->kind != TY_UNION) return none;
     expr = skip_reference_wrappers(expr);
     Expr const* aliased = aliased_access(expr);
+    Atom const* destructured = aliased ? nullptr : destructured_alias_name(q, expr);
     if (aliased) expr = aliased;
-    if (expr->tag != EXPR_PROPERTY || !is_matching_reference(me, q->reference, &expr->property->expr)) return nullptr;
-    Atom const* name = access_name(me, expr->property);
-    if (!name) return nullptr;
     Ty const* type = q->declared->kind == TY_UNION && is_type_subset_of(computed, q->declared) ? q->declared : computed;
-    return is_discriminant_property(me, type, name) ? expr->property : nullptr;
+    if (destructured) {
+        return is_discriminant_property(me, type, destructured) ? (DiscriminantAccess){ nullptr, destructured } : none;
+    }
+    if (expr->tag != EXPR_PROPERTY || !is_matching_reference(me, q->reference, &expr->property->expr)) return none;
+    Atom const* name = access_name(me, expr->property);
+    if (!name) return none;
+    return is_discriminant_property(me, type, name) ? (DiscriminantAccess){ expr->property, name } : none;
 }
 
 typedef Ty const* (*NarrowPropFn)(FlowQuery* q, Ty const* prop_type, void const* arg);
@@ -1464,13 +1495,14 @@ static bool keep_by_discriminant(Checker* me, Ty const* member, void const* arg)
 }
 
 // The members of `type` whose property could be what `narrow` leaves of the property's type
-static Ty const* narrow_by_discriminant(FlowQuery* q, Ty const* type, PropertyExpr const* access, NarrowPropFn narrow, void const* arg) {
+static Ty const* narrow_by_discriminant(FlowQuery* q, Ty const* type, DiscriminantAccess found, NarrowPropFn narrow, void const* arg) {
     Checker* me = q->me;
-    Atom const* name = access_name(me, access);
+    Atom const* name = found.name;
+    PropertyExpr const* access = found.access;
     if (!name) return type;
-    bool optional_chain = access->optional_chain;
+    bool optional_chain = access && access->optional_chain;
     bool remove_nullable = compiler_options()->strict_null_checks && has_type_facts(me, type, TF_EQ_UNDEFINED_OR_NULL) &&
-        (optional_chain || (access->expr.tag == EXPR_UNARY_OP && access->expr.unary_op->op == UNARY_OP_RIGHT_BANG));
+        (optional_chain || (access && access->expr.tag == EXPR_UNARY_OP && access->expr.unary_op->op == UNARY_OP_RIGHT_BANG));
     Ty const* prop = prop_type_by_name(me, remove_nullable ? type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL) : type, name);
     if (!prop) return type;
     if (remove_nullable && optional_chain) prop = union_of(me, prop, ty_intrinsic(me, TY_UNDEFINED));
@@ -1486,12 +1518,12 @@ static bool is_not_type(Checker* me, Ty const* member, void const* arg) {
 // `x.kind === k` with kind the key property of x's union: the member for k (tsc's narrowTypeByDiscriminantProperty).
 // Null if that doesn't decide it
 static Ty const* narrow_by_key_equality(
-    FlowQuery* q, Ty const* type, PropertyExpr const* access, BinaryOp op, Expr const* value, bool assume_true
+    FlowQuery* q, Ty const* type, DiscriminantAccess access, BinaryOp op, Expr const* value, bool assume_true
 ) {
     Checker* me = q->me;
     if (op != BINARY_OP_TRIPLE_EQUAL && op != BINARY_OP_TRIPLE_NOT_EQUAL) return nullptr;
     Atom const* key = ty_union_key_property(me, type);
-    if (!key || key != access_name(me, access)) return nullptr;
+    if (!key || key != access.name) return nullptr;
     Ty const* candidate = ty_union_member_for_key(me, type, ty_flow_expr_type(me, value));
     if (!candidate) return nullptr;
     if ((op == BINARY_OP_TRIPLE_EQUAL) == assume_true) return candidate;
@@ -1513,8 +1545,8 @@ static Ty const* narrow_by_truthiness(FlowQuery* q, Ty const* type, Expr const* 
     if (compiler_options()->strict_null_checks && assume_true && optional_chain_contains_reference(me, expr, q->reference)) {
         type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
     }
-    PropertyExpr const* access = discriminant_access(q, expr, type);
-    if (access) {
+    DiscriminantAccess access = discriminant_access(q, expr, type);
+    if (access.name) {
         u32 facts = assume_true ? TF_TRUTHY : TF_FALSY;
         return narrow_by_discriminant(q, type, access, narrow_prop_by_facts, &facts);
     }
@@ -1526,8 +1558,8 @@ static Ty const* narrow_by_optionality(FlowQuery* q, Ty const* type, Expr const*
     if (is_matching_reference(me, q->reference, expr)) {
         return adjusted_type_with_facts(me, type, assume_present ? TF_NE_UNDEFINED_OR_NULL : TF_EQ_UNDEFINED_OR_NULL);
     }
-    PropertyExpr const* access = discriminant_access(q, expr, type);
-    if (access) {
+    DiscriminantAccess access = discriminant_access(q, expr, type);
+    if (access.name) {
         u32 facts = assume_present ? TF_NE_UNDEFINED_OR_NULL : TF_EQ_UNDEFINED_OR_NULL;
         return narrow_by_discriminant(q, type, access, narrow_prop_by_facts, &facts);
     }
@@ -1539,21 +1571,16 @@ static bool is_comparable_to(Checker* me, Ty const* member, void const* arg) {
     return ty_is_comparable_either_way(me, member, value);
 }
 
-static bool is_coercible_kind(Ty const* ty) {
-    return (ty->flags & (TYF_NUMBER | TYF_STRING | TYF_BOOLEAN_LITERAL | TYF_NUMBER_LITERAL | TYF_STRING_LITERAL)) != 0;
+// tsc's isCoercibleUnderDoubleEquals: a number, string or boolean literal member may `==` a number, string or boolean
+// (not a literal: `"bar" == "foo"` is false)
+static bool is_coercible_under_double_equals(Ty const* source, Ty const* target) {
+    return (source->flags & (TYF_NUMBER | TYF_STRING | TYF_BOOLEAN_LITERAL)) &&
+        ((target->kind == TY_INTRINSIC && (target->flags & (TYF_NUMBER | TYF_STRING))) || (target->flags & TYF_BOOLEAN));
 }
 
 static bool is_comparable_or_coercible(Checker* me, Ty const* member, void const* arg) {
     Ty const* value = arg;
-    if (ty_is_comparable_either_way(me, member, value)) return true;
-    if (!is_coercible_kind(member)) return false;
-    if (value->kind == TY_UNION) {
-        for (u32 i = 0; i < value->composite.types.len; i++) {
-            if (is_coercible_kind(value->composite.types.data[i])) return true;
-        }
-        return false;
-    }
-    return is_coercible_kind(value);
+    return ty_is_comparable_either_way(me, member, value) || is_coercible_under_double_equals(member, value);
 }
 
 static bool is_not_unit_comparable_to(Checker* me, Ty const* member, void const* arg) {
@@ -1712,8 +1739,8 @@ static Ty const* narrow_by_typeof(FlowQuery* q, Ty const* type, Expr const* type
         ) {
             type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
         }
-        PropertyExpr const* access = discriminant_access(q, target, type);
-        if (access) {
+        DiscriminantAccess access = discriminant_access(q, target, type);
+        if (access.name) {
             TypeofPropArg arg = { name, assume_true };
             return narrow_by_discriminant(q, type, access, narrow_prop_by_typeof, &arg);
         }
@@ -1940,11 +1967,11 @@ static Ty const* narrow_by_binary(FlowQuery* q, Ty const* type, Expr const* expr
                     type = narrow_by_optional_chain_containment(q, type, binary->op, left, assume_true);
                 }
             }
-            PropertyExpr const* left_access = discriminant_access(q, left, type);
-            PropertyExpr const* right_access = left_access ? nullptr : discriminant_access(q, right, type);
-            if (left_access || right_access) {
-                EqualityPropArg arg = { binary->op, left_access ? right : left, assume_true };
-                PropertyExpr const* access = left_access ? left_access : right_access;
+            DiscriminantAccess left_access = discriminant_access(q, left, type);
+            DiscriminantAccess right_access = left_access.name ? (DiscriminantAccess){0} : discriminant_access(q, right, type);
+            if (left_access.name || right_access.name) {
+                EqualityPropArg arg = { binary->op, left_access.name ? right : left, assume_true };
+                DiscriminantAccess access = left_access.name ? left_access : right_access;
                 Ty const* by_key = narrow_by_key_equality(q, type, access, binary->op, arg.value, assume_true);
                 if (by_key) return by_key;
                 return narrow_by_discriminant(q, type, access, narrow_prop_by_equality, &arg);
@@ -2021,8 +2048,8 @@ static Ty const* narrow_by_predicate(FlowQuery* q, Ty const* type, TyPredicate c
     ) {
         type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
     }
-    PropertyExpr const* access = discriminant_access(q, argument, type);
-    if (access) {
+    DiscriminantAccess access = discriminant_access(q, argument, type);
+    if (access.name) {
         PredicatePropArg arg = { candidate, assume_true };
         return narrow_by_discriminant(q, type, access, narrow_prop_by_predicate, &arg);
     }
@@ -2222,11 +2249,11 @@ static Ty const* narrow_by_switch_on_discriminant(FlowQuery* q, Ty const* type, 
 
 // `switch (x.kind)` with kind the key property of x's union: the members for the clause's cases (tsc's
 // narrowTypeBySwitchOnDiscriminantProperty). Null if some case has no member of its own
-static Ty const* narrow_by_key_switch(FlowQuery* q, Ty const* type, PropertyExpr const* access, FlowSwitchClause const* clause) {
+static Ty const* narrow_by_key_switch(FlowQuery* q, Ty const* type, DiscriminantAccess access, FlowSwitchClause const* clause) {
     Checker* me = q->me;
     if (clause->clause_start >= clause->clause_end) return nullptr;
     Atom const* key = ty_union_key_property(me, type);
-    if (!key || key != access_name(me, access)) return nullptr;
+    if (!key || key != access.name) return nullptr;
     TyBuf switch_types = {0};
     switch_clause_types(me, clause->switch_, &switch_types);
     TyBuf candidates = {0};
@@ -2345,10 +2372,10 @@ static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
             ty_buf_drop(&switch_types);
             if (every) type = type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
         }
-        PropertyExpr const* access = discriminant_access(q, needle, type);
-        Ty const* by_key = access ? narrow_by_key_switch(q, type, access, clause) : nullptr;
+        DiscriminantAccess access = discriminant_access(q, needle, type);
+        Ty const* by_key = access.name ? narrow_by_key_switch(q, type, access, clause) : nullptr;
         if (by_key) type = by_key;
-        else if (access) type = narrow_by_discriminant(q, type, access, narrow_prop_by_switch, clause);
+        else if (access.name) type = narrow_by_discriminant(q, type, access, narrow_prop_by_switch, clause);
     }
     if (type == final_array_type(me, before.type)) return before;
     return (FlowType){ type, before.incomplete };
