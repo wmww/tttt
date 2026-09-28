@@ -1126,6 +1126,29 @@ static void program_report_unused_expect_errors(Program* me) {
     }
 }
 
+// tsc's addUndefinedToGlobalsOrErrorOnRedeclaration and the `globalThis` check of initializeTypeChecker: a global value
+// can't be named `undefined`, a script can't declare `globalThis` (TS2397)
+static void program_check_builtin_global_names(Program* me) {
+    static char const* const names[] = { "undefined", "globalThis" };
+    for (u32 n = 0; n < c_arraylen(names); n++) {
+        Symbol const* symbol = symbol_table_get(&my binder->globals, csview_from(names[n]));
+        for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
+            SymbolDecl const* decl = &symbol->decls[i];
+            SourceFile const* file = decl->name.source;
+            if (!file || file->is_stdlib || !span_valid(decl->name)) continue;
+            // (`declare global { namespace globalThis {} }` in a module augments it)
+            if (n == 1 && file->is_module) continue;
+            // (Type declarations: checkTypeNameIsReserved's business)
+            if (decl->kind != SYMBOL_DECL_VARIABLE && decl->kind != SYMBOL_DECL_FUNCTION &&
+                decl->kind != SYMBOL_DECL_NAMESPACE) {
+                continue;
+            }
+            error_ctx_error_d(my errs, decl->name, 2397, "Declaration name conflicts with built-in global identifier '",
+                names[n], "'.");
+        }
+    }
+}
+
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     program_validate_options(me);
@@ -1147,6 +1170,7 @@ void program_resolve_names(Program* me) {
         if (source->is_module && !source->is_js) scope_check_duplicate_exports(source->scope);
     }
     binder_link_global_expandos(my binder);
+    program_check_builtin_global_names(me);
     binder_check_ambient_module_exports(my binder, my errs);
 
     if (my options.no_resolve) {

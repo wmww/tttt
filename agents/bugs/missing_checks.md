@@ -33,7 +33,8 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   check only knows class and member decorators).
 - **Classes**: TS2467 (computed name referencing the containing declaration's type parameter: interface members have
   no computed-name scope marker). TS2383/TS2385/TS2386/TS2512 (overload export/access/optional/abstract agreement,
-  next to TS2394 in tsc's checkFunctionOrConstructorSymbol); TS2687 skips statics and method/accessor pairs. TS2564
+  next to TS2394 in tsc's checkFunctionOrConstructorSymbol; for method signatures the overloads of a name are one
+  InterfaceMember, whose `optional` doesn't say which declaration had the `?`); TS2687 skips statics and method/accessor pairs. TS2564
   (strictPropertyInitialization, absent) and TS2612 need isPropertyInitializedInConstructor (flow at the end of the
   constructor). TS2401/TS2376 (`super()` placement with initialized/parameter properties). TS4127 (`override` on a
   dynamic name: overrideLateBindableIndexSignature1). TS2506 across files through namespace-qualified bases

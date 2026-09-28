@@ -13381,7 +13381,7 @@ const baselines = {
         types: true,
     },
     'extendGlobalThis2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31941,17 +31941,17 @@ const baselines = {
         types: false,
     },
     'undefinedTypeAssignment2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'undefinedTypeAssignment3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'undefinedTypeAssignment4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
