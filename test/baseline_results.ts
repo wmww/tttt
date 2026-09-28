@@ -212,7 +212,7 @@ const baselines = {
     },
     'TransportStream': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'abstractClassInLocalScope': {
@@ -331,12 +331,12 @@ const baselines = {
         types: false,
     },
     'accessorWithoutBody1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'accessorWithoutBody2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2606,14 +2606,14 @@ const baselines = {
         types: false,
     },
     'bom-utf16be': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bom-utf16le': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bom-utf8': {
         errors: true,
@@ -4256,9 +4256,9 @@ const baselines = {
         types: true,
     },
     'collisionCodeGenModuleWithUnicodeNames': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'collisionExportsRequireAndAlias': {
         errors: true,
@@ -5571,24 +5571,24 @@ const baselines = {
         types: true,
     },
     'conflictMarkerDiff3Trivia1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'conflictMarkerDiff3Trivia2': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'conflictMarkerTrivia1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'conflictMarkerTrivia2': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'conflictMarkerTrivia3': {
         errors: false,
@@ -5597,8 +5597,8 @@ const baselines = {
     },
     'conflictMarkerTrivia4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'conflictingDeclarationsImportFromNamespace1': {
         errors: false,
@@ -7061,9 +7061,9 @@ const baselines = {
         types: false,
     },
     'corrupted': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'couldNotSelectGenericOverload': {
         errors: true,
@@ -9602,7 +9602,7 @@ const baselines = {
     },
     'destructuringControlFlowNoCrash': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructuringFromUnionSpread': {
@@ -13311,9 +13311,9 @@ const baselines = {
         types: false,
     },
     'expressionTypeNodeShouldError': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'expressionWithJSDocTypeArguments': {
         errors: false,
@@ -13416,14 +13416,14 @@ const baselines = {
         types: false,
     },
     'extendedUnicodePlaneIdentifiers': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'extendedUnicodePlaneIdentifiersJSDoc': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'extendingClassFromAliasAndUsageInIndexer': {
         errors: true,
@@ -17941,9 +17941,9 @@ const baselines = {
         types: false,
     },
     'instanceofOperator': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'instanceofTypeAliasToGenericClass': {
         errors: true,
@@ -18012,7 +18012,7 @@ const baselines = {
     },
     'intTypeCheck': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'interMixingModulesInterfaces0': {
@@ -18672,12 +18672,12 @@ const baselines = {
     },
     'invalidUnicodeEscapeSequance': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'invalidUnicodeEscapeSequance2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'invalidUnicodeEscapeSequance3': {
@@ -18687,8 +18687,8 @@ const baselines = {
     },
     'invalidUnicodeEscapeSequance4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'invalidUseOfTypeAsNamespace': {
         errors: false,
@@ -23221,7 +23221,7 @@ const baselines = {
         types: true,
     },
     'newExpressionWithCast': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24561,9 +24561,9 @@ const baselines = {
         types: false,
     },
     'octalLiteralAndEscapeSequence': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'omitTypeHelperModifiers01': {
         errors: true,
@@ -24606,12 +24606,12 @@ const baselines = {
         types: true,
     },
     'optionalChainWithInstantiationExpression1(target=es2019)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'optionalChainWithInstantiationExpression1(target=es2020)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -25341,7 +25341,7 @@ const baselines = {
         types: true,
     },
     'parseErrorInHeritageClause1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26156,9 +26156,9 @@ const baselines = {
         types: false,
     },
     'promiseTest': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'promiseTry': {
         errors: false,
@@ -27181,17 +27181,17 @@ const baselines = {
         types: true,
     },
     'regExpWithOpenBracketInCharClass(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regExpWithOpenBracketInCharClass(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regExpWithOpenBracketInCharClass(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27221,49 +27221,49 @@ const baselines = {
         types: false,
     },
     'regularExpressionAnnexB': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionCharacterClassRangeOrder': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionExtendedUnicodeEscapes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionGroupNameSuggestions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionScanning(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionScanning(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionScanning(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionUnicodePropertyValueExpressionSuggestions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'regularExpressionWithNonBMPFlags': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'relatedViaDiscriminatedTypeNoError': {
         errors: true,
@@ -28036,7 +28036,7 @@ const baselines = {
         types: true,
     },
     'shebangError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29341,7 +29341,7 @@ const baselines = {
         types: true,
     },
     'stringLiteralsErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30141,9 +30141,9 @@ const baselines = {
         types: true,
     },
     'targetTypeBaseCalls': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'targetTypeCalls': {
         errors: true,
@@ -32021,19 +32021,19 @@ const baselines = {
         types: false,
     },
     'unicodeIdentifierName2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeIdentifierNames': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unicodeStringLiteral': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unionCallMixedTypeParameterPresence': {
         errors: true,
@@ -32301,14 +32301,14 @@ const baselines = {
         types: true,
     },
     'unterminatedRegexAtEndOfSource1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unterminatedStringLiteralWithBackslash1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'untypedArgumentInLambdaExpression': {
         errors: true,
@@ -33726,9 +33726,9 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction9_es2017': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'asyncArrowFunctionCapturesArguments_es2017': {
         errors: true,
@@ -33871,7 +33871,7 @@ const baselines = {
         types: true,
     },
     'await_unaryExpression_es2017_3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34006,9 +34006,9 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction9_es5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'asyncArrowFunctionCapturesArguments_es5': {
         errors: true,
@@ -34321,9 +34321,9 @@ const baselines = {
         types: true,
     },
     'asyncArrowFunction9_es6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'asyncArrowFunctionCapturesArguments_es6': {
         errors: true,
@@ -34511,7 +34511,7 @@ const baselines = {
         types: true,
     },
     'await_unaryExpression_es6_3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42171,12 +42171,12 @@ const baselines = {
         types: false,
     },
     'objectBindingPatternKeywordIdentifiers01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectBindingPatternKeywordIdentifiers02': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42186,7 +42186,7 @@ const baselines = {
         types: false,
     },
     'objectBindingPatternKeywordIdentifiers04': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43647,13 +43647,13 @@ const baselines = {
     },
     'templateStringInObjectLiteral': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateStringInObjectLiteralES6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateStringInParentheses': {
         errors: true,
@@ -43677,23 +43677,23 @@ const baselines = {
     },
     'templateStringInPropertyName1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateStringInPropertyName2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateStringInPropertyNameES6_1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateStringInPropertyNameES6_2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateStringInSwitchAndCase': {
         errors: true,
@@ -44226,12 +44226,12 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions07(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions07(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44276,12 +44276,12 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions12(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions12(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44296,12 +44296,12 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions14(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions14(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44326,12 +44326,12 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions17(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions17(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44346,12 +44346,12 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions19(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeExtendedEscapesInRegularExpressions19(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44586,22 +44586,22 @@ const baselines = {
         types: true,
     },
     'unicodeExtendedEscapesInStrings24(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeExtendedEscapesInStrings24(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeExtendedEscapesInStrings25(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeExtendedEscapesInStrings25(target=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47671,9 +47671,9 @@ const baselines = {
         types: false,
     },
     'incrementAndDecrement': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callChain.2': {
         errors: true,
@@ -48466,7 +48466,7 @@ const baselines = {
         types: true,
     },
     'decrementOperatorWithAnyOtherTypeInvalidOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48502,7 +48502,7 @@ const baselines = {
     },
     'deleteOperatorInvalidOperations': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'deleteOperatorWithAnyOtherType': {
@@ -48536,7 +48536,7 @@ const baselines = {
         types: true,
     },
     'incrementOperatorWithAnyOtherTypeInvalidOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48691,8 +48691,8 @@ const baselines = {
         types: true,
     },
     'voidOperatorInvalidOperations': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'voidOperatorWithAnyOtherType': {
@@ -51721,8 +51721,8 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsReusesExistingTypeAnnotations': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsSubclassWithExplicitNoArgumentConstructor': {
@@ -52956,9 +52956,9 @@ const baselines = {
         types: false,
     },
     'jsxEsprimaFbTestSuite': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsxInvalidEsprimaTestSuite': {
         errors: false,
@@ -55898,7 +55898,7 @@ const baselines = {
     'parser.numericSeparators.decmialNegative': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.hex': {
         errors: true,
@@ -55921,7 +55921,7 @@ const baselines = {
         types: true,
     },
     'parser.numericSeparators.unicodeEscape': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56266,9 +56266,9 @@ const baselines = {
         types: true,
     },
     'parserClassDeclaration23': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserClassDeclaration24': {
         errors: true,
@@ -56656,7 +56656,7 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_Block2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56806,7 +56806,7 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_ParameterList4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56852,8 +56852,8 @@ const baselines = {
     },
     'parserInvalidIdentifiersInVariableStatements1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserVariableStatement1': {
         errors: true,
@@ -57051,9 +57051,9 @@ const baselines = {
         types: true,
     },
     'parserMemberAccessAfterPostfixExpression1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserObjectCreation2': {
         errors: true,
@@ -57061,18 +57061,18 @@ const baselines = {
         types: true,
     },
     'parserPostfixPostfixExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserPostfixUnaryExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserTypeAssertionInObjectCreationExpression1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserUnaryExpression1': {
@@ -57396,12 +57396,12 @@ const baselines = {
         types: true,
     },
     'parserMemberAccessExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserMemberAccessOffOfGenericType1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -57776,9 +57776,9 @@ const baselines = {
         types: false,
     },
     'parserMissingToken2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserModule1': {
         errors: true,
@@ -58221,7 +58221,7 @@ const baselines = {
         types: true,
     },
     'parser579071': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58261,14 +58261,14 @@ const baselines = {
         types: true,
     },
     'parser645086_1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser645086_2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser645086_3': {
         errors: true,
@@ -58346,9 +58346,9 @@ const baselines = {
         types: true,
     },
     'parserRegularExpressionDivideAmbiguity4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRegularExpressionDivideAmbiguity5': {
         errors: true,
@@ -58401,7 +58401,7 @@ const baselines = {
         types: true,
     },
     'parserSkippedTokens16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -59447,7 +59447,7 @@ const baselines = {
     },
     'parserS7.2_A1.5_T2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserS7.3_A1.1_T2': {
@@ -59466,7 +59466,7 @@ const baselines = {
         types: false,
     },
     'parserS7.9_A5.7_T1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59486,14 +59486,14 @@ const baselines = {
         types: false,
     },
     'parserUnicode2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserUnicode3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserUnicodeWhitespaceCharacter1': {
         errors: true,
@@ -59516,8 +59516,8 @@ const baselines = {
         types: true,
     },
     'parservoidInQualifiedName1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'parservoidInQualifiedName2': {
@@ -59631,9 +59631,9 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName29': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName3': {
         errors: true,
@@ -59642,7 +59642,7 @@ const baselines = {
     },
     'parserComputedPropertyName30': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName31': {
@@ -61102,7 +61102,7 @@ const baselines = {
     },
     'scannerS7.2_A1.5_T2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'scannerS7.3_A1.1_T2': {
@@ -61136,7 +61136,7 @@ const baselines = {
         types: false,
     },
     'scannerStringLiterals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
