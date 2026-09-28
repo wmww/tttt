@@ -5819,13 +5819,15 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
 
         bool optional = false;
         Span question = span_null;
+        Span definite = span_null;
         if (hop_char(&p, '?')) {
             question = span_from_previous_char(&p);
             hop_whitespace(&p);
             optional = true;
             if (!is_type) js_syntax_error(&p, question, 8009, "The '?' modifier can only be used in TypeScript files.");
         } else if (!is_type && *p.pos == '!' && p.pos[1] != '=') {
-            // Definite assignment assertion, only matters once definite assignment is checked
+            // Definite assignment assertion: see the field's grammar check below
+            definite = span_make(p.shared->source, p.pos, p.pos + 1);
             p.pos++;
             hop_whitespace(&p);
         }
@@ -5888,7 +5890,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             bool is_definitely_field = false;
 
             modified.kind = is_type ? MODIFIED_PROPERTY_SIGNATURE : MODIFIED_PROPERTY;
-            if (!check_modifiers(&p, &modifiers, modified) && modifiers.includes[MODIFIER_ACCESSOR] && optional) {
+            bool modifier_reported = check_modifiers(&p, &modifiers, modified);
+            if (!modifier_reported && modifiers.includes[MODIFIER_ACCESSOR] && optional) {
                 // (tsc's checkGrammarProperty)
                 parse_error(&p, question, 1276, "An 'accessor' property cannot be declared optional.");
             }
@@ -5929,6 +5932,18 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 mark_named_evaluation(&ret->field.value, ret->field.computed_key);
                 is_definitely_field = true;
                 hop_whitespace(&p);
+            }
+            // tsc's checkGrammarProperty
+            if (span_valid(definite) && !modifier_reported && (!ret->field.has_explicit_type || initialized ||
+                p.shared->in_ambient || ret->field.is_declare || ret->field.is_static || ret->field.is_abstract)
+            ) {
+                if (initialized) {
+                    parse_error(&p, definite, 1263, "Declarations with initializers cannot also have definite assignment assertions.");
+                } else if (!ret->field.has_explicit_type) {
+                    parse_error(&p, definite, 1264, "Declarations with definite assignment assertions must also have type annotations.");
+                } else {
+                    parse_error(&p, definite, 1255, "A definite assignment assertion '!' is not permitted in this context.");
+                }
             }
 
             if (p.whitespace != WHITESPACE_NEWLINE) {
@@ -9195,25 +9210,40 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         const char* end_of_initialization = p.pos;
         hop_whitespace(&p);
 
-        // `let x!: T`. TODO: TS1263/TS1264 when it's misplaced
-        if (*p.pos == '!' && p.whitespace != WHITESPACE_NEWLINE) {
-            Parser bang_p = parser(&p);
-            bang_p.pos++;
-            hop_whitespace(&bang_p);
-            if (*bang_p.pos == ':') {
-                initializer.binding.definitely_assigned = true;
-                parse_success(&bang_p);
-            } else {
-                parse_fail(&bang_p);
-            }
-        }
-
-        if (parse_binding_type_or_set_to_default(&p, &initializer.binding)) {
+        // `let x!: T` (tsc's parseVariableDeclarationAllowExclamation: not in a `for`)
+        Span definite = span_null;
+        if (!in_for && initializer.binding.tag == BINDING_IDENTIFIER && *p.pos == '!' && p.pos[1] != '=' &&
+            p.whitespace != WHITESPACE_NEWLINE
+        ) {
+            definite = span_make(p.shared->source, p.pos, p.pos + 1);
+            p.pos++;
             end_of_initialization = p.pos;
             hop_whitespace(&p);
         }
 
-        if (parse_initialization_or_set_to_default(&p, ctx, &initializer.value)) {
+        bool typed = false;
+        if (parse_binding_type_or_set_to_default(&p, &initializer.binding)) {
+            typed = true;
+            end_of_initialization = p.pos;
+            hop_whitespace(&p);
+        }
+
+        bool initialized = parse_initialization_or_set_to_default(&p, ctx, &initializer.value);
+        // tsc's checkGrammarVariableDeclaration (after its TS1155 for a `const` without an initializer)
+        if (span_valid(definite)) {
+            bool const_like = ret->keyword != VAR_INIT_VAR && ret->keyword != VAR_INIT_LET;
+            if (initialized) {
+                parse_error(&p, definite, 1263, "Declarations with initializers cannot also have definite assignment assertions.");
+            } else if (const_like && !p.shared->in_ambient) {
+            } else if (!typed) {
+                parse_error(&p, definite, 1264, "Declarations with definite assignment assertions must also have type annotations.");
+            } else if (p.shared->in_ambient) {
+                parse_error(&p, definite, 1255, "A definite assignment assertion '!' is not permitted in this context.");
+            } else {
+                initializer.binding.definitely_assigned = true;
+            }
+        }
+        if (initialized) {
             if (initializer.binding.tag == BINDING_IDENTIFIER) {
                 mark_named_evaluation(&initializer.value, false);
                 mark_assigned_name(&initializer.value, initializer.binding.content_span);
@@ -10633,7 +10663,7 @@ static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
         1079, 1089, 1090, 1096, 1097, 1120, 1123, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
-        1248, 1253, 1255, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18019,
+        1248, 1253, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18019,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;

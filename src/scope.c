@@ -3594,7 +3594,6 @@ void scope_note_ts_this_assignment(Scope const* me, BinaryOpExpr const* op) {
     Span name = expr_static_property_name(left);
     Expr const* prop = &left->property->prop;
     if (!span_valid(name) && prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_NUMBER) name = prop->inner_span; // `this[0]`
-    if (!span_valid(name)) return;
     Expr const* object = &left->property->expr;
     if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) return;
     // Directly in the constructor or a static block: not in a nested function, arrow functions included
@@ -3609,7 +3608,17 @@ void scope_note_ts_this_assignment(Scope const* me, BinaryOpExpr const* op) {
     }
     Symbol const* class_symbol = object->identifier.target;
     ClassDecl const* class_decl = class_symbol ? symbol_find_node(class_symbol, SYMBOL_DECL_CLASS) : nullptr;
-    ClassItem* field = class_decl ? class_decl_find_member(class_decl, name.sv, is_static) : nullptr;
+    if (!class_decl) return;
+    ClassItem* field = span_valid(name) ? class_decl_find_member(class_decl, name.sv, is_static) : nullptr;
+    // `this[k] = v` of a field `[k]: T`, written the same way
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (field) break;
+        if (i->tag == CLASS_ITEM_FIELD && i->field.computed_key && i->field.is_static == is_static &&
+            csview_equals_sv(i->field.computed_key->outer_span.sv, prop->outer_span.sv)
+        ) {
+            field = (ClassItem*)i;
+        }
+    }
     if (field && field->tag == CLASS_ITEM_FIELD && !field->field.ts_assigned) {
         field->field.ts_assigned = left;
         field->field.ts_assigned_class = class_decl;

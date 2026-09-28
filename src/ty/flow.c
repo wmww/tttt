@@ -578,6 +578,22 @@ static Expr const* reference_candidate(Expr const* expr) {
     }
 }
 
+// `E.A`, `ns.key` (tsc's tryGetNameFromEntityNameExpression): a dotted name of an enum member or a const
+static bool is_constant_entity_name(Checker* me, Expr const* key) {
+    if (key->tag != EXPR_PROPERTY || key->property->form != PROPERTY_EXPR_DOT || key->property->optional_chain) return false;
+    Expr const* root = &key->property->expr;
+    while (root->tag == EXPR_PROPERTY && root->property->form == PROPERTY_EXPR_DOT) root = &root->property->expr;
+    if (root->tag != EXPR_IDENTIFIER || root->identifier.keyword) return false;
+    // (tsc resolves the name as an entity first: a namespace, module or enum, never a variable's property)
+    Symbol const* target = root->identifier.target;
+    if (!target || !(target->flags & (SYMBOL_VALUE_MODULE | SYMBOL_REGULAR_ENUM | SYMBOL_CONST_ENUM))) return false;
+    Ty const* type = ty_flow_expr_type(me, key);
+    if (type->kind == TY_LITERAL && (type->flags & TYF_ENUM_LITERAL)) return true;
+    Atom const* name = checker_atom(me, expr_static_property_name(key).sv);
+    Prop const* prop = ty_get_prop(me, ty_flow_expr_type(me, &key->property->expr), name);
+    return prop && prop->decl->symbol && prop->decl->symbol->is_const;
+}
+
 // The name an access goes by: `a.b`, `a["b"]`, `a[0]`, `a[c]` for a `const c` of a literal type
 static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     Expr const* key = &access->prop;
@@ -587,7 +603,7 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     } else if (key->tag == EXPR_IDENTIFIER) {
         Symbol const* symbol = key->identifier.target;
         if (!symbol || !symbol->is_const || key->identifier.keyword) return nullptr;
-    } else {
+    } else if (!is_constant_entity_name(me, key)) {
         return nullptr;
     }
     bool is_number = false;

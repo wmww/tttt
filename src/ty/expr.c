@@ -1462,6 +1462,36 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
     return access->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
 }
 
+// tsc's getFlowTypeOfAccessExpression with assumeUninitialized: `this.x` in the constructor of the class that declares
+// x without an initializer is undefined until assigned (TS2565)
+void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    if (!options->strict_null_checks || !options->strict_property_initialization) return;
+    PropertyExpr const* access = expr->property;
+    if (access->assignment_target == FLOW_TARGET_DEFINITE || !access->flow || !access->in_constructor_of) return;
+    Expr const* object = &access->expr;
+    if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS ||
+        object->identifier.this_kind != THIS_CLASS_INSTANCE || object->identifier.target != access->in_constructor_of
+    ) {
+        return;
+    }
+    if (access->form != PROPERTY_EXPR_DOT || !span_valid(access->prop.inner_span)) return;
+    ClassDecl const* class_decl = symbol_find_node(access->in_constructor_of, SYMBOL_DECL_CLASS);
+    if (!class_decl || class_decl->is_ambient) return;
+    ClassItem const* field = class_decl_find_member(class_decl, access->prop.inner_span.sv, false);
+    if (!field || field->tag != CLASS_ITEM_FIELD || field->field.value.tag != EXPR_IMPLICIT_ANY || field->field.is_abstract ||
+        field->field.is_declare || field->field.is_auto_accessor || class_item_field_is_definite(field)
+    ) {
+        return;
+    }
+    Ty const* type = ty_expr_type(me, expr);
+    if (includes_undefined(type)) return;
+    Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+    Ty const* initial = ty_union(me, parts, 2, nullptr, (TyList){0});
+    if (!includes_undefined(ty_flow_type(me, expr, type, initial, access->flow))) return;
+    error_ctx_error_d(errs, access->prop.inner_span, 2565, "Property '", access->prop.inner_span, "' is used before being assigned.");
+}
+
 // Operators
 
 static bool extends_strict_nulls(Checker* me, Ty const* source, TyIntrinsic target) {

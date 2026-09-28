@@ -438,6 +438,44 @@ static Atom const* item_member_name(Checker* checker, ClassDecl const* me, Class
 }
 
 // What an instance member of a class is, for tsc's checkKindsOfPropertyMemberOverrides()
+bool class_item_field_is_definite(ClassItem const* me) {
+    check(my tag == CLASS_ITEM_FIELD);
+    if (!span_valid(my field.name_span)) return false;
+    char const* after = span_end_ptr(my field.name_span); // (the parser doesn't keep the `!`)
+    while (*after == ' ' || *after == '\t') after++;
+    return *after == '!';
+}
+
+// tsc's containsUndefinedType
+static bool contains_undefined(Ty const* ty) {
+    if (ty->flags & TYF_UNDEFINED) return true;
+    if (ty->kind != TY_UNION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty->composite.types.data[i]->flags & TYF_UNDEFINED) return true;
+    }
+    return false;
+}
+
+// tsc's isPropertyInitializedInConstructor: `this.x` isn't possibly undefined at the end of the constructor, when it
+// starts out undefined there. The reference is the constructor's first `this.x = v` (field.ts_assigned): without one
+// it's undefined wherever the end can be reached
+static bool field_initialized_in_constructor(Checker* checker, ClassItem const* field, Ty const* type, ClassItem const* constructor) {
+    FlowNode const* end = constructor->constructor.func.return_flow;
+    if (!end || flow_is_unreachable(end)) return true;
+    Expr const* reference = field->field.ts_assigned;
+    if (!reference) return false;
+    Ty const* parts[2] = { type, ty_intrinsic(checker, TY_UNDEFINED) };
+    Ty const* initial = ty_union(checker, parts, 2, nullptr, (TyList){0});
+    return !contains_undefined(ty_flow_type(checker, reference, type, initial, end));
+}
+
+static ClassItem const* class_constructor_with_body(ClassDecl const* me) {
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) return i;
+    }
+    return nullptr;
+}
+
 typedef enum MemberKind {
     MEMBER_NONE,
     MEMBER_PROPERTY,
@@ -454,6 +492,7 @@ typedef struct MemberInfo {
     bool definite; // `x!: T`
     bool identifier_name;
     Span name;
+    ClassItem const* field; // The property declaration
 } MemberInfo;
 
 static MemberInfo class_instance_member(Checker* checker, ClassDecl const* me, Atom const* name) {
@@ -472,6 +511,7 @@ static MemberInfo class_instance_member(Checker* checker, ClassDecl const* me, A
             ret.definite = after && *after == '!';
             ret.identifier_name = !i->field.computed_key && !i->field.name_is_value;
             ret.name = i->field.name_span;
+            ret.field = i;
         } else {
             ret.kind = i->method.accessor ? MEMBER_ACCESSOR : MEMBER_METHOD;
             ret.is_abstract = i->method.is_abstract;
@@ -563,13 +603,12 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
                 } else if (options->use_define_for_class_fields && derived_info.uninitialized_field && !base_info.is_abstract &&
                     !derived_info.is_abstract && !derived_info.is_declare && !my is_ambient
                 ) {
-                    // TODO: whether the constructor initializes it (tsc's isPropertyInitializedInConstructor, flow
-                    // analysis): until then only the cases that don't depend on it
-                    bool has_constructor = false;
-                    for_each (item, vec_class_item, &my items) {
-                        if (item->tag == CLASS_ITEM_CONSTRUCTOR && item->constructor.func.has_body) has_constructor = true;
-                    }
-                    if (derived_info.definite || !has_constructor || !derived_info.identifier_name || !options->strict_null_checks) {
+                    // (tsc's isPropertyInitializedInConstructor gets the class type for the property's here, which
+                    // only differs when it's assigned undefined)
+                    ClassItem const* constructor = class_constructor_with_body(me);
+                    if (derived_info.definite || !constructor || !derived_info.identifier_name || !options->strict_null_checks ||
+                        !field_initialized_in_constructor(checker, derived_info.field, type, constructor)
+                    ) {
                         error_ctx_error_d(errs, at, 2612, "Property '", atom_sv(base_prop->name), "' will overwrite the base "
                             "property in '", base, "'. If this is intentional, add an initializer. Otherwise, add a 'declare' "
                             "modifier or remove the redundant declaration.");
@@ -1207,6 +1246,27 @@ static void class_check_static_name_conflicts(ClassDecl const* me, ErrorCtx* err
     }
 }
 
+
+// tsc's checkPropertyInitialization: TS2564
+static void class_check_property_initialization(ClassDecl const* me, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    if (!options->strict_null_checks || !options->strict_property_initialization || my is_ambient) return;
+    Checker* checker = current_checker;
+    ClassItem const* constructor = class_constructor_with_body(me);
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || i->field.is_declare || i->field.is_abstract || i->field.is_optional) continue;
+        if (i->field.is_auto_accessor || i->field.value.tag != EXPR_IMPLICIT_ANY || !span_valid(i->field.name_span)) continue;
+        if (i->field.name_is_value && !i->field.computed_key) continue; // (a string or numeric name)
+        if (i->field.name_span.source && i->field.name_span.source->is_js) continue;
+        if (class_item_field_is_definite(i)) continue;
+        Ty const* type = class_item_get_type((ClassItem*)i);
+        if ((type->flags & (TYF_ANY | TYF_UNKNOWN)) || contains_undefined(type)) continue;
+        if (constructor && field_initialized_in_constructor(checker, i, type, constructor)) continue;
+        error_ctx_error_d(errs, i->field.name_span, 2564, "Property '", i->field.name_span,
+            "' has no initializer and is not definitely assigned in the constructor.");
+    }
+}
+
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (!ty_first_check(current_checker, me)) return;
 
@@ -1357,6 +1417,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     class_heritage_typecheck(me, errs);
     class_check_overloads(me, errs);
+    class_check_property_initialization(me, errs);
     ty_check_class_duplicate_members(current_checker, me, errs);
     if (my symbol && symbol_find_node(my symbol, SYMBOL_DECL_CLASS) == me) {
         ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);

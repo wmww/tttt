@@ -1601,6 +1601,7 @@ IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty cons
 bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* index);
 // Member modifiers at a property access (tsc's checkPropertyAccessibility and the readonly checks of
 // checkPropertyAccessExpressionOrQualifiedName): TS2341, TS2445, TS2446, TS2340, TS2855, TS2540, TS2542
+void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, ErrorCtx* errs); // TS2565
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
 // `#x` in `#x in obj`: the instance type of the class that declares it (its constructor for a static `#x`), null if
 // none does. `name` (may be null): the class's `#x`

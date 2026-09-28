@@ -90,6 +90,7 @@ Span class_item_private_name(ClassItem const* me);
 Ty const* class_item_field_evaluate_type(ClassItem* me);
 Ty const* class_item_accessor_evaluate_type(ClassItem* me);
 Ty const* class_item_get_type(ClassItem* me);
+bool class_item_field_is_definite(ClassItem const* me); // `x!: T`
 
 #define g_class_key ClassItem, class_item
 #define g_no_clone

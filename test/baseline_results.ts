@@ -9401,7 +9401,7 @@ const baselines = {
         types: true,
     },
     'definiteAssignmentWithErrorStillStripped': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16811,7 +16811,7 @@ const baselines = {
         types: false,
     },
     'inKeywordTypeguard(strict=true)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22891,7 +22891,7 @@ const baselines = {
         types: true,
     },
     'narrowingOfDottedNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37631,7 +37631,7 @@ const baselines = {
         types: false,
     },
     'strictPropertyInitialization': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37966,9 +37966,9 @@ const baselines = {
         types: false,
     },
     'definiteAssignmentAssertions': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'definiteAssignmentAssertionsWithObjectShortHand': {
         errors: true,
