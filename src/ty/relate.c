@@ -850,7 +850,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         if (cached) return *cached;
         Ty const* stack_buf[16];
         u32 len = 0;
-        bool all_optional = true;
+        bool all_optional = true, any_member = false;
         u32 flags = 0;
         for (u32 i = 0; i < ty->composite.types.len && len < c_arraylen(stack_buf); i++) {
             // Its members see the whole intersection as their `this` (tsc's getApparentTypeOfIntersectionType):
@@ -861,13 +861,17 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
             if (!part.found) continue;
             if (!ret.prop) ret.prop = part.prop;
             stack_buf[len++] = part.type;
-            all_optional &= (part.flags & PROP_OPTIONAL) != 0;
+            // Only class members (properties, methods, accessors) have a say: a variable of a namespace or of
+            // `typeof globalThis` is neither optional nor required (tsc's createUnionOrIntersectionProperty)
+            bool class_member = !part.prop || !part.prop->symbol;
+            if (class_member) all_optional &= (part.flags & PROP_OPTIONAL) != 0;
+            any_member |= class_member;
             flags |= part.flags & ~(u32)PROP_OPTIONAL;
         }
         if (len) {
             ret.found = true;
             ret.type = ty_intersection(me, stack_buf, len, nullptr, (TyList){0});
-            ret.flags = flags | (all_optional ? PROP_OPTIONAL : 0);
+            ret.flags = flags | (all_optional && any_member ? PROP_OPTIONAL : 0);
         }
         FoundProp* memo = arena_new(&my arena, FoundProp);
         *memo = ret;

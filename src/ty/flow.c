@@ -5,6 +5,7 @@
 #include "../statement.h"
 #include "../scope.h"
 #include "../compiler_options.h"
+#include "../program.h"
 
 // Queries on the control flow graph (flow.h, plan 05). The graph is read-only and may be shared by several checkers,
 // so everything that is remembered is remembered in the Checker.
@@ -1615,7 +1616,6 @@ static bool is_presence_possible(Checker* me, Ty const* member, void const* arg)
     return has_index || !a->assume_true;
 }
 
-// `"a" in x`. TODO: tsc intersects with `Record<"a", unknown>` when no member of x is known to have the property
 // `'a' in x` and `x.hasOwnProperty('a')` say whether `x.a`'s missing is there (tsc's narrowTypeByBinaryExpression and
 // narrowTypeByCallExpression with containsMissingType)
 static Ty const* narrow_missing_by_presence(FlowQuery* q, Ty const* type, Expr const* object, Atom const* name, bool assume_true) {
@@ -1644,10 +1644,9 @@ static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* 
         return owner ? narrowed_type(me, type, owner, assume_true, true) : type;
     }
     bool is_number = false;
-    Atom const* name = ty_property_name_of_key(me, ty_flow_expr_type(me, &binary->left), &is_number);
+    Ty const* name_type = ty_regular(me, ty_flow_expr_type(me, &binary->left));
+    Atom const* name = ty_property_name_of_key(me, name_type, &is_number);
     if (!name || (type->flags & TYF_ANY)) return type;
-    PresenceArg known = { name, true };
-    Ty const* possible = filter_type(me, type, is_presence_possible, &known);
     bool is_known = false;
     TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
     for (u32 i = 0; i < members.len && !is_known; i++) {
@@ -1655,8 +1654,15 @@ static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* 
         is_known = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) &&
             (ty_find_prop(me, apparent, name).found || prop_type_by_name(me, apparent, name));
     }
-    (void)possible;
-    if (!is_known) return type;
+    if (!is_known) {
+        // A property no member declares: `x & Record<"a", unknown>` (tsc's narrowTypeByInKeyword)
+        if (!assume_true) return type;
+        Symbol const* record = program_get_global(my program, c_sv("Record"), SYMBOL_TYPE);
+        if (!record || !(record->flags & SYMBOL_TYPE_ALIAS)) return type;
+        Ty const* args[2] = { name_type, ty_intrinsic(me, TY_UNKNOWN_) };
+        Ty const* parts[2] = { type, ty_alias_instance(me, record, (TyList){ .data = args, .len = 2 }) };
+        return ty_intersection(me, parts, 2, nullptr, (TyList){0});
+    }
     PresenceArg arg = { name, assume_true };
     return filter_type(me, type, is_presence_possible, &arg);
 }

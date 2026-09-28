@@ -5521,9 +5521,9 @@ const baselines = {
         types: true,
     },
     'conditionalTypeDoesntSpinForever': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypeGenericInSignatureTypeParameterConstraint': {
         errors: true,
@@ -16791,8 +16791,8 @@ const baselines = {
         types: true,
     },
     'inKeywordAndIntersection': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'inKeywordAndUnknown': {
@@ -16806,7 +16806,7 @@ const baselines = {
         types: false,
     },
     'inKeywordTypeguard(strict=false)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37878,7 +37878,7 @@ const baselines = {
     'controlFlowInOperator': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowInstanceOfGuardPrimitives': {
         errors: true,
