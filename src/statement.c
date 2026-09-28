@@ -1319,6 +1319,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             expr_lookup_names(&my expr, names, errs);
             flow->in_type_query = saved_type_query;
             flow->type_only_alias_ok = false;
+            if (my expr_jsdoc_type) type_lookup_names(my expr_jsdoc_type, names, errs);
         }   break;
 
         case STATEMENT_THROW_EXPR:
@@ -2024,7 +2025,19 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_EXPR:
+            expr_typecheck(&my expr, errs);
+            break;
+
         case STATEMENT_EXPORT_DEFAULT_EXPR:
+            if (my expr_jsdoc_type) {
+                // (Checked with it as the contextual type, then related without elaborating: tsc's checkTypeAssignableTo)
+                type_typecheck(my expr_jsdoc_type, errs);
+                Ty const* declared = ty_of_node(my expr_jsdoc_type);
+                Ty const* type = ty_check_expr(current_checker, &my expr, declared->flags & TYF_ANY ? nullptr : declared);
+                expr_typecheck(&my expr, errs);
+                ty_check_assignable(current_checker, type, declared, my expr.outer_span, errs);
+                break;
+            }
             expr_typecheck(&my expr, errs);
             break;
 
