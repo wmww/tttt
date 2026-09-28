@@ -8,7 +8,7 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
   ./realworld.py --code TS1005   # list the places a code is reported
   ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root)
 """
-import argparse, collections, re, resource, subprocess, sys, time
+import argparse, collections, os, re, resource, subprocess, sys, time
 
 # The corpora besides tsc's compiler (plan 17): modern, type-heavy code, clean under tsc 5.8, fetched by
 # thirdparty/ensure-corpora.sh
@@ -44,7 +44,9 @@ def main():
     args = ap.parse_args()
 
     if args.options is None:
-        args.options = '-p ' + CORPORA[args.corpus]
+        # Through its real path: in a worktree thirdparty/corpora is a symlink, and a project reached through one
+        # loads its own files twice (webpack's node_modules/webpack -> .. realpaths to the other copy; tsc too)
+        args.options = '-p ' + os.path.relpath(os.path.realpath(CORPORA[args.corpus]))
         if args.corpus != 'tsc':
             subprocess.run(['thirdparty/ensure-corpora.sh'], check=True)
     if not args.no_build:

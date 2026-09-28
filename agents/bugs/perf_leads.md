@@ -49,3 +49,10 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
   `expr_lookup_names_logical`, the checker, `expr_compile_test_info_inner` and `expr_drop`. Threads get smaller
   stacks: matters for parallelism.
 - The suite: the slowest tests left are the React-typings JSX ones (~1 s each: react16.d.ts per test).
+
+## Pathologies
+- **webpack loaded twice: 89 s** (tsc: 11 s on the same program). Run from a worktree whose `thirdparty/corpora` is a
+  symlink (`cd /tmp/wt; tttt -p thirdparty/corpora/webpack`), the root files keep the symlinked path and
+  `node_modules/webpack -> ..` realpaths to the other copy: two webpacks, 130 diagnostics (tsc gets 24 of its own).
+  realworld.py now passes the real path, but some relation between the two copies' structurally-identical types
+  runs away in tttt; a callgrind of that run would show which (probably the relation budget/recursion identity).

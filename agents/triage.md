@@ -17,12 +17,6 @@ non-widening undefined, `infer X extends C` scope), `bugs/display.md` (object li
 - `baseline_test_traversal.c` `port_item_add_alias`: the `import type`/`export type` declared-type rule checks the
   resolved symbol for class/interface/enum/alias only; tsc's getDeclaredTypeOfSymbol also takes type parameters and
   enum members. Unverified whether any test reaches that.
-- **Segfault on zod's root tsconfig** (`./release/tttt -q --keep-going -p thirdparty/corpora/zod`, not the pinned
-  `packages/zod/tsconfig.test.json`, which is fine): crashes in `reverse_mapped_type_uncached` <- `infer_to_mapped`
-  <- `infer_from_objects` <- ~10 nested `infer_from` <- `infer_type_arguments`, while checking a variable statement.
-  Present at 0746971 (not a stack overflow: `ulimit -s unlimited` still crashes). Found by plan 36's planning session;
-  `gdb -batch -ex run -ex bt --args ./release/tttt ...` with `TTTT_NO_REEXEC=1` reproduces in ~2 s. Worth pinning
-  the root config as a second zod corpus once it runs.
 - **const type parameter inference with several candidates** (plain TS too): `function f4<const T>(x: [T, T]): T;
   f4([[1, "x"], [2, "y"]])` gives TS2322s where tsc infers `readonly [1, "x"] | readonly [2, "y"]`
   (jsdocTemplateTag6). Found at the plan 26 session.
@@ -60,12 +54,6 @@ non-widening undefined, `infer X extends C` scope), `bugs/display.md` (object li
   eagerly instantiated: valibot +2.5% instructions. tsc resolves them lazily; a lazy IndexInfo value (or computing the
   mapped type's members only when asked for index infos) would take that back.
 - Variance annotations (`in T`/`out T`) now set the variance (measure_variances()), but their checks aren't implemented: TS2636/TS2637 (tsc's checkVarianceAnnotations: the annotation must agree with the measured variance, only on interfaces/classes/object-ish aliases), TS1274 (modifier on a non-type-declaration parameter). Also tsc unions the modifiers of all declarations of a merged interface's type parameter (getTypeParameterModifiers); tttt reads the one GenericItem the type parameter points at.
-- **webpack in a worktree** (2026-09-28, suite checker bugs 4): two sub-agents working in `git worktree`s (with
-  `thirdparty/corpora` symlinked into the main tree, as CLAUDE.md says) got 130 webpack diagnostics and 2-5 minute runs
-  of `./realworld.py --corpus webpack`, at commits where the main tree gives 115 in under a second; one also saw the
-  set change between two runs (TS2859s swapped for other codes). Suspects: the symlinked corpus path changes module
-  resolution (realpath vs symlink, node_modules lookup), or TS2859's relation budget isn't deterministic under load.
-  Find out which before trusting corpus numbers from worktrees.
 - `ty_check_object_literal_pattern()` treats every computed name in a binding pattern as ObjectLiteralPatternWithComputedProperties
   only when its type isn't a literal/unique symbol (like tsc), but `lower.c`'s rest-type computation (the `named`
   check near `binding_pattern_type`) still skips all computed keys: `const { ['a']: x, ...rest } = o` may keep `a` in
