@@ -989,6 +989,16 @@ static void render_lines_woven_with_file(
         newline_if_next_line_non_empty = vec_size == 0;
     }
 
+    // An empty file is one empty line (tsc splits "" into [""])
+    if (is_errors && !source_contents.size) {
+        cstr_append(target, line_indent);
+        for (; index < vec_size; index++) {
+            cstr_append(target, "\r\n");
+            cstr_append_s(target, vec_line_numbered_str_at(lines, index)->str);
+        }
+        return;
+    }
+
     intptr_t newlines_at_end_of_source = 0;
     const char* end_of_content_lines = csview_end_ptr(source_contents);
     while (end_of_content_lines > source_contents.buf) {
