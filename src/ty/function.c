@@ -195,6 +195,16 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             if (!(ret->flags & TYF_NEVER)) ret = ty_widened_return_type(me, ret, contextual);
         }
     }
+    if (function->is_async && !function->is_generator && !returned.len && function->promise_decl &&
+        !program_get_global(my program, c_sv("Promise"), SYMBOL_VALUE)
+    ) {
+        // tsc's createPromiseReturnType, which only the bodies that return no value get to: no Promise to make one
+        // with, said when the return type is first needed (like tsc: a function nobody asks about isn't reported)
+        ty_error_at(me, span_null, 2468, cstr_lit("Cannot find global value 'Promise'."));
+        ty_error_at(me, function_error_span(function), 2705, cstr_lit("An async function or method in ES5 requires the "
+            "'Promise' constructor.  Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in "
+            "your '--lib' option."));
+    }
     ty_buf_drop(&returned);
     if (function->is_async && !function->is_generator) ret = ty_promise_of(me, function, ret);
     return ret;
