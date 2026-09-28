@@ -64121,7 +64121,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeAsClauseRelationships': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -3869,7 +3869,10 @@ static Ternary structured_related_members(
         return mapped_related(me, st, ty_members(me, source)->mapped, target_mapped, report);
     }
     if (target_mapped && !my variance_depth) {
+        isize_t saved = vec_ty_report_line_size(&st->lines);
         Ternary related = generic_mapped_target_related(me, st, source, target_mapped, report);
+        // (Why S[K] isn't the template says nothing: tsc resets the error info, resetErrorInfo(saveErrorInfo))
+        if (!related) report_truncate(st, saved);
         // HACK: a generic source falls through to the member-by-member comparison, which a mapped type without
         // members passes: it stands in for tsc's rules between two generic mapped types (mappedTypeRelatedTo), a
         // homomorphic Readonly<T> and T, and the like, which don't exist here yet
@@ -3892,12 +3895,9 @@ static Ternary structured_related_members(
             if (!constraint || constraint == source) {
                 if (target->kind == TY_TYPE_PARAM || (target->flags & TYF_DEFERRED)) return TERNARY_FALSE;
                 // As `unknown` (tsc's getConstraintOfType(source) || unknownType): comparable to anything, and without
-                // strictNullChecks its apparent type `{}` against object types (not `object`, not `{ [k: string]: X }`)
-                if (st->relation == TY_RELATION_COMPARABLE || compiler_options()->strict_null_checks) {
-                    return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
-                }
-                if (target->flags & TYF_NON_PRIMITIVE) return TERNARY_FALSE;
-                return is_related_to(me, st, global_type(me, GLOBAL_EMPTY_OBJECT), target, false);
+                // strictNullChecks its apparent type `{}` against object types (apparent_type()), though not as a `{}`
+                // that any mapped type with `?` takes
+                return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
             }
             // The constraint as it is first, then with the type parameter as its `this` (tsc: raw `this` types from
             // base classes need it, subclassWithPolymorphicThisIsAssignable). From one type parameter to another, or from
