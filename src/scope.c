@@ -3630,6 +3630,11 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             if (constructor) {
                 class_symbol = js_constructor_symbol((Symbol*)expr_entity_name_symbol(constructor));
                 kind = ASSIGNMENT_DECL_THIS_IN_METHOD;
+            } else if (this_function->prototype_of && this_function->this_literal) {
+                // A method of `F.prototype = { m() { this.x = v } }`: tsc declares x in the literal's members, which
+                // are F's instance members
+                class_symbol = js_constructor_symbol((Symbol*)expr_entity_name_symbol(this_function->prototype_of));
+                kind = ASSIGNMENT_DECL_THIS_IN_METHOD;
             } else if (this_function->class_symbol) {
                 class_symbol = this_function->class_symbol; // `ns.C = function () {}` with `ns.C.prototype.m = v`
             } else if (!assigned_to) {

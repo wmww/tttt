@@ -698,8 +698,9 @@ static Ty const* this_type_marker(Checker* me, Ty const* contextual) {
 Symbol const* ty_js_this_class(FunctionImpl const* function) {
     Symbol const* js_class = ty_js_constructor_class(function);
     if (js_class) return js_class;
-    // A method of a constructor function's prototype (tsc's getClassNameFromPrototypeMethod)
-    Expr const* constructor = function->prototype_of;
+    // A method of a constructor function's prototype (tsc's getClassNameFromPrototypeMethod: not an accessor of
+    // `F.prototype = { get x() {} }`, whose `this` is the literal's)
+    Expr const* constructor = function->accessor ? nullptr : function->prototype_of;
     Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
     SourceFile const* file = function->full_span.source;
     if (!symbol || !file || !file->is_js || !(symbol->flags & SYMBOL_CLASS) || !symbol->members) return nullptr;

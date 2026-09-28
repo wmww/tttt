@@ -51561,7 +51561,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsFunctionLikeClasses2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60571,7 +60571,7 @@ const baselines = {
         types: true,
     },
     'propertiesOfGenericConstructorFunctions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
