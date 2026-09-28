@@ -2384,6 +2384,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         case LAZY_STATE_NOT_STARTED: break;
     }
     prop->type_state = LAZY_STATE_IN_FLIGHT;
+    u32 limit_hits = my instantiation_limit_hits;
     Ty const* type;
     if (prop->flags & (PROP_GETTER | PROP_SETTER) && !prop->target) {
         type = ty_object_literal_accessor_type(me, prop->decl->function, prop->flags & PROP_GETTER);
@@ -2419,6 +2420,12 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
             mapped, "'.");
         c_drop(cstr, &name, &mapped);
         return prop->type;
+    }
+    // What ran into the instantiation limits (TS2589, reported where it happened) is the error type only for now: a
+    // later statement starts the count over and gets the real type, not an any that depends on what was checked first
+    if (my instantiation_limit_hits != limit_hits) {
+        prop->type_state = LAZY_STATE_NOT_STARTED;
+        return type;
     }
     prop->type = type;
     prop->type_state = LAZY_STATE_DONE;
