@@ -1211,7 +1211,7 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
 // The type an unannotated parameter got from the contextual signature of its function expression, null if none
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter);
 // A JavaScript function's JSDoc `@type {F}` (FunctionImpl.jsdoc_signature_type) as its contextual signature, once
-void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function);
+void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, InitializedBinding const* evaluating);
 // The contextual type of a property or an element of something whose contextual type is `contextual` (null: none)
 Ty const* ty_contextual_prop_type(Checker* me, Ty const* contextual, Ty const* key);
 Ty const* ty_contextual_element_type(Checker* me, Ty const* contextual, u32 index);

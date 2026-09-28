@@ -60973,7 +60973,7 @@ const baselines = {
     'typeTagOnFunctionReferencesGeneric': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unannotatedParametersAreOptional': {
         errors: true,

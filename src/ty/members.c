@@ -2375,10 +2375,23 @@ static bool function_is_untyped_js(FunctionImpl const* function) {
     return file && file->is_js && !function->is_type && !function->is_iife && !function->jsdoc_typed;
 }
 
+// A JavaScript function declaration's or class method's `@type {F}` naming a function type: F's one call signature, which
+// is the function's (tsc's getSignaturesOfSymbol with getSignatureOfTypeTag). Function expressions, arrow functions and
+// object literal methods are contextually typed by it instead. Null if F isn't a single signature (getSingleCallSignature)
+static Signature const* jsdoc_tag_signature(Checker* me, FunctionImpl const* function) {
+    if (!function->jsdoc_signature_type || function->is_expression) return nullptr;
+    Ty const* type = ty_of_node(function->jsdoc_signature_type);
+    if (!(type->flags & TYF_OBJECT)) return nullptr;
+    Members const* members = ty_members(me, type);
+    if (members->call_count != 1 || members->construct_count || members->index_count || members->prop_count) return nullptr;
+    return members->call[0];
+}
+
 void signature_resolve(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     if (sig->state != LAZY_STATE_NOT_STARTED) return;
     sig->state = LAZY_STATE_IN_FLIGHT;
+    if (!sig->target && sig->function) sig->target = jsdoc_tag_signature(me, sig->function);
     if (sig->target) {
         Signature const* target = sig->target;
         signature_resolve(me, target);

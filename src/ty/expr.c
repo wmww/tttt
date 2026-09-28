@@ -737,7 +737,7 @@ static Ty const* apparent_contextual_type(Checker* me, Ty const* ty) {
 
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     // A JavaScript `@type {F}` gives its signature's `this` (tsc's getThisTypeOfDeclaration of a type tag's signature)
-    if (function->jsdoc_signature_type) ty_function_apply_jsdoc_type(me, function);
+    if (function->jsdoc_signature_type) ty_function_apply_jsdoc_type(me, function, nullptr);
     u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
     Ty const* from_signature = intern_get(&my links, this_key, 2);
     if (from_signature) return from_signature;
@@ -797,7 +797,8 @@ Signature const* ty_function_assigned_contextual_signature(Checker* me, Function
     return intern_get(&my links, key, 2);
 }
 
-static void assign_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual) {
+// `evaluating`: the parameter whose type evaluation asked for this, which takes its contextual type like the others
+static void assign_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual, InitializedBinding const* evaluating) {
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2)) return;
     Signature const* sig = contextual_signature(me, contextual, function, 0);
@@ -823,7 +824,7 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
         // A parameter with an initializer takes the contextual type too (tsc's getContextuallyTypedParameterType)
         if (i->initializer.binding.has_explicit_type) continue;
         LazyMemo* param_memo = lazy_type_state_peek((LazyType*)&i->initializer.lazy_type);
-        if (param_memo && param_memo->evaluation_started) continue;
+        if (param_memo && param_memo->evaluation_started && &i->initializer != evaluating) continue;
         Ty const* type = signature_type_at(me, sig, at, i->rest);
         if (!type) continue;
         if (i->rest && !ty_is_array(me, type) && !ty_is_tuple(type) && !(type->flags & TYF_TYPE_PARAM)) type = ty_array(me, type, false);
@@ -848,9 +849,9 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
     }
 }
 
-void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function) {
+void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, InitializedBinding const* evaluating) {
     if (!function->jsdoc_signature_type) return;
-    assign_contextual_signature(me, function, ty_of_node(function->jsdoc_signature_type));
+    assign_contextual_signature(me, function, ty_of_node(function->jsdoc_signature_type), evaluating);
 }
 
 // tsc's hasContextSensitiveParameters
@@ -3105,7 +3106,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_FUNCTION: {
             if (ctx.contextual) {
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
-                assign_contextual_signature(me, expr->function, ctx.contextual);
+                assign_contextual_signature(me, expr->function, ctx.contextual, nullptr);
             }
             return ty_function_type(me, expr->function);
         }

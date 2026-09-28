@@ -631,7 +631,7 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
     if (!compiler_options()->no_implicit_any || my private_ambient || my jsdoc_type) return;
     for_each (i, vec_function_arg, &my args) {
         if (i->initializer.binding.has_explicit_type || i->initializer.value.tag != EXPR_IMPLICIT_ANY) continue;
-        if (my jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me);
+        if (my jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me, nullptr);
         if (i->initializer.getter || ty_contextual_parameter_type(current_checker, &i->initializer)) continue;
         if (i->rest && i->initializer.binding.tag == BINDING_IDENTIFIER) {
             error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", i->initializer.binding.content_span,
