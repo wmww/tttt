@@ -24716,9 +24716,9 @@ const baselines = {
         types: true,
     },
     'optionalTupleElementsAndUndefined': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionsCompositeWithIncrementalFalse': {
         errors: false,

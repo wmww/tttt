@@ -311,10 +311,16 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         cstr index = cstr_d(i);
         Ty const* key = ty_string_literal(me, cstr_sv(&index));
         cstr_drop(&index);
-        mapped_elements[i] = ty_instantiate(me, ty_mapped_template(me, mapped), ty_mapper_with(me, mapper, mapped->type_param, key));
+        Ty const* element = ty_instantiate(me, ty_mapped_template(me, mapped), ty_mapper_with(me, mapper, mapped->type_param, key));
         flags[i] = shape->flags[i];
+        // `-?` takes undefined out of an element that was optional (tsc's instantiateMappedTypeTemplate), and an
+        // optional element has undefined added like a written one (createNormalizedTupleType's addOptionality)
+        if (mapped->optional < 0 && (flags[i] & TUPLE_ELEMENT_OPTIONAL) && compiler_options()->strict_null_checks) {
+            element = ty_without_undefined(me, element);
+        }
         if (mapped->optional > 0) flags[i] |= TUPLE_ELEMENT_OPTIONAL;
         if (mapped->optional < 0) flags[i] &= ~(unsigned)TUPLE_ELEMENT_OPTIONAL;
+        mapped_elements[i] = flags[i] & TUPLE_ELEMENT_OPTIONAL ? ty_optional_prop_type(me, element) : element;
     }
     TupleShape new_shape = {
         .arity = shape->arity,
