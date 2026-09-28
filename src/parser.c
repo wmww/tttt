@@ -116,6 +116,8 @@ typedef struct ExprCtx {
     bool reject_operators;
     bool entity_name; // The operand of a `typeof` type: `a.b.c<T>`, no calls and no `[i]` (that is an indexed access type)
     bool decorator; // `@dec [x]`: the `[` starts a computed member name, not an element access (tsc's inDecoratorContext)
+    // A conditional's true branch (tsc's allowReturnTypeInArrowFunction false): an arrow function there only has a
+    // return type if a `:` follows it, `a ? (b) : c => d` is `a ? b : (c => d)`
     bool is_parsing_ternary;
     int min_precedence;
 } ExprCtx;
@@ -4925,7 +4927,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         return parse_fail(&p);
     }
 
-    if (parse_function_args(&p, false, false, !ctx.is_parsing_ternary, committed, ret)) {
+    if (parse_function_args(&p, false, false, true, committed, ret)) {
 
         is_definitely_function = committed || (
             !vec_function_arg_is_empty(&ret->args) &&
@@ -4984,6 +4986,18 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
             .expr = expr,
         });
         ret->expression_body = true;
+    }
+
+    // tsc's parseParenthesizedArrowFunctionExpression: `a ? (x): string => x : y` keeps its return type
+    if (ctx.is_parsing_ternary && ret->ret_explicit) {
+        Parser q = parser(&p);
+        hop_whitespace(&q);
+        bool colon = *q.pos == ':';
+        parse_fail(&q);
+        if (!colon) {
+            function_impl_drop(ret);
+            return parse_fail(&p);
+        }
     }
 
     ret->has_body = true;
@@ -6351,6 +6365,7 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
 static bool parse_ternary_expr(Parser* parent, ExprCtx ctx, Expr* ret_yes, Expr* ret_no) {
     Parser p = parser(parent);
     ctx.min_precedence = ternary_precedence - 1;
+    bool parent_ternary = ctx.is_parsing_ternary;
     ctx.is_parsing_ternary = true;
 
     if (!hop_char(&p, '?')) {
@@ -6370,6 +6385,8 @@ static bool parse_ternary_expr(Parser* parent, ExprCtx ctx, Expr* ret_yes, Expr*
     }
     hop_whitespace(&p);
 
+    // The false branch allows return types as much as the conditional itself does
+    ctx.is_parsing_ternary = parent_ternary;
     if (!expect_expr(&p, ctx, ret_no)) {
         return parse_success(&p);
     }
