@@ -2190,7 +2190,14 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     if (!parent && !binding->source) {
         return ty_intrinsic(me, compiler_options()->use_unknown_in_catch_variables ? TY_UNKNOWN_ : TY_ANY);
     }
-    if (!parent) return lazy_type_get(binding->source);
+    if (!parent) {
+        // (A for-of's pattern destructures the iterated type as it is, the variable is widened)
+        if (binding->tag != BINDING_IDENTIFIER && binding->source->tag == LAZY_TYPE_FOR_EACH_LOOP_VAR) {
+            return for_each_loop_statement_pattern_source_type(
+                c_container_of(binding->source, ForEachLoopStatement, var_type));
+        }
+        return lazy_type_get(binding->source);
+    }
     Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
     bool in_array = parent->tag == BINDING_ARRAY;
     // An array pattern takes elements of an array (or tuple) by index, of anything else what iterating it gives

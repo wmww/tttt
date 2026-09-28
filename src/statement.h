@@ -303,6 +303,9 @@ typedef struct ForEachLoopStatement {
 
 zsview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me);
 Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me);
+// What a for-of's pattern destructures: the iterated type, not widened like the loop variable's (tsc's
+// getTypeForBindingElementParent -> checkRightHandSideOfForOf). A for-in's is the variable's type
+Ty const* for_each_loop_statement_pattern_source_type(ForEachLoopStatement const* me);
 
 // Switch statement
 

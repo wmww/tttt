@@ -10141,7 +10141,7 @@ const baselines = {
         types: true,
     },
     'downlevelLetConst16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63181,7 +63181,7 @@ const baselines = {
         types: true,
     },
     'ES5For-of31': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

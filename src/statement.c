@@ -521,6 +521,14 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
     impossible;
 }
 
+Ty const* for_each_loop_statement_pattern_source_type(ForEachLoopStatement const* me) {
+    Checker* checker = current_checker;
+    Ty const* var_type = lazy_type_get((LazyType*)&my var_type);
+    if (my keyword != FOR_EACH_LOOP_OF || var_type == ty_intrinsic(checker, TY_CIRCULAR)) return var_type;
+    return ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF,
+        ty_expr_type(checker, (Expr*)&my iterable), my iterable.outer_span, nullptr);
+}
+
 // What `for (k in x)` takes: object types and type parameters (every member of a union, some member of an
 // intersection: `T & object` is what `typeof t === "object"` makes of a T). Without strict null checks also null
 static bool for_in_accepts(Checker* checker, Ty const* ty) {
@@ -1979,7 +1987,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                         // TS2491 and nothing else
                         expr_destructuring_typecheck(&my for_each_loop->variable.expr,
                             my for_each_loop->keyword == FOR_EACH_LOOP_IN ? nullptr :
-                            ty_widened_objects(checker, lazy_type_get(&my for_each_loop->var_type)), errs);
+                            ty_widened_objects(checker, for_each_loop_statement_pattern_source_type(my for_each_loop)), errs);
                         break;
                     }
                     ty_check_assignable_expr(

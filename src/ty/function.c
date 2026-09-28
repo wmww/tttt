@@ -266,5 +266,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
 }
 
 bool ty_extends_array(Checker* me, Ty const* ty) {
+    // (tsc's isArrayLikeType: null and undefined themselves aren't, even where they're assignable to anything)
+    if (ty->kind == TY_INTRINSIC && (ty->flags & TYF_NULLABLE)) return false;
     return ty_is_related(me, ty, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE);
 }
