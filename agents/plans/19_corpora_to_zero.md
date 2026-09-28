@@ -38,6 +38,9 @@ namespace named after a primitive keyword). Left, tttt only:
 - 28 in `packages/bench/` against arktype's types: TS2349 "not callable" on `type(...)` results (17), TS2322 +
   TS6500 on `validateObjectLiteral<...>` properties (6), TS18048 (2). arktype is the heaviest type-level library we
   have; worth a probe.
+- execa 9's `result.stderr` (`ResultStdioNotAll<'2', OptionsType>`) is `any` in tttt, `string` in tsc: TS7006 on
+  the `.split("\n").filter((line) => ...)` callbacks (attw.test.ts:39/181). A probe file placed in
+  `packages/resolution/` and checked with `-p thirdparty/corpora/zod` reaches execa's types.
 - Missing: TS2412 at scripts/triage-signal.ts:676 (exactOptionalPropertyTypes' assignment check).
 
 ### HACKs the zod fixes left (hacks.md "Inference" and "Mapped types")
