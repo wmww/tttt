@@ -532,6 +532,11 @@ static Ty const* tuple_element_context(Checker* me, Ty const* tuple, ElementCont
 static Ty const* get_element_context(Checker* me, Ty const* object, void const* arg) {
     ElementContextArg const* a = arg;
     u32 index = a->index;
+    // A type parameter as its constraint (tsc's getApparentTypeOfContextualType): the elements of a tuple constraint
+    if (object->kind == TY_TYPE_PARAM) {
+        Ty const* apparent = ty_apparent_type(me, object);
+        if (ty_is_tuple(apparent) && apparent->kind == TY_REFERENCE) return tuple_element_context(me, apparent, a);
+    }
     if (ty_is_tuple(object) && object->kind == TY_REFERENCE) return tuple_element_context(me, object, a);
     if (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
         cstr name = cstr_d(index);
