@@ -40176,7 +40176,7 @@ const baselines = {
         types: true,
     },
     'symbolType12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

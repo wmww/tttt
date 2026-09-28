@@ -2419,7 +2419,7 @@ static bool binary_op_typecheck(
                 assignable_to_kind(left, string_like, true) || assignable_to_kind(right, string_like, true) ||
                 ((left->flags | right->flags) & TYF_ANY)
             ) {
-                check_symbol_operands(left, right, expr, errs);
+                if (!check_symbol_operands(left, right, expr, errs)) operands_ok = false; // (tsc returns before checkAssignmentOperator)
                 break;
             }
             // Shown as their base types (`false` as `boolean`) unless both could plausibly be operands
