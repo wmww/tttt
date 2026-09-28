@@ -108,7 +108,13 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     // The type, then the default, then the pattern: a default is evaluated before the elements it is destructured
     // into (tsc's bindParameterFlow / bindBindingElementFlow)
     if (my has_explicit_type) {
-        type_lookup_names(&my explicit_type, names, errs);
+        Scope* type_scope = names;
+        if (my explicit_type.from_jsdoc && names->parameters) {
+            // A JSDoc `@param` type is in the function's comment, which doesn't see its parameters as values
+            type_scope = scope_new(names, SCOPE_BLOCK);
+            type_scope->jsdoc_parameter_type = true;
+        }
+        type_lookup_names(&my explicit_type, type_scope, errs);
     }
     if (my default_value) {
         // In a parameter's pattern the default is the element's own (tsc's associatedDeclarationForContainingInitializer)

@@ -51576,7 +51576,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsFunctions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

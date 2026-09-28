@@ -380,6 +380,9 @@ typedef struct Scope {
     bool parameters;
     // Unless the downlevel emit moves the parameters into the body (tsc's useOuterVariableScopeInParameter)
     bool parameters_see_body;
+    // The type of a parameter written in the function's JSDoc (`@param {typeof x} x`): the function's parameters and
+    // `var`s aren't values there (tsc's resolveNameHelper: lastLocation is the JSDoc, not a parameter)
+    bool jsdoc_parameter_type;
     // The inside of the declaration of this symbol (a function, class, interface, type alias, enum or namespace
     // declaration): a use of it from here isn't a reference (tsc's isSelfReferenceLocation)
     Symbol const* self;

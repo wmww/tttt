@@ -2806,14 +2806,22 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     bool from_parameters = false;
     bool arguments = (meaning & SYMBOL_VARIABLE) && csview_equals(name, "arguments");
     bool arrows_have_arguments = compiler_options()->target < SCRIPT_TARGET_ES2015;
+    bool jsdoc_parameter_type = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
+        jsdoc_parameter_type |= scope->jsdoc_parameter_type;
         SymbolTable const* table = scope->kind == SCOPE_GLOBAL ? &scope->binder->globals : &scope->locals;
         if (table->count || table->parent) {
             Symbol* found = symbol_table_lookup(table, name, hash);
             bool body_variable = from_parameters && found && (found->flags & SYMBOL_VARIABLE) && !found->is_parameter &&
                 compiler_options()->target >= SCRIPT_TARGET_ES2015;
+            if (jsdoc_parameter_type && scope->kind == SCOPE_FUNCTION && found && (found->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE) &&
+                !(meaning & ~SYMBOL_VALUE & found->flags)
+            ) {
+                found = nullptr;
+            }
             if (found && !body_variable && symbol_has_meaning(found, meaning)) return found;
         }
+        if (scope->kind == SCOPE_FUNCTION) jsdoc_parameter_type = false;
         if (arguments && scope->kind == SCOPE_FUNCTION && scope->function &&
             (arrows_have_arguments || !span_valid(scope->function->arrow_span))
         ) {
