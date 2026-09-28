@@ -137,7 +137,9 @@ static bool walk_children(Expr const* me, AstExprVisit visit, void* arg) {
                 if (ast_walk_expr(&e->binary_op->right, visit, arg)) return true;
                 e = &e->binary_op->left;
                 if (e->tag != EXPR_BINARY_OP) return ast_walk_expr(e, visit, arg);
-                if (visit(e, arg)) return true;
+                AstWalk next = visit(e, arg);
+                if (next == AST_WALK_STOP) return true;
+                if (next == AST_WALK_SKIP) return false;
             }
         }
         case EXPR_UNARY_OP: return ast_walk_expr(&my unary_op->expr, visit, arg);
@@ -178,5 +180,6 @@ static bool walk_children(Expr const* me, AstExprVisit visit, void* arg) {
 }
 
 bool ast_walk_expr(Expr const* me, AstExprVisit visit, void* arg) {
-    return visit(me, arg) || walk_children(me, visit, arg);
+    AstWalk next = visit(me, arg);
+    return next == AST_WALK_STOP || (next == AST_WALK_CONTINUE && walk_children(me, visit, arg));
 }

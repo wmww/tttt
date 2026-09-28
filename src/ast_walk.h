@@ -4,10 +4,15 @@
 
 // A read-only pre-order walk over every expression under an AST node, like tsc's forEachChild recursion restricted to
 // expressions: statements, function bodies and parameters, classes, bindings' default values and initializers, JSX.
-// Types (TypeNodes) are not entered. `visit` returns true to stop the walk, which then returns true
+// Types (TypeNodes) are not entered. `visit` says whether to go on (the walk returns true if it stopped)
 typedef struct Expr Expr;
 typedef struct Statement Statement;
-typedef bool (*AstExprVisit)(Expr const* expr, void* arg);
+typedef enum AstWalk {
+    AST_WALK_CONTINUE,
+    AST_WALK_STOP,
+    AST_WALK_SKIP, // Not into the children of this expression
+} AstWalk;
+typedef AstWalk (*AstExprVisit)(Expr const* expr, void* arg);
 
 bool ast_walk_expr(Expr const* expr, AstExprVisit visit, void* arg);
 bool ast_walk_statement(Statement const* statement, AstExprVisit visit, void* arg);

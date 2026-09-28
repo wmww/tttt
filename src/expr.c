@@ -2254,8 +2254,7 @@ static bool same_access_chain(Expr const* tested, Expr const* child) {
     }
 }
 
-static bool truthy_use_visit(Expr const* e, void* arg) {
-    TruthyUseSearch const* search = arg;
+static bool truthy_use_found(Expr const* e, TruthyUseSearch const* search) {
     bool name = e->tag == EXPR_PROPERTY && e->property->form == PROPERTY_EXPR_DOT; // the name is a child of e
     if (!name && (e == search->root || e->tag != EXPR_IDENTIFIER)) return false;
     if (location_symbol(e) != search->symbol) return false;
@@ -2263,6 +2262,10 @@ static bool truthy_use_visit(Expr const* e, void* arg) {
     if (search->cond->tag == EXPR_IDENTIFIER || search->tested_identifier_in_binary) return true;
     if (!name) return false; // (an identifier's parent isn't the tested property access)
     return same_access_chain(search->tested, e);
+}
+
+static AstWalk truthy_use_visit(Expr const* e, void* arg) {
+    return truthy_use_found(e, arg) ? AST_WALK_STOP : AST_WALK_CONTINUE;
 }
 
 typedef struct TruthyBody {

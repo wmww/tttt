@@ -2,6 +2,7 @@
 #include "scope.h"
 #include "binding.h"
 #include "flow.h"
+#include "ast_walk.h"
 #include "ty/ty.h"
 #include "statement.h"
 #include "interface_member.h"
@@ -858,6 +859,52 @@ static void class_check_mixin(ClassDecl* me, ErrorCtx* errs) {
     }
 }
 
+static AstWalk this_or_super_visit(Expr const* e, void* arg) {
+    (void)arg;
+    if (e->tag == EXPR_IDENTIFIER) {
+        bool found = e->identifier.keyword == KEYWORD_IDENTIFIER_THIS || e->identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
+        return found ? AST_WALK_STOP : AST_WALK_CONTINUE;
+    }
+    // Not into what has its own `this`, nor into a function body (tsc's isThisContainerOrFunctionBlock)
+    if (e->tag == EXPR_CLASS_DECL) return AST_WALK_SKIP;
+    if (e->tag == EXPR_FUNCTION && (!span_valid(e->function->arrow_span) || !e->function->expression_body)) return AST_WALK_SKIP;
+    return AST_WALK_CONTINUE;
+}
+
+// In a derived class with initialized properties, parameter properties or private names (and without standard class
+// fields), the `super(...)` call has to be a statement of the constructor's body (TS2401), before anything that
+// refers to `this` or `super` (TS2376). tsc's checkConstructorDeclarationDiagnostics
+static void constructor_check_super_first(ClassDecl const* me, ClassItem const* constructor, Expr const* super_call, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    if (options->use_define_for_class_fields && options->target >= SCRIPT_TARGET_ES2022) return;
+    bool root_level_needed = false;
+    for_each (i, vec_class_item, &my items) {
+        root_level_needed |= span_valid(class_item_private_name(i));
+        root_level_needed |= i->tag == CLASS_ITEM_FIELD && !i->field.is_static && i->field.value.tag != EXPR_IMPLICIT_ANY;
+    }
+    for_each (i, vec_function_arg, &constructor->constructor.func.args) root_level_needed |= i->is_parameter_property;
+    if (!root_level_needed) return;
+    VecStatement const* statements = &constructor->constructor.func.body.statements;
+    bool root_level = false;
+    for_each (i, vec_statement, statements) root_level |= i->tag == STATEMENT_EXPR && &i->expr == super_call;
+    if (!root_level) {
+        error_ctx_error_d(errs, super_call->inner_span, 2401, "A 'super' call must be a root-level statement within a "
+            "constructor of a derived class that contains initialized properties, parameter properties, or private identifiers.");
+        return;
+    }
+    for_each (i, vec_statement, statements) {
+        if (i->tag == STATEMENT_EXPR && i->expr.tag == EXPR_CALL && i->expr.call->callable.tag == EXPR_IDENTIFIER &&
+            i->expr.call->callable.identifier.keyword == KEYWORD_IDENTIFIER_SUPER
+        ) {
+            return;
+        }
+        if (ast_walk_statement(i, this_or_super_visit, nullptr)) break;
+    }
+    error_ctx_error_d(errs, constructor->constructor.name_span, 2376, "A 'super' call must be the first statement in the "
+        "constructor to refer to 'super' or 'this' when a derived class contains initialized properties, parameter "
+        "properties, or private identifiers.");
+}
+
 // A class can't extend one whose constructor is private, outside of it (tsc's checkBaseTypeAccessibility)
 static void class_check_base_accessibility(ClassDecl* me, ErrorCtx* errs) {
     Checker* checker = current_checker;
@@ -1546,15 +1593,17 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             case CLASS_ITEM_CONSTRUCTOR:
                 i->constructor.func.private_ambient = class_item_private_in_ambient(me, i);
                 function_impl_typecheck(&i->constructor.func, errs);
-                // tsc's checkConstructorDeclaration. TODO: TS2401/TS2376 (where the call must be with initialized
-                // properties or parameter properties)
+                // tsc's checkConstructorDeclaration
                 if (i->constructor.func.has_body && my extends.tag != EXPR_IMPLICIT_ANY) {
                     Expr const* super_call = i->constructor.func.first_super_call;
                     bool extends_null = my extends.tag == EXPR_LITERAL && my extends.literal.tag == VALUE_NULL;
                     if (super_call && extends_null) {
                         error_ctx_error_d(errs, super_call->inner_span, 17005,
                             "A constructor cannot contain a 'super' call when its class extends 'null'.");
-                    } else if (!super_call && !extends_null) {
+                    }
+                    if (super_call) {
+                        constructor_check_super_first(me, i, super_call, errs);
+                    } else if (!extends_null) {
                         error_ctx_error_d(errs, i->constructor.name_span, 2377,
                             "Constructors for derived classes must contain a 'super' call.");
                     }

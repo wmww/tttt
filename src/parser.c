@@ -5843,7 +5843,11 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             modified.kind = MODIFIED_CONSTRUCTOR;
             check_modifiers(&p, &modifiers, modified);
             Span keyword = name_span;
+            // From the modifiers to the keyword (tsc's getErrorSpanForNode of a constructor)
             name_span = span_from(a);
+            if (span_valid(keyword) && span_end_ptr(keyword) >= span_start_ptr(name_span)) {
+                name_span = span_make(name_span.source, span_start_ptr(name_span), span_end_ptr(keyword));
+            }
             if (!parse_function_fn(&p, function_flags_null, &func)) {
                 parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
                 func = (FunctionImpl){0};
