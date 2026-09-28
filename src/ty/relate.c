@@ -967,6 +967,13 @@ static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
 
 Ty const* ty_signature_param_type_at(Checker* me, Signature const* sig, u32 i) { return param_type_at(me, sig, i); }
 
+// Whether position i is the rest parameter of a signature whose rest parameter is `[]`
+static bool past_empty_rest(Signature const* sig, u32 i) {
+    if (!sig->param_count || i + 1 < sig->param_count || !sig->params[sig->param_count - 1].rest) return false;
+    Ty const* rest = sig->params[sig->param_count - 1].type;
+    return rest->kind == TY_DECLARED && rest->declared.kind == TY_DECLARED_TUPLE_TARGET && !rest->declared.tuple->arity;
+}
+
 // How many parameters a signature has, with a rest tuple of fixed length counted as its elements
 u32 ty_signature_param_count(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return sig->param_count;
@@ -1083,6 +1090,8 @@ static Ternary compare_signatures(
     u32 source_count = ty_signature_param_count(source);
     u32 count = source_count > target_count ? source_count : target_count;
     for (u32 i = 0; i < count; i++) {
+        // (A position past a rest `[]` has no type: tsc's tryGetTypeAtPosition)
+        if (past_empty_rest(source, i) || past_empty_rest(target, i)) break;
         Ty const* source_type = param_type_at(me, source, i);
         Ty const* target_type = param_type_at(me, target, i);
         if (!source_type || !target_type) break;

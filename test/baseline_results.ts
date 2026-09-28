@@ -32221,7 +32221,7 @@ const baselines = {
         types: true,
     },
     'unmatchedParameterPositions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
