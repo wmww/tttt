@@ -1743,9 +1743,9 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding c
             if (seen || pattern_names(me, pattern, name)) continue;
             FoundProp found = ty_find_prop(me, source, name);
             if (!found.found || (found.flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
+            if (found.prop && !ty_is_spreadable_prop(me, found.prop)) continue;
             Prop const* origin = found.prop;
             while (origin && origin->target) origin = origin->target;
-            if ((found.flags & (PROP_METHOD | PROP_GETTER | PROP_SETTER)) && origin && origin->parent && (origin->parent->flags & SYMBOL_CLASS)) continue;
             props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
             panic_if(!props, "out of memory");
             props[count++] = (ObjectLiteralProp){
@@ -1790,10 +1790,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
     u32 count = 0;
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
-        if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) continue;
-        Prop const* origin = prop;
-        while (origin->target) origin = origin->target;
-        if ((prop->flags & (PROP_METHOD | PROP_GETTER | PROP_SETTER)) && origin->parent && (origin->parent->flags & SYMBOL_CLASS)) continue;
+        if (!ty_is_spreadable_prop(me, prop)) continue;
         bool named = false;
         for_each (item, vec_object_binding_item, &pattern->object) {
             if (item->target.rest || item->computed_key) continue;

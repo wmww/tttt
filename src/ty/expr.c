@@ -1519,6 +1519,17 @@ static LiteralBuilder literal_builder_clone(LiteralBuilder const* builder) {
 // spread into what came before like that too. A union is spread member by member (the result is a union), a generic
 // object stays itself (the result is an intersection with it)
 
+// tsc's isSpreadableProperty (and the modifier check of getSpreadType/getRestType): not private, protected or `#x`, nor
+// a method or accessor declared in a class
+bool ty_is_spreadable_prop(Checker* me, Prop const* prop) {
+    if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) return false;
+    if (ty_private_name_class(me, prop->name)) return false;
+    Prop const* origin = prop;
+    while (origin->target) origin = origin->target;
+    u32 kinds = PROP_METHOD | PROP_ACCESSOR | PROP_GETTER | PROP_SETTER;
+    return !((prop->flags | origin->flags) & kinds) || !origin->parent || !(origin->parent->flags & SYMBOL_CLASS);
+}
+
 // The properties of an object type as a spread takes them (tsc's isSpreadableProperty and getSpreadSymbol): not
 // private or protected ones, nor methods of classes, and none readonly. `partial`: each one optional (tsc's
 // getAnonymousPartialType)
@@ -1560,7 +1571,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
     Members const* members = ty_members(me, object);
     for (u32 j = 0; j < members->prop_count; j++) {
         Prop const* prop = members->props[j];
-        if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) continue;
+        if (!ty_is_spreadable_prop(me, prop)) continue;
         if ((prop->flags & PROP_METHOD) && prop->function) continue; // (a class method)
         Prop const* origin = prop;
         while (origin->target) origin = origin->target;
