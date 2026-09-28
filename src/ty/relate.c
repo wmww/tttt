@@ -752,6 +752,33 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
         report_line(st, 2375, cstr_d("Type '", source_str, "' is not assignable to type '", target_str,
             "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties."));
     } else {
+        // A string literal that looks like one of a union's (tsc's getSuggestedTypeForNonexistentStringLiteralType)
+        Ty const* suggested = nullptr;
+        if ((source->flags & TYF_STRING_LITERAL) && !(source->flags & TYF_ENUM_LITERAL) && target->kind == TY_UNION) {
+            TyList types = target->composite.types;
+            csview* names = malloc(sizeof(csview) * (types.len + 1));
+            Ty const** candidates = malloc(sizeof(Ty const*) * (types.len + 1));
+            panic_if(!names || !candidates, "out of memory");
+            isize count = 0;
+            for (u32 i = 0; i < types.len; i++) {
+                Ty const* t = types.data[i];
+                if (!(t->flags & TYF_STRING_LITERAL)) continue;
+                candidates[count] = t;
+                names[count++] = atom_sv(t->literal.string);
+            }
+            isize best = spelling_suggestion(atom_sv(source->literal.string), names, count);
+            if (best >= 0) suggested = candidates[best];
+            free(names);
+            free(candidates);
+        }
+        if (suggested) {
+            cstr suggested_str = display_for_report(me, suggested, false);
+            report_line(st, 2820, cstr_d("Type '", source_str, "' is not assignable to type '", target_str, "'. Did you mean '",
+                suggested_str, "'?"));
+            cstr_drop(&suggested_str);
+            c_drop(cstr, &source_str, &target_str);
+            return;
+        }
         report_line(st, 2322, cstr_d("Type '", source_str, "' is not assignable to type '", target_str, "'."));
     }
     report_missing_constraint(me, st, source, target);

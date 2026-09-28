@@ -9736,7 +9736,7 @@ const baselines = {
         types: true,
     },
     'didYouMeanStringLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11386,7 +11386,7 @@ const baselines = {
         types: true,
     },
     'errorsForCallAndAssignmentAreSimilar': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
