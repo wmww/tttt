@@ -66,6 +66,10 @@ typedef struct ParserShared {
     // type forms (`?T`, `T=`, `*`, `function(...)`...) are allowed
     bool in_jsdoc;
     const char* jsdoc_end; // The `*/` of the comment being parsed, with in_jsdoc
+    // The last postfix `T?` parsed in JSDoc, from T's start to after the `?`: a tuple element that is exactly this is
+    // an optional element (tsc's parseTupleElementType)
+    const char* jsdoc_postfix_nullable_start;
+    const char* jsdoc_postfix_nullable_end;
     // The type alias an `@enum` on the statement just parsed declares, for the statement list to append after it
     Statement* jsdoc_enum;
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
@@ -2192,7 +2196,22 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
             elem.optional = false;
         }
 
+        char const* type_start = p.pos;
         expect_type(&p, TYPE_PRECEDENCE_NULL, &elem.type);
+        // JSDoc `[T?]`: the postfix `?` that would make `T | null` marks an optional element instead
+        if (!named && p.shared->in_jsdoc && p.shared->jsdoc_postfix_nullable_start == type_start &&
+            p.shared->jsdoc_postfix_nullable_end == p.pos && elem.type.tag == TYPE_UNION) {
+            TypeNode null_type = *vec_type_back(&elem.type.composite);
+            check(null_type.synthesized);
+            vec_type_pop(&elem.type.composite);
+            if (vec_type_size(&elem.type.composite) == 1) {
+                TypeNode inner = *vec_type_front(&elem.type.composite);
+                elem.type.composite.size = 0;
+                type_drop(&elem.type);
+                elem.type = inner;
+            }
+            elem.optional = true;
+        }
         hop_whitespace(&p);
 
         if (!named && hop_char(&p, '?')) {
@@ -2376,7 +2395,7 @@ static void hop_jsdoc_optional(Parser* parent, TypeNode* type) {
 }
 
 // JSDoc's postfix type forms: `T?` (T | null), `T!` (T)
-static bool parse_jsdoc_postfix_type(Parser* parent, TypeNode* left_and_ret) {
+static bool parse_jsdoc_postfix_type(Parser* parent, char const* left_start, TypeNode* left_and_ret) {
     Parser p = parser(parent);
     if (hop_char(&p, '!')) {
         return parse_success(&p);
@@ -2388,6 +2407,8 @@ static bool parse_jsdoc_postfix_type(Parser* parent, TypeNode* left_and_ret) {
         parse_fail(&next);
         if (!type_follows) {
             *left_and_ret = type_composite_without_simplify(TYPE_UNION, *left_and_ret, jsdoc_synthesized(type_null));
+            p.shared->jsdoc_postfix_nullable_start = left_start;
+            p.shared->jsdoc_postfix_nullable_end = p.pos;
             return parse_success(&p);
         }
     }
@@ -2401,7 +2422,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
     hop_whitespace(&p);
 
-    if (p.shared->in_jsdoc && parse_jsdoc_postfix_type(&p, left_and_ret)) {
+    if (p.shared->in_jsdoc && parse_jsdoc_postfix_type(&p, left_start, left_and_ret)) {
         return parse_success(&p);
     }
 

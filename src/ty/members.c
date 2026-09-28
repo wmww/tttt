@@ -152,7 +152,7 @@ TyDeclGroup const* ty_decl_group(Checker* me, FunctionImpl const* function) {
     return intern_get(&my links, key, 2);
 }
 
-static TyDeclGroup const* decl_group_of(Checker* me, Symbol const* symbol, SymbolDecl const* node) {
+static TyDeclGroup const* decl_group_of(Checker* me, Symbol const* symbol, void const* node) {
     u64 key[2] = { KEY_DECL_GROUP, (u64)(uintptr_t)node };
     void const** slot = intern_slot(me, &my links, key, 2);
     if (!*slot) {
@@ -1121,6 +1121,18 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
         for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, members->call[j]);
         for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, members->construct[j]);
         for (u32 j = 0; j < members->index_count; j++) builder_push(builder, index, members->index[j]);
+        // A function declared in several places (lib.dom's `setTimeout` and @types/node's `declare global` one): each
+        // place's overloads are a group, and overload resolution tries the later groups first (reorder_candidates)
+        // (tsc's signature.declaration.parent: the block the declaration is in)
+        for (u32 j = 0; entry_count > 1 && j < members->call_count; j++) {
+            FunctionImpl const* function = members->call[j]->function;
+            if (!function || ty_decl_group(me, function)) continue;
+            void const* parent = entry;
+            for (u32 d = 0; d < decl->decl_count; d++) {
+                if (decl->decls[d].node == function && decl->decls[d].block) parent = decl->decls[d].block;
+            }
+            set_decl_group(me, function, decl_group_of(me, decl, parent));
+        }
     }
     free(entries);
     // What a module's `export =` assigns, with the module's other exports (module_export_equals())
