@@ -14,17 +14,19 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    61 -> 43, webpack 17 -> 13, others 0. Counts as two sessions.
 4. ~~Plan 38 stage 2~~ done (four sub-agents + main tree): xstate 43 -> 19, webpack 13 -> 9, suite 10565 -> 10567, 0
    lost. What is left of plan 38 is "Stage 3" (resolve once), which needs a planning session: after the insights.
-5. **Suite checker bugs 6** (four Opus sub-agents in worktrees + the main tree, like entry 7 of the last window, +165):
-   buckets from `./failstats.py`: the single-code tests (missing TS2322 12, TS2742 10, TS2538 8, TS7053 8; spurious
-   TS2339 10), `./unimplemented_codes.sh`'s families (TS2774/TS2845 condition checks, TS17012, TS1147, TS2564...),
-   the 365 tests where tsc reports errors and tttt nothing.
-6. **Perf: plan 36 stage 1** (parallel loading; `36_prototype.patch`). Load+parse is 117 ms of the tsc corpus's
+5. ~~Suite checker bugs 6~~ done (four Opus sub-agents + main tree): suite 10567 -> 10830 (+263, 0 lost), JS 560 ->
+   579, corpora unchanged (webpack 9, xstate 19, the rest 0). Instructions +0-5% (webpack +5.2%, valibot +3.5%;
+   measurements.md). Main tree: tsconfig option diagnostics at the option (the harness and CLI register the config),
+   resolveName details, TS2818/TS2686/TS7036/TS2376. Buckets left: `bugs/missing_checks.md`.
+6. **Perf: plan 36 stage 1** (parallel loading; `36_prototype.patch`). Also worth a look first: the last two checker
+   bugs sessions each cost 2-5% instructions spread thinly, and hacks.md's "Generic source constraints push both
+   nesting stacks" (a tsc port that was +14% on react: a missing cache?). Load+parse is 117 ms of the tsc corpus's
    0.53 s, 145 ms of webpack's. Also look at checker balance: on the tsc corpus one checker takes 292 ms and the
    others 90-166 (round-robin dealing; `checker.ts` is one file), so the check phase is bounded by one file. Update
    measurements.md (instructions per corpus, walls, RSS).
-7. **JS session** (plan 26, sub-agents): `./jsstats.py`: 560 / 1049 pass; only-CommonJS 65, only-JSDoc 60, other 54,
-   only-expandos 37, expandos+JSDoc 34.
-8. **Parser session** (plan 27 stage 1 leftovers and `./syntaxstats.py` clusters): 252 tests have a spurious TS1xxx;
+7. **JS session** (plan 26, sub-agents): `./jsstats.py`: 579 / 1049 pass; only-CommonJS 65, only-JSDoc 59, other 52,
+   only-expandos 33, expandos+JSDoc 32.
+8. **Parser session** (plan 27 stage 1 leftovers and `./syntaxstats.py` clusters): 225 tests have a spurious TS1xxx;
    many spurious TS2304/TS1005/TS1128 are downstream of recovery (constructorWithIncompleteTypeAnnotation alone: 22
    TS2304).
 9. **Types component** (plan 35's queue, sub-agents): `./displaydiff.py` "other" alone fixes 333 TS + 54 JS tests,

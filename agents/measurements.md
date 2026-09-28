@@ -10,14 +10,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Suite (2026-09-28, suite checker bugs 5, a59b7355; plan 37 C + D brought it to 10513, todo entry 9 to 10516, triage (entry 10) to 10543: errors 11983, symbols 12594, types 11613; the next window's corpus session to 10554, plan 38 stage 1 to 10565)
-**10477 / 13540** full pass (errors 11941, symbols 12590, types 11576). A suite run takes ~23 s. `./failstats.py`:
-errors component fails in 1599 tests: both missing and spurious 450, tsc reports errors and tttt nothing 382, **same
-codes+positions, other text 296**, only missing 248, tttt errors where tsc has none 119, only spurious 81. Top missing
-codes: TS1005 157 in 84 tests, TS2339 97/27, TS2322 94/52, TS2304 87/53; top spurious: TS2304 414 in 116 tests,
-TS1005 259/87, TS2339 229/60, TS2322 144/66. Single-code tests: missing TS2322 15, missing TS2742 10, spurious TS2339
-10, missing TS2304 9, missing TS2538 8, missing TS7053 8 (the spurious side was drained from 40/39/35). `./jsstats.py`:
-**556** of 1049 JS tests pass. The tool lines below are from 7aef64e (10189).
+## Suite (2026-09-28, suite checker bugs 6, ba04b275)
+**10830 / 13540** full pass (errors 12273, symbols 12648, types 11726; session start 10567). A suite run takes ~25 s.
+`./failstats.py`: errors component fails in 1267 tests: both missing and spurious 371, **same codes+positions, other
+text 294**, tsc reports errors and tttt nothing 232, only missing 193, tttt errors where tsc has none 82, only spurious
+72. 225 tests have a spurious TS1xxx. Top missing codes: TS1005 157 in 84 tests, TS1109 87/36, TS2339 82/19, TS2304
+78/49, TS2322 69/40. Single-code tests: missing TS2322 12, missing TS2742 10 (needs declaration-emit simulation),
+spurious TS2339 8, spurious TS1005 7. `./unimplemented_codes.sh` is now led by syntax (TS1335, TS7059, TS1497,
+TS17019/17020) and isolatedDeclarations (TS90xx). `./jsstats.py`: **579** of 1049 JS tests pass; only-CommonJS 65,
+only-JSDoc 59, other 52, only-expandos 33, expandos+JSDoc 32. The tool lines below are from 7aef64e (10189).
 - `./displaydiff.py`, tests fixed by one kind (TS, JS): other 390 + 53, underlines/order only 110 + 22, we-any 65 +
   37, union-order 48 + 3, tsc-any 34 + 5, names-only 28 + 5, tsc-typeof 24 + 9, line-missing 23 + 4.
 - `./displaydiff.py --fine`, TS tests by the kind of their first differing line: underlines/order 110, line-missing
@@ -31,23 +32,17 @@ TS1005 259/87, TS2339 229/60, TS2322 144/66. Single-code tests: missing TS2322 1
   M 31. Clusters: other:A 40, other:E 34, other:M 30, other:D 28, permissive:modifiers 22, recovery:list-context 14,
   lexical:identifiers 9, permissive:decorators 9, other:C 8, other:B 8, recovery:object-literal 6.
 
-## Corpora (2026-09-28, sixth window's corpus session, todo entry 1, c4b36dfa; diagnostics updated by plan 38 stages 1-2)
+## Corpora (2026-09-28, suite checker bugs 6, ba04b275)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**0**, zod **0**, webpack **9** (17 before plan 38 stage 1, 13 after), **xstate 19** (394 at pinning, 61 before plan 38
-stage 1, 43 after; plan 19 "xstate"). Plan 38 stage 2's instructions (vs 46fe1997): tsc 5.063 -> 5.050 G, type-fest
-3.389 -> 3.404, valibot 5.393 -> 5.308, react 1.949 -> 1.957, nest 1.142 -> 1.140, webpack 3.523 -> 3.523, zod 4.424
--> 4.414, xstate 2.840 -> 2.822. Plan 38 stage 1's instructions (same method as below, vs 6475225b): tsc 5.046 -> 5.062 G, zod
-4.417 -> 4.423, xstate 2.773 -> 2.840 (+2.4%). **zod-root** (not
-clean under tsc, which reports 55): tttt's `file:line code` set equals tsc's 55. threadcheck.sh: every corpus identical
-at 1 and 4 threads; xstate still differs between `--checkers 1` and 4 in 5 diagnostics (triage).
-Instructions (`perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`), session start (b4651c90) ->
-end: tsc 4.993 -> 5.045 G (+1.0%; the unknown-like-union check alone was +2.8% before its flag gate), type-fest 3.367
--> 3.385, valibot 5.336 -> 5.371, react 1.967 -> 1.942, nest 1.136 -> 1.139, webpack 3.446 -> 3.508 (+1.8%, checks more
-JS), zod 4.407 -> 4.433, xstate 3.800 -> 2.776 (-27%: the TS2589 blowup is gone). The "Memory and variances" table
-below is from todo entry 9 of the last window (tsc 4.822 then: the triage and insights in between added +3.5%).
-xstate walls (4 checkers): tttt 0.27 s / 370 MB, tsc 5.8 6.0 s / 572 MB, tsgo 7.0.2 1.00 s / 483 MB (tsgo reports 30
-errors there: TypeScript 7 places some errors differently, so `@ts-expect-error` directives go unused; its time is of
-a full check all the same).
+**0**, zod **0**, webpack **9**, **xstate 19** (plan 19 "xstate"). **zod-root** (not clean under tsc, which reports
+55): last compared in the corpus session (equal sets). Instructions (`perf stat -e instructions:u`,
+`TTTT_NO_REEXEC=1 --checkers 1 --threads 1`), session start (1874ff8e) -> end: tsc 5.051 -> 5.053 G, type-fest 3.407 ->
+3.433, valibot 5.308 -> 5.492 (+3.5%), react 1.960 -> 2.012 (+2.7%), nest 1.142 -> 1.147, webpack 3.526 -> 3.711
+(+5.2%, spread over every merge: +0.7% C, +0.9% B, +1.2% A, +0.6% D, +1.8% the last round with D's JSDoc @param
+checks), zod 4.413 -> 4.480, xstate 2.824 -> 2.879. valibot's biggest single growth is `recursive_related` (A's
+separate source/target nesting stacks, tsc's RecursionFlags: ~1.1%). A's RecursionFlags.Source for generic sources
+was +14% on react alone and is reverted (hacks.md). Walls of the last full comparison (xstate, 4 checkers): tttt 0.27 s
+/ 370 MB, tsc 5.8 6.0 s / 572 MB, tsgo 7.0.2 1.00 s / 483 MB.
 
 ## Memory and variances (2026-09-28, todo entry 9, f0dd10eb + 0c6b4a80)
 `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`, `perf stat -e instructions:u`, arena / types from `--time`:

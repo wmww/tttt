@@ -4,25 +4,19 @@ Each is small (one check, a few tests). Find fresh buckets with `./failstats.py`
 one code alone in `build/failstats/tests.tsv`) and `./unimplemented_codes.sh` (codes `src/` never mentions). Test
 statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (suite checker bugs 4).
 
-## Buckets (tests whose errors fail on this one code, 2026-09-28, after suite checker bugs 5, suite 10477)
-- Single-code tests: missing TS2322 15, missing TS2742 10 (declaration emit: out of scope), spurious TS2339 10,
-  missing TS2304 9, missing TS2538 8, missing TS7053 8, spurious TS1005 7, spurious TS2304 7 (escaped identifiers,
-  `bugs/escaped_identifiers.md`), spurious TS2307 6 (APISample_*, harness), missing TS7023/TS2344/TS2300/TS2774 5 each.
-  The spurious side is drained; the next checker-bugs session should start from the missing side (missing TS2322's
-  relation-engine leftovers, TS2538/TS7053 below) or from `./unimplemented_codes.sh` (TS2774 59 in 5 tests, TS7059,
-  TS1497, TS9007-9013 isolatedDeclarations, TS17012 in importMeta, TS2564 strictPropertyInitialization...).
-  Errors component: 382 tests where tsc reports errors and tttt none.
-- Module resolution / emit: TS8002 9 (JS, plan 26), TS2742 10 (declaration emit: out of scope); spurious TS2307 14 (APISample_*: resolving
-  `typescript` from the harness).
-- Checker: TS2538 8 (below), TS7023 5, TS2344 5 (import types' arguments aren't checked against constraints:
-  unmetTypeConstraintInImportCall, `identifier_type_check_arity()` doesn't see them), TS2449 through property access
-  (`a.C` to a class declared later: circularImportAlias, privacyClassExtendsClauseDeclFile; tsc's
-  checkPropertyNotUsedBeforeDeclaration, the access doesn't know whether a function defers it), TS2318 (the lazily looked-up globals: `Awaited`,
-  `TypedPropertyDescriptor`; the eager ones are done in `program_report_missing_global_types`, IterableIterator in
-  `ty_generator_type`);
-  spurious TS2349 13 (betterErrorForUnionCall, classExtendsNull, functionType), TS2403 12 (below), TS7006 8, TS2300 10.
-- TS7053 6 are JS (lateBoundAssignmentDeclarationSupport*: element access on a CommonJS module object is skipped in
-  JS, `ty_check_element_implicit_any`'s TODO).
+## Buckets (tests whose errors fail on this one code, 2026-09-28, after suite checker bugs 6, suite 10830)
+- Single-code tests: missing TS2322 12 (relation-engine leftovers), missing TS2742 10 (declaration emit: needs a
+  simulation of emit's type serialization and module specifiers, plan-sized), spurious TS2339 8, spurious TS1005 7
+  (parser), missing/spurious TS2304 5+5 (escaped identifiers, `bugs/escaped_identifiers.md`), missing TS2345 5,
+  missing TS2300 5, missing TS7023 4, spurious TS2749 4 (`export =` of a dotted name, triage), misplaced TS2322 5 and
+  TS2769 4, spurious TS2741 4. `./unimplemented_codes.sh` is now syntax and isolatedDeclarations (TS90xx) at the top;
+  TS2744 (type parameter defaults referencing later ones: needs a type-node walker) 15 in 4 tests.
+  Errors component: 232 tests where tsc reports errors and tttt none (was 382).
+- Done by suite checker bugs 6: TS2774/TS2801/TS2845 conditions, TS2564/TS2565 and definite assignment grammar,
+  TS2313, TS7023/TS7024, TS2401/TS2376, overload agreement (TS2385/TS2386/TS2512, TS2386 for method signatures too),
+  TS2818, TS2686, TS7036, TS2708 for `export import`, TS17012, TS1147/TS1194, TS2452, TS2702/TS2713, TS8024/TS8032,
+  TS2462, TS1182, TS2778-2781, TS2408, TS2659, TS1064, TS2492, TS2675, TS18045, TS2806, tsconfig option diagnostics
+  at the option (TS5xxx, paths validation, deprecations by version), TS6054.
 
 ## Known missing checks
 - TS2510 ("Base constructors must all have the same return type") for an intersection base whose construct
@@ -40,9 +34,6 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   (`/** @type {F} */ C.prototype.m;`) read in the same flow container (tsc's getFlowTypeOfAccessExpression with
   assumeUninitialized: jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError); TS7032 (a setter without a parameter
   type, `@type` on a setter being ignored) is absent entirely (probe plan19/webpack/jsdoc_accessor_type.ts).
-- **Conditions**: TS2774/TS2801 (uncalled function / promise in a condition): tsc's
-  checkTestingKnownTruthyCallableOrAwaitableOrEnumMemberType looks for uses of the tested symbol in the body; needs a
-  symbol-use walk over expressions (tttt has no generic expression visitor).
 - **Circularity**: TS2502 for accessors, class properties, parameters (circularAccessorAnnotations,
   circularGetAccessor, circularOptionalityRemoval; variables are done). TS2310 for cycles found while resolving
   (circularBaseTypes, circularConstraintYieldsAppropriateError); a cyclic interface still gets its bases' members (tsc:
@@ -50,11 +41,8 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
 - **Decorators**: TS2449 for a class used in the decorators of its own methods' parameters (tsc counts them; tttt's
   check only knows class and member decorators).
 - **Classes**: TS2467 (computed name referencing the containing declaration's type parameter: interface members have
-  no computed-name scope marker). TS2383/TS2385/TS2386/TS2512 (overload export/access/optional/abstract agreement,
-  next to TS2394 in tsc's checkFunctionOrConstructorSymbol; for method signatures the overloads of a name are one
-  InterfaceMember, whose `optional` doesn't say which declaration had the `?`); TS2687 skips statics and method/accessor pairs. TS2564
-  (strictPropertyInitialization, absent) and TS2612 need isPropertyInitializedInConstructor (flow at the end of the
-  constructor). TS2401/TS2376 (`super()` placement with initialized/parameter properties). TS4127 (`override` on a
+  no computed-name scope marker). TS2383 (overload export agreement); TS2386 across merged
+  interface declarations (interface.c checks per body); TS2687 skips statics and method/accessor pairs. TS4127 (`override` on a
   dynamic name: overrideLateBindableIndexSignature1). TS2506 across files through namespace-qualified bases
   (classExtendsItselfIndirectly2). Abstract members satisfied by an interface merged into the class: tsc looks there
   before TS2515 (mergedInheritedMembersSatisfyAbstractBase). TS1094 (accessor type parameters).
@@ -102,8 +90,8 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
 - **Modules**: exports in non-module containers dropped silently (`scope_add_port()`, TODO TS1194); `import { type
   require }` isn't type-only for TS2441; TS1361 through `import x = types.A` of a type-only namespace (importEquals1);
   typeOnlyMerge3 (TS1362 through an import merged with a namespace after TS2440); mergeSymbolRexportFunction (TS2451
-  path); TS2497 (default/namespace import of an `export =` module without esModuleInterop); TS2686 (UMD global from a
-  module, TODO in `scope_add_port`); TS2664/TS2671 (module augmentation errors); duplicatePackage_globalMerge prints
+  path); TS2497 (default/namespace import of an `export =` module without esModuleInterop); TS2686 from `typeof Foo` in a
+  type (expressions are done); TS2664/TS2671 (module augmentation errors); duplicatePackage_globalMerge prints
   TS2306 paths as `/node_modules/...` (tsc `/tests/node_modules/...`); a nested `declare module "m"` gets TS2435 but is
   still bound as a global ambient module (tsc: a local namespace). TS2846 (import of a `.d.ts` by name),
   TS2877/TS2876 (`rewriteRelativeImportExtensions`), TS2688 where tsc can't resolve a type reference directive and tttt

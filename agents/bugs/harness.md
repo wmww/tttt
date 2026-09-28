@@ -14,9 +14,9 @@
   differ from the harness by one or two (13540 vs 13542).
 - The CLI (`program.c`) loads the default lib even when a file says `/// <reference no-default-lib="true"/>`; only the
   harness honours it.
-- Diagnostics without a file that depend on emit paths: TS5055 (38 baselines, "would overwrite input file"), TS5056,
-  TS6054, TS6082/TS5053/TS5069 (outFile/sourceMap/declaration combinations), TS5101/TS5107 under
-  `ignoreDeprecations`. With a tsconfig tsc puts option diagnostics on the option's json span; tttt skips them.
+- Option diagnostics go on the tsconfig (program_set_config_file(), option_sites()) since suite checker bugs 6. Left:
+  `paths` only an extended config sets isn't validated; libReplacement (`@typescript/lib-*`, 4 tests) isn't
+  implemented; APILibCheck wants typescript.internal.d.ts and tsserverlibrary, which only a tsc build has.
 - Module resolution leftovers: resolution-mode attributes (~20 tests), `tryLoadInputFileForPath` (outDir mapping back
   to the input `.ts`, 8), Windows rooted paths (3), tsconfig `references`/`watchOptions`.
 - The stdlib checks clean: a cheap regression check for lib-related changes (`./bench.sh`'s `lib_closure` lists the
