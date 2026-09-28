@@ -1213,7 +1213,12 @@ static void check_access(
     if (object->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) return;
     if (object->flags & TYF_UNKNOWN) {
         // A destructured property (no object expression), or without strictNullChecks: what unknown lacks
-        if (!span_valid(object_span) || !compiler_options()->strict_null_checks) {
+        if (!compiler_options()->strict_null_checks) {
+            // (Its apparent type is `{}`, which has Object's members: tsc's getApparentType)
+            if (error_if_not_found && !ty_access(me, ty_empty_object_type(me), index)) {
+                report_no_property(me, object, index, 2339, index_span, errs);
+            }
+        } else if (!span_valid(object_span)) {
             if (error_if_not_found) report_no_property(me, object, index, 2339, index_span, errs);
         } else if (object_is_named) {
             error_ctx_error_d(errs, object_span, 18046, "'", object_span, "' is of type 'unknown'.");
