@@ -11046,8 +11046,8 @@ const baselines = {
         types: true,
     },
     'enumIdentifierLiterals': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'enumIndexer': {
@@ -20741,7 +20741,7 @@ const baselines = {
         types: true,
     },
     'literalsInComputedProperties1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -39066,9 +39066,9 @@ const baselines = {
         types: true,
     },
     'enumErrors': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'enumExportMergingES6': {
         errors: true,
@@ -56461,9 +56461,9 @@ const baselines = {
         types: true,
     },
     'parserEnum5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEnum6': {
         errors: true,
@@ -56471,9 +56471,9 @@ const baselines = {
         types: true,
     },
     'parserEnum7': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEnumDeclaration1': {
         errors: true,
@@ -59641,7 +59641,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName30': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

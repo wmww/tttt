@@ -95,6 +95,12 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
             error_ctx_error_d(errs, i->full_name, 1164, "Computed property names are not allowed in enums.");
             continue;
         }
+        // (tsc's computeEnumMemberValue: the name's text is what a number prints as, and not Infinity or NaN)
+        bool numeric = i->numeric_name ? i->numeric_name == 1 : value_is_numeric_literal_name(i->name.sv) &&
+            !csview_equals(i->name.sv, "Infinity") && !csview_equals(i->name.sv, "-Infinity") && !csview_equals(i->name.sv, "NaN");
+        if (numeric) {
+            error_ctx_error_d(errs, i->full_name, 2452, "An enum member cannot have a numeric name.");
+        }
         if (i->value.tag == EXPR_IMPLICIT_ANY || !i->symbol) continue;
         ty_check_enum_initializer_references(current_checker, i, &i->value, errs);
         Ty const* member = ty_declared_type_of(current_checker, i->symbol);

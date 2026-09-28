@@ -18,6 +18,7 @@
 #include "error.h"
 #include "source_file.h"
 #include "math_helpers.h"
+#include <math.h>
 #include "string_helpers.h"
 
 #define g_type VecU8, vec_u8
@@ -4424,6 +4425,14 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             enum_case.name_is_value = true;
         } else if (parse_identifier_or_keyword(&p, &enum_case.name)) {
             enum_case.full_name = enum_case.name;
+        } else if (isdigit((unsigned char)*p.pos) || (*p.pos == '.' && isdigit((unsigned char)p.pos[1]))) {
+            // A numeric name (tsc's parsePropertyName): TS2452 from the checker
+            Value value;
+            if (parse_numeric_value(&p, &value)) {
+                enum_case.numeric_name = value.tag == VALUE_NUMBER && isfinite(value.number) ? 1 : 2;
+                value_drop(&value);
+            }
+            enum_case.name = enum_case.full_name = span_from(name_anchor);
         } else if (*p.pos == '[') {
             // A computed name (tsc's parsePropertyName): `['a']` names the member `a`, anything else is TS1164
             p.pos++;
@@ -4467,9 +4476,9 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             enum_case.value = expr_implicit_any_no_span;
         }
         vec_enum_case_push(&cases, enum_case);
-        // tsc's parseDelimitedList: a missing comma is reported, and the list goes on
+        // tsc's parseDelimitedList: a missing comma is reported (getExpectedCommaDiagnostic), and the list goes on
         if (!hop_char(&p, ',') && *p.pos && *p.pos != '}') {
-            expect_char(&p, ',');
+            parse_error(&p, span_from_token(&p), 1357, "An enum member name must be followed by a ',', '=', or '}'.");
             if (p.pos == t.start) hop_token(&p);
         }
         hop_whitespace(&p);

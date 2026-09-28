@@ -14,6 +14,9 @@ typedef struct EnumCase {
     // `[e] = 1`: a computed name that isn't a string or number literal (TS1164; the member is computed and the name
     // expression isn't checked, tsc's isComputedNonLiteralName). `name` is the whole `[e]`
     bool computed_name;
+    // A numeric literal name (`1`, `0x1`): 1 if it's a finite number (TS2452), 2 if not. The name is its source text,
+    // not the number's canonical text like tsc's
+    uint8_t numeric_name;
     Expr value;
     Symbol* symbol;
 } EnumCase;
