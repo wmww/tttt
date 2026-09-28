@@ -35616,7 +35616,7 @@ const baselines = {
         types: true,
     },
     'derivedClassSuperProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
