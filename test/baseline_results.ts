@@ -51478,7 +51478,7 @@ const baselines = {
     'jsDeclarationsExportAssignedConstructorFunction': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsExportAssignedConstructorFunctionWithSub': {
         errors: false,
@@ -51581,7 +51581,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsFunctionsCjs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51763,7 +51763,7 @@ const baselines = {
     'jsDeclarationsTypeReferences3': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsTypeReferences4': {
         errors: true,
@@ -52486,7 +52486,7 @@ const baselines = {
         types: true,
     },
     'moduleExportsElementAccessAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60181,7 +60181,7 @@ const baselines = {
         types: true,
     },
     'exportNestedNamespaces': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60451,7 +60451,7 @@ const baselines = {
         types: false,
     },
     'moduleExportNestedNamespaces': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

@@ -3195,6 +3195,31 @@ static void declare_assignment_member(
     AssignmentDeclKind kind, uint8_t jsdoc_modifiers
 );
 
+// The export that the entity name `exports.a.b` (`module.exports.a.b`, or through an alias of them) of a CommonJS module
+// names, null if it isn't one or names nothing
+static Symbol* commonjs_export_entity(Scope* module, Expr const* entity) {
+    if (entity->tag != EXPR_PROPERTY || expr_is_perenthisized(entity)) return nullptr;
+    Span name = expr_static_property_name(entity);
+    if (!span_valid(name)) return nullptr;
+    Expr const* object = &entity->property->expr;
+    Symbol* parent = is_exports_alias(module, object) ? module->container : commonjs_export_entity(module, object);
+    return parent && parent->exports ? symbol_table_get(parent->exports, name.sv) : nullptr;
+}
+
+// Each export of the entity name of a top-level `module.exports.a.b.x = v` gets a namespace declaration, like
+// add_expando_namespace_decls() (the root is the file's symbol, which doesn't)
+static void add_commonjs_export_namespace_decls(Scope* module, Expr const* entity) {
+    Symbol* symbol = commonjs_export_entity(module, entity);
+    if (!symbol) return;
+    add_commonjs_export_namespace_decls(module, &entity->property->expr);
+    symbol_ensure_exports(symbol);
+    symbol->flags |= SYMBOL_VALUE_MODULE;
+    Span name = entity->property->prop.outer_span;
+    symbol_add_decl(symbol, (SymbolDecl){
+        .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = entity, .name = name, .full = name,
+    });
+}
+
 // JavaScript `F.prototype.x = v` declares an instance member x of F, which makes F a class (tsc's
 // bindPrototypePropertyAssignment)
 static void add_prototype_property(Scope* me, Expr* constructor, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type) {
@@ -3240,10 +3265,18 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
     if (span_equals(name, "prototype") && right->tag == EXPR_OBJECT && !(my file && my file->is_js)) return;
     // `a.x = v` where a is `module.exports` is an export (add_commonjs_export())
     Scope* module = my file && my file->is_commonjs ? commonjs_module_scope(me) : nullptr;
-    if (module && object->tag == EXPR_IDENTIFIER && is_exports_alias(module, object)) return;
+    if (module && is_exports_alias(module, object)) return;
     Expr* init;
     Symbol* host = expando_host(me, object, &init);
-    if (host) {
+    Symbol* exported = top_level && module ? commonjs_export_entity(module, object) : nullptr;
+    if (exported) {
+        // `module.exports.f.x = v` at the top level: f is the export (tsc's forEachIdentifierInEntityName starts from
+        // the file's symbol), it becomes a namespace like any entity name there
+        host = symbol_is_expando_host(exported, my file, true, &init) ? exported : nullptr;
+        if (!host) return;
+        set_expando_initializer_host(init, host);
+        add_commonjs_export_namespace_decls(module, object);
+    } else if (host) {
         set_expando_initializer_host(init, host);
         add_expando_namespace_decls(me, object, top_level);
     } else if (top_level && my file->is_js && is_global_expando_entity(me, left)) {
