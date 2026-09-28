@@ -2713,6 +2713,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 private_access_check_emit_helpers(me, errs);
             }
             if (ty_check_private_name_access(current_checker, my property, expr_type, errs)) break;
+            // `null.x`, `undefined[0]`, `u.x` with `u: undefined` (tsc's checkNonNullExpression; a union with null
+            // or undefined is check_access()'s)
+            if ((expr_type->flags & TYF_NULLABLE) && expr_type->kind != TY_UNION) {
+                ty_check_non_null_type(current_checker, expr_type, &my property->expr, errs);
+                break;
+            }
             ty_check_property_access(
                 current_checker,
                 expr_type,

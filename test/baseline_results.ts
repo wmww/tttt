@@ -14536,7 +14536,7 @@ const baselines = {
         types: true,
     },
     'functionsMissingReturnStatementsAndExpressions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22426,7 +22426,7 @@ const baselines = {
         types: true,
     },
     'moduleVariableArrayIndexer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24136,7 +24136,7 @@ const baselines = {
         types: true,
     },
     'nullKeyword': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26256,12 +26256,12 @@ const baselines = {
         types: true,
     },
     'propertyAccess4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'propertyAccess5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30536,7 +30536,7 @@ const baselines = {
         types: true,
     },
     'topLevelLambda4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53146,7 +53146,7 @@ const baselines = {
         types: true,
     },
     'tsxAttributeResolution15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53716,7 +53716,7 @@ const baselines = {
         types: true,
     },
     'tsxSpreadAttributesResolution4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64541,7 +64541,7 @@ const baselines = {
         types: true,
     },
     'nonPrimitiveStrictNull': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
