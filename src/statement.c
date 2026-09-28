@@ -220,7 +220,7 @@ void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
-        .exported = my jsdoc && scope->kind == SCOPE_MODULE ? DECL_EXPORTED_YES : props.exported,
+        .exported = my jsdoc && !my jsdoc_enum && scope->kind == SCOPE_MODULE ? DECL_EXPORTED_YES : props.exported,
         .kind = SYMBOL_DECL_TYPE_ALIAS,
         .node = me,
     });

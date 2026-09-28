@@ -10376,6 +10376,8 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                         .name = initializer->binding.content_span, .full_span = span, .type = type, .jsdoc = true,
                         .jsdoc_enum = true,
                     },
+                    // Exported with its variable only (tsc's jsdocTreatAsExported)
+                    .decl.props.exported = statement->decl.props.exported,
                     .span = span,
                 });
             }

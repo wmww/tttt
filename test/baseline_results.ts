@@ -19172,7 +19172,7 @@ const baselines = {
     },
     'jsEnumTagOnObjectFrozen': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsExpandoObjectDefineProperty': {
@@ -51846,9 +51846,9 @@ const baselines = {
         types: true,
     },
     'exportedEnumTypeAndValue': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'extendsTag1': {
         errors: true,
