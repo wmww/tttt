@@ -21,7 +21,7 @@ smaller leftovers to `bugs/*.md` and hacks.md.
 - xstate's output still depends on the checker count: 5 diagnostics only at `--checkers 1` (actor.test.ts:1060/1499/
   1566, assign.test.ts:20, invoke.test.ts:1257/1276: callbacks typed `AssignArgs<MachineContext...>`), no limit hit:
   some cached inference state (plan 38 territory?). checkerdiff.py should flag it; it's a determinism bug.
-- `StateId<U>` to `StateId<T>` (xstate's StateId, no variance measurement) still gives TS2589 + TS2322, tsc nothing:
+- `StateId<U>` to `StateId<T>` (xstate's StateId, no variance measurement) gives TS2589 next to the TS2322 tsc also reports:
   the definitely-assignable checks instantiate deeply nested indexed-access chains. Repro:
   test/probes/xstate/state_id_deep_nesting.ts.
 - `interface I<C> { a: StateNode<C, any> }` where StateNode requires `C extends MachineContext`: tsc's TS2344 missing.

@@ -1,5 +1,5 @@
 // @strict: true
-// tsc: no error; tttt: TS2589 + TS2322 (triage 2026-09-28: the definitely-assignable checks instantiate deep indexed-access chains)
+// tsc: TS2322 only; tttt adds TS2589 (the definitely-assignable checks instantiate deep indexed-access chains)
 type Values<T> = T[keyof T];
 type S = { id?: string; states?: Record<string, S>; };
 type Id<T extends S> =
