@@ -13786,7 +13786,7 @@ const baselines = {
         types: true,
     },
     'forInStatement7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23501,7 +23501,7 @@ const baselines = {
         types: false,
     },
     'noImplicitAnyForIn': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40181,7 +40181,7 @@ const baselines = {
         types: true,
     },
     'symbolType13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58841,7 +58841,7 @@ const baselines = {
         types: true,
     },
     'parserForStatement4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58861,7 +58861,7 @@ const baselines = {
         types: true,
     },
     'parserForStatement8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63036,7 +63036,7 @@ const baselines = {
         types: true,
     },
     'for-inStatementsInvalid': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

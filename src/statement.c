@@ -1990,6 +1990,16 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                             ty_widened_objects(checker, for_each_loop_statement_pattern_source_type(my for_each_loop)), errs);
                         break;
                     }
+                    if (my for_each_loop->keyword == FOR_EACH_LOOP_IN) {
+                        // tsc's checkForInStatement: one message whatever the variable's type
+                        if (!ty_is_related(checker, lazy_type_get(&my for_each_loop->var_type),
+                                expr_get_type(&my for_each_loop->variable.expr), TY_RELATION_ASSIGNABLE)
+                        ) {
+                            error_ctx_error_d(errs, my for_each_loop->variable.expr.outer_span, 2405,
+                                "The left-hand side of a 'for...in' statement must be of type 'string' or 'any'.");
+                        }
+                        break;
+                    }
                     ty_check_assignable_expr(
                         checker,
                         // HACK: tsc checks a pattern target property by property (checkDestructuringAssignment),
