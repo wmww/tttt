@@ -1513,9 +1513,12 @@ static void union_members(Ty const* const* ty_ref, Ty const* const** out, u32* c
 // `{ [K in keyof T]: X }` with T generic stays a mapped type, but has a property per property of T's apparent type (its
 // constraint), X with K the property's name, with T's modifiers (tsc's resolveMappedTypeMembers, whose modifiers type
 // is the apparent type): `Mutable<T>` with `T extends Node` has `pos: T["pos"]`
+static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members);
+
 static Members const* expand_generic_homomorphic(Checker* me, Members const* members) {
     MappedInfo const* mapped = members->mapped;
     if (!mapped->keyof_constraint || mapped->name_type || !mapped->modifiers_type) return members;
+    if (mapped->modifiers_type->kind == TY_INTERSECTION) return expand_generic_intersection_homomorphic(me, members);
     Ty const* apparent = ty_apparent_type(me, mapped->modifiers_type);
     if (apparent == mapped->modifiers_type || !(apparent->flags & TYF_OBJECT) || (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         return members;
@@ -1572,6 +1575,64 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         builder_push(&builder, index, info);
     }
     return builder_finish(me, &builder);
+}
+
+// The same over a generic intersection (`flatten<A<T> & B<T>>`): a property per property some part is known to have (a
+// generic mapped part has those of the lower bound of its keys), optional if it is in every part that has it (tsc's
+// resolveMappedTypeMembers over getPropertiesOfType of the intersection). No index signatures
+static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members) {
+    MappedInfo const* mapped = members->mapped;
+    TyList parts = mapped->modifiers_type->composite.types;
+    Prop* template = nullptr;
+    MembersBuilder builder = { .mapped = mapped };
+    for (u32 p = 0; p < parts.len; p++) {
+        Ty const* part = parts.data[p];
+        if (!(part->flags & TYF_OBJECT)) part = ty_apparent_type(me, part);
+        if (!(part->flags & TYF_OBJECT)) continue;
+        Members const* source = ty_members(me, part);
+        for (u32 i = 0; i < source->prop_count; i++) {
+            Prop const* from = source->props[i];
+            if (builder_find_prop(&builder, from->name)) continue;
+            // Optional only if every part that has it has it optional, readonly if any has it readonly
+            u32 flags = from->flags & (PROP_OPTIONAL | PROP_READONLY);
+            for (u32 q = p + 1; q < parts.len; q++) {
+                Ty const* other = parts.data[q];
+                if (!(other->flags & TYF_OBJECT)) other = ty_apparent_type(me, other);
+                Prop const* also = (other->flags & TYF_OBJECT) ? ty_get_prop(me, other, from->name) : nullptr;
+                if (!also) continue;
+                if (!(also->flags & PROP_OPTIONAL)) flags &= ~(u32)PROP_OPTIONAL;
+                flags |= also->flags & PROP_READONLY;
+            }
+            if (mapped->optional > 0) flags |= PROP_OPTIONAL;
+            if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
+                flags &= ~(u32)PROP_OPTIONAL;
+                if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
+            }
+            if (mapped->readonly > 0) flags |= PROP_READONLY;
+            if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
+            if (!template) {
+                template = arena_new(&my arena, Prop);
+                template->type = ty_mapped_template(me, mapped);
+                template->type_state = LAZY_STATE_DONE;
+            }
+            Ty const* key = ty_prop_key_literal(me, from);
+            TyMapper const* mapper = ty_mapper_new(
+                me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
+            );
+            Prop* prop = arena_new(&my arena, Prop);
+            *prop = (Prop){ .name = from->name, .flags = flags, .target = template, .mapper = mapper };
+            Prop const* declared = from;
+            while (declared && declared->target && !declared->decl_span_count) declared = declared->target;
+            if (declared) {
+                prop->name_span = declared->name_span;
+                prop->decl_spans = declared->decl_spans;
+                prop->decl_span_count = declared->decl_span_count;
+                prop->name_is_value = declared->name_is_value;
+            }
+            builder_push(&builder, props, prop);
+        }
+    }
+    return builder.props_count ? builder_finish(me, &builder) : members;
 }
 
 bool ty_is_valid_index_key(Ty const* ty) {

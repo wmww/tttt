@@ -6213,7 +6213,7 @@ const baselines = {
     'contextualTypeBasedOnIntersectionWithAnyInTheMix1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeBasedOnIntersectionWithAnyInTheMix2': {
         errors: true,
@@ -30431,8 +30431,8 @@ const baselines = {
         types: true,
     },
     'thisIndexOnExistingReadonlyFieldIsNotNever': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'thisKeyword': {
