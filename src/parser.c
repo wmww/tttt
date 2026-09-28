@@ -3530,12 +3530,8 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         } else {
             type = type_any;
         }
+        // (A bracketed property is optional like `foo?: T`, which adds optionality to its type)
         bool optional = tag->bracketed || type.jsdoc_optional;
-        if (tag->bracketed && !type.jsdoc_optional) {
-            // (tsc's addOptionality of a bracketed property tag: the declared type says undefined)
-            type = type_composite_without_simplify(TYPE_UNION, type, jsdoc_synthesized(type_undefined));
-            type.parsed = true;
-        }
         Span name_span = span_make(tag->name.source, name.buf, name.buf + name.size);
         vec_interface_member_push(&members, interface_member_make(
             jsdoc_tag_decl_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type

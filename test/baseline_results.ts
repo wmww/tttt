@@ -17351,12 +17351,12 @@ const baselines = {
         types: true,
     },
     'inferenceOptionalProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'inferenceOptionalPropertiesStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29281,7 +29281,7 @@ const baselines = {
         types: true,
     },
     'strictOptionalProperties3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

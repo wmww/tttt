@@ -2352,7 +2352,11 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         type = ty_object_literal_accessor_type(me, prop->function, prop->flags & PROP_GETTER);
     } else if (prop->target) {
         type = ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
-        if (prop->flags & PROP_STRIP_UNDEFINED) type = ty_without_undefined(me, type); // (Only set with strictNullChecks)
+        // (Only set with strictNullChecks. With exactOptionalPropertyTypes only the missing type goes: tsc's
+        // removeMissingOrUndefinedType, `Required<{ a?: number | undefined }>` is `{ a: number | undefined }`)
+        if (prop->flags & PROP_STRIP_UNDEFINED) {
+            type = compiler_options()->exact_optional_property_types ? ty_remove_missing(me, type, true) : ty_without_undefined(me, type);
+        }
         // (An optional property's declared-type view: tsc's getNonMissingTypeOfSymbol)
         type = ty_remove_missing(me, type, prop->flags & PROP_OPTIONAL);
     } else if (prop->overload_count) {
