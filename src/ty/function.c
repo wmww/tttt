@@ -27,8 +27,25 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
 typedef struct FunctionReturn {
     LazyState state;
     bool circular; // Asked for while being inferred
+    // An async function's body returns no value and there's no Promise value (TS2705), not said yet: only a request
+    // for the type that tsc would make says it (see ty_function_return_circular())
+    bool promise_missing;
     Ty const* type;
 } FunctionReturn;
+
+// infer_return_type() found the Promise constructor missing (FunctionReturn.promise_missing)
+static thread_local bool inferred_promise_missing;
+// The return type is asked for by ty_function_return_circular(), which tsc wouldn't do: no TS2705 from it
+static thread_local bool return_type_speculative;
+
+static void report_promise_missing(Checker* me, FunctionImpl const* function, FunctionReturn* memo) {
+    if (!memo->promise_missing || return_type_speculative) return;
+    memo->promise_missing = false;
+    ty_error_at(me, span_null, 2468, cstr_lit("Cannot find global value 'Promise'."));
+    ty_error_at(me, function_error_span(function), 2705, cstr_lit("An async function or method in ES5 requires the "
+        "'Promise' constructor.  Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in "
+        "your '--lib' option."));
+}
 
 Ty const* ty_promise_of(Checker* me, FunctionImpl const* function, Ty const* type) {
     if (!function->promise_decl) return ty_intrinsic(me, TY_ANY);
@@ -200,10 +217,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     ) {
         // tsc's createPromiseReturnType, which only the bodies that return no value get to: no Promise to make one
         // with, said when the return type is first needed (like tsc: a function nobody asks about isn't reported)
-        ty_error_at(me, span_null, 2468, cstr_lit("Cannot find global value 'Promise'."));
-        ty_error_at(me, function_error_span(function), 2705, cstr_lit("An async function or method in ES5 requires the "
-            "'Promise' constructor.  Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in "
-            "your '--lib' option."));
+        inferred_promise_missing = true;
     }
     ty_buf_drop(&returned);
     if (function->is_async && !function->is_generator) ret = ty_promise_of(me, function, ret);
@@ -228,7 +242,10 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
 // The inferred return type depended on itself, so it's any (tsc's getReturnTypeOfSignature failing popTypeResolution)
 bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
     if (function->constructed_class || function->ret_explicit || !function->has_body || function->setter_type) return false;
+    bool outer = return_type_speculative;
+    return_type_speculative = true;
     ty_function_return_type(me, function);
+    return_type_speculative = outer;
     u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
     FunctionReturn const* memo = intern_get(&my links, key, 2);
     return memo && memo->circular;
@@ -255,7 +272,9 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     if (!*slot) *slot = arena_new(&my arena, FunctionReturn);
     FunctionReturn* memo = (FunctionReturn*)*slot;
     switch (memo->state) {
-        case LAZY_STATE_DONE: return memo->type;
+        case LAZY_STATE_DONE:
+            report_promise_missing(me, function, memo);
+            return memo->type;
         case LAZY_STATE_IN_FLIGHT:
             memo->circular = true;
             return ty_intrinsic(me, TY_CIRCULAR); // TODO: TS7023 implicitly any, references itself
@@ -266,12 +285,16 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     // Unless the function is an argument of the call inferring now, nothing in its body is an argument of that call
     struct OuterInference* outer = my outer_inference;
     if (!keep_outer) my outer_inference = nullptr;
+    inferred_promise_missing = false;
     memo->type = infer_return_type(me, function);
+    memo->promise_missing = inferred_promise_missing;
+    inferred_promise_missing = false;
     // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
     if (memo->circular) memo->type = ty_intrinsic(me, TY_ANY);
     my outer_inference = outer;
     ty_flow_restore(me, isolation);
     memo->state = LAZY_STATE_DONE;
+    report_promise_missing(me, function, memo);
     return memo->type;
 }
 

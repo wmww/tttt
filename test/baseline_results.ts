@@ -23201,7 +23201,7 @@ const baselines = {
         types: true,
     },
     'neverAsDiscriminantType(strict=true)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
