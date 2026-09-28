@@ -877,6 +877,7 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
         case THIS_CLASS_STATIC: return ty_type_of_symbol(me, decl); // (With what a namespace merges in)
         case THIS_INTERFACE: return any_type(me);
         case THIS_GLOBAL: return my binder->global_this ? ty_type_of_symbol(me, my binder->global_this) : any_type(me);
+        case THIS_COMMONJS: return ty_commonjs_exports_type(me, identifier->name.source);
         case THIS_NAMESPACE: case THIS_ENUM: return any_type(me);
         case THIS_CLASS_INSTANCE: {
             // The class's `this` type (else the instance type, for a generic class applied to its own parameters)

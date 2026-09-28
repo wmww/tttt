@@ -1042,6 +1042,8 @@ Ty const* ty_empty_object_type(Checker* me); // `{}`
 // Also `{}`, but only as the non-nullish part of `unknown` while narrowing it (tsc's unknownEmptyObjectType, for TS2638)
 Ty const* ty_unknown_empty_object_type(Checker* me);
 Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file); // `module` of a CommonJS file
+// `module.exports` of a CommonJS file (what `this` is at its top level)
+Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file);
 // What a context-sensitive function is while context-sensitive arguments are skipped (tsc's anyFunctionType): no
 // members, non-inferrable, related to every function type
 Ty const* ty_any_function_type(Checker* me);

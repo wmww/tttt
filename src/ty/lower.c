@@ -878,13 +878,9 @@ static Ty* make_namespace(Checker* me, Symbol const* symbol) {
     return ret;
 }
 
-// The `module` of a CommonJS file: `{ exports: <what the module exports> }` (tsc builds it in
-// getTypeOfVariableOrParameterOrPropertyWorker for SymbolFlags.ModuleExports)
-Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
-    Symbol* module = file->scope ? file->scope->container : nullptr;
+Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
+    Symbol* module = file && file->scope ? file->scope->container : nullptr;
     if (!module) return ty_intrinsic(me, TY_ANY);
-    Span* file_span = arena_new(&my arena, Span);
-    *file_span = (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) };
     Symbol* assigned = module_export_equals(module);
     Ty const* exports;
     if (assigned != module) {
@@ -902,6 +898,17 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
             exports = made;
         }
     }
+    return exports;
+}
+
+// The `module` of a CommonJS file: `{ exports: <what the module exports> }` (tsc builds it in
+// getTypeOfVariableOrParameterOrPropertyWorker for SymbolFlags.ModuleExports)
+Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
+    Symbol* module = file->scope ? file->scope->container : nullptr;
+    if (!module) return ty_intrinsic(me, TY_ANY);
+    Span* file_span = arena_new(&my arena, Span);
+    *file_span = (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) };
+    Ty const* exports = ty_commonjs_exports_type(me, file);
     ObjectLiteralProp prop = {
         .name = checker_atom(me, c_sv("exports")),
         .type = exports,

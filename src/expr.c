@@ -292,6 +292,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                     file = file->parent;
                 }
                 if (file->kind == SCOPE_SCRIPT) my this_kind = THIS_GLOBAL;
+                if (file->kind == SCOPE_MODULE && file->file && file->file->is_commonjs) my this_kind = THIS_COMMONJS;
                 if (file->kind == SCOPE_NAMESPACE) my this_kind = THIS_NAMESPACE;
                 if (file->kind == SCOPE_ENUM) my this_kind = THIS_ENUM;
             }

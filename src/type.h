@@ -47,6 +47,7 @@ typedef enum ThisKind {
     THIS_PARAMETER,      // symbol: the `this` parameter
     THIS_INTERFACE,      // symbol: the interface (only a `this` type means something there)
     THIS_GLOBAL,         // The top level of a script: `typeof globalThis`
+    THIS_COMMONJS,       // The top level of a CommonJS JavaScript module: what it exports (tsc's checkThisExpression)
     THIS_NAMESPACE,      // The body of a namespace: TS2331, any
     THIS_ENUM,           // An enum member's initializer: TS2332, any
     THIS_TYPE_LITERAL,   // A `this` type in a member of a type literal: TS2526 (its members are `this` containers)
