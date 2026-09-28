@@ -1091,18 +1091,66 @@ static u32 value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
     return count;
 }
 
+// The properties of an intersection as tsc's getPropertiesOfType lists them: those of all of its members, each name
+// once. One only a single member has is that member's (tsc's createUnionOrIntersectionProperty returns the single
+// symbol), others of the type and with the modifiers the intersection has for them. malloc'd
+static u32 intersection_props(Checker* me, Ty const* ty, ObjectLiteralProp** out) {
+    u32 count = 0, cap = 0;
+    *out = nullptr;
+    for (u32 p = 0; p < ty->composite.types.len; p++) {
+        Ty const* part = ty_apparent_type(me, ty->composite.types.data[p]);
+        if (!(part->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, part);
+        for (u32 i = 0; i < members->prop_count; i++) {
+            Prop const* prop = members->props[i];
+            bool seen = false;
+            for (u32 k = 0; k < count && !seen; k++) seen = (*out)[k].name == prop->name;
+            if (seen) continue;
+            u32 owners = 0;
+            for (u32 q = 0; q < ty->composite.types.len; q++) {
+                Ty const* other = ty_apparent_type(me, ty->composite.types.data[q]);
+                owners += (other->flags & TYF_OBJECT) && ty_get_prop(me, other, prop->name);
+            }
+            if (count == cap) {
+                cap = cap ? cap * 2 : 8;
+                *out = realloc(*out, sizeof(ObjectLiteralProp) * cap);
+                panic_if(!*out, "out of memory");
+            }
+            if (owners == 1) {
+                (*out)[count++] = (ObjectLiteralProp){ .name = prop->name, .reuse = prop };
+                continue;
+            }
+            FoundProp found = ty_find_prop(me, ty, prop->name);
+            (*out)[count++] = (ObjectLiteralProp){
+                .name = prop->name, .flags = found.flags, .type = found.type, .name_span = prop->decl->name_span,
+            };
+        }
+    }
+    return count;
+}
+
 // `{ default: T }`, with T's own properties too if `spread` (tsc's createDefaultPropertyWrapperForModule, and
 // getSpreadType of the type with it in getTypeWithSyntheticDefaultImportType)
 static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread) {
-    Members const* members = spread && (type->flags & TYF_OBJECT) ? ty_members(me, type) : nullptr;
-    u32 count = 1 + (members ? members->prop_count : 0);
-    ObjectLiteralProp* props = arena_new_n(&my arena, ObjectLiteralProp, count);
     Atom const* default_name = checker_atom(me, c_sv("default"));
+    ObjectLiteralProp* from = nullptr;
+    u32 from_count = 0;
+    Members const* members = spread && (type->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_members(me, type) : nullptr;
+    if (members && type->kind == TY_INTERSECTION) {
+        from_count = intersection_props(me, type, &from);
+    } else if (members) {
+        from = malloc(sizeof(ObjectLiteralProp) * (members->prop_count + 1));
+        panic_if(!from, "out of memory");
+        for (u32 i = 0; i < members->prop_count; i++) from[from_count++] = (ObjectLiteralProp){ .reuse = members->props[i] };
+    }
+    ObjectLiteralProp* props = arena_new_n(&my arena, ObjectLiteralProp, from_count + 1);
     props[0] = (ObjectLiteralProp){ .name = default_name, .type = type };
     u32 n = 1;
-    for (u32 i = 0; members && i < members->prop_count; i++) {
-        if (members->props[i]->name != default_name) props[n++] = (ObjectLiteralProp){ .reuse = members->props[i] };
+    for (u32 i = 0; i < from_count; i++) {
+        Atom const* name = from[i].reuse ? from[i].reuse->name : from[i].name;
+        if (name != default_name) props[n++] = from[i];
     }
+    free(from);
     return ty_object_literal(me, props, n, members ? members->index : nullptr, members ? members->index_count : 0,
         OBJECT_SYNTHETIC);
 }
@@ -1128,7 +1176,8 @@ static Ty const* namespace_import_type(Checker* me, Symbol const* symbol) {
     bool esm_cjs = esm_usage && target && !target->is_esm && !target->is_json;
     if (!options->es_module_interop && !esm_cjs) return nullptr;
     Ty const* apparent = ty_apparent_type(me, type);
-    Members const* members = (apparent->flags & TYF_OBJECT) ? ty_members(me, apparent) : nullptr;
+    // (tsc's getSignaturesOfStructuredType: an intersection has the signatures of its members)
+    Members const* members = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_members(me, apparent) : nullptr;
     bool callable = members && (members->call_count || members->construct_count);
     bool has_default = members && ty_get_prop(me, apparent, checker_atom(me, c_sv("default")));
     if (!callable && !has_default && !esm_cjs) return nullptr;
