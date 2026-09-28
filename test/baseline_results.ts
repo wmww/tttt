@@ -19152,7 +19152,7 @@ const baselines = {
     },
     'jsElementAccessNoContextualTypeCrash': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsEmitIntersectionProperty': {
@@ -23737,12 +23737,12 @@ const baselines = {
     },
     'noParameterReassignmentIIFEAnnotated': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noParameterReassignmentJSIIFE': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noReachabilityErrorsOnEmptyStatement': {
@@ -52326,12 +52326,12 @@ const baselines = {
         types: false,
     },
     'jsdocTemplateConstructorFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsdocTemplateConstructorFunction2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52351,9 +52351,9 @@ const baselines = {
         types: true,
     },
     'jsdocTemplateTag4': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsdocTemplateTag5': {
         errors: false,
@@ -60066,9 +60066,9 @@ const baselines = {
         types: true,
     },
     'circularMultipleAssignmentDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'classCanExtendConstructorFunction': {
         errors: false,
@@ -60108,12 +60108,12 @@ const baselines = {
     'constructorFunctionMergeWithClass': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructorFunctionMethodTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constructorFunctions': {
         errors: false,
@@ -60197,7 +60197,7 @@ const baselines = {
     },
     'globalMergeWithCommonJSAssignmentDeclaration': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importAliasModuleExports': {
@@ -60262,7 +60262,7 @@ const baselines = {
     },
     'jsContainerMergeJsContainer': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsContainerMergeTsDeclaration': {
@@ -60272,8 +60272,8 @@ const baselines = {
     },
     'jsContainerMergeTsDeclaration2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsContainerMergeTsDeclaration3': {
         errors: false,
@@ -60506,7 +60506,7 @@ const baselines = {
         types: false,
     },
     'nestedPrototypeAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60616,7 +60616,7 @@ const baselines = {
         types: false,
     },
     'prototypePropertyAssignmentMergeWithInterfaceMethod': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60722,16 +60722,16 @@ const baselines = {
     },
     'typeFromPropertyAssignment': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment10_1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60751,14 +60751,14 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment14': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment15': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment16': {
         errors: true,
@@ -60782,8 +60782,8 @@ const baselines = {
     },
     'typeFromPropertyAssignment2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment20': {
         errors: true,
@@ -60807,8 +60807,8 @@ const baselines = {
     },
     'typeFromPropertyAssignment24': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment25': {
         errors: true,
@@ -60862,11 +60862,11 @@ const baselines = {
     },
     'typeFromPropertyAssignment34': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment35': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60891,9 +60891,9 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment40': {
         errors: true,
@@ -60903,10 +60903,10 @@ const baselines = {
     'typeFromPropertyAssignment5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60936,9 +60936,9 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignmentOutOfOrder': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignmentWithExport': {
         errors: true,

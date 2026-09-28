@@ -184,6 +184,30 @@ static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names, ErrorCtx* er
     return false;
 }
 
+// A JSDoc name in `X.prototype.m = function` that isn't in scope is looked up in X's declaration: its `@template`s
+// (tsc's getAssignmentDeclarationLocation). TODO: tsc only does this for the comments of the method and its statement
+static Symbol const* jsdoc_prototype_type_param(Scope const* names, Span name) {
+    Scope const* scope = names;
+    while (scope && scope->kind != SCOPE_FUNCTION) scope = scope->parent;
+    FunctionImpl const* function = scope ? scope->function : nullptr;
+    Expr* object = function ? (Expr*)function->this_assigned_object : nullptr;
+    Expr const* constructor = object ? expr_prototype_object(object) : nullptr;
+    if (!constructor) return nullptr;
+    Symbol const* symbol = expr_entity_name_symbol(constructor);
+    Generic const* generic = nullptr;
+    for (u32 i = 0; symbol && i < symbol->decl_count && !generic; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind == SYMBOL_DECL_CLASS) generic = &((ClassDecl const*)decl->node)->generic;
+        FunctionImpl const* constructor_function = symbol_decl_js_function(decl);
+        if (constructor_function) generic = &constructor_function->generic;
+    }
+    if (!generic) return nullptr;
+    for_each (i, vec_generic_item, &generic->items) {
+        if (csview_equals_sv(i->name.sv, name.sv)) return i->owned_symbol ? i->owned_symbol : i->symbol_ref;
+    }
+    return nullptr;
+}
+
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
 
@@ -231,6 +255,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
     } else {
         my target = scope_get_type(names, my name.sv, &my symbol);
         if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
+        if (!my target && my jsdoc) my target = my symbol = jsdoc_prototype_type_param(names, my name);
         unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
         if (!my target) scope_report_not_found(names, my name, SYMBOL_TYPE, false, errs);
         if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER)) check_static_type_parameter_reference(me, names, errs);

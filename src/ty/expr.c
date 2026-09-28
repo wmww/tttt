@@ -634,13 +634,10 @@ Symbol const* ty_js_this_class(FunctionImpl const* function) {
     Symbol const* js_class = ty_js_constructor_class(function);
     if (js_class) return js_class;
     // A method of a constructor function's prototype (tsc's getClassNameFromPrototypeMethod)
-    Expr const* object = function->this_assigned_object;
-    if (!object || object->tag != EXPR_PROPERTY || object->property->form != PROPERTY_EXPR_DOT ||
-        !span_equals(object->property->prop.inner_span, "prototype") || object->property->expr.tag != EXPR_IDENTIFIER
-    ) {
-        return nullptr;
-    }
-    Symbol const* symbol = object->property->expr.identifier.target;
+    Expr* object = (Expr*)function->this_assigned_object;
+    Expr const* constructor = object && object->tag == EXPR_PROPERTY && object->property->form == PROPERTY_EXPR_DOT ?
+        expr_prototype_object(object) : nullptr;
+    Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
     SourceFile const* file = function->full_span.source;
     if (!symbol || !file || !file->is_js || !(symbol->flags & SYMBOL_CLASS) || !symbol->members) return nullptr;
     return symbol;

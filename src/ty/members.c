@@ -1761,7 +1761,8 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 if (js_class && !(sig->flags & SIGNATURE_CONSTRUCT)) {
                     Signature* construct = signature_from_function(me, ty->anonymous.function, ty->anonymous.ctx);
                     construct->flags |= SIGNATURE_CONSTRUCT;
-                    construct->class_instance = ty_declared_type_of(me, js_class);
+                    construct->class_instance = ty_class_instance_type(me, js_class);
+                    construct->class_type_params = ty_local_type_params(ty_declared_type_of(me, js_class));
                     builder_push(&builder, construct, construct);
                 }
                 // `const f = () => {}; f.x = 1` (tsc merges the variable's exports into the function's symbol)

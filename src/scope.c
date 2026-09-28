@@ -2654,6 +2654,22 @@ struct ClassDecl const* scope_enclosing_class(Scope const* me) {
     return nullptr;
 }
 
+FunctionImpl const* symbol_decl_js_function(SymbolDecl const* decl) {
+    if (!decl->full.source || !decl->full.source->is_js) return nullptr;
+    Expr const* value = nullptr;
+    switch (decl->kind) {
+        case SYMBOL_DECL_FUNCTION: return decl->node;
+        case SYMBOL_DECL_VARIABLE: {
+            Binding const* binding = decl->node;
+            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
+            value = &((InitializedBinding const*)binding)->value;
+        }   break;
+        case SYMBOL_DECL_ASSIGNMENT: value = decl->node; break;
+        default: return nullptr;
+    }
+    return value->tag == EXPR_FUNCTION && !span_valid(value->function->arrow_span) ? value->function : nullptr;
+}
+
 Generic const* symbol_type_generic(Symbol const* me) {
     if (!me) return nullptr;
     for (u32 i = 0; i < my decl_count; i++) {
@@ -2662,6 +2678,16 @@ Generic const* symbol_type_generic(Symbol const* me) {
             case SYMBOL_DECL_CLASS: generic = &((ClassDecl const*)my decls[i].node)->generic; break;
             case SYMBOL_DECL_INTERFACE: generic = &((InterfaceDecl const*)my decls[i].node)->generic; break;
             case SYMBOL_DECL_TYPE_ALIAS: generic = &((TypeDecl const*)my decls[i].node)->generic; break;
+            // A JavaScript constructor function's `@template`s are its class's (tsc's
+            // getLocalTypeParametersOfClassOrInterfaceOrTypeAlias: isJSConstructor)
+            case SYMBOL_DECL_FUNCTION:
+            case SYMBOL_DECL_VARIABLE:
+            case SYMBOL_DECL_ASSIGNMENT: {
+                if (!(my flags & SYMBOL_CLASS)) continue;
+                FunctionImpl const* function = symbol_decl_js_function(&my decls[i]);
+                if (!function) continue;
+                generic = &function->generic;
+            }   break;
             default: continue;
         }
         return generic_empty(generic) ? nullptr : generic;
@@ -3128,13 +3154,13 @@ void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
             // `X.prototype.m = function () { this.x = v }` declares x for X, else the function is a constructor
             Symbol* class_symbol = nullptr;
             AssignmentDeclKind kind = ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
-            Expr const* assigned_to = this_function->this_assigned_object;
-            Span prototype = assigned_to ? expr_static_property_name(assigned_to) : span_null;
-            if (span_valid(prototype) && span_equals(prototype, "prototype") &&
-                assigned_to->property->expr.tag == EXPR_IDENTIFIER
-            ) {
-                class_symbol = js_constructor_symbol((Symbol*)assigned_to->property->expr.identifier.target);
+            Expr* assigned_to = (Expr*)this_function->this_assigned_object;
+            Expr const* constructor = assigned_to ? expr_prototype_object(assigned_to) : nullptr;
+            if (constructor) {
+                class_symbol = js_constructor_symbol((Symbol*)expr_entity_name_symbol(constructor));
                 kind = ASSIGNMENT_DECL_THIS_IN_METHOD;
+            } else if (this_function->class_symbol) {
+                class_symbol = this_function->class_symbol; // `ns.C = function () {}` with `ns.C.prototype.m = v`
             } else if (!assigned_to) {
                 class_symbol = this_function->class_symbol ? this_function->class_symbol :
                     this_function->is_expression ? nullptr : this_function->symbol;

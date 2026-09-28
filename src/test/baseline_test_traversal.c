@@ -85,7 +85,7 @@ static void commonjs_symbol_overrides(Expr const* left, BaselineTestCase* ctx) {
 static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Span name = expr_static_property_name(left);
     Expr* constructor = span_valid(name) ? expr_prototype_object(&left->property->expr) : nullptr;
-    Symbol const* symbol = constructor ? constructor->identifier.target : nullptr;
+    Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
     Symbol const* member = symbol && symbol->members ? symbol_table_get(symbol->members, name.sv) : nullptr;
     if (!member || ctx->symbol_override_count + 3 > c_arraylen(ctx->symbol_overrides)) return;
     ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){

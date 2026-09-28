@@ -128,6 +128,13 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
     ret->declared.kind = kind;
     ret->declared.symbol = symbol;
     ret->declared.name = ty_qualified_name(me, symbol);
+    // A constructor function assigned to a property (`ns.C = function () {}`) is a class of the function expression's
+    // own symbol in tsc (getExpandoSymbol), which has no parent
+    if (kind == TY_DECLARED_CLASS_INSTANCE && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
+        symbol_decl_js_function(&symbol->decls[0])
+    ) {
+        ret->declared.name = checker_atom(me, ty_symbol_display_name(symbol).sv);
+    }
     ret->declared.state = arena_new(&my arena, TyObjectState);
     if (kind == TY_DECLARED_INTERFACE || kind == TY_DECLARED_CLASS_INSTANCE || kind == TY_DECLARED_CLASS_STATIC) {
         ret->declared.outer = symbol_outer_generics(symbol);
@@ -431,7 +438,10 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         // is the class (tsc's getExpandoSymbol: the initializer's symbol merged in, which is a class). A bare
         // `import("./m")` whose `module.exports =` is one, `exports.C = class {}` too
         Expr* init = nullptr;
-        SymbolDecl const* first = decl->decl_count ? &decl->decls[0] : nullptr;
+        SymbolDecl const* first = nullptr;
+        for (u32 i = 0; i < decl->decl_count && !first; i++) {
+            if (decl->decls[i].kind != SYMBOL_DECL_EXPANDO) first = &decl->decls[i];
+        }
         if (first && first->full.source && first->full.source->is_js && !(decl->flags & SYMBOL_TYPE_ALIAS)) {
             if (first->kind == SYMBOL_DECL_ASSIGNMENT) {
                 init = expando_initializer((Expr*)first->node, span_null, true);

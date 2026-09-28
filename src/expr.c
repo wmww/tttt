@@ -3146,8 +3146,17 @@ Expr* expr_prototype_object(Expr* me) {
     Span name = expr_static_property_name(me);
     if (!span_valid(name) || !span_equals(name, "prototype")) return nullptr;
     Expr* object = &my property->expr;
-    if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || expr_is_perenthisized(object)) return nullptr;
-    return object;
+    return expr_is_entity_name(object) ? object : nullptr;
+}
+
+Symbol const* expr_entity_name_symbol(Expr const* me) {
+    if (expr_is_perenthisized(me)) return nullptr;
+    if (my tag == EXPR_IDENTIFIER) return my identifier.keyword ? nullptr : my identifier.target;
+    if (my tag != EXPR_PROPERTY) return nullptr;
+    Span name = expr_static_property_name(me);
+    Symbol const* object = span_valid(name) ? expr_entity_name_symbol(&my property->expr) : nullptr;
+    if (!object || object->is_module || (object->flags & SYMBOL_ALIAS) || !object->exports) return nullptr;
+    return symbol_table_get(object->exports, name.sv);
 }
 
 bool expr_is_module_exports(Expr const* me) {

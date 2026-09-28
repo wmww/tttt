@@ -268,6 +268,9 @@ static inline void const* symbol_find_node(Symbol const* me, SymbolDeclKind kind
     return decl ? decl->node : nullptr;
 }
 // The type parameters of the (first) class, interface or type alias declaration, null if it has none
+// The function a JavaScript declaration declares: a function declaration, or a variable or assignment whose value is a
+// function expression. Null otherwise
+FunctionImpl const* symbol_decl_js_function(SymbolDecl const* decl);
 Generic const* symbol_type_generic(Symbol const* me);
 OuterGenerics const* symbol_outer_generics(Symbol const* me);
 // tsc's getLocalSymbolForExportDefault: the local name of a module's `default` export (that of its first named
