@@ -19622,8 +19622,8 @@ const baselines = {
     },
     'jsFunctionWithPrototypeNoErrorTruncationNoCrash': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsNegativeElementAccessNotBound': {
         errors: true,
@@ -52356,7 +52356,7 @@ const baselines = {
         types: true,
     },
     'jsdocTemplateTag5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60056,7 +60056,7 @@ const baselines = {
         types: true,
     },
     'chainedPrototypeAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60571,7 +60571,7 @@ const baselines = {
         types: true,
     },
     'propertiesOfGenericConstructorFunctions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60822,8 +60822,8 @@ const baselines = {
     },
     'typeFromPropertyAssignment27': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment28': {
         errors: false,
@@ -60947,23 +60947,23 @@ const baselines = {
     },
     'typeFromPrototypeAssignment': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPrototypeAssignment2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPrototypeAssignment3': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeFromPrototypeAssignment4': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeLookupInIIFE': {
         errors: false,

@@ -102,6 +102,10 @@ typedef struct FunctionImpl {
     // it is a method (or function-valued property) of, or the object of the property it is assigned to (`o.m = function`)
     struct Expr const* this_literal;
     struct Expr const* this_assigned_object;
+    // JavaScript: F of `F.prototype.m = function` or `F.prototype = { m() {} }`, whose type parameters the JSDoc names
+    // of the method may be (tsc's getAssignmentDeclarationLocation) and whose instance `this` is in it (tsc's
+    // getClassNameFromPrototypeMethod). Set when resolving
+    struct Expr const* prototype_of;
     // A function expression or arrow function that initializes a variable with expandos (`const f = () => {}; f.x = 1`,
     // scope_add_expandos()): the variable, whose exports are members of this function's type (tsc's getSymbolOfExpando)
     Symbol const* expando_host;

@@ -1361,6 +1361,7 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
     for (u32 i = 0; i < params.len; i++) {
         if (inferred[i]) continue;
         Ty const* fallback = ty_param_default(me, params.data[i]);
+        if (fallback) inferred[i] = true; // (Only for the constraint check below)
         Ty const* nothing = ty_intrinsic(me, inf->any_default ? TY_ANY : TY_UNKNOWN_); // (tsc's getDefaultTypeArgumentType)
         results[i] = fallback ? ty_instantiate(me, fallback, mapper) : nothing;
         if (results[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
@@ -1371,14 +1372,15 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
         }
         mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
     }
-    // An inference that doesn't satisfy the constraint is replaced by it, and the argument check reports the rest
+    // An inference that doesn't satisfy the constraint is replaced by it, and the argument check reports the rest. So
+    // is a type parameter without inferences or a default (tsc's getInferredType: `!inferredType`)
     bool changed = false;
     for (u32 i = 0; i < params.len; i++) {
         Ty const* constraint = ty_param_constraint(me, params.data[i]);
         if (!constraint || constraint == params.data[i]) continue;
         Ty const* instantiated = ty_instantiate(me, constraint, mapper);
-        bool fits = inf->within_relation ? ty_is_related_within(me, results[i], instantiated) :
-            ty_is_related(me, results[i], instantiated, TY_RELATION_ASSIGNABLE);
+        bool fits = inferred[i] && (inf->within_relation ? ty_is_related_within(me, results[i], instantiated) :
+            ty_is_related(me, results[i], instantiated, TY_RELATION_ASSIGNABLE));
         if (!fits) {
             results[i] = instantiated;
             changed = true;

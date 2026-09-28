@@ -1215,6 +1215,16 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             ) {
                 right->function->this_assigned_object = &left->property->expr;
             }
+            if (op == BINARY_OP_EQUAL && left->tag == EXPR_PROPERTY && left->inner_span.source && left->inner_span.source->is_js) {
+                Expr const* constructor = expr_prototype_object(&left->property->expr);
+                if (constructor && right->tag == EXPR_FUNCTION) right->function->prototype_of = constructor;
+                constructor = expr_prototype_object(left);
+                if (constructor && right->tag == EXPR_OBJECT) {
+                    for_each (i, vec_object_expr_item, &right->object) {
+                        if (i->value.tag == EXPR_FUNCTION) i->value.function->prototype_of = constructor;
+                    }
+                }
+            }
             if (binary_op_is_logical(op) || binary_op_is_logical_assignment(op)) {
                 if (true_target) {
                     expr_lookup_names_logical(me, names, errs, true_target, false_target);

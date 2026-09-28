@@ -521,6 +521,19 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
         vec_span_drop(&spans);
     }
     free(entries);
+    // `F.prototype = { ... }`: the object literal's members too (tsc's getAssignedClassSymbol, merged into the class by
+    // getDeclaredTypeOfClassOrInterface)
+    Symbol const* prototype = symbol->exports && !symbol_find_decl(symbol, SYMBOL_DECL_CLASS) ?
+        symbol_table_get(symbol->exports, c_sv("prototype")) : nullptr;
+    for (u32 i = 0; prototype && i < prototype->decl_count; i++) {
+        Expr const* literal = prototype->decls[i].node;
+        if (prototype->decls[i].kind != SYMBOL_DECL_ASSIGNMENT || literal->tag != EXPR_OBJECT) continue;
+        Members const* members = ty_members(me, ty_widened_objects(me, ty_expr_type(me, literal)));
+        for (u32 j = 0; j < members->prop_count; j++) {
+            if (!builder_find_prop(builder, members->props[j]->name)) builder_push(builder, props, members->props[j]);
+        }
+        break;
+    }
 }
 
 // A class member named by an expression of type string, number or symbol (not a literal or unique symbol, which name

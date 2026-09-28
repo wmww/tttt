@@ -2961,6 +2961,8 @@ static void add_prototype_property(Scope* me, Expr* constructor, Span name, Expr
     declare_assignment_member(me, &host->members, host, name, left, value, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY);
 }
 
+static Symbol* js_constructor_symbol(Symbol* symbol);
+
 // `f.x = v` (tsc's bindStaticPropertyAssignment -> bindPropertyAssignment for AssignmentDeclarationKind.Property)
 static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     if (op->op != BINARY_OP_EQUAL) return;
@@ -3004,6 +3006,14 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
         .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_PROPERTY, .node = value, .name = left->outer_span,
         .full = left->outer_span, .jsdoc_type = op->jsdoc_type,
     });
+    // JavaScript `F.prototype = { ... }` makes F a class (tsc's bindPrototypeAssignment: containerIsClass)
+    if (span_equals(name, "prototype") && value->tag == EXPR_OBJECT && my file->is_js && js_constructor_symbol(host) &&
+        !symbol_find_decl(host, SYMBOL_DECL_CLASS)
+    ) {
+        host->flags |= SYMBOL_CLASS;
+        if (!host->members) host->members = arena_new(&my binder->arena, SymbolTable);
+        if (init && init->tag == EXPR_FUNCTION) init->function->class_symbol = host;
+    }
 }
 
 // Every assignment of a chain (`f.a = f.b = 1`)

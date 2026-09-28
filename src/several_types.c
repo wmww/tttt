@@ -190,8 +190,7 @@ static Symbol const* jsdoc_prototype_type_param(Scope const* names, Span name) {
     Scope const* scope = names;
     while (scope && scope->kind != SCOPE_FUNCTION) scope = scope->parent;
     FunctionImpl const* function = scope ? scope->function : nullptr;
-    Expr* object = function ? (Expr*)function->this_assigned_object : nullptr;
-    Expr const* constructor = object ? expr_prototype_object(object) : nullptr;
+    Expr const* constructor = function ? function->prototype_of : nullptr;
     if (!constructor) return nullptr;
     Symbol const* symbol = expr_entity_name_symbol(constructor);
     Generic const* generic = nullptr;
@@ -278,17 +277,24 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
 
 // The type parameters a class, interface or alias declares (the first declaration that has any), and how many of them
 // no declaration gives a default (tsc's getMinTypeArgumentCount)
+static Generic const* decl_generic(Symbol const* symbol, u32 d) {
+    switch (symbol->decls[d].kind) {
+        case SYMBOL_DECL_CLASS: return &((ClassDecl const*)symbol->decls[d].node)->generic;
+        case SYMBOL_DECL_INTERFACE: return &((InterfaceDecl const*)symbol->decls[d].node)->generic;
+        case SYMBOL_DECL_TYPE_ALIAS: return &((TypeDecl const*)symbol->decls[d].node)->generic;
+        default: {
+            // A JavaScript constructor function's (symbol_type_generic())
+            FunctionImpl const* function = symbol->flags & SYMBOL_CLASS ? symbol_decl_js_function(&symbol->decls[d]) : nullptr;
+            return function ? &function->generic : nullptr;
+        }
+    }
+}
+
 static Generic const* declared_type_params(Symbol const* symbol, u32* min) {
     Generic const* ret = nullptr;
     *min = 0;
     for (u32 d = 0; d < symbol->decl_count && !ret; d++) {
-        Generic const* generic = nullptr;
-        switch (symbol->decls[d].kind) {
-            case SYMBOL_DECL_CLASS: generic = &((ClassDecl const*)symbol->decls[d].node)->generic; break;
-            case SYMBOL_DECL_INTERFACE: generic = &((InterfaceDecl const*)symbol->decls[d].node)->generic; break;
-            case SYMBOL_DECL_TYPE_ALIAS: generic = &((TypeDecl const*)symbol->decls[d].node)->generic; break;
-            default: continue;
-        }
+        Generic const* generic = decl_generic(symbol, d);
         if (!generic_empty(generic)) ret = generic;
     }
     if (!ret) return nullptr;
@@ -296,13 +302,8 @@ static Generic const* declared_type_params(Symbol const* symbol, u32* min) {
     for (u32 i = 0; i < count; i++) {
         bool has_default = false;
         for (u32 d = 0; d < symbol->decl_count; d++) {
-            Generic const* generic = nullptr;
-            switch (symbol->decls[d].kind) {
-                case SYMBOL_DECL_CLASS: generic = &((ClassDecl const*)symbol->decls[d].node)->generic; break;
-                case SYMBOL_DECL_INTERFACE: generic = &((InterfaceDecl const*)symbol->decls[d].node)->generic; break;
-                case SYMBOL_DECL_TYPE_ALIAS: generic = &((TypeDecl const*)symbol->decls[d].node)->generic; break;
-                default: continue;
-            }
+            Generic const* generic = decl_generic(symbol, d);
+            if (!generic) continue;
             if (i < (u32)vec_generic_item_size(&generic->items)) has_default |= vec_generic_item_at(&generic->items, i)->fallback_explicit;
         }
         if (!has_default) *min = i + 1;
