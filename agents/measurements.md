@@ -16,7 +16,7 @@ after the 09-28 plan 26 session (errors 11242, symbols 12407, types 11090; error
 reports errors and tttt nothing 578), **9833** after the plan 27 stage 3 session (errors 11365, symbols 12453, types
 11151; errors component 2175 failing; 252 tests with a spurious TS1xxx), **9951** after the plan 35 stage 2
 session (errors 11395, symbols 12496, types 11261; errors component 2145 failing, tsc reports errors and tttt
-nothing 541), whose other numbers below weren't re-measured unless marked. A suite run takes ~23 s
+nothing 541), **9978** after the corpus session (todo entry 8: mixins), whose other numbers below weren't re-measured unless marked. A suite run takes ~23 s
 (was 50: relationComplexityError alone took 27). `./failstats.py`: errors component fails in
 2360 tests: tsc reports errors and tttt nothing 654, both missing and spurious 585, only missing 389, **same
 codes+positions, other text 311**, tttt errors where tsc has none 254, only spurious 137, column differs 30. 323 tests
@@ -37,12 +37,14 @@ spans of the silent call resolutions). The lines below the displaydiff ones are 
   permissive:modifiers 22, recovery:list-context 14, lexical:identifiers 9, other:B 9, permissive:decorators 9,
   other:C 8, recovery:object-literal 6, yield-await 4, index-signature 4, lexical:literals 2, private-names 2.
 
-## Corpora (2026-09-28, perf session, todo entry 3)
+## Corpora (2026-09-28, corpus session, todo entry 8)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**4** (mixin classes, plan 32 stage C), webpack **116** (JSDoc, plan 26; 130 -> 118 at the perf session: union
-inference with circularity; 118 -> 116 at the plan 26 session, which also turned on TS2339 in JS: 3 of those left),
-zod **13** (plan 19; its 2 TS2589s went with the inference depth fix). Re-checked 2026-09-28 (plan 27 stage 3):
-unchanged, no regex or lexical diagnostics anywhere. Re-checked after plan 35 stage 2: unchanged.
+**0** (4 -> 0: mixin classes, plan 32 stage C), zod **0** (13 -> 0: mapped index signatures from the constraint,
+returnMapper literals, `this` free parameters, generic intersection homomorphic mapped types, the exactOptional
+missing-type HACK, partially inferable reverse mapping), webpack **115** (JSDoc, plan 26).
+Instructions (`perf stat -e instructions:u`, stable like callgrind, much faster) at the session's start -> end:
+zod 8.87 -> 8.54 G, valibot 4.93 -> 5.07 G (index signatures of generic homomorphic mapped types, eagerly
+instantiated), type-fest 3.29 -> 3.29 G, tsc 4.60 -> 4.64 G, webpack 3.22 -> 3.23 G.
 
 ## Perf (2026-09-28, perf session, `./bench.sh --runs 2`)
 Best wall / peak RSS. tttt now re-executes itself with glibc's malloc on transparent huge pages and madvises its

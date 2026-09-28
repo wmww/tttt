@@ -16,7 +16,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   `other` (429 tests fixed alone) and `we-any` (166) are wrong types no diagnostic shows (plan 35).
 - **Corpora** (all clean under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
   **4** (mixins, plan 32 C), webpack **135** (checkJs; JSDoc leftovers, plan 26), zod **15** (plan 19: the missing
-  type, ProtoOf inference, keyof deferral).
+  type, ProtoOf inference, keyof deferral). *Update 09-28 (corpus session)*: type-fest **0**, zod **0**, webpack
+  **115**; every corpus but webpack is clean.
 - **Perf** (`measurements.md`; tsgo 7.0.2 on 4 cores): tsc corpus 0.80 s vs 1.24 s, type-fest 0.41 vs 1.94, valibot
   0.74 vs 1.61, react 0.29 vs 1.04, nest 0.26 vs 0.40, zod 1.43 vs 2.95, webpack 0.69 vs 0.61. *Update 09-28 (perf
   session)*: webpack 0.56 vs 0.60 single-threaded, every corpus ahead again (huge pages, inference depth 2); memory is
@@ -27,7 +28,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   references, flow graph + narrowing, module resolution + tsconfig, iteration protocol, generators, `this` types,
   elaboration, JSX, tsc's type printer and symbol chains, JSDoc (typedefs, templates, imports) + CommonJS + expandos.
   ~66k lines of C. `documentation.md` describes it, `hacks.md` lists what is approximated.
-- **Absent**: mixin classes (32 C), union origins, lazy reverse mapped types, decorator checking, `in`/`out` variance
+- **Absent**: union origins, lazy reverse mapped types, decorator checking, `in`/`out` variance
   annotations, regex literal checks (TS15xx), JSDoc stage 4 (the other tags, TS8xxx), declaration emit (out of scope),
   project references, parallelism.
 

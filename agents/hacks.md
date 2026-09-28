@@ -340,7 +340,14 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   mapper only fills type parameters the main inference left without candidates (using it for everything was
   tsc-exact on tests but cost valibot 9%). The first pass gives a non-context-sensitive function argument its parameter
   type fully instantiated with the return mapper, other arguments only the top level (`instantiate_instantiable`).
-  Higher-order branch not tsc's (call.c:588 HACK).
+  Higher-order branch not tsc's (call.c:588 HACK). A binding pattern's return mapper drops what inferred `any` (tsc's
+  nonInferrableAnyType, which tttt lacks) and a pattern with a rest element gives none. Nested literals ask
+  `ty_instantiate_contextual_type()` only in `check_for_mutable_location()` (tsc instantiates every contextual type
+  lookup with the returnMapper).
+- Second pass contextual types (`infer_type_arguments`, HACK): a type parameter without candidates stays itself only
+  where it would be `unknown` (then `Checker.contextual_fixing_mapper` fixes it in contextual signatures); others are
+  substituted by the constraint/default as before, because tttt's contextual lookups don't go through a type
+  parameter's constraint (tsc's getApparentTypeOfContextualType).
 - `infer_type_arguments` second pass: a type parameter is fixed before a context-sensitive argument when the contextual
   signature's parameter types mention it (`fixed_by_argument`, probed by instantiating with `unknown`; `fixed_by_expr`
   for literals); tsc fixes lazily when a contextual parameter type is asked for. Inference from the contextual return
@@ -446,6 +453,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   properties of a renaming `as` clause lose their declarations.
 
 ## Type core (`src/ty/`)
+- `exact_missing_flag()` (members.c HACK): no missing type. An optional mapped property whose modifiers property is
+  optional strips undefined under exactOptionalPropertyTypes (tsc: `T[K]` is `X | missing`, and the non-missing view
+  drops it), even an undefined the property declares.
 - Relation budget (`recursive_related`, `check_related`): tsc's relationCount, but without union origins tttt spends
   it where tsc takes a shortcut: `T1 & T2` (distributed into a 20k-member union) against `T1` is true at once in tsc
   (the union's origin is an intersection containing T1) and TS2859 in tttt (relationComplexityError's f1). Union

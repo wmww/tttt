@@ -1,9 +1,9 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-28 (after the perf session)**: tsc 0, valibot 0, react 0, nest 0, **webpack 118** (checkJs; causes
-in plan 26 "Stage 3 leftovers"), **type-fest 4** (all abstract-class: plan 32's mixin classes), **zod 13** (below).
-The history of R1-R21 (identity relation, homomorphic mapped modifiers, const type parameters, skip-sensitive
-inference, the permissive instantiation, ...) is in git (this file before the 2026-09-27 triage) and in the commits.
+**Status 2026-09-28 (after the corpus session, todo entry 8)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
+zod 0, **webpack 115** (checkJs; causes in plan 26 "Stage 3 leftovers"). The history of R1-R21 (identity relation,
+homomorphic mapped modifiers, const type parameters, skip-sensitive inference, the permissive instantiation, ...) and
+of the zod and type-fest items is in git (this file before the corpus session) and in the commits.
 
 ## The loop
 `./realworld.py` (tsc's `src/compiler`, must stay 0) and `./realworld.py --corpus X` for valibot, type-fest, react,
@@ -25,37 +25,14 @@ Corpus notes worth keeping:
   deep-partial.test.ts alone is 745 MB, `bugs/perf_leads.md`).
 
 ## What is left
-### zod (13)
-- **exactOptionalPropertyTypes' missing type** (recursive-types.test.ts 17, 35; probe `zod/exact_optional_mapped.ts`):
-  a homomorphic `{ [K in keyof T]: T[K] }` over an optional property reads `X | undefined` in tttt, `X | missing` in
-  tsc, and the missing is dropped against an index signature (getNonMissingTypeOfSymbol). tttt has no missing type
-  (type-fest's jsonify:57 was approximated with `?: never` padding). The fix is tsc's missingType: an undefined of
-  its own identity that optional reads add under exactOptionalPropertyTypes and removeMissingType strips. Medium;
-  touches access(), union construction and display. Also covers: `'a' in x` narrowing `x.a` to non-undefined when
-  its type contains missing (tsc narrowTypeByBinaryExpression's containsMissingType case: `x: {a: number} | {a?:
-  never}` gives `number` in the true branch, tttt `number | undefined`).
-- **ProtoOf inference** (classic/schemas.ts 2850-2858, 4; probe `zod/proto_of_infer.ts`): `$constructor<T>(name,
-  (inst, def) => ..., proto?: ProtoOf<T>)` against a `$constructor<ZodInstanceOf>` annotation. A non-arrow function
-  without an explicit `this` parameter is context sensitive (tsc's hasContextSensitiveParameters: implicit `this`),
-  so the proto literal is non-inferrable in the first pass, and tsc's createReverseMappedType requires
-  isPartiallyInferableType: no candidate, T comes from the return type. tttt builds the reverse mapped type anyway.
-  Adding the check to `reverse_mapped_type_uncached` fixes the probe but loses reverseMappedPartiallyInferableTypes
-  and contextualComputedNonBindablePropertyType: with no candidate, tsc's second pass keeps the argument's contextual
-  type uninstantiated and instantiates contextual *signatures* with the fixing mapper as parameters are assigned;
-  tttt instantiates the whole contextual type with T -> unknown. Fix both together: `context_mapper` in
-  `infer_type_arguments` (`ty/call.c`) and the parameter assignment in `assign_contextual_signature`.
-- detached-methods.test.ts (3): vitest's `MockReturnType` of a method picked by key from an overloaded interface.
-- v3 generics.test.ts:20: inside a generic function, `keyof` of a generic intersection of mapped types
-  (`addQuestionMarks<baseObjectOutputType<{ nested: TData }>, any>`) is expanded into a union of conditionals where
-  tsc keeps it deferred (getIndexType / shouldDeferIndexType), and `data.nested` is `any`.
-- in-out.test.ts:59, v3 types.ts 2778/2795: TS7053 on `{ [k in keyof T]?: true } & Record<Exclude<keyof Mask,
-  keyof T>, never>` indexed by string. Unsampled.
-
-### type-fest (4)
-All abstract-class: plan 32 stage C (mixin classes).
-
-### webpack (118)
+### webpack (115)
 JSDoc; plan 26 "Stage 3 leftovers".
+
+### HACKs the zod fixes left (hacks.md "Inference" and "Mapped types")
+- No missing type: `exact_missing_flag()` strips undefined from optional mapped properties read off optional ones;
+  tsc's missingType would also give `'a' in x` narrowing (`x: {a: number} | {a?: never}` -> `number`).
+- Uninferred type parameters stay generic in the second pass's contextual type only where they'd be `unknown`
+  (contextual types don't look through type parameters to constraints like getApparentTypeOfContextualType).
 
 ### Seen on the way, not corpus-visible now
 - `g(() => 1)` with `g<T>(t: T): T` infers `() => number` (tsc `() => 1`: a return literal isn't widened when the

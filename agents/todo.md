@@ -30,7 +30,8 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 7. ~~**Plan 35 stage 2**~~ done: stage 1's queue 1-9 (constructor-typed fields, tagged templates as calls, ...)
    plus heritage names, contextually typed field initializers (a spurious TS7006), non-strict null subtyping. Suite
    9833 -> 9951, corpora unchanged. The new queue (non-widening null/undefined first) is in plan 35.
-8. **Corpus session**: plan 32 stage C (mixin classes, type-fest 4 -> 0), then zod's 15 (plan 19).
+8. ~~**Corpus session**~~ done: plan 32 stage C (mixin classes; the plan is finished and deleted), then all of zod.
+   Suite 9951 -> 9978, type-fest 4 -> 0, zod 13 -> 0, webpack 116 -> 115. valibot +2.5% instructions (triage.md).
 9. **Suite checker bugs 4**: `bugs/missing_checks.md` buckets; 656 tests where tsc reports errors and tttt none.
    If time is left, plan 34's queue (error text, 311 tests).
 10. **Triage**: drain triage.md, prune hacks.md (677 lines) of entries that are fixed, refresh measurements.md.

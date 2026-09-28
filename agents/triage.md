@@ -50,3 +50,12 @@ non-widening undefined, `infer X extends C` scope), `bugs/display.md` (object li
   tttt's at 1:2; binary-file recovery (TS1490 is right). corrupted.ts passes.
 - `string_to_double()` (string_helpers.c) is only used by value.c now and accumulates decimals digit by digit (not
   correctly rounded for long mantissas); the parser uses strtod on the separator-free digits.
+- Plan 32 leftovers (the plan is done and deleted): TS2507 "Type 'X' is not a constructor function type" for an
+  `extends` expression is missing everywhere (only `new` reports it), and so is its related info for a type parameter
+  (TS2735 "Did you mean for 'T' to be constrained to type 'new (...args: any[]) => ...'?"); a class extending a base
+  that constructs `any` should get tsc's anyBaseTypeIndexInfo (`[x: string]: any`) instead of the
+  `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones generic method type parameters
+  (`Outer<string>.Outer.m<U>.In`). mixinAccessModifiers/mixinPrivateAndProtected are in `bugs/type_core.md`.
+- Corpus session (todo entry 8): generic homomorphic mapped types now get index signatures from their constraint,
+  eagerly instantiated: valibot +2.5% instructions. tsc resolves them lazily; a lazy IndexInfo value (or computing the
+  mapped type's members only when asked for index infos) would take that back.
