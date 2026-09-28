@@ -1,7 +1,7 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
 **Status 2026-09-28 (after the corpus session, todo entry 8)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
-zod 0, **webpack 108** (checkJs; causes in plan 26 "Stage 3 leftovers"). The history of R1-R21 (identity relation,
+zod 0, **webpack 107** (checkJs; causes in plan 26 "Stage 3 leftovers"). The history of R1-R21 (identity relation,
 homomorphic mapped modifiers, const type parameters, skip-sensitive inference, the permissive instantiation, ...) and
 of the zod and type-fest items is in git (this file before the corpus session) and in the commits.
 
@@ -25,10 +25,10 @@ Corpus notes worth keeping:
   deep-partial.test.ts alone is 745 MB, `bugs/perf_leads.md`).
 
 ## What is left
-### webpack (108)
+### webpack (107)
 JSDoc; plan 26 "Stage 3 leftovers".
 
-### zod-root (tsc 55, tttt 84: 30 spurious, 1 missing)
+### zod-root (tsc 55, tttt 82: 28 spurious, 1 missing)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
 **not clean under tsc**: 55 diagnostics of its own (26 TS2307 for bench deps the workspace doesn't install, 14 TS6133,
 8 TS6196, ...), so compare, don't count: `node thirdparty/tsc/lib/tsc.js --noEmit --pretty false -p
@@ -36,7 +36,7 @@ thirdparty/corpora/zod` and diff `file:line code` sets (triage 2026-09-28 did it
 that triage session (deferred reference args in `reverse_mapped_array_like`) and had 5 TS1005 (`string.submodule`, a
 namespace named after a primitive keyword). Left, tttt only:
 - 28 in `packages/bench/` against arktype's types: TS2349 "not callable" on `type(...)` results (17), TS2322 +
-  TS6500 on `validateObjectLiteral<...>` properties (6), TS18048 (2). arktype is the heaviest type-level library we
+  TS6500 on `validateObjectLiteral<...>` properties (6). arktype is the heaviest type-level library we
   have; worth a probe. Root: `type({ name: "string", age: "number" })` is `Type<{ name: never; age: never }, {}>`
   (tsc: `{ name: string; age: number }`): arktype's type-level parser of its string DSL fails; start from
   `type("string")` in a probe in `packages/bench/` (all 28 are probably this one cause).

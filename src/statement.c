@@ -1282,7 +1282,12 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 for_each (i, vec_initialized_binding, &loop->variable.statement.initializers) {
                     binding_lookup_names(&i->binding, loop_scope, errs);
                     expr_lookup_names(&i->value, loop_scope, errs);
-                    binding_flow_assign(&i->binding, loop_scope);
+                    if (loop->keyword == FOR_EACH_LOOP_IN && i->binding.tag == BINDING_IDENTIFIER) {
+                        // (The loop too: `for (const k in ref)` acts as a non-null on ref, see type_at_flow_assignment())
+                        flow_assign(loop_scope->flow, (FlowAssign){ .kind = FLOW_ASSIGN_DECLARATION, .binding = &i->binding, .for_each = loop });
+                    } else {
+                        binding_flow_assign(&i->binding, loop_scope);
+                    }
                 }
             } else {
                 flow->assignment_target = FLOW_TARGET_DEFINITE;

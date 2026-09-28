@@ -834,6 +834,16 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
         *out = (FlowType){ q->declared, false };
         return true;
     }
+    // `for (const k in ref)` acts as a non-null on ref (tsc's getTypeAtFlowAssignment)
+    if (assign->kind == FLOW_ASSIGN_DECLARATION && assign->for_each) {
+        Expr const* object = &assign->for_each->iterable;
+        if (is_matching_reference(me, q->reference, object) || optional_chain_contains_reference(me, object, q->reference)) {
+            FlowType before = type_at_flow_node(q, flow->antecedent);
+            Ty const* type = compiler_options()->strict_null_checks ? ty_non_nullable(me, before.type) : before.type;
+            *out = (FlowType){ type, before.incomplete };
+            return true;
+        }
+    }
     return false;
 }
 
