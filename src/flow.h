@@ -22,7 +22,7 @@ typedef struct Scope Scope;
 typedef struct vec_statement VecStatement;
 typedef struct FlowNode FlowNode;
 
-// tsc's FlowFlags (no array mutations: evolving array types are out of scope, see plan 05)
+// tsc's FlowFlags
 typedef enum FlowFlags {
     FLOW_UNREACHABLE = 1 << 0,
     FLOW_START = 1 << 1,           // node: FunctionImpl const* if the container is a function, else null
@@ -32,6 +32,7 @@ typedef enum FlowFlags {
     FLOW_TRUE_CONDITION = 1 << 5,  // node: Expr const*
     FLOW_FALSE_CONDITION = 1 << 6, // node: Expr const*
     FLOW_SWITCH_CLAUSE = 1 << 7,   // node: FlowSwitchClause const*
+    FLOW_ARRAY_MUTATION = 1 << 8,  // node: Expr const*, `x.push(...)`/`x.unshift(...)` (EXPR_CALL) or `x[i] = v` (`=`)
     FLOW_CALL = 1 << 9,            // node: Expr const* (EXPR_CALL), a possible assertion or `never` call
     FLOW_REDUCE_LABEL = 1 << 10,   // node: FlowReduceLabel const*
     FLOW_REFERENCED = 1 << 11,     // Something has it as its antecedent
@@ -255,6 +256,12 @@ bool expr_is_optional_chain(Expr const* me); // Part of `a?.b.c()`, from the `?.
 bool expr_is_optional_chain_root(Expr const* me); // Has the `?.` itself
 bool expr_is_narrowing(Expr const* me); // isNarrowingExpression
 bool expr_is_narrowable_reference(Expr const* me);
+// After a call or an `=` that isn't itself an assignment target: `x.push(v)`, `x.unshift(v)` and `x[i] = v` mark x as
+// an evolving array operation target (IdentifierExpr.evolving_op), and get an array mutation node (tsc's
+// createFlowMutation) if x may be an auto-typed variable
+void flow_array_mutation(FlowBuilder* me, Expr* expr);
+// `x.length` (any property access): marks x as an evolving array operation target
+void flow_length_access(Expr* access);
 bool expr_is_dotted_name(Expr const* me);
 bool expr_is_entity_name(Expr const* me); // isEntityNameExpression: `a.b.c`, no keywords
 // tsc's checkGrammarForInvalidDynamicName: a computed key that is neither syntactically a literal nor an entity name

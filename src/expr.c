@@ -17,6 +17,9 @@
 #include "unused.h"
 #include "regex_check.h"
 
+// Expressions are stored inline everywhere: keep them small
+static_assert(sizeof(Expr) == 144, "Expr grew");
+
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
 const int ternary_precedence = 20;
@@ -516,16 +519,20 @@ bool identifier_is_invalid_assignment_target(IdentifierExpr const* me) {
 
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     report_invalid_assignment_target(me, errs);
-    switch (ty_identifier_flow_issue(current_checker, me)) {
+    IdentifierFlowIssue issue = ty_identifier_flow_issue(current_checker, me);
+    switch (issue) {
         case IDENTIFIER_FLOW_OK: break;
         case IDENTIFIER_FLOW_UNASSIGNED:
             error_ctx_error_d(errs, my name, 2454, "Variable '", my name, "' is used before being assigned.");
             break;
-        case IDENTIFIER_FLOW_IMPLICIT_ANY: {
+        case IDENTIFIER_FLOW_IMPLICIT_ANY:
+        case IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY: {
+            if (!compiler_options()->no_implicit_any) break;
+            char const* t = issue == IDENTIFIER_FLOW_IMPLICIT_ANY ? "any" : "any[]";
             Binding const* binding = symbol_find_node(my target, SYMBOL_DECL_VARIABLE);
             error_ctx_error_d(errs, binding->content_span, 7034,
-                "Variable '", my name, "' implicitly has type 'any' in some locations where its type cannot be determined.");
-            error_ctx_error_d(errs, my name, 7005, "Variable '", my name, "' implicitly has an 'any' type.");
+                "Variable '", my name, "' implicitly has type '", t, "' in some locations where its type cannot be determined.");
+            error_ctx_error_d(errs, my name, 7005, "Variable '", my name, "' implicitly has an '", t, "' type.");
         }   break;
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_NAMESPACE) {
@@ -1366,6 +1373,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 expr_lookup_names(right, names, errs);
                 if (!assignment_target) {
                     flow_assignment_target(flow, left, (FlowAssign){ .kind = FLOW_ASSIGN_EXPR, .assignment = me });
+                    flow_array_mutation(flow, me);
                 }
             } else {
                 plain_binary_lookup_names(me, names, errs);
@@ -1411,7 +1419,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         flow->read_target = true;
                         expr_lookup_names(operand, names, errs);
                         // `x!` says x was assigned, whatever control flow thinks
-                        if (operand->tag == EXPR_IDENTIFIER) operand->identifier.assume_initialized = true;
+                        if (operand->tag == EXPR_IDENTIFIER) {
+                            operand->identifier.assume_initialized = true;
+                            operand->identifier.non_null_operand = true;
+                        }
                     }
                     break;
 
@@ -1455,6 +1466,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         case EXPR_PROPERTY:
             // Also when it can't be narrowed (`f().x`): the checker finds out when it makes the reference key
             my property->flow = flow_builder_reference(flow, my outer_span);
+            flow_length_access(me);
             my property->assignment_target = assignment_target;
             my property->compound_like_target = compound_like_target;
             my property->enclosing_class = scope_enclosing_class(names);
@@ -1535,6 +1547,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (my call->uses_new) my call->enclosing_class = scope_enclosing_class(names);
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
+                flow_array_mutation(flow, me); // `x?.push(v)`
                 break;
             }
             Expr* callee = &my call->callable;
@@ -1572,6 +1585,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             ) {
                 flow->current = flow_new_call(flow, flow->current, me);
             }
+            flow_array_mutation(flow, me);
         }   break;
 
         case EXPR_FUNCTION: {

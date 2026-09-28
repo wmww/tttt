@@ -93,6 +93,7 @@ enum {
     KEY_UNION_KEY_MEMBER, // (union type id, regular literal id) -> the member whose key property is it (unknown: several)
     KEY_FLOW_NARROWED,  // (type id, candidate id, assume_true | check_derived << 1) -> narrowed_type()
     KEY_FLOW_EXHAUSTIVE, // SwitchStatement -> 1 + whether it is exhaustive (2: being worked out)
+    KEY_EVOLVING_ARRAY, // element type id -> the evolving array type of it (flow.c)
     KEY_FLOW_LOOP,      // (loop label FlowNode, reference key id) -> Ty at the top of the loop
     KEY_SYNTHETIC_ACCESS, // Binding (an element of an object pattern) -> Expr `init.name`, see destructured_flow_type()
     KEY_DISCRIMINANT_CONFLICT, // (intersection member ids) -> 1 + whether they have conflicting discriminants

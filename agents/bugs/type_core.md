@@ -165,8 +165,6 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   span (see `harness.md`); something order-dependent in the shared lib state.
 
 ## Narrowing and flow
-- **Evolving arrays** (tsc's autoArrayType: `let x = []`, then `x.push(v)` / `x[i] = v` grow the element type; needs
-  FLOW_ARRAY_MUTATION nodes). Auto types (`let x;`) exist, the array half is `any[]` (controlFlowArrays).
 - **Destructuring assignment flow order** (controlFlowAssignmentPatternOrder, 12 spurious TS2322;
   controlFlowBindingPatternOrder): assignments in a pattern's computed keys and defaults happen in tsc's evaluation
   order, which the flow builder doesn't follow.

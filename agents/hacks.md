@@ -225,7 +225,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   and not typechecked, the same trick as `with` (tsc's checkYieldExpression returns before checking it).
 
 ## Control flow graph (`flow.c`, builders in `expr.c`/`statement.c`/`function_impl.c`)
-- No array mutation flow nodes (`x.push()`, `x[i] = v`): only evolving arrays need them (see Narrowing).
+- Array mutation nodes (`flow_array_mutation`) only for objects that may be auto-typed variables (`may_evolve`: a
+  binder-time look at the declaration), tsc makes them for every narrowable operand. `x.push` is an evolving array
+  operation target only as a callee (tsc: whenever the access's parent is a call, `f(x.push)` too).
 - Class *expression* methods are FUNCTION_IS_DECLARATION (tsc: narrowing continues outside); `export { x }` doesn't
   mark the local as assigned (tsc's markNodeAssignments).
 - `expr_is_narrowable_reference()`: `a = b` counts whatever the left side is (flow.c TODO).
@@ -254,9 +256,10 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   (`constraint_position` on IdentifierExpr/PropertyExpr); tsc's element-access rule is approximated by "literal index
   only". A pattern with a rest element (`pattern_type_has_rest`) is never a contextual type there (tsc types the
   initializer twice, CheckMode.RestBindingElement).
-- No `x!` rule of getFlowTypeOfReference; no evolving arrays: `let x = []` and `x = []` on an auto-typed `let x;` are
-  `any[]` (`initialized_binding_evaluate_assigned_type`, binding.c and ty/flow.c HACKs; triage "Evolving arrays").
-  At flow depth 2000 the query answers the error type silently.
+- The `x!` rule of getFlowTypeOfReference (only nullish there: the declared type) is done for identifiers
+  (`non_null_flow_type`), not property accesses (`a.b!`). At flow depth 2000 the query answers the error type silently.
+- Evolving arrays (`TY_EVOLVING_ARRAY`, ty/flow.c): switch clauses narrow the final array type and keep the evolving
+  one when nothing narrows (tsc narrows the evolving type itself, an object type without members).
 - `pattern_path_type()`: assigned types in destructuring *assignments* go through `ty_access()` by index/name; rest
   elements, computed keys and iterables fall back to the declared type.
 - Auto types (`TY_AUTO`): `IdentifierExpr.outer_reference` is decided by the resolve walk (a hoisted `var` declared

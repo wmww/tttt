@@ -214,7 +214,7 @@ Checker* checker_new(Program* program) {
     my errs = program_errors(program);
     my next_type_id = 1;
     my intrinsics[TY_ANY] = make_intrinsic(me, "any", TYF_ANY);
-    my intrinsics[TY_AUTO] = make_intrinsic(me, "any", TYF_ANY);
+    my intrinsics[TY_AUTO] = make_intrinsic(me, "any", TYF_ANY | TYF_NON_INFERRABLE);
     my intrinsics[TY_WILDCARD] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_ERROR] = make_intrinsic(me, "any", TYF_ANY | TYF_ERROR);
     my intrinsics[TY_CIRCULAR] = make_intrinsic(me, "any", TYF_ANY);
@@ -253,6 +253,11 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_IMPLICIT_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_UNREACHABLE_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_NON_PRIMITIVE] = make_intrinsic(me, "object", TYF_NON_PRIMITIVE);
+    // tsc's initializeTypeChecker makes the global Array type and autoArrayType next: the lowest ids of the arrays
+    Checker* saved = current_checker;
+    checker_make_current(me);
+    ty_auto_array(me);
+    checker_make_current(saved);
     return me;
 }
 
@@ -1768,10 +1773,21 @@ Ty const* ty_array(Checker* me, Ty const* element, bool readonly) {
     Ty const** target = readonly ? &my readonly_array_target : &my array_target;
     if (!*target) {
         *target = global_generic_target(me, readonly ? "ReadonlyArray" : "Array");
+        // tsc makes autoArrayType first thing: of the arrays it has the lowest id, so it's the `any[]` that survives
+        // subtype reduction
+        if (!readonly) {
+            Ty const* auto_element = ty_intrinsic(me, TY_AUTO);
+            my auto_array = ty_reference(me, *target, (TyList){ .data = &auto_element, .len = 1 });
+        }
     }
     // A lib without ReadonlyArray reads it as Array (tsc's getGlobalReadonlyArrayType)
     if (readonly && (*target)->declared.kind == TY_DECLARED_SYNTHETIC) return ty_array(me, element, false);
     return ty_reference(me, *target, (TyList){ .data = &element, .len = 1 });
+}
+
+Ty const* ty_auto_array(Checker* me) {
+    if (!my auto_array) ty_array(me, ty_intrinsic(me, TY_AUTO), false); // (Which makes it)
+    return my auto_array;
 }
 
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {

@@ -23,9 +23,9 @@ duplicated webpack), hacks.md (`string_to_double`).
   most suite tests have one file, so there is nothing to overlap). Irrelevant for one CLI run; a persistent pool
   (which stage 1's load pool would be) fixes it if a watch/LSP mode or a threaded harness ever wants it. Also, with
   fewer checked files than checkers, the empty checkers still build their global types (~0.2 ms each).
-- **`Array<T>` annotation display depends on when the global Array type was first built** (plan 37 D side finding):
-  creating Array early passes genericFunctionsWithOptionalParameters1/2, jsdocTypeGenericInstantiationAttempt,
-  unusedLocalsAndParametersTypeAliases (`Array<T>` vs `T[]`). An order dependence: find what the printer keys on.
+- **`Array<T>` annotation display depended on when the global Array type was first built**: moot since plan 37 D
+  builds Array when the checker starts (like tsc; +14 tests), but the order dependence (`Array<T>` vs `T[]`) is still
+  there for other global generics: find what the printer keys on if it shows up again.
 - **Type-predicate narrowing should return the candidate unchanged** (tsc's getNarrowedType; plan 37 B finding):
   tttt prints `A | B` where tsc has `Both` (flowControlTypeGuardThenSwitch, partiallyDiscriminantedUnions,
   stringLiteralCheckedInIf02).
@@ -61,3 +61,9 @@ duplicated webpack), hacks.md (`string_to_double`).
   `Type 'number' is not assignable to type 'Timeout'` at K=1 only: lib.dom's and @types/node's merged `setTimeout`
   overloads (their order, or which one `ReturnType` / the call picks) depend on what was checked before. Reproduce
   with `./release/tttt -q --keep-going --all-errors --checkers 1 -p thirdparty/corpora/webpack`.
+- Evolving arrays leftovers (plan 37 D): (1) `x.push("s"); x.push({})` finalizes to `(string | {})[]` in tsc but
+  `{}[]` in tttt: tsc's subtype reduction keeps a primitive next to that `{}` (its element is the context-free
+  type of the object literal; find out which rule of removeSubtypes/strictSubtypeRelation spares it, `["s", {}]` is
+  `{}[]` in both). (2) Without strictNullChecks, `let x = []; x.push(null); return x` should get TS7010 "implicitly
+  has an 'any[]' return type": `function_check_widened_return` only knows returns that are only null/undefined, not
+  arrays of widening types (tsc's reportErrorsFromWidening walks into them).

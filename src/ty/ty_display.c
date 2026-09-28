@@ -1926,6 +1926,12 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             ty_display(me, d, ty->string_mapping.type);
             out_lit(d, ">");
         }   break;
+
+        case TY_EVOLVING_ARRAY: // (Never leaves a flow query: only debug output sees one)
+            out_lit(d, "evolving ");
+            ty_display(me, d, ty->evolving_array.element);
+            out_lit(d, "[]");
+            break;
     }
 }
 

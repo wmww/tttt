@@ -127,6 +127,130 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow);
 static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true, bool nullish);
 static bool is_type_subset_of(Ty const* source, Ty const* target);
 
+static bool is_matching_reference(Checker* me, Expr const* source, Expr const* target);
+static Expr const* reference_candidate(Expr const* expr);
+
+// Evolving arrays (tsc's EvolvingArrayType, TY_EVOLVING_ARRAY): what an auto-typed variable (`let x = []`, `let x;`
+// after `x = []`) is while control flow sees elements pushed. They never leave a flow query: ty_flow_type() gives the
+// final array type
+
+static bool is_auto(Checker* me, Ty const* declared) {
+    return declared == ty_intrinsic(me, TY_AUTO) || (declared == my auto_array && declared);
+}
+
+static Ty const* evolving_array(Checker* me, Ty const* element) {
+    u64 key[2] = { KEY_EVOLVING_ARRAY, element->id };
+    Ty const** slot = (Ty const**)intern_slot(me, &my links, key, 2);
+    if (!*slot) {
+        Ty* ty = ty_alloc(me, TY_EVOLVING_ARRAY, TYF_OBJECT);
+        ty->evolving_array.element = element;
+        *slot = ty;
+    }
+    return *slot;
+}
+
+static Ty const* evolving_element(Checker* me, Ty const* ty) {
+    return ty->kind == TY_EVOLVING_ARRAY ? ty->evolving_array.element : ty_intrinsic(me, TY_NEVER);
+}
+
+// tsc's finalizeEvolvingArrayType: the array type of what was pushed, subtype reduced (the auto array if nothing was)
+static Ty const* final_array_type(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_EVOLVING_ARRAY) return ty;
+    if (!ty->evolving_array.final_array) {
+        Ty const* element = ty->evolving_array.element;
+        Ty const* final_array;
+        if (element->flags & TYF_NEVER) {
+            final_array = ty_auto_array(me);
+        } else {
+            if (element->kind == TY_UNION) {
+                element = ty_union_subtype_reduced(me, element->composite.types.data, element->composite.types.len);
+            }
+            final_array = ty_array(me, element, false);
+        }
+        ((Ty*)ty)->evolving_array.final_array = final_array; // (A cache: this checker's own type)
+    }
+    return ty->evolving_array.final_array;
+}
+
+// tsc's addEvolvingArrayElementType: no subtype reduction until the final array type
+static Ty const* add_evolving_element(Checker* me, Ty const* evolving, Expr const* expr) {
+    Ty const* element = ty_widened_objects(me, ty_regular(me, ty_base_type_of_literal(me, ty_flow_expr_type(me, expr))));
+    Ty const* current = evolving->evolving_array.element;
+    if (is_type_subset_of(element, current)) return evolving;
+    Ty const* types[2] = { current, element };
+    return evolving_array(me, ty_union(me, types, 2, nullptr, (TyList){0}));
+}
+
+// tsc's getUnionOrEvolvingArrayType: evolving arrays (and nevers) join into an evolving array, anything else makes
+// them final
+static Ty const* union_or_evolving(Checker* me, Ty const* const* types, u32 len, bool subtype_reduction) {
+    bool has_evolving = false;
+    bool all_evolving = true;
+    for (u32 i = 0; i < len; i++) {
+        if (types[i]->kind == TY_EVOLVING_ARRAY) has_evolving = true;
+        else if (!(types[i]->flags & TYF_NEVER)) all_evolving = false;
+    }
+    if (!has_evolving) {
+        return subtype_reduction ? ty_union_subtype_reduced(me, types, len) : ty_union(me, types, len, nullptr, (TyList){0});
+    }
+    TyBuf mapped = {0};
+    for (u32 i = 0; i < len; i++) {
+        ty_buf_push(&mapped, all_evolving ? evolving_element(me, types[i]) : final_array_type(me, types[i]));
+    }
+    Ty const* ret;
+    if (all_evolving) {
+        ret = evolving_array(me, ty_union(me, mapped.data, mapped.len, nullptr, (TyList){0}));
+    } else {
+        ret = subtype_reduction ? ty_union_subtype_reduced(me, mapped.data, mapped.len) :
+            ty_union(me, mapped.data, mapped.len, nullptr, (TyList){0});
+    }
+    ty_buf_drop(&mapped);
+    return ret;
+}
+
+// tsc's isTypeAssignableToKind(type, NumberLike): what the index of `x[i] = v` must be to push v
+static bool is_number_like_index(Checker* me, Expr const* index) {
+    Ty const* ty = ty_flow_expr_type(me, index);
+    return (ty->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL)) || ty_is_related(me, ty, ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE);
+}
+
+bool ty_is_evolving_array_operation_target(Checker* me, Expr const* reference) {
+    if (reference->tag != EXPR_IDENTIFIER) return false;
+    switch ((EvolvingArrayOp)reference->identifier.evolving_op) {
+        case EVOLVING_OP_NONE: return false;
+        case EVOLVING_OP_ACCESS: return true;
+        case EVOLVING_OP_ELEMENT_ASSIGNMENT: return is_number_like_index(me, reference->identifier.evolving_index);
+    }
+    impossible;
+}
+
+// tsc's getTypeAtFlowArrayMutation. False: the node isn't about the reference
+static bool type_at_array_mutation(FlowQuery* q, FlowNode const* flow, FlowType* out) {
+    Checker* me = q->me;
+    if (!is_auto(me, q->declared)) return false;
+    Expr const* node = flow->node;
+    Expr const* object;
+    if (node->tag == EXPR_CALL) {
+        Expr const* callee = &node->call->callable;
+        while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+        object = &callee->property->expr;
+    } else {
+        object = &node->binary_op->left.property->expr;
+    }
+    if (!is_matching_reference(me, q->reference, reference_candidate(object))) return false;
+    FlowType before = type_at_flow_node(q, flow->antecedent);
+    Ty const* evolved = before.type;
+    if (evolved->kind == TY_EVOLVING_ARRAY) {
+        if (node->tag == EXPR_CALL) {
+            for_each (i, vec_expr, &node->call->args) evolved = add_evolving_element(me, evolved, i);
+        } else if (is_number_like_index(me, &node->binary_op->left.property->prop)) {
+            evolved = add_evolving_element(me, evolved, &node->binary_op->right);
+        }
+    }
+    *out = (FlowType){ evolved, before.incomplete };
+    return true;
+}
+
 // Type facts (tsc's TypeFacts, bit for bit)
 
 enum {
@@ -803,6 +927,19 @@ static bool assign_is_compound(FlowAssign const* assign) {
     }
 }
 
+// tsc's isEmptyArrayAssignment: `let x = []`, `x = []`
+static bool is_empty_array_assignment(FlowAssign const* assign) {
+    Expr const* right = nullptr;
+    if (assign->kind == FLOW_ASSIGN_EXPR) {
+        right = &assign->assignment->binary_op->right;
+    } else if (assign->kind == FLOW_ASSIGN_DECLARATION && assign->binding && assign->binding->tag == BINDING_IDENTIFIER &&
+        assign->binding->source && assign->binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING
+    ) {
+        right = &c_container_of(assign->binding->source, InitializedBinding, lazy_type)->value;
+    }
+    return right && right->tag == EXPR_ARRAY && !vec_expr_size(&right->array);
+}
+
 // False: the assignment has nothing to do with the reference
 static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType* out) {
     Checker* me = q->me;
@@ -818,15 +955,17 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
             return true;
         }
         Ty const* declared = q->declared;
-        if (declared == ty_intrinsic(me, TY_AUTO)) {
-            // `let x;` is what was assigned last (tsc's autoType). HACK: `x = []` makes an evolving array in tsc, which
-            // isn't there: any[], like `let x = []` (hacks.md)
-            Expr const* right = assign->kind == FLOW_ASSIGN_EXPR ? &assign->assignment->binary_op->right : nullptr;
-            if (right && right->tag == EXPR_ARRAY && !vec_expr_size(&right->array)) {
-                *out = (FlowType){ ty_array(me, ty_intrinsic(me, TY_ANY), false), false };
+        if (is_auto(me, declared)) {
+            // `let x;` and `let x = []` are what was assigned last, an evolving array if that was `[]`
+            if (is_empty_array_assignment(assign)) {
+                *out = (FlowType){ evolving_array(me, ty_intrinsic(me, TY_NEVER)), false };
                 return true;
             }
-            *out = (FlowType){ ty_widened_literal(me, initial_or_assigned_type(q, assign)), false };
+            Ty const* assigned = ty_widened_literal(me, initial_or_assigned_type(q, assign));
+            if (declared != ty_intrinsic(me, TY_AUTO) && !ty_is_related(me, assigned, declared, TY_RELATION_ASSIGNABLE)) {
+                assigned = ty_array(me, ty_intrinsic(me, TY_ANY), false);
+            }
+            *out = (FlowType){ assigned, false };
             return true;
         }
         if (assign->kind == FLOW_ASSIGN_EXPR && assign->assignment->binary_op->op != BINARY_OP_EQUAL) {
@@ -859,7 +998,8 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
         Expr const* object = &assign->for_each->iterable;
         if (is_matching_reference(me, q->reference, object) || optional_chain_contains_reference(me, object, q->reference)) {
             FlowType before = type_at_flow_node(q, flow->antecedent);
-            Ty const* type = compiler_options()->strict_null_checks ? ty_non_nullable(me, before.type) : before.type;
+            Ty const* type = final_array_type(me, before.type);
+            if (compiler_options()->strict_null_checks) type = ty_non_nullable(me, type);
             *out = (FlowType){ type, before.incomplete };
             return true;
         }
@@ -2144,7 +2284,9 @@ static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
     FlowSwitchClause const* clause = flow->node;
     Expr const* needle = skip_reference_wrappers(&clause->switch_->needle);
     FlowType before = type_at_flow_node(q, flow->antecedent);
-    Ty const* type = before.type;
+    // (tsc narrows an evolving array as it is, an object type without members: as its final array type here, and
+    // what isn't narrowed stays evolving)
+    Ty const* type = final_array_type(me, before.type);
     if (is_matching_reference(me, q->reference, needle)) {
         type = narrow_by_switch_on_discriminant(q, type, clause);
     } else if (is_typeof_expr(needle) && is_matching_reference(me, q->reference, &needle->unary_op->expr)) {
@@ -2171,6 +2313,7 @@ static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
         if (by_key) type = by_key;
         else if (access) type = narrow_by_discriminant(q, type, access, narrow_prop_by_switch, clause);
     }
+    if (type == final_array_type(me, before.type)) return before;
     return (FlowType){ type, before.incomplete };
 }
 
@@ -2217,8 +2360,9 @@ static FlowType type_at_flow_condition(FlowQuery* q, FlowNode const* flow) {
     FlowType before = type_at_flow_node(q, flow->antecedent);
     if (before.type->flags & TYF_NEVER) return before;
     bool assume_true = (flow->flags & FLOW_TRUE_CONDITION) != 0;
-    Ty const* narrowed = narrow_type(q, before.type, flow->node, assume_true, (flow->flags & FLOW_NULLISH) != 0);
-    if (narrowed == before.type) return before;
+    Ty const* non_evolving = final_array_type(q->me, before.type);
+    Ty const* narrowed = narrow_type(q, non_evolving, flow->node, assume_true, (flow->flags & FLOW_NULLISH) != 0);
+    if (narrowed == non_evolving) return before;
     // A guard that leaves nothing of an incomplete type says control could get here once the type is complete: the
     // silent never doesn't report errors when operators are applied to it
     if (before.incomplete && (narrowed->flags & TYF_NEVER)) narrowed = ty_intrinsic(q->me, TY_SILENT_NEVER);
@@ -2255,8 +2399,8 @@ static void push_if_unique(TyBuf* buf, Ty const* ty) {
 
 static Ty const* union_at_label(FlowQuery* q, TyBuf const* types, bool subtype_reduction) {
     Checker* me = q->me;
-    Ty const* result = subtype_reduction ? ty_union_subtype_reduced(me, types->data, types->len) :
-        ty_union(me, types->data, types->len, nullptr, (TyList){0});
+    Ty const* result = is_auto(me, q->declared) ? union_or_evolving(me, types->data, types->len, subtype_reduction) :
+        subtype_reduction ? ty_union_subtype_reduced(me, types->data, types->len) : ty_union(me, types->data, types->len, nullptr, (TyList){0});
     // The same union as the declared type goes by the declared type's name
     Ty const* declared = q->declared;
     if (result != declared && result->kind == TY_UNION && declared->kind == TY_UNION &&
@@ -2335,7 +2479,9 @@ static FlowType type_at_loop_label(FlowQuery* q, FlowNode const* flow, FlowList 
         FlowLoopEntry const* entry = &my flow_loops[i];
         if (entry->flow == flow && entry->key == key && entry->types->len) {
             my flow_incomplete_seen++;
-            return (FlowType){ ty_union(me, entry->types->data, entry->types->len, nullptr, (TyList){0}), true };
+            Ty const* so_far = is_auto(me, q->declared) ? union_or_evolving(me, entry->types->data, entry->types->len, false) :
+                ty_union(me, entry->types->data, entry->types->len, nullptr, (TyList){0});
+            return (FlowType){ so_far, true };
         }
     }
     TyBuf types = {0};
@@ -2379,7 +2525,8 @@ static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl 
     if (reference->identifier.keyword == KEYWORD_IDENTIFIER_THIS) return span_valid(function->arrow_span);
     Symbol const* symbol = q->symbol;
     if (!symbol || symbol->flow_start == start) return false;
-    if (symbol->is_const) return true;
+    // (Not a `const x = []`: what a closure sees of it is `any[]`, whatever is pushed after, tsc's checkIdentifier)
+    if (symbol->is_const) return q->declared != q->me->auto_array;
     bool is_mutable_local = symbol->is_local && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE);
     if (!symbol->is_parameter && !is_mutable_local) return false;
     // Past the last assignment
@@ -2394,13 +2541,14 @@ static bool type_at_flow_call(FlowQuery* q, FlowNode const* flow, FlowType* out)
     if (effects.has_predicate && effects.predicate.asserts) {
         TyPredicate const* predicate = &effects.predicate;
         FlowType before = type_at_flow_node(q, flow->antecedent);
-        Ty const* narrowed = before.type;
+        Ty const* type = final_array_type(me, before.type);
+        Ty const* narrowed = type;
         if (predicate->type) {
-            narrowed = narrow_by_predicate(q, before.type, predicate, expr->call, true);
+            narrowed = narrow_by_predicate(q, type, predicate, expr->call, true);
         } else if (!predicate->is_this && predicate->param_index >= 0 && predicate->param_index < vec_expr_size(&expr->call->args)) {
-            narrowed = narrow_by_assertion(q, before.type, vec_expr_at(&expr->call->args, predicate->param_index));
+            narrowed = narrow_by_assertion(q, type, vec_expr_at(&expr->call->args, predicate->param_index));
         }
-        *out = (FlowType){ narrowed, before.incomplete };
+        *out = narrowed == type ? before : (FlowType){ narrowed, before.incomplete };
         return true;
     }
     if (effects.returns_never) {
@@ -2476,6 +2624,11 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
             bool is_outer = (q->left_container || (q->symbol && q->symbol->flow_start != flow)) &&
                 !(q->symbol && q->symbol->is_parameter);
             type = (FlowType){ is_outer ? q->declared : q->initial, false };
+        } else if (flags & FLOW_ARRAY_MUTATION) {
+            if (!type_at_array_mutation(q, flow, &type)) {
+                flow = flow->antecedent;
+                continue;
+            }
         } else {
             // Unreachable: errors come from the builder, the declared type keeps follow-on errors away
             type = (FlowType){ q->declared, false };
@@ -2509,8 +2662,13 @@ Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, T
     my flow_shared_count = q.shared_start;
     // (The result of a top-level query can be marked incomplete: a shared node that was first reached through a back
     // edge is remembered with what it had then. tsc takes the type as it is, so that is what the baselines show)
-    if (result.type == ty_intrinsic(me, TY_UNREACHABLE_NEVER)) return declared;
-    return result.type;
+    Ty const* ret = result.type;
+    // `x` of `x.push(v)` is the auto array, `any[]` without implicit any errors: anything can be pushed
+    if (ret->kind == TY_EVOLVING_ARRAY) {
+        ret = ty_is_evolving_array_operation_target(me, reference) ? ty_auto_array(me) : final_array_type(me, ret);
+    }
+    if (ret == ty_intrinsic(me, TY_UNREACHABLE_NEVER)) return declared;
+    return ret;
 }
 
 // Inferred type predicates (tsc's getTypePredicateFromBody): `x => x !== undefined` is `(x: T | undefined) => x is T`

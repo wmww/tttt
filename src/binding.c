@@ -533,24 +533,27 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
     return ty_check_expr(checker, &my value, contextual);
 }
 
-// `let x;` and `let x = null` under noImplicitAny: the type comes from what is assigned, as control flow sees it
-// (tsc's autoType in getWidenedTypeForVariableLikeDeclaration)
-static bool is_auto_typed(InitializedBinding const* me) {
-    // (Under noImplicitAny, or in a JavaScript file)
+// `let x;`, `let x = null` and `let x = []` under noImplicitAny (or in a JavaScript file): the type comes from what is
+// assigned (and pushed), as control flow sees it. tsc's autoType and autoArrayType in getWidenedTypeForVariableLike
+// Declaration: TY_AUTO, ty_auto_array(), else null
+static Ty const* auto_type(InitializedBinding const* me) {
     SourceFile const* file = my binding.content_span.source;
     if (my binding.has_explicit_type || my binding.tag != BINDING_IDENTIFIER ||
         !(compiler_options()->no_implicit_any || (file && file->is_js))
     ) {
-        return false;
+        return nullptr;
     }
     Symbol const* symbol = my binding.symbol;
-    if (!symbol || !(symbol->flags & SYMBOL_VARIABLE) || symbol->is_parameter || symbol->is_const || symbol->is_ambient ||
-        symbol->exported || symbol->parent
+    if (!symbol || !(symbol->flags & SYMBOL_VARIABLE) || symbol->is_parameter || symbol->is_ambient || symbol->exported ||
+        symbol->parent
     ) {
-        return false;
+        return nullptr;
     }
-    if (my value.tag == EXPR_IMPLICIT_ANY) return !my getter;
-    return my value.tag == EXPR_LITERAL && (my value.literal.tag == VALUE_NULL || my value.literal.tag == VALUE_UNDEFINED);
+    bool auto_any = my value.tag == EXPR_IMPLICIT_ANY ? !my getter :
+        my value.tag == EXPR_LITERAL && (my value.literal.tag == VALUE_NULL || my value.literal.tag == VALUE_UNDEFINED);
+    if (auto_any) return symbol->is_const ? nullptr : ty_intrinsic(current_checker, TY_AUTO);
+    if (my value.tag == EXPR_ARRAY && !vec_expr_size(&my value.array)) return ty_auto_array(current_checker);
+    return nullptr;
 }
 
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
@@ -572,21 +575,14 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
             return ty_binding_pattern_type(checker, &my binding, false);
         }
     }
-    if (is_auto_typed(me)) return ty_intrinsic(checker, TY_AUTO);
+    Ty const* auto_typed = auto_type(me);
+    if (auto_typed) return auto_typed;
     // A call of a single non-generic signature has its type without its arguments being checked (tsc's
     // checkDeclarationInitializer): `const r = f(x)` doesn't depend on x, which may depend on r through a loop
     Ty const* ret = ty_quick_expr_type(checker, &my value, false);
     if (!ret) ret = initialized_binding_check_value(me);
     if (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY) ret = ty_pad_initializer_type(checker, ret, &my binding);
-    // HACK: `let x = []` is an evolving array in tsc (autoArrayType, under noImplicitAny), which grows with what is
-    // pushed. Not there yet: it's any[] like before `[]` was never[]
     Symbol const* symbol = my binding.tag == BINDING_IDENTIFIER ? my binding.symbol : nullptr;
-    if (!my binding.has_explicit_type && my value.tag == EXPR_ARRAY && !vec_expr_size(&my value.array) &&
-        compiler_options()->no_implicit_any && symbol && !symbol->is_parameter && !symbol->is_ambient &&
-        (symbol->flags & SYMBOL_VARIABLE)
-    ) {
-        return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
-    }
     if (!my binding.has_explicit_type) {
         ret = ty_widened_for_declaration(checker, ret, my binding.tag == BINDING_IDENTIFIER && my abstract_literals);
         // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
@@ -631,13 +627,10 @@ static void report_errors_from_widening(InitializedBinding* me, ErrorCtx* errs) 
     Checker* checker = current_checker;
     if (!compiler_options()->no_implicit_any || compiler_options()->strict_null_checks) return;
     if (my binding.has_explicit_type || my value.tag == EXPR_IMPLICIT_ANY || my binding.tag != BINDING_IDENTIFIER) return;
-    if (is_auto_typed(me) || my is_rest_parameter) return;
+    if (auto_type(me) || my is_rest_parameter) return;
     Symbol const* symbol = my binding.symbol;
     if (!symbol) return;
     if (symbol->is_parameter && ty_contextual_parameter_type(checker, me)) return;
-    // `let x = []` is an evolving array (see initialized_binding_evaluate_assigned_type)
-    if (!symbol->is_parameter && my value.tag == EXPR_ARRAY && !vec_expr_size(&my value.array) && !symbol->is_ambient &&
-        (symbol->flags & SYMBOL_VARIABLE)) return;
     Ty const* ty = ty_expr_type(checker, &my value);
     if (!(ty->xflags & TYX_CONTAINS_WIDENING)) return;
     if (report_widening_errors_in_type(checker, ty, errs, 0)) return;

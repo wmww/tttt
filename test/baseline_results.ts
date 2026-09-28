@@ -6856,14 +6856,14 @@ const baselines = {
         types: true,
     },
     'controlFlowArrayErrors': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'controlFlowArrays': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowAutoAccessor1': {
         errors: true,
@@ -7413,7 +7413,7 @@ const baselines = {
     'declFilePrivateMethodOverloads': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFilePrivateStatic': {
         errors: true,
@@ -12376,14 +12376,14 @@ const baselines = {
         types: true,
     },
     'evolvingArrayResolvedAssert': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'evolvingArrayTypeInAssert': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exactSpellingSuggestion': {
         errors: true,
@@ -14676,7 +14676,7 @@ const baselines = {
         types: true,
     },
     'genericArrayExtenstions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15028,12 +15028,12 @@ const baselines = {
     'genericFunctionsWithOptionalParameters1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericFunctionsWithOptionalParameters2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericFunctionsWithOptionalParameters3': {
         errors: true,
@@ -15518,7 +15518,7 @@ const baselines = {
     'getAccessorWithImpliedReturnTypeAndFunctionClassMerge': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'getAndSetAsMemberNames': {
         errors: true,
@@ -17371,9 +17371,9 @@ const baselines = {
         types: true,
     },
     'inferenceShouldFailOnEvolvingArrays': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceUnionOfObjectsMappedContextualType': {
         errors: true,
@@ -19768,7 +19768,7 @@ const baselines = {
     'jsdocTypeGenericInstantiationAttempt': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeNongenericInstantiationAttempt': {
         errors: true,
@@ -22811,9 +22811,9 @@ const baselines = {
         types: true,
     },
     'narrowSwitchOptionalChainContainmentEvolvingArrayNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowTypeByInstanceof': {
         errors: true,
@@ -24033,7 +24033,7 @@ const baselines = {
     'nonNullFullInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonNullMappedType': {
         errors: true,
@@ -27951,7 +27951,7 @@ const baselines = {
         types: true,
     },
     'selfReferencingSpreadInLoop': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32563,7 +32563,7 @@ const baselines = {
     'unusedLocalsAndParametersTypeAliases': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedLocalsAndParametersTypeAliases2': {
         errors: true,
@@ -38002,8 +38002,8 @@ const baselines = {
     },
     'typeGuardsAsAssertions': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeGuardsNestedAssignments': {
         errors: true,
@@ -51263,7 +51263,7 @@ const baselines = {
     'checkJsdocTypeTag3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTag4': {
         errors: true,
@@ -51628,12 +51628,12 @@ const baselines = {
     'jsDeclarationsMissingGenerics': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsMissingTypeParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsModuleReferenceHasEmit': {
         errors: false,
@@ -67043,12 +67043,12 @@ const baselines = {
     'objectTypesIdentityWithGenericCallSignaturesDifferingByConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericCallSignaturesDifferingByConstraints2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericCallSignaturesDifferingByConstraints3': {
         errors: true,
@@ -67098,12 +67098,12 @@ const baselines = {
     'objectTypesIdentityWithGenericConstructSignaturesDifferingByConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericConstructSignaturesDifferingByConstraints2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesIdentityWithGenericConstructSignaturesDifferingByConstraints3': {
         errors: true,

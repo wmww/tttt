@@ -681,6 +681,9 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             return ret;
         }
 
+        case TY_EVOLVING_ARRAY:
+            impossible; // (Never leaves a flow query)
+
         case TY_STRING_MAPPING:
             return ty_string_mapping(
                 me, ty->string_mapping.mapping, ty->string_mapping.symbol, ty_instantiate(me, ty->string_mapping.type, mapper)

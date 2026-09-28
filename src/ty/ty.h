@@ -110,6 +110,9 @@ typedef enum TyKind {
     // primitive
     TY_TEMPLATE_LITERAL,
     TY_STRING_MAPPING,
+    // tsc's EvolvingArrayType: what `let x = []` is while control flow sees elements being pushed. Only exists inside
+    // a flow query (ty/flow.c): ty_flow_type() answers its final array type
+    TY_EVOLVING_ARRAY,
 } TyKind;
 
 // tsc-like TypeFlags, plus a few cached facts
@@ -360,6 +363,10 @@ struct Ty {
             Atom const* const* texts; // types.len + 1 of them, around the types
             TyList types; // Each a type variable or a pattern placeholder (string, number, bigint, any, a pattern...)
         } template_literal;
+        struct {
+            Ty const* element; // What was pushed so far (never: nothing), not subtype reduced
+            Ty const* final_array; // Cached by flow.c's final_array_type(), null until then
+        } evolving_array;
         struct {
             TyStringMapping mapping;
             Symbol const* symbol; // The lib alias, for display. May be null
@@ -716,6 +723,7 @@ struct Checker {
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()
     InternTable links;  // Symbol -> SymbolLinks, AST node -> Ty, Generic -> type parameter list...
     Ty const* array_target;
+    Ty const* auto_array; // ty_auto_array(), made with array_target
     Ty const* readonly_array_target;
     Ty const* global_types[13]; // GlobalType in relate.c: String, Number... looked up on first use
     bool global_types_resolved[13];
@@ -882,6 +890,12 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty 
 // `this` type (or `this_arg` is the type itself)
 Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg);
 Ty const* ty_array(Checker* me, Ty const* element, bool readonly);
+// tsc's autoArrayType: `any[]` of TY_AUTO (prints as `any[]`), the declared type of `let x = []`, which control flow
+// evolves (flow.c's TY_EVOLVING_ARRAY)
+Ty const* ty_auto_array(Checker* me);
+// tsc's isEvolvingArrayOperationTarget: `x` of `x.length`, `x.push(v)`, `x.unshift(v)`, `x[i] = v` with a number-like
+// i (IdentifierExpr.evolving_op). There `let x = []` is the auto array, not what it evolved to (flow.c)
+bool ty_is_evolving_array_operation_target(Checker* me, struct Expr const* reference);
 Ty const* ty_tuple_rest_slice(Checker* me, Ty const* source, u32 start);
 struct ImportAttributes;
 void ty_check_import_attributes(Checker* me, struct ImportAttributes const* attributes, ErrorCtx* errs);
@@ -1365,6 +1379,7 @@ typedef enum IdentifierFlowIssue {
     IDENTIFIER_FLOW_OK,
     IDENTIFIER_FLOW_UNASSIGNED, // TS2454
     IDENTIFIER_FLOW_IMPLICIT_ANY, // A `let x;` whose type control flow can't tell here: TS7034 + TS7005
+    IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY, // ... a `let x = []`: any[]
 } IdentifierFlowIssue;
 IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* identifier);
 // Type facts, for the operators

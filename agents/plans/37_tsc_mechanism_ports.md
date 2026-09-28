@@ -35,7 +35,7 @@ types, not now**: arrays/tuples are reverse mapped already (bugs/type_core.md's 
 reverseMappedTypeRecursiveInference plausibly needs laziness.
 
 **Landed**: A stage 1 (+48) and F (+1) in todo entry 4, B stage 1 (+37) and E stage 1 (+3, zod-root's TS2412) in todo entry 5,
-C stage 1 (+15) in todo entry 8.
+C stage 1 (+15) and D stage 1 (+21 with the early Array type) in todo entry 8.
 
 ## A. Non-widening null/undefined (landed at stage 1; stage 2 open)
 tsc, non-strict only: `undefinedWideningType`/`nullWideningType` print as `undefined`/`null`, carry
@@ -84,24 +84,17 @@ intersection). Not cached per decorated node (each decorator is checked once; ha
   privateFieldAccess, decoratorOnClassMethod11: name resolution scoping). esDecorators-contextualTypes.2 needs `This`
   inferred through a generic decorator (inference). List: `37_prototypes/decorators_remaining.txt`.
 
-## D. Evolving arrays (`evolving_arrays.patch`, `evolving_arrays_gained.txt`)
-Prototype: binder `FLOW_ARRAY_MUTATION` nodes (`flow_maybe_array_mutation()` after a non-chain call's arguments and
-a plain `=`; only when the target may be auto-typed, `may_evolve()`, which is what got perf from +0.75% to +0.2%),
-the operation-target mark (`.length`/`push`/`unshift`, `x[i] = v`); ty/flow.c `evolving_array`, `finalize_evolving`,
-`add_evolving_element`, `union_or_evolving`, `type_at_array_mutation`; `identifier_flow_type` treats TY_AUTO and the
-auto array alike, TS7034/TS7005 say `'any[]'` and are gated on noImplicitAny like tsc. TY_AUTO gets
-`TYF_NON_INFERRABLE` (inferenceShouldFailOnEvolvingArrays). **Ordering trap**: the auto array type needs the lowest
-array id (tsc's autoArrayType) to win subtype reduction against `any[]`; the prototype makes it in `ty_array()` when
-Array resolves. The Expr size must not grow (the prototype shares the `this_function` slot: 144 bytes stays).
-- **Stage 1 (1 session)**: a real representation for the evolving type (the prototype abuses a TY_INTRINSIC with the
-  element in `alias_args`), with its final array cached; an enum for the operation-target flag; tsc gaps the suite
-  doesn't cover (`x?.push(v)` mutation nodes, a `const x = []` read in a closure doesn't evolve outside it, the `x!`
-  rule for auto types); probes (loops, closures, non-numeric `x[i]`, `(x = [], x).push`). Delete the binding.c and
-  ty/flow.c HACKs, flow.h's comment, hacks.md "No array mutation flow nodes" + the evolving half of the `x!` entry,
-  bugs/type_core.md "Evolving arrays". Out of scope: yieldExpressionInControlFlow (TS7005 from a nested evaluation).
-- Side finding (not in the port, triage): creating the global Array type early passes 4 more tests
-  (genericFunctionsWithOptionalParameters1/2, jsdocTypeGenericInstantiationAttempt, unusedLocalsAndParametersType
-  Aliases): an `Array<T>` annotation prints `Array<T>` or `T[]` depending on when Array was first built.
+## D. Evolving arrays (landed at stage 1)
+Landed as the prototype described, cleaned up (documentation.md "Auto types and evolving arrays"): `TY_EVOLVING_ARRAY`
+(element + cached final array), `EvolvingArrayOp` on IdentifierExpr, `auto_type()` in binding.c replacing the HACKs,
+mutation nodes after `x?.push(v)` and through `x!` / `(x ||= [])`, a closure sees `const x = []` as the auto array,
+the `x!` rules (auto: starts undefined, non-nullable; every identifier: only-nullish is the declared type). The side
+finding is in too: the checker makes Array + the auto array when it starts (tsc's initializeTypeChecker), which is
+what 14 of the gained tests needed. **+21 tests, 0 lost** (10477 -> 10498); every corpus byte-identical;
+instructions (K=1) tsc +0.33%, webpack +0.29% (mostly layout: the evolving work itself is ~0.03%). IdentifierExpr's
+rarer flags became bit fields: Expr went from 152 to 144 bytes (static_assert in expr.c). Probes in
+`test/probes/plan37/evolving/` (all pass). Leftovers in triage.md ("Evolving arrays leftovers") and hacks.md.
+Out of scope still: yieldExpressionInControlFlow (TS7005 from a nested evaluation).
 
 ## E. The missing type (landed at stage 1; stage 2 open)
 Landed as the prototype described (documentation.md "The missing type"), `exact_missing_flag()` deleted; +3 tests,

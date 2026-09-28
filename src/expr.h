@@ -43,39 +43,57 @@ typedef struct IdentifierExpr {
     uint8_t keyword; // KeywordIdentifier
     uint8_t this_kind; // ThisKind
     uint8_t assignment_target; // FlowAssignmentKind: the reference is being assigned to, so it has its declared type
-    // The target of `x = <a shift, additive or multiplicative expression>` (tsc's isInCompoundLikeAssignment): it
-    // has the base type of its declared type, so `let s = empty; s = s + "a"` is fine with `empty: ""`
-    bool compound_like_target;
-    // Never "used before assigned": part of `typeof x` written as a type, or inside the binding pattern that declares it
-    bool assume_initialized;
-    // A variable referenced from another flow container (function) than the one it's declared in (tsc's
-    // isOuterVariable), as far as the resolve walk knows (a `var` whose declaration comes later isn't)
-    bool outer_reference;
-    bool is_arguments; // The implicit `arguments` of the function around it (tsc's argumentsSymbol)
-    // A name an instance field can't use because its constructor declares it (TS2301): no target (any), but `symbol`
-    // is still what it finds
-    bool invalid_initializer_reference;
-    // The namespace an extended interface's name starts with (`M` of `extends M.I`, TS2689): no target, but the
-    // symbols baseline shows `symbol` (tsc's getSymbolAtLocation of a property access's object)
-    bool namespace_as_value;
     // The callee of `require(x)` in a JavaScript file (module_ref is the module if x is a string literal): 1, or 2 when
     // the call is what a declaration's aliases import (InitializedBinding.require_ports, which report the module)
     uint8_t require_call;
-    bool shorthand; // The value of a shorthand property `{ a }`
-    bool shorthand_unchecked; // `{ a = 1 }` outside a pattern: tsc checks the default instead of the name
+    // (Bit fields: the struct is as big as an Expr may be, see expr.c)
+    // The target of `x = <a shift, additive or multiplicative expression>` (tsc's isInCompoundLikeAssignment): it
+    // has the base type of its declared type, so `let s = empty; s = s + "a"` is fine with `empty: ""`
+    bool compound_like_target : 1;
+    // Never "used before assigned": part of `typeof x` written as a type, or inside the binding pattern that declares it
+    bool assume_initialized : 1;
+    // A variable referenced from another flow container (function) than the one it's declared in (tsc's
+    // isOuterVariable), as far as the resolve walk knows (a `var` whose declaration comes later isn't)
+    bool outer_reference : 1;
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
-    bool constraint_position;
+    bool constraint_position : 1;
+    bool is_arguments : 1; // The implicit `arguments` of the function around it (tsc's argumentsSymbol)
+    // A name an instance field can't use because its constructor declares it (TS2301): no target (any), but `symbol`
+    // is still what it finds
+    bool invalid_initializer_reference : 1;
+    // The namespace an extended interface's name starts with (`M` of `extends M.I`, TS2689): no target, but the
+    // symbols baseline shows `symbol` (tsc's getSymbolAtLocation of a property access's object)
+    bool namespace_as_value : 1;
+    bool shorthand : 1; // The value of a shorthand property `{ a }`
+    bool shorthand_unchecked : 1; // `{ a = 1 }` outside a pattern: tsc checks the default instead of the name
     // `super.x` / `super[x]` (the base instance), `super(...)` (the base constructor)
-    bool super_member;
-    bool super_call;
-    bool class_base; // The whole element of a class's `extends` clause (TS2863 rather than TS2693 for `extends number`)
+    bool super_member : 1;
+    bool super_call : 1;
+    bool class_base : 1; // The whole element of a class's `extends` clause (TS2863 rather than TS2693 for `extends number`)
+    // `x` of `x.length`, `x.push(...)`, `x[i] = v`...: EvolvingArrayOp, see ty_is_evolving_array_operation_target()
+    uint8_t evolving_op : 2;
+    // The operand of `x!` (tsc's isAutomaticTypeInNonNull: an auto-typed variable there is initially undefined, and
+    // has the non-nullable type of what control flow says)
+    bool non_null_operand : 1;
     // The first name of the entity name a class's `extends` clause is (`M` of `extends M.I`), that entity name
     Expr const* extends_entity;
-    // `this` in a function that isn't a method or arrow function (THIS_ANY): that function, whose `this` may be
-    // contextually typed (ty_contextual_this_type())
-    FunctionImpl const* this_function;
+    union {
+        // `this` in a function that isn't a method or arrow function (THIS_ANY): that function, whose `this` may be
+        // contextually typed (ty_contextual_this_type())
+        FunctionImpl const* this_function;
+        struct Expr const* evolving_index; // EVOLVING_OP_ELEMENT_ASSIGNMENT: `i` of `x[i] = v` (never a keyword)
+    };
 } IdentifierExpr;
+
+// Where a name is the object of an operation an evolving array allows (tsc's isEvolvingArrayOperationTarget): such a
+// reference to `let x = []` is `any[]` rather than the array type control flow evolved so far. Set by the resolve walk
+// on the reference root (`x` of `(x = [], x).push(1)`)
+typedef enum EvolvingArrayOp {
+    EVOLVING_OP_NONE,
+    EVOLVING_OP_ACCESS, // `x.length`, `x.push(...)`, `x.unshift(...)`
+    EVOLVING_OP_ELEMENT_ASSIGNMENT, // `x[i] = v`: only if i is number-like (evolving_index)
+} EvolvingArrayOp;
 
 void identifier_expr_drop(IdentifierExpr* me);
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs);

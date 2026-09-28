@@ -4,6 +4,8 @@
 #include "statement.h"
 #include "function_impl.h"
 #include "source_file.h"
+#include "binding.h"
+#include "lazy_type.h"
 
 FlowNode flow_unreachable = { .flags = FLOW_UNREACHABLE };
 // Unreachable, and TS7027 was reported (or deliberately not) for the code that follows
@@ -263,6 +265,97 @@ static bool is_narrowable_operand(Expr const* me) {
         else break;
     }
     return contains_narrowable_reference(me);
+}
+
+// tsc's getReferenceRoot, from the top: the name `(x = [], x)` and `(x = y)` stand for, if they stand for one
+static Expr* reference_root_name(Expr* me) {
+    while (true) {
+        if (my tag == EXPR_AS_TYPE && my as_type->is_jsdoc) me = &my as_type->expr; // (tsc's parentheses)
+        else if (my tag == EXPR_BINARY_OP && my binary_op->op == BINARY_OP_EQUAL) me = &my binary_op->left;
+        else if (my tag == EXPR_BINARY_OP && my binary_op->op == BINARY_OP_COMMA) me = &my binary_op->right;
+        else break;
+    }
+    return my tag == EXPR_IDENTIFIER && !my identifier.keyword ? me : nullptr;
+}
+
+static void mark_evolving_array_target(Expr* object, EvolvingArrayOp op, Expr const* index) {
+    Expr* name = reference_root_name(object);
+    if (!name) return;
+    name->identifier.evolving_op = op;
+    if (op == EVOLVING_OP_ELEMENT_ASSIGNMENT) name->identifier.evolving_index = index;
+}
+
+// Only a variable declared without a type and with no initializer, null, undefined or `[]` can be auto-typed (tsc's
+// autoType, autoArrayType): no other reference needs array mutation nodes (tsc makes them for every narrowable one).
+// The variable is the checker's reference candidate: `(x ||= []).push(v)` pushes to x too
+static bool may_evolve(Expr const* object) {
+    while (true) {
+        // (ty/flow.c's reference_candidate(): `x!`, `x satisfies T`, JSDoc casts)
+        if (object->tag == EXPR_UNARY_OP && object->unary_op->op == UNARY_OP_RIGHT_BANG) {
+            object = &object->unary_op->expr;
+            continue;
+        }
+        if (object->tag == EXPR_AS_TYPE && (object->as_type->is_satisfies || object->as_type->is_jsdoc)) {
+            object = &object->as_type->expr;
+            continue;
+        }
+        if (object->tag != EXPR_BINARY_OP) break;
+        BinaryOp op = object->binary_op->op;
+        if (op == BINARY_OP_EQUAL || op == BINARY_OP_OR_OR_EQUAL || op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_EH_EH_EQUAL) {
+            object = &object->binary_op->left;
+        } else if (op == BINARY_OP_COMMA) {
+            object = &object->binary_op->right;
+        } else {
+            return false;
+        }
+    }
+    Expr const* name = object->tag == EXPR_IDENTIFIER && !object->identifier.keyword ? object : nullptr;
+    Symbol const* symbol = name ? name->identifier.target : nullptr;
+    if (!symbol || !(symbol->flags & SYMBOL_VARIABLE) || symbol->is_parameter) return false;
+    Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
+    if (!binding || binding->has_explicit_type || binding->tag != BINDING_IDENTIFIER || !binding->source ||
+        binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING
+    ) {
+        return false;
+    }
+    Expr const* value = &c_container_of(binding->source, InitializedBinding, lazy_type)->value;
+    switch (value->tag) {
+        case EXPR_IMPLICIT_ANY: return true;
+        case EXPR_LITERAL: return value->literal.tag == VALUE_NULL || value->literal.tag == VALUE_UNDEFINED;
+        case EXPR_ARRAY: return !vec_expr_size(&value->array);
+        default: return false;
+    }
+}
+
+static bool is_dot_name(Expr const* access, char const* name) {
+    if (access->tag != EXPR_PROPERTY || access->property->form != PROPERTY_EXPR_DOT) return false;
+    Expr const* prop = &access->property->prop;
+    return prop->tag == EXPR_LITERAL && span_valid(prop->inner_span) && csview_equals(prop->inner_span.sv, name);
+}
+
+void flow_array_mutation(FlowBuilder* me, Expr* expr) {
+    Expr* object;
+    if (expr->tag == EXPR_CALL) {
+        Expr* callee = &expr->call->callable;
+        while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+        if (expr->call->uses_new || !(is_dot_name(callee, "push") || is_dot_name(callee, "unshift"))) return;
+        object = &callee->property->expr;
+        mark_evolving_array_target(object, EVOLVING_OP_ACCESS, nullptr);
+    } else {
+        Expr* left = &expr->binary_op->left;
+        if (expr->binary_op->op != BINARY_OP_EQUAL || left->tag != EXPR_PROPERTY || left->property->form != PROPERTY_EXPR_BRACKET) return;
+        object = &left->property->expr;
+        mark_evolving_array_target(object, EVOLVING_OP_ELEMENT_ASSIGNMENT, &left->property->prop);
+    }
+    if (my dead || !is_narrowable_operand(object) || !may_evolve(object)) return;
+    set_referenced(my current);
+    my has_flow_effects = true;
+    my current = new_node(me, FLOW_ARRAY_MUTATION, my current, expr);
+    if (my exception_target) flow_add_antecedent(me, my exception_target, my current);
+}
+
+void flow_length_access(Expr* access) {
+    if (is_dot_name(access, "length")) mark_evolving_array_target(&access->property->expr, EVOLVING_OP_ACCESS, nullptr);
 }
 
 static bool is_narrowing_typeof_operands(Expr const* a, Expr const* b) {

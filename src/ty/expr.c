@@ -1249,6 +1249,18 @@ static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty 
 // The tail of tsc's checkIdentifier(): a variable or parameter has the type control flow gives it where it is read
 // With `issue_only` it only looks for the issue: nullptr when there can't be one, before walking the flow graph (every
 // identifier is asked when checked, and its type has been computed with its contextual type already)
+// The flow type of a variable, except that `x!` where control flow says x is only null or undefined is the declared type
+// (tsc's getFlowTypeOfReference: "the operand of a non-null assertion is never nullish")
+static Ty const* non_null_flow_type(Checker* me, Expr const* expr, Ty const* declared, Ty const* initial) {
+    Ty const* flow_type = ty_flow_type(me, expr, declared, initial, expr->identifier.flow);
+    if (expr->identifier.non_null_operand && !(flow_type->flags & TYF_NEVER) &&
+        (ty_non_nullable(me, flow_type)->flags & TYF_NEVER)
+    ) {
+        return declared;
+    }
+    return flow_type;
+}
+
 static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* contextual, IdentifierFlowIssue* issue, bool issue_only) {
     IdentifierExpr const* identifier = &expr->identifier;
     if (my contextual_pattern_count && identifier->target && (identifier->target->flags & SYMBOL_VARIABLE)) {
@@ -1274,14 +1286,32 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     }
     if (!identifier->flow) return type;
     Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
-    if (type == ty_intrinsic(me, TY_AUTO)) {
-        // Undefined until something is assigned. From a closure it is assumed to be assigned, to something control
-        // flow may not know: any unless every path leads to an assignment in the closure (tsc's checkIdentifier)
-        Ty const* initial = identifier->outer_reference && symbol->is_assigned ? type : ty_intrinsic(me, TY_UNDEFINED);
-        Ty const* flow_type = ty_flow_type(me, expr, type, initial, identifier->flow);
-        if (flow_type != type) return identifier->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
-        *issue = IDENTIFIER_FLOW_IMPLICIT_ANY;
-        return ty_intrinsic(me, TY_ANY);
+    Ty const* auto_any = ty_intrinsic(me, TY_AUTO);
+    if (type == auto_any || (type == my auto_array && type)) {
+        // `let x;`, `let x = []` (tsc's checkIdentifier). Undefined until something is assigned. From a closure it is
+        // assumed to be assigned, to something control flow may not know: any unless every path leads to an
+        // assignment in the closure. `x!` is what was assigned, non-nullable
+        bool non_null = identifier->non_null_operand;
+        bool assume_initialized = non_null || (identifier->outer_reference && (symbol->is_assigned || type != auto_any));
+        Ty const* initial = assume_initialized && !non_null ? type : ty_intrinsic(me, TY_UNDEFINED);
+        Ty const* flow_type = non_null_flow_type(me, expr, type, initial);
+        // (tsc's getNonNullableType makes an intersection of any, which is the plain any)
+        if (non_null && compiler_options()->strict_null_checks) {
+            flow_type = flow_type == auto_any ? ty_intrinsic(me, TY_ANY) : ty_non_nullable(me, flow_type);
+        }
+        bool still_auto = flow_type == auto_any || flow_type == my auto_array;
+        if (still_auto || (!assume_initialized && includes_undefined(flow_type))) {
+            if (!ty_is_evolving_array_operation_target(me, expr)) {
+                if (still_auto) {
+                    *issue = flow_type == auto_any ? IDENTIFIER_FLOW_IMPLICIT_ANY : IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY;
+                    return flow_type == auto_any ? ty_intrinsic(me, TY_ANY) : ty_array(me, ty_intrinsic(me, TY_ANY), false);
+                }
+            } else if (!assume_initialized && includes_undefined(flow_type)) {
+                *issue = IDENTIFIER_FLOW_UNASSIGNED; // `let x; x.push(1)`
+                return type;
+            }
+        }
+        return identifier->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
     }
     // Where nothing says otherwise, a variable is `undefined` until something is assigned to it
     bool assume_initialized = symbol->is_parameter || symbol->is_ambient || !compiler_options()->strict_null_checks ||
@@ -1294,7 +1324,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
         initial = ty_union(me, types, 2, nullptr, (TyList){0});
     }
-    Ty const* flow_type = ty_flow_type(me, expr, type, initial, identifier->flow);
+    Ty const* flow_type = non_null_flow_type(me, expr, type, initial);
     if (!assume_initialized && includes_undefined(flow_type)) {
         *issue = IDENTIFIER_FLOW_UNASSIGNED;
         return type;
