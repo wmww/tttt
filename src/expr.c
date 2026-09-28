@@ -2943,8 +2943,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 expr_typecheck(&i->value, errs);
                 if (i->jsdoc_type) {
                     type_typecheck(i->jsdoc_type, errs);
+                    // (At the property assignment, tsc's getErrorSpanForNode of it)
                     ty_check_assignable_expr(current_checker, expr_get_type(&i->value), ty_of_node(i->jsdoc_type),
-                        i->name_span, &i->value, errs);
+                        i->span, &i->value, errs);
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD) {
                     // `{ ...o }` is emitted with __assign below ES2015, `({ ...x } = o)` with __rest below ES2018

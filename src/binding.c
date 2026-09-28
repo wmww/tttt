@@ -524,7 +524,11 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
 // `let x;` and `let x = null` under noImplicitAny: the type comes from what is assigned, as control flow sees it
 // (tsc's autoType in getWidenedTypeForVariableLikeDeclaration)
 static bool is_auto_typed(InitializedBinding const* me) {
-    if (my binding.has_explicit_type || my binding.tag != BINDING_IDENTIFIER || !compiler_options()->no_implicit_any) {
+    // (Under noImplicitAny, or in a JavaScript file)
+    SourceFile const* file = my binding.content_span.source;
+    if (my binding.has_explicit_type || my binding.tag != BINDING_IDENTIFIER ||
+        !(compiler_options()->no_implicit_any || (file && file->is_js))
+    ) {
         return false;
     }
     Symbol const* symbol = my binding.symbol;
