@@ -2,17 +2,19 @@
 The work queue for "suite checker bugs" sessions: diagnostics tttt doesn't report, or reports under another code.
 Each is small (one check, a few tests). Find fresh buckets with `./failstats.py` (single-code tests: errors fail on
 one code alone in `build/failstats/tests.tsv`) and `./unimplemented_codes.sh` (codes `src/` never mentions). Test
-statuses checked 2026-09-27 (triage, suite 8952).
+statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (suite checker bugs 4).
 
 ## Buckets (tests whose errors fail on this one code, 2026-09-27, after suite checker bugs 3)
 - Mixed bags (sample, don't assume one cause): missing TS2339 52, spurious TS2322 46, missing TS2322 44, spurious
   TS2304 44, spurious TS2339 29, spurious TS2345 14. Missing TS2339 overall is ~380 in 166 tests: the gates in
   `check_access()` (JS, callables, mapped, unresolved bases) and whatever is typed `any` by failure.
 - Module resolution / emit: missing TS2303 15 (package pattern exports, below), TS8002 9 (JS, plan 26), TS2209 6,
-  TS5055 11, TS5069 6, TS2742 10 (declaration emit: out of scope); spurious TS2307 14 (APISample_*: resolving
+  TS2742 10 (declaration emit: out of scope); spurious TS2307 14 (APISample_*: resolving
   `typescript` from the harness).
-- Checker: missing TS2353 11, TS2538 8 (below), TS2449 6, TS7023 5, TS2352 5, TS1259 5 (esModuleInterop default
-  import, a TODO in scope.c), TS18050 5, TS7010 5, TS2318 (the lazily looked-up globals: `Awaited`,
+- Checker: TS2538 8 (below), TS7023 5, TS2344 5 (import types' arguments aren't checked against constraints:
+  unmetTypeConstraintInImportCall, `identifier_type_check_arity()` doesn't see them), TS2449 through property access
+  (`a.C` to a class declared later: circularImportAlias, privacyClassExtendsClauseDeclFile; tsc's
+  checkPropertyNotUsedBeforeDeclaration, the access doesn't know whether a function defers it), TS2318 (the lazily looked-up globals: `Awaited`,
   `TypedPropertyDescriptor`; the eager ones are done in `program_report_missing_global_types`, IterableIterator in
   `ty_generator_type`);
   spurious TS2349 13 (betterErrorForUnionCall, classExtendsNull, functionType), TS2403 12 (below), TS7006 8, TS2300 10.
@@ -27,10 +29,11 @@ statuses checked 2026-09-27 (triage, suite 8952).
   circularGetAccessor, circularOptionalityRemoval; variables are done). TS2310 for cycles found while resolving
   (circularBaseTypes, circularConstraintYieldsAppropriateError); a cyclic interface still gets its bases' members (tsc:
   none). TS1176 (`implements` on an interface: interfaceThatInheritsFromItself, parser recovery first).
+- **Decorators**: TS2449 for a class used in the decorators of its own methods' parameters (tsc counts them; tttt's
+  check only knows class and member decorators).
 - **Classes**: TS2467 (computed name referencing the containing declaration's type parameter: interface members have
   no computed-name scope marker). TS2383/TS2385/TS2386/TS2512 (overload export/access/optional/abstract agreement,
-  next to TS2394 in tsc's checkFunctionOrConstructorSymbol); TS2687 skips statics and method/accessor pairs. TS2699
-  (static `name`/`length`/`prototype`/... vs Function: staticPropertyNameConflicts, staticPrototypeProperty). TS2564
+  next to TS2394 in tsc's checkFunctionOrConstructorSymbol); TS2687 skips statics and method/accessor pairs. TS2564
   (strictPropertyInitialization, absent) and TS2612 need isPropertyInitializedInConstructor (flow at the end of the
   constructor). TS2401/TS2376 (`super()` placement with initialized/parameter properties). TS4127 (`override` on a
   dynamic name: overrideLateBindableIndexSignature1). TS2506 across files through namespace-qualified bases
@@ -49,15 +52,16 @@ statuses checked 2026-09-27 (triage, suite 8952).
   `amalgamatedDuplicates`: duplicateIdentifierRelatedSpans*), and TS6203 related info on a static duplicated by a
   namespace export (duplicateIdentifiersAcrossFileBoundaries). TS2492 (`catch (x) { let x }`:
   catchClauseWithTypeAnnotation).
-- **Operators**: TS18050 ("The value 'null' cannot be used here", 680 missing in 38 tests): tsc's message for
-  null/undefined operands; `expr.c` uses `type_extends_strict_nulls` + TS2365. `u += 1` with `u: undefined` is TS18048
-  in tsc (`check_non_null_type` exists). `x **= v` with a non-reference LHS: TS2362 here, TS2364 only in tsc
+- **Operators**: `void` operands/objects (UndefinedFacts in tsc: `v.x` with `v: void` is TS18048) aren't checked like
+  undefined. `x **= v` with a non-reference LHS: TS2362 here, TS2364 only in tsc
   (compoundExponentiationAssignmentLHSIsValue). `for (x in o)` with a non-declaration target: TS2322 here, TS2405 in tsc
   (re-probed).
 - **Type predicates**: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion
   callee without explicit types), TS1225 (no such parameter), a predicate function returning non-boolean.
-- **Implicit any**: TS7010 from widening (`function f() { return null; }` without strictNullChecks:
-  implicitAnyFunctionReturnNullOrUndefined); TS7031/TS7006 from widening of binding pattern defaults (`function
+- **Implicit any**: widening inside a return type (tsc's reportWideningErrorsInType: TS7018 on an object literal's
+  property) and of generator yield/next types; TS7023 through indirect self-references in return expressions
+  (simpleRecursionWithBaseCase1 `[fn5][0]()`, thisInObjectLiterals, trivialSubtypeReductionNoStructuralCheck);
+  TS7031/TS7006 from widening of binding pattern defaults (`function
   f([a1] = [undefined])`, noImplicitAnyDestructuring*: tsc's reportErrorsFromWidening, hacks.md `widen_nullable`);
   TS7051 (a parameter named like a type); TS7041 (`this` captured by a top-level arrow); TS7017 (`typeof globalThis` has
   no index signature); TS7055/TS7057 (generators).
@@ -92,7 +96,8 @@ statuses checked 2026-09-27 (triage, suite 8952).
   `export {Foo}`), exportAsNamespaceConflict (tttt says TS2484).
 - **Templates**: TS1125/TS1121 for escapes in template literal types, TS2590 (union too complex), `${symbol}` not
   rejected (templateLiteralTypes1/3/4).
-- **Misc**: TS2311 (`await` as a callee) and TS2663 in class computed names (need tsc's
+- **Misc**: TS2353 for an object literal assigned to an assignment pattern (`({ a } = { a, b })`: tsc's pattern on an
+  object literal type; binding patterns are done, `ty_check_object_literal_pattern()`). TS2311 (`await` as a callee) and TS2663 in class computed names (need tsc's
   includeClassComputedPropertyName); TS2561/TS2820 want the spelling suggestion (`spelling_suggestion()` exists; 11
   diagnostics in 5 tests); TS2551 suggestions don't filter inaccessible members; TS2793 only for function
   declarations, not overloaded methods/constructors (`add_implementation_success`); TS2635 (instantiation expression

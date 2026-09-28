@@ -60,3 +60,13 @@ non-widening undefined, `infer X extends C` scope), `bugs/display.md` (object li
   eagerly instantiated: valibot +2.5% instructions. tsc resolves them lazily; a lazy IndexInfo value (or computing the
   mapped type's members only when asked for index infos) would take that back.
 - Variance annotations (`in T`/`out T`) now set the variance (measure_variances()), but their checks aren't implemented: TS2636/TS2637 (tsc's checkVarianceAnnotations: the annotation must agree with the measured variance, only on interfaces/classes/object-ish aliases), TS1274 (modifier on a non-type-declaration parameter). Also tsc unions the modifiers of all declarations of a merged interface's type parameter (getTypeParameterModifiers); tttt reads the one GenericItem the type parameter points at.
+- **webpack in a worktree** (2026-09-28, suite checker bugs 4): two sub-agents working in `git worktree`s (with
+  `thirdparty/corpora` symlinked into the main tree, as CLAUDE.md says) got 130 webpack diagnostics and 2-5 minute runs
+  of `./realworld.py --corpus webpack`, at commits where the main tree gives 115 in under a second; one also saw the
+  set change between two runs (TS2859s swapped for other codes). Suspects: the symlinked corpus path changes module
+  resolution (realpath vs symlink, node_modules lookup), or TS2859's relation budget isn't deterministic under load.
+  Find out which before trusting corpus numbers from worktrees.
+- `ty_check_object_literal_pattern()` treats every computed name in a binding pattern as ObjectLiteralPatternWithComputedProperties
+  only when its type isn't a literal/unique symbol (like tsc), but `lower.c`'s rest-type computation (the `named`
+  check near `binding_pattern_type`) still skips all computed keys: `const { ['a']: x, ...rest } = o` may keep `a` in
+  rest. Unverified.
