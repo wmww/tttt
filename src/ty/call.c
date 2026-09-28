@@ -123,7 +123,7 @@ static bool calls_generic_function_returning_function(Checker* me, Expr const* e
     if (expr->tag != EXPR_CALL || expr->call->uses_new || expr->call->is_extends) return false;
     if (expr->call->callable.tag == EXPR_GENERIC_PARAMS) return false;
     Ty const* callee = ty_apparent_type(me, ty_expr_type(me, &expr->call->callable));
-    if (!(callee->flags & TYF_OBJECT)) return false;
+    if (!(callee->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false; // (getSignaturesOfType)
     Members const* members = ty_members(me, callee);
     for (u32 i = 0; i < members->call_count; i++) {
         signature_resolve(me, members->call[i]);
@@ -2094,7 +2094,8 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
     CallEffects none = {0};
     if (!callee || call->uses_new || call->is_extends) return none;
     Ty const* apparent = ty_apparent_type(me, callee);
-    if ((apparent->flags & TYF_ANY) || !(apparent->flags & TYF_OBJECT)) return none;
+    // (getSignaturesOfType: an intersection's are its members')
+    if ((apparent->flags & TYF_ANY) || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return none;
     Members const* members = ty_members(me, apparent);
     if (!members->call_count) return none;
     Candidate chosen = {0};
@@ -2238,7 +2239,7 @@ static bool awaited_type_needed(Checker* me, Ty const* ty, Symbol const* awaited
     Atom const* then = checker_atom(me, c_sv("then"));
     for (u32 i = 0; i < parts.len; i++) {
         Ty const* apparent = ty_apparent_type(me, parts.data[i]);
-        if ((apparent->flags & TYF_OBJECT) && ty_get_prop(me, apparent, then)) return true; // Thenable
+        if (ty_prop_type_of(me, apparent, then)) return true; // Thenable
     }
     return false;
 }
@@ -2569,7 +2570,7 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, 
     error_ctx_drop(&lib_errors);
     if (!has_call || (apparent->flags & TYF_ANY) || apparent == ty_intrinsic(me, TY_ERROR)) return;
     // tsc's isPotentiallyUncalledDecorator: `@f` where `@f()` was meant (not when parenthesized)
-    if ((apparent->flags & TYF_OBJECT) && span_eq(decorator->outer_span, decorator->inner_span)) {
+    if ((apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && span_eq(decorator->outer_span, decorator->inner_span)) {
         Members const* members = ty_members(me, apparent);
         bool uncalled = members->call_count > 0;
         for (u32 i = 0; i < members->call_count && uncalled; i++) {

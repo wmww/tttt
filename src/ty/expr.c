@@ -3397,7 +3397,7 @@ static bool is_for_in_numeric_variable(Checker* me, Expr const* index) {
     ForEachLoopStatement const* loop = c_container_of(binding->source, ForEachLoopStatement, var_type);
     if (loop->keyword != FOR_EACH_LOOP_IN) return false;
     Ty const* object = ty_apparent_type(me, ty_non_nullable(me, ty_expr_type(me, &loop->iterable)));
-    if (!(object->flags & TYF_OBJECT)) return false;
+    if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false; // (getIndexInfosOfType)
     Members const* members = ty_members(me, object);
     return members->index_count == 1 && (members->index[0].key->flags & TYF_NUMBER);
 }

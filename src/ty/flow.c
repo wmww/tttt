@@ -1266,12 +1266,12 @@ static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* na
 // member. Stored in the links table per union: KEY_UNION_KEY_NAME and KEY_UNION_KEY_MEMBER
 
 Ty const* ty_prop_type_of(Checker* me, Ty const* ty, Atom const* name) {
+    Ty const* holder = ty->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty : ty_apparent_type(me, ty);
     // (An intersection has no members of its own: its property is the intersection of its members')
-    if (ty->kind == TY_INTERSECTION) {
-        FoundProp found = ty_find_prop(me, ty, name);
+    if (holder->kind == TY_INTERSECTION) {
+        FoundProp found = ty_find_prop(me, holder, name);
         return found.found ? found.type : nullptr;
     }
-    Ty const* holder = ty->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty : ty_apparent_type(me, ty);
     Prop const* prop = ty_get_prop(me, holder, name);
     return prop ? prop_type(me, prop) : nullptr;
 }
@@ -1872,12 +1872,13 @@ static Ty const* narrow_by_constructor(FlowQuery* q, Ty const* type, BinaryOp op
     bool equals = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL;
     if (equals != assume_true) return type;
     Ty const* identifier_type = ty_flow_expr_type(me, identifier);
-    if (!(identifier_type->flags & TYF_OBJECT)) return type;
-    Members const* members = ty_members(me, identifier_type);
-    if (!members->call_count && !members->construct_count) return type;
-    Prop const* prototype = ty_get_prop(me, identifier_type, checker_atom(me, c_sv("prototype")));
-    if (!prototype) return type;
-    Ty const* candidate = ty_access(me, identifier_type, ty_string_literal(me, c_sv("prototype")));
+    // A function (tsc's isFunctionType: an object type with call signatures) or a constructor (isConstructorType:
+    // construct signatures, of an intersection too)
+    bool function = (identifier_type->flags & TYF_OBJECT) && ty_members(me, identifier_type)->call_count;
+    Ty const* apparent = ty_apparent_type(me, identifier_type);
+    bool constructor = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_members(me, apparent)->construct_count;
+    if (!function && !constructor) return type;
+    Ty const* candidate = ty_prop_type_of(me, identifier_type, checker_atom(me, c_sv("prototype")));
     if (!candidate || (candidate->flags & TYF_ANY)) return type;
     if (candidate == ty_global_object_type(me) || candidate == ty_global_function_type(me)) return type;
     if (type->flags & TYF_ANY) return candidate;

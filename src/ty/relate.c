@@ -1421,10 +1421,13 @@ static bool modifiers_related(
 
 // tsc's shouldReportUnmatchedPropertyError: a function (or class) without properties isn't told it lacks the
 // target's properties, unless the target has signatures of the same kind
+// (The signatures of an intersection count, its properties don't: tsc's getSignaturesOfStructuredType and
+// getPropertiesOfObjectType)
 static bool should_report_unmatched_property(Checker* me, Ty const* source, Ty const* target) {
-    if (!(source->flags & TYF_OBJECT)) return true;
+    if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION))) return true;
     Members const* members = ty_members(me, source);
-    if (!(members->call_count || members->construct_count) || members->prop_count) return true;
+    u32 prop_count = source->flags & TYF_OBJECT ? members->prop_count : 0;
+    if (!(members->call_count || members->construct_count) || prop_count) return true;
     Members const* target_members = ty_members(me, target);
     return (target_members->call_count && members->call_count) ||
         (target_members->construct_count && members->construct_count);
@@ -4291,8 +4294,10 @@ static Ty const* excess_check_target_of_union(Checker* me, RelationState* st, Ty
     return ret;
 }
 
+// tsc's getSignaturesOfType(ty, kind).length > 0 (of the apparent type, an intersection's being its members')
 static bool has_signatures(Checker* me, Ty const* ty, bool construct) {
-    if (!(ty->flags & TYF_OBJECT)) return false;
+    ty = ty_apparent_type(me, ty);
+    if (!(ty->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
     Members const* members = ty_members(me, ty);
     return construct ? members->construct_count > 0 : members->call_count > 0;
 }
@@ -4391,6 +4396,10 @@ static void collect_prop_names(Checker* me, Ty const* ty, csview** names, u32* c
         return;
     }
     ty = ty_apparent_type(me, ty);
+    if (ty->kind == TY_INTERSECTION) {
+        collect_prop_names(me, ty, names, count, cap, depth + 1);
+        return;
+    }
     if (!(ty->flags & TYF_OBJECT)) return;
     Members const* members = ty_members(me, ty);
     for (u32 i = 0; i < members->prop_count; i++) {
