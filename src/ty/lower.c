@@ -658,6 +658,11 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
                 }
             } else if (decl && decl->flags & SYMBOL_TYPE_PARAMETER) {
                 free_params_add(out, ty_type_param(me, decl));
+            } else if (decl && (decl->flags & SYMBOL_TYPE_ALIAS) && symbol_outer_generics(decl)) {
+                // A local alias's body can mention the type parameters around it, which it doesn't take as type
+                // arguments (tsc's isTypeParameterPossiblyReferenced: a node in a block may reference anything)
+                TyList outer = ty_outer_type_params(me, symbol_outer_generics(decl));
+                for (u32 i = 0; i < outer.len; i++) free_params_add(out, outer.data[i]);
             }
             for_each (i, vec_spanned_type, &identifier->generic_params) {
                 collect_free_params(me, &i->type, out);
