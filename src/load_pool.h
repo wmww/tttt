@@ -21,11 +21,13 @@ LoadPool* load_pool_new(u32 threads, LoadPoolParse parse, LoadPoolDrop drop, voi
 // Stops the workers and drops what nobody took
 void load_pool_destroy(LoadPool* me);
 
-// Queues a path unless it's already known (queued, parsed or taken). Any thread
-void load_pool_queue(LoadPool* me, csview path, bool is_stdlib);
+// Queues a path unless it's already known (queued, parsed or taken), with a guess of its size (workers take the
+// biggest queued file first; 0 when unknown: then in queue order). Any thread
+void load_pool_queue(LoadPool* me, csview path, bool is_stdlib, i64 size);
 
-// The loader: the file for path if a worker parsed it (or is parsing it: waits) as is_stdlib, with its parse errors
-// moved to errs; null if the loader has to parse it itself, and then no worker will
+// The loader: the file for path if a worker parsed it (or is parsing it: waits, parsing queued files meanwhile) as
+// is_stdlib, with its parse errors moved to errs; null if the loader has to parse it itself, and then no worker will.
+// The loader runs LoadPoolParse too then, with the compiler options set
 SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* errs);
 
 // The stack size for worker threads: the main thread's (at least 8 MB, at most 256): parsing and checking recurse per

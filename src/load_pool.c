@@ -14,6 +14,9 @@ typedef enum LoadState {
 typedef struct LoadEntry {
     cstr path;
     bool is_stdlib;
+    i64 size; // load_pool_queue()'s hint
+    isize order; // Queue order, between equal sizes
+    bool is_helped; // Parsed by the loader while it waited for another
     LoadState state;
     SourceFile* file; // LOAD_DONE: the worker's file, null if unreadable
     ErrorCtx errs; // LOAD_DONE: the file's parse errors
@@ -36,13 +39,15 @@ typedef struct LoadPool {
     pthread_cond_t done; // A file was parsed
     VecLoadEntryPtr entries; // In queue order
     HMapLoadEntryPtr by_path;
-    isize next; // The first entry no worker has looked at
+    // The queued entries (and ones taken since), a max-heap by size: the biggest file is the longest parse, and one
+    // big file started last would be the loader's critical path (tsc's checker.ts, lib.dom.d.ts)
+    VecLoadEntryPtr heap;
     bool stop;
     pthread_t* threads;
     u32 thread_count;
-    // TTTT_LOAD_POOL_STATS
+    // TTTT_LOAD_POOL_STATS (TTTT_LOAD_POOL_WAITS: each wait over 2 ms)
     isize taken, inline_parses;
-    double wait_ms;
+    double wait_ms, busy_ms, started_at, helped_ms;
 } LoadPool;
 
 size_t worker_stack_size(void) {
@@ -53,22 +58,72 @@ size_t worker_stack_size(void) {
     return stack;
 }
 
+static bool heap_before(LoadEntry const* a, LoadEntry const* b) {
+    return a->size != b->size ? a->size > b->size : a->order < b->order;
+}
+
+static void heap_push(LoadPool* me, LoadEntry* entry) {
+    vec_load_entry_ptr_push(&my heap, entry);
+    LoadEntry** items = my heap.data;
+    for (isize i = vec_load_entry_ptr_size(&my heap) - 1; i > 0;) {
+        isize parent = (i - 1) / 2;
+        if (!heap_before(items[i], items[parent])) break;
+        c_swap(&items[i], &items[parent]);
+        i = parent;
+    }
+}
+
+static LoadEntry* heap_pop(LoadPool* me) {
+    LoadEntry** items = my heap.data;
+    isize size = vec_load_entry_ptr_size(&my heap);
+    LoadEntry* ret = items[0];
+    items[0] = items[--size];
+    vec_load_entry_ptr_pop(&my heap);
+    for (isize i = 0;;) {
+        isize best = i, left = 2 * i + 1, right = left + 1;
+        if (left < size && heap_before(items[left], items[best])) best = left;
+        if (right < size && heap_before(items[right], items[best])) best = right;
+        if (best == i) break;
+        c_swap(&items[i], &items[best]);
+        i = best;
+    }
+    return ret;
+}
+
+// The next queued entry, now parsing, null if there's none. Under the lock
+static LoadEntry* load_pool_next(LoadPool* me) {
+    while (vec_load_entry_ptr_size(&my heap)) {
+        LoadEntry* entry = heap_pop(me);
+        if (entry->state != LOAD_QUEUED) continue;
+        entry->state = LOAD_PARSING;
+        return entry;
+    }
+    return nullptr;
+}
+
+// Parses a LOAD_PARSING entry, unlocking meanwhile
+static void load_pool_run(LoadPool* me, LoadEntry* entry) {
+    pthread_mutex_unlock(&my lock);
+    // (Nobody else touches the entry's path, errs or file while it's parsing)
+    struct timespec start, end;
+    timespec_get(&start, TIME_UTC);
+    SourceFile* file = my parse(my ctx, me, cstr_sv(&entry->path), entry->is_stdlib, &entry->errs);
+    timespec_get(&end, TIME_UTC);
+    pthread_mutex_lock(&my lock);
+    my busy_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+    if (entry->is_helped) my helped_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+    entry->file = file;
+    entry->state = LOAD_DONE;
+    pthread_cond_broadcast(&my done);
+}
+
 static void* load_pool_worker(void* arg) {
     LoadPool* me = arg;
     pthread_mutex_lock(&my lock);
-    while (true) {
-        while (!my stop && my next >= vec_load_entry_ptr_size(&my entries)) pthread_cond_wait(&my work, &my lock);
-        if (my stop) break;
-        LoadEntry* entry = *vec_load_entry_ptr_at(&my entries, my next++);
-        if (entry->state != LOAD_QUEUED) continue;
-        entry->state = LOAD_PARSING;
-        pthread_mutex_unlock(&my lock);
-        // (Nobody else touches the entry's path, errs or file while it's parsing)
-        SourceFile* file = my parse(my ctx, me, cstr_sv(&entry->path), entry->is_stdlib, &entry->errs);
-        pthread_mutex_lock(&my lock);
-        entry->file = file;
-        entry->state = LOAD_DONE;
-        pthread_cond_broadcast(&my done);
+    while (!my stop) {
+        LoadEntry* entry = load_pool_next(me);
+        if (entry) load_pool_run(me, entry);
+        else pthread_cond_wait(&my work, &my lock);
     }
     pthread_mutex_unlock(&my lock);
     return nullptr;
@@ -84,6 +139,9 @@ LoadPool* load_pool_new(u32 threads, LoadPoolParse parse, LoadPoolDrop drop, voi
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, worker_stack_size());
     my threads = c_new_n(pthread_t, threads);
+    struct timespec now;
+    timespec_get(&now, TIME_UTC);
+    my started_at = (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6;
     for (u32 t = 0; t < threads; t++) {
         panic_if(pthread_create(&my threads[t], &attr, load_pool_worker, me), "couldn't start a loader thread");
     }
@@ -92,17 +150,20 @@ LoadPool* load_pool_new(u32 threads, LoadPoolParse parse, LoadPoolDrop drop, voi
 }
 
 // Under the lock
-static LoadEntry* load_pool_add(LoadPool* me, csview path, bool is_stdlib, LoadState state) {
-    LoadEntry* entry = c_new(LoadEntry, { .path = cstr_from_sv(path), .is_stdlib = is_stdlib, .state = state });
+static LoadEntry* load_pool_add(LoadPool* me, csview path, bool is_stdlib, i64 size, LoadState state) {
+    LoadEntry* entry = c_new(LoadEntry, {
+        .path = cstr_from_sv(path), .is_stdlib = is_stdlib, .size = size,
+        .order = vec_load_entry_ptr_size(&my entries), .state = state,
+    });
     vec_load_entry_ptr_push(&my entries, entry);
     hmap_load_entry_ptr_insert(&my by_path, cstr_from_sv(path), entry);
     return entry;
 }
 
-void load_pool_queue(LoadPool* me, csview path, bool is_stdlib) {
+void load_pool_queue(LoadPool* me, csview path, bool is_stdlib, i64 size) {
     pthread_mutex_lock(&my lock);
     if (!hmap_load_entry_ptr_get(&my by_path, path)) {
-        load_pool_add(me, path, is_stdlib, LOAD_QUEUED);
+        heap_push(me, load_pool_add(me, path, is_stdlib, size, LOAD_QUEUED));
         pthread_cond_signal(&my work);
     }
     pthread_mutex_unlock(&my lock);
@@ -111,13 +172,23 @@ void load_pool_queue(LoadPool* me, csview path, bool is_stdlib) {
 SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* errs) {
     pthread_mutex_lock(&my lock);
     auto found = hmap_load_entry_ptr_get(&my by_path, path);
-    LoadEntry* entry = found ? found->second : load_pool_add(me, path, is_stdlib, LOAD_TAKEN);
+    LoadEntry* entry = found ? found->second : load_pool_add(me, path, is_stdlib, 0, LOAD_TAKEN);
     if (entry->state == LOAD_PARSING) {
         struct timespec start, end;
         timespec_get(&start, TIME_UTC);
-        while (entry->state == LOAD_PARSING) pthread_cond_wait(&my done, &my lock);
+        // (Rather than idle, the loader parses what's queued, like a worker)
+        while (entry->state == LOAD_PARSING) {
+            LoadEntry* other = load_pool_next(me);
+            if (other) {
+                other->is_helped = true;
+                load_pool_run(me, other);
+            }
+            else pthread_cond_wait(&my done, &my lock);
+        }
         timespec_get(&end, TIME_UTC);
-        my wait_ms += (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+        double waited = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+        my wait_ms += waited;
+        if (waited > 2 && getenv("TTTT_LOAD_POOL_WAITS")) eprintln("waited ", waited, " ms for ", path);
     }
     SourceFile* ret = nullptr;
     // (A file parsed as the other kind stays the pool's, dropped at the end)
@@ -138,6 +209,9 @@ SourceFile* load_pool_take(LoadPool* me, csview path, bool is_stdlib, ErrorCtx* 
 
 void load_pool_destroy(LoadPool* me) {
     if (!me) return;
+    struct timespec now;
+    timespec_get(&now, TIME_UTC);
+    double lifetime = (double)now.tv_sec * 1e3 + (double)now.tv_nsec / 1e6 - my started_at;
     pthread_mutex_lock(&my lock);
     my stop = true;
     pthread_cond_broadcast(&my work);
@@ -159,9 +233,12 @@ void load_pool_destroy(LoadPool* me) {
     if (getenv("TTTT_LOAD_POOL_STATS")) {
         eprintln("load pool: ", my thread_count, " threads, ", vec_load_entry_ptr_size(&my entries), " paths, ", my taken,
             " preparsed files taken, ", my inline_parses, " parsed by the loader, ", wasted, " parsed for nothing, ", never,
-            " never started; the loader waited ", my wait_ms, " ms");
+            " never started");
+        eprintln("load pool: the loader waited ", my wait_ms, " ms (parsing queued files for ", my helped_ms,
+            " ms of it); workers busy ", my busy_ms, " ms of ", lifetime * my thread_count);
     }
     vec_load_entry_ptr_drop(&my entries);
+    vec_load_entry_ptr_drop(&my heap);
     hmap_load_entry_ptr_drop(&my by_path);
     pthread_cond_destroy(&my work);
     pthread_cond_destroy(&my done);

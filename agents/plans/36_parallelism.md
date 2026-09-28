@@ -72,9 +72,7 @@ After that the sequential **resolve names** phase (54-89 ms) is the next largest
 
 ## The decision stage 3 needs: **made** (insights 2026-09-28): option 1
 A fixed logical checker count, `--checkers K` defaulting to 4, independent of `--threads`; the test harness runs 1.
-Stages 2 and 3 are scheduled before stage 1 (the check phase is the win). Stage 2 therefore also does stage 1's
-step 1 (the cleat `thread_local` patch, linking `dependency('threads')`) and stage 3 starts its own worker threads
-if the load pool doesn't exist yet (stage 1 can then share them). The original analysis:
+Stages 2 and 3 were done before stage 1 (the check phase is the win). The original analysis:
 With K checkers, printed union order depends on which checker saw what first. Options:
 1. **Fixed logical checker count** (tsgo's approach: `--checkers`, default 4, independent of the thread count),
    files assigned by a rule that depends only on the file list. Output is deterministic for a given K and identical
@@ -90,29 +88,29 @@ byte-identical for threads 1..4 on every corpus (add a script: `./threadcheck.sh
 `--threads 1` and `--threads 4` three times and `cmp`ing), a TSan run on webpack + nest + tsc clean, `./bench.sh`
 numbers in `measurements.md`.
 
-### Stage 1: parallel loading (one execution session)
-1. cleat patch: `_GLOBAL_RETURNED_VALUE_TARGET` `thread_local` (`thirdparty/cleat-failable-patch.txt`, applied with
-   `patch -p0` by `thirdparty/refresh.sh` like `stc-sort-pivot-patch.txt`; edit the vendored file the same way).
-   Link `dependency('threads')`.
-2. A `--threads N` CLI option (default: `min(4, nproc)`, like tsgo's default checker count; 1 = no pool, exactly
-   today's code path). Store it in `Program` (not `CompilerOptions`: it is not a tsc option). The test harness keeps
-   1; add a `baseline_tests --threads N` switch so the suite can be run with the pool for validation (results must
-   be identical).
-3. Productionize the cache warmer from the patch: a `LoadPool` in its own file (`load_pool.{h,c}`): growable entry
-   storage with stable pointers, path -> entry map, condition variable, per-entry held `VecError`, drop of unused
-   preparsed files at the end. `program_make_source` (split out of `program_add_source_idempotent`, as the patch
-   does) is what both sides call. Queue up front: the libs, the root files, the automatic `@types`; the pool queues
-   lib references from lib files, `/// <reference types>`, and resolved `module_refs`.
-4. Resolution without a global lock: make `ModuleResolver`'s caches shareable (sharded `pthread_mutex` per cache,
-   or a per-thread cache over a shared one); `module_resolver_file_format` too. The loader's own resolutions hit
-   the shared cache.
-5. The lexical import pre-scan (`import_scan()` near the parser: string literals after `from`, `import(`,
-   `require(`, `import x = require(`, reference directives; skip comments, strings and templates correctly, bail
-   out to "nothing found" on anything odd) queued before the full parse. Measure nest with and without; keep it only
-   if it pays.
-6. Cheap main-thread wins found on the way: one `fs_get_cwd` per program (cache the cwd in `Program`), queue the
-   automatic types up front.
-Expected: load phase roughly halves on 4 cores (nest may do better with 5), whole runs 5-12% faster.
+### Stage 1: parallel loading: **done** (2026-09-28, todo entry 6)
+The cache warmer as prototyped, in `src/load_pool.{h,c}` (documentation.md "Load from the filesystem"): `--threads N`
+workers (tttt's default, the harness's 1: `baseline_tests --threads N` uses it), `program_make_source()` split out of
+`program_add_source_idempotent()` (reading, flags, file format, parse), `program_load_ahead_from()` guesses the
+children, `program_load_ahead()` queues libs, roots and automatic types up front. Beyond the prototype:
+- The resolver is shared: its two caches under one mutex held only for lookup/insert (package.json values boxed so
+  pointers stay valid; two threads may both resolve a miss). No resolver per worker, no duplicate work.
+- **Biggest file first** (a max-heap by `stat` size, `program_set_file_size()`): FIFO started tsc's `checker.ts` late
+  and the loader then waited ~100 ms on it; now the load phase is about checker.ts's parse, the bound for whole files.
+- **The loader parses queued files while it waits** (and runs `program_parse_ahead()` itself then): measured better
+  than idling on every corpus, although it can pick up a big file and delay itself (hacks.md "Load pool guesses").
+- `compiler_options()` is thread-local; checker threads set it themselves. `Program.cwd` read once (`program_cwd()`,
+  lazily: the harness sets the mock cwd after `program_new`). The harness's allocation counter is atomic.
+- Not done: **the lexical import pre-scan** (step 5). Workers were ~90% busy (`TTTT_LOAD_POOL_STATS=1`: busy vs
+  lifetime x threads) on every corpus, nest included, so discovery wasn't the limit where this was measured; but the
+  machine was at load 8-10 from other jobs all session, which hides a discovery-bound pool. Re-measure nest on a quiet
+  machine (4 vs 2 workers, "parsed by the loader" count) before building it.
+Validation: suite 10830 unchanged; `baseline_tests --threads 4 --dump` byte-identical to `--threads 1`;
+`./threadcheck.sh` identical; TSan clean on all 9 corpora at `--threads 4`; single-threaded instructions unchanged.
+Numbers (load phase = libs + files, ms, best of 7 interleaved with the previous binary, 4 threads, machine at load ~8):
+tsc 189 -> 100, nest 195 -> 125, webpack 243 -> 153, react 134 -> 78, zod 138 -> 86, xstate 106 -> 58, valibot 102 -> 66,
+type-fest 29 -> 22. Walls were too noisy under that load to quote (`measurements.md`); `./bench.sh` on a quiet machine
+is owed.
 
 ### Stage 2: check-phase readiness: **done** (2026-09-28)
 `--checkers K` (tttt and `baseline_tests`; default 1), files dealt round robin by index among the checked files,
@@ -150,12 +148,17 @@ write flushed every thread's TLB (4% of cycles in IPIs); `zeroed_table()` writes
 Numbers: `measurements.md` "Perf". Memory: peak RSS +2..+47% at K=4 (react worst, zod 665 -> 846 MB; see there).
 
 ### Later (not planned yet)
-- **Stage 1 (parallel loading)** above is still to do; it is now the largest serial part next to name resolution.
+- **The import pre-scan** (stage 1 step 5), if a quiet machine shows the pool discovery-bound.
 - **Parallel name resolution** (54-89 ms serial after stage 3): per-file declare/resolve need per-file binder arenas
   and the globals/ambient-module tables merged in link (`hacks.md` "Parallelism contract"). Plan it after stage 3
   measures what's left.
 - Better balance than whole files (tsc's checker.ts, zod's deep-partial.test.ts bound K=4 at 1.9x/1.6x): nothing
-  cheap; tsgo has the same bound.
+  cheap; tsgo has the same bound. **Tried and reverted** (stage 1 session): dealing by content size (biggest first to
+  the checker with the fewest bytes, deterministic) instead of round robin. Typecheck phase, best of 7, loaded
+  machine: tsc 519 -> 481 ms, react 218 -> 146, zod 615 -> 540, type-fest 433 -> 321, but webpack 392 -> 626, xstate
+  300 -> 504, valibot 546 -> 648. Bytes are a poor cost proxy (JS vs declarations), and scattering a directory's files
+  over the checkers duplicates the types they share; round robin by program order keeps neighbours apart too, but
+  evenly. A cost model (per-file check time of a previous run, or type counts) would be the next thing to try.
 
 ## Audit of shared state in the check phase (2026-09-28, subagent)
 - Races: the shared `ErrorCtx` (sorted `vec_error_insert_n` in `error_ctx_append_error`, also read by

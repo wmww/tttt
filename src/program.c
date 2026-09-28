@@ -19,7 +19,6 @@
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
-#include <sys/resource.h>
 
 #define g_class_key SourceFile, source_file
 #define g_no_clone
@@ -89,6 +88,8 @@ typedef struct Program {
     u32 requested_checkers; // program_set_checkers()
     u32 threads; // program_set_threads(), 0: 1
     LoadPool* pool; // While loading with threads: parses files ahead of the loader
+    i64 (*file_size)(void* ctx, csview path); // program_set_file_size()
+    void* file_size_ctx;
     CompilerOptions options;
     // program_set_config_file(): the config and its JSON (with offsets), null / a null value without one
     SourceFile* config_source;
@@ -271,6 +272,11 @@ static csview program_cwd(Program const* me) {
         try (fs_get_cwd(my fs, &((Program*)me)->cwd)) or_panic;
     }
     return cstr_sv(&my cwd);
+}
+
+void program_set_file_size(Program* me, i64 (*file_size)(void* ctx, csview path), void* ctx) {
+    my file_size = file_size;
+    my file_size_ctx = ctx;
 }
 
 // tsc names files by absolute path, and its test harness strips the directory the test's files are in: relative
@@ -688,7 +694,8 @@ static void source_file_free(void* ctx, SourceFile* file) {
 
 static void program_queue_path(Program* me, LoadPool* pool, csview absolute, bool is_stdlib) {
     cstr canonical = relative_path_of(program_cwd(me), absolute);
-    load_pool_queue(pool, cstr_sv(&canonical), is_stdlib);
+    i64 size = my file_size ? my file_size(my file_size_ctx, cstr_sv(&canonical)) : 0;
+    load_pool_queue(pool, cstr_sv(&canonical), is_stdlib, size);
     cstr_drop(&canonical);
 }
 
@@ -757,10 +764,12 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile cons
 // A load pool worker's job
 static SourceFile* program_parse_ahead(void* ctx, LoadPool* pool, csview path, bool is_stdlib, ErrorCtx* errs) {
     Program* me = ctx;
-    set_compiler_options(&my options);
+    // (The loader runs jobs too, with the options set)
+    bool own_options = !compiler_options_private;
+    if (own_options) set_compiler_options(&my options);
     SourceFile* file = program_make_source(me, path, is_stdlib, errs);
     if (file) program_load_ahead_from(me, pool, file);
-    clear_compiler_options();
+    if (own_options) clear_compiler_options();
     return file;
 }
 
@@ -769,6 +778,7 @@ static LoadPool* program_pool(Program* me) {
     if (!my pool && my threads > 1 && my phase == PROGRAM_PHASE_LOADING) {
         program_resolver(me);
         program_cwd(me);
+        // (As many workers as threads: the loader mostly waits for them, and parses queued files meanwhile)
         my pool = load_pool_new(my threads, program_parse_ahead, source_file_free, me);
     }
     return my pool;
@@ -1879,11 +1889,7 @@ void program_typecheck(Program* me) {
         // The main thread works too. Workers get the main thread's stack size: the checker recurses per nesting level
         pthread_attr_t attr;
         pthread_attr_init(&attr);
-        struct rlimit limit;
-        size_t stack = 8u << 20;
-        if (!getrlimit(RLIMIT_STACK, &limit) && limit.rlim_cur != RLIM_INFINITY && limit.rlim_cur > stack) stack = limit.rlim_cur;
-        if (stack > (256u << 20)) stack = 256u << 20;
-        pthread_attr_setstacksize(&attr, stack);
+        pthread_attr_setstacksize(&attr, worker_stack_size());
         pthread_t* workers = c_new_n(pthread_t, threads - 1);
         for (u32 t = 0; t < threads - 1; t++) {
             panic_if(pthread_create(&workers[t], &attr, check_shares_thread, &shares), "couldn't start a checker thread");

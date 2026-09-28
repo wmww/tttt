@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <sys/stat.h>
 
 #include "ty/ty.h"
 #include "type.h"
@@ -108,6 +109,17 @@ static cstr real_path_of(void* ctx, csview path) {
     return realpath(buf, resolved) ? cstr_from(resolved) : cstr_null;
 }
 
+// For the program's scheduling of parses
+static i64 file_size_of(void* ctx, csview path) {
+    ignore ctx;
+    if (path.size >= PATH_MAX) return 0;
+    char buf[PATH_MAX];
+    memcpy(buf, path.buf, (size_t)path.size);
+    buf[path.size] = 0;
+    struct stat info;
+    return stat(buf, &info) ? 0 : (i64)info.st_size;
+}
+
 // The project's tsconfig if there is one (else strict, unless told otherwise), then whatever was on the command line.
 // The config's root files are appended to root_files
 static_failable apply_compiler_options(Options const* opts, Program* program, StrList* root_files) {
@@ -172,6 +184,7 @@ static_failable check_files(Options const* opts, returns int) {
     ErrorCtx errs = error_ctx_init();
     Program* program = program_new(&errs, fs);
     program_set_realpath(program, real_path_of, nullptr);
+    program_set_file_size(program, file_size_of, nullptr);
     program_set_checkers(program, opts->checkers);
     program_set_threads(program, opts->threads);
     set_lib_dir(program);

@@ -16,6 +16,8 @@ void program_destroy(Program* me);
 void program_set_lib_dir(Program* me, csview dir);
 // How the program's module resolution follows symlinks (see module_resolution.h), before loading anything
 void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx);
+// How big the file at path is, a guess (0 if unknown): with threads, the biggest files are parsed first
+void program_set_file_size(Program* me, i64 (*file_size)(void* ctx, csview path), void* ctx);
 // A `/// <reference lib="x">` in a file that isn't a lib loads that lib into this program, like tsc does. Not for a
 // program whose libs are copied from another (program_copy_globals_from())
 void program_follow_lib_references(Program* me);

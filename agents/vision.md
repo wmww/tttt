@@ -47,8 +47,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   a real-world oracle, not only the suite.
 - **Parallel sub-agent sessions stay the main suite engine** (+165 and +210 in the last two). One per window at least,
   plus JS, parser and types-component sessions run the same way.
-- **Perf is comfortably ahead** (2-6x tsgo). One perf session per window: now parallel loading (plan 36 stage 1) and
-  the check phase's load balance. Parallel name resolution after that, when it is the largest serial part.
+- **Perf is comfortably ahead** (2-6x tsgo). One perf session per window. Loading is parallel now (plan 36 stage 1);
+  next the instruction creep of the checker bugs sessions, the check phase's load balance (needs a cost model: size
+  alone was mixed), then parallel name resolution, the largest serial part left.
 - hacks.md is 811 lines again; the triage session prunes it.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
@@ -89,8 +90,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 - **Threading**: checking is threaded (stage 3; nothing in the checker had to change once stage 2's audit fixes were
   in, which is evidence the "AST read-only while checking" contract holds). Any new checker-wide memo that *reports*
   must be tagged `Error.once_key`, and anything written to AST/binder state during checking is a race (the frozen
-  guards log it; TSan on the corpora is the net: `plans/36_parallelism.md` has the build line). Parsing is
-  thread-clean (the prototype's cache-warmer pool is stage 1). The serial resolve-names phase is next after that.
+  guards log it; TSan on the corpora is the net: `plans/36_parallelism.md` has the build line). Loading is
+  threaded too (a cache-warmer pool beside the unchanged sequential loader: `src/load_pool.c`; the shared state is the
+  resolver's locked caches). The serial resolve-names phase is next.
 
 ## Risks / concerns
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order by

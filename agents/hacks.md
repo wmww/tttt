@@ -14,8 +14,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   (`*_typecheck`, `*_evaluate_type`, `ty_of_node`, the `Ty const*` displayable) finds its checker. Stays set after
   `program_typecheck` because the test traversal and debug display evaluate types afterwards. The type core takes a
   `Checker*`; the walk should get one too (a check context with checker + errs + options).
-- `compiler_options()` (`compiler_options.c`): a global set around load/resolve/check by `program.c`; should become a
-  `Checker`/`Program` field read through that context. Every tsc option parses, but the checker reads only a subset
+- `compiler_options()` (`compiler_options.c`): a thread-local set around load/resolve/check by `program.c` (and by
+  the load pool's and checker threads for themselves); should become a `Checker`/`Program` field read through that
+  context. Every tsc option parses, but the checker reads only a subset
   (`grep -o 'compiler_options()->[a-z_]*' src`); the rest is carried but inert.
 - `lazy_slot_new`: LazyType slot numbers come from one process-wide atomic counter, never reused, taken eagerly by
   everything that might need a memo. Sparse slot tables cost page fragmentation (bench RSS +6%), panics after 1G slots.
@@ -43,6 +44,13 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   (none on the suite or the corpora). These are runtime guards, not a proof: a path the suite doesn't reach can still
   write shared state; TSan on the corpora (stage 3) is the other net. cleat's `return ok;` sink is a thread-local
   (`thirdparty/cleat-failable-patch.txt`).
+- **Load pool guesses** (`program_load_ahead_from()`, plan 36 stage 1): what a parsed file will make the loader load
+  is a second copy of `program_load_module_ref()`'s and `program_handle_statement()`'s decisions, simplified (no
+  module-ness, no helpers/JSX runtime imports, `/// <reference path>` without extension probing). A divergence only
+  costs a wasted or inline parse (`TTTT_LOAD_POOL_STATS=1` prints "parsed for nothing" / "parsed by the loader"), never
+  output. File sizes for the biggest-first order come from `stat()` in `main.c` (none in the harness: FIFO). The
+  loader, while waiting for a file in flight, parses the biggest queued file, which can hold it up longer than the
+  wait (nest's libs); measured better than idling on a loaded machine anyway.
 - **Once-per-program diagnostics under K checkers** (`Error.once_key`, `error_ctx_keep_first_once()`): tsc reports
   some diagnostics once per program, from whichever file asks first (a checker-wide memo). With K checkers each one
   reports it; the merge keeps the report made while checking the earliest file. Only the emit helper checks

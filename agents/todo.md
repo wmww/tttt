@@ -18,12 +18,11 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    579, corpora unchanged (webpack 9, xstate 19, the rest 0). Instructions +0-5% (webpack +5.2%, valibot +3.5%;
    measurements.md). Main tree: tsconfig option diagnostics at the option (the harness and CLI register the config),
    resolveName details, TS2818/TS2686/TS7036/TS2376. Buckets left: `bugs/missing_checks.md`.
-6. **Perf: plan 36 stage 1** (parallel loading; `36_prototype.patch`). Also worth a look first: the last two checker
-   bugs sessions each cost 2-5% instructions spread thinly, and hacks.md's "Generic source constraints push both
-   nesting stacks" (a tsc port that was +14% on react: a missing cache?). Load+parse is 117 ms of the tsc corpus's
-   0.53 s, 145 ms of webpack's. Also look at checker balance: on the tsc corpus one checker takes 292 ms and the
-   others 90-166 (round-robin dealing; `checker.ts` is one file), so the check phase is bounded by one file. Update
-   measurements.md (instructions per corpus, walls, RSS).
+6. ~~Perf: plan 36 stage 1~~ done: the load pool (plan 36 "Stage 1"), load phase -35..-47% on every corpus (measured
+   on a machine at load 8-10: `./bench.sh` on a quiet one is owed, and the import pre-scan was left for then). Suite
+   and corpora unchanged. Size-based checker dealing tried and reverted (mixed; plan 36 "Later"). Not looked at: the
+   2-5% instruction creep of the checker bugs sessions and hacks.md's "Generic source constraints push both nesting
+   stacks" (+14% on react): the next perf session.
 7. **JS session** (plan 26, sub-agents): `./jsstats.py`: 579 / 1049 pass; only-CommonJS 65, only-JSDoc 59, other 52,
    only-expandos 33, expandos+JSDoc 32.
 8. **Parser session** (plan 27 stage 1 leftovers and `./syntaxstats.py` clusters): 225 tests have a spurious TS1xxx;
