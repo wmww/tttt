@@ -9191,7 +9191,7 @@ const baselines = {
         types: true,
     },
     'deepComparisons': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -26433,7 +26433,7 @@ const baselines = {
     'quickinfoTypeAtReturnPositionsInaccurate': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'quotedAccessorName1': {
         errors: true,

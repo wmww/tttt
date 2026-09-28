@@ -852,3 +852,11 @@ The harness's libs are a cached program keyed by the lib list, which a test's fi
 `@libReplacement: true` (text match), which tttt doesn't implement: tsc then takes `lib.dom.d.ts` from
 `node_modules/@typescript/lib-dom` (libTypeScriptOverrideSimple, libTypeScriptSubfileResolving and their Config
 variants fail on it).
+
+## Generic source constraints push both nesting stacks (`structured_related_members`)
+tsc relates a generic source's constraint (type parameter, indexed access, conditional, keyof, template/string
+mapping, generic tuple) with RecursionFlags.Source only. Ported in 6c7de767 (deepComparisons,
+quickinfoTypeAtReturnPositionsInaccurate types), reverted the same session: deep nesting then cuts in later and
+bulletproof-react took +14% instructions (2.01 -> 2.30 G, +3000 types, check 196 -> 231 ms), valibot +1%. tsc does the
+same walk, so tttt is probably missing a cache there (Maybe results of deep relations not memoized, or
+instantiations redone). The port is `is_related_to_side(me, st, ..., 2)` in those cases; redo it with a profile.

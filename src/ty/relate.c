@@ -3953,10 +3953,10 @@ static Ternary structured_related_members(
             // an `unknown` one, the constraint's failure doesn't explain anything
             bool report_constraint = report && target->kind != TY_TYPE_PARAM && constraint != ty_intrinsic(me, TY_UNKNOWN_);
             Ty const* with_this = ty_with_this_arg(me, constraint, source);
-            if (with_this == constraint) return is_related_to_side(me, st, constraint, target, report_constraint, 2);
-            Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
+            if (with_this == constraint) return is_related_to(me, st, constraint, target, report_constraint);
+            Ternary related = is_related_to(me, st, constraint, target, false);
             if (related) return related;
-            return is_related_to_side(me, st, with_this, target, report_constraint, 2);
+            return is_related_to(me, st, with_this, target, report_constraint);
         }
 
         case TY_KEYOF: {
@@ -3973,17 +3973,17 @@ static Ternary structured_related_members(
             if (!constraint) return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
             // `{ [P in K]: E }[X]` was E with X for P; `{ [P in K]: E }[C]`, with C the constraint of X, may be related
             // where that isn't (tsc's isMappedTypeGenericIndexedAccess branch)
-            if (!mapped_generic_indexed_access(me, source)) return is_related_to_side(me, st, constraint, target, report, 2);
-            Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
+            if (!mapped_generic_indexed_access(me, source)) return is_related_to(me, st, constraint, target, report);
+            Ternary related = is_related_to(me, st, constraint, target, false);
             if (related) return related;
             Ty const* index_constraint = simplified_or_constraint(me, source->indexed.index);
             Ty const* whole = index_constraint && index_constraint != source->indexed.index ?
                 indexed_or_null(me, source->indexed.object, index_constraint) : nullptr;
             if (whole && whole != source) {
-                related = is_related_to_side(me, st, whole, target, false, 2);
+                related = is_related_to(me, st, whole, target, false);
                 if (related) return related;
             }
-            return is_related_to_side(me, st, constraint, target, report, 2);
+            return is_related_to(me, st, constraint, target, report);
         }
 
         case TY_CONDITIONAL: {
@@ -3995,19 +3995,19 @@ static Ternary structured_related_members(
             Ty const* false_branch = ty_conditional_branch(me, source, false);
             if (true_branch->flags & TYF_ANY) true_branch = ty_intrinsic(me, TY_NEVER);
             else if (false_branch->flags & TYF_ANY) false_branch = ty_intrinsic(me, TY_NEVER);
-            Ternary related = is_related_to_side(me, st, true_branch, target, false, 2);
-            if (related) related &= is_related_to_side(me, st, false_branch, target, false, 2);
+            Ternary related = is_related_to(me, st, true_branch, target, false);
+            if (related) related &= is_related_to(me, st, false_branch, target, false);
             if (related) return related;
             // Through the distributive constraint (not to another conditional type, like in tsc)
             if (target->kind != TY_CONDITIONAL) {
                 Ty const* constraint = distributive_constraint(me, source, 0);
                 if (constraint) {
-                    related = is_related_to_side(me, st, constraint, target, false, 2);
+                    related = is_related_to(me, st, constraint, target, false);
                     if (related) return related;
                 }
             }
-            related = is_related_to_side(me, st, true_branch, target, report, 2);
-            if (related) related &= is_related_to_side(me, st, false_branch, target, report, 2);
+            related = is_related_to(me, st, true_branch, target, report);
+            if (related) related &= is_related_to(me, st, false_branch, target, report);
             return related;
         }
 
@@ -4015,7 +4015,7 @@ static Ternary structured_related_members(
             if (!(target->flags & (TYF_OBJECT | TYF_TEMPLATE_LITERAL))) {
                 Ty const* constraint = base_constraint(me, source, 0);
                 if (constraint && constraint != source) {
-                    Ternary related = is_related_to_side(me, st, constraint, target, report, 2);
+                    Ternary related = is_related_to(me, st, constraint, target, report);
                     if (related) return related;
                 }
             }
@@ -4029,7 +4029,7 @@ static Ternary structured_related_members(
             } else {
                 Ty const* constraint = base_constraint(me, source, 0);
                 if (constraint && constraint != source) {
-                    Ternary related = is_related_to_side(me, st, constraint, target, report, 2);
+                    Ternary related = is_related_to(me, st, constraint, target, report);
                     if (related) return related;
                 }
             }
@@ -4049,7 +4049,7 @@ static Ternary structured_related_members(
         // isGenericTupleType(source)): `[S, ...T]` with `T extends readonly X[]` as `[S, ...X[]]`
         if (is_tuple(source) && ty_is_generic_tuple(me, source) && !(is_tuple(target) && ty_is_generic_tuple(me, target))) {
             Ty const* constraint = base_constraint(me, source, 0);
-            if (constraint && constraint != source) return is_related_to_side(me, st, constraint, target, report, 2);
+            if (constraint && constraint != source) return is_related_to(me, st, constraint, target, report);
         }
         return tuples_related(me, st, source, target, report);
     }
