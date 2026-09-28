@@ -6,7 +6,7 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
   ./realworld.py                 # tttt -p thirdparty/tsc/src/compiler (its tsconfig.json)
   ./realworld.py path/to/entry.ts --options '--strict' -n 40
   ./realworld.py --code TS1005   # list the places a code is reported
-  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod)
+  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root)
 """
 import argparse, collections, re, resource, subprocess, sys, time
 
@@ -20,6 +20,8 @@ CORPORA = {
     'nest': 'thirdparty/corpora/nestjs-boilerplate',
     'webpack': 'thirdparty/corpora/webpack',
     'zod': 'thirdparty/corpora/zod/packages/zod/tsconfig.test.json',
+    # zod's root tsconfig: every package (docs excluded), nodenext with customConditions; also clean under tsc
+    'zod-root': 'thirdparty/corpora/zod',
 }
 
 KEYWORDS = set('''else in of as is asserts new function catch export import type default case satisfies this void

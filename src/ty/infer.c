@@ -454,8 +454,9 @@ static Ty const* reverse_mapped_type(Checker* me, Ty const* source, MappedInfo c
 
 // Of an array or tuple: an array or tuple of the reverse mapped element types
 static Ty const* reverse_mapped_array_like(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
+    TyList args = ty_reference_args(me, source);
     if (ty_is_array(me, source)) {
-        Ty const* element = reverse_mapped_prop_type(me, source->reference.args.data[0], mapped, operand);
+        Ty const* element = reverse_mapped_prop_type(me, args.data[0], mapped, operand);
         return ty_array(me, element, source->reference.target == my readonly_array_target);
     }
     TupleShape const* shape = ty_tuple_shape(source);
@@ -464,7 +465,7 @@ static Ty const* reverse_mapped_array_like(Checker* me, Ty const* source, Mapped
     unsigned char* flags = malloc(shape->arity);
     panic_if(!elements || !flags, "out of memory");
     for (u32 i = 0; i < shape->arity; i++) {
-        elements[i] = reverse_mapped_prop_type(me, source->reference.args.data[i], mapped, operand);
+        elements[i] = reverse_mapped_prop_type(me, args.data[i], mapped, operand);
         // (`?` in the mapped type: T's element needn't be optional)
         flags[i] = mapped->optional > 0 ? shape->flags[i] & ~(unsigned)TUPLE_ELEMENT_OPTIONAL : shape->flags[i];
     }

@@ -28,6 +28,21 @@ Corpus notes worth keeping:
 ### webpack (115)
 JSDoc; plan 26 "Stage 3 leftovers".
 
+### zod-root (tsc 55, tttt 91: 37 spurious, 1 missing)
+`./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
+**not clean under tsc**: 55 diagnostics of its own (26 TS2307 for bench deps the workspace doesn't install, 14 TS6133,
+8 TS6196, ...), so compare, don't count: `node thirdparty/tsc/lib/tsc.js --noEmit --pretty false -p
+thirdparty/corpora/zod` and diff `file:line code` sets (triage 2026-09-28 did it with `comm`). It crashed tttt until
+that triage session (deferred reference args in `reverse_mapped_array_like`) and had 5 TS1005 (`string.submodule`, a
+namespace named after a primitive keyword). Left, tttt only:
+- 28 in `packages/bench/` against arktype's types: TS2349 "not callable" on `type(...)` results (17), TS2322 +
+  TS6500 on `validateObjectLiteral<...>` properties (6), TS18048 (2). arktype is the heaviest type-level library we
+  have; worth a probe.
+- execa results: `proc.stdout` is `Readable` where tsc has `string` (TS2339 `.split`/`.match`, attw.test.ts,
+  tsc/bisect.ts, then TS7006 on the callbacks).
+- TS7022 on `const conn = data.repository[key]` (scripts/triage-signal.ts:318): a spurious circularity.
+- Missing: TS2412 at scripts/triage-signal.ts:676 (exactOptionalPropertyTypes' assignment check).
+
 ### HACKs the zod fixes left (hacks.md "Inference" and "Mapped types")
 - No missing type: `exact_missing_flag()` strips undefined from optional mapped properties read off optional ones;
   tsc's missingType would also give `'a' in x` narrowing (`x: {a: number} | {a?: never}` -> `number`).

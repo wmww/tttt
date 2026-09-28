@@ -2654,6 +2654,13 @@ static bool parse_unique_symbol_type(Parser* parent) {
     return parse_success(&p);
 }
 
+// A primitive type keyword not followed by `.` (tsc's parseKeywordAndNoDot): `string.x` names a namespace `string`
+static bool hop_type_keyword(Parser* parent, char const* keyword) {
+    Parser p = parser(parent);
+    if (!hop_start_if_ends_on_word_break(&p, keyword) || *tok_peek(&p).start == '.') return parse_fail(&p);
+    return parse_success(&p);
+}
+
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -2681,23 +2688,23 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     char c = *p.pos;
     bool word = identifier_char_size(p.pos, true);
     if (p.shared->in_jsdoc && parse_jsdoc_prefix_type(&p, ret)) {
-    } else if (hop_start_if_ends_on_word_break(&p, "any")) {
+    } else if (hop_type_keyword(&p, "any")) {
         *ret = type_any;
-    } else if (hop_start_if_ends_on_word_break(&p, "unknown")) {
+    } else if (hop_type_keyword(&p, "unknown")) {
         *ret = type_unknown;
-    } else if (hop_start_if_ends_on_word_break(&p, "never")) {
+    } else if (hop_type_keyword(&p, "never")) {
         *ret = type_never;
     } else if (hop_start_if_ends_on_word_break(&p, "void")) {
         *ret = type_void;
-    } else if (hop_start_if_ends_on_word_break(&p, "boolean")) {
+    } else if (hop_type_keyword(&p, "boolean")) {
         *ret = type_boolean;
-    } else if (hop_start_if_ends_on_word_break(&p, "number")) {
+    } else if (hop_type_keyword(&p, "number")) {
         *ret = type_number;
-    } else if (hop_start_if_ends_on_word_break(&p, "string")) {
+    } else if (hop_type_keyword(&p, "string")) {
         *ret = type_string;
-    } else if (hop_start_if_ends_on_word_break(&p, "symbol")) {
+    } else if (hop_type_keyword(&p, "symbol")) {
         *ret = type_symbol;
-    } else if (hop_start_if_ends_on_word_break(&p, "bigint")) {
+    } else if (hop_type_keyword(&p, "bigint")) {
         *ret = type_bigint;
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
         *ret = type_identifier(c_new(IdentifierType, {
