@@ -392,6 +392,11 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   `Checker.jsx_element` lets `report_relation_error` apply the JSX head rule (`ty_jsx_skips_head`); relations about
   attributes outside `ty_check_jsx_element` don't see it.
 
+- `literal_lacks_prop_of` (infer.c): tsc's propertiesRelatedTo rejects a source property that an *unwidened* object
+  literal target (ObjectFlags.ObjectLiteral) lacks, in every relation; tttt's regular object literal types are also the
+  widened ones declarations hold, so the rule can't live in relate.c and is only applied in `common_supertype` (where
+  the candidates are unwidened). Relations to inference results or nested literals don't see it.
+
 ## Expressions (`ty/expr.c`), contextual typing
 - `context_map` (`ty/expr.c`): tsc maps contextual types without union reduction (mapType's noReductions), so an
   `unknown` from one member stays a member; tttt's unions absorb into unknown, so context_map drops an `unknown` part
