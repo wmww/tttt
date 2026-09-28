@@ -349,6 +349,12 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
                 }
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
+                    // (tsc's getTypeForBindingElement: getIndexedAccessType with the name as the access node)
+                    if (parent && !i->target.rest) {
+                        Span key_span = i->computed_key->outer_span;
+                        ty_check_indexed_access_type(current_checker, parent, expr_get_type(i->computed_key), key_span,
+                            key_span, errs);
+                    }
                 } else if (!i->target.rest && i->source.tag == VALUE_STRING && unused_enabled()) {
                     Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
                     ty_mark_destructured_member(current_checker, type, cstr_sv(&i->source.string));

@@ -1879,13 +1879,15 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
                 index_count = 1;
                 continue;
             }
-            if (item->computed_key) {
-                has_computed = true;
+            // A computed name of a literal or unique symbol type is a property like any other (tsc's
+            // isTypeUsableAsPropertyName)
+            bool is_number = false;
+            Ty const* key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+            Atom const* name = ty_property_name_of_key(me, key, &is_number);
+            if (!name) {
+                has_computed |= item->computed_key != nullptr;
                 continue;
             }
-            bool is_number = false;
-            Atom const* name = ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number);
-            if (!name) continue;
             props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
             panic_if(!props, "out of memory");
             props[count++] = (ObjectLiteralProp){

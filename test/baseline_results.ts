@@ -5346,12 +5346,12 @@ const baselines = {
         types: false,
     },
     'computedPropertiesInDestructuring2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertiesInDestructuring2_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5388,7 +5388,7 @@ const baselines = {
     'computerPropertiesInES5ShouldBeTransformed': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'concatClassAndString': {
         errors: true,
@@ -7081,7 +7081,7 @@ const baselines = {
         types: false,
     },
     'crashInEmitTokenWithComment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9566,7 +9566,7 @@ const baselines = {
         types: true,
     },
     'destructuredLateBoundNameHasCorrectTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -50151,7 +50151,7 @@ const baselines = {
         types: true,
     },
     'parameterInitializersForwardReferencing1_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51653,7 +51653,7 @@ const baselines = {
     'jsDeclarationsNonIdentifierInferredNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsOptionalTypeLiteralProps1': {
         errors: true,
