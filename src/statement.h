@@ -261,6 +261,8 @@ typedef struct SourceDirectiveStatement {
     cstr path;
     Span path_span;
     bool preserve;
+    // `resolution-mode="import"`/`"require"` on a types reference (ImportResolutionOverride, import_attributes.h)
+    uint8_t resolution_override;
     // Set by the program when what is named wasn't found: the path as messages name it (TS6053), the name (TS2688)
     cstr not_found;
 } SourceDirectiveStatement;

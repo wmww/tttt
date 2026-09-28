@@ -107,6 +107,7 @@ typedef struct SourceFile {
     // package.json that has a say in that (as messages name it, empty if there is none) and whether it says
     // (src/module_resolution.h)
     bool is_esm;
+    bool has_format; // Whether is_esm means anything: tsc's impliedNodeFormat isn't undefined
     bool package_has_type;
     cstr package_json;
     Scope* scope; // The file's scope, made when names are declared. A module's container is its module symbol

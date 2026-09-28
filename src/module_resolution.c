@@ -1442,13 +1442,19 @@ ResolvedModule module_resolver_resolve(
     return ret;
 }
 
-ResolvedModule module_resolver_resolve_type_reference(ModuleResolver* me, csview name, csview containing_file) {
+ResolvedModule module_resolver_resolve_type_reference(
+    ModuleResolver* me, csview name, csview containing_file, ResolutionMode const* mode
+) {
     ResolvedModule ret = {0};
     if (!name.size) return ret;
-    State state = state_make(me, RESOLUTION_MODE_COMMONJS);
+    // Without a mode, bundler reads `exports` with `import`, the others with `require` (tsc's getConditions)
+    State state = state_make(me, !mode ? RESOLUTION_MODE_COMMONJS :
+        *mode == RESOLUTION_MODE_ESM ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_REQUIRE_SYNTAX);
     state.in_type_reference = true;
-    // Type reference lookup is node-style whatever the resolution kind, with exports for the modern ones
+    // Type reference lookup is node-style whatever the resolution kind, with exports for the modern ones, and for all
+    // of them when there is a mode (tsc's resolveTypeReferenceDirective: NodeResolutionFeatures.AllFeatures)
     if (state.kind == MODULE_RESOLUTION_CLASSIC) state.kind = MODULE_RESOLUTION_NODE10;
+    if (mode) state.use_exports = state.use_imports = state.use_self_name = true;
     cstr containing_dir = containing_file.size ? absolute_containing_dir(me, containing_file) : option_path(me, c_sv("."));
     state.containing_dir = cstr_sv(&containing_dir);
 

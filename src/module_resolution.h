@@ -68,7 +68,11 @@ ResolvedModule module_resolver_resolve(
     ResolutionMode mode
 );
 // `/// <reference types="name" />` and the entries of `types`. An empty containing_file is the options themselves
-ResolvedModule module_resolver_resolve_type_reference(ModuleResolver* me, csview name, csview containing_file);
+// A `/// <reference types>` or `types` entry. mode is the reference's `resolution-mode` or else the containing file's
+// format, null if it has none (tsc's getModeForFileReference)
+ResolvedModule module_resolver_resolve_type_reference(
+    ModuleResolver* me, csview name, csview containing_file, ResolutionMode const* mode
+);
 
 // The type reference directives that are part of every program: the `types` option, else every package in the type
 // roots (`typeRoots`, else each `node_modules/@types` from the config's or the current directory upwards)

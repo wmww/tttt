@@ -8131,16 +8131,22 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
     cstr reference_path = cstr_null;
     Span reference_path_span;
     bool reference_preserve = false;
+    ImportResolutionOverride reference_resolution = IMPORT_RESOLUTION_DEFAULT;
+    bool invalid_resolution = false;
     while (true) {
         if (hop_start(&p, "/>")) {
             break;
         }
 
+        // (Names like `resolution-mode` are words joined by dashes)
+        Anchor attr_a = anchor(&p);
         Span attr;
         if (!parse_identifier_or_keyword(&p, &attr)) {
             cstr_drop(&reference_path);
             return parse_fail(&p);
         }
+        while (*p.pos == '-' && hop_char(&p, '-') && parse_identifier_or_keyword(&p, &attr)) {}
+        attr = span_from(attr_a);
         hop_whitespace_full(&p, false, false);
 
         cstr value = cstr_null;
@@ -8174,6 +8180,11 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
             if (span_equals(attr, "preserve") && cstr_equals(&value, "true")) {
                 reference_preserve = true;
             }
+            if (span_equals(attr, "resolution-mode")) {
+                if (cstr_equals(&value, "import")) reference_resolution = IMPORT_RESOLUTION_IMPORT;
+                else if (cstr_equals(&value, "require")) reference_resolution = IMPORT_RESOLUTION_REQUIRE;
+                else invalid_resolution = true;
+            }
         }
 
         cstr_drop(&value);
@@ -8181,11 +8192,20 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
     }
 
     if (found_reference_attr) {
+        if (invalid_resolution && reference_attr == SOURCE_DIRECTIVE_REFERENCE_TYPES) {
+            // tsc's processPragmasIntoFields, on the name without its quotes
+            Span name = reference_path_span;
+            if (name.sv.size >= 2 && (*name.sv.buf == '"' || *name.sv.buf == '\'')) {
+                name.sv = csview_slice(name.sv, 1, name.sv.size - 1);
+            }
+            parse_error(&p, name, 1453, "`resolution-mode` should be either `require` or `import`.");
+        }
         *ret = (SourceDirectiveStatement){
             .tag = reference_attr,
             .path = reference_path,
             .path_span = reference_path_span,
             .preserve = reference_preserve,
+            .resolution_override = reference_resolution,
         };
         return parse_success(&p);
     } else {

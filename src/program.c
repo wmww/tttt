@@ -307,8 +307,19 @@ static SourceFile* program_load_reference_path(Program* me, Span path_span, csvi
     return ret;
 }
 
-static SourceFile* program_load_type_reference(Program* me, csview name, csview containing_file) {
-    ResolvedModule resolved = module_resolver_resolve_type_reference(program_resolver(me), name, containing_file);
+// A `types` reference from source (the program's `types` when null) with the reference's resolution mode, else the file's
+static SourceFile* program_load_type_reference(
+    Program* me, csview name, SourceFile const* source, ImportResolutionOverride override
+) {
+    ResolutionMode mode = RESOLUTION_MODE_COMMONJS;
+    bool has_mode = true;
+    if (override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM;
+    else if (override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_COMMONJS;
+    else if (source && source->has_format) mode = source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
+    else has_mode = false;
+    ResolvedModule resolved = module_resolver_resolve_type_reference(
+        program_resolver(me), name, source ? cstr_sv(&source->canonical_path) : c_sv(""), has_mode ? &mode : nullptr
+    );
     SourceFile* ret = resolved.kind == RESOLVED_NONE ? nullptr :
         program_add_source_idempotent(me, cstr_sv(&resolved.path));
     resolved_module_drop(&resolved);
@@ -340,8 +351,9 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                     break;
                 case SOURCE_DIRECTIVE_REFERENCE_TYPES:
                     if (!program_load_type_reference(
-                        me, cstr_sv(&statement->source_directive->path), cstr_sv(&source->canonical_path))
-                    ) {
+                        me, cstr_sv(&statement->source_directive->path), source,
+                        statement->source_directive->resolution_override
+                    )) {
                         cstr_assign_sv(&statement->source_directive->not_found, cstr_sv(&statement->source_directive->path));
                     }
                     break;
@@ -582,6 +594,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     if ((node_formats || in_node_modules) && !my loading_stdlib && !source_file->is_json) {
         FileFormat format = module_resolver_file_format(program_resolver(me), cstr_sv(&source_file->canonical_path));
         source_file->is_esm = format.mode == RESOLUTION_MODE_ESM;
+        source_file->has_format = true;
         source_file->package_has_type = format.package_has_type;
         if (cstr_size(&format.package_json)) {
             source_file->package_json = program_path_for_message(me, cstr_sv(&format.package_json));
@@ -729,7 +742,7 @@ void program_load_automatic_types(Program* me) {
     set_compiler_options(&my options);
     StrList names = module_resolver_automatic_types(program_resolver(me));
     for (isize i = 0; i < names.count; i++) {
-        if (program_load_type_reference(me, cstr_sv(&names.items[i]), c_sv(""))) continue;
+        if (program_load_type_reference(me, cstr_sv(&names.items[i]), nullptr, IMPORT_RESOLUTION_DEFAULT)) continue;
         cstr const* name = &names.items[i];
         Error* error = error_ctx_global_error_d(my errs, 2688, "Cannot find type definition file for '", *name, "'.");
         error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
