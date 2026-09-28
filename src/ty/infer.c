@@ -1347,26 +1347,6 @@ static bool is_literal_of_same_base(TyList types) {
     return types.len > 0;
 }
 
-// Whether an object literal type (unwidened, as inference candidates are) lacks a property of the source that isn't
-// undefined, which no relation allows (tsc's propertiesRelatedTo for an isObjectLiteralType target). A union target
-// lacks it if every member does. HACK: only here, where the candidates are unwidened: tttt's regular object literal
-// types are also the widened ones declarations get, which tsc's ObjectFlags.ObjectLiteral isn't on
-static bool literal_lacks_prop_of(Checker* me, Ty const* source, Ty const* target) {
-    if (target->kind == TY_UNION) {
-        for (u32 i = 0; i < target->composite.types.len; i++) {
-            if (!literal_lacks_prop_of(me, source, target->composite.types.data[i])) return false;
-        }
-        return true;
-    }
-    if (target->kind != TY_ANONYMOUS || !target->anonymous.object_literal || !(source->flags & TYF_OBJECT)) return false;
-    Members const* members = ty_members(me, source);
-    for (u32 i = 0; i < members->prop_count; i++) {
-        Prop const* prop = members->props[i];
-        if (!ty_get_prop(me, target, prop->name) && !(prop_type(me, prop)->flags & TYF_UNDEFINED)) return true;
-    }
-    return false;
-}
-
 // tsc's getCommonSupertype: the leftmost candidate that every other one is a subtype of. null and undefined stay out
 // of the contest and are added back
 static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) {
@@ -1387,9 +1367,7 @@ static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) 
         } else {
             ret = primary[0];
             for (u32 i = 1; i < primary_len; i++) {
-                if (ret != primary[i] && ty_is_related(me, ret, primary[i], TY_RELATION_SUBTYPE) &&
-                    !literal_lacks_prop_of(me, ret, primary[i])
-                ) {
+                if (ret != primary[i] && ty_is_related(me, ret, primary[i], TY_RELATION_SUBTYPE)) {
                     ret = primary[i];
                 }
             }

@@ -149,7 +149,8 @@ typedef enum TyFlags {
     TYF_FRESH_LITERAL                = 1 << 26,
     // A fresh object literal type (tsc's ObjectFlags.FreshLiteral): what an object literal expression evaluates to, and
     // the only kind of source that gets excess property checks. On unions and array/tuple references: one is inside
-    // (ty_widened_objects() has work to do)
+    // (ty_widened_objects() has work to do). Also on the regular twin before widening (OBJECT_LITERAL_REGULAR, which
+    // ty_is_fresh_object() tells apart): the flag is tsc's ContainsObjectOrArrayLiteral as far as widening goes
     TYF_FRESH_OBJECT                 = 1 << 27,
     TYF_TEMPLATE_LITERAL             = 1 << 28, // `a${B}` (TY_TEMPLATE_LITERAL)
     TYF_STRING_MAPPING               = 1 << 29, // Uppercase<T> & co. (TY_STRING_MAPPING)
@@ -322,6 +323,8 @@ struct Ty {
             TyList free_params;
             bool free_params_unknown;
             bool object_literal; // Made by an object literal expression (ty_object_literal())
+            // OBJECT_LITERAL_REGULAR: TYF_FRESH_OBJECT means it still widens, but it isn't fresh (ty_is_fresh_object())
+            bool regular;
             bool jsx_attributes; // OBJECT_JSX_ATTRIBUTES(_FRESH): hyphenated names are never excess, and excess ones say so differently
             bool js_literal; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
             TyObjectState* state;
@@ -844,7 +847,18 @@ Ty const* ty_string_literal(Checker* me, csview sv);
 Ty const* ty_fresh_literal(Checker* me, Ty const* ty); // Literals (not unique symbols), else ty itself
 Ty const* ty_regular(Checker* me, Ty const* ty); // Fresh literals, and unions with fresh members member-wise
 static inline bool ty_is_fresh(Ty const* ty) { return ty->kind == TY_LITERAL && (ty->flags & TYF_FRESH_LITERAL); }
-static inline bool ty_is_fresh_object(Ty const* ty) { return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_FRESH_OBJECT); }
+static inline bool ty_is_fresh_object(Ty const* ty) {
+    return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_FRESH_OBJECT) && !ty->anonymous.regular;
+}
+// tsc's isObjectLiteralType on a type that isn't widened yet: a fresh or regular object literal (not what widening
+// makes: tsc's getWidenedTypeOfObjectLiteral drops ObjectFlags.ObjectLiteral)
+static inline bool ty_is_unwidened_object_literal(Ty const* ty) {
+    return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_FRESH_OBJECT) && ty->anonymous.object_literal;
+}
+// tsc's getRegularTypeOfObjectLiteral: a fresh object literal (and those in its properties) no longer fresh, but still an
+// object literal that widens (ty_is_unwidened_object_literal()). Anything else is itself
+Ty const* ty_regular_object_literal(Checker* me, Ty const* ty);
+bool ty_is_empty_object_type(Checker* me, Ty const* ty); // tsc's isEmptyObjectType
 // The freshness part of tsc's getWidenedType: fresh object literals (also inside unions, arrays and tuples, and in the
 // properties of the regular twin) become regular. What declarations, inferred return types and inferences hold
 Ty const* ty_widened_objects(Checker* me, Ty const* ty);
@@ -1349,6 +1363,9 @@ typedef enum ObjectLiteralKind {
     OBJECT_SYNTHETIC, // Made up by the checker
     OBJECT_LITERAL, // The type of an object literal expression (tsc's ObjectFlags.ObjectLiteral), widened
     OBJECT_LITERAL_FRESH, // ... as the expression evaluates to it (TYF_FRESH_OBJECT)
+    // ... no longer fresh but not widened yet either (tsc's getRegularTypeOfObjectLiteral): TYF_FRESH_OBJECT +
+    // anonymous.regular. Still an object literal to relations (ty_is_unwidened_object_literal())
+    OBJECT_LITERAL_REGULAR,
     OBJECT_JSX_ATTRIBUTES, // The attributes of a JSX element (tsc's ObjectFlags.JsxAttributes)
     OBJECT_JSX_ATTRIBUTES_FRESH,
     // Or'ed with the kind: an object literal of a JavaScript file, open-ended without noImplicitAny (tsc's

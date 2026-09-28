@@ -2192,6 +2192,8 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
     }
     if (!ret) ret = ty_intrinsic(me, TY_ANY);
+    // (An element of an unannotated pattern is widened itself: the pattern's source isn't, see initialized_binding's)
+    if (!parent->has_explicit_type && !binding_is_parameter(parent)) ret = ty_widened_for_declaration(me, ret, false);
     if (binding->default_value) {
         // `[x = 1]`: undefined is replaced by the default. Under a written type, the default only removes undefined
         // (unless it can be undefined itself), else the two are a subtype-reduced union (tsc's getTypeForBindingElement)

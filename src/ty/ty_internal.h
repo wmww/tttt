@@ -28,6 +28,7 @@ enum {
     KEY_FRESH_LITERAL, // regular literal -> its fresh twin
     KEY_REGULAR_UNION, // union with fresh members -> ty_regular() of it
     KEY_WIDENED_OBJECTS, // type with fresh object literals -> ty_widened_objects() of it
+    KEY_REGULAR_OBJECT_LITERAL, // fresh object literal -> ty_regular_object_literal() of it
     KEY_TEMPLATE_LITERAL,
     KEY_STRING_MAPPING,
     KEY_MAPPED_KEY_PARAM, // MappedInfo -> TyMapper from its key type parameter to a constrained stand-in

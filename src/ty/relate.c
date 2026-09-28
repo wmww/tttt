@@ -408,7 +408,7 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     if ((sf & TYF_OBJECT) && (tf & TYF_NON_PRIMITIVE)) {
         // `{}` may be a primitive, so it isn't a strict subtype of `object` (unless it's a fresh `{}` literal)
         if (st->relation != TY_RELATION_STRICT_SUBTYPE || s->kind != TY_ANONYMOUS || s->anonymous.function ||
-            (sf & TYF_FRESH_OBJECT)
+            ty_is_fresh_object(s)
         ) {
             return true;
         }
@@ -1467,6 +1467,14 @@ static bool is_static_private_name(Checker* me, Prop const* prop) {
     return (prop->flags & PROP_STATIC) && ty_private_name_class(me, prop->name);
 }
 
+typedef struct SourceProp {
+    Prop const* prop;
+    Ty const* type;
+    u32 flags;
+} SourceProp;
+
+static SourceProp* source_props(Checker* me, Ty const* source, Members const* source_members, u32* count_out);
+
 static Ternary props_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent,
     bool optionals_only
@@ -1540,6 +1548,29 @@ static Ternary props_related_impl(
             st->override_next_head++;
             return TERNARY_FALSE;
         }
+    }
+
+    // An object literal that isn't widened yet has no room for other properties, unless they may be undefined (tsc's
+    // propertiesRelatedTo for an isObjectLiteralType target): `string` isn't a subtype of the element `{}` of
+    // `x.push("s"); x.push({})`, so the evolving array ends up `(string | {})[]`
+    if (!optionals_only && ty_is_unwidened_object_literal(target) && (source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+        u32 prop_count;
+        SourceProp* props = source_props(me, source, source->kind == TY_INTERSECTION ? nullptr : ty_members(me, source), &prop_count);
+        for (u32 i = 0; i < prop_count; i++) {
+            // (An optional property's type has undefined in it under strictNullChecks: tsc's missingType too)
+            bool undefined = (props[i].type->flags & TYF_UNDEFINED) ||
+                ((props[i].flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks);
+            if (undefined || ty_get_prop(me, target, props[i].prop->name)) continue;
+            if (report) {
+                cstr name = ty_prop_written_name(me, props[i].prop);
+                cstr target_str = display_for_report(me, target, false);
+                report_line(st, 2339, cstr_d("Property '", name, "' does not exist on type '", target_str, "'."));
+                c_drop(cstr, &name, &target_str);
+            }
+            free(props);
+            return TERNARY_FALSE;
+        }
+        free(props);
     }
 
     Ternary result = TERNARY_TRUE;
@@ -1630,12 +1661,6 @@ static bool has_inferable_index(Checker* me, Ty const* ty) {
         (ty->declared.kind == TY_DECLARED_NAMESPACE || ty->declared.kind == TY_DECLARED_ENUM_OBJECT);
 }
 
-typedef struct SourceProp {
-    Prop const* prop;
-    Ty const* type;
-    u32 flags;
-} SourceProp;
-
 // The properties of an object type, or of every member of an intersection (tsc's getPropertiesOfUnionOrIntersectionType:
 // the first of each name, with the type and flags of the intersection's). Free the result
 static SourceProp* source_props(Checker* me, Ty const* source, Members const* source_members, u32* count_out) {
@@ -1716,7 +1741,7 @@ static Ternary index_signatures_related(
                 return TERNARY_FALSE;
             }
             result &= related;
-        } else if (!st->member_of_intersection_source && has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || (source->flags & TYF_FRESH_OBJECT))) {
+        } else if (!st->member_of_intersection_source && has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || ty_is_fresh_object(source))) {
             // An object literal type is related if each of its properties the signature applies to is. Not in the strict
             // subtype relation unless it's fresh: `{ [k: string]: X }` is a strict subtype of `{}`, not vice versa. Of an
             // intersection, every property of every member, with the type they have together
@@ -3414,8 +3439,7 @@ static Ternary structured_related_members(
     // rather than to whichever of two mutual subtypes comes first (tsc's structuredTypeRelatedToWorker)
     // (Both subtype relations: inference's common supertype asks the plain one, `assign({}, options)`)
     if ((st->relation == TY_RELATION_STRICT_SUBTYPE || st->relation == TY_RELATION_SUBTYPE) && !source_is_generic &&
-        target->flags & TYF_FRESH_OBJECT &&
-        target->kind != TY_UNION && is_empty_object_type(me, target) && !is_empty_object_type(me, source)
+        ty_is_fresh_object(target) && is_empty_object_type(me, target) && !is_empty_object_type(me, source)
     ) {
         return TERNARY_FALSE;
     }
@@ -4174,6 +4198,10 @@ static bool is_empty_object_type(Checker* me, Ty const* ty) {
     Members const* members = ty_members(me, ty);
     return !members->mapped && !members->prop_count && !members->call_count && !members->construct_count &&
         !members->index_count;
+}
+
+bool ty_is_empty_object_type(Checker* me, Ty const* ty) {
+    return is_empty_object_type(me, ty);
 }
 
 bool ty_is_numeric_name(Atom const* name) {

@@ -583,7 +583,12 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     if (!ret) ret = initialized_binding_check_value(me);
     if (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY) ret = ty_pad_initializer_type(checker, ret, &my binding);
     Symbol const* symbol = my binding.tag == BINDING_IDENTIFIER ? my binding.symbol : nullptr;
-    if (!my binding.has_explicit_type) {
+    // A pattern's elements are widened one by one (ty_binding_assigned_type()), the object they come from isn't (tsc's
+    // getTypeForBindingElementParent): `{ a, b } = options || {}` reads the members of `{ a: A; b: B } | {}`, where the
+    // widened `{}` would absorb the other member
+    // (A parameter's pattern is its declared type too, which is widened)
+    bool pattern_source = my binding.tag != BINDING_IDENTIFIER && !binding_is_parameter(&my binding);
+    if (!my binding.has_explicit_type && !pattern_source) {
         ret = ty_widened_for_declaration(checker, ret, my binding.tag == BINDING_IDENTIFIER && my abstract_literals);
         // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
         if ((ret->flags & TYF_UNIQUE_ES_SYMBOL) && ret->literal.unique->key != symbol) {

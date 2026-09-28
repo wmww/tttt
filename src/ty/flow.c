@@ -174,7 +174,7 @@ static Ty const* final_array_type(Checker* me, Ty const* ty) {
 
 // tsc's addEvolvingArrayElementType: no subtype reduction until the final array type
 static Ty const* add_evolving_element(Checker* me, Ty const* evolving, Expr const* expr) {
-    Ty const* element = ty_widened_objects(me, ty_regular(me, ty_base_type_of_literal(me, ty_flow_expr_type(me, expr))));
+    Ty const* element = ty_regular_object_literal(me, ty_regular(me, ty_base_type_of_literal(me, ty_flow_expr_type(me, expr))));
     Ty const* current = evolving->evolving_array.element;
     if (is_type_subset_of(element, current)) return evolving;
     Ty const* types[2] = { current, element };

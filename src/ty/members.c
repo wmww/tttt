@@ -2743,7 +2743,8 @@ Ty const* ty_object_literal(
     kind &= ~OBJECT_JS;
     if (!ret) {
         MembersBuilder builder = {0};
-        u32 flags = TYF_OBJECT | (kind == OBJECT_LITERAL_FRESH || kind == OBJECT_JSX_ATTRIBUTES_FRESH ? TYF_FRESH_OBJECT : 0);
+        bool widens = kind == OBJECT_LITERAL_FRESH || kind == OBJECT_JSX_ATTRIBUTES_FRESH || kind == OBJECT_LITERAL_REGULAR;
+        u32 flags = TYF_OBJECT | (widens ? TYF_FRESH_OBJECT : 0);
         for (u32 i = 0; i < count; i++) {
             if (props[i].reuse) {
                 flags |= prop_type(me, props[i].reuse)->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
@@ -2781,6 +2782,7 @@ Ty const* ty_object_literal(
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         fresh->anonymous.free_params_unknown = true;
         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
+        fresh->anonymous.regular = kind == OBJECT_LITERAL_REGULAR;
         fresh->anonymous.jsx_attributes = kind == OBJECT_JSX_ATTRIBUTES || kind == OBJECT_JSX_ATTRIBUTES_FRESH;
         fresh->anonymous.js_literal = js;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
@@ -2959,7 +2961,12 @@ static Ty const* widen_with_context(Checker* me, Ty const* ty, WideningCtx* ctx)
             changed |= widened != member;
             ty_buf_push(&parts, widened);
         }
-        Ty const* ret = changed ? ty_union(me, parts.data, parts.len, ty->alias, ty->alias_args) : ty;
+        // Widening an empty object literal makes it take in everything but null and undefined, so the union is reduced
+        // then (tsc's getWidenedTypeWithContext: `{} | string` is `{}`)
+        bool empty_object = false;
+        for (u32 i = 0; changed && i < parts.len && !empty_object; i++) empty_object = ty_is_empty_object_type(me, parts.data[i]);
+        Ty const* ret = !changed ? ty : empty_object ? ty_union_subtype_reduced(me, parts.data, parts.len) :
+            ty_union(me, parts.data, parts.len, ty->alias, ty->alias_args);
         ty_buf_drop(&parts);
         widening_ctx_drop(&own);
         return ret;
@@ -2979,7 +2986,7 @@ static Ty const* widen_objects(Checker* me, Ty const* ty) {
         ty_buf_drop(&parts);
         return ret;
     }
-    check(ty_is_fresh_object(ty));
+    check(ty->kind == TY_ANONYMOUS && (ty->flags & TYF_FRESH_OBJECT));
     return widen_object_literal(me, ty, nullptr);
 }
 
@@ -3063,7 +3070,8 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
         if (changed) {
             ret = ty_object_literal(me, props, members->prop_count, index, index_count,
                 (ty->anonymous.jsx_attributes ? (ty->flags & TYF_FRESH_OBJECT ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES) :
-                ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL) | (ty->anonymous.js_literal ? OBJECT_JS : 0));
+                ty->anonymous.regular ? OBJECT_LITERAL_REGULAR : ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL) |
+                (ty->anonymous.js_literal ? OBJECT_JS : 0));
         }
         free(props);
     }
@@ -3082,6 +3090,41 @@ Ty const* ty_widened_objects(Checker* me, Ty const* ty) {
     void const* known = intern_get(&my links, key, 2);
     if (known) return known;
     Ty const* ret = widen_objects(me, ty);
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
+}
+
+Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
+    if (!ty_is_fresh_object(ty)) return ty;
+    // (JSX attributes stay what widening makes them, as before)
+    if (ty->anonymous.jsx_attributes) return ty_widened_objects(me, ty);
+    u64 key[2] = { KEY_REGULAR_OBJECT_LITERAL, (u64)(uintptr_t)ty };
+    void const* known = intern_get(&my links, key, 2);
+    if (known) return known;
+    Members const* members = ty_members(me, ty);
+    ObjectLiteralProp* props = calloc(members->prop_count ? members->prop_count : 1, sizeof(ObjectLiteralProp));
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        props[i] = (ObjectLiteralProp){
+            .name = prop->name,
+            .flags = prop->flags,
+            .type = prop->decl->function ? nullptr : ty_regular_object_literal(me, prop_type(me, prop)),
+            .accessor = prop->decl->function,
+            .name_span = prop->decl->name_span,
+            .decl_spans = prop->decl->decl_spans,
+            .decl_span_count = prop->decl->decl_span_count,
+            .name_is_value = prop->decl->name_is_value,
+            .asserted = prop->decl->asserted,
+            .own = prop->decl->literal_own,
+            .numeric_redeclared = prop->decl->numeric_redeclared,
+        };
+    }
+    IndexInfo index[8] = {0};
+    u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
+    for (u32 i = 0; i < index_count; i++) index[i] = members->index[i];
+    Ty const* ret = ty_object_literal(me, props, members->prop_count, index, index_count,
+        OBJECT_LITERAL_REGULAR | (ty->anonymous.js_literal ? OBJECT_JS : 0));
+    free(props);
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
 }
