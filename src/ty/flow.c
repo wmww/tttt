@@ -1566,7 +1566,7 @@ static Ty const* constructor_instance_type(Checker* me, Ty const* constructor, v
     Ty const* prototype = ty_access(me, constructor, ty_string_literal(me, c_sv("prototype")));
     if (prototype && !(prototype->flags & TYF_ANY)) return prototype;
     Ty const* apparent = ty_apparent_type(me, constructor);
-    if (apparent->flags & TYF_OBJECT) {
+    if ((apparent->flags & TYF_OBJECT) || apparent->kind == TY_INTERSECTION) {
         Members const* members = ty_members(me, apparent);
         if (members->construct_count) {
             // TODO: tsc erases the type parameters of a generic signature to any
