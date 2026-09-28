@@ -11,3 +11,15 @@ objects, the `literal_lacks_prop_of` HACK gone), TS7010/7011/7018 from reportErr
 (`\r`, U+2028/9) and whitespace (NEL, U+200B). Routed: eager contextual instantiation (plan 37 F's return_only probe)
 to `bugs/type_core.md`, the zod-without-variance TS2589, intersection property lists, spread identity, and the
 smaller leftovers to `bugs/*.md` and hacks.md.
+
+## 2026-09-28, sixth window's corpus session (todo entry 1)
+- `const M = module.exports; M.a = 1` in a JS file with no require/`exports.x =`: tsc's isExportsOrModuleExportsOrAlias
+  makes it a CommonJS module (setCommonJsModuleIndicator through the alias), tttt's parser flag `saw_commonjs` only
+  sees direct `module.exports`/`exports.x` targets: another file's `require("./p")` gets TS2306 "not a module".
+- Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
+  `g2<T extends unknown[]>(x: [...{ [K in keyof T]: S2<T[K]> }])` widens `g2(['a'])` to `[string]`, tsc `["a"]` (its
+  forConstraint constraint of `S2<T[number]>` keeps the true branch with T's implied `string`).
+- HACK candidate: after ty_instantiation_limit_reached, TY_ERROR results are memoized for good in lazily resolved Props,
+  so one TS2589 poisons every later user (xstate: StateMachine.ts:516, see plan 19 "xstate").
+- A corpus's output can depend on the checker count (4 by default): a file can look fine alone and fail in the corpus.
+  Reproduce with `--checkers 1` and the suspect file first in `files`.
