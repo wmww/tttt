@@ -54,6 +54,9 @@ typedef struct RelationState {
     // Relating to the members of an intersection target (tsc's IntersectionState.Target): no excess property checks,
     // the intersection as a whole had them
     bool intersection_target;
+    // Relating the members of an intersection source (tsc's IntersectionState.Source): a member has no inferable index
+    // signature, the intersection as a whole is related afterwards
+    bool intersection_source;
     // The failure just reported heads the error itself (a weak type): no "not assignable" line for it
     bool head_reported;
     u64* maybe_keys;
@@ -1594,7 +1597,7 @@ static Ternary index_signatures_related(
                 return TERNARY_FALSE;
             }
             result &= related;
-        } else if (has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || (source->flags & TYF_FRESH_OBJECT))) {
+        } else if (!st->intersection_source && has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || (source->flags & TYF_FRESH_OBJECT))) {
             // An object literal type is related if each of its properties the signature applies to is. Not in the strict
             // subtype relation unless it's fresh: `{ [k: string]: X }` is a strict subtype of `{}`, not vice versa. Of an
             // intersection, every property of every member, with the type they have together
@@ -3082,7 +3085,10 @@ static Ternary structured_related_impl(
         return result;
     }
     if (source->kind == TY_INTERSECTION) {
+        bool saved_source = st->intersection_source;
+        st->intersection_source = true;
         Ternary related = some_related(me, st, source->composite.types, target);
+        st->intersection_source = saved_source;
         if (related) return related;
         // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
         // `T extends Node | undefined` is a Node
@@ -3576,6 +3582,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     // Relating to an intersection's members is a question of its own (tsc's getRelationKey postfix): no excess property
     // checks, and a pair compared inside it isn't the same pair on the stack outside it
     if (st->intersection_target) key ^= 1ull << 63;
+    if (st->intersection_source) key ^= 1ull << 62;
     unsigned cached = relation_cache_get(cache, key);
     // A measurement of variances that goes through the pair again is as unreliable as the first one was
     if ((cached & CACHE_UNRELIABLE) && my variance_depth) my variance_unreliable = true;
@@ -4187,6 +4194,7 @@ static bool check_related(
     st->lines = (VecTyReportLine){0};
     st->override_next_head = 0;
     st->intersection_target = false;
+    st->intersection_source = false;
     st->maybe_keys = nullptr;
     st->maybe_count = st->maybe_cap = 0;
     st->depth = 0;
