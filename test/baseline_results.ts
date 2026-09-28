@@ -2602,7 +2602,7 @@ const baselines = {
     },
     'bluebirdStaticThis': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'bom-utf16be': {
@@ -4042,7 +4042,7 @@ const baselines = {
     },
     'classdecl': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'clinterfaces': {
@@ -5287,7 +5287,7 @@ const baselines = {
     },
     'complicatedPrivacy': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'compositeContextualSignature': {
@@ -7337,12 +7337,12 @@ const baselines = {
     },
     'declFileGenericType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declFileGenericType2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declFileImportChainInExportAssignment': {
@@ -7382,8 +7382,8 @@ const baselines = {
     },
     'declFileModuleContinuation': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declFileModuleWithPropertyOfTypeModule': {
         errors: true,
@@ -7557,18 +7557,18 @@ const baselines = {
     },
     'declFileWithInternalModuleNameConflictsInExtendsClause1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declFileWithInternalModuleNameConflictsInExtendsClause2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declFileWithInternalModuleNameConflictsInExtendsClause3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declInput-2': {
         errors: true,
@@ -8157,7 +8157,7 @@ const baselines = {
     },
     'declarationEmitHasTypesRefOnNamespaceUse': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitHigherOrderRetainedGenerics': {
@@ -8368,7 +8368,7 @@ const baselines = {
     'declarationEmitNameConflicts': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitNameConflicts2': {
         errors: true,
@@ -14787,7 +14787,7 @@ const baselines = {
     },
     'genericClassImplementingGenericInterfaceFromAnotherModule': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericClassInheritsConstructorFromNonGenericClass': {
@@ -14907,12 +14907,12 @@ const baselines = {
     },
     'genericConstraintOnExtendedBuiltinTypes': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericConstraintOnExtendedBuiltinTypes2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericConstraintSatisfaction1': {
@@ -18082,12 +18082,12 @@ const baselines = {
     },
     'interfaceDeclaration3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'interfaceDeclaration4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interfaceDeclaration5': {
@@ -18207,7 +18207,7 @@ const baselines = {
     },
     'interfacePropertiesWithSameName2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interfacePropertiesWithSameName3': {
@@ -19877,7 +19877,7 @@ const baselines = {
     },
     'jsxComplexSignatureHasApplicabilityError': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsxComponentTypeErrors': {
@@ -19897,7 +19897,7 @@ const baselines = {
     },
     'jsxElementClassTooManyParams': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsxElementType': {
@@ -21987,7 +21987,7 @@ const baselines = {
     },
     'moduleOuterQualification': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'modulePreserve1': {
@@ -25877,7 +25877,7 @@ const baselines = {
     },
     'privacyClassImplementsClauseDeclFile': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'privacyFunc': {
@@ -25962,7 +25962,7 @@ const baselines = {
     },
     'privacyInterfaceExtendsClauseDeclFile': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'privacyLocalInternalReferenceImportWithExport': {
@@ -26777,8 +26777,8 @@ const baselines = {
     },
     'recursiveClassReferenceTest': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'recursiveCloduleReference': {
         errors: true,
@@ -32092,7 +32092,7 @@ const baselines = {
     },
     'unionReductionWithStringMappingAndIdenticalBaseTypeExistsNoCrash': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unionRelationshipCheckPasses': {
@@ -49687,7 +49687,7 @@ const baselines = {
     },
     'extendsClause': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'filterNamespace_import': {
@@ -49707,7 +49707,7 @@ const baselines = {
     },
     'implementsClause': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importClause_default': {
@@ -49807,8 +49807,8 @@ const baselines = {
     },
     'nestedNamespace': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'preserveValueImports(isolatedmodules=false)': {
         errors: true,
@@ -52917,7 +52917,7 @@ const baselines = {
     },
     'inlineJsxFactoryDeclarationsLocalTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inlineJsxFactoryLocalTypeGlobalFallback': {
@@ -65232,7 +65232,7 @@ const baselines = {
     },
     'genericTypeReferenceWithoutTypeArgument': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericTypeReferenceWithoutTypeArgument2': {

@@ -548,6 +548,39 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             }
             bool heritage = ctx->heritage_type;
             ctx->heritage_type = false;
+            if (heritage) {
+                // A heritage clause's name is a property access to tsc's writer: `a.b.C` visits `a.b.C` (symbols only:
+                // the whole is part of the type) and `a.b` before `a`
+                isize_t count = vec_span_size(&my identifier->namespaces);
+                isize_t known = vec_symbol_cptr_size(&my identifier->namespace_symbols);
+                Symbol const* named = shown_declaration(my identifier->symbol, my identifier->target);
+                if (count && span_valid(my identifier->name) && named && !named->is_placeholder) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = declaration_get_spans(named),
+                        .allow_declaration_empty = true,
+                        .span = span_between(*vec_span_at(&my identifier->namespaces, 0), my identifier->name),
+                        .text = symbol_text(ctx, named),
+                    });
+                }
+                for (isize_t k = (count < known ? count : known) - 1; k >= 1; k--) {
+                    Symbol const* decl = *vec_symbol_cptr_at(&my identifier->namespace_symbols, k);
+                    Span prefix = span_between(*vec_span_at(&my identifier->namespaces, 0), *vec_span_at(&my identifier->namespaces, k));
+                    if (decl && !decl->is_placeholder) {
+                        baseline_test_case_add_symbol(ctx, (BaselineSym){
+                            .declarations = declaration_get_spans(decl),
+                            .allow_declaration_empty = true,
+                            .span = prefix,
+                            .text = symbol_text(ctx, decl),
+                        });
+                    }
+                    ctx->any_keeps_underline = true;
+                    if (decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE)) {
+                        baseline_test_case_add_symbol_value(ctx, prefix, decl);
+                    } else {
+                        baseline_test_case_add_type_node(ctx, prefix, &type_any);
+                    }
+                }
+            }
             VecSpan so_far = vec_span_init();
             for_each (i, vec_span, &my identifier->namespaces) {
                 intptr_t index = i_index;
