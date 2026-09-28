@@ -3932,11 +3932,15 @@ static Ternary structured_related_members(
                         return TERNARY_FALSE;
                     }
                 }
-                // The this-argument is one more covariant type argument (a reference without one is its own)
-                Ty const* source_this = source->kind == TY_REFERENCE ? source->reference.this_arg : nullptr;
-                Ty const* target_this = target->kind == TY_REFERENCE ? target->reference.this_arg : nullptr;
-                if (related && source_target->declared.this_param && (source_this || target_this) && source_this != target_this) {
-                    related &= is_related_to(me, st, source_this ? source_this : source, target_this ? target_this : target, report);
+                // The this-argument is one more covariant type argument, compared only when both have one (tsc's
+                // typeArgumentsRelatedTo goes as far as the shorter list: a written reference `C<X>` has none). A
+                // class or interface's own declared type stands for its own `this`
+                Ty const* source_this = source->kind == TY_REFERENCE ? source->reference.this_arg : source;
+                Ty const* target_this = target->kind == TY_REFERENCE ? target->reference.this_arg : target;
+                if (related && source_target->declared.this_param && source_this && target_this &&
+                    (source_this != source || target_this != target) && source_this != target_this
+                ) {
+                    related &= is_related_to(me, st, source_this, target_this, report);
                 }
                 if (related || !unreliable) return related;
                 report_truncate(st, saved);
