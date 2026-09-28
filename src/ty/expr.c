@@ -2768,6 +2768,31 @@ static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* 
     return ret;
 }
 
+// What `o[k] = v` takes for a union of keys: every key's property, the intersection of their (write) types (tsc's
+// getIndexedAccessType with AccessFlags.Writing). Null when a key has none (the read reports it)
+static Ty const* union_key_write_type(Checker* me, Ty const* object, Ty const* key) {
+    if (ty_is_generic_object(me, object)) return nullptr;
+    TyList keys = key->composite.types;
+    TyBuf parts = {0};
+    for (u32 i = 0; i < keys.len; i++) {
+        Ty const* k = keys.data[i];
+        if (!(k->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) {
+            ty_buf_drop(&parts);
+            return nullptr;
+        }
+        Ty const* part = ty_access_write_type(me, object, k);
+        if (!part) part = ty_access(me, object, k);
+        if (!part) {
+            ty_buf_drop(&parts);
+            return nullptr;
+        }
+        ty_buf_push(&parts, part);
+    }
+    Ty const* ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret;
+}
+
 Ty const* ty_compound_assignee_type(Checker* me, Expr const* target, Ty const* read_type) {
     if (target->tag != EXPR_PROPERTY || target->property->form != PROPERTY_EXPR_DOT) return read_type;
     Ty const* object = ty_expr_type(me, &target->property->expr);
@@ -2925,7 +2950,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (!ret) return missing_property_type(me, expr, object);
             if (ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
             if (expr->property->assignment_target == FLOW_TARGET_DEFINITE) {
-                Ty const* write = ty_access_write_type(me, object, key);
+                Ty const* write = key->kind == TY_UNION ? union_key_write_type(me, object, key) : ty_access_write_type(me, object, key);
                 if (write) ret = write;
             }
             ret = access_flow_type(me, expr, ret, ctx.contextual);
