@@ -192,8 +192,36 @@ void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
     }
 }
 
-void module_ref_report_resolved(ModuleRef const* me, ErrorCtx* errs) {
+// tsc's tryExtractTSExtension of a declaration file name: ".d.ts", ".d.mts", ".d.cts", else empty
+static csview declaration_extension(csview path) {
+    static char const* const extensions[] = { ".d.ts", ".d.mts", ".d.cts" };
+    for (u32 i = 0; i < c_arraylen(extensions); i++) {
+        if (csview_ends_with(path, extensions[i])) return csview_from(extensions[i]);
+    }
+    return (csview){0};
+}
+
+void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
+    // A declaration file named with its extension (tsc's resolveExternalModule: resolvedUsingTsExtension and
+    // isDeclarationFileName), outside a type-only import; the suggestion is getSuggestedImportSource's
+    csview dts = declaration_extension(cstr_sv(&my path));
+    if (dts.size && !type_only && my file && my file->is_declaration &&
+        csview_ends_with(cstr_sv(&my file->canonical_path), cstr_str(&my path) + (cstr_size(&my path) > 2 &&
+            cstr_str(&my path)[0] == '.' && cstr_str(&my path)[1] == '/' ? 2 : 0))
+    ) {
+        csview stem = csview_slice(cstr_sv(&my path), 0, cstr_size(&my path) - dts.size);
+        bool esm = (options->module >= MODULE_KIND_ES2015 && options->module <= MODULE_KIND_ESNEXT) ||
+            (my span.source && my span.source->is_esm);
+        char const* ext = "";
+        if (esm) {
+            bool prefer_ts = options->allow_importing_ts_extensions;
+            // (.d.cts gives .js: tsc compares with Dmts twice)
+            ext = csview_equals(dts, ".d.mts") ? (prefer_ts ? ".mts" : ".mjs") : prefer_ts ? ".ts" : ".js";
+        }
+        error_ctx_error_d(errs, my span, 2846, "A declaration file cannot be imported without 'import type'. Did you "
+            "mean to import an implementation file '", stem, ext, "' instead?");
+    }
     bool allowed = options->allow_importing_ts_extensions || options->rewrite_relative_import_extensions ||
         (my span.source && my span.source->is_declaration);
     // node16 and node18 can't `require()` an ES module (nodenext can)

@@ -158,7 +158,8 @@ static inline csview source_file_display_path(SourceFile const* me) {
 }
 
 // What there is to say about a module name that did find its file (TS5097)
-void module_ref_report_resolved(ModuleRef const* me, struct ErrorCtx* errs);
+// type_only: of an `import type`/`export type` declaration (no TS2846 for naming a .d.ts)
+void module_ref_report_resolved(ModuleRef const* me, bool type_only, struct ErrorCtx* errs);
 
 // The diagnostic for a module name that led to no module (neither a file nor an ambient module): TS2307 and its
 // flavours, by what module resolution found instead

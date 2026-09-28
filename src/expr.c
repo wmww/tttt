@@ -276,7 +276,7 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
 void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
     if (!ref) return;
     if (ref->file) {
-        module_ref_report_resolved(ref, errs);
+        module_ref_report_resolved(ref, false, errs);
     } else if (!binder_module_of_ref(names->binder, ref)) {
         module_ref_report_unresolved(ref, errs);
     }
@@ -358,7 +358,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         } else if (my keyword == KEYWORD_IDENTIFIER_IMPORT && my module_ref) {
             // `import("./a")`
             if (my module_ref->file) {
-                module_ref_report_resolved(my module_ref, errs);
+                module_ref_report_resolved(my module_ref, false, errs);
             } else if (!binder_module_of_ref(names->binder, my module_ref)) {
                 module_ref_report_unresolved(my module_ref, errs);
             }

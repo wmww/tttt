@@ -22101,12 +22101,12 @@ const baselines = {
         types: true,
     },
     'moduleResolutionNoTsCJS': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'moduleResolutionNoTsESM': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

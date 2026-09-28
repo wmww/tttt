@@ -97,7 +97,7 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
             module_ref_report_unresolved(my module_ref, errs);
         }
     } else if (my module_ref && my module_ref->file) {
-        module_ref_report_resolved(my module_ref, errs);
+        module_ref_report_resolved(my module_ref, my main.type_only, errs);
     }
 }
 
