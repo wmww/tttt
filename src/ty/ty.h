@@ -1638,6 +1638,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
 Ty const* ty_private_name_owner(Checker* me, Expr const* private_name, Atom const** name);
 void ty_check_in_expression(Checker* me, Expr const* left, Expr const* right, ErrorCtx* errs); // `left in right`
 // `a.#x`: what tsc says about private names rather than TS2339 (TS18013, TS18014, TS18016). True if it reported
+void ty_check_async_return_annotation(Checker* me, struct FunctionImpl const* function, ErrorCtx* errs); // check.c
 bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs);
 // It assigns to a readonly property (TS2540), which makes its type the error type
 bool ty_is_readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object);

@@ -739,6 +739,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
 
     function_impl_typecheck_signature(me, false, errs);
     if (my ret_explicit) type_typecheck(&my ret, errs);
+    ty_check_async_return_annotation(current_checker, me, errs);
     function_check_arguments_collision(me, errs);
 
     if (my newline_before_arrow) {

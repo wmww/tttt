@@ -514,6 +514,22 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
     return true;
 }
 
+// The annotation of an async function names the global Promise, from ES2015 on (tsc's checkAsyncFunctionReturnType;
+// TODO: below ES2015, what it names has to be a Promise-compatible constructor value, TS1055)
+void ty_check_async_return_annotation(Checker* me, FunctionImpl const* function, ErrorCtx* errs) {
+    if (!function->is_async || function->is_generator || !function->ret_explicit) return;
+    if (compiler_options()->target < SCRIPT_TARGET_ES2015) return;
+    Ty const* ret = ty_from_node(me, &function->ret, (LowerCtx){ .generic = true });
+    if (ret->flags & TYF_ERROR) return;
+    Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
+    Ty const* promise = promise_symbol ? ty_declared_type_of(me, promise_symbol) : nullptr;
+    if (!promise || promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return;
+    if (ret == promise || (ret->kind == TY_REFERENCE && ret->reference.target == promise)) return;
+    Ty const* awaited = ty_awaited_no_alias(me, ret);
+    error_ctx_error_d(errs, function->ret_span, 1064, "The return type of an async function or method must be the global "
+        "Promise<T> type. Did you mean to write 'Promise<", awaited ? awaited : ty_intrinsic(me, TY_VOID), ">'?");
+}
+
 // A function (or class) whose call (construction) would fit: the whole error, plus a hint
 static bool elaborate_did_you_mean_to_call(
     Checker* me, AssignHead head, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs
