@@ -2918,6 +2918,31 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
         for (u32 p = 0; p < parts.len && result; p++) {
             Ty const* part = apparent_type(me, parts.data[p]);
             if (!(part->flags & TYF_OBJECT)) continue;
+            if (is_tuple(apparent) && is_tuple(part)) {
+                // Tuples by their elements, the discriminant positions left out while the lengths are fixed (tsc's
+                // propertiesRelatedTo with excludedProperties); their methods are the arrays' (tsc returns there)
+                TupleShape const* source_shape = apparent->reference.target->declared.tuple;
+                TupleShape const* target_shape = part->reference.target->declared.tuple;
+                bool fixed = source_shape->arity == target_shape->arity;
+                for (u32 i = 0; i < source_shape->arity && fixed; i++) {
+                    fixed = !((source_shape->flags[i] | target_shape->flags[i]) & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST));
+                }
+                if (!fixed) {
+                    result &= tuples_related(me, st, apparent, part, false);
+                    continue;
+                }
+                TyList source_elements = ty_reference_args(me, apparent);
+                TyList target_elements = ty_reference_args(me, part);
+                for (u32 i = 0; i < source_shape->arity && result; i++) {
+                    char digits[16];
+                    snprintf(digits, sizeof(digits), "%u", i);
+                    Atom const* name = checker_atom(me, csview_from(digits));
+                    bool skip = false;
+                    for (u32 d = 0; d < count; d++) skip |= discriminants[d]->name == name;
+                    if (!skip) result &= is_related_to(me, st, source_elements.data[i], target_elements.data[i], false);
+                }
+                continue;
+            }
             Members const* part_members = ty_members(me, part);
             for (u32 i = 0; i < part_members->prop_count && result; i++) {
                 Atom const* name = part_members->props[i]->name;
