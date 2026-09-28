@@ -34,7 +34,8 @@ length: n}, (_, i) => ...)` must stay clean. Measured gain +1: revisit when a co
 types, not now**: arrays/tuples are reverse mapped already (bugs/type_core.md's note was stale, fixed), only
 reverseMappedTypeRecursiveInference plausibly needs laziness.
 
-**Landed**: A stage 1 (+48) and F (+1) in todo entry 4, B stage 1 (+37) and E stage 1 (+3, zod-root's TS2412) in todo entry 5.
+**Landed**: A stage 1 (+48) and F (+1) in todo entry 4, B stage 1 (+37) and E stage 1 (+3, zod-root's TS2412) in todo entry 5,
+C stage 1 (+15) in todo entry 8.
 
 ## A. Non-widening null/undefined (landed at stage 1; stage 2 open)
 tsc, non-strict only: `undefinedWideningType`/`nullWideningType` print as `undefined`/`null`, carry
@@ -72,20 +73,16 @@ intersection has (a display-only departure from tsc, hacks.md). Left: valibot +0
   `37_prototypes/union_origins_remaining.txt`. Not origins (triage): type-predicate narrowing should return the candidate unchanged
   (tsc's getNarrowedType: flowControlTypeGuardThenSwitch, partiallyDiscriminantedUnions, stringLiteralCheckedInIf02).
 
-## C. Decorators checked as calls (`decorators.patch`, `decorators_gained.txt`)
-Prototype: tsc's resolveDecorator as a `CallInfo` flag with synthetic arguments (`DecoratorCall` in ty.h, like
-tagged templates), argument count per tsc (TS1278/TS1279 wording), heads TS1238-1241, TS1270/1271 on returns,
-ES decorator contexts (`ClassMethodDecoratorContext`...) and legacy descriptors. Gains include plan 35 queue item 2
-(esDecorators-contextualTypes, legacyDecorators-contextualTypes), potentiallyUncalledDecorators, decoratorOnClass*.
-- **Stage 1 (1 session)**: cache the decorator signature per decorated node; make explicit that parameter
-  decorators get their contextual type from the class check before the function check re-checks them (implicit in
-  the prototype); TS2318 for missing decorator globals (missingDecoratorType then passes); probes (generic factory,
-  overloads, union callee, wrong ES return, constructor parameter decorator, private/computed names); delete hacks.md
-  "Decorators are typechecked as ordinary expressions" and the "only checked as expressions" TODOs in class_decl.h /
-  function_impl.h. Validation: nest stays 0 and threadcheck-identical, nest instructions within 1%.
+## C. Decorators checked as calls (landed at stage 1; stage 2 open)
+Landed as the prototype described (documentation.md "Calls"): +15 tests (the prototype's 14 and missingDecoratorType,
+TS2318 for the lib types a decorator signature needs, reported only once the callee isn't an error), corpora
+unchanged (nest 0: its decorators are checked now), nest +0.4% instructions. Parameter decorators of class members are
+checked by the class only (function_impl_typecheck skips them), so their contextual type doesn't depend on check
+order. Probes in `test/probes/plan37/decorators/` (match tsc but for the symbol of a property of the ES context
+intersection). Not cached per decorated node (each decorator is checked once; hacks.md `ty_check_decorator`).
 - **Stage 2 (small, triage-sized)**: `this` inside an ES decorator is the outer `this` (outerThisReference x4,
   privateFieldAccess, decoratorOnClassMethod11: name resolution scoping). esDecorators-contextualTypes.2 needs `This`
-  inferred through a generic decorator (inference). Rest: `decorators_remaining.txt`.
+  inferred through a generic decorator (inference). List: `37_prototypes/decorators_remaining.txt`.
 
 ## D. Evolving arrays (`evolving_arrays.patch`, `evolving_arrays_gained.txt`)
 Prototype: binder `FLOW_ARRAY_MUTATION` nodes (`flow_maybe_array_mutation()` after a non-chain call's arguments and

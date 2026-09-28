@@ -22,7 +22,7 @@ typedef struct ClassItem {
     bool is_override; // `override`, or in JavaScript a JSDoc `@override` (fields, methods, accessors)
     bool interface_member_static; // CLASS_ITEM_INTERFACE_MEMBER: `static [k: string]: T`
     Span span;
-    VecExpr decorators; // TODO: only checked as expressions, not as decorators of this member
+    VecExpr decorators; // Checked as calls by class_decl_typecheck() (ty_check_decorator())
     union {
         struct {
             Span name_span;
@@ -112,7 +112,7 @@ typedef struct ClassDecl {
     bool is_expression; // A class expression, which legacy decorators can't decorate the members of
     bool is_ambient; // `declare class`, or in an ambient context
     uint8_t named_evaluation; // ClassNamedEvaluation
-    VecExpr decorators; // TODO: only checked as expressions, not as decorators of this class
+    VecExpr decorators; // Checked as calls by class_decl_typecheck() (ty_check_decorator())
     Generic generic;
     OuterGenerics const* outer_generics; // The type parameters it captures (set by the resolve walk)
     Expr extends;

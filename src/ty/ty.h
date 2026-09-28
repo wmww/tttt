@@ -1440,6 +1440,8 @@ void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param, 
 // (tsc's elaborateError). Returns whether it was assignable
 void ty_check_enum_member_value(Checker* me, Ty const* source, Span span, ErrorCtx* errs);
 bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs);
+// `source` isn't assignable to `target` (the caller checked): error `ts_code` with message `head` (consumed), then why
+void ty_report_unassignable_with_head(Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, Span span, ErrorCtx* errs);
 bool ty_check_assignable_to_access(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, Expr const* left, ErrorCtx* errs);
 // A `using` (TS2850) or `await using` (TS2851) initializer: disposable, null or undefined
 void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Span span, ErrorCtx* errs);
@@ -1571,6 +1573,18 @@ void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty c
 // A tagged template `` tag`a${x}` ``, the EXPR_TEMPLATE: a call of the tag with a TemplateStringsArray and the substitutions
 Ty const* ty_tagged_template_return_type(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual);
 void ty_tagged_template_typecheck(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual, ErrorCtx* errs);
+// A decorator checked as a call (tsc's checkDecorator/resolveDecorator): of the class, of `item`, or of its
+// parameter `param_index` (-1: not a parameter). `at`: the whole decorator from its `@`
+struct ClassItem;
+typedef struct DecoratorSite {
+    ClassDecl const* class_decl;
+    struct ClassItem* item;
+    i32 param_index;
+    Span at;
+} DecoratorSite;
+// Checks the decorator expression too, with the decorator's signature as its contextual type (tsc's
+// getContextualTypeForDecorator): expr_typecheck() of it comes after
+void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, ErrorCtx* errs);
 Ty const* ty_awaited(Checker* me, Ty const* ty);
 Ty const* ty_promise_like_of(Checker* me, Ty const* ty);
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);

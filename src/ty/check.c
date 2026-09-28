@@ -773,6 +773,10 @@ void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span s
     check_assignable(me, HEAD_TYPE, source, target, span, nullptr, errs);
 }
 
+void ty_report_unassignable_with_head(Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, Span span, ErrorCtx* errs) {
+    report_unassignable_with_head(me, source, target, ts_code, head, false, span, errs);
+}
+
 bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs) {
     return check_assignable(me, HEAD_TYPE, source, target, span, expr, errs);
 }

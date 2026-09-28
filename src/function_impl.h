@@ -19,7 +19,7 @@ typedef struct FunctionArg {
     Span rest_span;
     bool rest;
     bool jsdoc_variadic; // JavaScript `@param {...T} x` of a parameter that isn't a rest parameter (x is T)
-    VecExpr decorators; // TODO: only checked as expressions
+    VecExpr decorators; // Of a class member's parameter: checked as calls by class_decl_typecheck()
     // `constructor(public x: T)`: also declares a property of the class
     bool is_parameter_property;
     bool is_readonly_property;

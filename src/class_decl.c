@@ -1176,6 +1176,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
 
     for_each (i, vec_expr, &my decorators) {
+        if (!(compiler_options()->experimental_decorators && my is_expression)) {
+            ty_check_decorator(current_checker, i, (DecoratorSite){ .class_decl = me, .param_index = -1, .at = decorator_span(i) }, errs);
+        }
         expr_typecheck(i, errs);
     }
     if (!my is_ambient) class_check_static_name_conflicts(me, errs);
@@ -1245,14 +1248,31 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             i->tag == CLASS_ITEM_CONSTRUCTOR ? &i->constructor.func : nullptr;
         for (isize a = 0; function && a < vec_function_arg_size(&function->args); a++) {
             FunctionArg const* arg = vec_function_arg_at(&function->args, a);
-            if (!vec_expr_size(&arg->decorators) || !span_valid(arg->span)) continue;
+            if (!vec_expr_size(&arg->decorators)) continue;
             bool getter = i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_GET;
-            if (legacy && function->has_body && !getter && !my is_expression) continue;
-            Span at = arg->span;
-            at.sv = csview_from_n(span_start_ptr(arg->span), 1);
-            error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
+            // (tsc's parameter index doesn't count a `this` parameter, which can't be decorated)
+            FunctionArg const* first = vec_function_arg_at(&function->args, 0);
+            bool has_this = first->initializer.binding.tag == BINDING_IDENTIFIER &&
+                span_equals(first->initializer.binding.content_span, "this");
+            bool valid = legacy && function->has_body && !getter && !my is_expression;
+            if (!valid && span_valid(arg->span)) {
+                Span at = arg->span;
+                at.sv = csview_from_n(span_start_ptr(arg->span), 1);
+                error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
+            }
+            for_each (decorator, vec_expr, &arg->decorators) {
+                if (valid && span_valid(arg->span) && !(has_this && a == 0)) {
+                    ty_check_decorator(current_checker, decorator, (DecoratorSite){ .class_decl = me, .item = i,
+                        .param_index = (i32)(a - (has_this ? 1 : 0)), .at = decorator_span(decorator) }, errs);
+                }
+                expr_typecheck(decorator, errs);
+            }
         }
         for_each (decorator, vec_expr, &i->decorators) {
+            if (!decorator_error) {
+                ty_check_decorator(current_checker, decorator, (DecoratorSite){ .class_decl = me, .item = i, .param_index = -1,
+                    .at = decorator_span(decorator) }, errs);
+            }
             expr_typecheck(decorator, errs);
         }
     }

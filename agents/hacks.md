@@ -641,7 +641,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   Class member reads are a checker table keyed by declaration span start (`ty_mark_member_referenced`).
 - `for_in_accepts` (statement.c): type parameters and deferred types are accepted outright (tsc judges the constraint:
   TS2407 missed).
-- Decorators are typechecked as ordinary expressions; placement checked (TS1206/TS1249), validity for the target isn't.
+- `ty_check_decorator` (ty/call.c): a decorator's signature is rebuilt per check (not cached per decorated node like
+  tsc's resolved signatures; each is checked once, so nothing asks twice yet). `this` in an ES decorator binds the
+  class, not the outer `this` (plan 37 C stage 2).
 - `program_apply_comment_directives` (`@ts-expect-error`/`@ts-ignore`): suppression goes by tttt's error *phase*
   (RESOLVE_NAMES/TYPECHECK), not tsc's diagnostic kind, so parser-reported grammar errors aren't suppressed and
   checker-reported parse errors are; program diagnostics in the file never are. Line breaks `\n` only, `\s` ASCII only.

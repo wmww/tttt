@@ -52,3 +52,8 @@ duplicated webpack), hacks.md (`string_to_double`).
   `module.exports` (`obj2.default`: nodeModulesTripleSlashReferenceModeDeclarationEmit7); (4) the symbols of a local
   type merged with an exported value of one name list both declarations (importElisionExportNonExportAndDefault);
   (5) tsc's pretty output splits lines on `\r` and U+2028/9 too, error_format_pretty() only on `\n`.
+- **webpack depends on the checker count** (found in todo entry 8, already at 8eab3851): `./checkerdiff.py webpack`
+  gives 37 diagnostics with `--checkers 1` and 30 with 4 (the default, what `./realworld.py` reports), 11 differing:
+  IdleFileCachePlugin.js 157/158/208/220 (TS2322, TS18048) and PackFileCacheStrategy.js:163 only with 1 checker,
+  cleverMerge.js:355 only with 4. An evaluation-order dependence in JS checking (webpack went 107 -> 30 in entries 6-7:
+  bisect those commits with checkerdiff first). tsc reports none of them, so K=1 is the worse one.

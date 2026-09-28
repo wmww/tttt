@@ -1,5 +1,4 @@
 esDecorators-contextualTypes.2	types: `this: This` of a function expression inside a generic decorator (inference of This from the context argument, then contextual this); decorator-call path now reached, rest is inference
-missingDecoratorType	TS2318 Cannot find global type 'TypedPropertyDescriptor' (tsc's tryCreateTypeReference reportErrors): 1-line add in decorator_call()
 esDecorators-classDeclaration-outerThisReference(target=es2015)	`this` in an ES decorator is the outer this (globalThis), tttt binds the class: name resolution, not the call
 esDecorators-classDeclaration-outerThisReference(target=es2021)	same
 esDecorators-classDeclaration-outerThisReference(target=es2022)	same

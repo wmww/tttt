@@ -668,9 +668,14 @@ static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_check_emit_helpers(me, errs);
     function_impl_check_implicit_any_parameters(me, errs);
+    // (The parameter decorators of a class member are the class's to check: they are calls with synthetic arguments,
+    // which is what gives them their contextual type)
+    bool class_member = !my is_expression && (span_valid(my member_name) || my constructed_class);
     for_each (i, vec_function_arg, &my args) {
-        for_each (decorator, vec_expr, &i->decorators) {
-            expr_typecheck(decorator, errs);
+        if (!class_member) {
+            for_each (decorator, vec_expr, &i->decorators) {
+                expr_typecheck(decorator, errs);
+            }
         }
         initialized_binding_typecheck_parameter(&i->initializer, i->span, errs);
         if (i->initializer.binding.tag == BINDING_ARRAY && i->initializer.value.tag != EXPR_IMPLICIT_ANY &&

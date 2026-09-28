@@ -25701,7 +25701,7 @@ const baselines = {
         types: true,
     },
     'potentiallyUncalledDecorators': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38171,7 +38171,7 @@ const baselines = {
         types: true,
     },
     'constructableDecoratorOnClass01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38253,7 +38253,7 @@ const baselines = {
     'decoratorChecksFunctionBodies': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorInstantiateModulesInFunctionBodies': {
         errors: true,
@@ -38286,7 +38286,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClass8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38301,7 +38301,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethod10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38381,7 +38381,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethod6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38391,7 +38391,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethod8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38436,7 +38436,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassProperty11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38461,17 +38461,17 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassProperty6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'decoratorOnClassProperty7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'decoratorCallGeneric': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38563,10 +38563,10 @@ const baselines = {
     'legacyDecorators-contextualTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'missingDecoratorType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46551,7 +46551,7 @@ const baselines = {
         types: true,
     },
     'esDecorators-arguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46563,7 +46563,7 @@ const baselines = {
     'esDecorators-contextualTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'esDecorators-decoratorExpression.1(experimentaldecorators=false)': {
         errors: false,
