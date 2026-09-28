@@ -1692,8 +1692,9 @@ Ty const* ty_prop_key_literal(Checker* me, Prop const* prop) {
     while (declared->target && !declared->decl_span_count) declared = declared->target;
     csview text = declared->name_span.sv;
     if (declared->name_is_value && span_valid(declared->name_span) && text.size &&
-        ((text.buf[0] >= '0' && text.buf[0] <= '9') || text.buf[0] == '.')
+        ((text.buf[0] >= '0' && text.buf[0] <= '9') || text.buf[0] == '.' || text.buf[0] == '[')
     ) {
+        // (A computed name is a value when its type is a number literal: tsc's nameType)
         csview name = atom_sv(prop->name);
         char buf[64];
         if (name.size > 0 && name.size < (isize_t)sizeof(buf)) {
