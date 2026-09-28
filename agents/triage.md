@@ -73,3 +73,31 @@ smaller leftovers to `bugs/*.md` and hacks.md.
 - mappedTypeGenericWithKnownKeys: `obj.unknownLiteralKey = 3` on `Record<keyof T | "k", V>` should be TS2551 (did you
   mean 'k'), `obj['' as string] = 4` TS2862; ty_check_generic_index_write() skips generic mapped types.
 - TS2705/TS2468 (async function in ES5 without a global `Promise` value, tsc's createPromiseReturnType): tsc reports it only when the return type of an async function *without* `return x` is computed from its body (noImplicitReturns, a call, a contextual signature...), not for every such function; checking every one of them breaks 9 tests (asyncFunctionWithForStatementNoInitializer, classStaticBlock7...). Needs the error at the lazy return-type computation (asyncFunctionNoReturnType, operationsAvailableOnPromisedType, destructuringControlFlowNoCrash). TS2712 (the same for `import()`) is unconditional in checkImportCallExpression.
+## 2026-09-28, suite checker bugs, sub-agent C (circularity / noImplicitAny / definite assignment)
+- tsc's circularity is one resolution stack (pushTypeResolution): a cycle found at entry i marks every entry from i on
+  circular, so the *outer* declarations get TS7022/TS2502 too. tttt has separate in-flight states (LazyType
+  self-referential scheme, function return memos, Prop.circular, aliases_in_flight) that only flag the re-entered one.
+  Missing because of it: for-of34/35 (TS7022 on `v` when `next()`'s return type is the cycle), circularTypeofWithVarOrFunc
+  (TS2502 on `var x: Alias` whose alias is `typeof x`, TS2577), circularGetAccessor (`typeof this.foo` in a declared
+  class goes through the accessor LazyType, not the Prop), implicitAnyFromCircularInference, recursiveTypesWithTypeof.
+  Worth a plan: one checker-level resolution stack that the lazy states push onto.
+- TS7023 that tsc gets from printing a type in an error message while the return type is in flight
+  (thisInObjectLiterals, accessorInferredReturnTypeErrorInReturnStatement, trivialSubtypeReductionNoStructuralCheck,
+  checkingObjectWithThisInNamePositionNoCrash, conflictingDeclarationsImportFromNamespace1/2): tttt's error types don't
+  resolve the in-flight return type. Probably only fixable by printing the way tsc does (resolving members' types).
+- TS2313 left: `[P in P]` (P isn't in scope of its own constraint: TS2304 instead), recursiveMappedTypes /
+  circularBaseTypes (`keyof` of an alias being resolved), incorrectRecursiveMappedTypeConstraint; the base constraint
+  walk (`walk_base_constraint`) doesn't go into conditional types.
+- TS2565 for JavaScript expandos read in the container that declares them (`d.q` after `if (b) d.q = false`,
+  typeFromPropertyAssignment36, classFieldSuperAccessibleJs1): getFlowTypeOfAccessExpression's second assumeUninitialized
+  branch.
+- dependentDestructuredVariables: narrowing of destructured variables by each other (tsc's getCandidateDiscriminantPropertyAccess
+  on binding elements) isn't implemented: 20 spurious TS2339 and 9 spurious TS7022.
+- blockScopedBindingUsedBeforeDef: tsc also reports TS2538 "Type 'any' cannot be used as an index type" for the
+  circular `any` key of `let {[a]: a}`.
+- generatorImplicitAny `f(yield)` with a generic `f<T>(value: T)`: tsc reports TS7057 (the argument's contextual type
+  ends up any); tttt's memo context is T.
+- circularReferenceInReturnType: `fn2()(() => res2)` is typed wrong (tsc: res2 any without error, tttt: TS7024 on the
+  arrow); context-sensitive argument order.
+- restTuplesFromContextualTypes line 56: `(a, b, ...x) => {}` against `(x: number, ...args: T)` should fail (T vs
+  `[b: T[0], ...x: T[number][]]`); tttt relates it.
