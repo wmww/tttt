@@ -1587,6 +1587,22 @@ static Ternary props_related_impl(
             if (!missing_count) missing_prop = target_prop;
             missing_count++;
         }
+        // A `#x` of another class that the source class has one of its own of (tsc's reportUnmatchedProperty)
+        Symbol const* private_owner = missing_count ? ty_private_name_class(me, missing_prop->name) : nullptr;
+        Ty const* source_declared = source->kind == TY_REFERENCE ? source->reference.target : source;
+        Symbol const* source_class = source_declared->kind == TY_DECLARED &&
+            source_declared->declared.kind == TY_DECLARED_CLASS_INSTANCE ? source_declared->declared.symbol : nullptr;
+        if (private_owner && source_class &&
+            find_prop(me, source, ty_private_name(me, source_class, atom_sv(missing_prop->name)), 0).found
+        ) {
+            report_line(st, 2322, cstr_d(
+                "Property '", atom_sv(missing_prop->name), "' in type '",
+                source_class->name.size ? source_class->name : c_sv("(Anonymous class)"),
+                "' refers to a different member that cannot be accessed from within type '",
+                private_owner->name.size ? private_owner->name : c_sv("(Anonymous class)"), "'."
+            ));
+            return TERNARY_FALSE;
+        }
         if (missing_count) {
             cstr source_str, target_str;
             display_pair(me, source, true, target, &source_str, &target_str);

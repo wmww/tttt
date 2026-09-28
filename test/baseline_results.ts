@@ -36956,7 +36956,7 @@ const baselines = {
         types: true,
     },
     'privateNamesUnique-1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36976,7 +36976,7 @@ const baselines = {
         types: true,
     },
     'privateNamesUnique-5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
