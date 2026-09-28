@@ -19176,9 +19176,9 @@ const baselines = {
         types: false,
     },
     'jsExpandoObjectDefineProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsExportAssignmentNonMutableLocation': {
         errors: true,
@@ -60506,8 +60506,8 @@ const baselines = {
         types: false,
     },
     'nestedPrototypeAssignment': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'plainJSBinderErrors': {

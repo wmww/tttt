@@ -3242,6 +3242,21 @@ void binder_link_global_expandos(Binder* me) {
 static void add_expando_namespace_decls(Scope* me, Expr const* entity, bool top_level) {
     if (entity->tag == EXPR_PROPERTY) add_expando_namespace_decls(me, &entity->property->expr, top_level);
     Symbol* symbol = lookup_for_property_access(me, entity);
+    if (!symbol && top_level && entity->tag == EXPR_PROPERTY) {
+        // A name the namespace doesn't have yet is declared in it (tsc's forEachIdentifierInEntityName action)
+        Symbol* parent = lookup_for_property_access(me, &entity->property->expr);
+        Span name = expr_static_property_name(entity);
+        if (parent && parent->exports && !parent->is_module && !(parent->flags & SYMBOL_ALIAS) && span_valid(name)) {
+            bool merged;
+            symbol = declare_symbol(me, parent->exports, name.sv, name, SYMBOL_VALUE_MODULE, 0, false, &merged);
+            if (!merged) {
+                symbol->name = name.sv;
+                symbol->name_span = name;
+                symbol->parent = parent;
+                symbol->exported = true;
+            }
+        }
+    }
     if (!symbol) return;
     Span name = entity->tag == EXPR_PROPERTY ? entity->property->prop.outer_span : entity->outer_span;
     symbol_ensure_exports(symbol);
