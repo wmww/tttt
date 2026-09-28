@@ -413,11 +413,12 @@ Ty const* ty_conditional_resolve(
     // (tsc's isDeferredType of the extends type: `{} extends Mapped<T>` waits for T too)
     if (ty_is_generic_index(inferred_extends) || is_generic_mapped(me, inferred_extends, 0)) return nullptr;
 
+    // (An `any` or `unknown` extends type takes anything, `any` too: only then is `any` not both branches)
+    if (inferred_extends->flags & (TYF_ANY | TYF_UNKNOWN)) return branch_type_with(me, if_true, mapper);
     if (check_type->flags & TYF_ANY) {
         Ty const* parts[2] = { branch_type_with(me, if_true, mapper), branch_type(me, if_false) };
         return ty_union(me, parts, 2, nullptr, (TyList){0});
     }
-    if (inferred_extends->flags & (TYF_ANY | TYF_UNKNOWN)) return branch_type_with(me, if_true, mapper);
     // Definitely false: not even with every type variable in either side the wildcard (tsc's permissive
     // instantiation); definitely true: with each one unconstrained (restrictive); otherwise deferred
     if (definitely_unrelated(me, check_type, inferred_extends)) return branch_type(me, if_false);

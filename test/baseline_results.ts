@@ -2626,9 +2626,9 @@ const baselines = {
         types: true,
     },
     'booleanFilterAnyArray': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'booleanLiteralsContextuallyTypedFromUnion': {
         errors: true,
