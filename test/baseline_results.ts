@@ -17931,9 +17931,9 @@ const baselines = {
         types: true,
     },
     'instanceofNarrowReadonlyArray': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instanceofOnInstantiationExpression': {
         errors: false,
