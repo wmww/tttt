@@ -594,7 +594,10 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   only takes type parameters as the type variable, not indexed accesses like tsc: with them valibot's
   `NonNullable<TSchema['~types']>` became never, because tttt's base constraint of that indexed access came out as
   `undefined` (see bugs/type_core.md). The IsConstrainedTypeVariable mark is an xflag set on the interned intersection
-  after the fact (tsc keys NoConstraintReduction intersections apart).
+  after the fact (tsc keys NoConstraintReduction intersections apart). And a type parameter whose declared
+  constraint has a deferred type in it (`Expected extends Cond<...> ? ... : ...`, expect-type) isn't reduced at all:
+  its base constraint, which tsc asks for, cost 5% of valibot's instructions (`primitive_constraint_of`, memoized
+  per type variable). The real fix is a cheaper conditional base constraint (bugs/perf_leads.md).
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`, `ty/helpers.c`)
 - `check_access` (TS2339, HACKs): lets through generic mapped types (`Pick<T, K>`: members

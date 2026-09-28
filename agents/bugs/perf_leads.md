@@ -67,3 +67,10 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
   `node_modules/webpack -> ..` realpaths to the other copy: two webpacks, 130 diagnostics (tsc gets 24 of its own).
   realworld.py now passes the real path, but some relation between the two copies' structurally-identical types
   runs away in tttt; a callgrind of that run would show which (probably the relation budget/recursion identity).
+
+## Base constraints of expect-type's conditional constraints
+In valibot's `*.test-d.ts`, `ty_base_constraint` of expect-type's `Expected` (constrained by
+`StrictEqualUsingTSInternalIdenticalToOperator<Input, Expected> extends true ? unknown : MismatchInfo<...>`) took
+5-10 ms per type parameter (about 250M instructions over the corpus, 5%) when constrained type variable reduction asked
+for it; `primitive_constraint_of` (checker.c) now skips deferred declared constraints because of it. Worth a look: tsc
+computes the same constraint without it showing up.

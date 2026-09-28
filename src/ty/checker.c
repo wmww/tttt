@@ -657,10 +657,11 @@ static Ty const* union_with_origin(
     TyBuf buf = {0};
     ty_buf_add_flattened(&buf, TY_UNION, types, len);
 
-    u32 includes = 0;
+    u32 includes = 0, xincludes = 0;
     bool includes_error = false, includes_non_widening = false;
     for (u32 i = 0; i < buf.len; i++) {
         includes |= buf.data[i]->flags;
+        xincludes |= buf.data[i]->xflags;
         if ((buf.data[i]->flags & TYF_NULLABLE) && !(buf.data[i]->xflags & TYX_CONTAINS_WIDENING)) includes_non_widening = true;
         includes_error |= buf.data[i]->kind == TY_INTRINSIC && (buf.data[i]->flags & TYF_ERROR);
     }
@@ -709,11 +710,7 @@ static Ty const* union_with_origin(
         if ((includes & TYF_STRING_LITERAL) && (includes & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING))) {
             out = remove_literals_matched_by_patterns(me, buf.data, out);
         }
-        bool has_constrained = false;
-        for (u32 i = 0; i < out && !has_constrained; i++) {
-            has_constrained = buf.data[i]->kind == TY_INTERSECTION && (buf.data[i]->xflags & TYX_CONSTRAINED_TYPE_VARIABLE);
-        }
-        if (has_constrained) out = remove_constrained_type_variables(me, buf.data, out);
+        if (xincludes & TYX_CONSTRAINED_TYPE_VARIABLE) out = remove_constrained_type_variables(me, buf.data, out);
         if (out == 0) {
             // Nothing but null and undefined (without strictNullChecks): null wins, like in tsc's getUnionType
             TyIntrinsic only = TY_NEVER;
@@ -1122,17 +1119,61 @@ static bool is_primitive_or_empty_object(Checker* me, Ty const* t) {
 // tsc's getIntersectionType for `T & P`, T a type variable, P a primitive, `object` or `{}`, when T's constraint is
 // made of those too: T if the constraint is a strict subtype of P, never if they are unrelated. Otherwise null, and
 // *constrained says whether it's a constrained type variable
+static Ty const* compute_type_variable_reduction(Checker* me, Ty const* variable, Ty const* primitive, bool* constrained);
+
 static Ty const* reduce_type_variable_intersection(Checker* me, Ty const* a, Ty const* b, bool* constrained) {
     *constrained = false;
     Ty const* variable = is_type_variable(a) ? a : b;
     Ty const* primitive = variable == a ? b : a;
-    if (!is_type_variable(variable) || !is_primitive_or_empty_object(me, primitive)) return nullptr;
-    Ty const* constraint = ty_base_constraint(me, variable);
-    if (!constraint || constraint == variable) return nullptr;
-    TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
-    for (u32 i = 0; i < parts.len; i++) {
-        if (!is_primitive_or_empty_object(me, parts.data[i])) return nullptr;
+    if (!is_type_variable(variable) || is_type_variable(primitive)) return nullptr;
+    // (Not asking whether P is `{}` before the constraint says it could matter: that resolves an object's members)
+    if (!primitive_family(primitive) && !(primitive->flags & (TYF_NON_PRIMITIVE | TYF_OBJECT))) return nullptr;
+    // (Memoized: `T & {}` is made over and over, NonNullable<T>. 1: nothing to reduce, 2: constrained)
+    u64 key[3] = { KEY_TYPE_VARIABLE_REDUCTION, variable->id, primitive->id };
+    void const* known = intern_get(&my links, key, 3);
+    if (known) {
+        *constrained = (uintptr_t)known == 2;
+        return (uintptr_t)known <= 2 ? nullptr : known;
     }
+    Ty const* ret = compute_type_variable_reduction(me, variable, primitive, constrained);
+    *intern_slot(me, &my links, key, 3) = ret ? (void const*)ret : (void const*)(uintptr_t)(*constrained ? 2 : 1);
+    return ret;
+}
+
+// The base constraint of a type variable if it's made of primitives, `object` and `{}`, else null. Once per variable:
+// a conditional type's constraint is costly, and `T & P` is asked for with many P (expect-type's `T & string`, `T &
+// number`...)
+static Ty const* primitive_constraint_of(Checker* me, Ty const* variable) {
+    u64 key[3] = { KEY_TYPE_VARIABLE_REDUCTION, variable->id, 0 };
+    void const* known = intern_get(&my links, key, 3);
+    if (known) return (uintptr_t)known == 1 ? nullptr : known;
+    Ty const* ret = nullptr;
+    // (The declared constraint tells first, cheaply: an object type in it is the end of it)
+    Ty const* declared = ty_param_constraint(me, variable);
+    TyList declared_parts = !declared ? (TyList){0} :
+        declared->kind == TY_UNION ? declared->composite.types : (TyList){ .data = &declared, .len = 1 };
+    bool possible = declared != nullptr;
+    for (u32 i = 0; i < declared_parts.len && possible; i++) {
+        Ty const* part = declared_parts.data[i];
+        // HACK: a deferred type in the declared constraint (expect-type's `Expected extends Cond<...> ? ... : ...`) is
+        // taken to be no primitive: tsc asks its base constraint, which costs tttt 5% of valibot
+        possible = part->kind == TY_TYPE_PARAM || is_primitive_or_empty_object(me, part);
+    }
+    Ty const* constraint = possible ? ty_base_constraint(me, variable) : nullptr;
+    if (constraint && constraint != variable) {
+        TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+        bool all = true;
+        for (u32 i = 0; i < parts.len && all; i++) all = is_primitive_or_empty_object(me, parts.data[i]);
+        if (all) ret = constraint;
+    }
+    *intern_slot(me, &my links, key, 3) = ret ? (void const*)ret : (void const*)(uintptr_t)1;
+    return ret;
+}
+
+static Ty const* compute_type_variable_reduction(Checker* me, Ty const* variable, Ty const* primitive, bool* constrained) {
+    Ty const* constraint = primitive_constraint_of(me, variable);
+    if (!constraint || !is_primitive_or_empty_object(me, primitive)) return nullptr;
+    TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
     if (ty_is_related(me, constraint, primitive, TY_RELATION_STRICT_SUBTYPE)) return variable;
     bool some = false;
     for (u32 i = 0; constraint->kind == TY_UNION && i < parts.len && !some; i++) {

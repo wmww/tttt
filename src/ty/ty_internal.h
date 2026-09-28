@@ -51,6 +51,7 @@ enum {
     KEY_SIMPLIFIED, // (indexed access type id, writing) -> ty_simplified() of it; itself while in flight (relate.c)
     KEY_IMPLIED_CONSTRAINT, // TernaryType -> TyImplied of its (unary tuple-unwrapped) check and extends types (lower.c)
     KEY_RESTRICTIVE_PARAM, // type parameter id -> its unconstrained stand-in (conditional.c)
+    KEY_TYPE_VARIABLE_REDUCTION, // (type variable id, primitive id) -> reduce_type_variable_intersection (checker.c)
     KEY_DEFINITELY_RELATED, // (source id, target id, which) -> 1 + ty_definitely_assignable/unassignable (conditional.c)
     KEY_BASE_SIGNATURE, // Signature -> TyMapper of its type parameters to their base constraints (infer.c)
     KEY_VARIANCES,      // declared type id -> variance array
