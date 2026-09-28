@@ -330,6 +330,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool jsx_generic_arrow_start(Parser* parent);
 static bool parse_binding_content(Parser* parent, Binding* ret);
+static bool is_reserved_word(csview word);
 static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, u32 code, char const* message);
 static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
 static bool parse_binding_element(Parser* parent, Binding* ret);
@@ -6882,6 +6883,15 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
 
     if (parse_dot_prop(&p, &parsed.optional_chain, &parsed.expr_a)) {
+        if (left_and_ret->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(left_and_ret) &&
+            !parsed.optional_chain
+        ) {
+            // `f<T>.x` (tsc's parsePropertyAccessExpressionRest): over the type arguments, `<` to `>`
+            const char* open = span_end_ptr(left_and_ret->generic_params->expr.outer_span);
+            while (*open && *open != '<') open++;
+            parse_error(&p, span_make(p.shared->source, open, span_end_ptr(left_and_ret->outer_span)), 1477,
+                "An instantiation expression cannot be followed by a property access.");
+        }
         *left_and_ret = expr_property(
             span_from(a),
             c_new(PropertyExpr, {
@@ -8492,12 +8502,23 @@ static bool parse_binding_element(Parser* parent, Binding* ret) {
     return parse_success(&p);
 }
 
+// tsc's isBindingIdentifier: an identifier that isn't a reserved word (`yield`/`await` are the caller's business)
+static bool parse_binding_identifier(Parser* parent) {
+    const char* start = parent->pos;
+    if (!parse_identifier(parent, nullptr)) return false;
+    if (is_reserved_word(csview_from_range(start, parent->pos))) {
+        parent->pos = start;
+        return false;
+    }
+    return true;
+}
+
 static bool parse_binding_content(Parser* parent, Binding* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
     Binding binding;
 
-    if (parse_identifier(&p, nullptr)) {
+    if (parse_binding_identifier(&p)) {
         *ret = (Binding){ .tag = BINDING_IDENTIFIER };
         // Name is accessed via content_span, which is set at the end
     } else if (hop_char(&p, '[')) {
@@ -8542,7 +8563,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 goto object_item_done;
             } else if (parse_identifier_or_keyword(&p, &name)) {
                 key = value_string(cstr_from_span(name));
-                shorthand_allowed = true;
+                shorthand_allowed = !is_reserved_word(name.sv);
             } else if (*p.pos == '[') {
                 p.pos++;
                 hop_whitespace(&p);
@@ -8563,7 +8584,16 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             if (hop_char(&p, ':')) {
                 hop_whitespace(&p);
                 if (!parse_binding_element(&p, &binding)) {
-                    parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                    Span word;
+                    Parser probe = parser(&p);
+                    bool reserved = parse_identifier_or_keyword(&probe, &word) && is_reserved_word(word.sv);
+                    parse_fail(&probe);
+                    if (reserved) {
+                        // tsc's createIdentifier: a missing identifier, the word is left for the list to trip over
+                        parse_error(&p, word, 1359, "Identifier expected. '", word, "' is a reserved word that cannot be used here.");
+                    } else {
+                        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                    }
                     binding = (Binding){ .tag = BINDING_NOOP, .content_span = span_from_pos(&p) };
                 }
             } else {
@@ -8826,6 +8856,9 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                     list_leave(&p, saved_context);
                     variable_statement_drop(ret);
                     return parse_fail(&p);
+                } else if (!list_is_terminator(PARSING_VARIABLE_DECLARATIONS, tok_peek(&p))) {
+                    // `var class`: TS1389 (the checker's TS1123 for the empty list is a grammar error, dropped)
+                    if (!list_abort_or_skip(&p, PARSING_VARIABLE_DECLARATIONS)) continue;
                 } else {
                     Span s = span_from(end_of_keyword);
                     s.sv.size = 0;
