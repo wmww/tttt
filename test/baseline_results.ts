@@ -9021,12 +9021,12 @@ const baselines = {
         types: true,
     },
     'decoratorInJsFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'decoratorInJsFile1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19291,7 +19291,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationConstructorOverloadSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19366,7 +19366,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationFunctionOverloadSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19401,7 +19401,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationMethodOverloadSyntax': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19421,7 +19421,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationNonNullAssertion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19481,7 +19481,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationTypeAssertions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -19496,7 +19496,7 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationTypeParameterSyntaxOfClassExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30276,7 +30276,7 @@ const baselines = {
         types: true,
     },
     'thisAssignmentInNamespaceDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48381,7 +48381,7 @@ const baselines = {
         types: true,
     },
     'typeSatisfaction_js': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49671,7 +49671,7 @@ const baselines = {
         types: false,
     },
     'exportNamespace_js': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51391,7 +51391,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsClassesErr': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51436,7 +51436,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsEnums': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51766,7 +51766,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsTypeReferences4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54381,17 +54381,17 @@ const baselines = {
         types: false,
     },
     'nodeModulesAllowJs1(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesAllowJs1(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesAllowJs1(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -54441,17 +54441,17 @@ const baselines = {
         types: true,
     },
     'nodeModulesAllowJsExportAssignment(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesAllowJsExportAssignment(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesAllowJsExportAssignment(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -54486,17 +54486,17 @@ const baselines = {
         types: true,
     },
     'nodeModulesAllowJsImportAssignment(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesAllowJsImportAssignment(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesAllowJsImportAssignment(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54646,7 +54646,7 @@ const baselines = {
         types: false,
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55836,7 +55836,7 @@ const baselines = {
         types: true,
     },
     'override_js3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

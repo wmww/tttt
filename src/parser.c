@@ -317,6 +317,7 @@ static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, 
 static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
 static bool parse_binding_element(Parser* parent, Binding* ret);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
+static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js);
 static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
 
@@ -467,6 +468,64 @@ static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr messag
 
 /// Builds the message from a display sequence
 #define parse_error(me, span, ts_code, ...) parse_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+
+// TypeScript-only syntax in a JavaScript file (tsc's getJSSyntacticDiagnosticsForFile: TS8002-TS8017, TS8037). They're
+// syntactic diagnostics of their own: not parse errors (grammar errors are still reported), reported whether or not
+// the file is checked, never deduplicated with parse errors
+static bool is_js_syntax_code(unsigned code) {
+    return (code >= 8002 && code <= 8017) || code == 8037;
+}
+
+static bool reports_js_syntax(Parser const* me) {
+    return my shared->source && my shared->source->is_js && !my shared->in_jsdoc;
+}
+
+static void js_syntax_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
+    if (!reports_js_syntax(me)) {
+        cstr_drop(&message);
+        return;
+    }
+    add_error_to_parser(me, (Error){ .message = message, .span = span, .ts_code = ts_code, .phase = ERROR_PHASE_PARSE });
+}
+
+#define js_syntax_error(me, span, ts_code, ...) js_syntax_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+
+// The TypeScript-only syntax errors inside what one of them is about are not reported (tsc's walk returns "skip"):
+// drops those reported since `start` (a size of the error list)
+static void js_syntax_skip_since(Parser* me, intptr_t start) {
+    if (!reports_js_syntax(me)) return;
+    VecError* errors = &my shared->errors;
+    intptr_t kept = start;
+    for (intptr_t i = start; i < vec_error_size(errors); i++) {
+        Error* error = vec_error_at_mut(errors, i);
+        if (is_js_syntax_code(error->ts_code)) {
+            error_drop(error);
+            my error_count--;
+        } else {
+            if (kept != i) errors->data[kept] = *error;
+            kept++;
+        }
+    }
+    errors->size = kept;
+}
+
+static intptr_t error_mark(Parser const* me) {
+    return vec_error_size(&my shared->errors);
+}
+
+// A function's type parameters (`type_params`: of a declaration, not of a signature in a type) and return type in
+// JavaScript
+static void js_syntax_function(Parser* me, FunctionImpl const* function, bool type_params) {
+    if (!reports_js_syntax(me)) return;
+    VecGenericItem const* items = &function->generic.items;
+    if (type_params && !vec_generic_item_is_empty(items) && !vec_generic_item_front(items)->jsdoc) {
+        Span span = span_between(vec_generic_item_front(items)->full_span, vec_generic_item_back(items)->full_span);
+        js_syntax_error(me, span, 8004, "Type parameter declarations can only be used in TypeScript files.");
+    }
+    if (function->ret_explicit && span_valid(function->ret_span)) {
+        js_syntax_error(me, function->ret_span, 8010, "Type annotations can only be used in TypeScript files.");
+    }
+}
 
 typedef struct Anchor {
     Parser* parser;
@@ -1649,8 +1708,57 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
     return parse_success(&p);
 }
 
+// TypeScript-only modifiers in JavaScript (tsc's getJSSyntacticDiagnosticsForFile: checkModifiers, and every modifier
+// of a class property but `static` and `accessor`, TS8012 for a parameter's)
+static void check_js_modifiers(Parser* parent, ModifierList const* me, ModifiedNode node) {
+    if (!reports_js_syntax(parent) || node.parent == MODIFIED_IN_TYPE) return;
+    switch (node.kind) {
+        case MODIFIED_PARAMETER: {
+            Span first = vec_spanned_modifier_front(&me->spanned)->span;
+            Span last = vec_spanned_modifier_back(&me->spanned)->span;
+            js_syntax_error(parent, span_between(first, last), 8012, "Parameter modifiers can only be used in TypeScript files.");
+            return;
+        }
+        case MODIFIED_PROPERTY:
+        case MODIFIED_METHOD:
+        case MODIFIED_GET_ACCESSOR:
+        case MODIFIED_SET_ACCESSOR:
+        case MODIFIED_CONSTRUCTOR:
+        case MODIFIED_VARIABLE_STATEMENT:
+        case MODIFIED_FUNCTION:
+        case MODIFIED_CLASS:
+            break;
+        default:
+            return;
+    }
+    for_each (i, vec_spanned_modifier, &me->spanned) {
+        bool reported;
+        if (node.kind == MODIFIED_PROPERTY) {
+            reported = i->tag != MODIFIER_STATIC && i->tag != MODIFIER_ACCESSOR;
+        } else {
+            switch (i->tag) {
+                case MODIFIER_CONST: reported = node.kind != MODIFIED_VARIABLE_STATEMENT; break;
+                case MODIFIER_PUBLIC:
+                case MODIFIER_PRIVATE:
+                case MODIFIER_PROTECTED:
+                case MODIFIER_READONLY:
+                case MODIFIER_DECLARE:
+                case MODIFIER_ABSTRACT:
+                case MODIFIER_OVERRIDE:
+                    reported = true;
+                    break;
+                default: reported = false; break;
+            }
+        }
+        if (reported) {
+            js_syntax_error(parent, i->span, 8009, "The '", i->span, "' modifier can only be used in TypeScript files.");
+        }
+    }
+}
+
 static bool check_modifiers(Parser* parent, ModifierList const* me, ModifiedNode node) {
     if (vec_spanned_modifier_is_empty(&me->spanned)) return false;
+    check_js_modifiers(parent, me, node);
     node.parent_ambient |= parent->shared->in_ambient;
     ErrorCtx errs = { .phase = ERROR_PHASE_PARSE };
     bool reported = modifier_list_check_grammar(me, &node, &errs);
@@ -3723,6 +3831,10 @@ static void parse_heritage_expr(Parser* p, Expr* ret) {
     VecSpannedType params;
     if (*gp.pos == '<' && parse_generic_params(&gp, false, &params)) {
         parse_success(&gp);
+        if (!vec_spanned_type_is_empty(&params)) {
+            Span args = span_between(vec_spanned_type_front(&params)->span, vec_spanned_type_back(&params)->span);
+            js_syntax_error(p, args, 8011, "Type arguments can only be used in TypeScript files.");
+        }
         *ret = expr_generic_params(span_from(a), c_new(GenericParamsExpr, { .expr = *ret, .params = params }));
     } else {
         parse_fail(&gp);
@@ -3816,6 +3928,8 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
         u32 count = 0;
         Span trailing_comma = span_null;
         Span second_element = span_null;
+        intptr_t clause_mark = error_mark(p);
+        const char* clause_end = span_end_ptr(keyword);
         u32 saved_elements = list_enter(p, PARSING_HERITAGE_CLAUSE_ELEMENT);
         while (true) {
             hop_whitespace(p);
@@ -3824,6 +3938,7 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
                 const char* start = p->pos;
                 if (count == 1) second_element = span_make(p->shared->source, e.start, e.end);
                 parse_heritage_element(p, h, is_extends, checked, keyword, count);
+                clause_end = p->pos;
                 count++;
                 trailing_comma = span_null;
                 hop_whitespace(p);
@@ -3840,6 +3955,11 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
             if (list_abort_or_skip(p, PARSING_HERITAGE_CLAUSE_ELEMENT)) break;
         }
         list_leave(p, saved_elements);
+        if (h->is_class && !is_extends && reports_js_syntax(p)) {
+            js_syntax_skip_since(p, clause_mark);
+            js_syntax_error(p, span_make(p->shared->source, span_start_ptr(keyword), clause_end), 8005,
+                "'implements' clauses can only be used in TypeScript files.");
+        }
 
         // checkGrammarClassDeclarationHeritageClauses, checkGrammarInterfaceDeclaration: the first complaint about
         // the clauses ends the check, then checkGrammarHeritageClause for each clause until then
@@ -4193,6 +4313,7 @@ static bool parse_function_args_inner(
                 if (hop_char(&p, '?')) {
                     explicit_optional = true;
                     question_span = span_from_previous_char(&p);
+                    js_syntax_error(&p, question_span, 8009, "The '?' modifier can only be used in TypeScript files.");
                     hop_whitespace(&p);
                 }
 
@@ -4385,6 +4506,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionFlags flag
     function_ctx_leave(parent, saved);
     if (success) {
         ret->is_async = flags.is_async;
+        js_syntax_function(parent, ret, true);
     }
     return success;
 }
@@ -4490,6 +4612,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, Functi
         ret->is_async = flags.is_async;
         ret->is_generator = flags.is_generator;
         ret->asterisk = flags.asterisk;
+        js_syntax_function(parent, ret, true);
     }
     return success;
 }
@@ -5042,7 +5165,11 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         bool has_type = false;
         if (hop_char(&p, ':')) {
             hop_whitespace(&p);
+            Anchor type_start = anchor(&p);
+            intptr_t mark = error_mark(&p);
             expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
+            js_syntax_skip_since(&p, mark);
+            js_syntax_error(&p, span_from(type_start), 8010, "Type annotations can only be used in TypeScript files.");
             has_type = true;
             hop_whitespace(&p);
         } else if (span_valid(rest)) {
@@ -5247,6 +5374,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
 static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
+    intptr_t mark = error_mark(&p);
 
     ModifierList modifiers;
     if (!parse_modifier_list(&p, true, &modifiers)) {
@@ -5318,6 +5446,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             question = span_from_previous_char(&p);
             hop_whitespace(&p);
             optional = true;
+            if (!is_type) js_syntax_error(&p, question, 8009, "The '?' modifier can only be used in TypeScript files.");
         } else if (!is_type && *p.pos == '!' && p.pos[1] != '=') {
             // Definite assignment assertion, only matters once definite assignment is checked
             p.pos++;
@@ -5334,10 +5463,14 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         if (!is_type && !name_is_value && span_equals(name_span, "constructor")) {
             modified.kind = MODIFIED_CONSTRUCTOR;
             check_modifiers(&p, &modifiers, modified);
+            Span keyword = name_span;
             name_span = span_from(a);
             if (!parse_function_fn(&p, function_flags_null, &func)) {
                 parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
                 func = (FunctionImpl){0};
+            } else if (!func.has_body && reports_js_syntax(&p)) {
+                js_syntax_skip_since(&p, mark);
+                js_syntax_error(&p, keyword, 8017, "Signature declarations can only be used in TypeScript files.");
             }
             func.full_span = span_from(a);
             func.is_constructor = true;
@@ -5354,6 +5487,12 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 is_type ? MODIFIED_METHOD_SIGNATURE :
                 MODIFIED_METHOD;
             check_modifiers(&p, &modifiers, modified);
+            if (is_type && modified.kind == MODIFIED_METHOD_SIGNATURE) {
+                js_syntax_function(&p, &func, false);
+            } else if (!is_type && !is_getter && !is_setter && !func.has_body && reports_js_syntax(&p)) {
+                js_syntax_skip_since(&p, mark);
+                js_syntax_error(&p, name_span, 8017, "Signature declarations can only be used in TypeScript files.");
+            }
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_METHOD,
                 .method = {
@@ -5392,8 +5531,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 }
             };
 
-            Binding binding;
-            if (parse_binding_type_or_set_to_default(&p, &binding)) {
+            Binding binding = {0};
+            if (parse_binding_type_ex(&p, &binding, !is_type)) {
                 ret->field.explicit_type = binding.explicit_type;
                 ret->field.explicit_type_span = binding.explicit_type_span;
                 ret->field.has_explicit_type = binding.has_explicit_type;
@@ -5569,6 +5708,11 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
 
     if (parse_generic_decl(&p, &ret->generic)) {
         hop_whitespace(&p);
+        if (!generic_empty(&ret->generic)) {
+            Span span = span_between(vec_generic_item_front(&ret->generic.items)->full_span,
+                vec_generic_item_back(&ret->generic.items)->full_span);
+            js_syntax_error(&p, span, 8004, "Type parameter declarations can only be used in TypeScript files.");
+        }
     } else {
         ret->generic = (Generic){0};
     }
@@ -5804,7 +5948,13 @@ static bool parse_as_type(Parser* parent, TypeNode* ret, Span* keyword_span_ret,
     *keyword_span_ret = span_from(a);
     hop_whitespace(&p);
 
+    Anchor type_start = anchor(&p);
     expect_type(&p, TYPE_PRECEDENCE_NULL, ret);
+    if (*is_satisfies_ret) {
+        js_syntax_error(&p, span_from(type_start), 8037, "Type satisfaction expressions can only be used in TypeScript files.");
+    } else {
+        js_syntax_error(&p, span_from(type_start), 8016, "Type assertion expressions can only be used in TypeScript files.");
+    }
 
     return parse_success(&p);
 }
@@ -6504,6 +6654,9 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     if (!ctx.reject_operators && !hit_newline) {
         if (parse_right_unary_op(&p, &parsed.unary)) {
+            if (parsed.unary == UNARY_OP_RIGHT_BANG) {
+                js_syntax_error(&p, span_from(a), 8013, "Non-null assertions can only be used in TypeScript files.");
+            }
             *left_and_ret = expr_unary_op(
                 span_from(a),
                 c_new(UnaryOpExpr, {
@@ -6686,9 +6839,12 @@ static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
 // tags is read straight from the source, where `//` isn't a comment and `'` isn't a string
 
 static bool last_error_starts_at(Parser* me, Span span) {
-    if (!vec_error_size(&my shared->errors)) return false;
-    Error const* last = vec_error_back(&my shared->errors);
-    return last->span.source == span.source && span_start_ptr(last->span) == span_start_ptr(span);
+    for (intptr_t i = vec_error_size(&my shared->errors); i-- > 0;) {
+        Error const* last = vec_error_at(&my shared->errors, i);
+        if (is_js_syntax_code(last->ts_code)) continue;
+        return last->span.source == span.source && span_start_ptr(last->span) == span_start_ptr(span);
+    }
+    return false;
 }
 
 // A unicode escape in an identifier (`\u0061`, `\u{61}`) at c: its length, 0 if there is none
@@ -7762,6 +7918,8 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             .expr = expr,
             .export_equals = true,
         };
+        js_syntax_error(&p, span_with_semicolon(span_from(statement_start)), 8003,
+            "'export =' can only be used in TypeScript files.");
         return parse_success(&p);
     }
 
@@ -7917,6 +8075,21 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     statement.main.full_span = span_from(a);
 
 done:
+    if (reports_js_syntax(&p)) {
+        Span whole = span_with_semicolon(span_from(statement_start));
+        if (statement.main.tag == PORT_IMPORT_ALIAS || statement.main.is_require) {
+            js_syntax_error(&p, whole, 8002, "'import ... =' can only be used in TypeScript files.");
+        } else if (statement.main.type_only) {
+            js_syntax_error(&p, whole, 8006, "'", is_export ? "export type" : "import type",
+                "' declarations can only be used in TypeScript files.");
+        } else {
+            for_each (i, vec_port_item, &statement.items) {
+                if (!i->type_only) continue;
+                js_syntax_error(&p, i->full_span, 8006, "'", is_export ? "export...type" : "import...type",
+                    "' declarations can only be used in TypeScript files.");
+            }
+        }
+    }
     if (span_valid(statement.target_path_span)) {
         statement.module_ref = add_module_ref(&p, cstr_clone(statement.target_path), statement.target_path_span);
         if (statement.is_import_require) statement.module_ref->syntax = MODULE_REF_REQUIRE;
@@ -8092,7 +8265,8 @@ static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, 
     return true;
 }
 
-static bool parse_binding_type(Parser* parent, Binding* ret) {
+// `report_js`: TS8010 in JavaScript (not for a property signature)
+static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js) {
     if (!hop_char(parent, ':')) {
         return false;
     }
@@ -8100,13 +8274,22 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
 
     Anchor a = anchor(parent);
 
+    intptr_t mark = error_mark(parent);
     TypeNode type;
     expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     ret->has_explicit_type = true;
     ret->explicit_type = type;
     ret->explicit_type_span = span_from(a);
+    if (report_js) {
+        js_syntax_skip_since(parent, mark);
+        js_syntax_error(parent, ret->explicit_type_span, 8010, "Type annotations can only be used in TypeScript files.");
+    }
 
     return true;
+}
+
+static bool parse_binding_type(Parser* parent, Binding* ret) {
+    return parse_binding_type_ex(parent, ret, true);
 }
 
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
@@ -9275,9 +9458,49 @@ static bool parse_global_block(Parser* parent, NamespaceDecl* ret) {
     return parse_success(&p);
 }
 
+// Declarations that only exist in TypeScript, reported at their name with nothing inside them (tsc's
+// getJSSyntacticDiagnosticsForFile). `keyword`: where the declaration starts after its modifiers
+static void js_syntax_declaration(Parser* p, intptr_t mark, const char* keyword, Statement const* s) {
+    if (!reports_js_syntax(p)) return;
+    Span name;
+    unsigned code = 8006;
+    char const* what;
+    switch (s->tag) {
+        case STATEMENT_DECL_INTERFACE: name = s->decl.interface->name; what = "interface"; break;
+        case STATEMENT_DECL_ENUM: name = s->decl.enum_->name; what = "enum"; break;
+        case STATEMENT_DECL_TYPE: name = s->decl.type.name; code = 8008; what = nullptr; break;
+        case STATEMENT_DECL_NAMESPACE:
+            name = s->decl.namespace.name;
+            what = strncmp(keyword, "namespace", 9) == 0 ? "namespace" : "module";
+            break;
+        case STATEMENT_DECL_FUNCTION:
+            if (s->decl.function.impl->has_body) return;
+            name = s->decl.function.impl->name;
+            code = 8017;
+            what = nullptr;
+            break;
+        default: return;
+    }
+    js_syntax_skip_since(p, mark);
+    if (!span_valid(name)) return;
+    // (The first name of `namespace A.B`)
+    if (s->tag == STATEMENT_DECL_NAMESPACE) {
+        const char* dot = memchr(name.sv.buf, '.', (size_t)name.sv.size);
+        if (dot) name = span_make(name.source, name.sv.buf, dot);
+    }
+    if (code == 8008) {
+        js_syntax_error(p, name, 8008, "Type aliases can only be used in TypeScript files.");
+    } else if (code == 8017) {
+        js_syntax_error(p, name, 8017, "Signature declarations can only be used in TypeScript files.");
+    } else {
+        js_syntax_error(p, name, 8006, "'", what, "' declarations can only be used in TypeScript files.");
+    }
+}
+
 static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
+    intptr_t mark = error_mark(&p);
 
     union {
         VariableStatement variable;
@@ -9303,6 +9526,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         return parse_fail(&p);
     }
     hop_whitespace(&p);
+    const char* keyword = p.pos;
     DeclStatementProps decl_props = {
         .exported = modifiers.includes[MODIFIER_EXPORT_DEFAULT] ?
             DECL_EXPORTED_YES_DEFAULT :
@@ -9472,6 +9696,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     }
     p.shared->in_ambient = outer_ambient;
     check_modifiers(&p, &modifiers, modified);
+    js_syntax_declaration(&p, mark, keyword, ret);
 
     if (!vec_expr_is_empty(&decorators)) {
         if (ret->tag == STATEMENT_DECL_CLASS) {
@@ -9723,7 +9948,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;
     for_each (i, vec_error, &shared.errors) {
-        source->has_parse_errors |= !is_grammar_code(i->ts_code);
+        source->has_parse_errors |= !is_grammar_code(i->ts_code) && !is_js_syntax_code(i->ts_code);
     }
     for_each (i, vec_error, &shared.errors) {
         if (source->has_parse_errors && is_grammar_code(i->ts_code)) {
