@@ -583,6 +583,13 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `binding_rest_elements`: a rest from a readonly array/tuple loses `readonly`. `binding_add_names`: literal types on
   exported bindings aren't widened like tsc (defaultNamedExportWithType1).
 
+- Conditional type targets in `structured_related` (`relate.c`, `case TY_CONDITIONAL`): tsc's skipFalse is there
+  (restrictive instantiations assignable: only the true branch counts), skipTrue isn't: `ty_definitely_unassignable`
+  (wildcard instantiation of check and extends types) is exponential on zod's union-to-tuple types (`Exclude<Exclude<...,
+  GetUnionLast<...>>, ...>`, 5M instantiations, TS2589), because tttt re-instantiates shared subterms of a type DAG under
+  a fresh mapper (tsc caches conditional instantiations by their mapped outer type arguments and short-circuits a
+  wildcard check type). Fix the sharing, then add skipTrue.
+
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`, `ty/helpers.c`)
 - `check_access` (TS2339, HACKs): lets through generic mapped types (`Pick<T, K>`: members
   only via the constraint) and classes with bases `class_base()` can't see (`ty_has_unresolved_base()`). Bracket access

@@ -51,6 +51,7 @@ enum {
     KEY_SIMPLIFIED, // (indexed access type id, writing) -> ty_simplified() of it; itself while in flight (relate.c)
     KEY_IMPLIED_CONSTRAINT, // TernaryType -> TyImplied of its (unary tuple-unwrapped) check and extends types (lower.c)
     KEY_RESTRICTIVE_PARAM, // type parameter id -> its unconstrained stand-in (conditional.c)
+    KEY_DEFINITELY_RELATED, // (source id, target id, which) -> 1 + ty_definitely_assignable/unassignable (conditional.c)
     KEY_BASE_SIGNATURE, // Signature -> TyMapper of its type parameters to their base constraints (infer.c)
     KEY_VARIANCES,      // declared type id -> variance array
     KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation
@@ -140,6 +141,7 @@ typedef enum InferPriority {
     INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE = 1 << 3, // T from a reverse mapped type (`{ [K in keyof T]: X<T[K]> }`)
     INFER_PRIORITY_PARTIAL_HOMOMORPHIC_MAPPED_TYPE = 1 << 4, // the same, from a source with a skipped function in it
     INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT = 1 << 5, // K from the keys of the source (`{ [P in K]: X }`)
+    INFER_PRIORITY_CONTRAVARIANT_CONDITIONAL = 1 << 6, // to the branches of a conditional type in a contravariant position
     INFER_PRIORITY_RETURN_TYPE = 1 << 7,
 } InferPriority;
 

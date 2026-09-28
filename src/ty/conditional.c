@@ -332,9 +332,24 @@ static bool definitely_unrelated(Checker* me, Ty const* check_type, Ty const* ex
     return ret;
 }
 
-bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target) {
+// (Memoized: relations ask again and again, and each instantiates both sides with a fresh mapper. tsc keeps the
+// permissive and restrictive instantiations on the type)
+static bool definitely_memo(Checker* me, Ty const* source, Ty const* target, bool assignable) {
+    u64 key[4] = { KEY_DEFINITELY_RELATED, source->id, target->id, assignable };
+    void const* known = intern_get(&my links, key, 4);
+    if (known) return (uintptr_t)known == 2;
     bool mentions = false;
-    return definitely_related(me, source, target, &mentions);
+    bool ret = assignable ? definitely_related(me, source, target, &mentions) : definitely_unrelated(me, source, target);
+    *intern_slot(me, &my links, key, 4) = (void const*)(uintptr_t)(1 + ret);
+    return ret;
+}
+
+bool ty_definitely_unassignable(Checker* me, Ty const* source, Ty const* target) {
+    return definitely_memo(me, source, target, false);
+}
+
+bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target) {
+    return definitely_memo(me, source, target, true);
 }
 
 Ty const* ty_conditional_resolve(

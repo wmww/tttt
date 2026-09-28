@@ -5496,12 +5496,12 @@ const baselines = {
         types: true,
     },
     'conditionalTypeAssignabilityWhenDeferred': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'conditionalTypeBasedContextualTypeReturnTypeWidening': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5531,7 +5531,7 @@ const baselines = {
         types: true,
     },
     'conditionalTypeRelaxingConstraintAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

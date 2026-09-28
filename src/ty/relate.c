@@ -270,13 +270,13 @@ static bool could_have_singletons(Checker* me, Ty const* ty) {
         Ty const* constraint = ty_param_constraint(me, ty);
         return constraint && constraint != ty && could_have_singletons(me, constraint);
     }
-    if (ty->kind == TY_STRING_MAPPING) {
+    if (ty->kind == TY_STRING_MAPPING || (ty->flags & TYF_DEFERRED)) {
         // Through its constraint, like any instantiable type: Uppercase<string> is some string
         Ty const* constraint = ty_base_constraint(me, ty);
         if (constraint && constraint != ty) return could_have_singletons(me, constraint);
     }
     return ty->kind == TY_LITERAL ||
-        (ty->flags & (TYF_DEFERRED | TYF_UNDEFINED | TYF_NULL | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) != 0;
+        (ty->flags & (TYF_UNDEFINED | TYF_NULL | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) != 0;
 }
 
 // Enums
@@ -3529,8 +3529,18 @@ static Ternary structured_related_members(
             if (source_root != target_root && !ty_conditional_own_infers(me, target_root).len &&
                 !ty_conditional_distribution_dependent(me, target)
             ) {
+                // (The false branch doesn't count when it can't be picked: tsc's skipFalse, asked only when it isn't
+                // related anyway. HACK: tsc's skipTrue, the true branch when the permissive instantiations aren't
+                // assignable, is left out: instantiating the sides with wildcards is exponential on zod's
+                // union-to-tuple types, whose instantiations tttt doesn't share)
+                Ty const* check = target->conditional.check;
+                Ty const* extends = target->conditional.extends;
                 Ternary related = is_related_to(me, st, source, ty_conditional_branch(me, target, true), false);
-                if (related) related &= is_related_to(me, st, source, ty_conditional_branch(me, target, false), false);
+                if (related) {
+                    Ternary related_false = is_related_to(me, st, source, ty_conditional_branch(me, target, false), false);
+                    if (!related_false && ty_definitely_assignable(me, check, extends)) related_false = TERNARY_TRUE;
+                    related &= related_false;
+                }
                 if (related) return related;
             }
         }   break;

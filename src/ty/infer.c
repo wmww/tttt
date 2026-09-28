@@ -1119,8 +1119,23 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             infer_from(me, inf, ty_conditional_branch(me, source, true), ty_conditional_branch(me, target, true));
             infer_from(me, inf, ty_conditional_branch(me, source, false), ty_conditional_branch(me, target, false));
         } else {
-            infer_from(me, inf, source, ty_conditional_branch(me, target, true));
-            infer_from(me, inf, source, ty_conditional_branch(me, target, false));
+            // To both branches, the ones that aren't naked type parameters first, the naked ones less directly (tsc's
+            // inferToConditionalType + inferToMultipleTypesWithPriority)
+            u32 saved = inf->priority;
+            if (inf->contravariant) inf->priority |= INFER_PRIORITY_CONTRAVARIANT_CONDITIONAL;
+            Ty const* branches[2] = { ty_conditional_branch(me, target, true), ty_conditional_branch(me, target, false) };
+            bool naked = false;
+            for (u32 i = 0; i < 2; i++) {
+                if (inference_param(inf, branches[i])) {
+                    naked = true;
+                } else {
+                    infer_from(me, inf, source, branches[i]);
+                }
+            }
+            for (u32 i = 0; naked && i < 2; i++) {
+                if (inference_param(inf, branches[i])) infer_with_priority(me, inf, source, branches[i], INFER_PRIORITY_NAKED_TYPE_VARIABLE);
+            }
+            inf->priority = saved;
         }
     } else if (target->flags & TYF_OBJECT) {
         if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {

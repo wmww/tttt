@@ -1186,6 +1186,9 @@ Ty const* ty_conditional_resolve(
 );
 // Assignable whatever the type parameters in either side turn out to be (tsc's check on their restrictive instantiations)
 bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target);
+// Not assignable even with every type parameter in either side the wildcard (tsc's check on their permissive
+// instantiations). False when unsure
+bool ty_definitely_unassignable(Checker* me, Ty const* source, Ty const* target);
 
 // access.c
 // The type of `object[index]` (and `object.name`, the index being the name as a literal). Null if there's no such
