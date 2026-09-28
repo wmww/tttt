@@ -8,6 +8,8 @@ typedef struct GenericItem {
     Span name;
     Span full_span;
     bool is_const; // `const T`
+    bool is_in; // `in T`: a variance annotation, with `is_out` too `in out T`
+    bool is_out; // `out T`
     bool extends_explicit;
     TypeNode extends;
     bool fallback_explicit;

@@ -1817,6 +1817,14 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
     bool saved_unreliable = my variance_unreliable;
     my variance_depth++;
     for (u32 i = 0; i < variances->len; i++) {
+        // Variance annotations (`in T`, `out T`, `in out T`) are taken as they are (tsc's getVariancesWorker)
+        Ty const* param = subject.params.data[i];
+        GenericItem const* item = param->kind == TY_TYPE_PARAM && param->param.state ? param->param.state->item : nullptr;
+        if (item && (item->is_in || item->is_out)) {
+            variances->data[i] = (unsigned char)(item->is_in && item->is_out ? VARIANCE_INVARIANT :
+                item->is_out ? VARIANCE_COVARIANT : VARIANCE_CONTRAVARIANT);
+            continue;
+        }
         my variance_unreliable = false;
         Ty const* with_super = marker_instance(me, subject, i, variance_marker(me, 0));
         Ty const* with_sub = marker_instance(me, subject, i, variance_marker(me, 1));

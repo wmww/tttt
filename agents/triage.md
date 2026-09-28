@@ -59,3 +59,4 @@ non-widening undefined, `infer X extends C` scope), `bugs/display.md` (object li
 - Corpus session (todo entry 8): generic homomorphic mapped types now get index signatures from their constraint,
   eagerly instantiated: valibot +2.5% instructions. tsc resolves them lazily; a lazy IndexInfo value (or computing the
   mapped type's members only when asked for index infos) would take that back.
+- Variance annotations (`in T`/`out T`) now set the variance (measure_variances()), but their checks aren't implemented: TS2636/TS2637 (tsc's checkVarianceAnnotations: the annotation must agree with the measured variance, only on interfaces/classes/object-ish aliases), TS1274 (modifier on a non-type-declaration parameter). Also tsc unions the modifiers of all declarations of a merged interface's type parameter (getTypeParameterModifiers); tttt reads the one GenericItem the type parameter points at.

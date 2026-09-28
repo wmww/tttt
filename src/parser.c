@@ -1935,17 +1935,19 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    // Modifiers: `const T`, `in T`, `out T`, `in out T`. TODO: variance annotations are parsed and dropped
-    bool is_const = false;
+    // Modifiers: `const T`, `in T`, `out T`, `in out T`
+    bool is_const = false, is_in = false, is_out = false;
     while (true) {
         Parser modifier_p = parser(&p);
-        bool modifier_const = false;
-        if ((hop_start_if_ends_on_word_break(&modifier_p, "in") ||
-             hop_start_if_ends_on_word_break(&modifier_p, "out") ||
+        bool modifier_const = false, modifier_in = false, modifier_out = false;
+        if (((modifier_in = hop_start_if_ends_on_word_break(&modifier_p, "in")) ||
+             (modifier_out = hop_start_if_ends_on_word_break(&modifier_p, "out")) ||
              (modifier_const = hop_start_if_ends_on_word_break(&modifier_p, "const"))) &&
             (hop_whitespace(&modifier_p), identifier_char_size(modifier_p.pos, true))
         ) {
             is_const |= modifier_const;
+            is_in |= modifier_in;
+            is_out |= modifier_out;
             parse_success(&modifier_p);
         } else {
             parse_fail(&modifier_p);
@@ -1983,6 +1985,8 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
         .name = name,
         .full_span = span_from(a),
         .is_const = is_const,
+        .is_in = is_in,
+        .is_out = is_out,
         .extends_explicit = extends_explicit,
         .extends = extends,
         .fallback_explicit = fallback_explicit,
@@ -2858,6 +2862,7 @@ typedef struct JsDocTag {
     Span name; // `@param {T} name`, `@typedef {T} Name`, `@template T`: the name (maybe dotted: `o.a`)
     bool bracketed; // `[name]`, `[name=default]`: optional
     bool is_const; // `@template const T`
+    bool is_in, is_out; // `@template in T`, `@template out T`
     // A `@param`/`@returns` of a `@callback`, a `@property` of a `@typedef`: part of that, not about the host
     bool nested;
     // `@returns {x is T}`, `{asserts x}`: owned, `type` is then the return type the predicate goes with
@@ -3073,7 +3078,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 bool bracketed = c < end && *c == '[';
                 if (bracketed) c = jsdoc_skip_space(c + 1, end);
                 // Modifiers (tsc's parseTemplateTagTypeParameter: parseModifiers): `const`, `in`, `out`
-                bool is_const = false;
+                bool is_const = false, is_in = false, is_out = false;
                 while (true) {
                     const char* word = c;
                     while (c < end && (is_identifier_char(*c) || (uint8_t)*c >= 0x80)) c++;
@@ -3084,6 +3089,8 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                         break;
                     }
                     is_const |= csview_equals(w, "const");
+                    is_in |= csview_equals(w, "in");
+                    is_out |= csview_equals(w, "out");
                     c = jsdoc_skip_space(c, end);
                 }
                 const char* name_start = c;
@@ -3096,6 +3103,8 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 tag.name = span_make(source, name_start, c);
                 tag.bracketed = bracketed;
                 tag.is_const = is_const;
+                tag.is_in = is_in;
+                tag.is_out = is_out;
                 if (bracketed) {
                     while (c < end && (*c == ' ' || *c == '\t')) c++;
                     if (c < end && *c == '=') {
@@ -3620,7 +3629,7 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
         if (comment ? i->comment != comment : i->earlier) continue;
-        GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true, .is_const = i->is_const };
+        GenericItem item = { .name = i->name, .full_span = i->name, .jsdoc = true, .is_const = i->is_const, .is_in = i->is_in, .is_out = i->is_out };
         if (i->has_type) {
             item.extends = jsdoc_take_type(i, nullptr);
             item.extends.from_jsdoc = false;
