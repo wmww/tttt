@@ -1802,6 +1802,7 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
         case BINARY_OP_EH_EH_EQUAL:
             // The target contextually types what is assigned to it (tsc's getContextualTypeForBinaryOperand)
             left = ty_expr_type(me, &binary->left);
+            Ty const* assigned_context = left->flags & TYF_ANY ? nullptr : left;
             if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && binary->left.assignment_pattern &&
                 (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS
             ) {
@@ -1809,12 +1810,9 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
                 // spread or computed name leaves its properties open
                 bool open = false;
                 for_each (i, vec_object_expr_item, &binary->left.object) open |= i->tag == OBJECT_ITEM_SPREAD || i->computed_key;
-                if (!open) {
-                    right = ty_check_expr(me, &binary->right, ty_pattern_clone(me, left));
-                    break;
-                }
+                if (!open) assigned_context = ty_pattern_clone(me, left);
             }
-            right = ty_check_expr(me, &binary->right, left->flags & TYF_ANY ? nullptr : left);
+            right = ty_check_expr(me, &binary->right, assigned_context);
             // `{} = v` is v without null and undefined, the error type if nothing is left (tsc's
             // checkObjectLiteralAssignment returns checkNonNullType's)
             if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && !expr_is_perenthisized(&binary->left) &&
