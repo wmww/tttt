@@ -1,5 +1,6 @@
 // madvise(), which strict -std=c2x hides
 #define _DEFAULT_SOURCE
+#include "error.h"
 #include "ty/ty_internal.h"
 #include <math.h>
 #include <sys/mman.h>
@@ -2191,6 +2192,41 @@ Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index
 }
 
 // `x!`: the type without null and undefined. TODO: tsc intersects a type variable with `{}` under strictNullChecks
+u32 ty_nullable_facts(Checker* me, Ty const* ty) {
+    if (ty->flags & (TYF_UNDEFINED | TYF_VOID)) return 1;
+    if (ty->flags & TYF_NULL) return 2;
+    if (ty->kind == TY_UNION) {
+        u32 facts = 0;
+        for (u32 i = 0; i < ty->composite.types.len; i++) facts |= ty_nullable_facts(me, ty->composite.types.data[i]);
+        return facts;
+    }
+    if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
+        Ty const* constraint = ty_base_constraint(me, ty);
+        return constraint && constraint != ty ? ty_nullable_facts(me, constraint) : 0;
+    }
+    return 0;
+}
+
+Ty const* ty_check_non_null_callee(Checker* me, Ty const* callee, Span span, ErrorCtx* errs) {
+    if (!compiler_options()->strict_null_checks) return callee;
+    u32 facts = ty_nullable_facts(me, callee);
+    if (!facts) return callee;
+    if (facts == 3) error_ctx_error_d(errs, span, 2723, "Cannot invoke an object which is possibly 'null' or 'undefined'.");
+    else if (facts == 1) error_ctx_error_d(errs, span, 2722, "Cannot invoke an object which is possibly 'undefined'.");
+    else error_ctx_error_d(errs, span, 2721, "Cannot invoke an object which is possibly 'null'.");
+    Ty const* rest = ty_non_nullable(me, callee);
+    if (rest->kind == TY_UNION) {
+        // (void goes too: tsc's getNonNullableType removes what IsUndefinedOrNull says)
+        TyList members = rest->composite.types;
+        Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+        u32 len = 0;
+        for (u32 i = 0; i < members.len; i++) if (!(members.data[i]->flags & TYF_VOID)) kept[len++] = members.data[i];
+        if (len != members.len) rest = ty_union(me, kept, len, nullptr, (TyList){0});
+        free(kept);
+    }
+    return rest->flags & (TYF_NULLABLE | TYF_NEVER | TYF_VOID) ? ty_intrinsic(me, TY_ERROR) : rest;
+}
+
 Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
     if (ty->flags & TYF_NULLABLE) return ty_intrinsic(me, TY_NEVER);
     if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {

@@ -20881,7 +20881,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeIndexedAccessConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24141,7 +24141,7 @@ const baselines = {
         types: true,
     },
     'nullableFunctionError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39576,24 +39576,24 @@ const baselines = {
         types: true,
     },
     'logicalAssignment5(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment5(target=es2020)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment5(target=es2021)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment5(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment6(target=es2015)': {
         errors: true,

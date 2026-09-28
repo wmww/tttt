@@ -2911,6 +2911,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             if (my call->optional_chain || (expr_is_optional_chain(callee) && !expr_is_perenthisized(callee))) {
                 callee_type = ty_non_nullable(checker, callee_type);
             }
+            if (!my call->uses_new && !my call->is_extends) {
+                callee_type = ty_check_non_null_callee(checker, callee_type, callee->outer_span, errs);
+            }
             // `import("m", options)`: the options are ImportCallOptions
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
                 vec_expr_size(&my call->args) > 1

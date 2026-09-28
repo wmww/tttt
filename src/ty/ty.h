@@ -930,6 +930,12 @@ Ty const* ty_conditional(
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 TyList ty_conditional_own_infers(Checker* me, Ty const* root); // The `infer` type parameters its extends type declares
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
+// tsc's getTypeFacts(type, IsUndefinedOrNull) as bits: 1 possibly undefined (void too), 2 possibly null. A type
+// parameter goes by its constraint
+u32 ty_nullable_facts(Checker* me, Ty const* ty);
+// tsc's checkNonNullTypeWithReporter for a callee: TS2721-2723 if it may be null or undefined (strictNullChecks), and
+// what is called then (the error type if nothing is left)
+Ty const* ty_check_non_null_callee(Checker* me, Ty const* callee, Span span, ErrorCtx* errs);
 // tsc's checkNonNullType: unknown and (under strictNullChecks) null or undefined are errors. Null if it reported
 Ty const* ty_check_non_null_type(Checker* me, Ty const* type, Expr const* expr, ErrorCtx* errs);
 // tsc's checkAssertionDeferred: `x as T` where x's type and T don't overlap (TS2352)
