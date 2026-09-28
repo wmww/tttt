@@ -12,8 +12,8 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 2. ~~Plan 38 planning~~ and 3. ~~Plan 38 stage 1~~ done in one session (the planning session died before writing
    up; the next recovered its worktrees, fixed the last losses and landed it): suite 10554 -> 10565, 0 lost, xstate
    61 -> 43, webpack 17 -> 13, others 0. Counts as two sessions.
-4. **Plan 38 stage 2** (execution, `plans/38_inference_flow.md` "Stage 2": generic mapped contextual types, the
-   one-step mapped template, the xstate diagnostics stage 1 introduced, the JSDoc `@template` quirk).
+4. ~~Plan 38 stage 2~~ done (four sub-agents + main tree): xstate 43 -> 19, webpack 13 -> 9, suite 10565 -> 10567, 0
+   lost. What is left of plan 38 is "Stage 3" (resolve once), which needs a planning session: after the insights.
 5. **Suite checker bugs 6** (four Opus sub-agents in worktrees + the main tree, like entry 7 of the last window, +165):
    buckets from `./failstats.py`: the single-code tests (missing TS2322 12, TS2742 10, TS2538 8, TS7053 8; spurious
    TS2339 10), `./unimplemented_codes.sh`'s families (TS2774/TS2845 condition checks, TS17012, TS1147, TS2564...),

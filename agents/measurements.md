@@ -31,10 +31,12 @@ TS1005 259/87, TS2339 229/60, TS2322 144/66. Single-code tests: missing TS2322 1
   M 31. Clusters: other:A 40, other:E 34, other:M 30, other:D 28, permissive:modifiers 22, recovery:list-context 14,
   lexical:identifiers 9, permissive:decorators 9, other:C 8, other:B 8, recovery:object-literal 6.
 
-## Corpora (2026-09-28, sixth window's corpus session, todo entry 1, c4b36dfa; diagnostics updated by plan 38 stage 1)
+## Corpora (2026-09-28, sixth window's corpus session, todo entry 1, c4b36dfa; diagnostics updated by plan 38 stages 1-2)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**0**, zod **0**, webpack **13** (17 before plan 38 stage 1), **xstate 43** (394 at pinning, 61 before plan 38 stage
-1; plan 19 "xstate"). Plan 38 stage 1's instructions (same method as below, vs 6475225b): tsc 5.046 -> 5.062 G, zod
+**0**, zod **0**, webpack **9** (17 before plan 38 stage 1, 13 after), **xstate 19** (394 at pinning, 61 before plan 38
+stage 1, 43 after; plan 19 "xstate"). Plan 38 stage 2's instructions (vs 46fe1997): tsc 5.063 -> 5.050 G, type-fest
+3.389 -> 3.404, valibot 5.393 -> 5.308, react 1.949 -> 1.957, nest 1.142 -> 1.140, webpack 3.523 -> 3.523, zod 4.424
+-> 4.414, xstate 2.840 -> 2.822. Plan 38 stage 1's instructions (same method as below, vs 6475225b): tsc 5.046 -> 5.062 G, zod
 4.417 -> 4.423, xstate 2.773 -> 2.840 (+2.4%). **zod-root** (not
 clean under tsc, which reports 55): tttt's `file:line code` set equals tsc's 55. threadcheck.sh: every corpus identical
 at 1 and 4 threads; xstate still differs between `--checkers 1` and 4 in 5 diagnostics (triage).

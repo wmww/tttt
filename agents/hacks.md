@@ -352,8 +352,18 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   standing in for tsc resolving a call once. The signature view of a contextual type (`ExprCtx.sig_contextual`) is
   only built where `may_want_signature()` says a function may ask. A function argument's return type is computed
   right after its contextual signature is assigned (`ty_argument_return_type()` in compute()'s EXPR_FUNCTION) and
-  `KEY_CONTEXT_RETURN` is rewritten on every later check (`set_contextual_return()`). Generic function arguments
-  still fix by probing (`fixed_by_argument`/`fixed_by_type`, with the candidates gate).
+  `KEY_CONTEXT_RETURN` is rewritten on every later check (`set_contextual_return()`). Plan 38 "Stage 3" is the
+  resolve-once replacement for the replay record and `LazyMemo.speculative`.
+- JSDoc possibly-referenced type parameters (`meets_jsdoc_node_in()` in `assignment_mentions()`, call.c): only for
+  fixing, only through unions/intersections/reference arguments, and "in scope" is by source position (from the host's
+  first `@template` to its end). tsc instantiates every JSDoc node for all its outer type parameters (triage).
+- `infer_from_objects()` (infer.c): the homomorphic `{ [K in keyof T]: T[K] }` shortcut that makes the source a
+  candidate for the modifiers type stands in for reverse-mapped inference; it is skipped for a deferred `keyof X`
+  constraint whose X isn't being inferred (`Partial<T & {}>`), which tsc's inferToMappedType infers nothing from.
+  Stricter gates lost complicatedIndexesOfIntersectionsAreInferencable, twiceNestedKeyofIndexInference,
+  checkJsxIntersectionElementPropsType. When `infer_to_mapped()` finds nothing, tsc goes on property by property;
+  tttt returns (matching it was neutral).
+- `inference_call_result()`: a combined covariant inference is a literal-reduced union; tsc's is subtype-reduced.
 - `TYF_NON_INFERRABLE`: set on the silent never and `ty_any_function_type()`, propagated through unions,
   intersections, references, object literals and aliased anonymous instantiations.
 - Skip-sensitive first pass (`ExprCtx.skip_sensitive`): returnOnlyType (`return_only_type()`) gives generators

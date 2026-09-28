@@ -98,38 +98,42 @@ mappedTypeContextualTypesApplied, reverseMappedPartiallyInferableTypes...). Corp
 xstate +2.4%. The plan 19 probe `webpack/contextual_return_default_leak.ts` infers tsc's `B` now (it still fails on
 an optional parameter's `| undefined` display).
 
-## Stage 2 (execution, next)
-Start from `./realworld.py --corpus xstate` and the probes; each item is independent.
-1. **Generic mapped contextual types stay generic** (`38_prototypes/xstate_contextual_type_keeps_generic_mapped.ts`,
-   still fails; xstate's `assign({ prop: ({ spawn }) => ... })` TS7031s, 7 in the runtime tests): the member of a
-   generic mapped contextual type should be read through the mapped type with only its key instantiated, not after
-   the whole type was instantiated with `C = {}`.
-2. **Mapped template instantiated in one step** (`wt38b_on_base.diff`, `ty_mapped_template_instantiated()`: an
-   instantiated mapped type's template is its declaration's, instantiated with every mapper composed, like tsc's
-   addMemberForKeyTypeWorker; xstate 42 -> 40 on the base prototype, suite neutral). Its `object_literal_unchanged()`
-   in instantiate.c is a second, separate idea (an object literal type a mapper doesn't touch stays itself); measure
-   both on top of stage 1 separately.
-3. **xstate diagnostics stage 1 introduced** (at `--all-errors`, all 0 under tsc): interpreter.test.ts:1310 TS2728 +
-   1319 TS2322, types.test.ts:3034/3055/3847 TS2322. Reduce each to a probe in `38_prototypes/`. Done: input.test.ts:255
-   and invoke.test.ts:1427 TS7031 (`xstate_intra_expression_raw_context.ts`: intra-expression sites are now tsc's,
-   recorded by the literal check and inferred from before the next fixing, instead of a pre-walk that checked each
-   arrow against the raw member type). Not the same cause: spawnChild.test.ts:107 TS7031 (`spawnChild(child, { id:
-   ({ context }) => ... })` nested in `entry: [...]`).
-4. **JSDoc `@template` fixed by a nested JSDoc function type** (below): webpack MultiCompiler.js 645/649 and
-   FileSystemInfo.js 3859, still there.
-5. Replace the stand-ins stage 1 left (hacks.md "Inference" entries it names): the replay record, the probes that
-   still decide fixing for generic function arguments (`fixed_by_argument`/`fixed_by_type`), and
-   `LazyMemo.speculative`, if tsc's resolve-once model can be had with a per-call-resolution cache.
+## Stage 2 (landed, todo entry 4 of the sixth window)
+xstate 43 -> 19, webpack 13 -> 9, suite 10565 -> 10567 (0 lost), other corpora 0, zod-root still tsc's 55;
+instructions within +-0.5% (valibot -1.6%). One commit each, probes in `38_prototypes/` (all pass; the last one's
+symbols differ for an unrelated reason):
+1. Top-level instantiation rebuilds unions without reduction (tsc's UnionReduction.None in
+   instantiateInstantiableTypes, `ty_union_unreduced()`): `C[K] | ((a: Args<C>) => C[K])` with `C = {}` became
+   `unknown | fn` and was absorbed into `unknown`, losing the signature. The generic mapped type was never the problem
+   (`xstate_contextual_type_keeps_generic_mapped.ts`, the seven `({ spawn })` TS7031s).
+2. `ty_mapped_template_instantiated()` (from `wt38b_on_base.diff`): types.test.ts 3034/3055/3847.
+   `object_literal_unchanged()` from the same diff changes nothing on top of stage 1: dropped.
+3. xstate reductions by four sub-agents: tsc's intra-expression sites (recorded by check_object/check_array while
+   the literal is checked, inferred from by `fixing_mapper()`; the pre-walk is gone,
+   `xstate_intra_expression_raw_context.ts`), `base_constraint()` of an indexed access resolving to a type parameter
+   (`xstate_mapped_key_indexed_base_constraint.ts`), no homomorphic shortcut through a deferred `keyof (T & {})`
+   (`xstate_partial_low_infer.ts`), combined candidates for every PriorityImpliesCombination priority
+   (`xstate_return_contra_intersection.ts`).
+4. JSDoc `@template` quirk: `meets_jsdoc_node_in()` in `assignment_mentions()` (section below). The general form
+   (every JSDoc node instantiated for all its outer type parameters) needs the in-scope `@template`s on the lowering
+   context: triage.
+5. Generic function arguments fix what their contextual signature's parameters mention
+   (`fix_for_generic_function()`, tsc's instantiateSignatureInContextOf); `fixed_by_*` deleted.
 
-## JS: a JSDoc `@template` is fixed by any nested JSDoc function type
-`38_prototypes/jsdoc_template_fixed_by_nested_function_type.ts` (todo entry 1 of the sixth window): in JS, tsc's
-isTypeParameterPossiblyReferenced walks up from a JSDoc type node and never meets the `@template` tag, so R counts as
-referenced by `s: () => void` in `@param {(i: number, s: () => void) => R} setup`. Checking the context-sensitive
-setup arrow instantiates that parameter type with the fixing mapper, which fixes R before it has candidates: the JS
-default `any`. webpack depends on it: MultiCompiler.js `_runGraph` (SetupResult is any: TS18048, TS2345) and
-FileSystemInfo.js `_readContext` (T is any: TS2345 at 3859). With lazy fixing landed, this needs the quirk in
-`assignment_mentions()` (a JSDoc function type in JS mentions every `@template` of its host).
+## Stage 3 (not planned yet): resolve once
+What is left of stage 1's stand-ins is the replay record (`KEY_ARG_FIXES`) and `LazyMemo.speculative`, both there
+because tttt resolves a call several times (error pass, every outer inference round, overload rounds) where tsc
+resolves it once (links.resolvedSignature) and caches it even when first resolved under an outer inference. Removing
+them means caching a call's resolution per node and making the error pass, outer rounds and overload rounds reuse
+it: it touches every nested-call path (`generic_call`/`nested_generic` arguments, `ty_call_typecheck`'s
+KEY_CALL_RESOLUTION, the types baseline printing the last check), so it needs its own planning session (prototype
+first, measure what the suite and xstate lose). Not urgent: both stand-ins are exact on everything measured.
+
+xstate's 19 left (none is known to be an inference-flow bug; plan 19 "xstate" has them by cause): spawnChild.test.ts:107
+TS7031 (`spawnChild(child, { id: ({ context }) => ... })` nested in `entry: [...]`, the nested-generic-call path),
+emit.test.ts 49/52 (TS2353, `emit()` under a plain createMachine; not reproduced standalone), meta.test 270/434
+(elaboration), setup.types 2787-2951 (setup().extend()), types 870/1662/2634, spawn.ts:132.
 
 ## Validation
-Stage 2: xstate and webpack lower with no new diagnostic (compare `file:line code` sets against the previous commit;
+Any stage: xstate and webpack lower with no new diagnostic (compare `file:line code` sets against the previous commit;
 strip colours and sort with LC_ALL=C), the probes above pass, 0 suite tests lost, the other corpora still 0.
