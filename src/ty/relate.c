@@ -3674,6 +3674,9 @@ static Ternary structured_related_members(
         }   break;
 
         case TY_CONDITIONAL: {
+            // Ten instantiations of this conditional type on the target stack: an infinitely expanding recursive
+            // conditional type, assumed related (tsc's isDeeplyNestedType(target, targetStack, targetDepth, 10))
+            if (st->depth && is_deeply_nested_max(target, st->target_stack, st->depth - 1, 10)) return TERNARY_MAYBE;
             // Identical extends types, check types related one way or the other, and related branches (tsc's rule for
             // two conditional types). The source's own `infer` type parameters are inferred from the target's extends
             // type first: `HM extends Box<infer H> ? H : never` against another such alias
