@@ -702,7 +702,12 @@ static void block_hoist_names(Block* me, Scope* scope) {
 void statement_hoist_names(Statement* me, Scope* scope) {
     switch (my tag) {
         case STATEMENT_DECL_FUNCTION:
-            if (!scope->strict) function_impl_add_names(my decl.function.impl, scope, DECL_EXPORTED_NO, true, my decl.props.declared);
+            // (`export function` in a block of a namespace is exported: tsc's declareSymbolAndAddToSymbolTable goes by the
+            // container, declareModuleMember)
+            if (!scope->strict) {
+                function_impl_add_names(my decl.function.impl, scope,
+                    my decl.props.exported == DECL_EXPORTED_YES ? DECL_EXPORTED_YES : DECL_EXPORTED_NO, true, my decl.props.declared);
+            }
             break;
 
         case STATEMENT_BLOCK:

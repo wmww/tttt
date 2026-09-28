@@ -17881,12 +17881,12 @@ const baselines = {
         types: true,
     },
     'innerModExport1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'innerModExport2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
