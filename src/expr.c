@@ -115,6 +115,22 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
     my target = scope->this_ref.symbol;
 }
 
+// Whether a use of a class is in an ES decorator of the class or of one of its members, not deferred by a function
+// (an IIFE runs right away): the class isn't initialized yet (tsc's isBlockScopedNameDeclaredBeforeUse)
+static bool class_decorator_runs_first(Scope const* names, void const* class_decl) {
+    if (compiler_options()->experimental_decorators) return false;
+    for (Scope const* i = names; i; i = i->parent) {
+        if (i->kind == SCOPE_FUNCTION && !(i->function && i->function->is_iife)) return false;
+        if (i->decorator_of) return i->decorator_of == class_decl;
+        if (i->no_super == NO_SUPER_DECORATOR) {
+            Scope const* class_scope = i;
+            while (class_scope && !class_scope->this_ref.class_decl) class_scope = class_scope->parent;
+            return class_scope && class_scope->this_ref.class_decl == class_decl;
+        }
+    }
+    return false;
+}
+
 // tsc's checkResolvedBlockScopedVariable / isBlockScopedNameDeclaredBeforeUse: a `let`/`const`, class or enum used
 // (as a value) before its declaration, unless the use is deferred: in a function, in an instance member
 static void check_declared_before_use(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
@@ -142,7 +158,11 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
             for (; i && i->kind != SCOPE_FUNCTION && !i->this_ref.class_decl; i = i->parent) {
                 in_computed_name |= i->no_super == NO_SUPER_COMPUTED_NAME;
             }
-            if (!in_computed_name || !i || i->this_ref.class_decl != decl->node) return;
+            if (in_computed_name && i && i->this_ref.class_decl == decl->node) {
+                // (reported below)
+            } else if (!class_decorator_runs_first(names, decl->node)) {
+                return;
+            }
         } else {
             // Declared before, but used in its own initializer (`let x = x`, `for (const x of x)`)
             if (decl->kind != SYMBOL_DECL_VARIABLE || !names->flow || !names->flow->initializing) return;

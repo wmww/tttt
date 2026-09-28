@@ -33081,12 +33081,12 @@ const baselines = {
         types: true,
     },
     'useBeforeDeclaration_classDecorators.1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'useBeforeDeclaration_classDecorators.2(experimentaldecorators=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

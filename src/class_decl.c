@@ -322,8 +322,12 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
 }
 
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
-    for_each (i, vec_expr, &my decorators) {
-        expr_lookup_names(i, names, errs);
+    if (vec_expr_size(&my decorators)) {
+        Scope* scope = scope_new(names, SCOPE_BLOCK);
+        scope->decorator_of = me;
+        for_each (i, vec_expr, &my decorators) {
+            expr_lookup_names(i, scope, errs);
+        }
     }
 
     my outer_class = scope_enclosing_class(names);

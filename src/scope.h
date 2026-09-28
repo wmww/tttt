@@ -366,6 +366,9 @@ typedef struct Scope {
     // A computed member name, a member decorator or a constructor's parameters: `super` can't be used, tsc's
     // isLegalUsageOfSuperExpression (see resolve_super())
     NoSuper no_super;
+    // The scope of a decorator of this class (for a member decorator, no_super is NO_SUPER_DECORATOR instead): an ES
+    // decorator runs before the class is initialized (tsc's isBlockScopedNameDeclaredBeforeUse)
+    struct ClassDecl const* decorator_of;
     // The file the scope is in (null for the global scope)
     SourceFile* file;
     // The parameter list of a function: from ES2015 on the variables its body declares aren't visible there (tsc's
