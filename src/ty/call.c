@@ -119,7 +119,7 @@ static bool is_empty_tuple(Ty const* ty) {
 }
 
 // tsc's isGenericFunctionReturningFunction for some call signature of the callee of `expr`, a call without type arguments
-static bool calls_generic_function_returning_function(Checker* me, Expr const* expr) {
+bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr) {
     if (expr->tag != EXPR_CALL || expr->call->uses_new || expr->call->is_extends) return false;
     if (expr->call->callable.tag == EXPR_GENERIC_PARAMS) return false;
     Ty const* callee = ty_apparent_type(me, ty_expr_type(me, &expr->call->callable));
@@ -194,7 +194,7 @@ static Args collect_args(Checker* me, CallInfo const* info) {
             args_push(&args, (Arg){
                 .expr = i,
                 .context_sensitive = context_sensitive,
-                .generic_call = !context_sensitive && calls_generic_function_returning_function(me, i),
+                .generic_call = !context_sensitive && ty_calls_generic_function_returning_function(me, i),
             });
         }
     }

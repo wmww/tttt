@@ -206,6 +206,10 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY) return compute(me, expr, ctx);
         GenericFunctionMode* mode = ctx.generic_mode;
         ctx.generic_mode = nullptr;
+        if (!mode->sig && ty_calls_generic_function_returning_function(me, expr)) {
+            mode->skipped = true;
+            return ty_intrinsic(me, TY_SILENT_NEVER);
+        }
         return ty_generic_function_in_context(me, check_with(me, expr, ctx), ctx.contextual, mode);
     }
     LazyType* lazy = (LazyType*)&expr->lazy_type;

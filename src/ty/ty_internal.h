@@ -212,6 +212,9 @@ Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 
 // instantiateTypeWithSingleGenericCallSignature, which applies at any depth of an argument): the first inference pass
 // skips it (SkipGenericFunctions: it is the non-inferrable any-function), the second instantiates it in the context of
 // that signature, which fixes the type parameters the signature's parameters mention (tsc's fixing mapper)
+// A call of a generic function returning a function nested there is skipped by the first pass too (silent never, which
+// infers nothing: tsc's resolveCallExpression under SkipGenericFunctions), and checked by the second, where it sees what
+// the outer call inferred: `createMachine({ context: { count: 0 }, entry: assign(({ context }) => ...) })`
 typedef struct GenericFunctionMode {
     Signature const* sig; // Null: skip them. Else the call inferring, and its inferences
     Inference* inf;
@@ -222,6 +225,7 @@ Ty const* ty_check_literal_argument(
     Checker* me, Expr const* expr, Ty const* contextual, bool is_const, bool skip_sensitive, GenericFunctionMode* mode
 );
 Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* contextual, GenericFunctionMode* mode);
+bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr);
 // tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
 bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth, u32 max); // tsc's maxDepth: 3 for relations, 2 for inference
 void inference_drop(Inference* inf);
