@@ -577,7 +577,19 @@ static bool check_assignable(
     if (errs && elaborate_error(me, head, expr, source, target, errs)) return false;
     // (The head is about the target as relations see it: a substitution type's base, getNormalizedType)
     while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
-    report_unassignable(me, head, source, target, span, errs);
+    Error* error = report_unassignable(me, head, source, target, span, errs);
+    // A namespace import whose value would have fit: likely the wrong kind of import (tsc's checkTypeRelatedTo with
+    // links.originatingImport)
+    Symbol const* alias = expr && expr->tag == EXPR_IDENTIFIER ? expr->identifier.symbol : nullptr;
+    Ty const* original = error && alias && (alias->flags & SYMBOL_ALIAS) ? ty_namespace_import_original(me, alias) : nullptr;
+    if (original && ty_is_related(me, original, target, TY_RELATION_ASSIGNABLE)) {
+        PortItem const* item = alias->alias->item;
+        Span statement = span_valid(item->keyword_span) ?
+            span_between(item->keyword_span, span_with_semicolon(item->full_span)) : item->full_span;
+        error_add_related_d(error, statement, 7038, "Type originates at this import. A namespace-style import "
+            "cannot be called or constructed, and will cause a failure at runtime. Consider using a default import or "
+            "import require here instead.");
+    }
     return false;
 }
 

@@ -1116,6 +1116,11 @@ static Ty const* namespace_import_type(Checker* me, Symbol const* symbol) {
     return synthetic ? with_synthetic_default(me, type, true) : nullptr;
 }
 
+Ty const* ty_namespace_import_original(Checker* me, Symbol const* alias) {
+    if (!namespace_import_type(me, alias)) return nullptr;
+    return ty_type_of_symbol(me, module_export_equals(binder_module_of_ref(alias->binder, alias->alias->item->module_ref)));
+}
+
 bool ty_is_constructor_declared(Symbol const* symbol) {
     bool in_constructor = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {

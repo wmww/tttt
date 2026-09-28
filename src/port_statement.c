@@ -77,8 +77,10 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         return;
     }
 
+    my main.keyword_span = my keyword_span;
     scope_add_port(scope, &my main);
     for_each (i, vec_port_item, &my items) {
+        i->keyword_span = my keyword_span;
         scope_add_port(scope, i);
     }
 }

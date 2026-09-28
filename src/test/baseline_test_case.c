@@ -1515,5 +1515,6 @@ void baseline_test_case_add_symbol_value(BaselineTestCase* me, Span span, Symbol
         baseline_test_case_add_type_node(me, span, &type_any);
         return;
     }
-    baseline_test_case_add_type(me, span, ty_type_of_symbol(current_checker, value));
+    // (the alias itself: `import * as ns` of an `export =` module can be its own type, see namespace_import_type())
+    baseline_test_case_add_type(me, span, ty_type_of_symbol(current_checker, symbol));
 }

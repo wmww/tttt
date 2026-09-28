@@ -1113,6 +1113,9 @@ Ty const* ty_any_function_type(Checker* me);
 // tsc's getTypeFromBindingPattern. include_pattern: as the contextual type of an initializer (TYF_BINDING_PATTERN)
 Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
 Ty const* ty_pattern_clone(Checker* me, Ty const* ty); // A clone marked TYF_BINDING_PATTERN
+// tsc's originatingImport: what `import * as ns` of an `export =` module imports when ns's type is a module type made
+// from it (a synthetic default under esModuleInterop), else null
+Ty const* ty_namespace_import_original(Checker* me, Symbol const* alias);
 bool ty_is_array(Checker* me, Ty const* ty); // A reference to Array<T> (not ReadonlyArray, not a tuple)
 // A class as written inside itself: `C<T, U>` with its own type parameters as the arguments
 Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol);

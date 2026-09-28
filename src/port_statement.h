@@ -41,6 +41,7 @@ typedef struct PortItem {
     } tag;
     Span decl_name; // May be same as source_name, empty only if is_export_wildcard is true
     Span full_span; // Span of declaration
+    Span keyword_span; // The statement's `import` or `export` (set when the item is declared)
     bool type_only; // Has the "type" keyword for the main import
     Span source_name; // Only used for _SPECIFIC ports
     VecSpan alias_path; // Only used for PORT_IMPORT_ALIAS, the dotted name after the =

@@ -12293,7 +12293,7 @@ const baselines = {
     'esModuleInteropImportNamespace': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'esModuleInteropImportTSLibHasImport': {
         errors: true,
@@ -12306,9 +12306,9 @@ const baselines = {
         types: true,
     },
     'esModuleInteropPrettyErrorRelatedInformation': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'esModuleInteropTslibHelpers': {
         errors: true,
@@ -55313,7 +55313,7 @@ const baselines = {
     'nodeModulesResolveJsonModule(module=node16)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesResolveJsonModule(module=node18)': {
         errors: true,
