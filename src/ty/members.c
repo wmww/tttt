@@ -182,9 +182,11 @@ TyDeclGroup const* ty_decl_group(Checker* me, FunctionImpl const* function) {
     return intern_get(&my links, key, 2);
 }
 
+// The group of a symbol's declarations in one place (tsc's reorderCandidates: the merged symbol and the declaration's
+// parent). Per symbol: a `declare global {}` block declares several functions, each its own group there
 static TyDeclGroup const* decl_group_of(Checker* me, Symbol const* symbol, void const* node) {
-    u64 key[2] = { KEY_DECL_GROUP, (u64)(uintptr_t)node };
-    void const** slot = intern_slot(me, &my links, key, 2);
+    u64 key[3] = { KEY_DECL_GROUP_OF, (u64)(uintptr_t)symbol, (u64)(uintptr_t)node };
+    void const** slot = intern_slot(me, &my links, key, 3);
     if (!*slot) {
         TyDeclGroup* group = arena_new(&my arena, TyDeclGroup);
         group->symbol = symbol;

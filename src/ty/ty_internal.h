@@ -69,7 +69,8 @@ enum {
     KEY_LITERAL_CONTEXT, // Object literal Expr -> the contextual type it is being checked with (for `this` in methods)
     KEY_PATTERN_COMPUTED, // Implied type of an object binding pattern with a computed name -> non-null
     KEY_LITERAL_PARENT, // Object literal Expr -> the object literal it is the value of a property of
-    KEY_DECL_GROUP,     // FunctionImpl of an interface member, or a SymbolDecl -> TyDeclGroup
+    KEY_DECL_GROUP,     // FunctionImpl of an interface member or merged function -> TyDeclGroup
+    KEY_DECL_GROUP_OF,  // Symbol, declaration (block) -> TyDeclGroup
     KEY_FUNCTION,       // FunctionImpl -> Ty, see ty_function_type()
     KEY_ITERATION_TYPES, // (type id, which) -> TyIterationTypes, see iterate.c
     KEY_UNIQUE_SYMBOL_NAME, // Escaped property name atom (`__@sym@12`) -> the unique symbol type it stands for
