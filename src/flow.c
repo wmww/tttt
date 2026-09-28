@@ -230,6 +230,10 @@ bool expr_is_narrowable_reference(Expr const* me) {
                 if (my unary_op->op != UNARY_OP_RIGHT_BANG) return false;
                 me = &my unary_op->expr;
                 break;
+            case EXPR_AS_TYPE:
+                if (!my as_type->is_jsdoc) return false; // (A JSDoc cast is tsc's ParenthesizedExpression)
+                me = &my as_type->expr;
+                break;
             case EXPR_BINARY_OP:
                 if (my binary_op->op == BINARY_OP_COMMA) {
                     me = &my binary_op->right;

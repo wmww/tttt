@@ -1112,6 +1112,25 @@ static Ty const* narrowable_type(Checker* me, bool constraint_position, Ty const
     return ret;
 }
 
+// `(o: T | undefined = {})` (or an optional parameter typed by the context or a JSDoc `@type` tag) is a T in the body
+// unless the default can be undefined (tsc's removeOptionalityFromDeclaredType)
+static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty const* type) {
+    if (!binding || !compiler_options()->strict_null_checks || !includes_undefined(type) || !binding->source ||
+        binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING
+    ) {
+        return type;
+    }
+    InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
+    // (Not from inside the default itself: `(x: number | undefined = x > 0 ? x : 0)`)
+    LazyMemo const* memo = lazy_type_state_peek((LazyType*)&initialized->value.lazy_type);
+    bool in_flight = memo && memo->evaluation_started && !memo->done;
+    Ty const* value = initialized->value.tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, &initialized->value);
+    if (value && !includes_undefined(value) && !(value->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID))) {
+        return ty_without_undefined(me, type);
+    }
+    return type;
+}
+
 // The tail of tsc's checkIdentifier(): a variable or parameter has the type control flow gives it where it is read
 // With `issue_only` it only looks for the issue: nullptr when there can't be one, before walking the flow graph (every
 // identifier is asked when checked, and its type has been computed with its contextual type already)
@@ -1155,21 +1174,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         identifier->assume_initialized ||
         includes_undefined(type);
     if (issue_only && assume_initialized) return nullptr;
-    Ty const* initial = type;
-    if (symbol->is_parameter && binding && binding->has_explicit_type && compiler_options()->strict_null_checks &&
-        includes_undefined(type) && binding->source && binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING
-    ) {
-        // `(o: T | undefined = {})` is a T in the body unless the default can be undefined (tsc's
-        // removeOptionalityFromDeclaredType)
-        InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-        // (Not from inside the default itself: `(x: number | undefined = x > 0 ? x : 0)`)
-        LazyMemo const* memo = lazy_type_state_peek((LazyType*)&initialized->value.lazy_type);
-        bool in_flight = memo && memo->evaluation_started && !memo->done;
-        Ty const* value = initialized->value.tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, &initialized->value);
-        if (value && !includes_undefined(value) && !(value->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID))) {
-            initial = ty_without_undefined(me, type);
-        }
-    }
+    Ty const* initial = symbol->is_parameter ? parameter_initial_type(me, binding, type) : type;
     if (!assume_initialized) {
         Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
         initial = ty_union(me, types, 2, nullptr, (TyList){0});
@@ -1216,6 +1221,10 @@ static bool is_narrowable_access(Expr const* expr) {
             case EXPR_UNARY_OP:
                 if (expr->unary_op->op != UNARY_OP_RIGHT_BANG) return false;
                 expr = &expr->unary_op->expr;
+                break;
+            case EXPR_AS_TYPE:
+                if (!expr->as_type->is_jsdoc) return false; // (A JSDoc cast is tsc's ParenthesizedExpression)
+                expr = &expr->as_type->expr;
                 break;
             default:
                 return false;

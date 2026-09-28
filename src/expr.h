@@ -478,6 +478,8 @@ typedef struct AsTypeExpr {
     bool angle_bracket_syntax; // If the <type>value syntax was used
     Span keyword_span; // `as` or `satisfies`
     bool is_satisfies; // `expr satisfies type`, which checks the expression against the type but doesn't change it
+    // JavaScript's `/** @type {T} */ (x)`: parentheses to tsc, which references look through (isMatchingReference)
+    bool is_jsdoc;
 } AsTypeExpr;
 
 // Ternary

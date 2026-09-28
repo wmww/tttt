@@ -7889,6 +7889,7 @@ static void jsdoc_apply_parenthesized(Parser* p, const char* start, Span span, E
             .keyword_span = tag->type_span, // (Where tsc reports what's wrong with a JSDoc assertion: its type)
             .type = jsdoc_take_type(tag, nullptr),
             .is_satisfies = is_satisfies,
+            .is_jsdoc = true,
         }));
     }
     vec_jsdoc_tag_drop(&tags);
