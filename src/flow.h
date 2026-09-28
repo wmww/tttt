@@ -174,6 +174,9 @@ typedef struct FlowBuilder {
     // isInPropertyInitializerOrClassStaticBlock), where a property can be read before it is initialized (TS2729).
     // Functions (and the computed names of methods, which are in them for tsc) don't count
     uint8_t initializer_context; // InitializerContext
+    // Inside an object literal, which is a binder container of its own for tsc: an assignment `f.x = v` in there
+    // declares no expando (scope_add_nested_expando())
+    u32 object_literal_depth;
     struct ClassItem const* initializer_field; // The field whose initializer it is
     bool in_type_query; // Inside `typeof x` written as a type: never "used before assigned"
     // Where a name imported with `import type` may be used (tsc's isValidTypeOnlyAliasUseSite, besides type queries): the

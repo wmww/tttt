@@ -12511,7 +12511,7 @@ const baselines = {
         types: false,
     },
     'expandoFunctionNestedAssigments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

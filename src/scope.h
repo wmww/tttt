@@ -545,6 +545,9 @@ void scope_add_commonjs_module(Scope* me);
 // or its function (or file), or a variable initialized with a function (JavaScript: also a class or `{}`), declares x
 // in f's exports (tsc's bindSpecialPropertyAssignment)
 void scope_add_expandos(Scope* me, struct Block const* block);
+// An assignment `f.x = v` nested in an expression (`(f.x = 1)`, `if (f.x = 1)`), which tsc's binder binds like any
+// other: called by the resolve walk for the ones scope_add_expandos() didn't see
+void scope_add_nested_expando(Scope* me, struct BinaryOpExpr* op);
 // The expression a declaration initialized (or a member assigned) with `init` is an expando container of (tsc's
 // getExpandoInitializer/getDefaultedExpandoInitializer): a function or arrow function, in JavaScript also a class
 // expression or `{}`, possibly defaulted (`var ns = ns || {}`: `name` is the declared name, invalid for a member)

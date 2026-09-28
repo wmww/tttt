@@ -3219,6 +3219,7 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
 
 static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     if (op->op != BINARY_OP_EQUAL) return;
+    op->expando_bound = true;
     add_expando_decl(me, &op->left, &op->right, op->jsdoc_type, top_level);
 }
 
@@ -3300,6 +3301,19 @@ static void add_expando_chain(Scope* me, Expr* e, bool top_level) {
         if (expr_is_perenthisized(e)) break;
         add_expando(me, e->binary_op, top_level);
     }
+}
+
+void scope_add_nested_expando(Scope* me, BinaryOpExpr* op) {
+    if (op->expando_bound) return;
+    // In an object literal or a class's field initializer, tsc's binder looks the name up in the literal or the class
+    // (its container), where it doesn't find a variable (lookupSymbolForName). (A class's statics would be found)
+    FlowBuilder const* flow = my flow;
+    if (flow && (flow->object_literal_depth || flow->initializer_context == INITIALIZER_INSTANCE_FIELD ||
+        flow->initializer_context == INITIALIZER_STATIC_FIELD)
+    ) {
+        return;
+    }
+    add_expando(me, op, false);
 }
 
 void scope_add_expandos(Scope* me, Block const* block) {

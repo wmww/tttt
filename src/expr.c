@@ -1303,6 +1303,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 flow->assignment_target = op == BINARY_OP_EQUAL ? FLOW_TARGET_DEFINITE : FLOW_TARGET_COMPOUND;
                 flow->compound_like_target = op == BINARY_OP_EQUAL && is_compound_like(right);
                 expr_lookup_names(left, names, errs);
+                if (op == BINARY_OP_EQUAL) scope_add_nested_expando(names, my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) scope_add_this_property(names, my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file && !names->file->is_js) scope_note_ts_this_assignment(names, my binary_op);
                 expr_lookup_names(right, names, errs);
@@ -1530,6 +1531,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_OBJECT:
             my assignment_pattern = assignment_target != FLOW_TARGET_NONE;
+            flow->object_literal_depth++;
             for_each (i, vec_object_expr_item, &my object) {
                 if (i->computed_key) {
                     // (A scope of its own only for resolve_super())
@@ -1563,6 +1565,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 expr_lookup_names(&i->value, names, errs);
                 if (i->shorthand_default) expr_lookup_names_initializer(i->shorthand_default, names, errs);
             }
+            flow->object_literal_depth--;
             break;
 
         case EXPR_ARRAY:
