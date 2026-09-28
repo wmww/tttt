@@ -800,6 +800,36 @@ static Ty const* apparent_type(Checker* me, Ty const* ty) {
         }
         if (ty->flags & (TYF_OBJECT | TYF_INTERSECTION)) return ty_with_this_arg(me, ty, param);
     }
+    if (ty->kind == TY_INTERSECTION) {
+        // The intersection of what its generic members are apparently (tsc's getApparentTypeOfIntersectionType, through
+        // getTypeWithThisArgument(needApparentType)): `NonNullable<T["p"]>` with `p?: X` is `(X | undefined) & {}`,
+        // which is X
+        bool generic = false;
+        for (u32 i = 0; i < ty->composite.types.len && !generic; i++) {
+            Ty const* member = ty->composite.types.data[i];
+            generic = member->kind == TY_TYPE_PARAM || member->kind == TY_INDEXED || member->kind == TY_CONDITIONAL ||
+                member->kind == TY_SUBSTITUTION;
+        }
+        if (!generic) return ty;
+        Ty const* stack_buf[16];
+        TyList members = ty->composite.types;
+        Ty const** parts = members.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * members.len);
+        panic_if(!parts, "out of memory");
+        bool changed = false;
+        for (u32 i = 0; i < members.len; i++) {
+            Ty const* member = members.data[i];
+            bool member_generic = member->kind == TY_TYPE_PARAM || member->kind == TY_INDEXED ||
+                member->kind == TY_CONDITIONAL || member->kind == TY_SUBSTITUTION;
+            parts[i] = member_generic ? apparent_type(me, member) : member;
+            // (A constraint that is unknown or any says nothing: the member stays as it is. HACK: tsc's default constraint
+            // of a conditional type leaves an any branch out, base_constraint() doesn't)
+            if (parts[i]->flags & (TYF_UNKNOWN | TYF_ANY)) parts[i] = member;
+            changed |= parts[i] != member;
+        }
+        Ty const* ret = changed ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : ty;
+        if (parts != stack_buf) free(parts);
+        return ret;
+    }
     if (ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || ty->kind == TY_SUBSTITUTION) {
         // (tsc's getApparentType: an instantiable type is its base constraint)
         Ty const* constraint = base_constraint(me, ty, 0);

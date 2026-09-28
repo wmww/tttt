@@ -469,6 +469,10 @@ static Ty const* union_of(Checker* me, Ty const* a, Ty const* b) {
 static Ty const* map_non_nullable(Checker* me, Ty const* ty, void const* arg) {
     (void)arg;
     if (!has_type_facts(me, ty, TF_EQ_UNDEFINED_OR_NULL)) return ty;
+    // The lib's `NonNullable<T>` (`T & {}`) when there is one, which is how it prints (tsc's
+    // getGlobalNonNullableTypeInstantiation)
+    Symbol const* alias = program_get_global(my program, c_sv("NonNullable"), SYMBOL_TYPE);
+    if (alias && (alias->flags & SYMBOL_TYPE_ALIAS)) return ty_alias_instance(me, alias, (TyList){ .data = &ty, .len = 1 });
     Ty const* types[2] = { ty, ty_empty_object_type(me) };
     return ty_intersection(me, types, 2, nullptr, (TyList){0});
 }
