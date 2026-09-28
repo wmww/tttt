@@ -3325,9 +3325,15 @@ static Ternary structured_related_impl(
         // members passes: it stands in for tsc's rules between two generic mapped types (mappedTypeRelatedTo), a
         // homomorphic Readonly<T> and T, and the like, which don't exist here yet
         if (related || !(source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return related;
-        // (An object type that isn't a mapped type is done, whatever it mentions: tsc's structuredTypeRelatedToWorker
-        // returns False for a generic mapped target unless the source is a mapped type too)
-        if ((source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && !ty_members(me, source)->mapped) return related;
+        // (tsc's structuredTypeRelatedToWorker returns False for a generic mapped target unless the source is a mapped
+        // type too, whatever else it is; generic_mapped_target_related() isn't complete enough to rely on that. Only an
+        // object type without properties is done here: its keys (index signatures aside) are never, which a generic
+        // `{ [P in K]: X }` wants more of)
+        if ((source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && !ty_members(me, source)->mapped &&
+            !ty_members(me, source)->prop_count
+        ) {
+            return related;
+        }
     }
 
     // Generic sources
