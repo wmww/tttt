@@ -2070,6 +2070,67 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
     cstr_drop(&module_name);
 }
 
+// tsc's getTargetofModuleDefault: `import d from "m"`, `import { default as d }`, `export { default } from "m"`
+static Symbol* resolve_default_target(Symbol* me, PortItem* item, Symbol* module, Symbol* assigned, ErrorCtx* errs) {
+    Symbol* found = symbol_get_export(module, c_sv("default"));
+    if (!found && assigned) {
+        // The default import is what `export =` names, with allowSyntheticDefaultImports or where an ES module
+        // imports a CommonJS one (tsc's getTargetofModuleDefault, canHaveSyntheticDefault)
+        SourceFile const* file = item->module_ref->file;
+        if (!compiler_options()->allow_synthetic_default_imports && !(file && esm_imports_cjs(item, file))) {
+            const char* option = compiler_options()->module >= MODULE_KIND_ES2015 ?
+                "allowSyntheticDefaultImports" : "esModuleInterop";
+            cstr module_name = module_name_for_error(module, item->module_ref, false);
+            Error* error = error_ctx_error_d(errs, item->decl_name, 1259, "Module '", module_name,
+                "' can only be default-imported using the '", option, "' flag");
+            Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
+            if (error && export_equals && export_equals->decl_count) {
+                error_add_related_d(error, export_equals->decls[0].full, 2594,
+                    "This module is declared with 'export =', and can only be used with a default import when "
+                    "using the '", option, "' flag.");
+            }
+            cstr_drop(&module_name);
+            return nullptr; // (tsc's exportDefaultSymbol, which there is none of)
+        }
+        return assigned;
+    }
+    if (!found) {
+        SourceFile const* file = item->module_ref->file;
+        if (compiler_options()->allow_synthetic_default_imports && file && file->is_commonjs &&
+            !symbol_get_export(module, c_sv("__esModule"))
+        ) {
+            // A CommonJS JavaScript module's synthetic default is the module (tsc's canHaveSyntheticDefault)
+            return module;
+        }
+        if (compiler_options()->allow_synthetic_default_imports && (!file || file->is_declaration) &&
+            !symbol_get_export(module, c_sv("__esModule")) && !(file && esm_imports_esm(item, file))
+        ) {
+            return module; // So is a declaration file's (tsc's canHaveSyntheticDefault)
+        }
+        // (a specifier naming `default` is tsc's errorNoModuleMemberSymbol)
+        if (item->tag != PORT_IMPORT_DEFAULT) {
+            scope_report_non_exported_member(item, module, errs);
+            return nullptr;
+        }
+        cstr module_name = module_name_for_error(module, item->module_ref, false);
+        Error* error = error_ctx_error_d(errs, item->decl_name, 1192, "Module '", module_name, "' has no default export.");
+        // (tsc's reportNonDefaultExport: the first `export *` of a module that has a default)
+        for (u32 s = 0; error && module->is_module && s < module->module->export_star_count; s++) {
+            PortItem const* star = module->module->export_stars[s];
+            Symbol const* from = binder_module_of_ref(module->binder, star->module_ref);
+            if (from && from->exports && symbol_table_get(from->exports, c_sv("default"))) {
+                error_add_related_d(error, span_with_semicolon(star->full_span), 1195,
+                    "'export *' does not re-export a default.");
+                break;
+            }
+        }
+        cstr_drop(&module_name);
+        return nullptr;
+    }
+    item->source_symbol = found;
+    return resolve_if_pure_alias(found);
+}
+
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = my alias->scope->errs;
@@ -2106,6 +2167,9 @@ static Symbol* resolve_alias_target(Symbol* me) {
     switch (item->tag) {
         case PORT_IMPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC: {
+            if (csview_equals(port_item_name(item->source_name), "default")) {
+                return resolve_default_target(me, item, module, assigned, errs);
+            }
             // (tsc's getExternalModuleMember: `{ default as x }` with allowSyntheticDefaultImports is fine)
             if (!item->value_only && !(csview_equals(port_item_name(item->source_name), "default") &&
                 compiler_options()->allow_synthetic_default_imports)
@@ -2147,60 +2211,8 @@ static Symbol* resolve_alias_target(Symbol* me) {
             return resolve_if_pure_alias(found);
         }
 
-        case PORT_IMPORT_DEFAULT: {
-            Symbol* found = symbol_get_export(module, c_sv("default"));
-            if (!found && assigned) {
-                // The default import is what `export =` names, with allowSyntheticDefaultImports or where an ES module
-                // imports a CommonJS one (tsc's getTargetofModuleDefault, canHaveSyntheticDefault)
-                SourceFile const* file = item->module_ref->file;
-                if (!compiler_options()->allow_synthetic_default_imports && !(file && esm_imports_cjs(item, file))) {
-                    const char* option = compiler_options()->module >= MODULE_KIND_ES2015 ?
-                        "allowSyntheticDefaultImports" : "esModuleInterop";
-                    cstr module_name = module_name_for_error(module, item->module_ref, false);
-                    Error* error = error_ctx_error_d(errs, item->decl_name, 1259, "Module '", module_name,
-                        "' can only be default-imported using the '", option, "' flag");
-                    Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
-                    if (error && export_equals && export_equals->decl_count) {
-                        error_add_related_d(error, export_equals->decls[0].full, 2594,
-                            "This module is declared with 'export =', and can only be used with a default import when "
-                            "using the '", option, "' flag.");
-                    }
-                    cstr_drop(&module_name);
-                    return nullptr; // (tsc's exportDefaultSymbol, which there is none of)
-                }
-                return assigned;
-            }
-            if (!found) {
-                SourceFile const* file = item->module_ref->file;
-                if (compiler_options()->allow_synthetic_default_imports && file && file->is_commonjs &&
-                    !symbol_get_export(module, c_sv("__esModule"))
-                ) {
-                    // A CommonJS JavaScript module's synthetic default is the module (tsc's canHaveSyntheticDefault)
-                    return module;
-                }
-                if (compiler_options()->allow_synthetic_default_imports && (!file || file->is_declaration) &&
-                    !symbol_get_export(module, c_sv("__esModule")) && !(file && esm_imports_esm(item, file))
-                ) {
-                    return module; // So is a declaration file's (tsc's canHaveSyntheticDefault)
-                }
-                cstr module_name = module_name_for_error(module, item->module_ref, false);
-                Error* error = error_ctx_error_d(errs, item->decl_name, 1192, "Module '", module_name, "' has no default export.");
-                // (tsc's reportNonDefaultExport: the first `export *` of a module that has a default)
-                for (u32 s = 0; error && module->is_module && s < module->module->export_star_count; s++) {
-                    PortItem const* star = module->module->export_stars[s];
-                    Symbol const* from = binder_module_of_ref(module->binder, star->module_ref);
-                    if (from && from->exports && symbol_table_get(from->exports, c_sv("default"))) {
-                        error_add_related_d(error, span_with_semicolon(star->full_span), 1195,
-                            "'export *' does not re-export a default.");
-                        break;
-                    }
-                }
-                cstr_drop(&module_name);
-                return nullptr;
-            }
-            item->source_symbol = found;
-            return resolve_if_pure_alias(found);
-        }
+        case PORT_IMPORT_DEFAULT:
+            return resolve_default_target(me, item, module, assigned, errs);
 
         case PORT_EXPORT_SPECIFIC: {
             Symbol* found = scope_resolve(my alias->scope, item->source_name.sv, SYMBOL_ANY_MEANING);

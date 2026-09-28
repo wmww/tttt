@@ -546,9 +546,9 @@ const baselines = {
         types: true,
     },
     'allowSyntheticDefaultImports7': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'allowSyntheticDefaultImports8': {
         errors: true,
@@ -556,9 +556,9 @@ const baselines = {
         types: true,
     },
     'allowSyntheticDefaultImports9': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'allowSyntheticDefaultImportsCanPaintCrossModuleDeclaration': {
         errors: true,
@@ -12268,7 +12268,7 @@ const baselines = {
     'esModuleInteropDefaultImports': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'esModuleInteropDefaultMemberMustBeSyntacticallyDefaultExport': {
         errors: true,
@@ -27136,9 +27136,9 @@ const baselines = {
         types: true,
     },
     'reexportMissingDefault5': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'reexportMissingDefault6': {
         errors: true,
@@ -51698,7 +51698,7 @@ const baselines = {
     'jsDeclarationsReexportAliasesEsModuleInterop': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsDeclarationsReexportedCjsAlias': {
         errors: true,
