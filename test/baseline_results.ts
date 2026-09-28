@@ -35216,7 +35216,7 @@ const baselines = {
         types: true,
     },
     'classStaticBlock19': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

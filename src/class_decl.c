@@ -183,9 +183,13 @@ static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, Er
 }
 
 void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
+    // (A static block's decorators are TS1206 and nothing else: tsc's checkClassStaticBlockDeclaration doesn't check
+    // them. Their names are still resolved for the baselines)
+    ErrorCtx discarded = error_ctx_init();
     for_each (i, vec_expr, &my decorators) {
-        lookup_names_without_super(i, names, NO_SUPER_DECORATOR, errs);
+        lookup_names_without_super(i, names, NO_SUPER_DECORATOR, my tag == CLASS_ITEM_STATIC_BLOCK ? &discarded : errs);
     }
+    error_ctx_drop(&discarded);
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
             function_impl_lookup_names(&my constructor.func, false, names, errs);
@@ -1268,7 +1272,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 expr_typecheck(decorator, errs);
             }
         }
-        for_each (decorator, vec_expr, &i->decorators) {
+        if (i->tag != CLASS_ITEM_STATIC_BLOCK) for_each (decorator, vec_expr, &i->decorators) {
             if (!decorator_error) {
                 ty_check_decorator(current_checker, decorator, (DecoratorSite){ .class_decl = me, .item = i, .param_index = -1,
                     .at = decorator_span(decorator) }, errs);
