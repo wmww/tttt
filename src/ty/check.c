@@ -2707,6 +2707,12 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
         }
         return true;
     }
+    // unknown is TS18046 (check_access()), after which the object is the error type: a name no class around declares
+    // doesn't exist on 'any' (tsc's checkPropertyAccessExpressionOrQualifiedName)
+    if ((object->flags & TYF_UNKNOWN) && compiler_options()->strict_null_checks && !lexical && access->enclosing_class) {
+        error_ctx_error_d(errs, name, 2339, "Property '", name, "' does not exist on type 'any'.");
+        return false;
+    }
     Ty const* apparent = ty_apparent_type(me, object);
     if (!(apparent->flags & TYF_OBJECT)) return false;
     Members const* members = ty_members(me, apparent);
