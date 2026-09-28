@@ -3364,10 +3364,53 @@ void scope_add_nested_expando(Scope* me, BinaryOpExpr* op) {
     add_expando(me, op, false);
 }
 
+// Whether a JavaScript scope's `this` is the global one: the top level of a script, blocks included (tsc's
+// getThisContainer is the source file)
+static bool this_is_global_script(Scope const* me) {
+    if (!my file || !my file->is_js) return false;
+    Scope const* scope = me;
+    while (scope && scope->kind == SCOPE_BLOCK && !scope->function) scope = scope->parent;
+    return scope && scope->kind == SCOPE_SCRIPT;
+}
+
+// `this.x = v` at the top level of a JavaScript script declares a global variable x (tsc's bindThisPropertyAssignment
+// for a SourceFile container: declareSymbolAndAddToSymbolTable as a FunctionScopedVariable)
+static void add_global_this_chain(Scope* me, Expr* e) {
+    for (; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e); e = &e->binary_op->right) {
+        Expr* left = &e->binary_op->left;
+        Span name = expr_static_property_name(left);
+        if (!span_valid(name) || name.sv.buf[0] == '#') continue;
+        Expr const* object = &left->property->expr;
+        if (object->tag != EXPR_IDENTIFIER || expr_is_perenthisized(object) || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) {
+            continue;
+        }
+        Expr* value = &e->binary_op->right;
+        while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+            value = &value->binary_op->right;
+        }
+        bool merged;
+        Symbol* symbol = declare_symbol(
+            me, &my binder->globals, name.sv, name, SYMBOL_FUNCTION_SCOPED_VARIABLE, SYMBOL_FUNCTION_SCOPED_VARIABLE_EXCLUDES,
+            false, &merged
+        );
+        if (!merged) {
+            symbol->name = name.sv;
+            symbol->name_span = name;
+        }
+        left->property->declares = symbol;
+        symbol_add_decl(symbol, (SymbolDecl){
+            .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE, .node = value, .name = left->outer_span,
+            .full = left->outer_span, .jsdoc_type = e->binary_op->jsdoc_type,
+        });
+    }
+}
+
 void scope_add_expandos(Scope* me, Block const* block) {
     bool top_level = my kind == SCOPE_MODULE || my kind == SCOPE_SCRIPT;
+    bool global_this = this_is_global_script(me);
     for_each (i, vec_statement, &block->statements) {
         if (i->tag == STATEMENT_EXPR) add_expando_chain(me, &i->expr, top_level);
+        if (i->tag == STATEMENT_EXPR && global_this) add_global_this_chain(me, &i->expr);
         // `/** @type {T} */ a.b;` at the top level (tsc's bindSpecialPropertyDeclaration)
         if (i->tag == STATEMENT_EXPR && i->expr_jsdoc_type && top_level) {
             add_expando_decl(me, &i->expr, &i->expr, i->expr_jsdoc_type, top_level);

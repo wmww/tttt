@@ -994,7 +994,8 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     Ty const* annotated = annotated_expando_type(me, symbol);
     if (annotated) return annotated;
     Ty const* type = ty_expr_type(me, decl->node);
-    return symbol->parent && !symbol->parent->is_module ? ty_widened_literal(me, type) : ty_regular(me, type);
+    // (A direct export keeps its literal type, tsc's isDirectExport; a global declared by `this.x = v` doesn't)
+    return !symbol->parent || !symbol->parent->is_module ? ty_widened_literal(me, type) : ty_regular(me, type);
 }
 
 // JavaScript `var ns = {}` or `ns.a = {}` with expandos (`ns.x = 1`): the members they declare (tsc's

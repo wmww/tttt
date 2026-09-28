@@ -39208,7 +39208,7 @@ const baselines = {
     'globalThisPropertyAssignment': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'globalThisReadonlyProperties': {
         errors: false,
@@ -60681,9 +60681,9 @@ const baselines = {
         types: false,
     },
     'topLevelThisAssignment': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeFromContextualThisType': {
         errors: true,
