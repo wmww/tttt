@@ -582,6 +582,9 @@ typedef enum TyVariance {
     VARIANCE_BIVARIANT     = VARIANCE_COVARIANT | VARIANCE_CONTRAVARIANT,
     VARIANCE_INDEPENDENT   = 1 << 2,
     VARIANCE_UNRELIABLE    = 1 << 3, // Measured through something that isn't simply structural: fall back to structure
+    // Measured through something nonlinear (a `-?` mapped type): only identical arguments are related without a
+    // structural comparison
+    VARIANCE_UNMEASURABLE  = 1 << 4,
 } TyVariance;
 
 // What the checker knows about a symbol (nothing in a Symbol is written during checking)
@@ -784,7 +787,7 @@ struct Checker {
     u32 flow_shared_count;
     u32 flow_shared_cap;
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
-    bool variance_unreliable; // structurally: set when they go through something that isn't (relate.c)
+    unsigned char variance_reports; // VARIANCE_UNRELIABLE/UNMEASURABLE of what the measurement went through (relate.c)
     struct IterationState const* iteration; // The lib's iteration interfaces, looked up on first use (iterate.c)
     // `Disposable | null | undefined` and `AsyncDisposable | Disposable | null | undefined`, what a `using` / `await
     // using` initializer must be (ty_check_using_initializer()), made on first use. Null: not yet
@@ -964,6 +967,7 @@ Ty const* ty_undefined_or_missing(Checker* me); // tsc's undefinedOrMissingType
 Ty const* ty_remove_missing(Checker* me, Ty const* ty, bool optional); // tsc's removeMissingType
 // tsc's containsMissingType. Relies on TY_MISSING having the lowest id of the undefined-likes: it sorts first in a union
 bool ty_contains_missing(Checker* me, Ty const* ty);
+bool ty_mentions_any(Checker* me, Ty const* ty, Ty const* const* params, u32 count);
 bool ty_exact_optional_mismatch(Checker* me, Ty const* source, Ty const* target);
 bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_optional_prop_type(Checker* me, Ty const* ty); // tsc's getOptionalType(type, isProperty=true)

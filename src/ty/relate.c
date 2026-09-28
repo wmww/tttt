@@ -27,7 +27,10 @@ typedef enum Ternary {
 enum {
     CACHE_SUCCEEDED = 1,
     CACHE_FAILED = 2,
-    CACHE_UNRELIABLE = 4, // Went through something that makes a variance measurement unreliable (tsc's ReportsUnreliable)
+    // Went through something that makes a variance measurement unreliable/unmeasurable (tsc's ReportsUnreliable,
+    // ReportsUnmeasurable)
+    CACHE_UNRELIABLE = 4,
+    CACHE_UNMEASURABLE = 8,
 };
 
 #define MAX_RELATION_DEPTH 100
@@ -90,6 +93,7 @@ static inline bool optional_adds_undefined(void) {
 }
 
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
+static void report_variance(Checker* me, Ty const* ty, unsigned flag);
 static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth);
 
 // Relation cache
@@ -1044,6 +1048,14 @@ static u32 min_argument_count(Checker* me, Signature const* sig) {
 
 // `return_code`: what failing return types say (tsc's incompatibleErrorReporter), 0 for nothing: 2202-2205, see
 // report_incompatible()
+// tsc's getNonArrayRestType
+static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
+    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
+    Ty const* rest = sig->params[sig->param_count - 1].type;
+    if ((rest->flags & TYF_ANY) || (rest->kind == TY_REFERENCE && is_array_target(me, rest->reference.target))) return nullptr;
+    return rest;
+}
+
 static Ternary compare_signatures(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report,
     unsigned return_code
@@ -1055,6 +1067,11 @@ static Ternary compare_signatures(
     if (source->type_params.len && source->type_params.data != target->type_params.data) {
         source = ty_instantiate_signature_in_context_of(me, source, target, nullptr);
     }
+
+    // A rest parameter that isn't an array relates by its elements, not by what it's instantiated with
+    Ty const* non_array_rest = non_array_rest_type(me, source);
+    if (!non_array_rest) non_array_rest = non_array_rest_type(me, target);
+    if (non_array_rest) report_variance(me, non_array_rest, VARIANCE_UNRELIABLE);
 
     u32 target_count = ty_signature_param_count(target);
     u32 source_min = source->min_args > target_count ? min_argument_count(me, source) : source->min_args;
@@ -1882,6 +1899,15 @@ static Ty const* marker_reference(Checker* me, Ty const* target, u32 index, Ty c
     return ret;
 }
 
+// Measuring variances through a relation that doesn't go by what the type parameter is instantiated with: the
+// measurement is unreliable (VARIANCE_UNRELIABLE) or unmeasurable (VARIANCE_UNMEASURABLE) if the type mentions a marker
+// (tsc's instantiateType(source, reportUnreliableMapper))
+static void report_variance(Checker* me, Ty const* ty, unsigned flag) {
+    if (!my variance_depth || (my variance_reports & flag)) return;
+    Ty const* markers[3] = { variance_marker(me, 0), variance_marker(me, 1), variance_marker(me, 2) };
+    if (ty_mentions_any(me, ty, markers, 3)) my variance_reports |= (unsigned char)flag;
+}
+
 // A reference made by marker_reference() (tsc's isMarkerType): what variances are measured with
 static bool is_marker_reference(Checker* me, Ty const* ty) {
     if (ty->kind != TY_REFERENCE || ty->reference.deferred || ty->reference.this_arg) return false;
@@ -1984,7 +2010,7 @@ static unsigned subject_variance_modifiers(VarianceSubject subject, u32 index) {
 }
 
 static void measure_variances(Checker* me, VarianceSubject subject, Variances* variances) {
-    bool saved_unreliable = my variance_unreliable;
+    unsigned char saved_reports = my variance_reports;
     my variance_depth++;
     for (u32 i = 0; i < variances->len; i++) {
         // Variance annotations (`in T`, `out T`, `in out T`) are taken as they are (tsc's getVariancesWorker), those of
@@ -1995,7 +2021,7 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
                 VARIANCE_INVARIANT : modifiers == VARIANCE_MODIFIER_OUT ? VARIANCE_COVARIANT : VARIANCE_CONTRAVARIANT);
             continue;
         }
-        my variance_unreliable = false;
+        my variance_reports = 0;
         Ty const* with_super = marker_instance(me, subject, i, variance_marker(me, 0));
         Ty const* with_sub = marker_instance(me, subject, i, variance_marker(me, 1));
         unsigned variance =
@@ -2005,11 +2031,11 @@ static void measure_variances(Checker* me, VarianceSubject subject, Variances* v
             Ty const* with_other = marker_instance(me, subject, i, variance_marker(me, 2));
             if (ty_is_related(me, with_other, with_super, TY_RELATION_ASSIGNABLE)) variance = VARIANCE_INDEPENDENT;
         }
-        if (my variance_unreliable) variance |= VARIANCE_UNRELIABLE;
+        variance |= my variance_reports;
         variances->data[i] = (unsigned char)variance;
     }
     my variance_depth--;
-    my variance_unreliable = saved_unreliable;
+    my variance_reports = saved_reports;
     variances->state = LAZY_STATE_DONE;
     if (debug_env.dump_variances) {
         cstr name = subject.declared ? ty_to_cstr(me, subject.declared) : cstr_from_sv(subject.alias->name);
@@ -2076,22 +2102,21 @@ static Ternary type_args_related(
 ) {
     Ternary result = TERNARY_TRUE;
     *unreliable = false;
+    for (u32 i = 0; i < variances->len; i++) {
+        if (variances->data[i] & (VARIANCE_UNRELIABLE | VARIANCE_UNMEASURABLE)) *unreliable = true;
+    }
     for (u32 i = 0; i < source_args.len && i < target_args.len; i++) {
         unsigned variance = i < variances->len ? variances->data[i] : VARIANCE_COVARIANT;
-        if (variance & VARIANCE_UNRELIABLE) {
-            *unreliable = true;
-            // Measuring variances through this one: the outer measurement is as unreliable (tsc's
-            // reportUnreliableMapper, which fires only if a marker is in the arguments)
-            if (my variance_depth && ((source_args.data[i]->flags | target_args.data[i]->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-                my variance_unreliable = true;
-            }
-        }
         unsigned kind = variance & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT);
         if (kind == VARIANCE_INDEPENDENT) continue;
         Ty const* s = source_args.data[i];
         Ty const* t = target_args.data[i];
         Ternary related;
-        if (kind == VARIANCE_COVARIANT) {
+        if (variance & VARIANCE_UNMEASURABLE) {
+            // Even so identical arguments make identical instantiations
+            related = st->relation == TY_RELATION_IDENTITY ? is_related_to(me, st, s, t, false) :
+                ty_is_related(me, s, t, TY_RELATION_IDENTITY) ? TERNARY_TRUE : TERNARY_FALSE;
+        } else if (kind == VARIANCE_COVARIANT) {
             related = is_related_to(me, st, s, t, report);
         } else if (kind == VARIANCE_CONTRAVARIANT) {
             related = is_related_to(me, st, t, s, report);
@@ -2495,6 +2520,8 @@ static Ternary mapped_related(Checker* me, RelationState* st, MappedInfo const* 
     bool modifiers_related = st->relation == TY_RELATION_COMPARABLE ||
         combined_mapped_info_optionality(me, source) <= combined_mapped_info_optionality(me, target);
     if (!modifiers_related) return TERNARY_FALSE;
+    report_variance(me, source->constraint,
+        combined_mapped_info_optionality(me, source) < 0 ? VARIANCE_UNMEASURABLE : VARIANCE_UNRELIABLE);
     Ternary result = is_related_to(me, st, target->constraint, source->constraint, report);
     if (!result) return TERNARY_FALSE;
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &source->type_param, .len = 1 },
@@ -3491,7 +3518,6 @@ static Ternary structured_related_members(
     }
 
     // Generic targets
-    if (my variance_depth && ((source->flags | target->flags) & TYF_DEFERRED)) my variance_unreliable = true;
     switch ((TyKind)target->kind) {
         case TY_TYPE_PARAM: {
             // `{ [P in Q]: X }` is related to T if keyof T is related to Q and X to T[P] (`Mutable<T>` to T)
@@ -3645,7 +3671,7 @@ static Ternary structured_related_members(
             if (source->kind == TY_TEMPLATE_LITERAL) {
                 if (comparable) return ty_templates_definitely_unrelated(source, target) ? TERNARY_FALSE : TERNARY_TRUE;
                 // `foo-${number}` is related to `foo-${string}` though number isn't related to string
-                if (my variance_depth) my variance_unreliable = true;
+                report_variance(me, source, VARIANCE_UNRELIABLE);
             }
             if (ty_template_matches(me, source, target)) return TERNARY_TRUE;
             break;
@@ -3659,7 +3685,6 @@ static Ternary structured_related_members(
 
     // A mapped type whose keys aren't known yet (target side first, like in tsc)
     MappedInfo const* target_mapped = target->kind == TY_ANONYMOUS ? ty_members(me, target)->mapped : nullptr;
-    if (target_mapped && my variance_depth) my variance_unreliable = true;
     // An empty object type is related to any mapped type with `?` (tsc's isPartialMappedType)
     if (target_mapped && target_mapped->optional > 0 && st->relation != TY_RELATION_SUBTYPE &&
         st->relation != TY_RELATION_STRICT_SUBTYPE && is_empty_object_type(me, source)
@@ -3711,6 +3736,9 @@ static Ternary structured_related_members(
         }
 
         case TY_INDEXED: {
+            // Two indexed access types relate by their parts only (the target's case above), not through the source's
+            // constraint: `S[K]` isn't `U[K]` because `S[keyof T]` happens to be (tsc's structuredTypeRelatedToWorker)
+            if (target->kind == TY_INDEXED) break;
             // (tsc: `getConstraintOfType(source) || unknownType`, which is comparable to anything; not elaborated)
             Ty const* constraint = constraint_of_indexed(me, source);
             if (!constraint) return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
@@ -3941,7 +3969,6 @@ static Ternary structured_related_members(
         }
     }
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return TERNARY_FALSE;
-    if (my variance_depth && target_mapped) my variance_unreliable = true;
     if (apparent->kind == TY_INTERSECTION) {
         // As a whole: its signatures and index infos are those of its members together (resolve_intersection_members())
         Ternary result = props_related(me, st, apparent, target, report, false);
@@ -4026,8 +4053,9 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     if (st->intersection_source) key ^= 1ull << 62;
     unsigned cached = relation_cache_get(cache, key);
     // A measurement of variances that goes through the pair again is as unreliable as the first one was
-    if ((cached & CACHE_UNRELIABLE) && my variance_depth) my variance_unreliable = true;
-    cached &= ~CACHE_UNRELIABLE;
+    if (cached & CACHE_UNRELIABLE) report_variance(me, source, VARIANCE_UNRELIABLE);
+    if (cached & CACHE_UNMEASURABLE) report_variance(me, source, VARIANCE_UNMEASURABLE);
+    cached &= ~(CACHE_UNRELIABLE | CACHE_UNMEASURABLE);
     if (cached == CACHE_SUCCEEDED) return TERNARY_TRUE;
     // A cached failure is computed again only to explain it, and then a pair on the stack is still assumed related.
     // Which comparisons explain (`report`) decides what is blamed, so it follows tsc closely
@@ -4057,17 +4085,18 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     st->target_stack[st->depth] = target;
     st->depth++;
 
-    bool saved_unreliable = my variance_unreliable;
-    my variance_unreliable = false;
+    unsigned char saved_reports = my variance_reports;
+    my variance_reports = 0;
     Ternary result = st->expanding == 3 ? TERNARY_MAYBE : structured_related(me, st, source, target, report);
-    unsigned unreliable = my variance_unreliable ? CACHE_UNRELIABLE : 0;
+    unsigned unreliable = (my variance_reports & VARIANCE_UNRELIABLE ? CACHE_UNRELIABLE : 0) |
+        (my variance_reports & VARIANCE_UNMEASURABLE ? CACHE_UNMEASURABLE : 0);
     if (debug_env.debug_relate_nested) {
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
         log_info("nested ", st->depth, ": '", source_str, "' -> '", target_str, "': ", (u32)result, unreliable ? " (unreliable)" : "");
         c_drop(cstr, &source_str, &target_str);
     }
-    my variance_unreliable |= saved_unreliable;
+    my variance_reports |= saved_reports;
     st->depth--;
     st->expanding = saved_expanding;
 

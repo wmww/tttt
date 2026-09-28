@@ -5546,7 +5546,7 @@ const baselines = {
         types: true,
     },
     'conditionalTypeVarianceBigArrayConstraintsPerformance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15081,9 +15081,9 @@ const baselines = {
         types: false,
     },
     'genericIndexedAccessVarianceComparisonResultCorrect': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericInference1': {
         errors: true,
@@ -18698,7 +18698,7 @@ const baselines = {
     'invariantGenericErrorElaboration': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invocationExpressionInFunctionParameter': {
         errors: true,
@@ -27516,7 +27516,7 @@ const baselines = {
         types: false,
     },
     'requiredMappedTypeModifierTrumpsVariance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

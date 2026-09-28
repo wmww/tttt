@@ -215,6 +215,21 @@ bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional) {
     return ret;
 }
 
+// Whether one of `params` occurs free in the type (true when unsure): what tsc finds out by instantiating a type with
+// a mapper that reports the types it's asked to map (reportUnreliableMapper)
+bool ty_mentions_any(Checker* me, Ty const* ty, Ty const* const* params, u32 count) {
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    TyBuf found = {0};
+    MentionWalk walk = { .collect = &found };
+    bool ret = mentions_type_variables(me, ty, &walk, 0);
+    free(walk.visited);
+    for (u32 i = 0; !ret && i < found.len; i++) {
+        for (u32 j = 0; !ret && j < count; j++) ret = found.data[i] == params[j];
+    }
+    ty_buf_drop(&found);
+    return ret;
+}
+
 static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {
     TyCondBranch copy = *branch;
     return ty_cond_branch_type(me, &copy);
