@@ -314,10 +314,11 @@ static Ty const* widen_literals(Checker* me, Ty const* ty) {
     return ty_regular(me, ty_widened_unique_symbol(me, ty_widened_literal(me, ty)));
 }
 
-// Without strictNullChecks `null` and `undefined` widen to `any`
+// Without strictNullChecks `null` and `undefined` widen to `any`. Unique symbols stay (tsc's getWidenedLiteralType): only
+// one made for another declaration widens, and only at the top (binding.c's initialized_binding_type)
 Ty const* ty_widened_for_declaration(Checker* me, Ty const* ty, bool literals) {
     // Not regularised: `const e = E.x` holds the fresh `E.x`, `let x = a` with `a: "a"` the regular "a"
-    if (literals) ty = ty_widened_unique_symbol(me, ty_widened_literal(me, ty));
+    if (literals) ty = ty_widened_literal(me, ty);
     return ty_widened_nullable(me, ty_widened_objects(me, ty));
 }
 
