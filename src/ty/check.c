@@ -995,6 +995,7 @@ static void check_access(
     bool error_if_not_found, u32 depth, ErrorCtx* errs
 ) {
     if (depth > 8) return;
+    if (object->flags & TYF_ERROR) return; // (tsc's checkElementAccessExpression: nothing to say about an error type)
     // `string & Tag` is a string as far as indexing goes (tsc's isTypeAssignableToKind)
     u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL;
     if (index->kind == TY_UNION || (index->kind == TY_INTERSECTION && !(ty_key_flags(index) & key_like))) {

@@ -15726,9 +15726,9 @@ const baselines = {
         types: true,
     },
     'identifierStartAfterNumericLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'identityAndDivergentNormalizedTypes': {
         errors: true,
@@ -24156,7 +24156,7 @@ const baselines = {
         types: true,
     },
     'numberLiteralsWithLeadingZeros': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24231,12 +24231,12 @@ const baselines = {
         types: true,
     },
     'numericLiteralsWithTrailingDecimalPoints01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'numericLiteralsWithTrailingDecimalPoints02': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -25311,8 +25311,8 @@ const baselines = {
         types: false,
     },
     'parseBigInt': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parseCommaSeparatedNewlineNew': {
@@ -30086,29 +30086,29 @@ const baselines = {
         types: false,
     },
     'taggedTemplatesWithIncompleteNoSubstitutionTemplate1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'taggedTemplatesWithIncompleteNoSubstitutionTemplate2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'taggedTemplatesWithIncompleteTemplateExpressions1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplatesWithIncompleteTemplateExpressions2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplatesWithIncompleteTemplateExpressions3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplatesWithIncompleteTemplateExpressions4': {
         errors: false,
@@ -30123,7 +30123,7 @@ const baselines = {
     'taggedTemplatesWithIncompleteTemplateExpressions6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tailRecursiveConditionalTypes': {
         errors: true,
@@ -40511,7 +40511,7 @@ const baselines = {
         types: true,
     },
     'invalidBinaryIntegerLiteralAndOctalIntegerLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43861,52 +43861,52 @@ const baselines = {
         types: true,
     },
     'templateStringUnterminated1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringUnterminated1_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringUnterminated2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringUnterminated2_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringUnterminated3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringUnterminated3_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringUnterminated4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringUnterminated4_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringUnterminated5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringUnterminated5_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47906,7 +47906,7 @@ const baselines = {
         types: false,
     },
     'propertyAccessNumericLiterals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55876,9 +55876,9 @@ const baselines = {
         types: true,
     },
     'parser.numericSeparators.binaryNegative': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.decimal(target=es2020)': {
         errors: true,
@@ -55906,9 +55906,9 @@ const baselines = {
         types: true,
     },
     'parser.numericSeparators.hexNegative': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.octal': {
         errors: true,
@@ -55916,9 +55916,9 @@ const baselines = {
         types: true,
     },
     'parser.numericSeparators.octalNegative': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.unicodeEscape': {
         errors: false,
@@ -61016,9 +61016,9 @@ const baselines = {
         types: true,
     },
     'scannerES3NumericLiteral6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerES3NumericLiteral7': {
         errors: true,
@@ -61081,9 +61081,9 @@ const baselines = {
         types: true,
     },
     'scannerNumericLiteral6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerNumericLiteral7': {
         errors: true,
@@ -61121,7 +61121,7 @@ const baselines = {
         types: false,
     },
     'scannerS7.8.3_A6.1_T1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

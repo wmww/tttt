@@ -301,7 +301,6 @@ static bool parse_function_args(
     bool commit_on_paren,
     FunctionImpl* ret
 );
-static bool parse_number(Parser* parent, double* ret);
 static bool parse_numeric_value(Parser* parent, Value* ret);
 static bool parse_string(Parser* parent, cstr* ret);
 static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts);
@@ -6270,60 +6269,170 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     return parse_success(&p);
 }
 
-static bool parse_number(Parser* parent, double* ret) {
-    if (!is_number_start_char(*parent->pos)) {
-        return false;
+static inline bool is_digit_of_base(char c, int base) {
+    int v = hex_digit_value(c);
+    return v >= 0 && v < base;
+}
+
+// The digits of `base` at c and the numeric separators between them (tsc's scanNumberFragment, scanHexDigits and
+// scanBinaryOrOctalDigits, which agree on where a `_` may be): appends the digits to `digits`, returns their end
+static const char* scan_digit_fragment(Parser* p, const char* c, int base, cstr* digits) {
+    bool allow_separator = false;
+    bool previous_separator = false;
+    for (;; c++) {
+        if (*c == '_') {
+            if (allow_separator) {
+                allow_separator = false;
+                previous_separator = true;
+            } else if (previous_separator) {
+                parse_error(p, span_make(p->shared->source, c, c + 1), 6189,
+                    "Multiple consecutive numeric separators are not permitted.");
+            } else {
+                parse_error(p, span_make(p->shared->source, c, c + 1), 6188, "Numeric separators are not allowed here.");
+            }
+        } else if (is_digit_of_base(*c, base)) {
+            allow_separator = true;
+            previous_separator = false;
+            cstr_push(digits, (char[]){ *c, 0 });
+        } else {
+            break;
+        }
     }
-    char const* start = parent->pos;
-    const char* end = string_to_double(parent->pos, nullptr, true, true, true, ret);
-    if (end) {
-        parent->pos = end;
-        // tsc's scanNumber: a leading zero before more digits is a legacy octal (TS1121) or a decimal with a leading
-        // zero (TS1489)
-        if (start[0] == '0' && end - start > 1 && start[1] >= '0' && start[1] <= '9') {
-            bool octal = true;
-            char const* digits_end = start + 1;
-            while (digits_end < end && *digits_end >= '0' && *digits_end <= '9') {
-                if (*digits_end >= '8') octal = false;
-                digits_end++;
-            }
-            if (octal) {
-                double value = 0;
-                for (char const* i = start + 1; i < digits_end; i++) value = value * 8 + (*i - '0');
-                *ret = value;
-                parent->pos = end = digits_end;
-                bool minus = start > cstr_str(&parent->shared->source->contents) && start[-1] == '-';
-                char octal_text[64];
-                snprintf(octal_text, sizeof(octal_text), "%s0o%llo", minus ? "-" : "", (unsigned long long)value);
-                Span span = span_make(parent->shared->source, minus ? start - 1 : start, end);
-                parse_error(parent, span, 1121, "Octal literals are not allowed. Use the syntax '", octal_text, "'.");
-                return true;
-            }
-            char const* decimal_end = end;
-            while (decimal_end > start && (*(decimal_end - 1) == 'n')) decimal_end--;
-            parse_error(parent, span_make(parent->shared->source, start, decimal_end), 1489,
-                "Decimals with leading zeros are not allowed.");
+    if (c[-1] == '_') {
+        parse_error(p, span_make(p->shared->source, c - 1, c), 6188, "Numeric separators are not allowed here.");
+    }
+    return c;
+}
+
+static double digits_value(csview digits, int base) {
+    double value = 0;
+    for (intptr_t i = 0; i < digits.size; i++) value = value * base + hex_digit_value(digits.buf[i]);
+    return value;
+}
+
+// After a numeric literal that ends at c (tsc's checkForIdentifierStartAfterNumericLiteral): an identifier right
+// after it is TS1351 and a token of its own, but a lone `n` is a bigint suffix in the wrong place (consumed)
+static const char* check_identifier_after_number(Parser* p, const char* start, const char* c, bool scientific) {
+    if (!is_identifier_start_char(*c)) return c;
+    const char* id_end = c + 1;
+    while (is_identifier_char(*id_end)) id_end++;
+    if (id_end - c == 1 && *c == 'n') {
+        Span span = span_make(p->shared->source, start, id_end);
+        if (scientific) parse_error(p, span, 1352, "A bigint literal cannot use exponential notation.");
+        else parse_error(p, span, 1353, "A bigint literal must be an integer.");
+        return id_end;
+    }
+    parse_error(p, span_make(p->shared->source, c, id_end), 1351,
+        "An identifier or keyword cannot immediately follow a numeric literal.");
+    return c;
+}
+
+// A numeric literal with its scanner diagnostics (tsc's scanNumber and the `0x`/`0b`/`0o` cases of scan()); `bigint`
+// is set for an `n` suffix (the value stays a double, see Value)
+static bool scan_numeric_literal(Parser* parent, double* ret, bool* bigint) {
+    const char* start = parent->pos;
+    const char* c = start;
+    if (!(*c >= '0' && *c <= '9') && !(*c == '.' && c[1] >= '0' && c[1] <= '9')) return false;
+    *bigint = false;
+    cstr digits = cstr_init();
+    char prefix = c[0] == '0' ? (char)(c[1] | 0x20) : 0;
+    if ((prefix == 'x' || prefix == 'b' || prefix == 'o') && c[2]) {
+        int base = prefix == 'x' ? 16 : prefix == 'b' ? 2 : 8;
+        c = scan_digit_fragment(parent, c + 2, base, &digits);
+        if (!cstr_size(&digits)) {
+            Span at = span_make(parent->shared->source, c, c);
+            if (base == 16) parse_error(parent, at, 1125, "Hexadecimal digit expected.");
+            else if (base == 2) parse_error(parent, at, 1177, "Binary digit expected.");
+            else parse_error(parent, at, 1178, "Octal digit expected.");
         }
-        if (*parent->pos == 'e' || *parent->pos == 'E') {
-            parent->pos++;
-            parse_error(parent, span_from_pos(parent), 1124, "Digit expected.");
+        *ret = digits_value(cstr_sv(&digits), base);
+        cstr_drop(&digits);
+        if (*c == 'n') {
+            *bigint = true;
+            c++;
         }
+        parent->pos = c;
         return true;
-    } else {
-        return false;
     }
+
+    bool leading_zero = false;
+    if (c[0] == '0' && c[1] >= '0' && c[1] <= '9') {
+        // A legacy octal (TS1121), or a decimal with a leading zero (NonOctalDecimalIntegerLiteral: TS1489 below)
+        const char* d = c + 1;
+        bool octal = true;
+        for (; *d >= '0' && *d <= '9'; d++) octal &= *d < '8';
+        if (octal) {
+            double value = digits_value(csview_from_range(c + 1, d), 8);
+            *ret = value;
+            parent->pos = d;
+            cstr_drop(&digits);
+            bool minus = start > cstr_str(&parent->shared->source->contents) && start[-1] == '-';
+            char octal_text[64];
+            snprintf(octal_text, sizeof(octal_text), "%s0o%llo", minus ? "-" : "", (unsigned long long)value);
+            Span span = span_make(parent->shared->source, minus ? start - 1 : start, d);
+            parse_error(parent, span, 1121, "Octal literals are not allowed. Use the syntax '", octal_text, "'.");
+            return true;
+        }
+        leading_zero = true;
+        cstr_append_n(&digits, c, d - c);
+        c = d;
+    } else if (c[0] == '0' && c[1] == '_') {
+        // tsc reports this `_` and then reads the literal as if it wasn't a leading zero (the `_` is allowed there)
+        parse_error(parent, span_make(parent->shared->source, c + 1, c + 2), 6188,
+            "Numeric separators are not allowed here.");
+        c = scan_digit_fragment(parent, c, 10, &digits);
+    } else {
+        c = scan_digit_fragment(parent, c, 10, &digits);
+    }
+    bool decimal = false;
+    if (*c == '.') {
+        decimal = true;
+        cstr_push(&digits, ".");
+        c = scan_digit_fragment(parent, c + 1, 10, &digits);
+    }
+    const char* end = c;
+    bool scientific = false;
+    if (*c == 'e' || *c == 'E') {
+        scientific = true;
+        c++;
+        char sign = 0;
+        if (*c == '+' || *c == '-') sign = *c++;
+        cstr exponent = cstr_init();
+        c = scan_digit_fragment(parent, c, 10, &exponent);
+        if (!cstr_size(&exponent)) {
+            parse_error(parent, span_make(parent->shared->source, c, c), 1124, "Digit expected.");
+        } else {
+            cstr_push(&digits, "e");
+            if (sign) cstr_push(&digits, (char[]){ sign, 0 });
+            cstr_append_s(&digits, exponent);
+            end = c;
+        }
+        cstr_drop(&exponent);
+    }
+    *ret = strtod(cstr_str(&digits), nullptr);
+    cstr_drop(&digits);
+    if (leading_zero) {
+        parse_error(parent, span_make(parent->shared->source, start, end), 1489,
+            "Decimals with leading zeros are not allowed.");
+    } else if (decimal || scientific) {
+        c = check_identifier_after_number(parent, start, c, !decimal && scientific);
+    } else {
+        if (*c == 'n') {
+            *bigint = true;
+            c++;
+        }
+        c = check_identifier_after_number(parent, start, c, false);
+    }
+    parent->pos = c;
+    return true;
 }
 
 // A number or, with an `n` suffix, a bigint literal (its value is kept as a double, see Value)
 static bool parse_numeric_value(Parser* parent, Value* ret) {
     double number;
-    if (!parse_number(parent, &number)) return false;
-    if (*parent->pos == 'n' && !is_identifier_char(parent->pos[1])) {
-        parent->pos++;
-        *ret = (Value){ .tag = VALUE_BIGINT, .bigint = number };
-    } else {
-        *ret = (Value){ .tag = VALUE_NUMBER, .number = number };
-    }
+    bool bigint;
+    if (!scan_numeric_literal(parent, &number, &bigint)) return false;
+    *ret = bigint ? (Value){ .tag = VALUE_BIGINT, .bigint = number } : (Value){ .tag = VALUE_NUMBER, .number = number };
     return true;
 }
 
@@ -6362,6 +6471,8 @@ static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escape
     *ret = str;
     if (*p.pos == quote) {
         p.pos++;
+    } else if (quote == '`') {
+        parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
     } else {
         parse_error(&p, span_from_pos(&p), 1002, "Unterminated string literal.");
     }
@@ -6439,6 +6550,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
 
     TemplateType template = { .texts = vec_cstr_init(), .types = vec_type_init(), .type_spans = vec_span_init() };
     cstr text = cstr_null;
+    bool missing_tail = false; // As in parse_template()
     while (*p.pos && *p.pos != '`') {
         if (*p.pos == '\\' && p.pos[1]) {
             p.pos++;
@@ -6456,6 +6568,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
             vec_span_push(&template.type_spans, span_from(type_a));
             hop_whitespace(&p);
             if (!expect_char(&p, '}')) {
+                missing_tail = true;
                 break;
             }
         } else if (*p.pos == '\r') {
@@ -6476,7 +6589,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
 
     if (*p.pos == '`') {
         p.pos++;
-    } else {
+    } else if (!missing_tail) {
         parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
     }
 
@@ -6757,6 +6870,8 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
     VecExpr substitutions = vec_expr_init();
     VecCStr cooked = vec_cstr_init();
     cstr text = cstr_null;
+    // A missing `}` ends the template (tsc's parseTemplateSpan: a missing template tail)
+    bool missing_tail = false;
     while (*p.pos && *p.pos != '`') {
         if (*p.pos == '\\' && p.pos[1]) {
             p.pos++;
@@ -6770,13 +6885,13 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
             text = cstr_null;
             p.pos += 2;
             hop_whitespace(&p);
+            // Committed from the `${` on: a missing expression is one
             Expr expr;
-            if (expect_expr(&p, expr_ctx_null, &expr)) {
-                parse_comma_ops_right_side(&p, &expr);
-                vec_expr_push(&substitutions, expr);
-            }
+            if (expect_expr(&p, expr_ctx_null, &expr)) parse_comma_ops_right_side(&p, &expr);
+            vec_expr_push(&substitutions, expr);
             hop_whitespace(&p);
             if (!expect_char(&p, '}')) {
+                missing_tail = true;
                 break;
             }
         } else {
@@ -6795,7 +6910,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
 
     if (*p.pos == '`') {
         p.pos++;
-    } else {
+    } else if (!missing_tail) {
         parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
     }
 

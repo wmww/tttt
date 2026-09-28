@@ -1418,7 +1418,7 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
             if (unary->op == UNARY_OP_MINUS && !expr_is_perenthisized(operand) && operand->tag == EXPR_LITERAL &&
                 operand->literal.tag == VALUE_BIGINT
             ) {
-                Value value = { .tag = VALUE_BIGINT, .bigint = -operand->literal.bigint };
+                Value value = { .tag = VALUE_BIGINT, .bigint = 0.0 - operand->literal.bigint }; // (bigints have no -0)
                 return ty_fresh_literal(me, ty_literal(me, &value));
             }
             if (unary->op == UNARY_OP_PLUS) return ty_intrinsic(me, TY_NUMBER);
