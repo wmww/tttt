@@ -434,6 +434,8 @@ static bool is_valid_base_type(Checker* me, Ty const* ty, u32 depth) {
 // (tsc also checks that they all construct the same type, TS2510)
 static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, Ty const** instance, Symbol const** base_decl) {
     Expr const* extends = &class_decl->extends;
+    SourceFile const* file = extends->inner_span.source;
+    bool js = file && file->is_js;
     VecSpannedType const* written_args = nullptr;
     if (extends->tag == EXPR_GENERIC_PARAMS) {
         written_args = &extends->generic_params->params;
@@ -497,6 +499,12 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
             args[i] = ty_from_node(me, &vec_spanned_type_at(written_args, i - outer)->type, ctx);
         } else {
             Ty const* fallback = ty_param_default(me, params.data[i]);
+            // In JavaScript a default of `{}` or unknown is any (tsc's fillMissingTypeArguments, isJavaScriptImplicitAny)
+            if (fallback && js && ((fallback->flags & TYF_UNKNOWN) ||
+                ty_is_related(me, fallback, ty_empty_object_type(me), TY_RELATION_IDENTITY))
+            ) {
+                fallback = nullptr;
+            }
             args[i] = fallback ? fallback : ty_intrinsic(me, TY_ANY);
         }
     }

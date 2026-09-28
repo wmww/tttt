@@ -9346,9 +9346,9 @@ const baselines = {
         types: true,
     },
     'defaultPropsEmptyCurlyBecomesAnyForJs': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultValueInConstructorOverload1': {
         errors: true,
