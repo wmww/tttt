@@ -551,36 +551,6 @@ static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape,
     if (param_type && args->data[i].type) infer_types(me, inf, args->data[i].type, param_type, INFER_PRIORITY_NORMAL);
 }
 
-// Whether checking a context-sensitive argument against `param_type` fixes type parameter `param`: its parameters are
-// typed for good, so what they mention is decided. The contextual return type isn't (tsc instantiates it with the
-// non-fixing mapper), except for the parameters of a function it returns (`() => x => x.length`), which are typed for
-// good too. Anything other than a single signature is taken to decide everything it mentions
-static bool fixed_by_type(Checker* me, Ty const* type, TyMapper const* probe, bool top, u32 depth) {
-    Members const* members = type->kind == TY_ANONYMOUS ? ty_members(me, type) : nullptr;
-    if (!members || members->call_count != 1 || members->prop_count || members->construct_count) {
-        return top && ty_instantiate(me, type, probe) != type;
-    }
-    Signature const* contextual = members->call[0];
-    signature_resolve(me, contextual);
-    for (u32 i = 0; i < contextual->param_count; i++) {
-        if (ty_instantiate(me, contextual->params[i].type, probe) != contextual->params[i].type) return true;
-    }
-    return depth < 8 && fixed_by_type(me, signature_return_type(me, contextual), probe, false, depth + 1);
-}
-
-// A function typed by contextual signature `sig`: only its parameters without a type annotation are typed by it (tsc's
-// assignContextualParameterTypes), and its `this` and what it returns
-static bool fixed_by_function(Checker* me, FunctionImpl const* function, Signature const* sig, TyMapper const* probe) {
-    signature_resolve(me, sig);
-    for (u32 i = 0; i < sig->param_count; i++) {
-        FunctionArg const* arg = i < (u32)vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, i) : nullptr;
-        if (arg && !arg->rest && arg->initializer.binding.has_explicit_type) continue;
-        if (ty_instantiate(me, sig->params[i].type, probe) != sig->params[i].type) return true;
-    }
-    if (sig->this_type && ty_instantiate(me, sig->this_type, probe) != sig->this_type) return true;
-    return fixed_by_type(me, signature_return_type(me, sig), probe, false, 1);
-}
-
 // Whether instantiating `type` meets a JSDoc object or function type that `host`'s `@template`s are in scope at (see
 // Ty.anonymous.jsdoc_references_all): from the first `@template` tag to the end of the host
 static bool meets_jsdoc_node_in(Checker* me, Ty const* type, FunctionImpl const* host, u32 depth) {
@@ -678,43 +648,6 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
     return fixed;
 }
 
-// Of an object or array literal, only the context-sensitive functions in it fix anything: the rest was inferred from in
-// the first pass already (`{ s: 1, cb: () => 0 }` against `Mapped<T>` doesn't fix T, `cb`'s contextual type
-// `() => T["cb"]` has no parameters to type)
-static bool fixed_by_expr(Checker* me, Expr const* expr, Ty const* context, TyMapper const* probe, u32 depth) {
-    if (!context) return false;
-    if (depth < 8 && expr->tag == EXPR_OBJECT) {
-        for_each (i, vec_object_expr_item, &expr->object) {
-            if (!ty_expr_is_context_sensitive(&i->value)) continue;
-            if (i->tag == OBJECT_ITEM_SPREAD || i->computed_key) return fixed_by_type(me, context, probe, true, 8);
-            Ty const* key = ty_prop_name_literal(me, checker_atom(me, cstr_sv(&i->name_string)));
-            if (fixed_by_expr(me, &i->value, ty_contextual_prop_type(me, context, key), probe, depth + 1)) return true;
-        }
-        return false;
-    }
-    if (depth < 8 && expr->tag == EXPR_ARRAY) {
-        for_each (i, vec_expr, &expr->array) {
-            if (!ty_expr_is_context_sensitive(i)) continue;
-            if (i->tag == EXPR_SPREAD) return fixed_by_type(me, context, probe, true, 8);
-            if (fixed_by_expr(me, i, ty_contextual_element_type(me, context, (u32)i_index), probe, depth + 1)) return true;
-        }
-        return false;
-    }
-    if (expr->tag == EXPR_FUNCTION && context->kind == TY_UNION) {
-        // Of a union, what the function is typed by is the signature its members have in common (a method against
-        // `(() => T[K]) | Computed<T[K]>` gets `() => T[K]`, whose no parameters fix nothing)
-        Signature const* sig = ty_contextual_signature(me, context, expr->function);
-        if (!sig) return false;
-        return fixed_by_function(me, expr->function, sig, probe);
-    }
-    if (expr->tag == EXPR_FUNCTION) {
-        Signature const* sig = ty_contextual_signature(me, context, expr->function);
-        if (sig) return fixed_by_function(me, expr->function, sig, probe);
-    }
-    // (Only a function returns what the contextual return type says)
-    return fixed_by_type(me, context, probe, true, expr->tag == EXPR_FUNCTION ? 0 : 8);
-}
-
 // Whether an intra-expression pass checks `expr` on its own. HACK: only arrow functions (and nested literals). tsc takes
 // methods and function expressions too, but their `this` goes by the literal's contextual type, which isn't finished
 // while the pass runs, and tttt remembers the `this` it evaluated once (tsc recomputes it): thisTypeInObjectLiterals2
@@ -792,16 +725,6 @@ static void infer_intra_expression(
     }
 }
 
-static bool fixed_by_argument(Checker* me, Arg const* arg, Ty const* param_type, Ty const* param) {
-    if (!param_type) return false;
-    Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
-    TyMapper const* probe = ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &unknown, .len = 1 });
-    // (A generic function argument is instantiated in the context of the parameters alone)
-    if (arg->generic_function) return fixed_by_type(me, param_type, probe, true, 8);
-    if (arg->spread || arg->part_of_spread) return fixed_by_type(me, param_type, probe, true, 8);
-    return fixed_by_expr(me, arg->expr, param_type, probe, 0);
-}
-
 Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members) {
     if (!(ty->flags & TYF_OBJECT)) return nullptr;
     Members const* members = ty_members(me, ty);
@@ -836,6 +759,27 @@ static bool contextual_rest_is_variadic(Signature const* contextual) {
         contextual->params[contextual->param_count - 1].type->kind == TY_TYPE_PARAM;
 }
 
+// A generic function argument instantiated in the context of signature `contextual` fixes the call's type parameters
+// that `contextual`'s parameters (and `this`) mention: tsc's instantiateSignatureInContextOf instantiates it with the
+// fixing mapper, and applyToParameterTypes asks for every parameter type. (A rest parameter of type parameter type
+// isn't fixed: tsc's nonFixingMapper.) Returns the mapper of what is inferred so far
+static TyMapper const* fix_for_generic_function(Checker* me, Signature const* sig, Inference* inf, Signature const* contextual) {
+    signature_resolve(me, contextual);
+    if (!contextual_rest_is_variadic(contextual)) {
+        TyMapper const* so_far = inference_mapper(me, sig, inf, true);
+        for (u32 j = 0; j < inf->len; j++) {
+            if (inf->params[j].fixed) continue;
+            Ty const* param = sig->type_params.data[j];
+            bool mentioned = contextual->this_type && ty_mentions_any(me, contextual->this_type, &param, 1);
+            for (u32 i = 0; i < contextual->param_count && !mentioned; i++) {
+                mentioned = ty_mentions_any(me, contextual->params[i].type, &param, 1);
+            }
+            if (mentioned) inf->params[j].fixed = so_far->targets[j];
+        }
+    }
+    return inference_mapper(me, sig, inf, true);
+}
+
 Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* contextual, GenericFunctionMode* mode) {
     Signature const* wanted = nullptr;
     Signature const* generic = generic_function_argument(me, type, contextual, &wanted);
@@ -845,16 +789,7 @@ Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* 
         return ty_any_function_type(me);
     }
     // HACK: not tsc's higher-order branch (a call returning a function would get the member's type parameters)
-    Inference* inf = mode->inf;
-    TyMapper const* so_far = inference_mapper(me, mode->sig, inf, true);
-    Ty const* wanted_type = ty_signature_type(me, wanted);
-    Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
-    for (u32 j = 0; j < inf->len && !contextual_rest_is_variadic(wanted); j++) {
-        if (!inf->params[j].co_len && !inf->params[j].contra_len) continue;
-        Ty const* param = mode->sig->type_params.data[j];
-        TyMapper const* probe = ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &unknown, .len = 1 });
-        if (fixed_by_type(me, wanted_type, probe, true, 8)) inf->params[j].fixed = so_far->targets[j];
-    }
+    TyMapper const* so_far = fix_for_generic_function(me, mode->sig, mode->inf, wanted);
     return ty_signature_type(me, ty_instantiate_signature_in_context_of(me, generic, wanted, so_far));
 }
 
@@ -1084,14 +1019,7 @@ static TyMapper const* infer_type_arguments(
                     continue;
                 }
             }
-            // (A rest parameter of type parameter type isn't fixed: tsc's nonFixingMapper)
-            bool variadic = contextual_rest_is_variadic(contextual);
-            TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
-            for (u32 j = 0; j < inf.len && !variadic; j++) {
-                if ((inf.params[j].co_len || inf.params[j].contra_len) && fixed_by_argument(me, arg, param_type, sig->type_params.data[j])) {
-                    inf.params[j].fixed = so_far->targets[j];
-                }
-            }
+            TyMapper const* so_far = fix_for_generic_function(me, sig, &inf, contextual);
             Signature const* instantiated = ty_instantiate_signature_in_context_of(me, generic, contextual, so_far);
             infer_types(me, &inf, ty_signature_type(me, instantiated), param_type, INFER_PRIORITY_NORMAL);
             continue;
