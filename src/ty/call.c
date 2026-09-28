@@ -1109,6 +1109,16 @@ static i32 first_unfit_argument(
         }
         if (i >= shape->count && shape->rest_variadic) break;
     }
+    // No argument for a rest parameter that isn't an array: it still gets `[]` (tsc's checkApplicableSignature with
+    // getNonArrayRestType), reported at the call (the index past the arguments)
+    if (shape->rest_variadic && args->len <= shape->count && args->spread_index < 0 && !args->incomplete) {
+        Ty const* source = rest_args_tuple(me, args, args->len, false, false);
+        if (!ty_is_related(me, source, shape->rest_variadic, relation)) {
+            *arg_type = source;
+            *param_type = shape->rest_variadic;
+            return (i32)args->len;
+        }
+    }
     return -1;
 }
 
@@ -1278,6 +1288,8 @@ static Span report_unfit_argument(
         // The attributes, at the tag name (tsc's checkApplicableSignatureForJsxCallLikeElement)
         span = callee_span(info);
         ty_check_assignable_expr(me, arg_type, param_type, span, &info->jsx->attributes, errs);
+    } else if (index >= 0 && (u32)index == args->len) {
+        ty_report_unfit_argument(me, arg_type, param_type, span, nullptr, errs);
     } else if (index >= 0) {
         Arg const* arg = &args->data[index];
         bool is_rest_tuple = arg_type != arg->type;

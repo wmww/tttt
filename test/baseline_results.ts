@@ -30501,7 +30501,7 @@ const baselines = {
         types: true,
     },
     'topFunctionTypeNotCallable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
