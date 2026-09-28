@@ -3321,14 +3321,46 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         if (member->key.tag == INTERFACE_KEY_CALLABLE && member->type.tag == TYPE_CALLABLE) signature = member->type.callable->function;
     }
     if (!signature || signature->is_constructor) return;
+    // `(this: T) => R`: the function's `this` parameter, unless it has one (or is an arrow function), and not a
+    // position to match the parameters by
+    FunctionArg* signature_this = vec_function_arg_size(&signature->args) ? signature->args.data : nullptr;
+    if (signature_this && !(signature_this->initializer.binding.tag == BINDING_IDENTIFIER &&
+        span_equals(signature_this->initializer.binding.content_span, "this"))
+    ) {
+        signature_this = nullptr;
+    }
+    FunctionArg const* own_first = vec_function_arg_size(&function->args) ? function->args.data : nullptr;
+    bool has_this = own_first && own_first->initializer.binding.tag == BINDING_IDENTIFIER &&
+        span_equals(own_first->initializer.binding.content_span, "this");
+    if (signature_this && !has_this && !span_valid(function->arrow_span) && signature_this->initializer.binding.has_explicit_type) {
+        FunctionArg arg = {
+            .initializer.value = expr_implicit_any(signature_this->initializer.binding.content_span),
+            .jsdoc_this = true,
+        };
+        arg.initializer.binding = (Binding){
+            .tag = BINDING_IDENTIFIER,
+            .content_span = signature_this->initializer.binding.content_span,
+            .has_explicit_type = true,
+            .explicit_type = signature_this->initializer.binding.explicit_type,
+            .explicit_type_span = signature_this->initializer.binding.explicit_type_span,
+        };
+        arg.initializer.binding.explicit_type.from_jsdoc = true;
+        signature_this->initializer.binding.has_explicit_type = false;
+        signature_this->initializer.binding.explicit_type = (TypeNode){0};
+        vec_function_arg_insert_n(&function->args, 0, &arg, 1);
+        has_this = true;
+    }
     if (generic_empty(&function->generic) && !generic_empty(&signature->generic)) {
         function->generic = signature->generic;
         signature->generic = (Generic){0};
         for_each (i, vec_generic_item, &function->generic.items) i->jsdoc = true;
     }
+    isize skip_own = has_this ? 1 : 0, skip_signature = signature_this ? 1 : 0;
     for_each (i, vec_function_arg, &function->args) {
-        if (i_index >= vec_function_arg_size(&signature->args)) break;
-        FunctionArg* from = vec_function_arg_at_mut(&signature->args, i_index);
+        if (i_index < skip_own) continue;
+        isize at = i_index - skip_own + skip_signature;
+        if (at >= vec_function_arg_size(&signature->args)) break;
+        FunctionArg* from = vec_function_arg_at_mut(&signature->args, at);
         Binding* binding = &i->initializer.binding;
         if (binding->has_explicit_type || !from->initializer.binding.has_explicit_type || from->rest != i->rest) continue;
         binding->explicit_type = from->initializer.binding.explicit_type;

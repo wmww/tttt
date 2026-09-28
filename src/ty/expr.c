@@ -672,6 +672,8 @@ static Ty const* apparent_contextual_type(Checker* me, Ty const* ty) {
 }
 
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
+    // A JavaScript `@type {F}` gives its signature's `this` (tsc's getThisTypeOfDeclaration of a type tag's signature)
+    if (function->jsdoc_signature_type) ty_function_apply_jsdoc_type(me, function);
     u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
     Ty const* from_signature = intern_get(&my links, this_key, 2);
     if (from_signature) return from_signature;
