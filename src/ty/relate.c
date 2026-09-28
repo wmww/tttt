@@ -1372,14 +1372,27 @@ static bool is_static_private_name(Checker* me, Prop const* prop) {
     return (prop->flags & PROP_STATIC) && ty_private_name_class(me, prop->name);
 }
 
+static Ternary props_related_impl(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent,
+    bool optionals_only
+);
+
 static Ternary props_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent
+) {
+    return props_related_impl(me, st, source, target, report, source_is_apparent, false);
+}
+
+// `optionals_only`: only the optional properties of the target that the source has (tsc's optionalsOnly)
+static Ternary props_related_impl(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent,
+    bool optionals_only
 ) {
     Members const* target_members = ty_members(me, target);
     bool comparable = st->relation == TY_RELATION_COMPARABLE;
 
     // A primitive is shown as itself, not as the global interface its properties come from
-    if (report && !source_is_apparent && should_report_unmatched_property(me, source, target)) {
+    if (report && !source_is_apparent && !optionals_only && should_report_unmatched_property(me, source, target)) {
         // Missing properties get a message of their own instead of the generic head
         Atom const* missing[5];
         Prop const* missing_prop = nullptr;
@@ -1438,6 +1451,7 @@ static Ternary props_related(
     Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
     for (u32 i = 0; i < target_members->prop_count; i++) {
         Prop const* target_prop = target_members->props[i];
+        if (optionals_only && !(target_prop->flags & PROP_OPTIONAL)) continue;
         // The same accessor of the same object literal, typed or not (tsc's `sourceProp !== targetProp`: the literal's
         // types share the declaration's symbol). Not typing it matters when the literal is rechecked against what was
         // inferred from it, in the initializer its getter refers back to
@@ -1448,6 +1462,7 @@ static Ternary props_related(
             if (same && same->function == target_prop->function && !same->target && same->flags == target_prop->flags) continue;
         }
         FoundProp source_prop = find_prop(me, source, target_prop->name, 0);
+        if (optionals_only && (!source_prop.found || source_prop.prop == target_prop)) continue;
         if (!source_prop.found) {
             if (is_static_private_name(me, target_prop)) continue;
             // Subtypes need the optional properties too, unless an object literal, [] or a tuple leaves them out
@@ -3095,13 +3110,22 @@ static Ternary structured_related_impl(
         st->intersection_source = true;
         Ternary related = some_related(me, st, source->composite.types, target);
         st->intersection_source = saved_source;
-        if (related) return related;
         // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
         // `T extends Node | undefined` is a Node
-        Ty const* constraint = intersection_constraint(me, source);
-        if (constraint) {
-            related = is_related_to(me, st, constraint, target, false);
-            if (related) return related;
+        Ty const* constraint = related ? nullptr : intersection_constraint(me, source);
+        if (constraint) related = is_related_to(me, st, constraint, target, false);
+        if (related) {
+            // A member being related isn't enough for the target's optional properties, which the intersection as a
+            // whole may have with another type: `{ a: null } & { b: string }` to `{ a?: number, b: string }` (tsc's
+            // extra property check in structuredTypeRelatedTo)
+            bool member_is_target = false;
+            for (u32 i = 0; i < source->composite.types.len; i++) member_is_target |= source->composite.types.data[i] == target;
+            if (!member_is_target && (target->flags & TYF_OBJECT) && !ty_is_generic_object(me, target) &&
+                !(target->kind == TY_REFERENCE && is_array_target(me, target->reference.target)) && !is_tuple(target)
+            ) {
+                related &= props_related_impl(me, st, apparent_type(me, source), target, report, false, true);
+            }
+            return related;
         }
         // Otherwise the members may still add up to the target, property by property (below)
     }
