@@ -13,6 +13,7 @@ core_files = files(
     'interface_decl.c',
     'block.c',
     'expr.c',
+    'ast_walk.c',
     'value.c',
     'modifier_list.c',
     'statement.c',

@@ -16,6 +16,7 @@
 #include "ty/ty.h"
 #include "unused.h"
 #include "regex_check.h"
+#include "ast_walk.h"
 
 // Expressions are stored inline everywhere: keep them small
 static_assert(sizeof(Expr) == 144, "Expr grew");
@@ -2148,6 +2149,219 @@ void expr_check_truthiness(Expr const* me, ErrorCtx* errs) {
     }
 }
 
+// The logical operand whose binary_expr_typecheck() is next (its parent is a logical operator: not the top of a tree of them), and the condition of the `if`
+// being checked, whose logical operators expr_typecheck_if_condition() looks at
+static thread_local Expr const* logical_operand;
+static thread_local Expr const* if_condition;
+
+// tsc's checkTestingKnownTruthyCallableOrAwaitableOrEnumMemberType: a condition that tests a function or a promise
+// without calling or awaiting it in the condition or the body (TS2774, TS2801), or an enum member (TS2845). Parentheses
+// aren't nodes here, so the parents tsc looks at are kept on the way down: a path of frames from the condition
+typedef struct CondPath {
+    Expr const* node;
+    struct CondPath const* up; // null at the condition, whose parent is no binary expression that matters
+} CondPath;
+
+static bool is_logical_binary(Expr const* me) {
+    return my tag == EXPR_BINARY_OP && binary_op_is_logical(my binary_op->op);
+}
+
+// The binary expression that is the node's parent (tsc's node.parent when isBinaryExpression), else null
+static Expr const* cond_path_binary_parent(CondPath const* path) {
+    if (expr_is_perenthisized(path->node) || !path->up) return nullptr;
+    return path->up->node->tag == EXPR_BINARY_OP ? path->up->node : nullptr;
+}
+
+// What tsc's getSymbolAtLocation gives for an identifier or the name of a property access, as a key to compare: the
+// symbol of an identifier, the declaration of a property. Null if there is nothing to compare
+static void const* location_symbol(Expr const* me) {
+    if (my tag == EXPR_IDENTIFIER) return my identifier.keyword ? nullptr : my identifier.symbol;
+    if (my tag != EXPR_PROPERTY || my property->form != PROPERTY_EXPR_DOT || my property->prop.tag != EXPR_LITERAL) return nullptr;
+    Checker* checker = current_checker;
+    Ty const* key = ty_access_key_type(checker, my property);
+    if (!(key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) || (key->flags & TYF_ENUM_LITERAL)) return nullptr;
+    Atom const* name = ty_literal_name(checker, key);
+    Ty const* object = ty_apparent_type(checker, ty_expr_type(checker, &my property->expr));
+    Prop const* prop = nullptr;
+    if (object->kind == TY_UNION) {
+        for (u32 i = 0; i < object->composite.types.len && !prop; i++) {
+            prop = ty_property_of_type(checker, ty_apparent_type(checker, object->composite.types.data[i]), name);
+        }
+    } else {
+        prop = ty_property_of_type(checker, object, name);
+    }
+    if (!prop) return nullptr;
+    while (prop->target) prop = prop->target;
+    if (prop->decl->symbol) return prop->decl->symbol;
+    if (prop->decl->decl_span_count) return prop->decl->decl_spans[0].sv.buf;
+    return prop->decl != &ty_prop_decl_none ? (void const*)prop->decl : (void const*)prop;
+}
+
+typedef struct TruthyUseSearch {
+    Expr const* root; // Its children are searched, not itself (tsc's forEachChild of the node)
+    void const* symbol;
+    Expr const* cond; // The condition (tsc's expr in isSymbolUsedInConditionBody), null for a binary chain
+    Expr const* tested; // The location that was tested
+    bool tested_identifier_in_binary; // tsc's isIdentifier(testedNode) && isBinaryExpression(testedNode.parent)
+} TruthyUseSearch;
+
+// isSymbolUsedInConditionBody's walk up the tested and the found expressions in step
+static bool same_access_chain(Expr const* tested, Expr const* child) {
+    while (true) {
+        if (tested->tag == EXPR_IDENTIFIER && child->tag == EXPR_IDENTIFIER) {
+            bool tested_this = tested->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
+            bool child_this = child->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
+            if (tested_this && child_this) return true;
+            if (tested_this || child_this || tested->identifier.keyword || child->identifier.keyword) return false;
+            return tested->identifier.symbol == child->identifier.symbol;
+        }
+        if (tested->tag == EXPR_PROPERTY && child->tag == EXPR_PROPERTY &&
+            tested->property->form == PROPERTY_EXPR_DOT && child->property->form == PROPERTY_EXPR_DOT
+        ) {
+            if (location_symbol(tested) != location_symbol(child)) return false;
+            tested = &tested->property->expr;
+            child = &child->property->expr;
+        } else if (tested->tag == EXPR_CALL && child->tag == EXPR_CALL) {
+            tested = &tested->call->callable;
+            child = &child->call->callable;
+        } else {
+            return false;
+        }
+    }
+}
+
+static bool truthy_use_visit(Expr const* e, void* arg) {
+    TruthyUseSearch const* search = arg;
+    bool name = e->tag == EXPR_PROPERTY && e->property->form == PROPERTY_EXPR_DOT; // the name is a child of e
+    if (!name && (e == search->root || e->tag != EXPR_IDENTIFIER)) return false;
+    if (location_symbol(e) != search->symbol) return false;
+    if (!search->cond) return true; // isSymbolUsedInBinaryExpressionChain
+    if (search->cond->tag == EXPR_IDENTIFIER || search->tested_identifier_in_binary) return true;
+    if (!name) return false; // (an identifier's parent isn't the tested property access)
+    return same_access_chain(search->tested, e);
+}
+
+typedef struct TruthyBody {
+    Statement const* statement;
+    Expr const* expr;
+} TruthyBody;
+
+static bool truthy_symbol_used(Expr const* root, TruthyUseSearch* search) {
+    search->root = root;
+    return ast_walk_expr(root, truthy_use_visit, search);
+}
+
+static void truthy_both_helper(Expr const* cond, CondPath const* path, TruthyBody body, ErrorCtx* errs);
+
+static void truthy_helper(Expr const* cond, CondPath const* path, TruthyBody body, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    CondPath right_frame;
+    Expr const* location = cond;
+    CondPath const* location_path = path;
+    if (is_logical_binary(cond)) {
+        location = &cond->binary_op->right;
+        right_frame = (CondPath){ location, path };
+        location_path = &right_frame;
+    }
+    if (expr_is_module_exports(location)) return;
+    if (is_logical_binary(location)) {
+        truthy_both_helper(location, location_path, body, errs);
+        return;
+    }
+    Ty const* type = ty_expr_type(checker, location);
+    bool dot = location->tag == EXPR_PROPERTY && location->property->form == PROPERTY_EXPR_DOT;
+    if ((type->flags & TYF_ENUM_LITERAL) && dot) {
+        Expr const* object = &location->property->expr;
+        Symbol const* enum_symbol = object->tag == EXPR_IDENTIFIER ? object->identifier.target : nullptr;
+        if (enum_symbol && (enum_symbol->flags & SYMBOL_ENUM)) {
+            Value const* value = &type->literal.value;
+            bool truthy = value->tag == VALUE_STRING ? type->literal.string && type->literal.string->len != 0
+                : value->tag == VALUE_NUMBER ? value->number != 0 && value->number == value->number : true;
+            error_ctx_error_d(errs, location->inner_span, 2845, "This condition will always return '",
+                truthy ? "true" : "false", "'.");
+            return;
+        }
+    }
+    bool cast = dot && location->property->expr.tag == EXPR_AS_TYPE && !location->property->expr.as_type->is_satisfies;
+    if (!ty_can_be_truthy(checker, type) || cast) return;
+    bool promise = ty_is_promise(checker, type);
+    if (!ty_call_signature_count(checker, type) && !promise) return;
+    void const* symbol = location->tag == EXPR_IDENTIFIER || dot ? location_symbol(location) : nullptr;
+    if (!symbol && !promise) return;
+    bool used = false;
+    if (symbol) {
+        TruthyUseSearch search = { .symbol = symbol };
+        // isSymbolUsedInBinaryExpressionChain(cond.parent)
+        for (CondPath const* p = path; !used; p = p->up) {
+            Expr const* parent = cond_path_binary_parent(p);
+            if (!parent || parent->binary_op->op != BINARY_OP_AND_AND) break;
+            used = truthy_symbol_used(&parent->binary_op->right, &search);
+        }
+        if (!used && (body.statement || body.expr)) {
+            search.cond = cond;
+            search.tested = location;
+            search.tested_identifier_in_binary = location->tag == EXPR_IDENTIFIER &&
+                (location == cond ? cond_path_binary_parent(path) != nullptr : !expr_is_perenthisized(location));
+            if (body.expr) {
+                used = truthy_symbol_used(body.expr, &search);
+            } else {
+                search.root = nullptr;
+                used = ast_walk_statement(body.statement, truthy_use_visit, &search);
+            }
+        }
+    }
+    if (used) return;
+    if (promise) {
+        cstr name = ty_to_cstr(checker, type);
+        Error* error = error_ctx_error_d(errs, location->inner_span, 2801,
+            "This condition will always return true since this '", name, "' is always defined.");
+        error_add_related_d(error, location->inner_span, 2773, "Did you forget to use 'await'?");
+        cstr_drop(&name);
+    } else {
+        error_ctx_error_d(errs, location->inner_span, 2774,
+            "This condition will always return true since this function is always defined. Did you mean to call it instead?");
+    }
+}
+
+static void truthy_both_helper(Expr const* cond, CondPath const* path, TruthyBody body, ErrorCtx* errs) {
+    truthy_helper(cond, path, body, errs);
+    if (cond->tag == EXPR_BINARY_OP && (cond->binary_op->op == BINARY_OP_OR_OR || cond->binary_op->op == BINARY_OP_EH_EH)) {
+        CondPath frame = { &cond->binary_op->left, path };
+        truthy_both_helper(&cond->binary_op->left, &frame, body, errs);
+    }
+}
+
+static void check_known_truthy(Expr const* cond, CondPath const* path, TruthyBody body, ErrorCtx* errs) {
+    if (!compiler_options()->strict_null_checks) return;
+    truthy_both_helper(cond, path, body, errs);
+}
+
+// The logical expressions under `root` through parentheses and other logical expressions (their parent as far as tsc's
+// checkBinaryLikeExpression is concerned is root's parent): each checks its left operand when it is `&&` or when
+// root is the condition of an `if`, with the `if`'s body
+static void check_known_truthy_tree(Expr const* me, CondPath const* path, bool in_if, TruthyBody body, ErrorCtx* errs) {
+    if (!is_logical_binary(me)) return;
+    CondPath left = { &my binary_op->left, path };
+    CondPath right = { &my binary_op->right, path };
+    check_known_truthy_tree(&my binary_op->left, &left, in_if, body, errs);
+    if (my binary_op->op == BINARY_OP_AND_AND || in_if) check_known_truthy(&my binary_op->left, &left, body, errs);
+    check_known_truthy_tree(&my binary_op->right, &right, in_if, body, errs);
+}
+
+// The condition of an `if` statement, whose body is `then`
+void expr_typecheck_if_condition(Expr const* me, Statement const* then, ErrorCtx* errs) {
+    Expr const* outer = if_condition;
+    if_condition = me;
+    expr_typecheck(me, errs);
+    if_condition = outer;
+    expr_check_truthiness(me, errs);
+    if (!compiler_options()->strict_null_checks) return;
+    CondPath root = { me, nullptr };
+    TruthyBody body = { .statement = then };
+    check_known_truthy(me, &root, body, errs);
+    check_known_truthy_tree(me, &root, true, body, errs);
+}
+
 // tsc's getSyntacticNullishnessSemantics
 static PredicateSemantics nullish_semantics(Expr const* me) {
     me = skip_outer_expressions(me);
@@ -2625,6 +2839,28 @@ static bool is_literal_expression_of_object(Expr const* me) {
 
 // Returns whether a compound assignment is checked too: not after its operands were rejected (tsc's
 // checkBinaryLikeExpression, whose checkAssignmentOperator is skipped then)
+// The global NaN (tsc's isGlobalNaN)
+static bool is_global_nan(Expr const* me) {
+    if (my tag != EXPR_IDENTIFIER || my identifier.keyword || !csview_equals(my identifier.name.sv, "NaN")) return false;
+    Symbol const* nan = ty_global_value_symbol(current_checker, c_sv("NaN"));
+    return nan && my identifier.target == nan;
+}
+
+// Nothing is equal to NaN (tsc's checkNaNEquality)
+static void nan_equality_typecheck(Expr const* me, ErrorCtx* errs) {
+    Expr const* left = &my binary_op->left;
+    Expr const* right = &my binary_op->right;
+    bool left_nan = is_global_nan(left), right_nan = is_global_nan(right);
+    if (!left_nan && !right_nan) return;
+    BinaryOp op = my binary_op->op;
+    bool eq = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL;
+    Error* error = error_ctx_error_d(errs, my outer_span, 2845, "This condition will always return '", eq ? "false" : "true", "'.");
+    if (left_nan && right_nan) return;
+    Expr const* other = left_nan ? right : left;
+    csview name = expr_is_entity_name(other) ? other->inner_span.sv : c_sv("...");
+    error_add_related_d(error, other->outer_span, 1369, "Did you mean '", eq ? "" : "!", "Number.isNaN(", name, ")'?");
+}
+
 static bool binary_op_typecheck(
     Ty const* left,
     BinaryOp op,
@@ -2767,6 +3003,7 @@ static bool binary_op_typecheck(
                 error_ctx_error_d(errs, expr->outer_span, 2839, "This condition will always return '", eq ? "false" : "true",
                     "' since JavaScript compares objects by reference, not value.");
             }
+            nan_equality_typecheck(expr, errs);
         }
             // (Anything may be compared with null and undefined: tsc's isTypeEqualityComparableTo())
             if (!((left->flags | right->flags) & TYF_NULLABLE) && !ty_is_comparable_either_way(current_checker, left, right)) {
@@ -2918,7 +3155,7 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
 }
 
 // The binary case of expr_typecheck() once the left operand is checked
-static void binary_expr_typecheck_rest(Expr const* me, ErrorCtx* errs) {
+static void binary_expr_typecheck_rest(Expr const* me, bool root, ErrorCtx* errs) {
     if (my binary_op->op == BINARY_OP_AND_AND || my binary_op->op == BINARY_OP_OR_OR) {
         expr_check_truthiness(&my binary_op->left, errs);
     } else if (my binary_op->op == BINARY_OP_EH_EH) {
@@ -2929,7 +3166,9 @@ static void binary_expr_typecheck_rest(Expr const* me, ErrorCtx* errs) {
         error_ctx_error_d(errs, expr_error_span(&my binary_op->left), 2695,
             "Left side of comma operator is unused and has no side effects.");
     }
+    logical_operand = binary_op_is_logical(my binary_op->op) ? &my binary_op->right : nullptr;
     expr_typecheck(&my binary_op->right, errs);
+    logical_operand = nullptr;
     binary_op_typecheck(
         expr_get_type(&my binary_op->left),
         my binary_op->op,
@@ -2937,11 +3176,19 @@ static void binary_expr_typecheck_rest(Expr const* me, ErrorCtx* errs) {
         me,
         errs
     );
+    // The top of a tree of logical operators (tsc's checkBinaryLikeExpression reports on each of them with the
+    // parent of the tree in mind)
+    if (root && is_logical_binary(me) && me != if_condition && compiler_options()->strict_null_checks) {
+        CondPath path = { me, nullptr };
+        check_known_truthy_tree(me, &path, false, (TruthyBody){0}, errs);
+    }
 }
 
 // The binary case of expr_typecheck(). A chain (`a + b + c + ...`) is walked down its left spine with a loop, not a
 // recursion per operand: generated code has chains long enough to overflow the stack (tsc checks them iteratively too)
 static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
+    bool root = logical_operand != me;
+    logical_operand = nullptr;
     if (my binary_op->jsdoc_type) type_typecheck(my binary_op->jsdoc_type, errs);
     if (my binary_op->defaulted_expando) {
         expr_typecheck(&my binary_op->right, errs);
@@ -2962,7 +3209,7 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
     for (Expr const* e = me; e->binary_op->left.tag == EXPR_BINARY_OP; e = &e->binary_op->left) depth++;
     if (!depth) {
         expr_typecheck(&my binary_op->left, errs);
-        binary_expr_typecheck_rest(me, errs);
+        binary_expr_typecheck_rest(me, root, errs);
         return;
     }
     // In the order the recursion would: each level's own type on the way down, the rest on the way up
@@ -2974,8 +3221,10 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
         spine[i] = e;
         if (i) expr_get_type((Expr*)e);
     }
+    logical_operand = is_logical_binary(spine[depth - 1]) ? e : nullptr;
     expr_typecheck(e, errs); // The bottom binary expression, whose left operand isn't one
-    for (u32 i = depth; i-- > 0;) binary_expr_typecheck_rest(spine[i], errs);
+    logical_operand = nullptr;
+    for (u32 i = depth; i-- > 0;) binary_expr_typecheck_rest(spine[i], i ? !is_logical_binary(spine[i - 1]) : root, errs);
     if (spine != local) free(spine);
 }
 
@@ -3147,6 +3396,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_TERNARY:
             expr_typecheck(&my ternary->condition, errs);
             expr_check_truthiness(&my ternary->condition, errs);
+            if (compiler_options()->strict_null_checks) {
+                CondPath path = { &my ternary->condition, nullptr };
+                check_known_truthy(&my ternary->condition, &path, (TruthyBody){ .expr = &my ternary->yes }, errs);
+            }
             expr_typecheck(&my ternary->yes, errs);
             expr_typecheck(&my ternary->no, errs);
             break;

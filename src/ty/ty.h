@@ -1032,6 +1032,7 @@ Prop const* ty_namespace_type_only_prop(Checker* me, Ty const* object, Atom cons
 // The type whose members a value of `ty` has: `String` for a string, the constraint of a type parameter...
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
 Ty const* ty_global_function_type(Checker* me); // Null without a lib
+Symbol const* ty_global_value_symbol(Checker* me, csview name); // The global value of that name, null if none (relate.c)
 void ty_init_global_types(Checker* me); // tsc's initializeTypeChecker's global types, in its order
 Ty const* prop_type(Checker* me, Prop const* prop);
 // What writes to the property are checked against when it differs from what reads get (a `set` accessor whose
@@ -1690,6 +1691,8 @@ typedef struct DecoratorSite {
 void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, ErrorCtx* errs);
 Ty const* ty_awaited(Checker* me, Ty const* ty);
 Ty const* ty_promise_like_of(Checker* me, Ty const* ty);
+u32 ty_call_signature_count(Checker* me, Ty const* ty); // call.c
+bool ty_is_promise(Checker* me, Ty const* ty); // A thenable (tsc's getAwaitedTypeOfPromise), call.c
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);
 Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual); // function.c
 Ty const* ty_promise_of(Checker* me, struct FunctionImpl const* function, Ty const* type); // Promise<type>, for an async function (function.c)

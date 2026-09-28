@@ -2424,6 +2424,16 @@ static Ty const* promised_type_of(Checker* me, Ty const* ty) {
     return first_params_union(me, callbacks, count, true);
 }
 
+// tsc's getSignaturesOfType(ty, SignatureKind.Call).length
+u32 ty_call_signature_count(Checker* me, Ty const* ty) {
+    u32 count = 0;
+    call_signatures_of(me, ty, &count);
+    return count;
+}
+
+// tsc's !!getAwaitedTypeOfPromise(ty): a thenable
+bool ty_is_promise(Checker* me, Ty const* ty) { return promised_type_of(me, ty) != nullptr; }
+
 // The type `await` gives for a value of the given type. `wrap`: a generic one that could be a promise is `Awaited<T>`
 // (tsc's getAwaitedType; without it getAwaitedTypeNoAlias)
 // A cycle is TS1062 at the current node (tsc reports it at the error node its callers pass, the `await` expression)

@@ -41,7 +41,7 @@ At the core of tttt is a TypeScript AST (Abstract Syntax Tree). This is a data s
 
 This list is not exhaustive as there are other structs owned by these. Each of these structs has it's own `.h` and `.c` files. Look through them for more details.
 
-There is no AST node struct, interface or visitor. The AST is simply a *concept* that includes these structs, and is relevant for reasoning about the architecture.
+There is no AST node struct or interface (`ast_walk.h` is a read-only walk over every expression under a statement or expression, like tsc's forEachChild recursion, for checks that search a subtree). The AST is simply a *concept* that includes these structs, and is relevant for reasoning about the architecture.
 
 ### Span
 A span is a reference to a section of source code, often used for error messages. Spans don't own anything, and don't need to be dropped. Identifier names are generally stores as spans.

@@ -196,6 +196,7 @@ Ty const* ty_global_object_type(Checker* me) { return global_type(me, GLOBAL_OBJ
 Ty const* ty_empty_object_type(Checker* me) { return global_type(me, GLOBAL_EMPTY_OBJECT); }
 Ty const* ty_unknown_empty_object_type(Checker* me) { return global_type(me, GLOBAL_UNKNOWN_EMPTY_OBJECT); }
 Ty const* ty_any_function_type(Checker* me) { return global_type(me, GLOBAL_ANY_FUNCTION); }
+Symbol const* ty_global_value_symbol(Checker* me, csview name) { return program_get_global(my program, name, SYMBOL_VALUE); }
 
 // The type of a regular expression literal
 Ty const* ty_global_regexp_type(Checker* me) {

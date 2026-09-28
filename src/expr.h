@@ -384,6 +384,10 @@ Expr const* expr_effective_check_node(Expr const* me);
 Span expr_error_span(Expr const* me);
 // tsc's checkTruthinessOfType, for a condition that has been typechecked
 void expr_check_truthiness(Expr const* me, ErrorCtx* errs);
+// expr_typecheck() and expr_check_truthiness() of the condition of an `if` statement whose body is `then`, and tsc's
+// checkTestingKnownTruthyCallableOrAwaitableOrEnumMemberType
+typedef struct Statement Statement;
+void expr_typecheck_if_condition(Expr const* me, Statement const* then, ErrorCtx* errs);
 zsview binary_op_get_zv(BinaryOp op);
 
 typedef struct BinaryOpExpr {

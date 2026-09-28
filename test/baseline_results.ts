@@ -11326,7 +11326,7 @@ const baselines = {
         types: true,
     },
     'errorOnEnumReferenceInCondition': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22706,7 +22706,7 @@ const baselines = {
         types: true,
     },
     'nanEquality': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30621,17 +30621,17 @@ const baselines = {
         types: true,
     },
     'truthinessCallExpressionCoercion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'truthinessCallExpressionCoercion1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'truthinessCallExpressionCoercion2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30646,7 +30646,7 @@ const baselines = {
         types: true,
     },
     'truthinessPromiseCoercion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31841,12 +31841,12 @@ const baselines = {
         types: true,
     },
     'uncalledFunctionChecksInConditional': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'uncalledFunctionChecksInConditional2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1888,10 +1888,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             if (statement_size != cond_size && statement_size != cond_size + 1) {
                 panic("invalid if statement has ", cond_size, " conditions and ", statement_size, " statements");
             }
-            for_each (i, vec_expr, &my if_else.conditions) {
+            for (intptr_t i = 0; i < cond_size; i++) {
                 // Conditions do not have to be booleans
-                expr_typecheck(i, errs);
-                expr_check_truthiness(i, errs);
+                expr_typecheck_if_condition(vec_expr_at(&my if_else.conditions, i), vec_statement_at(&my if_else.statements, i), errs);
             }
             ctx.body = true;
             for_each (i, vec_statement, &my if_else.statements) {
