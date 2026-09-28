@@ -83,6 +83,9 @@ typedef struct ParserShared {
     bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
     ModifiedParent statement_parent;
     bool in_namespace_body; // The module block is a `namespace N {}`'s, not an ambient module's
+    // The end of the file's last token (tsc's full start of the end-of-file token): where a missing expression at the
+    // end of the file is reported. The smallest position trivia was skipped from up to the end
+    const char* eof_full_start;
     u32 errors_attempted; // Every parse_error() call, the ones dropped too (a position that already has one)
     // The parse errors of JSDoc comments (tsc's jsDocDiagnostics): kept whether or not the attempt that parsed the
     // comment succeeds (a comment is parsed by every attempt that parses its host), deduplicated at the end, and only
@@ -988,6 +991,7 @@ static inline void hop_whitespace_full(Parser* parent, bool hop_comments, bool h
 }
 
 static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newlines) {
+    const char* start = parent->pos;
     parent->whitespace = WHITESPACE_NONE;
     while (true) {
         switch (*parent->pos) {
@@ -1052,6 +1056,10 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
 
 ws_end:
     parent->whitespace_end = parent->pos;
+    if (!*parent->pos && !parent->shared->in_jsdoc &&
+        (!parent->shared->eof_full_start || start < parent->shared->eof_full_start)) {
+        parent->shared->eof_full_start = start;
+    }
 }
 
 static inline void hop_whitespace(Parser* parent) {
@@ -1102,8 +1110,15 @@ static bool expect_closing(Parser* parent, char close, const char* open) {
     return false;
 }
 
+// At the end of the file tsc reports at the end of the last token (createIdentifier's reportAtCurrentPosition)
+static Span span_from_token_or_eof(Parser* parent) {
+    const char* eof_start = parent->shared->eof_full_start;
+    if (!*parent->pos && eof_start && !parent->shared->in_jsdoc) return span_make(parent->shared->source, eof_start, eof_start);
+    return span_from_token(parent);
+}
+
 static Error* expected_expression_error(Parser* parent) {
-    return parse_error(parent, span_from_token(parent), 1109, "Expression expected.");
+    return parse_error(parent, span_from_token_or_eof(parent), 1109, "Expression expected.");
 }
 
 // The keyword probe: no child parser (nothing to backtrack), and most probes fail on the first character
@@ -8070,9 +8085,11 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     return parse_success(&p);
 }
 
-// tsc's parseUpdateExpression: in a JSX file, `<` followed by an identifier, keyword or `>` starts an element
-__attribute__((noinline)) static bool at_jsx_element_start(Parser* parent) {
+// tsc's parseUpdateExpression: in a JSX file, `<` followed by an identifier, keyword or `>` starts an element. As the
+// operand of a unary operator any `<` does (tsc's parseSimpleUnaryExpression: `+ <1234> x`)
+__attribute__((noinline)) static bool at_jsx_element_start(Parser* parent, bool unary_operand) {
     if (!parent->shared->source->is_jsx || *parent->pos != '<') return false;
+    if (unary_operand) return true;
     Parser p = parser(parent);
     p.pos++;
     hop_whitespace(&p);
@@ -8247,7 +8264,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         expect_char(&p, ')');
         inner_span_set = true;
         if (p.shared->source->is_js) jsdoc_apply_parenthesized(&p, a.start, span_from(a), ret);
-    } else if (at_jsx_element_start(&p)) {
+    } else if (at_jsx_element_start(&p, ctx.min_precedence == unary_op_get_precedence(UNARY_OP_LEFT_BANG))) {
         // The operand of a unary operator is a unary expression, which a comma expression isn't (tsc's mustBeUnary)
         bool must_be_unary = ctx.min_precedence >= unary_op_get_precedence(UNARY_OP_LEFT_BANG);
         parse_jsx_element(&p, true, nullptr, must_be_unary, nullptr, ret);
