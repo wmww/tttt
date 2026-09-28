@@ -506,7 +506,7 @@ const baselines = {
         types: true,
     },
     'allowJscheckJsTypeParameterNoCrash': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5731,7 +5731,7 @@ const baselines = {
         types: true,
     },
     'constEnumBadPropertyNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6241,7 +6241,7 @@ const baselines = {
         types: true,
     },
     'contextualTypeForInitalizedVariablesFiltersUndefined': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14736,7 +14736,7 @@ const baselines = {
         types: false,
     },
     'genericCallSpecializedToTypeArg': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15416,9 +15416,9 @@ const baselines = {
         types: true,
     },
     'genericUnboundedTypeParamAssignability': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'genericWithCallSignatureReturningSpecialization': {
         errors: true,
@@ -31641,7 +31641,7 @@ const baselines = {
         types: true,
     },
     'typeValueConflict2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -36246,7 +36246,7 @@ const baselines = {
         types: true,
     },
     'privateNameAndAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36256,9 +36256,9 @@ const baselines = {
         types: true,
     },
     'privateNameAndObjectRestSpread': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameAndPropertySignature': {
         errors: true,
@@ -36681,9 +36681,9 @@ const baselines = {
         types: true,
     },
     'privateNameStaticAccessorssDerivedClasses': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameStaticAndStaticInitializer(target=es2015)': {
         errors: true,
@@ -36871,9 +36871,9 @@ const baselines = {
         types: true,
     },
     'privateNamesAndStaticFields': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesAndStaticMethods(target=es2022)': {
         errors: true,
@@ -36901,14 +36901,14 @@ const baselines = {
         types: true,
     },
     'privateNamesConstructorChain-1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesConstructorChain-2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNamesInGenericClasses': {
         errors: true,
@@ -49536,9 +49536,9 @@ const baselines = {
         types: true,
     },
     'chained2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'circular1': {
         errors: true,
@@ -49621,14 +49621,14 @@ const baselines = {
         types: true,
     },
     'exportNamespace11': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportNamespace12': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportNamespace2': {
         errors: true,
@@ -49636,9 +49636,9 @@ const baselines = {
         types: true,
     },
     'exportNamespace3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportNamespace4': {
         errors: true,
@@ -49746,9 +49746,9 @@ const baselines = {
         types: true,
     },
     'importEquals2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importEquals3': {
         errors: false,
@@ -49781,7 +49781,7 @@ const baselines = {
         types: true,
     },
     'namespaceImportTypeQuery': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49801,9 +49801,9 @@ const baselines = {
         types: true,
     },
     'namespaceMemberAccess': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nestedNamespace': {
         errors: true,
@@ -51186,7 +51186,7 @@ const baselines = {
         types: false,
     },
     'checkJsdocSatisfiesTag10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51231,12 +51231,12 @@ const baselines = {
         types: true,
     },
     'checkJsdocSatisfiesTag6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'checkJsdocSatisfiesTag7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51333,7 +51333,7 @@ const baselines = {
     'constructorTagOnObjectLiteralMethod': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructorTagWithThisTag': {
         errors: true,
@@ -51801,7 +51801,7 @@ const baselines = {
         types: true,
     },
     'enumTag': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52386,7 +52386,7 @@ const baselines = {
         types: true,
     },
     'jsdocThisType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -60791,9 +60791,9 @@ const baselines = {
         types: true,
     },
     'typeFromPropertyAssignment21': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeFromPropertyAssignment22': {
         errors: true,
@@ -61306,12 +61306,12 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarations.6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'awaitUsingDeclarations.7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61591,12 +61591,12 @@ const baselines = {
         types: true,
     },
     'usingDeclarations.6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'usingDeclarations.7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63026,7 +63026,7 @@ const baselines = {
         types: true,
     },
     'for-inStatementsDestructuring3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65321,9 +65321,9 @@ const baselines = {
         types: true,
     },
     'spreadMethods': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'spreadNonObject1': {
         errors: true,
@@ -65547,8 +65547,8 @@ const baselines = {
     },
     'contextualThisTypeInJavascript': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationFiles': {
         errors: false,
@@ -66081,19 +66081,19 @@ const baselines = {
         types: true,
     },
     'propertyAccessOnTypeParameterWithConstraints3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'propertyAccessOnTypeParameterWithConstraints4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'propertyAccessOnTypeParameterWithConstraints5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'propertyAccessOnTypeParameterWithoutConstraints': {
         errors: false,
