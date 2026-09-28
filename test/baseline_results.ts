@@ -796,8 +796,8 @@ const baselines = {
         types: true,
     },
     'amdDeclarationEmitNoExtraDeclare': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'amdDependencyComment1': {
@@ -858,7 +858,7 @@ const baselines = {
     'anonClassDeclarationEmitIsAnon': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'anonterface': {
         errors: true,
@@ -2287,7 +2287,7 @@ const baselines = {
     },
     'baseConstraintOfDecorator': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'baseExpressionTypeParameters': {
@@ -3766,7 +3766,7 @@ const baselines = {
         types: true,
     },
     'classImplementsClass4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8308,7 +8308,7 @@ const baselines = {
     'declarationEmitLocalClassDeclarationMixin': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitLocalClassHasRequiredDeclare': {
         errors: true,
@@ -8528,7 +8528,7 @@ const baselines = {
     'declarationEmitPrivateNameCausesError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitPrivatePromiseLikeInterface': {
         errors: false,
@@ -10073,7 +10073,7 @@ const baselines = {
     'doubleMixinConditionalTypeBaseClassWorks': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'doubleUnderStringLiteralAssignability': {
         errors: true,
@@ -10673,12 +10673,12 @@ const baselines = {
     'emitClassExpressionInDeclarationFile': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitClassExpressionInDeclarationFile2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitClassMergedWithConstNamespaceNotElided': {
         errors: true,
@@ -17596,7 +17596,7 @@ const baselines = {
         types: true,
     },
     'inheritance1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17606,12 +17606,12 @@ const baselines = {
         types: true,
     },
     'inheritanceGrandParentPrivateMemberCollisionWithPublicMember': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'inheritanceGrandParentPublicMemberCollisionWithPrivateMember': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18151,7 +18151,7 @@ const baselines = {
         types: true,
     },
     'interfaceImplementation8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21378,22 +21378,22 @@ const baselines = {
     'mixinIntersectionIsValidbaseType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mixinOverMappedTypeNoCrash': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mixinPrivateAndProtected': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mixingApparentTypeOverrides': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mixingFunctionAndAmbientModule1': {
         errors: true,
@@ -23378,7 +23378,7 @@ const baselines = {
     'noCrashOnMixin': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCrashOnNoLib': {
         errors: true,
@@ -25127,8 +25127,8 @@ const baselines = {
     },
     'overrideBaseIntersectionMethod': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'overridingPrivateStaticMembers': {
         errors: true,
@@ -30848,7 +30848,7 @@ const baselines = {
     'typeAliasFunctionTypeSharedSymbol': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeAnnotationBestCommonTypeInArrayLiteral': {
         errors: true,
@@ -36971,7 +36971,7 @@ const baselines = {
         types: true,
     },
     'privateNamesUnique-4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37016,19 +37016,19 @@ const baselines = {
         types: true,
     },
     'mixinAbstractClasses.2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mixinAbstractClasses': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mixinAbstractClassesReturnTypeInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mixinAccessModifiers': {
         errors: false,
@@ -37036,17 +37036,17 @@ const baselines = {
         types: false,
     },
     'mixinClassesAnnotated': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mixinClassesAnonymous': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mixinClassesMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37126,9 +37126,9 @@ const baselines = {
         types: true,
     },
     'accessorsOverrideProperty9': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'assignParameterPropertyToPropertyDeclarationES2022': {
         errors: true,
@@ -50671,7 +50671,7 @@ const baselines = {
         types: true,
     },
     'implementingAnInterfaceExtendingClassWithProtecteds': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66346,7 +66346,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithObjectMembersAccessibility': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

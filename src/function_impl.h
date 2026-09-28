@@ -89,6 +89,7 @@ typedef struct FunctionImpl {
     struct Expr const** yields; // Generators: every `yield` of the body, in source order (malloc'd, owned)
     u32 yield_count;
     Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
+    Span variable_name; // A function expression or arrow function that initializes a variable: its name (display)
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
     bool is_expression; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)
     // The callee of a call (tsc's getImmediatelyInvokedFunctionExpression), set by the resolve walk: its unannotated

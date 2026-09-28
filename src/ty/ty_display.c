@@ -1219,17 +1219,20 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     // reused but what has no annotation (`(x) => void` prints its `any` synthetically)
     Signature const* root = sig;
     bool this_only = true; // Instantiated only with what `this` is (every method of a class): no fresh type parameters
+    bool class_default = false; // (A class's default constructor returns the class, whatever its base signature returns)
     for (; root->target; root = root->target) {
+        class_default |= root->class_instance != nullptr;
         for (u32 i = 0; root->mapper && i < root->mapper->len; i++) {
             Ty const* source = root->mapper->sources[i];
             this_only &= source->kind == TY_TYPE_PARAM && source->param.state->is_this;
         }
     }
     signature_resolve(me, root);
-    if (root != sig && !this_only && !mentions_mapped(me, sig, root)) sig = root;
+    if (root != sig && !this_only && !class_default && !mentions_mapped(me, sig, root)) sig = root;
     bool instantiated = root != sig;
     if (instantiated && root->type_params.len && !this_only) d.fresh_params = root->type_params;
-    FunctionImpl const* function = root->class_instance ? nullptr : root->function;
+    // (A class's constructor has its parameters reused, but it returns the class)
+    FunctionImpl const* function = root->function && root->class_instance && !root->function->is_constructor ? nullptr : root->function;
     // (A JSDoc `@this` makes a parameter of its own, which isn't reused)
     bool jsdoc_this = function && vec_function_arg_size(&function->args) && function->args.data[0].jsdoc_this;
     bool reusable = d.underline && function;
@@ -1285,7 +1288,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     out(d, csview_from(separator));
     TyPredicate const* predicate = signature_predicate(me, sig);
     Ty const* ret = signature_return_type(me, sig);
-    TypeNode const* ret_annotation = !reusable ? nullptr : function->ret_explicit ? &function->ret :
+    TypeNode const* ret_annotation = !reusable || root->class_instance ? nullptr : function->ret_explicit ? &function->ret :
         single_return_assertion(me, function, signature_return_type(me, root));
     bool reused = ret_annotation &&
         (!instantiated || (ret == signature_return_type(me, root) && !mentions(me, ret, d.fresh_params)));
@@ -1310,7 +1313,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         return;
     }
     TyDisplay ret_d = reused_if(d, false);
-    if (reusable && !ret_annotation && !function->ret_explicit) ret_d.syntactic_function = single_return_function(me, function, ret);
+    if (reusable && !ret_annotation && !function->ret_explicit && !root->class_instance) ret_d.syntactic_function = single_return_function(me, function, ret);
     display_annotated(me, ret_d, reused ? ret_annotation : nullptr, ret, false);
 }
 
@@ -1403,12 +1406,30 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, "...");
         return;
     }
+    // Abstract construct signatures can't be members of a type literal: `(abstract new () => C) & { rest }` (tsc's
+    // createTypeNodeFromObjectType)
+    u32 abstract_count = 0;
+    for (u32 i = 0; i < members->construct_count; i++) abstract_count += (members->construct[i]->flags & SIGNATURE_ABSTRACT) != 0;
+    if (abstract_count) {
+        for (u32 i = 0, printed = 0; i < members->construct_count; i++) {
+            if (!(members->construct[i]->flags & SIGNATURE_ABSTRACT)) continue;
+            if (printed++) out_lit(d, " & ");
+            out_lit(d, "(");
+            display_signature(me, d, members->construct[i], " => ", true);
+            out_lit(d, ")");
+        }
+        if (members->call_count + members->construct_count - abstract_count + members->index_count + members->prop_count == 0) {
+            return;
+        }
+        out_lit(d, " & ");
+    }
     out_lit(d, "{ ");
     for (u32 i = 0; i < members->call_count; i++) {
         display_signature(me, d, members->call[i], ": ", false);
         out_lit(d, "; ");
     }
     for (u32 i = 0; i < members->construct_count; i++) {
+        if (members->construct[i]->flags & SIGNATURE_ABSTRACT) continue;
         display_signature(me, d, members->construct[i], ": ", true);
         out_lit(d, "; ");
     }
@@ -1492,6 +1513,26 @@ static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty) {
     Members const* members = ty_members(me, ty);
     return !members->prop_count && !members->index_count && !members->mapped &&
         members->call_count + members->construct_count == 1;
+}
+
+// The static side of a mixin class, which tsc prints as a type literal rather than `typeof C` (createAnonymousTypeNode:
+// only a class without getBaseTypeVariableOfClass is a type query)
+static bool is_mixin_static_side(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
+    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_CLASS_STATIC && ty->declared.symbol &&
+        !ty->declared.merged_value && ty_class_base_type_variable(me, ty->declared.symbol);
+}
+
+// A type literal that prints as an intersection: its abstract construct signatures are split off (display_structure())
+static bool displays_as_intersection(Checker* me, TyDisplay d, Ty const* ty) {
+    if (shows_alias(d, ty)) return false;
+    if (ty->kind != TY_ANONYMOUS && !is_mixin_static_side(me, ty)) return false;
+    Members const* members = ty_members(me, ty);
+    if (members->mapped) return false;
+    u32 abstract_count = 0;
+    for (u32 i = 0; i < members->construct_count; i++) abstract_count += (members->construct[i]->flags & SIGNATURE_ABSTRACT) != 0;
+    return abstract_count && (abstract_count > 1 || members->prop_count || members->index_count || members->call_count ||
+        members->construct_count > abstract_count);
 }
 
 static void display_parenthesized_if(Checker* me, TyDisplay d, Ty const* ty, bool parens) {
@@ -1708,7 +1749,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 case TY_DECLARED_CLASS_STATIC:
                 case TY_DECLARED_ENUM_OBJECT:
                 case TY_DECLARED_NAMESPACE:
-                    if (!ty->declared.name->len) {
+                    if (!ty->declared.name->len || is_mixin_static_side(me, ty)) {
                         display_structure(me, d, ty); // A module nobody named
                         break;
                     }
@@ -1734,7 +1775,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         case TY_REFERENCE: {
             Ty const* target = ty->reference.target;
             TyList args = ty_reference_args(me, ty);
-            if (target->declared.kind == TY_DECLARED_CLASS_STATIC) {
+            if (target->declared.kind == TY_DECLARED_CLASS_STATIC && is_mixin_static_side(me, target)) {
+                display_structure(me, d, ty);
+            } else if (target->declared.kind == TY_DECLARED_CLASS_STATIC) {
                 // The static side of a local class, applied to its outer type parameters (tsc: an anonymous type)
                 out_lit(d, "typeof ");
                 out_declared_name(me, d, target, SYMBOL_VALUE);
@@ -1802,7 +1845,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             for (u32 i = 0; i < ty->composite.types.len; i++) {
                 Ty const* t = ty->composite.types.data[i];
                 if (i) out_lit(d, " & ");
-                display_parenthesized_if(me, d, t, !shows_alias(d, t) && (t->kind == TY_UNION || t->kind == TY_CONDITIONAL || is_function_like(me, d, t)));
+                display_parenthesized_if(me, d, t, !shows_alias(d, t) && (t->kind == TY_UNION || t->kind == TY_CONDITIONAL ||
+                    is_function_like(me, d, t) || displays_as_intersection(me, d, t)));
             }
             break;
 

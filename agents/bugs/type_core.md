@@ -39,7 +39,8 @@ Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `displa
   (`has_conflicting_discriminants`) only for non-generic members; tsc reduces lazily, so a generic intersection
   instantiated later isn't re-checked, and the "The intersection 'A & B' was reduced to 'never' because..." elaborations
   (6 tests) need the unreduced intersection. mappedTypeNotMistakenlyHomomorphic (`keyof Gen<ABC.A>` misses `a`),
-  mixinAccessModifiers / mixinPrivateAndProtected (mixin intersections aren't reduced; plan 32).
+  mixinAccessModifiers / mixinPrivateAndProtected (mixin intersections of classes with private/protected `p` aren't
+  reduced, so no TS2509 on them; protected access through an intersection names the wrong class).
 - **Permissive instantiation** for conditional types is missing (`ty_conditional_resolve` defers where tsc picks the
   false branch); a flat `TyMapper` can't say "every type parameter -> any". Needs a wildcard type + cached permissive
   instantiation. (reactHOCSpreadprops, the test it cost, passes now through something else.)

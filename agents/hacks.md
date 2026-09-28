@@ -481,8 +481,12 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `apparent_type` (relate.c) keeps a TY_INDEXED/TY_CONDITIONAL without base constraint as itself (tsc: `{}`).
 - `class_base()` (members.c HACK): a base class *name* is found syntactically; any other `extends` expression is the
   return type of its first construct signature that takes the written type arguments (tsc's
-  getInstantiatedConstructorsForTypeArguments, without its TS2510 check that they all agree; no static members inherited, no intersection with the base constraint for mixins: plan 32 stage C). `ty_has_unresolved_base()` gates
-  TS2339/TS7053 for such classes.
+  getInstantiatedConstructorsForTypeArguments, without its TS2510 check that they all agree). A base that constructs
+  `any` is no base (tsc: anyBaseTypeIndexInfo, `[x: string]: any`); `ty_has_unresolved_base()` gates TS2339/TS7053
+  for those instead. Inherited members of a type-parameter base come from its constraint when the class is declared,
+  and aren't re-read from the type argument when a reference to the class is instantiated.
+- `ty_non_augmenting_base()` (tsc's getSingleBaseForNonAugmentingSubtype) is computed from the syntax (any non-static
+  class item or interface member counts as a member), not from a symbol table.
 - `this` types: `Prop.thisless` follows tsc's syntactic isThisless rules; `this` in a static member is the static side;
   relations compare a reference with a this-argument structurally with the plain one (tsc: one more covariant argument).
   A bare `C`/`this` inside generic class C isn't the class's own instantiation (lower.c TODO).

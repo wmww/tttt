@@ -210,7 +210,9 @@ typedef struct LowerCtx {
 // The mutable, lazily resolved part of an object type. Everything else about a Ty is immutable once published.
 typedef struct TyObjectState {
     LazyState members_state;
+    uint8_t base_state; // LazyState of equivalent_base
     Members const* members;
+    Ty const* equivalent_base; // See ty_non_augmenting_base()
 } TyObjectState;
 
 typedef struct TyParamState {
@@ -569,6 +571,8 @@ typedef struct SymbolLinks {
     Ty const* static_type; // See ty_static_type_of()
     bool circular; // A type alias whose resolution reached itself (TS2456 when it finishes, see ty_declared_type_of())
     uint8_t base_cycle; // BASE_CYCLE_* flags, see ty_interface_in_base_cycle()
+    LazyState base_variable_state;
+    Ty const* base_variable; // See ty_class_base_type_variable()
 } SymbolLinks;
 
 typedef enum TyRelation {
@@ -896,6 +900,12 @@ bool ty_props_identical(Checker* me, Prop const* source, Prop const* target); //
 // The name of the property's first declaration (instantiations follow their target), invalid if it has none
 Span ty_prop_decl_span(Prop const* prop);
 bool ty_has_unresolved_base(Checker* me, Ty const* ty); // HACK: see has_unresolved_base()
+// The base a class or interface without members of its own is equivalent to (tsc's
+// getSingleBaseForNonAugmentingSubtype: relations see it instead). Null if there's none
+Ty const* ty_non_augmenting_base(Checker* me, Ty const* ty);
+// The type variable a mixin class extends (`class C extends Base` with `Base: T`, or `T & U`): its value is `typeof C & T`
+// (tsc's getBaseTypeVariableOfClass). Null for any other class
+Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol);
 void signature_resolve(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
 bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its return type is being inferred up the stack

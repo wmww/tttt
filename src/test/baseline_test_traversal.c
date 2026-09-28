@@ -1269,8 +1269,14 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         Ty const* base = !class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY ? nullptr :
             my this_kind == THIS_CLASS_STATIC ? ty_expr_type(current_checker, &class_decl->extends) :
             ty_class_base_instance(current_checker, class_decl);
+        // (For a class that is its base constructor's type that's the same symbol, not for a mixin's `T`)
+        if (base && my super_call && class_decl->extends.tag == EXPR_IDENTIFIER) {
+            Ty const* constructor = ty_expr_type(current_checker, &class_decl->extends);
+            if (constructor->flags & TYF_TYPE_PARAM) base = constructor;
+        }
         if (base && base->kind == TY_REFERENCE) base = base->reference.target;
-        Symbol const* symbol = base && base->kind == TY_DECLARED ? base->declared.symbol : nullptr;
+        Symbol const* symbol = base && base->kind == TY_DECLARED ? base->declared.symbol :
+            base && base->kind == TY_TYPE_PARAM ? base->param.symbol : nullptr; // (A mixin's `T`)
         // (A mixin, a class expression that extends a type parameter's value, is an intersection to tsc: no symbol)
         ClassDecl const* base_decl = symbol ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
         if (base_decl && base_decl->is_expression && base_decl->extends.tag != EXPR_IMPLICIT_ANY &&

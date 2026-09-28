@@ -430,6 +430,8 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     ) {
         my value.function->class_symbol = my binding.symbol;
     }
+    // (tsc's getNameOfSymbolAsWritten: an anonymous function is named by the variable it initializes)
+    if (my binding.tag == BINDING_IDENTIFIER && my value.tag == EXPR_FUNCTION) my value.function->variable_name = my binding.content_span;
     expr_lookup_names(&my value, names, errs);
     names->flow->contextual_depth -= my binding.has_explicit_type;
     names->flow->initializing = outer;

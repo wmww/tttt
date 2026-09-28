@@ -1017,7 +1017,14 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             // the function's mapper instantiates its statics
             Ty const* static_type = ty_static_type_of(me, symbol);
             TyList outer = static_type->declared.type_params;
-            return outer.len ? ty_reference(me, static_type, outer) : static_type;
+            Ty const* value = outer.len ? ty_reference(me, static_type, outer) : static_type;
+            // A mixin class is also what it extends: `typeof C & T` (tsc's getTypeOfFuncClassEnumModule)
+            Ty const* variable = ty_class_base_type_variable(me, symbol);
+            if (variable) {
+                Ty const* parts[2] = { value, variable };
+                value = ty_intersection(me, parts, 2, nullptr, (TyList){0});
+            }
+            return value;
         }
         case SYMBOL_DECL_ENUM:
             return ty_static_type_of(me, symbol);

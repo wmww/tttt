@@ -284,41 +284,50 @@ static void builder_add_interface(
     }
 }
 
-static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const* base) {
-    if (base->kind == TY_INTERSECTION) {
-        // Every member of every part; a property several parts have is one of the intersection's own, with the
-        // intersected type (tsc's getPropertiesOfType on the base, createUnionOrIntersectionProperty)
-        for (u32 i = 0; i < base->composite.types.len; i++) {
-            Ty const* part = base->composite.types.data[i];
-            if (!(part->flags & TYF_OBJECT)) continue;
-            Members const* members = ty_members(me, part);
-            for (u32 j = 0; j < members->prop_count; j++) {
-                Prop* prop = members->props[j];
-                if (builder_find_prop(builder, prop->name)) continue;
-                u32 owners = 0;
-                for (u32 k = 0; k < base->composite.types.len; k++) {
-                    Ty const* other = base->composite.types.data[k];
-                    owners += (other->flags & TYF_OBJECT) && ty_get_prop(me, other, prop->name);
-                }
-                if (owners > 1) {
-                    FoundProp found = ty_find_prop(me, base, prop->name);
-                    Prop* merged = arena_new(&my arena, Prop);
-                    *merged = (Prop){
-                        .name = prop->name, .flags = found.flags, .parent = prop->parent, .target = prop,
-                        .type = found.type, .type_state = LAZY_STATE_DONE,
-                    };
-                    prop = merged;
-                }
-                builder_push(builder, props, prop);
+// Every member of every part of an intersection (only the properties if `props_only`); a property several parts have
+// is one of the intersection's own, with the intersected type (tsc's getPropertiesOfType on the base,
+// createUnionOrIntersectionProperty)
+static void builder_add_intersection_members(Checker* me, MembersBuilder* builder, Ty const* base, bool props_only) {
+    for (u32 i = 0; i < base->composite.types.len; i++) {
+        Ty const* part = base->composite.types.data[i];
+        if (!(part->flags & TYF_OBJECT)) part = ty_apparent_type(me, part);
+        if (!(part->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, part);
+        for (u32 j = 0; j < members->prop_count; j++) {
+            Prop* prop = members->props[j];
+            if (builder_find_prop(builder, prop->name)) continue;
+            u32 owners = 0;
+            for (u32 k = 0; k < base->composite.types.len; k++) {
+                Ty const* other = base->composite.types.data[k];
+                owners += (other->flags & TYF_OBJECT) && ty_get_prop(me, other, prop->name);
             }
-            for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, members->call[j]);
-            for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, members->construct[j]);
-            for (u32 j = 0; j < members->index_count; j++) {
-                bool has_own = false;
-                for (u32 k = 0; k < builder->index_count; k++) has_own |= builder->index[k].key == members->index[j].key;
-                if (!has_own) builder_push(builder, index, members->index[j]);
+            if (owners > 1) {
+                FoundProp found = ty_find_prop(me, base, prop->name);
+                Prop* merged = arena_new(&my arena, Prop);
+                *merged = (Prop){
+                    .name = prop->name, .flags = found.flags, .parent = prop->parent, .target = prop,
+                    .type = found.type, .type_state = LAZY_STATE_DONE,
+                };
+                prop = merged;
             }
+            builder_push(builder, props, prop);
         }
+        if (props_only) continue;
+        for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, members->call[j]);
+        for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, members->construct[j]);
+        for (u32 j = 0; j < members->index_count; j++) {
+            bool has_own = false;
+            for (u32 k = 0; k < builder->index_count; k++) has_own |= builder->index[k].key == members->index[j].key;
+            if (!has_own) builder_push(builder, index, members->index[j]);
+        }
+    }
+}
+
+static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const* base) {
+    // (A mixin's base can be a type parameter or `object`: what it has is its apparent type's)
+    if (!(base->flags & (TYF_OBJECT | TYF_INTERSECTION))) base = ty_apparent_type(me, base);
+    if (base->kind == TY_INTERSECTION) {
+        builder_add_intersection_members(me, builder, base, false);
         return;
     }
     Members const* members = ty_members(me, base);
@@ -386,6 +395,26 @@ static Ty const* base_signature_with_type_args(
     return params.len ? ty_instantiate(me, ret, ty_mapper_new(me, params, (TyList){ .data = args, .len = params.len })) : ret;
 }
 
+// An object type, `object`, a type parameter constrained to one or an intersection of them (tsc's isValidBaseType).
+// Unlike tsc, not `any`: a class extending `any` has no base as far as class_base() goes
+static bool is_valid_base_type(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 16) return false;
+    if (ty->flags & TYF_ANY) return false;
+    if (ty->kind == TY_TYPE_PARAM) {
+        Ty const* constraint = ty_param_constraint(me, ty);
+        return constraint && constraint != ty && is_valid_base_type(me, constraint, depth + 1);
+    }
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!is_valid_base_type(me, ty->composite.types.data[i], depth + 1)) return false;
+        }
+        return true;
+    }
+    if (ty->flags & TYF_NON_PRIMITIVE) return true;
+    if (!(ty->flags & TYF_OBJECT)) return false;
+    return ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_members(me, ty)->mapped;
+}
+
 // The class a class extends: its instance type (with the written type arguments) and its declaration. False if
 // there's none. HACK: a class name (`extends Name`, `extends Name<Args>`, `extends A.B.Name`) is found syntactically;
 // any other expression is the return type of its first construct signature that takes the written type arguments
@@ -432,8 +461,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
             constructed = signature_return_type(me, members->construct[i]);
             if (mapper) constructed = ty_instantiate(me, constructed, mapper);
         }
-        if (!constructed) return false;
-        if (!(constructed->flags & (TYF_OBJECT | TYF_INTERSECTION)) || (constructed->flags & TYF_ANY)) return false;
+        if (!constructed || !is_valid_base_type(me, constructed, 0)) return false;
         *instance = constructed;
         *base_decl = nullptr;
         return true;
@@ -461,6 +489,120 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     }
     *instance = ty_reference(me, base, (TyList){ .data = args, .len = params.len });
     return true;
+}
+
+Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
+    SymbolDecl const* node = symbol_find_decl(class_symbol, SYMBOL_DECL_CLASS);
+    if (!node) return nullptr;
+    ClassDecl const* class_decl = node->node;
+    Expr const* extends = &class_decl->extends;
+    if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+    if (extends->tag == EXPR_IMPLICIT_ANY) return nullptr;
+    // (A class name isn't a type variable: no need to type the expression)
+    if (extends->tag == EXPR_IDENTIFIER && symbol_for_meaning(extends->identifier.target, SYMBOL_CLASS)) return nullptr;
+    SymbolLinks* links = ty_symbol_links(me, class_symbol);
+    if (links->base_variable_state == LAZY_STATE_DONE) return links->base_variable;
+    if (links->base_variable_state == LAZY_STATE_IN_FLIGHT) return nullptr; // The extends expression mentions the class
+    links->base_variable_state = LAZY_STATE_IN_FLIGHT;
+    Ty const* type = ty_expr_type(me, extends);
+    Ty const* variable = nullptr;
+    if ((type->flags & TYF_TYPE_PARAM) || type->kind == TY_INDEXED) {
+        variable = type;
+    } else if (type->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < type->composite.types.len && !variable; i++) {
+            Ty const* part = type->composite.types.data[i];
+            if ((part->flags & TYF_TYPE_PARAM) || part->kind == TY_INDEXED) variable = part;
+        }
+    }
+    links = ty_symbol_links(me, class_symbol);
+    links->base_variable = variable;
+    links->base_variable_state = LAZY_STATE_DONE;
+    return variable;
+}
+
+// Whether a class or interface declaration adds members to what it inherits: anything but statics (tsc's
+// getMembersOfSymbol, where a constructor is a member too)
+static bool declaration_has_members(SymbolDecl const* node) {
+    if (node->kind == SYMBOL_DECL_INTERFACE) {
+        InterfaceDecl const* interface_decl = node->node;
+        return vec_interface_member_size(&interface_decl->type.interface.members) != 0;
+    }
+    if (node->kind != SYMBOL_DECL_CLASS) return false;
+    for_each (i, vec_class_item, &((ClassDecl const*)node->node)->items) {
+        if (i->tag == CLASS_ITEM_STATIC_BLOCK) continue;
+        if (i->tag == CLASS_ITEM_INTERFACE_MEMBER ? !i->interface_member_static : !class_item_is_static(i)) return true;
+    }
+    return false;
+}
+
+static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 depth);
+
+static Ty const* non_augmenting_base_uncached(Checker* me, Ty const* ty) {
+    Ty const* target = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
+    Symbol const* decl = target->declared.symbol;
+    if (!decl || decl->members) return nullptr; // (JavaScript `this.x = v` members)
+    // A class, or an interface that is a reference in tsc (generic, or mentioning `this`)
+    bool is_class = target->declared.kind == TY_DECLARED_CLASS_INSTANCE;
+    if (!is_class && !target->declared.type_params.len && !target->declared.this_param) return nullptr;
+    LowerCtx ctx = { .generic = target->declared.type_params.len > 0 || target->declared.this_param };
+    Ty const* base = nullptr;
+    for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+        if (declaration_has_members(node)) return nullptr;
+        if (node->kind == SYMBOL_DECL_CLASS) {
+            ClassDecl const* class_decl = node->node;
+            Expr const* extends = &class_decl->extends;
+            if (extends->tag == EXPR_IMPLICIT_ANY) continue;
+            if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+            // (Only a name: the expression could mention the class itself)
+            if (extends->tag != EXPR_IDENTIFIER && extends->tag != EXPR_PROPERTY) return nullptr;
+            Ty const* instance = nullptr;
+            Symbol const* base_decl = nullptr;
+            if (!class_base(me, class_decl, ctx, &instance, &base_decl)) continue;
+            if (base) return nullptr;
+            base = instance;
+        } else if (node->kind == SYMBOL_DECL_INTERFACE) {
+            InterfaceDecl const* interface_decl = node->node;
+            for_each (extends, vec_spanned_type, &interface_decl->extends) {
+                Ty const* type = ty_from_node(me, &extends->type, ctx);
+                if (!(type->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+                if (base) return nullptr;
+                base = type;
+            }
+        }
+    }
+    // (A circular base is none: tsc's resolveBaseTypesOfClass)
+    if (!base || base == target || has_base_type(me, base, target, 0)) return nullptr;
+    TyList params = target->declared.type_params;
+    if (ty->kind == TY_REFERENCE && params.len) base = ty_instantiate(me, base, ty_mapper_new(me, params, ty_reference_args(me, ty)));
+    if (target->declared.this_param) {
+        Ty const* this_arg = ty->kind == TY_REFERENCE && ty->reference.this_arg ? ty->reference.this_arg : ty;
+        base = ty_with_this_arg(me, base, this_arg);
+    }
+    return base;
+}
+
+Ty const* ty_non_augmenting_base(Checker* me, Ty const* ty) {
+    TyObjectState* state;
+    if (ty->kind == TY_DECLARED) {
+        if (ty->declared.kind != TY_DECLARED_CLASS_INSTANCE && ty->declared.kind != TY_DECLARED_INTERFACE) return nullptr;
+        if (ty->declared.merged_value) return nullptr;
+        state = ty->declared.state;
+    } else if (ty->kind == TY_REFERENCE) {
+        Ty const* target = ty->reference.target;
+        if (target->declared.kind != TY_DECLARED_CLASS_INSTANCE && target->declared.kind != TY_DECLARED_INTERFACE) return nullptr;
+        if (ty->reference.deferred) return nullptr;
+        state = ty->reference.state;
+    } else {
+        return nullptr;
+    }
+    if (!state) return nullptr;
+    if (state->base_state == LAZY_STATE_DONE) return state->equivalent_base;
+    if (state->base_state == LAZY_STATE_IN_FLIGHT) return nullptr;
+    state->base_state = LAZY_STATE_IN_FLIGHT;
+    Ty const* base = non_augmenting_base_uncached(me, ty);
+    state->equivalent_base = base;
+    state->base_state = LAZY_STATE_DONE;
+    return base;
 }
 
 static u32 access_prop_flags(AccessModifier access) {
@@ -839,7 +981,8 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     // The type of the extends expression, when the base isn't a class declaration (a variable of a constructor type, a
     // mixin call...)
     Ty const* base_expr_constructor = nullptr;
-    if (has_base && !base_static) {
+    // (Also when what it constructs isn't a valid base, `any`: the constructor still is one)
+    if (!base_static && class_decl->extends.tag != EXPR_IMPLICIT_ANY) {
         Expr const* extends = &class_decl->extends;
         if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
         Ty const* type = ty_apparent_type(me, ty_expr_type(me, extends));
@@ -887,7 +1030,9 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         Ty const* type = ty_apparent_type(me, ty_expr_type(me, extends));
         if (type->flags & (TYF_OBJECT | TYF_INTERSECTION) && type != ty) base_constructor = type;
     }
-    if (base_constructor) {
+    if (base_constructor && base_constructor->kind == TY_INTERSECTION) {
+        builder_add_intersection_members(me, builder, base_constructor, true);
+    } else if (base_constructor) {
         Members const* base_members = ty_members(me, base_constructor);
         for (u32 i = 0; i < base_members->prop_count; i++) {
             if (!builder_find_prop(builder, base_members->props[i]->name)) {
@@ -1001,7 +1146,14 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
 static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 depth) {
     if (source->kind == TY_REFERENCE) source = source->reference.target;
     if (source == target) return true;
-    if (depth > 32 || source->kind != TY_DECLARED) return false;
+    if (depth > 32) return false;
+    if (source->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < source->composite.types.len; i++) {
+            if (has_base_type(me, source->composite.types.data[i], target, depth + 1)) return true;
+        }
+        return false;
+    }
+    if (source->kind != TY_DECLARED) return false;
     if (source->declared.kind != TY_DECLARED_INTERFACE && source->declared.kind != TY_DECLARED_CLASS_INSTANCE) return false;
     Symbol const* decl = source->declared.symbol;
     if (!decl) return false;
@@ -1095,10 +1247,10 @@ bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol) {
     return links->base_cycle & BASE_CYCLE_IN_CYCLE;
 }
 
-// Whether a class (instance or static side) has a base that class_base() can't see all the members of: an `extends`
-// expression it can't resolve, or one whose type involves a type parameter (a mixin: tsc intersects the constructed
-// type with the base constraint's). Members can be missing from such a class
-static bool has_unresolved_base(Checker* me, Ty const* ty, bool static_side, u32 depth) {
+// Whether a class (instance or static side) has a base that class_base() can't see: an `extends` expression it can't
+// resolve or that constructs `any` (tsc: the class gets anyBaseTypeIndexInfo, `[x: string]: any`). Members can be
+// missing from such a class
+static bool has_unresolved_base(Checker* me, Ty const* ty, u32 depth) {
     if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
     if (depth > 32 || ty->kind != TY_DECLARED) return false;
     if (ty->declared.kind != TY_DECLARED_CLASS_INSTANCE && ty->declared.kind != TY_DECLARED_CLASS_STATIC) return false;
@@ -1112,19 +1264,13 @@ static bool has_unresolved_base(Checker* me, Ty const* ty, bool static_side, u32
         Ty const* base = nullptr;
         Symbol const* base_decl = nullptr;
         if (!class_base(me, class_decl, ctx, &base, &base_decl)) return true;
-        if (!base_decl) {
-            if (static_side) return true; // Statics aren't inherited from expressions
-            if (ty_expr_type(me, &class_decl->extends)->flags & (TYF_TYPE_PARAM | TYF_COULD_CONTAIN_TYPE_VARIABLES)) return true;
-        }
-        if (base != ty && has_unresolved_base(me, base, static_side, depth + 1)) return true;
+        if (base != ty && has_unresolved_base(me, base, depth + 1)) return true;
     }
     return false;
 }
 
 bool ty_has_unresolved_base(Checker* me, Ty const* ty) {
-    Ty const* target = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
-    bool static_side = target->kind == TY_DECLARED && target->declared.kind == TY_DECLARED_CLASS_STATIC;
-    return has_unresolved_base(me, ty, static_side, 0);
+    return has_unresolved_base(me, ty, 0);
 }
 
 Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl) {

@@ -83,24 +83,25 @@ typeArgumentInferenceWithClassExpression1/3...), nothing lost. Probes `probe_out
   parameters), JSDoc `@template`/`@typedef` scopes, prototype-assignment declarations.
 - The rest of the `name<args>.Local` tests are mixins (stage C).
 
-## Stage C: mixin classes (one session)
-- The class value type (`ty_type_of_symbol` for a class, whatever returns `ty_static_type_of()` as a value) becomes
-  `typeof C & T` when the base constructor is a type variable (or an intersection with one). Only such classes pay
-  (a flag computed from the `extends` expression's type, cached in the class symbol's links). Check what else assumes
-  a class value is `TY_DECLARED_CLASS_STATIC` (`typeof C` displays, `instanceof`, static member lookup).
-- `class_base()`: the base instance of an extends expression whose type is a type variable comes from the apparent
-  type's construct signatures; accept a type-variable instance type (isValidBaseType); the default construct signatures
-  come from the base constructor even when the instance type is a type variable. Keep the syntactic class-name path.
-- TS2545, TS2515 on mixin results, TS2797, TS2509 (mixinAccessModifiers wants it), private/protected through mixin
-  intersections (mixinPrivateAndProtected, mixinAccessModifiers: TS2341/TS2445 on intersection members; see
-  `bugs/type_core.md`'s mixin entry and move it here or delete it once done).
-- Remove or narrow `ty_has_unresolved_base()`; update hacks.md's `class_base()` entry.
-- Validate: `test/probes/plan19/typefest/mixin_abstract.ts` at 0 diffs, type-fest's `abstract-class.ts` 4 gone
-  (`./realworld.py --corpus type-fest`), the mixin tests (`grep -lE "new ?\(\.\.\.args: any\[\]\)"` over the test
-  cases: mixinClassesAnnotated, mixinClassesAnonymous, mixinClassesMembers, mixinAbstractClasses(.2),
-  mixinAccessModifiers, mixinPrivateAndProtected, mixinOverMappedTypeNoCrash, mixingApparentTypeOverrides,
-  doubleMixinConditionalTypeBaseClassWorks, mixinIntersectionIsValidbaseType, noCrashOnMixin,
-  exportClassExtendingIntersection, override19/20, accessorsOverrideProperty9), no lost components.
+## Stage C: mixin classes: done
+- `ty_class_base_type_variable()` (members.c, cached in the symbol links) is tsc's getBaseTypeVariableOfClass; the
+  class value (`value_entry_type()`) is `typeof C & T` for such a class, and its static side prints structurally
+  (`is_mixin_static_side()` in ty_display.c), with abstract construct signatures split off like tsc's
+  createTypeNodeFromObjectType (`(abstract new () => C) & { prototype: ... }`).
+- `class_base()` accepts tsc's isValidBaseType (a type parameter with a valid constraint, `object`, intersections);
+  inherited members of a type-variable base come from its apparent type; a class's default construct signatures come
+  from the base constructor even when it constructs `any`; statics are inherited from an intersection base constructor.
+- Relations normalize a class/interface without own members and one base to that base (`ty_non_augmenting_base()`,
+  tsc's getSingleBaseForNonAugmentingSubtype): `class Building extends H {}` is assignable to H's `BT`.
+- TS2545, TS2797, TS2515 through intersection bases, `has_base_type()` through intersections (protected access in a
+  class extending a mixin). `super(...)` in a mixin's symbol baseline is `T`. Anonymous functions initializing a
+  variable are named by it in outer type arguments (`Printable<any>.(Anonymous class)`). A class's default
+  constructor prints its own return type and reuses its base signature's parameter annotations.
+- `ty_has_unresolved_base()` only gates bases that construct `any` or can't be resolved.
+- Suite +26 (the mixin tests, inheritance1, interfaceImplementation8, privateNamesUnique-4...), type-fest 4 -> 0.
+- Left: mixinAccessModifiers / mixinPrivateAndProtected (TS2509 on reduced-to-never intersections, `bugs/type_core.md`),
+  override19/20 (noImplicitOverride's TS4113/TS4117 don't exist at all), TS2507 for an `extends` expression that
+  isn't a constructor (missing everywhere).
 
 ## Risks
 - Stage B changes type argument counts of every local generic-scope declaration; anything indexing `type_params` by

@@ -4065,6 +4065,16 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
+    // A class or interface that adds nothing to its one base is that base (getNormalizedType)
+    if (source->kind == TY_DECLARED || source->kind == TY_REFERENCE) {
+        Ty const* base;
+        for (u32 i = 0; i < 16 && (base = ty_non_augmenting_base(me, source)) && base != source; i++) source = ty_regular(me, base);
+    }
+    if (target->kind == TY_DECLARED || target->kind == TY_REFERENCE) {
+        Ty const* base;
+        for (u32 i = 0; i < 16 && (base = ty_non_augmenting_base(me, target)) && base != target; i++) target = ty_regular(me, base);
+    }
+    if (source == target) return TERNARY_TRUE;
     bool deferred = ((source->flags | target->flags) & TYF_DEFERRED) != 0;
     if (deferred) {
         // A substitution type is `base & constraint` as a source, its base as a target (getNormalizedType)
