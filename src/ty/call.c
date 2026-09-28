@@ -2150,10 +2150,51 @@ static bool has_predicate_or_declared_never(Checker* me, Signature const* sig) {
 // signature it resolves to, and whether that is declared to return `never`. A callee with one signature that isn't
 // generic is that signature whatever the arguments are; anything else is resolved, which checks the arguments: the
 // caller (flow.c) sees to it that this happens in uncached mode
+// A union callee whose members have one non-generic signature each: the predicate they have in common, members that
+// return `false` included (tsc's getUnionOrIntersectionTypePredicate of the union signature)
+static CallEffects union_call_effects(Checker* me, Ty const* callee) {
+    CallEffects none = {0};
+    TyPredicate first = {0};
+    bool has_first = false;
+    TyBuf types = {0};
+    for (u32 i = 0; i < callee->composite.types.len; i++) {
+        Ty const* member = ty_apparent_type(me, callee->composite.types.data[i]);
+        if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION))) goto fail;
+        Members const* members = ty_members(me, member);
+        if (members->call_count != 1) goto fail;
+        Signature const* sig = members->call[0];
+        signature_resolve(me, sig);
+        if (sig->type_params.len) goto fail;
+        TyPredicate const* predicate = signature_predicate(me, sig);
+        if (!predicate) {
+            Ty const* ret = ty_regular(me, signature_return_type(me, sig));
+            if (ret != ty_intrinsic(me, TY_FALSE)) goto fail;
+            continue;
+        }
+        if (!predicate->type) goto fail;
+        if (has_first && (first.is_this != predicate->is_this || first.asserts != predicate->asserts ||
+            first.param_index != predicate->param_index)
+        ) {
+            goto fail;
+        }
+        if (!has_first) first = *predicate;
+        has_first = true;
+        ty_buf_push(&types, predicate->type);
+    }
+    if (!has_first) goto fail;
+    first.type = ty_union(me, types.data, types.len, nullptr, (TyList){0});
+    ty_buf_drop(&types);
+    return (CallEffects){ .has_predicate = true, .predicate = first };
+fail:
+    ty_buf_drop(&types);
+    return none;
+}
+
 CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call) {
     CallEffects none = {0};
     if (!callee || call->uses_new || call->is_extends) return none;
     Ty const* apparent = ty_apparent_type(me, callee);
+    if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) return union_call_effects(me, apparent);
     // (getSignaturesOfType: an intersection's are its members')
     if ((apparent->flags & TYF_ANY) || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return none;
     Members const* members = ty_members(me, apparent);

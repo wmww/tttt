@@ -31488,7 +31488,7 @@ const baselines = {
     'typePredicatesInUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typePredicatesInUnion2': {
         errors: true,
@@ -31498,7 +31498,7 @@ const baselines = {
     'typePredicatesInUnion3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typePredicatesInUnion_noMatch': {
         errors: true,
@@ -52582,7 +52582,7 @@ const baselines = {
     },
     'returnTagTypeGuard': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'seeTag1': {
