@@ -11356,7 +11356,7 @@ const baselines = {
         types: true,
     },
     'errorRecoveryWithDotFollowedByNamespaceKeyword': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14761,7 +14761,7 @@ const baselines = {
         types: true,
     },
     'genericCallWithoutArgs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -25291,7 +25291,7 @@ const baselines = {
         types: true,
     },
     'parse1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32056,12 +32056,12 @@ const baselines = {
         types: false,
     },
     'unionOfArraysFilterCall': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unionOfClassCalls': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -32086,9 +32086,9 @@ const baselines = {
         types: false,
     },
     'unionReductionMutualSubtypes': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionReductionWithStringMappingAndIdenticalBaseTypeExistsNoCrash': {
         errors: true,
@@ -34656,7 +34656,7 @@ const baselines = {
         types: true,
     },
     'classAbstractCrashedOnce': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -58151,7 +58151,7 @@ const baselines = {
         types: false,
     },
     'parser509667': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -66558,7 +66558,7 @@ const baselines = {
     'functionWithMultipleReturnStatements2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'heterogeneousArrayLiterals': {
         errors: true,

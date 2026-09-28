@@ -1047,6 +1047,11 @@ static Ternary compare_signatures(
 
     u32 target_count = ty_signature_param_count(target);
     u32 source_min = source->min_args > target_count ? min_argument_count(me, source) : source->min_args;
+    // The strict subtype relation counts optional parameters too (tsc's SignatureCheckMode.StrictArity): of `() => void`
+    // and `(b?: string) => void`, only the first is a strict subtype of the other
+    bool strict_arity = st->relation == TY_RELATION_STRICT_SUBTYPE && !ty_signature_has_rest(target) &&
+        (ty_signature_has_rest(source) || ty_signature_param_count(source) > target_count);
+    if (strict_arity) return TERNARY_FALSE;
     if (!ty_signature_has_rest(target) && source_min > target_count) {
         if (report) {
             report_line(st, 2849, cstr_d(

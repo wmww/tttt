@@ -1565,6 +1565,41 @@ static Ty const* this_argument(Checker* me, CallExpr const* call, Span call_span
     return property->optional_chain ? ty_non_nullable(me, receiver) : receiver;
 }
 
+// tsc's getSignaturesOfType arrayFallbackSignatures: a method of a union of arrays and tuples whose members have no
+// signatures in common is that method of an array of all their elements (`(A[] | B[]).filter` is `(A | B)[]`'s,
+// readonly if one of them is). Null if the callee isn't such a method
+static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
+    Expr const* callee = &call->callable;
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    if (callee->tag != EXPR_PROPERTY) return nullptr;
+    PropertyExpr const* property = callee->property;
+    Expr const* name = &property->prop;
+    if (property->form != PROPERTY_EXPR_DOT || name->tag != EXPR_LITERAL || name->literal.tag != VALUE_STRING) {
+        return nullptr;
+    }
+    Ty const* receiver = ty_expr_type(me, &property->expr);
+    if (property->optional_chain) receiver = ty_non_nullable(me, receiver);
+    Ty const* apparent = ty_apparent_type(me, receiver);
+    if (apparent->kind != TY_UNION) return nullptr;
+    TyList members = apparent->composite.types;
+    Ty const** elements = malloc(sizeof(Ty const*) * members.len);
+    bool readonly = false;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* array = ty_apparent_type(me, members.data[i]);
+        if (ty_is_tuple(array)) array = ty_tuple_as_array(me, array);
+        if (!ty_is_array(me, array)) {
+            free(elements);
+            return nullptr;
+        }
+        readonly |= array->reference.target != ty_array(me, ty_intrinsic(me, TY_ANY), false)->reference.target;
+        elements[i] = ty_reference_args(me, array).data[0];
+    }
+    Ty const* element = ty_union(me, elements, members.len, nullptr, (TyList){0});
+    free(elements);
+    Ty const* index = ty_string_literal(me, cstr_sv(&name->literal.string));
+    return ty_access(me, ty_array(me, element, readonly), index);
+}
+
 static bool is_super_call(CallExpr const* call) {
     return !call->uses_new && call->callable.tag == EXPR_IDENTIFIER && call->callable.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
 }
@@ -1652,6 +1687,10 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     Signature* const* union_sigs = nullptr;
     u32 union_count = 0;
     if (apparent->kind == TY_UNION) union_sigs = ty_union_signatures(me, apparent->composite.types, construct, &union_count);
+    if (apparent->kind == TY_UNION && !union_sigs && !construct) {
+        Ty const* fallback = array_fallback_callee(me, call);
+        if (fallback && fallback->kind != TY_UNION) return resolve_call(me, fallback, info, call_span, errs);
+    }
     if (apparent->kind == TY_UNION && !union_sigs && !call->is_extends) {
         bool all_have = true;
         for (u32 i = 0; i < apparent->composite.types.len && all_have; i++) {

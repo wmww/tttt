@@ -1028,6 +1028,8 @@ static Prop const* suggested_property(Checker* me, Ty const* object, csview name
 }
 
 static void report_no_property(Checker* me, Ty const* object, Ty const* index, unsigned ts_code, Span span, ErrorCtx* errs) {
+    // A name the parser found missing (`o.` then something else) has said enough (tsc: `right.escapedText &&`)
+    if (span_valid(span) && !span.sv.size) return;
     cstr name = index_name(me, index);
     cstr object_str = ty_to_cstr(me, object);
     Error* error;
