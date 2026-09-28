@@ -63,6 +63,9 @@ typedef struct InterfaceMember {
     TypeNode write_type;
     bool has_write_type;
     bool setter_first; // Parser only: `type` is a typed setter's parameter type until a getter shows up
+    // `get [k](): T` / `set [k](v: T)` (a computed key): `type` is the getter's return or the setter's parameter type,
+    // a getter and a setter of the same key make one property (members.c). 0 none, 1 get, 2 set
+    unsigned char computed_accessor;
     // An accessor pair's second name, and a setter's parameter name (for the types and symbols baselines)
     Span second_name;
     Span setter_param;

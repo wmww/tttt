@@ -5366,7 +5366,7 @@ const baselines = {
         types: true,
     },
     'computedPropertiesWithSetterAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -65291,9 +65291,9 @@ const baselines = {
         types: true,
     },
     'objectSpreadSetonlyAccessor': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectSpreadStrictNull': {
         errors: true,

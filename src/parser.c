@@ -5958,6 +5958,23 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             ret->interface_member_static = modifiers.includes[MODIFIER_STATIC];
             // `readonly [K in T]: X` (the modifier went to the list before the key was known to be mapped)
             InterfaceMember* member = &ret->interface_memeber;
+            if (is_type && (is_getter || is_setter) && member->key.tag == INTERFACE_KEY_EXPR && member->is_method &&
+                member->type.tag == TYPE_CALLABLE
+            ) {
+                // `get [k](): T` in a type is a property of type T, `set [k](v: T)` one of type T to write
+                FunctionImpl* accessor = member->type.callable->function;
+                TypeNode type = type_any;
+                if (is_getter) {
+                    if (accessor->ret_explicit) type = type_move(&accessor->ret);
+                } else if (vec_function_arg_size(&accessor->args)) {
+                    FunctionArg* arg = &accessor->args.data[0];
+                    if (arg->initializer.binding.has_explicit_type) type = type_move(&arg->initializer.binding.explicit_type);
+                }
+                type_drop(&member->type);
+                member->type = type;
+                member->is_method = false;
+                member->computed_accessor = is_getter ? 1 : 2;
+            }
             if (member->key.tag == INTERFACE_KEY_MAPPED && member->readonly && !member->key.mapped.readonly) {
                 member->key.mapped.readonly = 1;
             }

@@ -184,6 +184,19 @@ static void builder_add_interface_member(
                     i->type.tag == TYPE_CALLABLE;
                 if (is_method && builder->decl_group) set_decl_group(me, i->type.callable->function, builder->decl_group);
                 Prop* existing = builder_find_prop(builder, name);
+                if (existing && i->computed_accessor && i->key.tag == INTERFACE_KEY_EXPR) {
+                    // The other accessor of `get [k]()` / `set [k](v)`: the getter's type is read, the setter's written
+                    // (tsc's getWriteTypeOfSymbol)
+                    if (i->computed_accessor == 2) {
+                        if (i->type.tag != TYPE_ANY || i->type.parsed) existing->write_node = &i->type;
+                    } else {
+                        existing->write_node = existing->node;
+                        existing->node = &i->type;
+                    }
+                    existing->flags &= ~(u32)PROP_READONLY;
+                    prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
+                    break;
+                }
                 if (existing) {
                     // Overloads are separate members in the legacy interface and one method with several signatures here
                     if (is_method && (existing->flags & PROP_METHOD) && existing->node) {
@@ -212,7 +225,7 @@ static void builder_add_interface_member(
                 prop->thisless = i->type.tag == TYPE_CALLABLE ?
                     function_is_thisless(i->type.callable->function) : type_node_is_thisless(&i->type);
                 if (i->optional) prop->flags |= PROP_OPTIONAL;
-                if (i->readonly) prop->flags |= PROP_READONLY;
+                if (i->readonly || (i->computed_accessor == 1 && i->key.tag == INTERFACE_KEY_EXPR)) prop->flags |= PROP_READONLY;
                 if (is_method) prop->flags |= PROP_METHOD;
                 prop->name_span = i->key.span;
                 prop->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
