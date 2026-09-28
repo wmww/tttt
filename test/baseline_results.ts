@@ -6907,7 +6907,7 @@ const baselines = {
     },
     'controlFlowDestructuringVariablesInTryCatch': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowFavorAssertedTypeThroughTypePredicate': {
@@ -25697,8 +25697,8 @@ const baselines = {
     },
     'potentiallyUnassignedVariableInCatch': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'potentiallyUncalledDecorators': {
         errors: false,
@@ -34417,7 +34417,7 @@ const baselines = {
     },
     'asyncWithVarShadowing_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression1_es6': {
