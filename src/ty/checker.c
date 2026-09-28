@@ -1991,6 +1991,33 @@ Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand) {
     return ret;
 }
 
+// keyof `keyof T`: the names of the properties `string | number | symbol` has, which are those all of String, Number
+// and Symbol have, Object's included (tsc's getLiteralTypeFromProperties of the apparent union; its index signatures,
+// which only String has, aren't common)
+static Ty const* keyof_keyof(Checker* me) {
+    Ty const* apparent[3] = {
+        ty_apparent_type(me, my intrinsics[TY_STRING]), ty_apparent_type(me, my intrinsics[TY_NUMBER]),
+        ty_apparent_type(me, my intrinsics[TY_ES_SYMBOL]),
+    };
+    TyBuf parts = {0};
+    for (u32 i = 0; i < 3; i++) {
+        if (!(apparent[i]->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, apparent[i]);
+        for (u32 j = 0; j < members->prop_count; j++) {
+            Prop const* prop = members->props[j];
+            if (ty_private_name_class(me, prop->name)) continue;
+            bool common = true;
+            for (u32 k = 0; k < 3 && common; k++) {
+                common = k == i || !(apparent[k]->flags & TYF_OBJECT) || ty_get_object_prop(me, apparent[k], prop->name);
+            }
+            if (common) ty_buf_push(&parts, ty_prop_key_literal(me, prop));
+        }
+    }
+    Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret;
+}
+
 Ty const* ty_keyof(Checker* me, Ty const* operand) {
     if (ty_is_no_infer(operand)) return ty_no_infer(me, ty_keyof(me, operand->substitution.base));
     if (operand->flags & TYF_ANY) {
@@ -2073,10 +2100,20 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
     if (operand->flags & (TYF_UNKNOWN | TYF_NON_PRIMITIVE | TYF_VOID | TYF_NULLABLE)) {
         return my intrinsics[TY_NEVER];
     }
-    // keyof a primitive is the keys of its apparent type (`String`, `Number`...)
-    if (operand->kind == TY_INTRINSIC || operand->kind == TY_LITERAL) {
+    // tsc only defers keyof an InstantiableNonPrimitive (shouldDeferIndexType): keyof `keyof T` is the keys its apparent
+    // type `string | number | symbol` has (`"toString" | "valueOf" | "toLocaleString"`). Template literals and string
+    // mappings are Strings below
+    if (operand->kind == TY_KEYOF) return keyof_keyof(me);
+    // keyof a primitive is the keys of its apparent type (`String`, `Number`...), without the `keyof String` origin
+    if (operand->kind == TY_INTRINSIC || operand->kind == TY_LITERAL || operand->kind == TY_TEMPLATE_LITERAL ||
+        operand->kind == TY_STRING_MAPPING
+    ) {
         Ty const* apparent = ty_apparent_type(me, operand);
-        if (apparent != operand && (apparent->flags & TYF_OBJECT)) return ty_keyof(me, apparent);
+        if (apparent != operand && (apparent->flags & TYF_OBJECT)) {
+            Ty const* keys = ty_keyof(me, apparent);
+            if (keys->kind != TY_UNION) return keys;
+            return ty_union(me, keys->composite.types.data, keys->composite.types.len, nullptr, (TyList){0});
+        }
     }
     u64 key[2] = { KEY_KEYOF, operand->id };
     Ty* fresh;
@@ -2154,6 +2191,7 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
         return ty_access(me, object, index);
     }
     if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return nullptr;
+    index = ty_string_index_only_key(me, object, index);
     Ty const* ret = ty_access_without_node(me, object, index); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
     // What isn't there is unknown, or the error type where it's written (tsc's getIndexedAccessType: the access node
     // reported it)

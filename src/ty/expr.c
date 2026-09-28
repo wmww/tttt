@@ -3231,6 +3231,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // `never` has no properties (TS2339), `never[k]` is never
             if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
             Ty const* key = ty_access_key_type(me, expr->property);
+            if (expr->property->form == PROPERTY_EXPR_BRACKET) key = ty_string_index_only_key(me, object, key);
             Ty const* ret = expr->property->assignment_target ? ty_access(me, object, key) : ty_access_reading(me, object, key);
             if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target) ret = object_literal_access(me, object, key);
             if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET) ret = generic_element_access(me, expr->property, object, key);

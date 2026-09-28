@@ -147,6 +147,34 @@ enum {
 
 // ACCESS_INCLUDE_UNDEFINED: what an index signature or the rest of a tuple gives includes undefined (noUncheckedIndexedAccess, tsc's
 // AccessFlags.IncludeUndefined)
+// tsc's isStringIndexSignatureOnlyType: no properties and a string index signature only (of every member of a union or
+// intersection)
+static bool is_string_index_signature_only(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        if (ty->flags & TYF_BOOLEAN) return false;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!is_string_index_signature_only(me, ty->composite.types.data[i])) return false;
+        }
+        return true;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, ty);
+    return !members->mapped && !members->prop_count && members->index_count == 1 && (members->index[0].key->flags & TYF_STRING);
+}
+
+// An element access or indexed access type of an object with nothing but a string index signature reads that for any
+// string or number key, `o["toString"]` included (tsc's getIndexedAccessTypeOrUndefined; property access expressions
+// find Object's toString)
+Ty const* ty_string_index_only_key(Checker* me, Ty const* object, Ty const* index) {
+    if ((index->flags & TYF_NULLABLE) || index->kind == TY_INTRINSIC || !is_string_index_signature_only(me, object)) return index;
+    if (ty_is_related(me, index, ty_intrinsic(me, TY_STRING), TY_RELATION_ASSIGNABLE) ||
+        ty_is_related(me, index, ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE)
+    ) {
+        return ty_intrinsic(me, TY_STRING);
+    }
+    return index;
+}
+
 static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags) {
     bool include_undefined = (flags & ACCESS_INCLUDE_UNDEFINED) != 0;
     if (depth > 16) return nullptr;

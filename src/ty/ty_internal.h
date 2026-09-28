@@ -269,6 +269,7 @@ typedef struct FoundProp {
     Prop const* prop; // The property found (of an intersection: of its first member that has one)
 } FoundProp;
 FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name);
+Ty const* ty_string_index_only_key(Checker* me, Ty const* object, Ty const* index); // access.c
 bool ty_is_spreadable_prop(Checker* me, Prop const* prop); // expr.c, tsc's isSpreadableProperty
 // The type of an object literal expression, without spreads (tsc's isObjectLiteralType && !ContainsSpread)
 bool ty_is_object_literal_without_spread(Checker* me, Ty const* ty);
