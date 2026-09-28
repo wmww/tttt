@@ -1213,9 +1213,31 @@ static Ty const* base_class_property_type(Checker* me, Symbol const* member) {
     return base ? ty_prop_type_of(me, base, checker_atom(me, member->name)) : nullptr;
 }
 
+// What `this.x` is at `flow` in the class constructor that declares x by assignment (tsc's getFlowTypeOfProperty: it
+// starts out as the base class's x, else undefined, auto-typed from there)
+Ty const* ty_constructor_declared_flow_type(Checker* me, Symbol const* member, Expr const* reference, FlowNode const* flow) {
+    Ty const* base = base_class_property_type(me, member);
+    Ty const* ret = ty_flow_type(me, reference, ty_intrinsic(me, TY_AUTO), base ? base : ty_intrinsic(me, TY_UNDEFINED), flow);
+    return ret == ty_intrinsic(me, TY_AUTO) ? ty_intrinsic(me, TY_ANY) : ret;
+}
+
+// A member only `this.x = v` assignments declare, one of them in a class constructor: the type `this.x` has at the end of
+// the constructor (tsc's getFlowTypeInConstructor). Null if that is only null or undefined, or it isn't such a member
+static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
+    if (!symbol->constructor_assigned || !symbol->declaring_constructor || !symbol->declaring_constructor->return_flow) {
+        return nullptr;
+    }
+    Ty const* ret = ty_constructor_declared_flow_type(me, symbol, symbol->constructor_assigned, symbol->declaring_constructor->return_flow);
+    TyList parts = ret->kind == TY_UNION ? ret->composite.types : (TyList){ .data = &ret, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        if (!(parts.data[i]->flags & TYF_NULLABLE)) return ret;
+    }
+    return nullptr;
+}
+
 // tsc's getWidenedTypeForAssignmentDeclaration: the union of what the assignments assign. A member `this.x = v`
-// declares in a constructor has the type the constructor gives it (tsc: its flow type at the end of the
-// constructor; here the union of the constructor's assignments). TODO: a JSDoc type on one of them is the type
+// declares in a class constructor has the type the constructor gives it (flow_type_in_constructor()), else (a
+// constructor function's) the union of the constructor's assignments. TODO: a JSDoc type on one of them is the type
 static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     if (is_js_container(symbol, symbol->decls[0].node, span_null)) return ty_namespace_type(me, symbol);
     // The first JSDoc `@type` of an assignment is the type (tsc's getAnnotatedTypeForAssignmentDeclaration)
@@ -1225,6 +1247,11 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     Ty const* stack[16];
     Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
     bool constructor_declared = ty_is_constructor_declared(symbol);
+    Ty const* in_constructor_type = constructor_declared ? flow_type_in_constructor(me, symbol) : nullptr;
+    if (in_constructor_type) {
+        if (types != stack) free(types);
+        return in_constructor_type;
+    }
     bool in_constructor = false, in_method = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         in_constructor |= symbol->decls[i].assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;

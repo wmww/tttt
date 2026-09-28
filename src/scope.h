@@ -264,6 +264,10 @@ typedef struct Symbol {
     // tsc's isReferenced: the meanings the name was used with, see unused_mark_referenced(). Written by the resolve
     // walk of the file that uses it, only under noUnusedLocals/noUnusedParameters
     u32 referenced;
+    // JavaScript members `this.x = v` declares in a class constructor: the first such `this.x` and the constructor,
+    // where the flow query of tsc's getFlowTypeInConstructor goes (lower.c's assignment_symbol_type)
+    struct Expr const* constructor_assigned;
+    FunctionImpl const* declaring_constructor;
 } Symbol;
 
 // The symbol that gives the name the given meaning: itself, or for an alias its target (null if there is none).

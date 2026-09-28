@@ -3636,6 +3636,11 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             AssignmentDeclKind kind = function && function->is_constructor ?
                 ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : ASSIGNMENT_DECL_THIS_IN_METHOD;
             declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
+            Symbol* member = (Symbol*)symbol_table_get(class_symbol->members, name.sv);
+            if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !member->constructor_assigned) {
+                member->constructor_assigned = left;
+                member->declaring_constructor = function;
+            }
             // A field the class body declares without a type or initializer has the type the constructor assigns
             ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
             ClassItem* field = class_decl ? class_decl_find_member(class_decl, name.sv, false) : nullptr;

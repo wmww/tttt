@@ -3102,32 +3102,49 @@ static bool is_string_index_only(Checker* me, Ty const* ty) {
         members->index_count == 1 && (members->index[0].key->flags & TYF_STRING);
 }
 
-// JavaScript `this.x = v` in the constructor that declares x, when only such assignments do (tsc's
-// isThisPropertyAccessInConstructor with isConstructorDeclaredProperty): x is being inferred from them, any
-static bool is_constructor_declared_target(Checker* me, PropertyExpr const* access) {
-    (void)me;
-    if (access->assignment_target != FLOW_TARGET_DEFINITE || access->form != PROPERTY_EXPR_DOT) return false;
+// JavaScript `this.x` in the constructor that declares x, when only `this.x = v` assignments do (tsc's
+// isThisPropertyAccessInConstructor with isConstructorDeclaredProperty): x, whose type is being inferred from them.
+// Null otherwise
+static Symbol const* constructor_declared_member(PropertyExpr const* access) {
+    if (access->form != PROPERTY_EXPR_DOT) return nullptr;
     Expr const* object = &access->expr;
     IdentifierExpr const* this = expr_this_or_alias(object);
-    if (!this) return false;
+    if (!this) return nullptr;
     SourceFile const* file = object->inner_span.source;
-    if (!file || !file->is_js) return false;
+    if (!file || !file->is_js) return nullptr;
     Symbol const* class_symbol = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE) {
-        if (!access->in_constructor_of) return false;
+        if (!access->in_constructor_of) return nullptr;
         class_symbol = this->target;
     } else if (this->this_kind == THIS_ANY && this->this_function) {
         class_symbol = ty_js_constructor_class(this->this_function);
     }
-    if (!class_symbol || !class_symbol->members) return false;
+    if (!class_symbol || !class_symbol->members) return nullptr;
     Symbol const* member = symbol_table_get(class_symbol->members, access->prop.inner_span.sv);
-    if (!member) return false;
-    if (!ty_is_constructor_declared(member)) return false;
+    if (!member) return nullptr;
+    if (!ty_is_constructor_declared(member)) return nullptr;
     // Only in the constructor (tsc: getThisContainer(node) === getDeclaringConstructor(prop))
-    if (this->this_kind == THIS_ANY && ty_js_constructor_class(this->this_function) != class_symbol) return false;
+    if (this->this_kind == THIS_ANY && ty_js_constructor_class(this->this_function) != class_symbol) return nullptr;
     // Not when the class body declares it
     ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
-    return !class_decl || !class_decl_find_member(class_decl, access->prop.inner_span.sv, false);
+    return !class_decl || !class_decl_find_member(class_decl, access->prop.inner_span.sv, false) ? member : nullptr;
+}
+
+// An assignment to it: any
+static bool is_constructor_declared_target(Checker* me, PropertyExpr const* access) {
+    (void)me;
+    return access->assignment_target == FLOW_TARGET_DEFINITE && constructor_declared_member(access);
+}
+
+// A read of it in a class constructor: what control flow says it has been assigned so far (tsc's getFlowTypeOfProperty
+// with autoType). Null otherwise
+static Ty const* constructor_declared_read(Checker* me, Expr const* expr) {
+    PropertyExpr const* access = expr->property;
+    if (access->assignment_target || !access->flow) return nullptr;
+    Symbol const* member = constructor_declared_member(access);
+    if (!member || !member->declaring_constructor || !member->declaring_constructor->return_flow) return nullptr;
+    if (expr_this_or_alias(&access->expr)->this_kind != THIS_CLASS_INSTANCE) return nullptr;
+    return ty_constructor_declared_flow_type(me, member, expr, access->flow);
 }
 
 // `o[k]` with a generic key that ty_access() couldn't read through a constraint: the deferred
@@ -3223,6 +3240,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_PROPERTY: {
             if (ty_is_import_meta(expr)) return ty_import_meta_type(me);
             if (is_constructor_declared_target(me, expr->property)) return any_type(me);
+            Ty const* in_constructor = constructor_declared_read(me, expr);
+            if (in_constructor) return in_constructor;
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
             if (expr->property->method_call || expr->property->assignment_target) object = ty_widened_nullable(me, object);
