@@ -2061,10 +2061,21 @@ Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
     // (calloc: with ty_union_filtered inlined, gcc's -Wmaybe-uninitialized can't tell kept[0] is written when len is 1)
     Ty const** kept = calloc(members.len, sizeof(Ty const*));
     u32 len = 0;
+    // A generic member that can only be null or undefined goes too (tsc filters by type facts, which a type parameter
+    // or conditional type takes from its constraint: `T | (string extends T ? undefined : never)`)
+    bool mapped = false;
     for (u32 i = 0; i < members.len; i++) {
-        if (!(members.data[i]->flags & TYF_NULLABLE)) kept[len++] = members.data[i];
+        Ty const* member = members.data[i];
+        if (member->flags & TYF_NULLABLE) continue;
+        if (member->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
+            Ty const* stripped = ty_non_nullable(me, member);
+            if (stripped->flags & TYF_NEVER) continue;
+            mapped |= stripped != member;
+            member = stripped;
+        }
+        kept[len++] = member;
     }
-    Ty const* ret = ty_union_filtered(me, ty, kept, len);
+    Ty const* ret = mapped ? ty_union(me, kept, len, nullptr, (TyList){0}) : ty_union_filtered(me, ty, kept, len);
     free(kept);
     return ret;
 }
