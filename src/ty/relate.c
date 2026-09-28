@@ -3128,12 +3128,22 @@ static Ternary structured_related_impl(
                 Ternary related = is_related_to(me, st, ty_mapped_template(me, mapped), ty_indexed(me, target, mapped->type_param), report);
                 if (related) return related;
             }
-            if (comparable) {
-                Ty const* constraint = ty_param_constraint(me, target);
-                if (constraint && constraint != target) {
-                    Ternary related = is_related_to(me, st, source, constraint, false);
+            if (comparable && source->kind == TY_TYPE_PARAM) {
+                // Two type parameters are comparable only if one extends the other (comparability is mostly
+                // bidirectional: the other way around is tried too)
+                Ty const* constraint = ty_param_constraint(me, source);
+                for (u32 depth = 0; constraint && constraint != source && depth < 16; depth++) {
+                    bool has_param = constraint->kind == TY_TYPE_PARAM;
+                    for (u32 i = 0; constraint->kind == TY_UNION && i < constraint->composite.types.len; i++) {
+                        has_param |= constraint->composite.types.data[i]->kind == TY_TYPE_PARAM;
+                    }
+                    if (!has_param) break;
+                    Ternary related = is_related_to(me, st, constraint, target, false);
                     if (related) return related;
+                    if (constraint->kind != TY_TYPE_PARAM) break;
+                    constraint = ty_param_constraint(me, constraint);
                 }
+                return TERNARY_FALSE;
             }
             if (source->kind != TY_TYPE_PARAM && !(source->flags & TYF_DEFERRED) && source->kind != TY_INTERSECTION) {
                 return TERNARY_FALSE;

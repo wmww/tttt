@@ -15346,17 +15346,17 @@ const baselines = {
         types: true,
     },
     'genericTypeAssertions4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'genericTypeAssertions5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'genericTypeAssertions6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
