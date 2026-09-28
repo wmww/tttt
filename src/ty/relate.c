@@ -3781,7 +3781,7 @@ static Ternary structured_related_members(
     switch ((TyKind)source->kind) {
         case TY_TYPE_PARAM: {
             Ty const* constraint = ty_param_constraint(me, source);
-            if (!constraint || constraint == source || (constraint->flags & TYF_ANY)) {
+            if (!constraint || constraint == source) {
                 if (target->kind == TY_TYPE_PARAM || (target->flags & TYF_DEFERRED)) return TERNARY_FALSE;
                 // As `unknown` (tsc's getConstraintOfType(source) || unknownType): comparable to anything, and without
                 // strictNullChecks its apparent type `{}` against object types (not `object`, not `{ [k: string]: X }`)
@@ -3792,9 +3792,9 @@ static Ternary structured_related_members(
                 return is_related_to(me, st, global_type(me, GLOBAL_EMPTY_OBJECT), target, false);
             }
             // The constraint as it is first, then with the type parameter as its `this` (tsc: raw `this` types from
-            // base classes need it, subclassWithPolymorphicThisIsAssignable). From one type parameter to another, the
-            // constraint's failure doesn't explain anything
-            bool report_constraint = report && target->kind != TY_TYPE_PARAM;
+            // base classes need it, subclassWithPolymorphicThisIsAssignable). From one type parameter to another, or from
+            // an `unknown` one, the constraint's failure doesn't explain anything
+            bool report_constraint = report && target->kind != TY_TYPE_PARAM && constraint != ty_intrinsic(me, TY_UNKNOWN_);
             Ty const* with_this = ty_with_this_arg(me, constraint, source);
             if (with_this == constraint) return is_related_to(me, st, constraint, target, report_constraint);
             Ternary related = is_related_to(me, st, constraint, target, false);

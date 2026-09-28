@@ -3165,6 +3165,12 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
             node = state->item->extends_explicit ? &state->item->extends : nullptr;
         }
         state->constraint = node ? ty_from_node(me, node, (LowerCtx){ .generic = true }) : nullptr;
+        // A declared `extends any` is `extends unknown` (tsc's getConstraintFromTypeParameter; its keyofConstraintType for
+        // a mapped type's key isn't done here). One that becomes any by instantiation stays any, and any is related to
+        // everything: `<T extends E>` of `Ref<any>` takes any other type parameter
+        if (state->constraint == ty_intrinsic(me, TY_ANY) && node != state->constraint_node) {
+            state->constraint = ty_intrinsic(me, TY_UNKNOWN_);
+        }
         if (!node && state->is_infer) state->constraint = ty_implied_infer_constraint(me, param);
         state->constraint_state = LAZY_STATE_DONE;
     }
