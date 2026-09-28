@@ -15,7 +15,8 @@ if test "${1:-}" = --relock; then RELOCK=1; fi
 # NAME URL COMMIT PROJECT_DIR [LINK] (PROJECT_DIR: the directory with the package.json the dependencies are installed
 # for, relative to the checkout; LINK: node_modules/NAME is a symlink to LINK, relative to node_modules, as a project
 # that imports its own package name gets from `yarn link` or a workspace). If corpora-locks/NAME.package.json exists, it
-# replaces PROJECT_DIR/package.json before installing (a monorepo whose package manager npm can't read)
+# replaces PROJECT_DIR/package.json before installing (a monorepo whose package manager npm can't read). The files under
+# corpora-locks/NAME.overlay/ are copied into the checkout (a tsconfig of our own, when upstream's doesn't fit)
 CORPORA=(
     # type-fest v4.26.1: type-level utilities (template literal types, key remapping, deep recursion) + tsd tests
     "type-fest https://github.com/sindresorhus/type-fest.git 2b98d9f2ac8921b79ed07ceeef278a5406edbe05 ."
@@ -40,6 +41,14 @@ CORPORA=(
     # root's devDependencies (without `zod: workspace:*`, plus the @types/node vitest hoists), from
     # corpora-locks/zod.package.json
     "zod https://github.com/colinhacks/zod.git 59bbc03e10c636b9eb3c393dfeb552819774ec21 . ../packages/zod"
+    # xstate v5.28 (Mar 2026, todo entry 1 of the sixth window): the last commit before its move to TypeScript 6. The
+    # core package (state machines, setup()/createMachine()/assign() configs typed through generic call inference
+    # with callbacks) and its vitest tests (types.test.ts, setup.types.test.ts: @ts-expect-error on inference
+    # results), checked through packages/core/tsconfig.corpus.json from the overlay (upstream checks every package
+    # through the root tsconfig, lib es2019 + ESNext.Promise, which lacks Promise.withResolvers under tsc 5.8: ours
+    # has lib es2024 and src + test only). A pnpm workspace: the dependencies are core's devDependencies (without
+    # @scion-scxml/test-framework) + vitest and @types/node, from corpora-locks/xstate.package.json
+    "xstate https://github.com/statelyai/xstate.git f210b35ceed100615ed3acafa120e29db303cef2 ."
 )
 
 mkdir -p corpora
@@ -59,6 +68,7 @@ for ENTRY in "${CORPORA[@]}"; do
     PROJECT="corpora/$NAME/$DIR"
     LOCK="corpora-locks/$NAME.package-lock.json"
     if test -e "corpora-locks/$NAME.package.json"; then cp "corpora-locks/$NAME.package.json" "$PROJECT/package.json"; fi
+    if test -d "corpora-locks/$NAME.overlay"; then cp -r "corpora-locks/$NAME.overlay/." "corpora/$NAME/"; fi
     if test $RELOCK = 1; then
         rm -rf "$PROJECT/node_modules" "$PROJECT/package-lock.json"
         (cd "$PROJECT" && npm install --package-lock-only --ignore-scripts --legacy-peer-deps --no-audit --no-fund)

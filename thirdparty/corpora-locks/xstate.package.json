@@ -1,0 +1,12 @@
+{
+  "name": "xstate-monorepo",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "25.2.1",
+    "ajv": "^8.12.0",
+    "pkg-up": "^3.1.0",
+    "rxjs": "^7.8.1",
+    "vitest": "^3.2.2",
+    "xml-js": "^1.6.11"
+  }
+}
