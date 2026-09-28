@@ -1836,6 +1836,46 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
 
 static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
+static bool binding_declares_name(Binding const* me, csview name) {
+    switch (my tag) {
+        case BINDING_NOOP: return false;
+        case BINDING_IDENTIFIER: return csview_equals_sv(my content_span.sv, name);
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &my array) if (binding_declares_name(i, name)) return true;
+            return false;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &my object) if (binding_declares_name(&i->target, name)) return true;
+            return false;
+    }
+    return false;
+}
+
+static void catch_check_block_names(Binding const* catch_var, Binding const* declared, ErrorCtx* errs) {
+    switch (declared->tag) {
+        case BINDING_NOOP: break;
+        case BINDING_IDENTIFIER:
+            if (binding_declares_name(catch_var, declared->content_span.sv)) {
+                error_ctx_grammar_error_d(errs, declared->content_span, 2492, "Cannot redeclare identifier '",
+                    declared->content_span, "' in catch clause.");
+            }
+            break;
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &declared->array) catch_check_block_names(catch_var, i, errs);
+            break;
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &declared->object) catch_check_block_names(catch_var, &i->target, errs);
+            break;
+    }
+}
+
+// A `let`/`const` directly in a catch block can't redeclare the catch variable (tsc's checkTryStatement)
+static void catch_check_redeclared(Binding const* catch_var, Block const* block, ErrorCtx* errs) {
+    for_each (i, vec_statement, &block->statements) {
+        if (i->tag != STATEMENT_DECL_VARIABLE || i->decl.variable.keyword == VAR_INIT_VAR) continue;
+        for_each (j, vec_initialized_binding, &i->decl.variable.initializers) catch_check_block_names(catch_var, &j->binding, errs);
+    }
+}
+
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     CurrentNode saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
     statement_typecheck_inner(me, ctx, errs);
@@ -2069,6 +2109,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             ) {
                 error_ctx_error_d(errs, my try_catch->catch_var.explicit_type_span, 1196,
                     "Catch clause variable type annotation must be 'any' or 'unknown' if specified.");
+            }
+            if (my try_catch->has_catch && !my try_catch->catch_var.has_explicit_type && !my try_catch->catch_var.default_value) {
+                catch_check_redeclared(&my try_catch->catch_var, &my try_catch->catch_block, errs);
             }
             block_typecheck(&my try_catch->catch_block, ctx, errs);
             block_typecheck(&my try_catch->finally_block, ctx, errs);
