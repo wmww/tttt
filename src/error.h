@@ -30,6 +30,9 @@ typedef struct Error {
     VecError sub_errors;
 } Error;
 
+// tsc's DiagnosticCategory of a code as the baselines print it: "error", "message" (TS1450) or "suggestion"
+char const* error_category_name(unsigned ts_code);
+
 void error_drop(Error* me);
 Error error_clone(Error me);
 /// noop if me is null

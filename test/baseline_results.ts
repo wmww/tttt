@@ -38741,7 +38741,7 @@ const baselines = {
         types: true,
     },
     'importCallExpressionGrammarError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -50256,7 +50256,7 @@ const baselines = {
         types: true,
     },
     'importAssertion1(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50306,7 +50306,7 @@ const baselines = {
         types: true,
     },
     'importAttributes1(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

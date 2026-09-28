@@ -594,7 +594,7 @@ static void format_error_tree(
 ) {
     // Add the prefix for toplevel errors, this "global" string will appear at the top of the output file
     if (indent_level == 0 && !span_valid(error->span)) {
-        cstr_append_d(global_target, DEFAULT_DISPLAY, "error TS", error->ts_code, ": ");
+        cstr_append_d(global_target, DEFAULT_DISPLAY, error_category_name(error->ts_code), " TS", error->ts_code, ": ");
     } else if (indent_level == 0) {
         unsigned line = span_line_index(error->span);
         unsigned col = span_col_index(error->span);
@@ -602,7 +602,7 @@ static void format_error_tree(
 
         cstr_append_d(
             global_target, DEFAULT_DISPLAY,
-            filename, "(", line + 1, ",", col + 1, "): error TS", error->ts_code, ": "
+            filename, "(", line + 1, ",", col + 1, "): ", error_category_name(error->ts_code), " TS", error->ts_code, ": "
         );
     }
 
@@ -620,7 +620,8 @@ static void format_error_tree(
         // Handle toplevel errors and non-related errors (sub-errors that don't have a valid span)
         cstr_append_d(
             file_target, DEFAULT_DISPLAY,
-            "\r\n!!! error TS", toplevel->ts_code, ": ", repeated_d("  ", indent_level), error->message
+            "\r\n!!! ", error_category_name(toplevel->ts_code), " TS", toplevel->ts_code, ": ", repeated_d("  ", indent_level),
+            error->message
         );
     } else {
         // Handle related errors (sub-errors that do have a valid span): in their own file, lib files without a position

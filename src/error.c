@@ -621,3 +621,11 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
     });
 }
 
+
+char const* error_category_name(unsigned ts_code) {
+    switch (ts_code) {
+        case 1450: return "message";
+        case 6807: return "suggestion";
+        default: return "error";
+    }
+}
