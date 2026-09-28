@@ -322,6 +322,10 @@ struct Ty {
             // only cares about these. If unknown (the node has parts that aren't syntax), assume every one in scope
             TyList free_params;
             bool free_params_unknown;
+            // A JSDoc node: tsc's isTypeParameterPossiblyReferenced walks up from it and never meets the `@template` tag
+            // declaring a type parameter, so every type parameter in scope counts as referenced (see
+            // assignment_mentions()). free_params still says what it really mentions
+            bool jsdoc_references_all;
             bool object_literal; // Made by an object literal expression (ty_object_literal())
             // OBJECT_LITERAL_REGULAR: TYF_FRESH_OBJECT means it still widens, but it isn't fresh (ty_is_fresh_object())
             bool regular;

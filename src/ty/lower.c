@@ -853,6 +853,9 @@ Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx
         FreeParams found = {0};
         collect_free_params(me, node, &found);
         anonymous_set_free_params(me, ret, found);
+        // (In JS, a type node is JSDoc, see Ty.anonymous.jsdoc_references_all)
+        Span span = node->tag == TYPE_CALLABLE ? node->callable->function->args_span : node->interface.span;
+        ret->anonymous.jsdoc_references_all = span.source && span.source->is_js;
     }
     // Collecting can intern type parameters, so the slot is looked up again
     *intern_slot(me, &my links, key, 2) = ret;

@@ -581,9 +581,44 @@ static bool fixed_by_function(Checker* me, FunctionImpl const* function, Signatu
     return fixed_by_type(me, signature_return_type(me, sig), probe, false, 1);
 }
 
+// Whether instantiating `type` meets a JSDoc object or function type that `host`'s `@template`s are in scope at (see
+// Ty.anonymous.jsdoc_references_all): from the first `@template` tag to the end of the host
+static bool meets_jsdoc_node_in(Checker* me, Ty const* type, FunctionImpl const* host, u32 depth) {
+    // (Not gated by TYF_COULD_CONTAIN_TYPE_VARIABLES: `() => void` mentions nothing, it is only possibly referencing)
+    if (depth > 4) return false;
+    if (type->kind == TY_UNION || type->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < type->composite.types.len; i++) {
+            if (meets_jsdoc_node_in(me, type->composite.types.data[i], host, depth + 1)) return true;
+        }
+        return false;
+    }
+    if (type->kind == TY_REFERENCE) {
+        TyList args = ty_reference_args(me, type);
+        for (u32 i = 0; i < args.len; i++) {
+            if (meets_jsdoc_node_in(me, args.data[i], host, depth + 1)) return true;
+        }
+        return false;
+    }
+    if (type->kind != TY_ANONYMOUS) return false;
+    Ty const* target = type->anonymous.target ? type->anonymous.target : type;
+    TypeNode const* node = target->kind == TY_ANONYMOUS ? target->anonymous.node : nullptr;
+    if (!node || !target->anonymous.jsdoc_references_all) return false;
+    Span span = node->tag == TYPE_CALLABLE ? node->callable->function->args_span : node->interface.span;
+    Span first = vec_generic_item_at(&host->generic.items, 0)->full_span;
+    return span.source == host->full_span.source && span.sv.buf >= first.sv.buf &&
+        span.sv.buf + span.sv.size <= host->full_span.sv.buf + host->full_span.sv.size;
+}
+
 // Whether assigning contextual signature `sig` to `function` asks for a type that mentions type parameter `param`: the
-// types of its parameters without annotation and its `this` (tsc's assignContextualParameterTypes)
+// types of its parameters without annotation and its `this` (tsc's assignContextualParameterTypes). In JS, one that
+// meets a JSDoc type node in the scope of the call's `@template`s mentions them all (tsc's fixing mapper fixes every
+// type parameter isTypeParameterPossiblyReferenced says the node may reference: `R` for `s: () => void` in
+// `@param {(i: number, s: () => void) => R} setup`)
 static bool assignment_mentions(Checker* me, FunctionImpl const* function, Signature const* sig, Ty const* param) {
+    FunctionImpl const* host = my outer_inference->sig->function;
+    if (host && (!host->full_span.source || !host->full_span.source->is_js || !vec_generic_item_size(&host->generic.items))) {
+        host = nullptr;
+    }
     signature_resolve(me, sig);
     u32 index = 0;
     bool this_declared = false;
@@ -596,7 +631,7 @@ static bool assignment_mentions(Checker* me, FunctionImpl const* function, Signa
         u32 at = index++;
         if (i->initializer.binding.has_explicit_type) continue;
         Ty const* type = ty_contextual_signature_type_at(me, sig, at, i->rest);
-        if (type && ty_mentions_any(me, type, &param, 1)) return true;
+        if (type && (ty_mentions_any(me, type, &param, 1) || (host && meets_jsdoc_node_in(me, type, host, 0)))) return true;
     }
     return !this_declared && sig->this_type && ty_mentions_any(me, sig->this_type, &param, 1);
 }
