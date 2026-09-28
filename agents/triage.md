@@ -42,3 +42,13 @@ duplicated webpack), hacks.md (`string_to_double`).
   `apparent->flags & TYF_OBJECT`, skipping intersections whose `ty_members()` are well defined
   (`constructor_instance_type` in flow.c, `call_signatures_of` in call.c). Grep for other `TYF_OBJECT ? ty_members`
   gates and check whether tsc's counterpart (getSignaturesOfType etc.) accepts intersections there.
+- Suite checker bugs 5 (main tree) leftovers: (1) a union property's symbol lists every member's declarations in tsc
+  (`(A[] | B[]).filter` is `Symbol(Array.filter, Decl x4)`, tttt x2: unionOfArraysFilterCall symbols); (2) tsc's
+  alternateResult TS2307/TS7016 elaboration ("There are types at '...', but this result could not be resolved under
+  your current 'moduleResolution' setting" / "...when respecting package.json \"exports\"", moduleNameResolver.ts
+  nodeModuleNameResolverWorker) and TS6504 for JS files a resolution put in the program: 9 tests
+  (node10AlternateResult_*, resolvesWithoutExportsDiagnostic1, nodeModulesExportsBlocksTypesVersions,
+  resolutionModeImportType1/TypeOnlyImport1(node10)); (3) a default import of a CommonJS file from ESM in node16 is
+  `module.exports` (`obj2.default`: nodeModulesTripleSlashReferenceModeDeclarationEmit7); (4) the symbols of a local
+  type merged with an exported value of one name list both declarations (importElisionExportNonExportAndDefault);
+  (5) tsc's pretty output splits lines on `\r` and U+2028/9 too, error_format_pretty() only on `\n`.
