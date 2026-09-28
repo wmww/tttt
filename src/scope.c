@@ -1127,8 +1127,8 @@ void scope_add_port(Scope* me, PortItem* item) {
             return;
 
         case PORT_EXPORT_AS_NAMESPACE: {
-            // A global alias of the module (UMD; a module using its value is TS2686, check_umd_global_use()). The checks are tsc's
-            // bindNamespaceExportDeclaration()
+            // A global alias of the module (UMD; a module using its value is TS2686, check_umd_global_use()). The
+            // checks are tsc's bindNamespaceExportDeclaration()
             if (span_valid(item->modifiers)) error_ctx_error_d(my errs, item->modifiers, 1184, "Modifiers cannot appear here.");
             if (item->not_top_level) {
                 error_ctx_error_d(my errs, item->full_span, 1316, "Global module exports may only appear at top level.");
