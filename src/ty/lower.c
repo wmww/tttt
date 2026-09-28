@@ -2068,6 +2068,11 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     } else {
         ObjectBindingItem const* item = binding->parent_item;
         ret = ty_access(me, object, item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));
+        // A property an object literal lacks is undefined when there's a default, which decides (tsc's
+        // AccessFlags.AllowMissing)
+        if (!ret && binding->default_value && object->kind == TY_ANONYMOUS && object->anonymous.object_literal) {
+            ret = ty_intrinsic(me, TY_UNDEFINED);
+        }
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
     }
     if (!ret) ret = ty_intrinsic(me, TY_ANY);

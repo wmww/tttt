@@ -6906,9 +6906,9 @@ const baselines = {
         types: true,
     },
     'controlFlowDestructuringVariablesInTryCatch': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowFavorAssertedTypeThroughTypePredicate': {
         errors: true,
@@ -41863,7 +41863,7 @@ const baselines = {
     'destructuringWithLiteralInitializers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringWithLiteralInitializers2': {
         errors: true,
@@ -58868,7 +58868,7 @@ const baselines = {
     'parserForStatement9': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserIfStatement1.d': {
         errors: true,
