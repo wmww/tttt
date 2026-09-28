@@ -32,8 +32,11 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    9833 -> 9951, corpora unchanged. The new queue (non-widening null/undefined first) is in plan 35.
 8. ~~**Corpus session**~~ done: plan 32 stage C (mixin classes; the plan is finished and deleted), then all of zod.
    Suite 9951 -> 9978, type-fest 4 -> 0, zod 13 -> 0, webpack 116 -> 115. valibot +2.5% instructions (triage.md).
-9. **Suite checker bugs 4**: `bugs/missing_checks.md` buckets; 656 tests where tsc reports errors and tttt none.
-   If time is left, plan 34's queue (error text, 311 tests).
+9. ~~**Suite checker bugs 4**~~ done: ~35 small checks in the main tree (output paths TS5055, module-kind/option
+   checks, TS1259, TS2353 for binding patterns, TS2699, TS18050 on null objects, TS7010 from widening, import()
+   grammar, TS2350, TS7029, ...) plus four Opus sub-agents in worktrees (missing TS2339, missing TS2322, TS2303/TS2209,
+   two corpus regressions: isGenericType and variance annotations). Suite 9978 -> 10188, tsc-errors-tttt-none 541 ->
+   421, corpora unchanged (webpack 115). The single-code buckets are now mostly spurious errors (missing_checks.md).
 10. **Triage**: drain triage.md, prune hacks.md (677 lines) of entries that are fixed, refresh measurements.md.
 11. **Insights.**
 

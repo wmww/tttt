@@ -16,7 +16,7 @@ after the 09-28 plan 26 session (errors 11242, symbols 12407, types 11090; error
 reports errors and tttt nothing 578), **9833** after the plan 27 stage 3 session (errors 11365, symbols 12453, types
 11151; errors component 2175 failing; 252 tests with a spurious TS1xxx), **9951** after the plan 35 stage 2
 session (errors 11395, symbols 12496, types 11261; errors component 2145 failing, tsc reports errors and tttt
-nothing 541), **9978** after the corpus session (todo entry 8: mixins), whose other numbers below weren't re-measured unless marked. A suite run takes ~23 s
+nothing 541), **9978** after the corpus session (todo entry 8: mixins), **10188** after suite checker bugs 4 (errors 11681, symbols 12527, types 11348; errors component 1859 failing: tsc reports errors and tttt nothing 421, both missing and spurious 514, same codes+positions other text 298, all spurious 220), whose other numbers below weren't re-measured unless marked. A suite run takes ~23 s
 (was 50: relationComplexityError alone took 27). `./failstats.py`: errors component fails in
 2360 tests: tsc reports errors and tttt nothing 654, both missing and spurious 585, only missing 389, **same
 codes+positions, other text 311**, tttt errors where tsc has none 254, only spurious 137, column differs 30. 323 tests

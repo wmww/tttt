@@ -4,12 +4,13 @@ Each is small (one check, a few tests). Find fresh buckets with `./failstats.py`
 one code alone in `build/failstats/tests.tsv`) and `./unimplemented_codes.sh` (codes `src/` never mentions). Test
 statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (suite checker bugs 4).
 
-## Buckets (tests whose errors fail on this one code, 2026-09-27, after suite checker bugs 3)
-- Mixed bags (sample, don't assume one cause): missing TS2339 52, spurious TS2322 46, missing TS2322 44, spurious
-  TS2304 44, spurious TS2339 29, spurious TS2345 14. Missing TS2339 overall is ~380 in 166 tests: the gates in
-  `check_access()` (JS, callables, mapped, unresolved bases) and whatever is typed `any` by failure.
-- Module resolution / emit: missing TS2303 15 (package pattern exports, below), TS8002 9 (JS, plan 26), TS2209 6,
-  TS2742 10 (declaration emit: out of scope); spurious TS2307 14 (APISample_*: resolving
+## Buckets (tests whose errors fail on this one code, 2026-09-28, after suite checker bugs 4, suite 10188)
+- The single-code tests are now mostly *spurious*: spurious TS2339 40, TS2322 35, TS2304 35, TS2345 12, TS2300 10,
+  TS2403 9, TS1005 9, TS2349 8, TS2554 7; missing TS2322 13 (the leftovers: relation-engine cases that accept what tsc
+  rejects, deepComparisons, genericRestTypes, invariantGenericErrorElaboration...; evolving arrays; mappedTypeErrors2's
+  key constraint check), missing TS2304 9, TS2538 8. The next checker-bugs session should start from the spurious side
+  (sample, don't assume one cause). Errors component: 421 tests where tsc reports errors and tttt none (was 656).
+- Module resolution / emit: TS8002 9 (JS, plan 26), TS2742 10 (declaration emit: out of scope); spurious TS2307 14 (APISample_*: resolving
   `typescript` from the harness).
 - Checker: TS2538 8 (below), TS7023 5, TS2344 5 (import types' arguments aren't checked against constraints:
   unmetTypeConstraintInImportCall, `identifier_type_check_arity()` doesn't see them), TS2449 through property access
