@@ -128,6 +128,27 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   TS2322 (line 44, variance of an alias of an interface reference), varianceAnnotations' extra error on
   `InstanceType<typeof Anon<T>>` of a class expression.
 
+## JavaScript binder leftovers (suite checker bugs 5, 2026-09-28)
+Spurious diagnostics in JS tests whose causes were investigated but not fixed:
+- **Class members aren't binder symbols**, so `Clazz.method.prop = 5` (a static method as an expando host, tsc's
+  bindPotentiallyMissingNamespaces giving the method symbol a namespace declaration) can't declare prop:
+  jsDeclarationsClassStaticMethodAugmentation (TS2339 on `() => void`).
+- **Chained expando initializers** `var G = m.G = {}` (typeFromPropertyAssignment18): tsc types G as `typeof m.G` and
+  merges the exports of the variable and of the member (getTypeOfFuncClassEnumModule -> getSymbolOfExpando ->
+  mergeJSSymbols), so `G.q` (declared on m.G) and `m.G.p` (declared on G) resolve.
+- **CommonJS exports inside functions**: tsc binds `exports.x = v` / `module.exports = v` from any container
+  (bindExportsPropertyAssignment has no container check); `add_nested_commonjs_exports()` only walks top-level
+  statement lists, so an IIFE's exports are missing (moduleExportAliasExports). Needs a declare-step walk into function
+  bodies (the link step must see them, so the resolve walk is too late).
+- **`@typedef` inside a class body** (jsdocTemplateClass): tsc binds it in the class (blockScopeContainer = the class,
+  getEnclosingBlockScopeContainer of the host), where the class's `@template T` is visible; tttt's
+  `jsdoc_bind_comments()` only lets statement lists claim comments, so the file claims it and `T` is TS2304.
+- **`Object.defineProperty(o, "p", {...})`** declares nothing (tsc's bindObjectDefinePropertyAssignment,
+  isBindableObjectDefinePropertyCall): jsExpandoObjectDefineProperty now passes its errors only because
+  `chrome.devtools.x = {}` declares devtools as a namespace; 32 tests mention defineProperty.
+- **`this.x = v` at the top level of a CommonJS module** should declare an export (bindThisPropertyAssignment, SourceFile
+  container with commonJsModuleIndicator); only the script (global) case is done (`add_global_this_chain()`).
+
 ## Wrong codes that are type-core bugs
 Spurious TS2403 ("Subsequent variable declarations must have the same type") means tttt computed two spellings of one
 type differently; each is one type-core bug, good one-per-session material (all re-checked failing 2026-09-27):
