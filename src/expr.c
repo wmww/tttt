@@ -921,6 +921,47 @@ static bool is_compound_like(Expr const* right) {
     return op >= BINARY_OP_STAR_STAR && op <= BINARY_OP_GREATER_GREATER_GREATER;
 }
 
+// tsc's isSameEntityName: `a.b` and `a.b`, also `this.a.b`/`window.a.b`/`self.a.b`/`global.a.b` for `a.b`
+static bool is_same_entity_name(Expr const* name, Expr const* init) {
+    if (expr_is_perenthisized(name) || expr_is_perenthisized(init)) return false;
+    if (name->tag == EXPR_IDENTIFIER && init->tag == EXPR_IDENTIFIER) {
+        return !name->identifier.keyword && !init->identifier.keyword && csview_equals_sv(name->identifier.name.sv, init->identifier.name.sv);
+    }
+    Span init_name = expr_static_property_name(init);
+    if (name->tag == EXPR_IDENTIFIER && span_valid(init_name)) {
+        Expr const* object = &init->property->expr;
+        bool global_like = object->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(object) &&
+            (object->identifier.keyword == KEYWORD_IDENTIFIER_THIS || (!object->identifier.keyword &&
+                (span_equals(object->identifier.name, "window") || span_equals(object->identifier.name, "self") ||
+                    span_equals(object->identifier.name, "global"))));
+        return global_like && !name->identifier.keyword && csview_equals_sv(name->identifier.name.sv, init_name.sv);
+    }
+    Span name_name = expr_static_property_name(name);
+    return span_valid(name_name) && span_valid(init_name) && csview_equals_sv(name_name.sv, init_name.sv) &&
+        is_same_entity_name(&name->property->expr, &init->property->expr);
+}
+
+// JavaScript `a.b = a.b || {}` (or a function, a class): tsc checks only the initializer of such a defaulted expando
+// (checkBinaryExpression skips a node getAssignedExpandoInitializer finds, getDefaultedExpandoInitializer)
+static void mark_defaulted_expando(BinaryOpExpr* assignment) {
+    Expr* right = &assignment->right;
+    if (right->tag != EXPR_BINARY_OP || expr_is_perenthisized(right)) return;
+    BinaryOpExpr* logical = right->binary_op;
+    if (logical->op != BINARY_OP_OR_OR && logical->op != BINARY_OP_EH_EH) return;
+    Expr const* init = &logical->right;
+    bool prototype = expr_prototype_object(&assignment->left) != nullptr;
+    bool expando;
+    switch (init->tag) {
+        case EXPR_FUNCTION: case EXPR_CLASS_DECL: expando = true; break;
+        case EXPR_OBJECT: expando = prototype || !vec_object_expr_item_size(&init->object); break;
+        case EXPR_CALL: {
+            expando = init->call->callable.tag == EXPR_FUNCTION && !init->call->uses_new;
+        }   break;
+        default: expando = false; break;
+    }
+    if (expando && is_same_entity_name(&assignment->left, &logical->left)) logical->defaulted_expando = true;
+}
+
 static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
     FlowBuilder* flow = names->flow;
     BinaryOp op = my binary_op->op;
@@ -937,7 +978,8 @@ static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, Fl
         flow_add_nullish_conditions(flow, &my binary_op->left, true_target, pre_right);
     } else {
         flow->nullish_condition = op == BINARY_OP_EH_EH || op == BINARY_OP_EH_EH_EQUAL;
-        expr_lookup_names_condition(&my binary_op->left, names, errs, true_target, pre_right);
+        // The left side of a defaulted expando initializer isn't checked (see BinaryOpExpr.defaulted_expando)
+        expr_lookup_names_condition(&my binary_op->left, names, my binary_op->defaulted_expando ? nullptr : errs, true_target, pre_right);
     }
     flow_set_current(flow, flow_finish_label(pre_right));
     if (is_assignment) {
@@ -1318,6 +1360,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 flow->compound_like_target = op == BINARY_OP_EQUAL && is_compound_like(right);
                 expr_lookup_names(left, names, errs);
                 if (op == BINARY_OP_EQUAL) scope_add_nested_expando(names, my binary_op);
+                if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) mark_defaulted_expando(my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) scope_add_this_property(names, my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file && !names->file->is_js) scope_note_ts_this_assignment(names, my binary_op);
                 expr_lookup_names(right, names, errs);
@@ -2727,6 +2770,10 @@ static void binary_expr_typecheck_rest(Expr const* me, ErrorCtx* errs) {
 // recursion per operand: generated code has chains long enough to overflow the stack (tsc checks them iteratively too)
 static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
     if (my binary_op->jsdoc_type) type_typecheck(my binary_op->jsdoc_type, errs);
+    if (my binary_op->defaulted_expando) {
+        expr_typecheck(&my binary_op->right, errs);
+        return;
+    }
     if (my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
         !expr_is_perenthisized(&my binary_op->left)
     ) {

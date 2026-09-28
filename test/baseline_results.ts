@@ -19151,9 +19151,9 @@ const baselines = {
         types: false,
     },
     'jsElementAccessNoContextualTypeCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsEmitIntersectionProperty': {
         errors: true,
@@ -60926,12 +60926,12 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment9_1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

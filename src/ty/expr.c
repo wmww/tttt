@@ -1490,6 +1490,7 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             break;
         case BINARY_OP_OR_OR:
         case BINARY_OP_EH_EH:
+            if (binary->defaulted_expando) return ty_check_expr(me, &binary->right, ctx.contextual);
             left = ty_check_expr(me, &binary->left, ctx.contextual);
             right = ty_check_expr(me, &binary->right, ctx.contextual ? ctx.contextual : left);
             break;

@@ -376,6 +376,9 @@ typedef struct BinaryOpExpr {
     // The declare step's scope_add_expandos() looked at it as a possible `f.x = v` expando; the resolve walk binds the
     // other ones (nested in expressions) with scope_add_nested_expando()
     bool expando_bound;
+    // JavaScript: the `a.b || {}` of `a.b = a.b || {}` (a function, class...: tsc's getDefaultedExpandoInitializer), whose
+    // left side tsc doesn't check (checkBinaryExpression). Its type is its right side's. Set by the resolve walk
+    bool defaulted_expando;
 } BinaryOpExpr;
 
 static inline void expr_mark_binary_operand(Expr* me) {
