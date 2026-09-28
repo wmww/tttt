@@ -225,6 +225,7 @@ Checker* checker_new(Program* program) {
         widening->xflags = TYX_CONTAINS_WIDENING;
         my intrinsics[TY_UNDEFINED_WIDENING] = widening;
     }
+    my intrinsics[TY_MISSING] = make_intrinsic(me, "undefined", TYF_UNDEFINED);
     my intrinsics[TY_NULL] = make_intrinsic(me, "null", TYF_NULL);
     my intrinsics[TY_NULL_WIDENING] = my intrinsics[TY_NULL];
     if (!compiler_options()->strict_null_checks) {
@@ -689,6 +690,8 @@ static Ty const* union_with_origin(
         for (u32 i = 0; i < buf.len; i++) {
             Ty const* t = buf.data[i];
             if (out && buf.data[out - 1] == t) continue;
+            // undefined and missing: undefined (tsc's getUnionType removes missingType then)
+            if (t == my intrinsics[TY_MISSING] && out && buf.data[out - 1] == my intrinsics[TY_UNDEFINED]) continue;
             if (t->kind == TY_INTRINSIC && (t->flags & TYF_NEVER)) continue;
             // Without strictNullChecks null and undefined are in every type, so a union doesn't keep them
             if (!strict_null_checks && (t->flags & TYF_NULLABLE)) continue;
@@ -2050,6 +2053,30 @@ Ty const* ty_without_undefined(Checker* me, Ty const* type) {
     Ty const* ret = ty_union_filtered(me, type, kept, len);
     free(kept);
     return ret;
+}
+
+Ty const* ty_undefined_or_missing(Checker* me) {
+    return my intrinsics[compiler_options()->exact_optional_property_types ? TY_MISSING : TY_UNDEFINED];
+}
+
+bool ty_contains_missing(Checker* me, Ty const* ty) {
+    Ty const* missing = my intrinsics[TY_MISSING];
+    return ty == missing || (ty->kind == TY_UNION && ty->composite.types.data[0] == missing);
+}
+
+Ty const* ty_remove_missing(Checker* me, Ty const* ty, bool optional) {
+    if (!optional || !compiler_options()->exact_optional_property_types) return ty;
+    Ty const* missing = my intrinsics[TY_MISSING];
+    if (ty == missing) return my intrinsics[TY_NEVER];
+    if (ty->kind != TY_UNION || !ty_contains_missing(me, ty)) return ty;
+    return ty_union_filtered(me, ty, ty->composite.types.data + 1, ty->composite.types.len - 1);
+}
+
+Ty const* ty_optional_prop_type(Checker* me, Ty const* ty) {
+    if (!compiler_options()->strict_null_checks) return ty;
+    Ty const* add = ty_undefined_or_missing(me);
+    if (ty == add || (ty->kind == TY_UNION && ty->composite.types.data[0] == add)) return ty;
+    return ty_union(me, (Ty const*[]){ ty, add }, 2, nullptr, (TyList){0});
 }
 
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {

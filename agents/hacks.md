@@ -455,11 +455,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   properties of a renaming `as` clause lose their declarations.
 
 ## Type core (`src/ty/`)
-- No missing type (tsc's missingType; plan 19 "zod corpus" has the fix): under exactOptionalPropertyTypes optional
-  reads (`ty_access`) add a real `undefined`, so `{ [K in keyof T]: T[K] }` over an optional property holds
-  `X | undefined` where tsc holds `X | missing`. `exact_missing_flag()` (members.c HACK) compensates: an optional mapped
-  property whose modifiers property is optional strips undefined (tsc's non-missing view drops only the missing), even
-  an undefined the property declares.
 - Relation error reporting (`relate.c`, plan 34): `flush_incompatible()` reads a property's name back out of its
   pending "Types of property 'NAME' are incompatible." message (fixed prefix length) instead of storing it. tsc's
   `headMessage` is approximated by `RelationState.at_top` (the first `is_related_to()` call): a suppressed top-level

@@ -1616,9 +1616,26 @@ static bool is_presence_possible(Checker* me, Ty const* member, void const* arg)
 }
 
 // `"a" in x`. TODO: tsc intersects with `Record<"a", unknown>` when no member of x is known to have the property
+// `'a' in x` and `x.hasOwnProperty('a')` say whether `x.a`'s missing is there (tsc's narrowTypeByBinaryExpression and
+// narrowTypeByCallExpression with containsMissingType)
+static Ty const* narrow_missing_by_presence(FlowQuery* q, Ty const* type, Expr const* object, Atom const* name, bool assume_true) {
+    Checker* me = q->me;
+    if (!name || !ty_contains_missing(me, type)) return type;
+    Expr const* reference = skip_reference_wrappers(q->reference);
+    if (reference->tag != EXPR_PROPERTY || !is_matching_reference(me, &reference->property->expr, object)) return type;
+    if (access_name(me, reference->property) != name) return type;
+    return type_with_facts(me, type, assume_true ? TF_NE_UNDEFINED : TF_EQ_UNDEFINED);
+}
+
 static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* binary, bool assume_true) {
     Checker* me = q->me;
     Expr const* target = reference_candidate(&binary->right);
+    if (binary->left.tag != EXPR_PRIVATE_NAME && ty_contains_missing(me, type)) {
+        bool number = false;
+        Atom const* name = ty_property_name_of_key(me, ty_flow_expr_type(me, &binary->left), &number);
+        Ty const* narrowed = narrow_missing_by_presence(q, type, target, name, assume_true);
+        if (narrowed != type) return narrowed;
+    }
     if (!is_matching_reference(me, q->reference, target)) return type;
     if (binary->left.tag == EXPR_PRIVATE_NAME) {
         // `#x in obj` says obj is an instance of the class that declares `#x` (its constructor for a static `#x`: tsc's
@@ -1782,6 +1799,19 @@ static bool has_matching_argument(FlowQuery* q, CallExpr const* call) {
 
 static Ty const* narrow_by_call(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true) {
     CallExpr const* call = expr->call;
+    if (!call->uses_new && ty_contains_missing(q->me, type) && call->callable.tag == EXPR_PROPERTY &&
+        call->callable.property->form == PROPERTY_EXPR_DOT && vec_expr_size(&call->args) == 1 &&
+        vec_expr_at(&call->args, 0)->tag == EXPR_LITERAL && vec_expr_at(&call->args, 0)->literal.tag == VALUE_STRING
+    ) {
+        Atom const* method = access_name(q->me, call->callable.property);
+        if (method && csview_equals(atom_sv(method), "hasOwnProperty")) {
+            Ty const* key = ty_flow_expr_type(q->me, vec_expr_at(&call->args, 0));
+            bool number = false;
+            Atom const* name = ty_property_name_of_key(q->me, key, &number);
+            Ty const* narrowed = narrow_missing_by_presence(q, type, reference_candidate(&call->callable.property->expr), name, assume_true);
+            if (narrowed != type) return narrowed;
+        }
+    }
     if (call->uses_new || !has_matching_argument(q, call)) return type;
     // (An optional call that didn't happen says nothing)
     if (!assume_true && expr_is_optional_chain(expr)) return type;
@@ -1910,6 +1940,7 @@ static bool buf_contains(TyBuf const* buf, Ty const* ty) {
 static bool is_not_case_unit(Checker* me, Ty const* member, void const* arg) {
     TyBuf const* switch_types = arg;
     Ty const* unit = ty_regular(me, member);
+    if (unit->flags & TYF_UNDEFINED) unit = ty_intrinsic(me, TY_UNDEFINED); // (missing is undefined here)
     if (member->kind == TY_INTERSECTION) {
         // `"a" & Tag`
         for (u32 i = 0; i < member->composite.types.len; i++) {

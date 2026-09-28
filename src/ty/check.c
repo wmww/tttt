@@ -49,6 +49,8 @@ static AssignHead const HEAD_ARGUMENT = { "Argument of type", "parameter of type
 static AssignHead const HEAD_THIS = { "The 'this' context of type", "method's 'this' of type", 2684 };
 static AssignHead const HEAD_COMPUTED = { nullptr, nullptr, 2418 }; // "Type of computed property's value is..."
 static AssignHead const HEAD_SATISFIES = { nullptr, nullptr, 1360 };
+static AssignHead const HEAD_EXACT_PROP = { nullptr, nullptr, 2412 }; // "... with 'exactOptionalPropertyTypes: true'..."
+
 
 static Error* report_unassignable_with_head(
     Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, bool keep_natural_head, Span span,
@@ -94,7 +96,16 @@ static Error* report_unassignable(
         error = error_ctx_error_s(errs, span, natural_head->ts_code, cstr_clone(natural_head->message));
         first_nested = 1;
     } else {
-        if (head.ts_code == HEAD_COMPUTED.ts_code) {
+        if (head.ts_code == HEAD_ARGUMENT.ts_code && natural_head && natural_head->ts_code == 2375) {
+            error = error_ctx_error_d(errs, span, 2379, "Argument of type '", source_str,
+                "' is not assignable to parameter of type '", target_str,
+                "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.");
+            first_nested = 1;
+        } else if (head.ts_code == HEAD_EXACT_PROP.ts_code) {
+            error = error_ctx_error_d(errs, span, 2412, "Type '", source_str, "' is not assignable to type '", target_str,
+                "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.");
+            if (natural_head && natural_head->ts_code == 2322) first_nested = 1;
+        } else if (head.ts_code == HEAD_COMPUTED.ts_code) {
             error = error_ctx_error_d(errs, span, head.ts_code, "Type of computed property's value is '", source_str,
                 "', which is not assignable to type '", target_str, "'.");
         } else {
@@ -218,7 +229,14 @@ static bool elaborate_element(
         specific = source_prop;
     }
     AssignHead head = item->computed_non_literal ? HEAD_COMPUTED : HEAD_TYPE;
-    Error* error = item->message_code ?
+    Error* error;
+    if (!item->message_code && ty_exact_optional_mismatch(me, specific, target_prop)) {
+        // (tsc's elaborateElementwise: the error is on the property, with no elaboration)
+        cstr source_str = ty_to_cstr(me, specific), target_str = ty_to_cstr(me, target_prop);
+        error = error_ctx_error_d(errs, item->error_span, 2412, "Type '", source_str, "' is not assignable to type '", target_str,
+            "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.");
+        c_drop(cstr, &source_str, &target_str);
+    } else error = item->message_code ?
         report_unassignable_with_head(me, specific, target_prop, item->message_code, cstr_from_sv(item->message), false,
             item->error_span, errs) :
         report_unassignable(me, head, specific, target_prop, item->error_span, errs);
@@ -745,6 +763,26 @@ void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span s
 
 bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs) {
     return check_assignable(me, HEAD_TYPE, source, target, span, expr, errs);
+}
+
+// `x.a = value` (tsc's checkAssignmentOperator: under exactOptionalPropertyTypes an undefined for an optional property
+// says so)
+bool ty_check_assignable_to_access(
+    Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, Expr const* left, ErrorCtx* errs
+) {
+    AssignHead head = HEAD_TYPE;
+    if (compiler_options()->exact_optional_property_types && left->tag == EXPR_PROPERTY &&
+        left->property->form == PROPERTY_EXPR_DOT && ty_exact_optional_mismatch(me, source, ty_intrinsic(me, TY_MISSING))
+    ) {
+        Atom const* name = ty_literal_name(me, ty_access_key_type(me, left->property));
+        FoundProp prop = name ? ty_find_prop(me, ty_expr_type(me, &left->property->expr), name) : (FoundProp){0};
+        if (prop.found && (prop.flags & PROP_OPTIONAL) &&
+            ty_exact_optional_mismatch(me, source, ty_optional_prop_type(me, prop.type))
+        ) {
+            head = HEAD_EXACT_PROP;
+        }
+    }
+    return check_assignable(me, head, source, target, span, expr, errs);
 }
 
 // The global ImportAttributes / ImportCallOptions, or null (tsc's getGlobalImportAttributesType & co give the empty

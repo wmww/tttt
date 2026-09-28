@@ -33,7 +33,7 @@ the assignment should narrow), and `watching.running` after `if (compiler.watchi
 (MultiCompiler.js:645, `watching` is `_runGraph`'s inferred SetupResult: a plain TS probe of the shape passes, so the
 difference is in the JS inference). Both need a probe inside webpack's program.
 
-### zod-root (tsc 55, tttt 82: 28 spurious, 1 missing)
+### zod-root (tsc 55, tttt 83: 28 spurious, 0 missing)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
 **not clean under tsc**: 55 diagnostics of its own (26 TS2307 for bench deps the workspace doesn't install, 14 TS6133,
 8 TS6196, ...), so compare, don't count: `node thirdparty/tsc/lib/tsc.js --noEmit --pretty false -p
@@ -48,7 +48,7 @@ namespace named after a primitive keyword). Left, tttt only:
 - execa 9's `result.stderr` (`ResultStdioNotAll<'2', OptionsType>`) is `any` in tttt, `string` in tsc: TS7006 on
   the `.split("\n").filter((line) => ...)` callbacks (attw.test.ts:39/181). A probe file placed in
   `packages/resolution/` and checked with `-p thirdparty/corpora/zod` reaches execa's types.
-- Missing: TS2412 at scripts/triage-signal.ts:676 (exactOptionalPropertyTypes' assignment check).
+- (The one missing diagnostic, TS2412 at scripts/triage-signal.ts:676, came with plan 37 E's missing type.)
 
 ### HACKs the zod fixes left (hacks.md "Inference" and "Mapped types")
 - No missing type: `exact_missing_flag()` strips undefined from optional mapped properties read off optional ones;

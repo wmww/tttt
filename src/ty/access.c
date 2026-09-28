@@ -247,7 +247,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             u32 at = (u32)n;
             u32 fixed = ty_tuple_fixed_length(shape);
             if (at < fixed) {
-                return shape->flags[at] & TUPLE_ELEMENT_OPTIONAL ? with_undefined(me, elements.data[at]) : elements.data[at];
+                return shape->flags[at] & TUPLE_ELEMENT_OPTIONAL ? ty_optional_prop_type(me, elements.data[at]) : elements.data[at];
             }
             // Past the leading fixed elements of a tuple with a rest element: any of the elements from there on
             // (tsc's getTupleElementTypeOutOfStartCount)
@@ -280,7 +280,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
                 if (element) found[len++] = element;
             } else if (name) {
                 FoundProp prop = ty_find_prop(me, part, name);
-                if (prop.found) found[len++] = prop.flags & PROP_OPTIONAL ? with_undefined(me, prop.type) : prop.type;
+                if (prop.found) found[len++] = prop.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, prop.type) : prop.type;
             }
         }
         Ty const* ret = some_tuple && len ? ty_intersection(me, found, len, nullptr, (TyList){0}) : nullptr;
@@ -289,7 +289,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     }
     if (name) {
         FoundProp prop = ty_find_prop(me, object, name);
-        if (prop.found) return prop.flags & PROP_OPTIONAL ? with_undefined(me, prop.type) : prop.type;
+        if (prop.found) return prop.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, prop.type) : prop.type;
     }
     Ty const* value = access_index_infos(me, object, index);
     if (!value && (flags & ACCESS_NO_NODE) && (ty_key_flags(index) & TYF_ES_SYMBOL_LIKE) && (object->flags & TYF_OBJECT)) {
@@ -360,5 +360,8 @@ Ty const* ty_access_write_type(Checker* me, Ty const* object, Ty const* index) {
     FoundProp prop = ty_find_prop(me, object, name);
     if (!prop.found || !prop.prop) return nullptr;
     Ty const* write = prop_write_type(me, prop.prop);
+    // (Under exactOptionalPropertyTypes an optional property takes its declared type: tsc's removeMissingType of a
+    // Definite assignment target)
+    if (write && (prop.flags & PROP_OPTIONAL) && compiler_options()->exact_optional_property_types) return write;
     return write && (prop.flags & PROP_OPTIONAL) ? with_undefined(me, write) : write;
 }

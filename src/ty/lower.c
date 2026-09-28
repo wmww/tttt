@@ -1331,7 +1331,7 @@ static Ty const* tuple_element_type(Checker* me, TupleElement const* element, Lo
     if (element->rest && type->kind == TY_REFERENCE && ty_is_array(me, type) && type->alias) {
         return ty_array(me, ty_reference_args(me, type).data[0], false);
     }
-    return element->optional ? ty_optional_param_type(me, type) : type;
+    return element->optional ? ty_optional_prop_type(me, type) : type;
 }
 
 static Ty const* lower_tuple(Checker* me, TypeNode const* node, LowerCtx ctx) {
@@ -2479,6 +2479,9 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         case TYPE_INDEXED: {
             Ty const* index = ty_from_node(me, &node->indexed->index, ctx);
             Ty const* ret = ty_indexed(me, ty_from_node(me, &node->indexed->interface, ctx), index);
+            // `T["a"]` written as a type reads an optional property's missing as a real undefined (tsc's
+            // getPropertyTypeForIndexType with an IndexedAccessTypeNode)
+            if (ty_contains_missing(me, ret)) ret = ty_union(me, (Ty const*[]){ ret, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
             // With a union index the result is the union of what each member accesses, made under the alias's name
             // (tsc's getIndexedAccessType passes the alias symbol to getUnionType)
             bool renames = ret->kind == TY_INDEXED || (ret->kind == TY_UNION && index->kind == TY_UNION);

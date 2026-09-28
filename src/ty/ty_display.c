@@ -1596,14 +1596,15 @@ static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyL
         if (i) out_lit(d, ", ");
         bool rest = shape->flags[i] & TUPLE_ELEMENT_REST;
         bool optional = shape->flags[i] & TUPLE_ELEMENT_OPTIONAL;
+        Ty const* element = ty_remove_missing(me, args.data[i], optional); // (tsc's typeReferenceToTypeNode)
         if (rest) out_lit(d, "...");
         if (shape->names && shape->names[i]) {
             out(d, atom_sv(shape->names[i]));
             if (optional) out_lit(d, "?");
             out_lit(d, ": ");
-            ty_display(me, d, args.data[i]);
+            ty_display(me, d, element);
         } else {
-            display_parenthesized_if(me, d, args.data[i], optional && needs_parens_in_array(me, d, args.data[i]));
+            display_parenthesized_if(me, d, element, optional && needs_parens_in_array(me, d, element));
             if (optional) out_lit(d, "?");
         }
     }

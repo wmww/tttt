@@ -34,7 +34,7 @@ length: n}, (_, i) => ...)` must stay clean. Measured gain +1: revisit when a co
 types, not now**: arrays/tuples are reverse mapped already (bugs/type_core.md's note was stale, fixed), only
 reverseMappedTypeRecursiveInference plausibly needs laziness.
 
-**Landed**: A stage 1 (+48) and F (+1) in todo entry 4, B stage 1 (+37) in todo entry 5.
+**Landed**: A stage 1 (+48) and F (+1) in todo entry 4, B stage 1 (+37) and E stage 1 (+3, zod-root's TS2412) in todo entry 5.
 
 ## A. Non-widening null/undefined (landed at stage 1; stage 2 open)
 tsc, non-strict only: `undefinedWideningType`/`nullWideningType` print as `undefined`/`null`, carry
@@ -106,23 +106,9 @@ Array resolves. The Expr size must not grow (the prototype shares the `this_func
   (genericFunctionsWithOptionalParameters1/2, jsdocTypeGenericInstantiationAttempt, unusedLocalsAndParametersType
   Aliases): an `Array<T>` annotation prints `Array<T>` or `T[]` depending on when Array was first built.
 
-## E. The missing type (`missing_type.patch`, `missing_type_gained.txt`)
-Small in the suite (few exactOptional tests) but valibot, type-fest and zod are exactOptional projects, and it deletes
-`exact_missing_flag()`. Every new path runs only under exactOptionalPropertyTypes. Prototype: `TY_MISSING` intrinsic
-(prints `undefined`, dropped next to undefined in `ty_union`), `ty_undefined_or_missing`/`ty_contains_missing`/
-`ty_remove_missing`/`ty_optional_prop_type`; reads (`access()`, `tuple_element_type`, `prop_or_index_type`) add
-missing; written `T["a"]` turns it into undefined; write targets read the declared type (`ty_access_write_type`);
-`optional_adds_undefined()` at the relation's add-undefined sites; `tuples_related` removes missing per element;
-`identity_prop_type` still adds undefined (**valibot's expect-type checks broke with 52 TS2554 without that**: tsc's
-identity treats missing = undefined); spreads keep the declared optional type (**zod broke with 6 spurious** without
-that: `spread_props_of`, `spread_into`); `'a' in x` / hasOwnProperty narrow the missing away; `[string?]` display;
-array holes are optional missing elements; TS2375 (`ty_has_exact_optional_unassignable`), TS2379, TS2412 (in
-`elaborate_element` and `x.a = v` via a `HEAD_EXACT_PROP` head).
-- **Stage 1 (1 session, or half of one)**: land it; delete `exact_missing_flag()` + 3 call sites (`PROP_STRIP_
-  UNDEFINED` stays for `-?`); fix the ty.h comment the prototype mangled (`ty_without_undefined`'s "Removes undefined
-  only" landed on `ty_optional_prop_type`); assert/document that `ty_contains_missing` relies on missing sorting first;
-  `./threadcheck.sh valibot zod`. Delete hacks.md "No missing type", trim bugs/type_core.md "exactOptionalProperty
-  Types" to the leftovers, mark plan 19's zod-root TS2412 fixed (zod-root 91 -> 92 total, the added one is tsc's).
+## E. The missing type (landed at stage 1; stage 2 open)
+Landed as the prototype described (documentation.md "The missing type"), `exact_missing_flag()` deleted; +3 tests,
+zod-root 82 -> 83 (tsc's TS2412), other corpora unchanged; instructions valibot -0.1%, zod -0.7%, type-fest +0.1%.
 - **Stage 2 (with other inference work, 2-3 tests)**: inferred candidates drop missing (contextuallyTypedOptional
   Property), inferring `T` from `Partial<T>` makes properties required (strictOptionalProperties1), JSDoc `[value]`
   optional properties (strictOptionalProperties3).

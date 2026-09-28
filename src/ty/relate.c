@@ -83,6 +83,12 @@ typedef struct RelationState {
     struct RelationState* outer;
 } RelationState;
 
+// Relations compare an optional property's type with its optionality's undefined, except under
+// exactOptionalPropertyTypes, where they compare the declared-type view (tsc's getNonMissingTypeOfSymbol)
+static inline bool optional_adds_undefined(void) {
+    return compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types;
+}
+
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
 static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth);
 
@@ -642,6 +648,36 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
     report_relation_error_now(me, st, source, target, top);
 }
 
+// tsc's isExactOptionalPropertyMismatch: source may be undefined, target has an optional property's missing
+bool ty_exact_optional_mismatch(Checker* me, Ty const* source, Ty const* target) {
+    if (!compiler_options()->exact_optional_property_types || !source || !target) return false;
+    bool maybe_undefined = source->flags & TYF_UNDEFINED;
+    if (source->kind == TY_UNION) {
+        for (u32 i = 0; i < source->composite.types.len; i++) {
+            if (source->composite.types.data[i]->flags & TYF_UNDEFINED) maybe_undefined = true;
+        }
+    }
+    return maybe_undefined && ty_contains_missing(me, target);
+}
+
+// tsc's getExactOptionalUnassignableProperties(...).length
+bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const* target) {
+    if (!compiler_options()->exact_optional_property_types || !compiler_options()->strict_null_checks) return false;
+    if (is_tuple(source) && is_tuple(target)) return false;
+    if (!(target->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, target);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* target_prop = members->props[i];
+        if (!(target_prop->flags & PROP_OPTIONAL)) continue;
+        Ty const* target_type = ty_optional_prop_type(me, prop_type(me, target_prop));
+        FoundProp source_prop = ty_find_prop(me, source, target_prop->name);
+        if (!source_prop.found) continue;
+        Ty const* source_type = source_prop.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, source_prop.type) : source_prop.type;
+        if (ty_exact_optional_mismatch(me, source_type, target_type)) return true;
+    }
+    return false;
+}
+
 // `top`: the error's head, which callers replace with their own words (tsc's headMessage)
 static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top) {
     flush_incompatible(st);
@@ -676,6 +712,9 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
     } else if (!top && cstr_eq(&source_str, &target_str)) {
         report_line(st, 2719, cstr_d("Type '", source_str, "' is not assignable to type '", target_str,
             "'. Two different types with this name exist, but they are unrelated."));
+    } else if (ty_has_exact_optional_unassignable(me, source, target)) {
+        report_line(st, 2375, cstr_d("Type '", source_str, "' is not assignable to type '", target_str,
+            "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties."));
     } else {
         report_line(st, 2322, cstr_d("Type '", source_str, "' is not assignable to type '", target_str, "'."));
     }
@@ -1481,12 +1520,12 @@ static Ternary props_related_impl(
         if (!modifiers_related(me, st, source, target, &source_prop, target_prop, report)) return TERNARY_FALSE;
         Ty const* source_type = source_prop.type;
         Ty const* target_type = prop_type(me, target_prop);
-        if ((target_prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+        if ((target_prop->flags & PROP_OPTIONAL) && optional_adds_undefined()) {
             Ty const* parts[2] = { target_type, undefined };
             target_type = ty_union(me, parts, 2, nullptr, (TyList){0});
         }
         // (An optional source is only related to a required target when comparing: it may be undefined too)
-        if ((source_prop.flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+        if ((source_prop.flags & PROP_OPTIONAL) && optional_adds_undefined()) {
             Ty const* source_parts[2] = { source_type, undefined };
             source_type = ty_union(me, source_parts, 2, nullptr, (TyList){0});
         }
@@ -1769,9 +1808,10 @@ static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, 
             return TERNARY_FALSE;
         }
         // A variadic source element against a rest one relates as a whole to the rest's array type
-        Ty const* source_type = source_args.data[i];
+        // (tsc's removeMissingType: an optional element's missing only matches an optional one)
+        Ty const* source_type = ty_remove_missing(me, source_args.data[i], source_flags & target_flags & TUPLE_ELEMENT_OPTIONAL);
         if ((source_flags & TUPLE_ELEMENT_REST) && !source_variadic) source_type = rest_element_type(me, source_type);
-        Ty const* target_type = target_args.data[target_index];
+        Ty const* target_type = ty_remove_missing(me, target_args.data[target_index], target_flags & TUPLE_ELEMENT_OPTIONAL);
         if ((target_flags & TUPLE_ELEMENT_REST) && !target_variadic && !source_variadic) target_type = rest_element_type(me, target_type);
         Ternary related = is_related_to(me, st, source_type, target_type, report);
         if (!related) {
@@ -2818,7 +2858,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
                 }
                 Ty const* target_type = target_prop.type;
                 Ty const* source_type = source_prop.type;
-                if ((target_prop.flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+                if ((target_prop.flags & PROP_OPTIONAL) && optional_adds_undefined()) {
                     Ty const* target_parts[2] = { target_type, ty_intrinsic(me, TY_UNDEFINED) };
                     target_type = ty_union(me, target_parts, 2, nullptr, (TyList){0});
                     if (source_prop.flags & PROP_OPTIONAL) {
@@ -2903,6 +2943,7 @@ static bool prop_modifiers_identical(Prop const* source, Prop const* target) {
 // `{ a?: string | undefined }` and to `Partial<{ a: string }>` mapped again (whose template read added undefined)
 static Ty const* identity_prop_type(Checker* me, Prop const* prop) {
     Ty const* type = prop_type(me, prop);
+    // (Also under exactOptionalPropertyTypes: identity takes missing for undefined, both are the one Undefined singleton)
     if (!(prop->flags & PROP_OPTIONAL) || !compiler_options()->strict_null_checks) return type;
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
     return ty_union(me, parts, 2, nullptr, (TyList){0});
@@ -3107,7 +3148,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             }
             Ty const* target_type = target_prop.type;
             Ty const* source_type = source_prop.type;
-            if (compiler_options()->strict_null_checks) {
+            if (optional_adds_undefined()) {
                 Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
                 if (target_prop.flags & PROP_OPTIONAL) target_type = ty_union(me, (Ty const*[]){ target_type, undefined }, 2, nullptr, (TyList){0});
                 if (source_prop.flags & PROP_OPTIONAL) source_type = ty_union(me, (Ty const*[]){ source_type, undefined }, 2, nullptr, (TyList){0});
@@ -3906,7 +3947,7 @@ static Ty const* prop_or_index_type(Checker* me, Ty const* ty, Atom const* name)
     if (!(ty->flags & TYF_OBJECT)) return nullptr;
     Prop const* prop = ty_get_prop(me, ty, name);
     if (prop && (prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
-        Ty const* parts[2] = { prop_type(me, prop), ty_intrinsic(me, TY_UNDEFINED) };
+        Ty const* parts[2] = { prop_type(me, prop), ty_undefined_or_missing(me) };
         return ty_union(me, parts, 2, nullptr, (TyList){0});
     }
     if (prop) return prop_type(me, prop);

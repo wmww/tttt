@@ -9846,9 +9846,9 @@ const baselines = {
         types: true,
     },
     'discriminateWithOptionalProperty4(exactoptionalpropertytypes=true)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'discriminatedUnionErrorMessage': {
         errors: true,
@@ -18571,9 +18571,9 @@ const baselines = {
         types: true,
     },
     'intersectionsAndOptionalProperties2(exactoptionalpropertytypes=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionsAndOptionalProperties3(exactoptionalpropertytypes=false)': {
         errors: true,
@@ -18581,9 +18581,9 @@ const baselines = {
         types: true,
     },
     'intersectionsAndOptionalProperties3(exactoptionalpropertytypes=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionsAndReadonlyProperties': {
         errors: true,
@@ -19868,7 +19868,7 @@ const baselines = {
     'jsxChildrenWrongType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxClassAttributeResolution': {
         errors: false,
@@ -27216,7 +27216,7 @@ const baselines = {
         types: true,
     },
     'regexpExecAndMatchTypeUsages(strict=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -29271,14 +29271,14 @@ const baselines = {
         types: false,
     },
     'strictOptionalProperties1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'strictOptionalProperties2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictOptionalProperties3': {
         errors: false,

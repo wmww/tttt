@@ -18,13 +18,13 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    corpora unchanged, perf flat (zod/valibot within 0.1%).
 5. ~~Plan 37 B stage 1~~ done: union/keyof origins (+37, 0 components lost, corpora unchanged); valibot +0.7%,
    zod +0.2% instructions after `dedupe_unions` (the prototype's +3% was `U & U` / `keyof (A | B)` cross products).
-   E (missing type) moved to entry 8.
+   E stage 1 too: the missing type (+3, zod-root 82 -> 83 with tsc's TS2412, zod -0.7% instructions).
 6. **Corpus session**: webpack 107 (plan 26 leftovers, plan 19's two TS18048s) and zod-root's arktype `never`
    (plan 19). Both are real-world JS/type-level signal the suite lacks.
 7. **Suite checker bugs 5, spurious side**: the single-code buckets are now mostly spurious (TS2339 40, TS2322 39,
    TS2304 35, `bugs/missing_checks.md`); sample, group by cause, parallel Opus sub-agents in worktrees like session 4.
-8. **Plan 37 C + D (+ E if room)**: decorators checked as calls (+14, nest must stay 0) and evolving arrays (+8), both
-   stage 1 from their prototypes; E (missing type, +3, zod-root's TS2412) (replaces the plan 35 queue here: its head items 1-2 were plan 37 A and C).
+8. **Plan 37 C + D**: decorators checked as calls (+14, nest must stay 0) and evolving arrays (+8), both
+   stage 1 from their prototypes (replaces the plan 35 queue here: its head items 1-2 were plan 37 A and C).
 9. **Perf: memory and types**: `perf_leads.md` "Unreliable variance measurements" first (zod without its `out`
    annotations costs 2x: is tttt marking more measurements unreliable than tsc?), then "Memory" (the `Prop` split, why
    tttt makes more types than tsc), with the K=4 RSS from entry 2 as the baseline (`measurements.md` Perf: zod 846 MB, react 335 vs 228 at K=1); then plan 36 stage 1 (parallel loading) if the session has room.

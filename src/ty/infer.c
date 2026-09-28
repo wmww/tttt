@@ -869,6 +869,10 @@ static bool is_identical(Checker* me, Ty const* source, Ty const* target) {
 }
 
 static bool is_identical_or_base(Checker* me, Ty const* source, Ty const* target) {
+    // (missing is only matched by itself, but matches undefined: tsc's isTypeOrBaseIdenticalTo)
+    Ty const* missing = ty_intrinsic(me, TY_MISSING);
+    if (target == missing) return source == target;
+    if (source == missing) return target == ty_intrinsic(me, TY_UNDEFINED);
     return is_identical(me, source, target) ||
         ((target->flags & TYF_STRING) && (source->flags & TYF_STRING_LITERAL)) ||
         ((target->flags & TYF_NUMBER) && (source->flags & TYF_NUMBER_LITERAL));

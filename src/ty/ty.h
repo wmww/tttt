@@ -644,6 +644,9 @@ typedef enum TyIntrinsic {
     TY_CIRCULAR,
     TY_UNKNOWN_,
     TY_UNDEFINED,
+    // tsc's missingType: the undefined an optional property or tuple element adds under exactOptionalPropertyTypes
+    // (and only then: ty_undefined_or_missing()), which the property's declared-type view takes out again
+    TY_MISSING,
     TY_NULL,
     TY_STRING,
     TY_NUMBER,
@@ -923,6 +926,13 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs);
 // `allow_members`: properties and index signatures may be there too
 Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members);
 Ty const* ty_without_undefined(Checker* me, Ty const* ty); // Removes undefined only (tsc's getTypeWithFacts(NEUndefined))
+Ty const* ty_undefined_or_missing(Checker* me); // tsc's undefinedOrMissingType
+Ty const* ty_remove_missing(Checker* me, Ty const* ty, bool optional); // tsc's removeMissingType
+// tsc's containsMissingType. Relies on TY_MISSING having the lowest id of the undefined-likes: it sorts first in a union
+bool ty_contains_missing(Checker* me, Ty const* ty);
+bool ty_exact_optional_mismatch(Checker* me, Ty const* source, Ty const* target);
+bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const* target);
+Ty const* ty_optional_prop_type(Checker* me, Ty const* ty); // tsc's getOptionalType(type, isProperty=true)
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch);
 static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional, bool which) {
     return ty_cond_branch_type(me, &conditional->conditional.branches[which]);
@@ -1399,6 +1409,7 @@ void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param, 
 // (tsc's elaborateError). Returns whether it was assignable
 void ty_check_enum_member_value(Checker* me, Ty const* source, Span span, ErrorCtx* errs);
 bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs);
+bool ty_check_assignable_to_access(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, Expr const* left, ErrorCtx* errs);
 // A `using` (TS2850) or `await using` (TS2851) initializer: disposable, null or undefined
 void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Span span, ErrorCtx* errs);
 void ty_check_satisfies(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS1360

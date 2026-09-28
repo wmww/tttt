@@ -1,3 +1,0 @@
-intersectionsAndOptionalProperties2(exactoptionalpropertytypes=true)
-intersectionsAndOptionalProperties3(exactoptionalpropertytypes=true)
-strictOptionalProperties2

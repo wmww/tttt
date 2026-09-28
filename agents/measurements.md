@@ -34,7 +34,7 @@ tests: spurious TS2339 40, spurious TS2322 39, spurious TS2304 35. The tool line
 ## Corpora (2026-09-28, triage session)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
 **0**, zod **0**, webpack **107** (JSDoc, plan 26). **zod-root** (new: zod's root tsconfig, not clean under tsc,
-which reports 55): tttt 82, of which 28 spurious and 1 missing (plan 19).
+which reports 55): tttt 83, of which 28 spurious and 0 missing (plan 19; 82 -> 83 is plan 37 E's TS2412).
 Instructions (`perf stat -e instructions:u`, stable like callgrind, much faster) at the end of the triage session:
 tsc 4.67 G, type-fest 3.30, valibot 5.06, react 1.91, nest 1.02, webpack 3.25, zod **4.26** (8.54 at the corpus
 session; bisected to 62d8c89, variance annotations taken as given: zod's `out` types were measured unreliable before,

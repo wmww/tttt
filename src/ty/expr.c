@@ -1648,6 +1648,14 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
         }
         for (u32 j = 0; j < all.count; j++) {
             Ty const* type = ty_access(me, object, ty_prop_name_literal(me, all.props[j].name));
+            // (Under exactOptionalPropertyTypes the optional property keeps its declared type: the read's missing goes)
+            bool exact = compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks;
+            if (type && exact && (all.props[j].flags & PROP_OPTIONAL)) {
+                all.props[j].type = ty_remove_missing(me, type, true);
+                all.props[j].asserted = nullptr;
+                literal_builder_add(out, all.props[j]);
+                continue;
+            }
             if (type && (all.props[j].flags & PROP_OPTIONAL) && !partial) type = ty_without_undefined(me, type);
             if (type) {
                 all.props[j].type = (all.props[j].flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks ?
@@ -1671,7 +1679,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
         u32 flags = prop->flags & (u32)~PROP_READONLY;
         if (partial && !(flags & PROP_OPTIONAL)) {
             flags |= PROP_OPTIONAL;
-            if (compiler_options()->strict_null_checks) type = optional_type(me, type);
+            if (compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) type = optional_type(me, type);
         }
         // The annotation of the property it comes from still says what it is, unless instantiated
         TypeNode const* annotation = !partial && origin->node && origin->node->parsed && !origin->lazy && !origin->function &&
@@ -1706,8 +1714,11 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         ObjectLiteralProp merged = *l;
         merged.flags = l->flags & (PROP_OPTIONAL | PROP_METHOD);
         merged.own = false;
-        Ty const* right_type = ty_without_undefined(me, r->type);
-        if (l->type && ty_without_undefined(me, l->type) != right_type) {
+        // (Under exactOptionalPropertyTypes only the missing goes, which the declared type doesn't have: tsc's
+        // removeMissingOrUndefinedType)
+        bool exact = compiler_options()->exact_optional_property_types;
+        Ty const* right_type = exact ? r->type : ty_without_undefined(me, r->type);
+        if (l->type && (exact ? l->type : ty_without_undefined(me, l->type)) != right_type) {
             Ty const* both[2] = { l->type, right_type };
             merged.type = ty_union_subtype_reduced(me, both, 2);
             merged.asserted = nullptr;
@@ -2384,6 +2395,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
     Ty const** elements = malloc(sizeof(Ty const*) * (len ? len : 1));
     unsigned char* flags = calloc(len ? len : 1, 1);
     u32 count = 0;
+    bool has_omitted = false;
     for_each (i, vec_expr, &expr->array) {
         Ty const* element_context = contextual_array_element_type(me, ctx.contextual, expr, (u32)i_index);
         ExprCtx element_ctx = {
@@ -2401,7 +2413,20 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             }
             continue;
         }
-        elements[count++] = as_tuple ? check_for_mutable_location(me, i, element_ctx) : check_for_mutable_location(me, i, element_ctx);
+        if (compiler_options()->exact_optional_property_types && i->tag == EXPR_LITERAL && i->outer_span.sv.size == 0) {
+            // A hole is an optional element that isn't there (tsc's checkArrayLiteral with an OmittedExpression)
+            (void)ty_expr_type(me, i);
+            has_omitted = true;
+            flags[count] = TUPLE_ELEMENT_OPTIONAL;
+            elements[count++] = ty_undefined_or_missing(me);
+            continue;
+        }
+        Ty const* element = check_for_mutable_location(me, i, element_ctx);
+        if (has_omitted) {
+            flags[count] = TUPLE_ELEMENT_OPTIONAL;
+            element = ty_optional_prop_type(me, element);
+        }
+        elements[count++] = element;
     }
 
     Ty const* ret;
@@ -3026,6 +3051,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (expr->property->assignment_target == FLOW_TARGET_DEFINITE) {
                 Ty const* write = key->kind == TY_UNION ? union_key_write_type(me, object, key) : ty_access_write_type(me, object, key);
                 if (write) ret = write;
+                ret = ty_remove_missing(me, ret, true); // (tsc's getFlowTypeOfAccessExpression)
             }
             ret = access_flow_type(me, expr, ret, ctx.contextual);
             return optional ? optional_type(me, ret) : ret;
