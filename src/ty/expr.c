@@ -1693,8 +1693,10 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
         if ((prop->flags & PROP_METHOD) && prop->function) continue; // (a class method)
         Prop const* origin = prop;
         while (origin->target) origin = origin->target;
-        Ty const* type = prop_type(me, prop);
-        u32 flags = prop->flags & (u32)~PROP_READONLY;
+        // (A set-only accessor spreads as undefined: tsc's getSpreadSymbol)
+        bool setonly = ((prop->flags | origin->flags) & PROP_SETTER) && !((prop->flags | origin->flags) & PROP_GETTER);
+        Ty const* type = setonly ? ty_intrinsic(me, TY_UNDEFINED) : prop_type(me, prop);
+        u32 flags = prop->flags & (u32)~(PROP_READONLY | (setonly ? PROP_SETTER : 0));
         if (partial && !(flags & PROP_OPTIONAL)) {
             flags |= PROP_OPTIONAL;
             if (compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) type = optional_type(me, type);
