@@ -920,6 +920,10 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
 static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
     ClassDecl const* class_decl = identifier->target ? symbol_find_node(identifier->target, SYMBOL_DECL_CLASS) : nullptr;
     if (!class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY) return any_type(me);
+    // `extends null`: `super()` is an error of its own (TS17005), `super.x` reads null (tsc's checkSuperExpression)
+    if (class_decl->extends.tag == EXPR_LITERAL && class_decl->extends.literal.tag == VALUE_NULL) {
+        return identifier->super_member ? ty_intrinsic(me, TY_NULL_WIDENING) : ty_intrinsic(me, TY_ERROR);
+    }
     if (!identifier->super_member) {
         Expr const* extends = &class_decl->extends;
         if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;

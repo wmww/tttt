@@ -3681,19 +3681,19 @@ const baselines = {
         types: true,
     },
     'classExtendsNull': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendsNull2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendsNull3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtensionNameOutput': {
         errors: true,
@@ -24061,7 +24061,7 @@ const baselines = {
         types: true,
     },
     'nonNullableReduction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -40636,9 +40636,9 @@ const baselines = {
         types: true,
     },
     'superCallBeforeThisAccessing4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superCallBeforeThisAccessing5': {
         errors: true,
