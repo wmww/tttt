@@ -774,6 +774,10 @@ struct Checker {
     // where indexed access types are checked (tsc's substitution types, see ty_check_indexed_access_type())
     RelationCache relations[TY_RELATION_COUNT];
     struct RelationState* relating; // The relation check in progress, if any (relate.c)
+    // The function whose return type is being inferred from its return statements (function.c), and whether a return
+    // of a bare call to it was left out (tsc's checkAndAggregateReturnExpressionTypes, hasReturnOfTypeNever)
+    FunctionImpl const* return_inference_of;
+    bool return_inference_skipped;
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null
     struct OuterInference* outer_inference;
@@ -1403,6 +1407,9 @@ Ty const* ty_object_literal(
 // function.c
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
 // The return type of a function: its annotation, else inferred from the `return`s of its body
+bool ty_is_recursive_return(Checker* me, Expr const* returned); // `return f()` in f: not part of f's return type
+Ty const* ty_jsdoc_tag_return_type(Checker* me, FunctionImpl const* function); // members.c
+bool ty_function_return_circular(Checker* me, FunctionImpl const* function); // TS7023/TS7024
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
 // Without strictNullChecks: the inferred return type was null or undefined, widened to any (TS7010/TS7011)
 // The inferred return type before widening if widening makes null or undefined in it any (without strictNullChecks), else

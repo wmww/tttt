@@ -2505,8 +2505,22 @@ static bool function_is_untyped_js(FunctionImpl const* function) {
 // A JavaScript function declaration's or class method's `@type {F}` naming a function type: F's one call signature, which
 // is the function's (tsc's getSignaturesOfSymbol with getSignatureOfTypeTag). Function expressions, arrow functions and
 // object literal methods are contextually typed by it instead. Null if F isn't a single signature (getSingleCallSignature)
+static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function);
+
 static Signature const* jsdoc_tag_signature(Checker* me, FunctionImpl const* function) {
-    if (!function->jsdoc_signature_type || function->is_expression) return nullptr;
+    if (function->is_expression) return nullptr;
+    return jsdoc_tag_single_signature(me, function);
+}
+
+// The return type of the function's `@type {F}` signature, which is its return type whatever kind of function it is
+// (tsc's getReturnTypeFromAnnotation -> getReturnTypeOfTypeTag). Null if there's no such signature
+Ty const* ty_jsdoc_tag_return_type(Checker* me, FunctionImpl const* function) {
+    Signature const* sig = jsdoc_tag_single_signature(me, function);
+    return sig ? signature_return_type(me, sig) : nullptr;
+}
+
+static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function) {
+    if (!function->jsdoc_signature_type) return nullptr;
     Ty const* type = ty_of_node(function->jsdoc_signature_type);
     if (!(type->flags & TYF_OBJECT)) return nullptr;
     Members const* members = ty_members(me, type);

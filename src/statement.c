@@ -1562,7 +1562,7 @@ void statement_collect_return_types(Statement const* me, TyBuf* out) {
             break;
 
         case STATEMENT_RETURN_EXPR:
-            if (statement_is_bare_return(me)) break;
+            if (statement_is_bare_return(me) || ty_is_recursive_return(current_checker, &my expr)) break;
             ty_buf_push(out, ty_check_expr(current_checker, &my expr, current_checker->return_context));
             break;
 

@@ -26888,7 +26888,7 @@ const baselines = {
     'recursiveGenericSignatureInstantiation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveGenericSignatureInstantiation2': {
         errors: true,
@@ -28251,19 +28251,19 @@ const baselines = {
         types: true,
     },
     'simpleRecursionWithBaseCase1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'simpleRecursionWithBaseCase2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'simpleRecursionWithBaseCase3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'simpleRecursionWithBaseCase4': {
         errors: true,
@@ -32593,7 +32593,7 @@ const baselines = {
     'unusedLocalsInRecursiveReturn': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedLocalsOnFunctionDeclarationWithinFunctionDeclaration1': {
         errors: true,
@@ -64563,7 +64563,7 @@ const baselines = {
     'callSignatureWithoutReturnTypeAnnotationInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callSignaturesThatDifferOnlyByReturnType': {
         errors: true,

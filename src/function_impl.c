@@ -639,6 +639,21 @@ void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, 
     error_ctx_error_d(errs, at, 7010, "'", name, "', which lacks return-type annotation, implicitly has an 'any' return type.");
 }
 
+// tsc's getReturnTypeOfSignature when the inferred return type references itself: TS7023 at the name (a function
+// expression's is what it's assigned to, getNameOfDeclaration), TS7024 without one
+static void function_check_circular_return(FunctionImpl const* me, ErrorCtx* errs) {
+    if (!compiler_options()->no_implicit_any || !my has_body || my ret_explicit || my jsdoc_signature_type) return;
+    if (!ty_function_return_circular(current_checker, me)) return;
+    Span name = span_valid(my name) ? my name : span_valid(my member_name) ? my member_name : my variable_name;
+    if (span_valid(name)) {
+        error_ctx_error_d(errs, name, 7023, "'", name, "' implicitly has return type 'any' because it does not have a return "
+            "type annotation and is referenced directly or indirectly in one of its return expressions.");
+    } else {
+        error_ctx_error_d(errs, function_error_span(me), 7024, "Function implicitly has return type 'any' because it does not "
+            "have a return type annotation and is referenced directly or indirectly in one of its return expressions.");
+    }
+}
+
 // Parameters without a type (and default) that nothing gives a type are implicitly any
 void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCtx* errs) {
     if (!compiler_options()->no_implicit_any || my private_ambient || my jsdoc_type) return;
@@ -738,4 +753,5 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     block_typecheck(&my body, ctx, errs);
     current_checker->return_context = outer_context;
     function_impl_check_end(me, errs);
+    function_check_circular_return(me, errs);
 }

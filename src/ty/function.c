@@ -123,10 +123,41 @@ Ty const* ty_function_return_before_widening(Checker* me, FunctionImpl const* fu
     return intern_get(&my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2);
 }
 
+// tsc's checkAndAggregateReturnExpressionTypes: a bare call to the function itself (through a constant reference, for
+// a function expression) doesn't contribute to its return type
+bool ty_is_recursive_return(Checker* me, Expr const* returned) {
+    FunctionImpl const* function = my return_inference_of;
+    if (!function) return false;
+    Expr const* expr = returned;
+    if (function->is_async && expr->tag == EXPR_UNARY_OP && expr->unary_op->op == UNARY_OP_AWAIT) expr = &expr->unary_op->expr;
+    if (expr->tag != EXPR_CALL || expr->call->uses_new || expr->call->optional_chain) return false;
+    Expr const* callee = &expr->call->callable;
+    if (callee->tag != EXPR_IDENTIFIER || callee->identifier.keyword || !callee->identifier.target) return false;
+    Symbol const* symbol = callee->identifier.target;
+    // (tsc's isConstantReference: a const, or a local `let` never assigned again. Parameters count too, left out)
+    if (function->is_expression && !symbol->is_const &&
+        !(symbol->is_local && !symbol->is_assigned && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE))
+    ) {
+        return false;
+    }
+    Ty const* type = ty_expr_type(me, callee);
+    bool self = (function->symbol && symbol == function->symbol) ||
+        (type->kind == TY_ANONYMOUS && type->anonymous.function == function);
+    if (self) my return_inference_skipped = true;
+    return self;
+}
+
 static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     Ty const* outer_context = function_impl_enter_return_context(function);
     TyBuf returned = {0};
+    FunctionImpl const* outer_inference_of = my return_inference_of;
+    bool outer_skipped = my return_inference_skipped;
+    my return_inference_of = function;
+    my return_inference_skipped = false;
     block_collect_return_types(&function->body, &returned);
+    bool skipped = my return_inference_skipped;
+    my return_inference_of = outer_inference_of;
+    my return_inference_skipped = outer_skipped;
     my return_context = outer_context;
 
     Ty const* ret;
@@ -137,7 +168,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
         // reachability knows about `never` calls and exhaustive switches
         FlowReachability end = ty_function_end_reachability(me, function);
         bool returns_nothing_somewhere = function->has_bare_return || end == FLOW_REACH_YES;
-        if (!returned.len && !function->has_bare_return && end == FLOW_REACH_NO && function->is_expression) {
+        if (!returned.len && !function->has_bare_return && end == FLOW_REACH_NO && (function->is_expression || skipped)) {
             // Function expressions that can't return don't (declarations are `void`)
             ret = ty_intrinsic(me, TY_NEVER);
         } else if (!returned.len) {
@@ -184,6 +215,15 @@ bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
 
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer);
 
+// The inferred return type depended on itself, so it's any (tsc's getReturnTypeOfSignature failing popTypeResolution)
+bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
+    if (function->constructed_class || function->ret_explicit || !function->has_body || function->setter_type) return false;
+    ty_function_return_type(me, function);
+    u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
+    FunctionReturn const* memo = intern_get(&my links, key, 2);
+    return memo && memo->circular;
+}
+
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
     return function_return_type(me, function, false);
 }
@@ -196,6 +236,10 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     if (function->constructed_class) return ty_class_instance_type(me, function->constructed_class);
     if (function->ret_explicit || !function->has_body) return ty_from_node(me, &function->ret, function_lower_ctx);
     if (function->setter_type) return ty_from_node(me, function->setter_type, function_lower_ctx);
+    if (function->jsdoc_signature_type) {
+        Ty const* tagged = ty_jsdoc_tag_return_type(me, function);
+        if (tagged) return tagged;
+    }
     u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
     void const** slot = intern_slot(me, &my links, key, 2);
     if (!*slot) *slot = arena_new(&my arena, FunctionReturn);

@@ -236,7 +236,10 @@ static void infer_from_returns(
         infer_step(me, inf, step, ty_instantiate(me, source_predicate->type, mapper), target_predicate->type);
         return;
     }
-    infer_step(me, inf, step, ty_instantiate(me, signature_return_type(me, source), mapper), signature_return_type(me, target));
+    // (Only a target that could mention what's inferred asks for the source's, which may still be being inferred)
+    Ty const* target_return = signature_return_type(me, target);
+    if (!(target_return->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+    infer_step(me, inf, step, ty_instantiate(me, signature_return_type(me, source), mapper), target_return);
 }
 
 static void infer_from_signatures(Checker* me, Inference* inf, Signature const* source, Signature const* target) {
