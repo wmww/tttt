@@ -55,8 +55,11 @@ typedef struct RelationState {
     // the intersection as a whole had them
     bool intersection_target;
     // Relating the members of an intersection source (tsc's IntersectionState.Source): a member has no inferable index
-    // signature, the intersection as a whole is related afterwards
+    // signature, the intersection as a whole is related afterwards. Set for the members' relations (part of their cache
+    // key), and turned into member_of_intersection_source for their own structure only. HACK: tsc keeps the state
+    // down into their properties; doing that here made zod's deep-partial test run into the instantiation limits
     bool intersection_source;
+    bool member_of_intersection_source;
     // The failure just reported heads the error itself (a weak type): no "not assignable" line for it
     bool head_reported;
     u64* maybe_keys;
@@ -1521,6 +1524,8 @@ static bool index_key_applies(IndexInfo const* source, IndexInfo const* target) 
 static bool has_inferable_index(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {
+            // (`object` is `{}` in the intersection's apparent type, which drops it: tsc's getApparentTypeOfIntersectionType)
+            if (ty->composite.types.data[i]->flags & TYF_NON_PRIMITIVE) continue;
             if (!has_inferable_index(me, ty->composite.types.data[i])) return false;
         }
         return true;
@@ -1619,7 +1624,7 @@ static Ternary index_signatures_related(
                 return TERNARY_FALSE;
             }
             result &= related;
-        } else if (!st->intersection_source && has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || (source->flags & TYF_FRESH_OBJECT))) {
+        } else if (!st->member_of_intersection_source && has_inferable_index(me, source) && (st->relation != TY_RELATION_STRICT_SUBTYPE || (source->flags & TYF_FRESH_OBJECT))) {
             // An object literal type is related if each of its properties the signature applies to is. Not in the strict
             // subtype relation unless it's fresh: `{ [k: string]: X }` is a strict subtype of `{}`, not vice versa. Of an
             // intersection, every property of every member, with the type they have together
@@ -3064,8 +3069,24 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     return structured_related_impl(me, st, source, target, report, true);
 }
 
+static Ternary structured_related_members(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
+);
+
 // `use_variances` false: two instantiations of the same generic are compared by their members, as for an explanation
 static Ternary structured_related_impl(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
+) {
+    bool saved_source = st->intersection_source, saved_member = st->member_of_intersection_source;
+    st->member_of_intersection_source = st->intersection_source;
+    st->intersection_source = false;
+    Ternary ret = structured_related_members(me, st, source, target, report, use_variances);
+    st->intersection_source = saved_source;
+    st->member_of_intersection_source = saved_member;
+    return ret;
+}
+
+static Ternary structured_related_members(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
 ) {
     if (st->relation == TY_RELATION_IDENTITY) return identity_structured(me, st, source, target);
@@ -4244,6 +4265,7 @@ static bool check_related(
     st->override_next_head = 0;
     st->intersection_target = false;
     st->intersection_source = false;
+    st->member_of_intersection_source = false;
     st->maybe_keys = nullptr;
     st->maybe_count = st->maybe_cap = 0;
     st->depth = 0;
