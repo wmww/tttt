@@ -646,23 +646,29 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
     }
 }
 
-// tsc's reportErrorsFromWidening for an inferred return type: `return null` without strictNullChecks makes it any
-// (TS7010, TS7011 for an unnamed function expression). A contextually typed function only if the contextual return type
-// is generic (shouldReportErrorsFromWideningWithContextualSignature)
+// tsc's reportErrorsFromWidening for an inferred return type: null and undefined in it widen to any without
+// strictNullChecks (`return null`, `return [null]`, `return { a: null }`). TS7018 at the object literal properties
+// that do, else TS7010 (TS7011 for an unnamed function expression) with the widened type. A contextually typed
+// function only if the contextual return type is generic (shouldReportErrorsFromWideningWithContextualSignature)
 static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     if (!options->no_implicit_any || options->strict_null_checks || my ret_explicit || !my has_body) return;
     if (my is_generator || my is_constructor || my accessor || my jsdoc_typed) return;
     Checker* checker = current_checker;
-    if (!ty_function_return_widened_to_any(checker, me)) return;
+    Ty const* unwidened = ty_function_return_before_widening(checker, me);
+    if (!unwidened) return;
     if (my is_expression && !ty_function_widening_reportable(checker, me)) return;
+    if (binding_report_widening_errors_in_type(unwidened, errs)) return;
+    cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty_widened_objects(checker, unwidened)));
     Span name = span_valid(my name) ? my name : my member_name;
     if (span_valid(name)) {
-        error_ctx_error_d(errs, name, 7010, "'", name, "', which lacks return-type annotation, implicitly has an 'any' return type.");
+        error_ctx_error_d(errs, name, 7010, "'", name, "', which lacks return-type annotation, implicitly has an '", type,
+            "' return type.");
     } else {
         error_ctx_error_d(errs, function_error_span(me), 7011,
-            "Function expression, which lacks return-type annotation, implicitly has an 'any' return type.");
+            "Function expression, which lacks return-type annotation, implicitly has an '", type, "' return type.");
     }
+    cstr_drop(&type);
 }
 
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {

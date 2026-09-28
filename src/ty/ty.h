@@ -1381,7 +1381,9 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
 // The return type of a function: its annotation, else inferred from the `return`s of its body
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
 // Without strictNullChecks: the inferred return type was null or undefined, widened to any (TS7010/TS7011)
-bool ty_function_return_widened_to_any(Checker* me, FunctionImpl const* function);
+// The inferred return type before widening if widening makes null or undefined in it any (without strictNullChecks), else
+// null (tsc's reportErrorsFromWidening with WideningKind.FunctionReturn)
+Ty const* ty_function_return_before_widening(Checker* me, FunctionImpl const* function);
 // The return type of a function expression that is an argument of the generic call inferring now: the calls it returns
 // see what that call has inferred so far (tsc's getInferenceContext finds the call through the argument)
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function);

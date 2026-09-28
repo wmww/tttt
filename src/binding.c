@@ -598,11 +598,15 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     return ret;
 }
 
-// tsc's reportWideningErrorsInType: TS7018 on the object literal properties whose null/undefined widen to any
+// tsc's reportWideningErrorsInType: TS7018 on the object literal properties whose null/undefined widen to any. A union
+// with an empty object type in it counts as reported (tsc: nothing is said)
 static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, ErrorCtx* errs, u32 depth) {
     if (depth > 8 || !(ty->xflags & TYX_CONTAINS_WIDENING)) return false;
     bool reported = false;
     if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (ty_is_empty_object_type(checker, ty->composite.types.data[i])) return true;
+        }
         for (u32 i = 0; i < ty->composite.types.len; i++) reported |= report_widening_errors_in_type(checker, ty->composite.types.data[i], errs, depth + 1);
     } else if (ty->kind == TY_REFERENCE && (ty_is_array(checker, ty) || ty_tuple_shape(ty))) {
         TyList args = ty_reference_args(checker, ty);
@@ -615,10 +619,11 @@ static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, Error
             Ty const* t = prop_type(checker, prop);
             if (!(t->xflags & TYX_CONTAINS_WIDENING)) continue;
             bool inner = report_widening_errors_in_type(checker, t, errs, depth + 1);
-            if (!inner && prop->decl->literal_own && prop->decl->name_span.source) {
+            // (At the property's declaration in this literal: `a: null`, not just its name)
+            if (!inner && prop->decl->literal_own && prop->decl->decl_span_count && prop->decl->decl_spans[0].source) {
                 cstr name = ty_prop_name_cstr(checker, prop->name);
                 cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, t));
-                error_ctx_error_d(errs, prop->decl->name_span, 7018, "Object literal's property '", name, "' implicitly has an '", type, "' type.");
+                error_ctx_error_d(errs, prop->decl->decl_spans[0], 7018, "Object literal's property '", name, "' implicitly has an '", type, "' type.");
                 c_drop(cstr, &name, &type);
                 inner = true;
             }
@@ -626,6 +631,10 @@ static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, Error
         }
     }
     return reported;
+}
+
+bool binding_report_widening_errors_in_type(Ty const* ty, ErrorCtx* errs) {
+    return report_widening_errors_in_type(current_checker, ty, errs, 0);
 }
 
 static void report_errors_from_widening(InitializedBinding* me, ErrorCtx* errs) {

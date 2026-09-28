@@ -118,18 +118,9 @@ Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual) {
     return ret;
 }
 
-// null, undefined or a union of them: what widens to any without strictNullChecks
-static bool only_nullable(Ty const* ty) {
-    if (ty->kind != TY_UNION) return (ty->flags & TYF_NULLABLE) != 0;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (!(ty->composite.types.data[i]->flags & TYF_NULLABLE)) return false;
-    }
-    return true;
-}
-
-bool ty_function_return_widened_to_any(Checker* me, FunctionImpl const* function) {
+Ty const* ty_function_return_before_widening(Checker* me, FunctionImpl const* function) {
     ty_function_return_type(me, function);
-    return intern_get(&my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2) != nullptr;
+    return intern_get(&my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2);
 }
 
 static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
@@ -166,8 +157,8 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
                 ty_buf_push(&returned, ty_intrinsic(me, TY_UNDEFINED));
             }
             ret = ty_union_subtype_reduced(me, returned.data, returned.len);
-            if (!compiler_options()->strict_null_checks && only_nullable(ret)) {
-                // Widened to any below (tsc's reportErrorsFromWidening with WideningKind.FunctionReturn)
+            if (!compiler_options()->strict_null_checks && (ret->xflags & TYX_CONTAINS_WIDENING)) {
+                // Its null and undefined widen to any below (tsc's reportErrorsFromWidening with WideningKind.FunctionReturn)
                 *intern_slot(me, &my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2) = ret;
             }
             if (!(ret->flags & TYF_NEVER)) ret = ty_widened_return_type(me, ret, contextual);
