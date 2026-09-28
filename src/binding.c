@@ -333,10 +333,18 @@ void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
     binding_typecheck_at(me, initializer, span_null, errs);
 }
 
+// A JavaScript `/** @type {T} */ const x = {}` whose members are expandos (`x.a = 1`) isn't checked against T (tsc's
+// checkVariableLikeDeclaration: isJSObjectLiteralInitializer)
+static bool is_js_expando_object_initializer(Binding const* me, Expr const* initializer) {
+    if (!initializer || initializer->tag != EXPR_OBJECT || vec_object_expr_item_size(&initializer->object)) return false;
+    if (my tag != BINDING_IDENTIFIER || !my symbol || !my symbol->exports || !my symbol->exports->count) return false;
+    return my content_span.source && my content_span.source->is_js;
+}
+
 void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, ErrorCtx* errs) {
     if (my has_explicit_type) type_typecheck(&my explicit_type, errs);
     // (A catch variable's annotation isn't assigned anything: TS1196 is its only check)
-    if (my has_explicit_type && (my parent || my source)) {
+    if (my has_explicit_type && (my parent || my source) && !is_js_expando_object_initializer(me, initializer)) {
         ty_check_assignable_expr(current_checker, ty_binding_assigned_type(current_checker, me),
             ty_of_node(&my explicit_type), span_valid(span) ? span : my content_span, initializer, errs);
     }
