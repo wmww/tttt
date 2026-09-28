@@ -2374,7 +2374,9 @@ Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const
     if (!mapped || !generic || mapped->name_type) return nullptr;
     Ty const* constraint = mapped->constraint;
     if (is_excluded_mapped_name(me, constraint, key)) return nullptr;
-    Ty const* base = constraint->kind == TY_TYPE_PARAM || (constraint->flags & TYF_DEFERRED) ? base_constraint(me, constraint, 0) : nullptr;
+    // (tsc's getBaseConstraintOfType: of a union too, `[K in T["type"] | "*"]` takes any string)
+    Ty const* base = constraint->kind == TY_TYPE_PARAM || (constraint->flags & (TYF_DEFERRED | TYF_UNION | TYF_INTERSECTION)) ?
+        base_constraint(me, constraint, 0) : nullptr;
     if (!ty_is_related(me, key, base ? base : constraint, TY_RELATION_ASSIGNABLE)) return nullptr;
     return substitute_indexed_mapped(me, object, mapped, true, key);
 }
