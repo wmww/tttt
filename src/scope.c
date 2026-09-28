@@ -3019,12 +3019,13 @@ static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
 }
 
 // Whether a symbol can have expandos (tsc's isExpandoSymbol, and in TypeScript isFunctionSymbol). `init_ret`: a
-// variable's (or JavaScript member's) expando initializer
-static bool symbol_is_expando_host(Symbol const* found, bool js, Expr** init_ret) {
+// variable's (or JavaScript member's) expando initializer. tsc binds a file before globals merge: what counts is the
+// first value declaration in `file` (the valueDeclaration of the file's own symbol)
+static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, bool js, Expr** init_ret) {
     *init_ret = nullptr;
     SymbolDecl const* value = nullptr;
     for (u32 i = 0; i < found->decl_count && !value; i++) {
-        if (found->decls[i].flags & SYMBOL_VALUE) value = &found->decls[i];
+        if ((found->decls[i].flags & SYMBOL_VALUE) && found->decls[i].full.source == file) value = &found->decls[i];
     }
     if (!value) return false;
     switch (value->kind) {
@@ -3073,7 +3074,7 @@ static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
     bool here = false;
     for (u32 i = 0; i < found->decl_count && !here; i++) here = found->decls[i].full.source == file;
     if (!here) return nullptr;
-    return symbol_is_expando_host(found, js, init_ret) ? found : nullptr;
+    return symbol_is_expando_host(found, file, js, init_ret) ? found : nullptr;
 }
 
 // Whether the entity name of a top-level JavaScript `a.b.x = v` starts with a name the file doesn't declare, which
