@@ -426,6 +426,9 @@ void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, Error
             ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, empty_pattern ? at : my content_span, errs);
             Ty const* parent = element_parent_type(me, nullptr);
             for_each (i, vec_binding, &my array) {
+                if (i->rest && i_index + 1 < vec_binding_size(&my array)) { // (tsc's checkGrammarBindingElement)
+                    error_ctx_grammar_error_d(errs, i->content_span, 2462, "A rest element must be last in a destructuring pattern.");
+                }
                 // Past the end of a tuple (TS2493), unless there's a default
                 if (parent && i->tag != BINDING_NOOP && !i->rest && !i->default_value) {
                     Value index = value_number((double)i_index);
@@ -439,6 +442,9 @@ void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, Error
         case BINDING_OBJECT: {
             Ty const* parent = element_parent_type(me, my parent ? my default_value : initializer);
             for_each (i, vec_object_binding_item, &my object) {
+                if (i->target.rest && i_index + 1 < vec_object_binding_item_size(&my object)) {
+                    error_ctx_grammar_error_d(errs, i->target.content_span, 2462, "A rest element must be last in a destructuring pattern.");
+                }
                 if (parent && !i->computed_key && !i->target.rest && !(i->target.default_value &&
                     parent->kind == TY_ANONYMOUS && parent->anonymous.object_literal)
                 ) {

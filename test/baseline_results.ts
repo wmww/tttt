@@ -65081,7 +65081,7 @@ const baselines = {
         types: true,
     },
     'objectRestPropertyMustBeLast': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65091,7 +65091,7 @@ const baselines = {
         types: false,
     },
     'restElementMustBeLast': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1958,7 +1958,9 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
             u32 index = 0;
             for_each (i, vec_expr, &target->array) {
                 Ty const* element = iterated;
-                if (i->tag == EXPR_SPREAD) {
+                if (i->tag == EXPR_SPREAD && i_index + 1 < vec_expr_size(&target->array)) {
+                    error_ctx_error_d(errs, i->outer_span, 2462, "A rest element must be last in a destructuring pattern.");
+                } else if (i->tag == EXPR_SPREAD) {
                     // The rest of a tuple, else an array of the elements (tsc's checkArrayLiteralDestructuringElementAssignment)
                     Ty const* rest = nullptr;
                     if (source) {
@@ -2035,7 +2037,9 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                     }
                     property = ty_access_reading(checker, source, key);
                 }
-                if (i->tag == OBJECT_ITEM_SPREAD) {
+                if (i->tag == OBJECT_ITEM_SPREAD && i_index + 1 < vec_object_expr_item_size(&target->object)) {
+                    error_ctx_error_d(errs, i->span, 2462, "A rest element must be last in a destructuring pattern.");
+                } else if (i->tag == OBJECT_ITEM_SPREAD) {
                     if (expr_check_reference_not_optional(&i->value, 2778,
                         "The target of an object rest assignment may not be an optional property access.", errs)
                     ) {
