@@ -17777,8 +17777,8 @@ const baselines = {
     },
     'inheritedModuleMembersForClodule': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'inheritedOverloadedSpecializedSignatures': {
         errors: true,
@@ -19092,8 +19092,8 @@ const baselines = {
     },
     'javascriptThisAssignmentInStaticBlock': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jqueryInference': {
         errors: true,
@@ -51377,7 +51377,7 @@ const baselines = {
     },
     'jsDeclarationsClassStatic2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsClassStaticMethodAugmentation': {

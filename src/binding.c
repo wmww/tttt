@@ -527,6 +527,9 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
+    // `const x = require("m")`, `const x = require("m").a`: an alias, which is all tsc checks
+    // (checkVariableLikeDeclaration: checkAliasSymbol and return)
+    if (my require_port_count) return;
     initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
     binding_typecheck(&my binding, my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value, errs);

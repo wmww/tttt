@@ -921,7 +921,12 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
         Members const* members = ty_members(me, entry);
         for (u32 j = 0; j < members->prop_count; j++) {
             Prop* existing = builder_find_prop(builder, members->props[j]->name);
-            if (existing) {
+            if (existing && existing->parent && existing->parent != decl && members->props[j]->parent == decl) {
+                // The symbol's own export (a JavaScript class's expando `C.x = v`) hides a static the class inherits
+                // (tsc: the class's exports come before the base constructor's members). The props here are copies
+                *existing = *members->props[j];
+                if (existing->type_state != LAZY_STATE_DONE) existing->type_state = LAZY_STATE_NOT_STARTED;
+            } else if (existing) {
                 prop_add_decl_spans(me, existing, members->props[j]->decl_spans, members->props[j]->decl_span_count);
             } else {
                 // A copy: decl spans are added to it
