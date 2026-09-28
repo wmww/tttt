@@ -296,6 +296,29 @@ typedef struct OuterInference {
     TyMapper const* return_mapper; // What its own contextual type said, see infer_type_arguments()
 } OuterInference;
 
+static Ty const* instantiate_instantiable(Checker* me, Ty const* type, TyMapper const* mapper);
+
+// A contextual type instantiated with a call's returnMapper: without `boolean` in it (tsc's instantiateContextualType,
+// so that `box(false)` against `Box<boolean>` is `Box<boolean>`, not `Box<false>`)
+static Ty const* instantiate_with_return_mapper(Checker* me, Ty const* contextual, TyMapper const* return_mapper) {
+    Ty const* type = instantiate_instantiable(me, contextual, return_mapper);
+    if (type->kind != TY_UNION || !(type->flags & TYF_BOOLEAN)) return type;
+    TyBuf kept = {0};
+    for (u32 i = 0; i < type->composite.types.len; i++) {
+        Ty const* part = type->composite.types.data[i];
+        if (part != ty_intrinsic(me, TY_TRUE) && part != ty_intrinsic(me, TY_FALSE)) ty_buf_push(&kept, part);
+    }
+    Ty const* ret = ty_union_filtered(me, type, kept.data, kept.len);
+    ty_buf_drop(&kept);
+    return ret;
+}
+
+Ty const* ty_instantiate_contextual_type(Checker* me, Ty const* contextual) {
+    OuterInference const* outer = my outer_inference;
+    if (!contextual || !outer || !outer->return_mapper || !(contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return contextual;
+    return instantiate_with_return_mapper(me, contextual, outer->return_mapper);
+}
+
 // What the outer call has inferred so far, the rest being silent never (which nothing is inferred from): tsc's
 // cloneInferenceContext(outerContext, InferenceFlags.NoDefault)
 static TyMapper const* outer_inference_mapper(Checker* me, OuterInference const* outer) {
@@ -713,6 +736,24 @@ static TyMapper const* infer_type_arguments(
             infer_types(me, &pattern_inf, contextual, return_type, INFER_PRIORITY_NORMAL);
             return_mapper = return_inference_mapper(me, sig, &pattern_inf, nullptr);
             inference_drop(&pattern_inf);
+            // HACK: the `any` of an element without default is tsc's nonInferrableAnyType, which infers nothing. And a
+            // pattern with a rest element isn't a contextual type at all (see narrowable_type(): tsc types such an
+            // initializer again for the rest, CheckMode.RestBindingElement)
+            TupleShape const* shape = ty_is_tuple(contextual) ? contextual->reference.target->declared.tuple : nullptr;
+            bool rest = shape ? shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST) :
+                (contextual->flags & TYF_OBJECT) && ty_members(me, contextual)->index_count;
+            if (rest) return_mapper = nullptr;
+            if (return_mapper) {
+                Ty const** targets = arena_new_n(&my arena, Ty const*, return_mapper->len);
+                bool any_left = false;
+                for (u32 i = 0; i < return_mapper->len; i++) {
+                    Ty const* target = return_mapper->targets[i];
+                    targets[i] = target == ty_intrinsic(me, TY_ANY) ? return_mapper->sources[i] : target;
+                    any_left |= targets[i] != return_mapper->sources[i];
+                }
+                return_mapper = !any_left ? nullptr : ty_mapper_new(me, (TyList){ .data = return_mapper->sources, .len = return_mapper->len },
+                    (TyList){ .data = targets, .len = return_mapper->len });
+            }
         }
     } else if (contextual && !(contextual->flags & TYF_ANY)) {
         Ty const* return_type = signature_return_type(me, sig);
@@ -791,6 +832,13 @@ static TyMapper const* infer_type_arguments(
                 ty_instantiate(me, param_type, return_mapper) : instantiate_instantiable(me, param_type, return_mapper);
             arg->type = ty_check_expr_in_const(me, arg->expr, context,
                 ty_is_const_type_variable(me, param_type, 0));
+            // A literal the instantiated contextual type has room for is regular, so it isn't widened as a candidate
+            // (tsc's checkExpressionWithContextualType)
+            if (context && (arg->type->flags & TYF_FRESH_LITERAL) &&
+                ty_is_literal_of_contextual_type(me, arg->type, instantiate_with_return_mapper(me, param_type, return_mapper))
+            ) {
+                arg->type = ty_regular(me, arg->type);
+            }
         } else {
             check_arg(me, &shape, args, i);
         }

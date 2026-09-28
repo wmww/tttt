@@ -473,7 +473,8 @@ bool ty_is_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* conte
 // tsc's checkExpressionForMutableLocation: the type a property or element gets from its initializer
 static Ty const* check_for_mutable_location(Checker* me, Expr const* expr, ExprCtx ctx) {
     Ty const* type = check_with(me, expr, ctx);
-    if (in_const_context(me, expr, ctx) || any_literal_of_contextual_type(me, type, ctx.contextual)) return ty_regular(me, type);
+    if (in_const_context(me, expr, ctx)) return ty_regular(me, type);
+    if (any_literal_of_contextual_type(me, type, ty_instantiate_contextual_type(me, ctx.contextual))) return ty_regular(me, type);
     return widen_literals(me, type);
 }
 

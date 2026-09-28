@@ -1127,6 +1127,9 @@ Ty const* ty_expr_type(Checker* me, Expr const* expr); // The memo, else checked
 Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* contextual);
 // tsc's isLiteralOfContextualType (of a literal or a union with literals in it)
 bool ty_is_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* contextual);
+// A contextual type inside an argument of a generic call, instantiated with what the call's own contextual type says
+// about its type parameters (tsc's instantiateContextualType with the returnMapper)
+Ty const* ty_instantiate_contextual_type(Checker* me, Ty const* contextual);
 // An array literal re-read as a tuple of its elements (tsc's checkArrayLiteral with forceTuple), from the elements'
 // memos
 Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* contextual);
