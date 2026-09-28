@@ -29541,7 +29541,7 @@ const baselines = {
         types: true,
     },
     'superCallFromClassThatDerivesFromGenericTypeButWithIncorrectNumberOfTypeArguments1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29551,7 +29551,7 @@ const baselines = {
         types: false,
     },
     'superCallFromClassThatDerivesNonGenericTypeButWithTypeArguments1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

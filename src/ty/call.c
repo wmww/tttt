@@ -1450,6 +1450,8 @@ static TyMapper const* explicit_type_arguments(Checker* me, Signature const* sig
     return mapper;
 }
 
+static bool is_super_call(CallExpr const* call);
+
 static void report_type_argument_arity(
     Checker* me, Signature* const* signatures, u32 count, CallInfo const* info, ErrorCtx* errs
 ) {
@@ -1585,7 +1587,8 @@ static Resolution resolve_with_signatures(
         mark_would_report(info);
         if (errs) {
             if (!type_argument_arity_ok) {
-                report_type_argument_arity(me, signatures, count, info, errs);
+                // (A `super(...)`'s are the heritage clause's, which reports them: TS2314/TS2315)
+                if (!(info->call && is_super_call(info->call))) report_type_argument_arity(me, signatures, count, info, errs);
             } else if (unfit_count) {
                 report_no_match(me, unfit, unfit_count, count, args, info, call_span, errs);
             } else if (arity_candidate.sig) {

@@ -505,6 +505,9 @@ typedef struct PrivateNameExpr {
 typedef struct GenericParamsExpr {
     Expr expr;
     VecSpannedType params;
+    // A class's `extends B<T>`: the type arguments are a type reference's (TS2314/TS2315, class_check_base_arity()),
+    // not an instantiation expression's
+    bool heritage;
 } GenericParamsExpr;
 
 // As type

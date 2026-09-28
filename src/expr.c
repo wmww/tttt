@@ -641,6 +641,7 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
         }
     }
     if (sig) signature_resolve(checker, sig);
+    if ((!sig || !sig->type_params.len) && my heritage) return;
     if (!sig || !sig->type_params.len) {
         error_ctx_error_d(
             errs,
