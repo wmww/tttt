@@ -133,7 +133,12 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
             if (is_call) {
                 legal = function->is_constructor;
             } else if (member && function->is_expression) {
-                return; // An object literal's method: any
+                // An object literal's method: any
+                if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
+                    error_ctx_error_d(errs, my name, 2659, "'super' is only allowed in members of object literal "
+                        "expressions when option 'target' is 'ES2015' or higher.");
+                }
+                return;
             } else {
                 legal = function->is_constructor || member;
             }

@@ -29641,7 +29641,7 @@ const baselines = {
         types: false,
     },
     'superInObjectLiterals_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29731,7 +29731,7 @@ const baselines = {
         types: true,
     },
     'super_inside-object-literal-getters-and-setters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
