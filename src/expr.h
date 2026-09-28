@@ -76,6 +76,7 @@ typedef struct IdentifierExpr {
     // The operand of `x!` (tsc's isAutomaticTypeInNonNull: an auto-typed variable there is initially undefined, and
     // has the non-nullable type of what control flow says)
     bool non_null_operand : 1;
+    bool this_through_arrow : 1; // `this` of a script's top level inside an arrow function (TS7041)
     // The first name of the entity name a class's `extends` clause is (`M` of `extends M.I`), that entity name
     Expr const* extends_entity;
     union {

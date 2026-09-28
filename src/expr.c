@@ -452,7 +452,14 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                 ) {
                     file = file->parent;
                 }
-                if (file->kind == SCOPE_SCRIPT) my this_kind = THIS_GLOBAL;
+                if (file->kind == SCOPE_SCRIPT) {
+                    my this_kind = THIS_GLOBAL;
+                    for (Scope const* scope = names; scope && scope != file; scope = scope->parent) {
+                        if (scope->kind == SCOPE_FUNCTION && scope->function && span_valid(scope->function->arrow_span)) {
+                            my this_through_arrow = true;
+                        }
+                    }
+                }
                 if (file->kind == SCOPE_MODULE && file->file && file->file->is_commonjs) my this_kind = THIS_COMMONJS;
                 if (file->kind == SCOPE_NAMESPACE) my this_kind = THIS_NAMESPACE;
                 if (file->kind == SCOPE_ENUM) my this_kind = THIS_ENUM;
@@ -645,6 +652,16 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_NAMESPACE) {
         error_ctx_error_d(errs, my name, 2331, "'this' cannot be referenced in a module or namespace body.");
+        // (Nor does it have a type: tsc's tryGetThisTypeAt of a namespace)
+        if (compiler_options()->no_implicit_this) {
+            error_ctx_error_d(errs, my name, 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
+        }
+    }
+    // (tsc's checkThisExpression: `typeof globalThis` through an arrow function)
+    if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_GLOBAL && my this_through_arrow &&
+        compiler_options()->no_implicit_this
+    ) {
+        error_ctx_error_d(errs, my name, 7041, "The containing arrow function captures the global value of 'this'.");
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ENUM) {
         error_ctx_error_d(errs, my name, 2332, "'this' cannot be referenced in current location.");
@@ -3082,7 +3099,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 ty_access_key_type(current_checker, my property),
                 my property->expr.outer_span,
                 my property->prop.outer_span,
-                expr_is_entity_name(&my property->expr),
+                // (In a `typeof a.b.c` type the object is a qualified name, an entity name expression only when it's an
+                // identifier, `this` included: tsc's isEntityNameExpression)
+                my property->qualified_name ?
+                    my property->expr.tag == EXPR_IDENTIFIER && !expr_is_perenthisized(&my property->expr) :
+                    expr_is_entity_name(&my property->expr),
                 error_if_not_found,
                 &found
             );

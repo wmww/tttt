@@ -22896,7 +22896,7 @@ const baselines = {
         types: true,
     },
     'narrowingOfQualifiedNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23681,7 +23681,7 @@ const baselines = {
         types: true,
     },
     'noImplicitThisFunctions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65211,7 +65211,7 @@ const baselines = {
         types: true,
     },
     'typeofThis': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
