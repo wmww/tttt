@@ -708,7 +708,10 @@ static Ty const* apparent_type(Checker* me, Ty const* ty) {
         Ty const* param = ty;
         for (u32 depth = 0; ty->kind == TY_TYPE_PARAM && depth < 16; depth++) {
             Ty const* constraint = ty_param_constraint(me, ty);
-            if (!constraint || constraint == ty) return global_type(me, GLOBAL_EMPTY_OBJECT);
+            if (!constraint || constraint == ty) {
+                // (tsc's getApparentType: the base constraint is unknown, which is `{}` only without strictNullChecks)
+                return compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_UNKNOWN_) : global_type(me, GLOBAL_EMPTY_OBJECT);
+            }
             ty = constraint;
         }
         if (ty->flags & (TYF_OBJECT | TYF_INTERSECTION)) return ty_with_this_arg(me, ty, param);

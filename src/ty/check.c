@@ -1048,6 +1048,31 @@ static void check_access(
     // `this` is checked as its apparent type, the class with this-argument `this` (tsc's isThisTypeParameter case of
     // reportNonexistentProperty). TODO: other type parameters
     if (object->kind == TY_TYPE_PARAM && object->param.state->is_this) object = ty_apparent_type(me, object);
+    if (object->kind == TY_TYPE_PARAM && error_if_not_found) {
+        // A type parameter has what its apparent type has, and is named in the message (tsc's
+        // checkPropertyAccessExpressionOrQualifiedName). Without a constraint (or `extends unknown`) that's unknown with
+        // strictNullChecks: no properties at all, not even Object's
+        Ty const* apparent = ty_apparent_type(me, object);
+        if (apparent->flags & TYF_UNKNOWN) {
+            report_no_property(me, object, index, 2339, index_span, errs);
+            return;
+        }
+        // (Possibly null or undefined is checkNonNullExpression's business)
+        if (apparent->flags & (TYF_ANY | TYF_NEVER | TYF_NULLABLE | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_ERROR)) return;
+        if (apparent->kind == TY_UNION) {
+            for (u32 i = 0; i < apparent->composite.types.len; i++) {
+                if (apparent->composite.types.data[i]->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NULLABLE | TYF_TYPE_PARAM | TYF_DEFERRED)) return;
+            }
+        }
+        if (is_js_literal_type(me, apparent)) return;
+        if (apparent->flags & TYF_OBJECT) {
+            Members const* members = ty_members(me, apparent);
+            if (members->mapped && (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+            if (ty_has_unresolved_base(me, apparent)) return;
+        }
+        if (!ty_access(me, apparent, index)) report_no_property(me, object, index, 2339, index_span, errs);
+        return;
+    }
     if (object->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) return;
     if (object->flags & TYF_UNKNOWN) {
         // A destructured property (no object expression), or without strictNullChecks: what unknown lacks
