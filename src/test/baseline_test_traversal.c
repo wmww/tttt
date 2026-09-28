@@ -1210,8 +1210,11 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         // to tsc, named like the variable)
         SymbolDecl const* variable = symbol_find_decl(js_class, SYMBOL_DECL_VARIABLE);
         Expr const* init = variable ? &((InitializedBinding const*)variable->node)->value : nullptr;
+        // (A function expression assigned to a property, `exports.F = function () {}`, is declared by itself)
+        bool own = my this_function->class_symbol == js_class && my this_function->is_expression;
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = init ? vec_span_single(init->outer_span) : declaration_get_spans(js_class),
+            .declarations = init ? vec_span_single(init->outer_span) :
+                own ? vec_span_single(my this_function->full_span) : declaration_get_spans(js_class),
             .span = my name,
             .text = symbol_text(ctx, js_class),
         });
