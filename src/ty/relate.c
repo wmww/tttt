@@ -1782,8 +1782,11 @@ static Ternary index_signatures_related(
         for (u32 j = 0; j < source_members->index_count && !source_info; j++) {
             if (index_key_applies(&source_members->index[j], target_info)) source_info = &source_members->index[j];
         }
-        // (tsc's getApplicableIndexInfo(source, targetInfo.keyType): `string & A & B` takes `string & A`'s)
-        if (!source_info && target_info->key->kind == TY_INTERSECTION && source_members->index_count) {
+        // (tsc's getApplicableIndexInfo(source, targetInfo.keyType): `string & A & B` takes `string & A`'s, `a${string}a`
+        // both `a${string}`'s and `${string}a`'s)
+        if (!source_info && source_members->index_count && (target_info->key->kind == TY_INTERSECTION ||
+            (target_info->key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)))
+        ) {
             source_info = ty_applicable_index_info(me, source, target_info->key);
         }
         if (source_info) {
@@ -4306,7 +4309,12 @@ static bool has_index_for_name(Checker* me, Members const* members, Atom const* 
         if (key->flags & TYF_STRING) return true;
         if ((key->flags & TYF_NUMBER) && ty_is_numeric_name(name)) return true;
         if ((key->flags & TYF_ES_SYMBOL) && ty_unique_symbol_of_name(me, name)) return true;
-        if (!(key->flags & (TYF_NUMBER | TYF_ES_SYMBOL))) return true; // (Patterns tttt doesn't have: let them through)
+        // A pattern (`data${string}`, `string & Tag`) takes the names it matches (tsc's isApplicableIndexType)
+        if ((key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) || key->kind == TY_INTERSECTION) {
+            if (ty_is_related(me, ty_prop_name_literal(me, name), key, TY_RELATION_ASSIGNABLE)) return true;
+            continue;
+        }
+        if (!(key->flags & (TYF_NUMBER | TYF_ES_SYMBOL))) return true; // (Anything else tttt doesn't have: let it through)
     }
     return false;
 }

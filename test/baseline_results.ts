@@ -64281,7 +64281,7 @@ const baselines = {
         types: false,
     },
     'indexSignatures1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
