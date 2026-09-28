@@ -858,6 +858,31 @@ static void class_check_mixin(ClassDecl* me, ErrorCtx* errs) {
     }
 }
 
+// A class can't extend one whose constructor is private, outside of it (tsc's checkBaseTypeAccessibility)
+static void class_check_base_accessibility(ClassDecl* me, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    Expr const* extends = &my extends;
+    if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+    if (extends->tag == EXPR_IMPLICIT_ANY || !my symbol) return;
+    Members const* members = ty_members(checker, ty_apparent_type(checker, ty_expr_type(checker, extends)));
+    if (!members->construct_count) return;
+    Signature const* sig = members->construct[0];
+    while (sig && !sig->function && sig->target) sig = sig->target;
+    FunctionImpl const* function = sig ? sig->function : nullptr;
+    if (!function || !function->constructed_class || function->constructor_access != ACCESS_MODIFIER_PRIVATE) return;
+    ClassDecl const* base = symbol_find_node(function->constructed_class, SYMBOL_DECL_CLASS);
+    if (base && span_valid(base->full_span) && base->full_span.source == extends->inner_span.source &&
+        span_start_ptr(base->full_span) <= span_start_ptr(extends->inner_span) &&
+        span_end_ptr(extends->inner_span) <= span_end_ptr(base->full_span)
+    ) {
+        return;
+    }
+    cstr name = symbol_fully_qualified_name(function->constructed_class);
+    error_ctx_error_d(errs, my extends.inner_span, 2675, "Cannot extend a class '", name,
+        "'. Class constructor is marked as private.");
+    cstr_drop(&name);
+}
+
 // tsc's checkClassLikeDeclaration: the class (with its own `this`) has to fit what it extends and implements, with
 // that `this`
 static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
@@ -889,6 +914,7 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
         base = nullptr;
     }
     class_check_mixin(me, errs);
+    class_check_base_accessibility(me, errs);
     class_check_override_modifiers(me, base && (base->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? base : nullptr, errs);
     if (base && (base->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
         class_check_member_overrides(me, declared, base, errs);

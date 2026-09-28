@@ -13396,7 +13396,7 @@ const baselines = {
         types: true,
     },
     'extendPrivateConstructorClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35476,7 +35476,7 @@ const baselines = {
         types: true,
     },
     'classConstructorAccessibility2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
