@@ -3600,6 +3600,12 @@ static void declare_assignment_member(
     if (!merged) {
         member->name = name.sv;
         member->name_span = name;
+        // `o["x"] = v` is named as written, quotes included (tsc's getNameOfSymbolAsWritten: the declaration's name)
+        if (left->tag == EXPR_PROPERTY && left->property->form == PROPERTY_EXPR_BRACKET &&
+            left->property->prop.tag == EXPR_LITERAL && left->property->prop.literal.tag == VALUE_STRING
+        ) {
+            member->name_span = left->property->prop.inner_span;
+        }
         member->parent = parent;
         member->exported = true;
     }
