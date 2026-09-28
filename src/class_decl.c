@@ -1452,6 +1452,13 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         if (span_valid(private_name) && compiler_options()->target < SCRIPT_TARGET_ES2015 && !ambient_accessor) {
             error_ctx_grammar_error_d(errs, private_name, 18028,
                 "Private identifiers are only available when targeting ECMAScript 2015 and higher.");
+        } else if (i->tag == CLASS_ITEM_FIELD && i->field.is_auto_accessor && compiler_options()->target < SCRIPT_TARGET_ES2015 &&
+            // (after checkGrammarForInvalidDynamicName's TS1166)
+            !(i->field.computed_key && expr_is_non_bindable_dynamic_name(i->field.computed_key) &&
+                !expr_is_entity_name(i->field.computed_key))
+        ) {
+            error_ctx_grammar_error_d(errs, i->field.name_span, 18045,
+                "Properties with the 'accessor' modifier are only available when targeting ECMAScript 2015 and higher.");
         }
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR:

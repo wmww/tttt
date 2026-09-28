@@ -37151,7 +37151,7 @@ const baselines = {
         types: true,
     },
     'autoAccessor1(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37196,7 +37196,7 @@ const baselines = {
         types: true,
     },
     'autoAccessor3(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37216,7 +37216,7 @@ const baselines = {
         types: true,
     },
     'autoAccessor4(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37236,7 +37236,7 @@ const baselines = {
         types: true,
     },
     'autoAccessor5(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
