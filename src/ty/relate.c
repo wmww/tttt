@@ -664,16 +664,28 @@ bool ty_exact_optional_mismatch(Checker* me, Ty const* source, Ty const* target)
     return maybe_undefined && ty_contains_missing(me, target);
 }
 
+static Ty const* apparent_type(Checker* me, Ty const* ty);
+
 // tsc's getExactOptionalUnassignableProperties(...).length
 bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const* target) {
     if (!compiler_options()->exact_optional_property_types || !compiler_options()->strict_null_checks) return false;
     if (is_tuple(source) && is_tuple(target)) return false;
-    if (!(target->flags & TYF_OBJECT)) return false;
-    Members const* members = ty_members(me, target);
+    // (tsc's getPropertiesOfType: of a union, the properties every member has, which are some of its first member's)
+    bool is_union = target->kind == TY_UNION && !(target->flags & TYF_BOOLEAN);
+    Ty const* owner = is_union ? apparent_type(me, target->composite.types.data[0]) : target;
+    if (!(owner->flags & TYF_OBJECT)) return false;
+    Members const* members = ty_members(me, owner);
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* target_prop = members->props[i];
-        if (!(target_prop->flags & PROP_OPTIONAL)) continue;
-        Ty const* target_type = ty_optional_prop_type(me, prop_type(me, target_prop));
+        Ty const* target_type;
+        if (is_union) {
+            FoundProp common = ty_find_prop(me, target, target_prop->name);
+            if (!common.found || !(common.flags & PROP_OPTIONAL)) continue;
+            target_type = ty_optional_prop_type(me, common.type);
+        } else {
+            if (!(target_prop->flags & PROP_OPTIONAL)) continue;
+            target_type = ty_optional_prop_type(me, prop_type(me, target_prop));
+        }
         FoundProp source_prop = ty_find_prop(me, source, target_prop->name);
         if (!source_prop.found) continue;
         Ty const* source_type = source_prop.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, source_prop.type) : source_prop.type;
