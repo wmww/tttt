@@ -193,7 +193,14 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
 bool expr_is_ambient_const_initializer(Expr const* me) {
     switch (my tag) {
         case EXPR_LITERAL:
-            return my literal.tag == VALUE_NUMBER || my literal.tag == VALUE_STRING || my literal.tag == VALUE_BOOLEAN;
+            return my literal.tag == VALUE_NUMBER || my literal.tag == VALUE_STRING || my literal.tag == VALUE_BOOLEAN ||
+                my literal.tag == VALUE_BIGINT;
+        case EXPR_UNARY_OP: {
+            // `-1`, `-1n` (isStringOrNumberLiteralExpression, isBigIntLiteralExpression)
+            Expr const* operand = &my unary_op->expr;
+            return my unary_op->op == UNARY_OP_MINUS && operand->tag == EXPR_LITERAL &&
+                (operand->literal.tag == VALUE_NUMBER || operand->literal.tag == VALUE_BIGINT);
+        }
         case EXPR_IDENTIFIER:
         case EXPR_PROPERTY:
             return true;

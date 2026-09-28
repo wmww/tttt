@@ -10,6 +10,15 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 @exactOptionalPropertyTypes thirdparty/tsc/tests/cases` is unsorted.
 
 ## Inference
+- **Defaults leak into context-sensitive arguments' return types** (probe `plan19/webpack/contextual_return_default_leak.ts`,
+  ~9 webpack TS2322s on `.then` chains): the second pass in `infer_type_arguments()` instantiates a context-sensitive
+  argument's whole parameter type with the inferences so far (an uninferred `T = A` becomes A), tsc only the
+  instantiable types at the top (instantiateContextualType), leaving `(x) => P<T>` raw; the calls in the body then map T
+  to silentNever. Tried 2026-09-28 (instantiate_instantiable + fixing mapper = so_far + `outer_inference = &self`
+  around the check + the contextual return from the unfixed signature in assign_contextual_signature()): T leaked as
+  `B | T` and 8 tests were lost, apparently because the body's return expressions are evaluated later, outside the
+  outer inference's scope. Needs a look at when a context-sensitive function's return type is computed relative to
+  `my outer_inference`.
 - const type parameters with several candidates: `function f4<const T>(x: [T, T]): T; f4([[1, "x"], [2, "y"]])`
   gives TS2322s where tsc infers `readonly [1, "x"] | readonly [2, "y"]` (jsdocTemplateTag6, plain TS too).
 - **Fixing without candidates** (plan 30 stage 2): `mutate((a, b) => b)` with `callback: (a: NoInfer<T>, b: number)

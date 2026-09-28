@@ -9238,7 +9238,7 @@ const baselines = {
     'deeplyNestedConditionalTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deeplyNestedConstraints': {
         errors: true,

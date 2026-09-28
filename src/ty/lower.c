@@ -1368,41 +1368,9 @@ bool ty_tuple_node_has_variadic(TypeNode const* node) {
 
 // Deferred references, see Ty.reference.deferred
 
-// Whether lowering the node right now would run into a type alias that is being resolved. Object types aren't looked
-// into, their members are lazy anyway
-static bool node_reaches_alias_in_flight(Checker* me, TypeNode const* node, u32 depth) {
-    if (depth > 32) return false;
-    switch (node->tag) {
-        case TYPE_IDENTIFIER: {
-            Symbol const* decl = canonical(me, node->identifier->target);
-            if (decl && decl->flags & SYMBOL_TYPE_ALIAS) {
-                u64 key[2] = { KEY_SYMBOL_LINKS, (u64)(uintptr_t)decl };
-                SymbolLinks const* links = intern_get(&my links, key, 2);
-                if (links && links->declared_state == LAZY_STATE_IN_FLIGHT) return true;
-            }
-            for_each (i, vec_spanned_type, &node->identifier->generic_params) {
-                if (node_reaches_alias_in_flight(me, &i->type, depth + 1)) return true;
-            }
-            return false;
-        }
-        case TYPE_ARRAY: return node_reaches_alias_in_flight(me, node->array.element, depth + 1);
-        case TYPE_TUPLE:
-            for_each (i, vec_tuple_element, &node->tuple.elements) {
-                if (node_reaches_alias_in_flight(me, &i->type, depth + 1)) return true;
-            }
-            return false;
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            for_each (i, vec_type, &node->composite) {
-                if (node_reaches_alias_in_flight(me, i, depth + 1)) return true;
-            }
-            return false;
-        default: return false;
-    }
-}
-
-// The same through the bodies of aliases that aren't resolved yet, which lowering the node would resolve. `budget`
-// bounds the walk (aliases that aren't resolved yet can name each other)
+// Whether lowering the node right now would run into a type alias that is being resolved, also through the bodies of
+// aliases that aren't resolved yet, which lowering the node would resolve. Object types aren't looked into, their
+// members are lazy anyway. `budget` bounds the walk (aliases that aren't resolved yet can name each other)
 static bool node_reaches_alias_in_flight_through(Checker* me, TypeNode const* node, u32* budget) {
     if (!*budget) return false;
     --*budget;
@@ -1445,33 +1413,6 @@ static bool node_reaches_alias_in_flight_through(Checker* me, TypeNode const* no
 bool ty_node_reaches_alias_in_flight(Checker* me, TypeNode const* node) {
     u32 budget = 64;
     return node_reaches_alias_in_flight_through(me, node, &budget);
-}
-
-static bool node_reaches_alias_in_flight_deep(Checker* me, TypeNode const* node) {
-    if (node_reaches_alias_in_flight(me, node, 0)) return true;
-    switch (node->tag) {
-        case TYPE_TERNARY:
-            return node_reaches_alias_in_flight_deep(me, &node->ternary->maybe_sub) ||
-                node_reaches_alias_in_flight_deep(me, &node->ternary->maybe_super) ||
-                node_reaches_alias_in_flight_deep(me, &node->ternary->if_true) ||
-                node_reaches_alias_in_flight_deep(me, &node->ternary->if_false);
-        case TYPE_INDEXED:
-            return node_reaches_alias_in_flight_deep(me, &node->indexed->interface) ||
-                node_reaches_alias_in_flight_deep(me, &node->indexed->index);
-        case TYPE_KEYOF: return node_reaches_alias_in_flight_deep(me, &node->keyof->interface);
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            for_each (i, vec_type, &node->composite) {
-                if (node_reaches_alias_in_flight_deep(me, i)) return true;
-            }
-            return false;
-        case TYPE_TEMPLATE:
-            for_each (i, vec_type, &node->template_->types) {
-                if (node_reaches_alias_in_flight_deep(me, i)) return true;
-            }
-            return false;
-        default: return false;
-    }
 }
 
 // Whether lowering the node could resolve a type alias, going by the syntax alone (tsc's mayResolveTypeAlias): what
@@ -2180,8 +2121,6 @@ static bool is_naked_type_param_node(TypeNode const* node) {
     return (decl->flags & SYMBOL_TYPE_PARAMETER) != 0;
 }
 
-static bool node_reaches_alias_in_flight_deep(Checker* me, TypeNode const* node);
-
 // The `infer` type parameters a type node declares (what type_add_inferred_names() declares for an extends type)
 static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* out) {
     switch (node->tag) {
@@ -2261,11 +2200,9 @@ static Ty const* deferred_interface_reference(
     return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
 }
 
-static TyCondBranch lower_branch(Checker* me, TypeNode const* node, LowerCtx ctx) {
-    if (node_reaches_alias_in_flight_deep(me, node)) {
-        return (TyCondBranch){ .node = node, .ctx = ctx };
-    }
-    return (TyCondBranch){ .type = ty_from_node(me, node, ctx) };
+// Lowered when first needed, like tsc's (getTypeFromConditionalTypeNode only resolves the check and extends types)
+static TyCondBranch lower_branch(TypeNode const* node, LowerCtx ctx) {
+    return (TyCondBranch){ .node = node, .ctx = ctx };
 }
 
 // The check and extends types of a conditional type as they imply a constraint on the types in its true branch (tsc's
@@ -2503,8 +2440,8 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             TypeNode const* extends_node = &node->ternary->maybe_super;
             Ty const* check_type = ty_from_node(me, &node->ternary->maybe_sub, ctx);
             Ty const* extends = ty_from_node(me, &node->ternary->maybe_super, inner);
-            TyCondBranch if_true = lower_branch(me, &node->ternary->if_true, inner);
-            TyCondBranch if_false = lower_branch(me, &node->ternary->if_false, ctx);
+            TyCondBranch if_true = lower_branch(&node->ternary->if_true, inner);
+            TyCondBranch if_false = lower_branch(&node->ternary->if_false, ctx);
             // (tsc's isDistributive looks at the check type: a type parameter substituted by an outer true branch
             // isn't one)
             bool distributive = is_naked_type_param_node(&node->ternary->maybe_sub) && check_type->kind == TY_TYPE_PARAM;
