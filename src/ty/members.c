@@ -1513,6 +1513,15 @@ static void union_members(Ty const* const* ty_ref, Ty const* const** out, u32* c
 // `{ [K in keyof T]: X }` with T generic stays a mapped type, but has a property per property of T's apparent type (its
 // constraint), X with K the property's name, with T's modifiers (tsc's resolveMappedTypeMembers, whose modifiers type
 // is the apparent type): `Mutable<T>` with `T extends Node` has `pos: T["pos"]`
+// Under exactOptionalPropertyTypes, what `T[K]` reads of an optional property of T adds is tsc's missing type, which
+// an optional property of the mapped type doesn't have in its declared-type view (getNonMissingTypeOfSymbol): HACK,
+// without a missing type the undefined is taken out (PROP_STRIP_UNDEFINED) unless the property declares one
+static u32 exact_missing_flag(Checker* me, u32 flags, u32 from_flags, Prop const* from) {
+    if (!compiler_options()->exact_optional_property_types || !compiler_options()->strict_null_checks) return 0;
+    if (!(flags & PROP_OPTIONAL) || !(from_flags & PROP_OPTIONAL) || !from) return 0;
+    return ty_can_be_undefined(me, prop_type(me, from)) ? 0 : PROP_STRIP_UNDEFINED;
+}
+
 static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members);
 
 static Members const* expand_generic_homomorphic(Checker* me, Members const* members) {
@@ -1536,11 +1545,13 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
             me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
         );
         u32 flags = from->flags & (PROP_OPTIONAL | PROP_READONLY);
+        u32 from_flags = flags;
         if (mapped->optional > 0) flags |= PROP_OPTIONAL;
         if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
             flags &= ~(u32)PROP_OPTIONAL;
             if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
         }
+        flags |= exact_missing_flag(me, flags, from_flags, from);
         if (mapped->readonly > 0) flags |= PROP_READONLY;
         if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
         Prop* prop = arena_new(&my arena, Prop);
@@ -1603,11 +1614,13 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
                 if (!(also->flags & PROP_OPTIONAL)) flags &= ~(u32)PROP_OPTIONAL;
                 flags |= also->flags & PROP_READONLY;
             }
+            u32 from_flags = flags;
             if (mapped->optional > 0) flags |= PROP_OPTIONAL;
             if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
                 flags &= ~(u32)PROP_OPTIONAL;
                 if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
             }
+            flags |= exact_missing_flag(me, flags, from_flags, from);
             if (mapped->readonly > 0) flags |= PROP_READONLY;
             if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
             if (!template) {
@@ -1843,11 +1856,13 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 if (modifiers && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) {
                     from = modifiers_prop(me, modifiers, ty_literal_name(me, key), &flags);
                 }
+                u32 from_flags = flags;
                 if (mapped->optional > 0) flags |= PROP_OPTIONAL;
                 if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
                     flags &= ~(u32)PROP_OPTIONAL;
                     if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
                 }
+                flags |= exact_missing_flag(me, flags, from_flags, from);
                 if (mapped->readonly > 0) flags |= PROP_READONLY;
                 if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
                 Prop* prop = arena_new(&my arena, Prop);
