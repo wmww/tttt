@@ -604,9 +604,18 @@ static void format_error_tree(
     }
 }
 
+static void remove_test_path_prefixes(cstr* target, isize from);
+
 static void process_errors(BaselineTestCase* me) {
     if (error_ctx_empty(my error_ctx)) {
         return;
+    }
+    if (my pretty) {
+        // (the minimal list is made below all the same, into a string that is thrown away)
+        for_each (error, vec_error, &my error_ctx->errors) {
+            error_format_pretty(&my formatted_pretty_errors, error, "\r\n", error_file_name);
+        }
+        remove_test_path_prefixes(&my formatted_pretty_errors, 0);
     }
 
     SourceFile const* current_source = nullptr;
@@ -831,6 +840,7 @@ BaselineTestCase run_baseline_test_case(
     program_typecheck(program);
 
     set_compiler_options(program_options(program));
+    ret.pretty = program_options(program)->pretty;
     for_each (i, vec_baseline_test_file, &ret.files) {
         if (!i->source) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
@@ -855,6 +865,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     cstr_drop(&my lib_files);
     cstr_drop(&my last_unit);
     cstr_drop(&my formatted_errors);
+    cstr_drop(&my formatted_pretty_errors);
     cstr_drop(&my formatted_global_errors);
     vec_baseline_test_file_drop(&my files);
     vec_cstr_drop(&my links);
@@ -1077,7 +1088,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
         return;
     }
 
-    cstr_append_s(target, my formatted_errors);
+    cstr_append_s(target, my pretty ? my formatted_pretty_errors : my formatted_errors);
     cstr_append_lit(target, "\r\n");
     if (cstr_size(&my formatted_global_errors)) {
         cstr_append_d(target, DEFAULT_DISPLAY, my formatted_global_errors);
@@ -1098,6 +1109,11 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
             i == vec_baseline_test_file_back(&my files),
             false
         );
+    }
+    if (my pretty) {
+        isize from = cstr_size(target);
+        error_format_pretty_summary(target, &my error_ctx->errors, "\r\n", error_file_name);
+        remove_test_path_prefixes(target, from);
     }
 }
 

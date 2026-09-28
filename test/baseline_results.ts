@@ -9226,7 +9226,7 @@ const baselines = {
         types: true,
     },
     'deeplyNestedAssignabilityIssue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10296,7 +10296,7 @@ const baselines = {
         types: true,
     },
     'duplicateIdentifierRelatedSpans1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22516,7 +22516,7 @@ const baselines = {
         types: false,
     },
     'multiLineContextDiagnosticWithPretty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25741,12 +25741,12 @@ const baselines = {
         types: true,
     },
     'prettyContextNotDebugAssertion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'prettyFileWithErrorsAndTabs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52711,7 +52711,7 @@ const baselines = {
         types: true,
     },
     'typedefCrossModule5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

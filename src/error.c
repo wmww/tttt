@@ -1,6 +1,8 @@
 #include "error.h"
 #include "string_helpers.h"
 #include "source_file.h"
+#include "display.h"
+#include <math.h>
 
 void error_drop(Error* me) {
     cstr_drop(&my message);
@@ -107,6 +109,192 @@ void error_add_detached_related_s(Error* me, unsigned ts_code, cstr message) {
 
 void error_ctx_drop(ErrorCtx* me) {
     vec_error_drop(&my errors);
+}
+
+// Pretty diagnostics (tsc's program.ts and watch.ts), with tsc's escape sequences
+
+#define PRETTY_RESET "\x1b[0m"
+#define PRETTY_GUTTER "\x1b[7m"
+#define PRETTY_RED "\x1b[91m"
+#define PRETTY_YELLOW "\x1b[93m"
+#define PRETTY_CYAN "\x1b[96m"
+#define PRETTY_GREY "\x1b[90m"
+
+// tsc's formatLocation: file:line:column, 1-based
+static void pretty_location(cstr* out, Span span, ErrorFileNamer file_name) {
+    cstr_append_d(out, DEFAULT_DISPLAY,
+        PRETTY_CYAN, file_name(span.source), PRETTY_RESET ":" PRETTY_YELLOW, span_line_index(span) + 1, PRETTY_RESET ":"
+        PRETTY_YELLOW, span_col_index(span) + 1, PRETTY_RESET);
+}
+
+// JavaScript's trimEnd() of a line's text (without its line break), for what tsc's source files contain
+static char const* pretty_trim_end(char const* start, char const* end) {
+    while (end > start) {
+        unsigned char c = (unsigned char)end[-1];
+        if (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\v' || c == '\f') end--;
+        else if (end - start >= 2 && (unsigned char)end[-2] == 0xC2 && c == 0xA0) end -= 2; // U+00A0
+        else if (end - start >= 3 && (unsigned char)end[-3] == 0xEF && (unsigned char)end[-2] == 0xBB && c == 0xBF) end -= 3;
+        else break;
+    }
+    return end;
+}
+
+static bool pretty_is_space(char const* c) {
+    return *c == ' ' || *c == '\t' || *c == '\v' || *c == '\f' || ((unsigned char)c[0] == 0xC2 && (unsigned char)c[1] == 0xA0);
+}
+
+// tsc's formatCodeSpan: the lines of the span with a gutter of line numbers, squiggled (UTF-16 code units, like tsc)
+static void pretty_code_span(cstr* out, Span span, char const* indent, char const* squiggle, char const* newline) {
+    SourceFile const* source = span.source;
+    char const* text = source_file_start(source);
+    char const* text_end = text + cstr_size(&source->contents);
+    unsigned first_line = span_line_index(span);
+    unsigned last_line = source_file_line_index(source, span_end_ptr(span));
+    unsigned last_line_in_file = source_file_line_index(source, text_end);
+    unsigned first_char = span_col_index(span);
+    unsigned last_char = 0;
+    for (char const* c = text + source->line_starts[last_line]; c < span_end_ptr(span); c++) last_char += utf8_byte_utf16_units(c);
+
+    bool more_than_five = last_line - first_line >= 4;
+    char digits[16];
+    int gutter = snprintf(digits, sizeof(digits), "%u", last_line + 1);
+    if (more_than_five && gutter < 3) gutter = 3;
+    for (unsigned i = first_line; i <= last_line; i++) {
+        cstr_append(out, newline);
+        if (more_than_five && first_line + 1 < i && i < last_line - 1) {
+            cstr_append_d(out, DEFAULT_DISPLAY, indent, PRETTY_GUTTER, repeated_d(" ", gutter - 3), "..." PRETTY_RESET " ", newline);
+            i = last_line - 1;
+        }
+        char const* line_start = text + source->line_starts[i];
+        char const* line_end = i < last_line_in_file ? text + source->line_starts[i + 1] : text_end;
+        line_end = pretty_trim_end(line_start, line_end);
+        int width = snprintf(digits, sizeof(digits), "%u", i + 1);
+        cstr_append_d(out, DEFAULT_DISPLAY, indent, PRETTY_GUTTER, repeated_d(" ", gutter - width), digits, PRETTY_RESET " ");
+        for (char const* c = line_start; c < line_end; c++) cstr_append_n(out, *c == '\t' ? " " : c, 1);
+        cstr_append(out, newline);
+        cstr_append_d(out, DEFAULT_DISPLAY, indent, PRETTY_GUTTER, repeated_d(" ", gutter), PRETTY_RESET " ", squiggle);
+        // Columns in UTF-16 units: before the squiggle, non-space characters become spaces
+        unsigned col = 0;
+        unsigned from = i == first_line ? first_char : 0;
+        unsigned to = i == last_line ? last_char : UINT32_MAX;
+        for (char const* c = line_start; c < line_end && col < to; c++) {
+            unsigned units = utf8_byte_utf16_units(c);
+            if (col < from) {
+                if (units && pretty_is_space(c)) cstr_append_n(out, *c == '\t' ? " " : c, *c == '\xC2' ? 2 : 1);
+                else if (units) cstr_append_lit(out, " ");
+                if ((unsigned char)*c == 0xC2 && pretty_is_space(c)) c++;
+            } else {
+                for (unsigned n = units; n; n--) cstr_append_lit(out, "~");
+            }
+            col += units;
+        }
+        cstr_append_lit(out, PRETTY_RESET);
+    }
+}
+
+// tsc's flattenDiagnosticMessageText: the chain (sub errors without a location) indented by depth
+static void pretty_message(cstr* out, Error const* me, char const* newline, int depth) {
+    if (depth) cstr_append_d(out, DEFAULT_DISPLAY, newline, repeated_d("  ", depth));
+    cstr_append_s(out, my message);
+    for_each (i, vec_error, &my sub_errors) {
+        if (!i->detached && !span_valid(i->span)) pretty_message(out, i, newline, depth + 1);
+    }
+}
+
+static void pretty_related(cstr* out, Error const* me, char const* newline, ErrorFileNamer file_name) {
+    for_each (i, vec_error, &my sub_errors) {
+        if (i->detached) {
+            cstr_append_d(out, DEFAULT_DISPLAY, newline, "    ");
+            pretty_message(out, i, newline, 0);
+        } else if (span_valid(i->span) && i->span.source) {
+            cstr_append_d(out, DEFAULT_DISPLAY, newline, "  ");
+            pretty_location(out, i->span, file_name);
+            pretty_code_span(out, i->span, "    ", PRETTY_CYAN, newline);
+            cstr_append_d(out, DEFAULT_DISPLAY, newline, "    ");
+            pretty_message(out, i, newline, 0);
+        } else {
+            pretty_related(out, i, newline, file_name);
+        }
+    }
+}
+
+static bool has_related(Error const* me) {
+    for_each (i, vec_error, &my sub_errors) {
+        if (i->detached || (span_valid(i->span) && i->span.source) || has_related(i)) return true;
+    }
+    return false;
+}
+
+void error_format_pretty(cstr* out, Error const* me, char const* newline, ErrorFileNamer file_name) {
+    bool located = span_valid(my span) && my span.source;
+    if (located) {
+        pretty_location(out, my span, file_name);
+        cstr_append_lit(out, " - ");
+    }
+    cstr_append_d(out, DEFAULT_DISPLAY, PRETTY_RED "error" PRETTY_RESET PRETTY_GREY " TS", my ts_code, ": " PRETTY_RESET);
+    pretty_message(out, me, newline, 0);
+    if (located) {
+        cstr_append(out, newline);
+        pretty_code_span(out, my span, "", PRETTY_RED, newline);
+    }
+    if (has_related(me)) {
+        cstr_append(out, newline);
+        pretty_related(out, me, newline, file_name);
+    }
+    cstr_append(out, newline);
+}
+
+void error_format_pretty_summary(cstr* out, VecError const* errors, char const* newline, ErrorFileNamer file_name) {
+    isize count = vec_error_size(errors);
+    if (!count) return;
+    // The files with errors in order, each with its first error's line and its error count
+    typedef struct { SourceFile const* source; unsigned line; isize errors; } FileInError;
+    FileInError* files = malloc(sizeof(FileInError) * (size_t)count);
+    isize file_count = 0;
+    bool first_has_file = false;
+    for_each (i, vec_error, errors) {
+        SourceFile const* source = span_valid(i->span) ? i->span.source : nullptr;
+        if (i == errors->data) first_has_file = source != nullptr;
+        if (!source) continue;
+        isize j = 0;
+        while (j < file_count && files[j].source != source) j++;
+        if (j == file_count) files[file_count++] = (FileInError){ source, span_line_index(i->span) + 1, 0 };
+        files[j].errors++;
+    }
+    cstr first = cstr_null;
+    if (file_count) {
+        first = cstr_d(file_name(files[0].source), PRETTY_GREY ":", files[0].line, PRETTY_RESET);
+    }
+    cstr_append(out, newline);
+    if (count == 1) {
+        if (first_has_file) cstr_append_d(out, DEFAULT_DISPLAY, "Found 1 error in ", first);
+        else cstr_append_lit(out, "Found 1 error.");
+    } else if (!file_count) {
+        cstr_append_d(out, DEFAULT_DISPLAY, "Found ", count, " errors.");
+    } else if (file_count == 1) {
+        cstr_append_d(out, DEFAULT_DISPLAY, "Found ", count, " errors in the same file, starting at: ", first);
+    } else {
+        cstr_append_d(out, DEFAULT_DISPLAY, "Found ", count, " errors in ", file_count, " files.");
+    }
+    cstr_append(out, newline);
+    cstr_append(out, newline);
+    if (file_count > 1) {
+        // tsc's createTabularErrorsDisplay, its lengths being log10(n) + 1 as floating point numbers
+        isize max = 0;
+        for (isize j = 0; j < file_count; j++) if (files[j].errors > max) max = files[j].errors;
+        double max_length = log10((double)max) + 1;
+        double goal = max_length > 6 ? max_length : 6;
+        int header_padding = max_length - 6 > 0 ? (int)(max_length - 6) : 0;
+        cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", header_padding), "Errors  Files\n");
+        for (isize j = 0; j < file_count; j++) {
+            int digits = (int)(log10((double)files[j].errors) + 1);
+            int padding = digits < goal ? (int)(goal - digits) : 0;
+            cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", padding), files[j].errors, "  ",
+                file_name(files[j].source), PRETTY_GREY ":", files[j].line, PRETTY_RESET "\n");
+        }
+    }
+    cstr_drop(&first);
+    free(files);
 }
 
 intptr_t print_error_ctx_max_display = 5000;

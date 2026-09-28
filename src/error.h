@@ -63,6 +63,13 @@ typedef struct ErrorCtx {
 
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
 void error_ctx_drop(ErrorCtx* me);
+// tsc's formatDiagnosticsWithColorAndContext (`--pretty`) of one diagnostic, lines ending in nl, file_name naming the
+// files of the diagnostic and its related information
+typedef char const* (*ErrorFileNamer)(SourceFile const* source);
+void error_format_pretty(cstr* out, Error const* me, char const* newline, ErrorFileNamer file_name);
+// tsc's getErrorSummaryText: "Found 3 errors in 2 files." and a table of them (errors in the order they're printed)
+void error_format_pretty_summary(cstr* out, VecError const* errors, char const* newline, ErrorFileNamer file_name);
+
 extern intptr_t print_error_ctx_max_display; // tttt --all-errors lifts it
 void print_error_ctx(ErrorCtx const* me);
 bool error_ctx_empty(ErrorCtx const* me);

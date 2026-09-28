@@ -109,6 +109,8 @@ typedef struct BaselineTestCase {
     cstr last_unit; // The name of the test's last unit (the only one whose content ends where the test file does)
     bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
     cstr formatted_errors;
+    cstr formatted_pretty_errors;
+    bool pretty; // `@pretty: true`: the diagnostics at the top are tsc's pretty ones, and a summary ends the baseline
     cstr formatted_global_errors; // The `!!!` lines of diagnostics without a file
     VecBaselineTestFile files;
     // A unit named tsconfig.json: its options (under the directives) and its files are the roots

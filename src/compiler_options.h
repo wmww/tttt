@@ -107,6 +107,7 @@ typedef enum ModuleDetectionKind {
     X(no_unused_locals, "nounusedlocals", false) \
     X(no_unused_parameters, "nounusedparameters", false) \
     X(preserve_const_enums, "preserveconstenums", false) \
+    X(pretty, "pretty", false) \
     X(preserve_symlinks, "preservesymlinks", false) \
     X(resolve_json_module, "resolvejsonmodule", false) \
     X(resolve_package_json_exports, "resolvepackagejsonexports", false) \
