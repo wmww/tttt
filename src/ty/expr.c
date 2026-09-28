@@ -1241,7 +1241,8 @@ static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty 
     LazyMemo const* memo = lazy_type_state_peek((LazyType*)&initialized->value.lazy_type);
     bool in_flight = memo && memo->evaluation_started && !memo->done;
     Ty const* value = initialized->value.tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, &initialized->value);
-    if (value && !includes_undefined(value) && !(value->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID))) {
+    // (`any` and `unknown` can't be undefined here, tsc's UnknownFacts)
+    if (value && !includes_undefined(value) && !(value->flags & TYF_VOID)) {
         return ty_without_undefined(me, type);
     }
     return type;
