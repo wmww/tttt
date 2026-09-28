@@ -50,3 +50,25 @@ smaller leftovers to `bugs/*.md` and hacks.md.
   `@template`s on the lowering context.
 - Sub-agents given a worktree share `thirdparty/corpora` through the symlink: a probe written into the corpus
   (xstate's `test/zz_probe.ts`) shows up in every tree's corpus run. Tell sub-agents to keep probes out of it.
+
+## 2026-09-28, suite checker bugs, bucket B (indexed/property access)
+- Unicode escapes in identifiers (`x`, `\u{78}`) aren't decoded: names are source spans, so `x` and `x` are
+  different names (spurious TS2339/TS2304 in unicodeEscapesInNames01/02, escapedIdentifiers, unicodeEscapesInJsxtags).
+  Needs a decoded-name path in the lexer/binder (an interned name next to the span).
+- Node16+ ESM `import * as ns` of a CommonJS module: tsc gives ns a synthetic `default` (the module) through
+  cloneTypeAsModuleType, displayed `typeof ns` (nodeNextCjsNamespaceImportDefault1/2). Making it an interned object
+  literal broke the display of 16 node tests (`{ default: typeof cjs; }` vs `typeof cjs`); needs a module-clone type
+  that displays as its alias.
+- JS `/** @type {Cb} */ function f(x)` / `const f = ...` with a Cb whose `@return {x is T}` (or `@type {(x) => x is T}`)
+  doesn't narrow: the signature control flow resolves has no predicate (returnTagTypeGuard line 58).
+- `error_ctx_init()` gives phase 0: a temporary ErrorCtx merged into a checker's must copy `phase` or
+  @ts-expect-error/@ts-ignore miss its errors (bit this session once). A `error_ctx_scratch(ErrorCtx const* like)`
+  helper would make that impossible to forget.
+- dependentDestructuredVariables: `function foo({ value1, test1 = value1.test1, ... })` gives TS7022 on every testN;
+  tsc reports the circularity once, at value1 (7022 + 7031).
+- moduleAugmentationOfAlias: `declare module './a' { export default interface I {...} }` merging into `export default
+  I` (an alias) should make the default export alias+interface (tsc's mergeSymbol), spurious TS2339.
+- narrowingMutualSubtypes: `Array.isArray(obj)` with `obj: Record<string, any> | Record<string, any>[]` keeps `any[]`
+  in the true branch (tsc: only `Record<string, any>[]`), spurious TS7053.
+- mappedTypeGenericWithKnownKeys: `obj.unknownLiteralKey = 3` on `Record<keyof T | "k", V>` should be TS2551 (did you
+  mean 'k'), `obj['' as string] = 4` TS2862; ty_check_generic_index_write() skips generic mapped types.
