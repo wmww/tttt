@@ -1,0 +1,343 @@
+diff --git a/src/binding.c b/src/binding.c
+index 80b56bd..0cc1520 100644
+--- a/src/binding.c
++++ b/src/binding.c
+@@ -585,6 +585,56 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
+     return ret;
+ }
+ 
++// tsc's reportWideningErrorsInType: TS7018 on the object literal properties whose null/undefined widen to any
++static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, ErrorCtx* errs, u32 depth) {
++    if (depth > 8 || !(ty->xflags & TYX_CONTAINS_WIDENING)) return false;
++    bool reported = false;
++    if (ty->kind == TY_UNION) {
++        for (u32 i = 0; i < ty->composite.types.len; i++) reported |= report_widening_errors_in_type(checker, ty->composite.types.data[i], errs, depth + 1);
++    } else if (ty->kind == TY_REFERENCE && (ty_is_array(checker, ty) || ty_tuple_shape(ty))) {
++        TyList args = ty_reference_args(checker, ty);
++        for (u32 i = 0; i < args.len; i++) reported |= report_widening_errors_in_type(checker, args.data[i], errs, depth + 1);
++    } else if (ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal) {
++        Members const* members = ty_members(checker, ty);
++        for (u32 i = 0; i < members->prop_count; i++) {
++            Prop const* prop = members->props[i];
++            if (prop->function) continue;
++            Ty const* t = prop_type(checker, prop);
++            if (!(t->xflags & TYX_CONTAINS_WIDENING)) continue;
++            bool inner = report_widening_errors_in_type(checker, t, errs, depth + 1);
++            if (!inner && prop->literal_own && prop->name_span.source) {
++                cstr name = ty_prop_name_cstr(checker, prop->name);
++                cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, t));
++                error_ctx_error_d(errs, prop->name_span, 7018, "Object literal's property '", name, "' implicitly has an '", type, "' type.");
++                c_drop(cstr, &name, &type);
++                inner = true;
++            }
++            reported |= inner;
++        }
++    }
++    return reported;
++}
++
++static void report_errors_from_widening(InitializedBinding* me, ErrorCtx* errs) {
++    Checker* checker = current_checker;
++    if (!compiler_options()->no_implicit_any || compiler_options()->strict_null_checks) return;
++    if (my binding.has_explicit_type || my value.tag == EXPR_IMPLICIT_ANY || my binding.tag != BINDING_IDENTIFIER) return;
++    if (is_auto_typed(me) || my is_rest_parameter) return;
++    Symbol const* symbol = my binding.symbol;
++    if (!symbol) return;
++    if (symbol->is_parameter && ty_contextual_parameter_type(checker, me)) return;
++    // `let x = []` is an evolving array (see initialized_binding_evaluate_assigned_type)
++    if (!symbol->is_parameter && my value.tag == EXPR_ARRAY && !vec_expr_size(&my value.array) && !symbol->is_ambient &&
++        (symbol->flags & SYMBOL_VARIABLE)) return;
++    Ty const* ty = ty_expr_type(checker, &my value);
++    if (!(ty->xflags & TYX_CONTAINS_WIDENING)) return;
++    if (report_widening_errors_in_type(checker, ty, errs, 0)) return;
++    cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty));
++    error_ctx_error_d(errs, my binding.content_span, symbol->is_parameter ? 7006 : 7005, symbol->is_parameter ? "Parameter '" : "Variable '",
++        my binding.content_span, "' implicitly has an '", type, "' type.");
++    cstr_drop(&type);
++}
++
+ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
+     // `const x = require("m")`, `const x = require("m").a`: an alias, which is all tsc checks
+     // (checkVariableLikeDeclaration: checkAliasSymbol and return)
+@@ -592,6 +642,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
+     initialized_binding_check_value(me);
+     expr_typecheck(&my value, errs);
+     binding_typecheck(&my binding, my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value, errs);
++    report_errors_from_widening(me, errs);
+ }
+ 
+ void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
+@@ -599,6 +650,7 @@ void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span,
+     expr_typecheck(&my value, errs);
+     Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
+     binding_typecheck_at(&my binding, initializer, span, errs);
++    report_errors_from_widening(me, errs);
+     if (!initializer || my binding.has_explicit_type) return;
+     // An unannotated parameter typed by its contextual signature: the initializer is assigned to that type, unless it
+     // was the initializer's type instead (tsc's assignContextualParameterTypes: when the contextual type is assignable
+diff --git a/src/expr.c b/src/expr.c
+index bb30bfb..ea8b570 100644
+--- a/src/expr.c
++++ b/src/expr.c
+@@ -1455,6 +1455,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
+             while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+             if (callee->tag == EXPR_IDENTIFIER) callee->identifier.constraint_position = true;
+             if (callee->tag == EXPR_PROPERTY) callee->property->constraint_position = true;
++            if (callee->tag == EXPR_PROPERTY) callee->property->method_call = true;
+             if (callee->tag == EXPR_FUNCTION && !my call->uses_new) {
+                 // An immediately invoked function expression is part of this flow, after its arguments
+                 for_each (i, vec_expr, &my call->args) {
+diff --git a/src/expr.h b/src/expr.h
+index a0914fb..0053ca6 100644
+--- a/src/expr.h
++++ b/src/expr.h
+@@ -437,6 +437,7 @@ typedef struct PropertyExpr {
+     bool qualified_name;
+     uint8_t assignment_target; // FlowAssignmentKind
+     bool compound_like_target; // Like IdentifierExpr.compound_like_target
++    bool method_call; // The callee of a call or new (tsc's isMethodAccessForCall): the object widens
+     FlowNode* flow; // Like IdentifierExpr.flow
+     // The innermost class it is in (member accessibility, see ClassDecl.outer_class for the others), and the class
+     // whose constructor is the function it is directly in (where `this.x = ` may write a readonly x)
+diff --git a/src/statement.c b/src/statement.c
+index 63a1110..543b172 100644
+--- a/src/statement.c
++++ b/src/statement.c
+@@ -493,8 +493,8 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
+             return ty_for_in_key_type(checker, iterable);
+ 
+         case FOR_EACH_LOOP_OF:
+-            return ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable,
+-                my iterable.outer_span, nullptr);
++            return ty_widened_nullable(checker, ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable,
++                my iterable.outer_span, nullptr));
+     }
+     impossible;
+ }
+diff --git a/src/test/baseline_test_traversal.c b/src/test/baseline_test_traversal.c
+index df7bb40..b2b6cfd 100644
+--- a/src/test/baseline_test_traversal.c
++++ b/src/test/baseline_test_traversal.c
+@@ -1805,14 +1805,7 @@ static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
+ }
+ 
+ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+-    // Without strictNullChecks `[]` and `[undefined]` are undefined[] before widening (tsc's undefinedWideningType),
+-    // unless they're tuples (a tuple context, a destructuring pattern)
+-    if (my tag == EXPR_ARRAY && !compiler_options()->strict_null_checks &&
+-        !vec_expr_contains_elements_other_than_undefined(&my array) && ty_is_array(current_checker, expr_get_type(me))
+-    ) {
+-        Checker* checker = current_checker;
+-        Ty const* undefined_array = ty_array(checker, ty_intrinsic(checker, TY_UNDEFINED), false);
+-        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, undefined_array);
++    if (false) {
+     } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
+         // `null` itself has no line, `(null)` does
+         const char* start = span_start_ptr(my inner_span);
+diff --git a/src/ty/checker.c b/src/ty/checker.c
+index e7a6a08..2133c10 100644
+--- a/src/ty/checker.c
++++ b/src/ty/checker.c
+@@ -219,7 +219,19 @@ Checker* checker_new(Program* program) {
+     my intrinsics[TY_CIRCULAR] = make_intrinsic(me, "any", TYF_ANY);
+     my intrinsics[TY_UNKNOWN_] = make_intrinsic(me, "unknown", TYF_UNKNOWN);
+     my intrinsics[TY_UNDEFINED] = make_intrinsic(me, "undefined", TYF_UNDEFINED);
++    my intrinsics[TY_UNDEFINED_WIDENING] = my intrinsics[TY_UNDEFINED];
++    if (!compiler_options()->strict_null_checks) {
++        Ty* widening = (Ty*)make_intrinsic(me, "undefined", TYF_UNDEFINED);
++        widening->xflags = TYX_CONTAINS_WIDENING;
++        my intrinsics[TY_UNDEFINED_WIDENING] = widening;
++    }
+     my intrinsics[TY_NULL] = make_intrinsic(me, "null", TYF_NULL);
++    my intrinsics[TY_NULL_WIDENING] = my intrinsics[TY_NULL];
++    if (!compiler_options()->strict_null_checks) {
++        Ty* widening = (Ty*)make_intrinsic(me, "null", TYF_NULL);
++        widening->xflags = TYX_CONTAINS_WIDENING;
++        my intrinsics[TY_NULL_WIDENING] = widening;
++    }
+     my intrinsics[TY_STRING] = make_intrinsic(me, "string", TYF_STRING);
+     my intrinsics[TY_NUMBER] = make_intrinsic(me, "number", TYF_NUMBER);
+     my intrinsics[TY_BIGINT] = make_intrinsic(me, "bigint", TYF_BIGINT);
+@@ -508,6 +520,7 @@ static Ty const* intern_composite(
+             flags |= TYF_BOOLEAN;
+         }
+         Ty* ret = ty_alloc(me, kind, flags);
++        for (u32 i = 0; i < len; i++) ret->xflags |= types[i]->xflags;
+         ret->alias = alias;
+         ret->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
+         ret->composite.types = ty_list_copy(me, types, len);
+@@ -551,9 +564,10 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
+     ty_buf_add_flattened(&buf, TY_UNION, types, len);
+ 
+     u32 includes = 0;
+-    bool includes_error = false;
++    bool includes_error = false, includes_non_widening = false;
+     for (u32 i = 0; i < buf.len; i++) {
+         includes |= buf.data[i]->flags;
++        if ((buf.data[i]->flags & TYF_NULLABLE) && !(buf.data[i]->xflags & TYX_CONTAINS_WIDENING)) includes_non_widening = true;
+         includes_error |= buf.data[i]->kind == TY_INTRINSIC && (buf.data[i]->flags & TYF_ERROR);
+     }
+     Ty const* ret = nullptr;
+@@ -602,7 +616,10 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
+         if (out == 0) {
+             // Nothing but null and undefined (without strictNullChecks): null wins, like in tsc's getUnionType
+             TyIntrinsic only = TY_NEVER;
+-            if (!strict_null_checks) only = includes & TYF_NULL ? TY_NULL : includes & TYF_UNDEFINED ? TY_UNDEFINED : TY_NEVER;
++            if (!strict_null_checks) {
++                only = includes & TYF_NULL ? (includes_non_widening ? TY_NULL : TY_NULL_WIDENING) :
++                    includes & TYF_UNDEFINED ? (includes_non_widening ? TY_UNDEFINED : TY_UNDEFINED_WIDENING) : TY_NEVER;
++            }
+             ret = my intrinsics[only];
+         } else if (out == 1) {
+             ret = buf.data[0];
+@@ -1189,6 +1206,7 @@ Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty
+         ret->reference.target = target;
+         ret->reference.args = ty_list_copy(me, args.data, args.len);
+         ret->reference.this_arg = this_arg;
++        for (u32 i = 0; i < args.len; i++) ret->xflags |= args.data[i]->xflags;
+         ret->reference.state = arena_new(&my arena, TyObjectState);
+         *slot = ret;
+     }
+diff --git a/src/ty/expr.c b/src/ty/expr.c
+index 5866d48..ed33107 100644
+--- a/src/ty/expr.c
++++ b/src/ty/expr.c
+@@ -1437,7 +1437,7 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
+             for (u32 i = 0; i < c_arraylen(names); i++) types[i] = ty_string_literal(me, csview_from(names[i]));
+             return ty_union(me, types, c_arraylen(names), nullptr, (TyList){0});
+         }
+-        case UNARY_OP_VOID: return ty_intrinsic(me, TY_UNDEFINED);
++        case UNARY_OP_VOID: return ty_intrinsic(me, TY_UNDEFINED_WIDENING);
+         case UNARY_OP_TILDE: return unary_result_type(me, ty_expr_type(me, operand));
+         case UNARY_OP_DELETE: return ty_intrinsic(me, TY_BOOLEAN);
+         case UNARY_OP_AWAIT: return ty_awaited(me, ty_expr_type(me, operand));
+@@ -2350,10 +2350,10 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
+         if (kept) {
+             element = ty_union_subtype_reduced(me, elements, kept);
+         } else if (count) {
+-            element = elements[0];
++            element = ty_union(me, elements, count, nullptr, (TyList){0});
+         } else {
+             // `[]` (an unannotated variable initialized with it is an evolving array in tsc, see binding.c)
+-            element = compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_IMPLICIT_NEVER) : any_type(me);
++            element = compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_IMPLICIT_NEVER) : ty_intrinsic(me, TY_UNDEFINED_WIDENING);
+         }
+         ret = ty_array(me, element, false);
+     }
+@@ -2903,7 +2903,10 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
+ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
+     switch (expr->tag) {
+         case EXPR_IMPLICIT_ANY: return any_type(me);
+-        case EXPR_LITERAL: return ty_fresh_literal(me, ty_literal(me, &expr->literal));
++        case EXPR_LITERAL:
++            if (expr->literal.tag == VALUE_NULL) return ty_intrinsic(me, TY_NULL_WIDENING);
++            if (expr->literal.tag == VALUE_UNDEFINED) return ty_intrinsic(me, TY_UNDEFINED_WIDENING);
++            return ty_fresh_literal(me, ty_literal(me, &expr->literal));
+         case EXPR_IDENTIFIER: {
+             IdentifierFlowIssue issue = IDENTIFIER_FLOW_OK; // Reported by the typecheck walk
+             return identifier_flow_type(me, expr, ctx.contextual, &issue, false);
+@@ -2934,6 +2937,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
+             if (is_constructor_declared_target(me, expr->property)) return any_type(me);
+             bool optional = false;
+             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
++            if (expr->property->method_call || expr->property->assignment_target) object = ty_widened_nullable(me, object);
+             // `never` has no properties (TS2339), `never[k]` is never
+             if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
+             Ty const* key = ty_access_key_type(me, expr->property);
+diff --git a/src/ty/function.c b/src/ty/function.c
+index a0e5046..41d5357 100644
+--- a/src/ty/function.c
++++ b/src/ty/function.c
+@@ -47,7 +47,7 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
+         ty_expr_type(me, function->yields[i]); // Checks the operand with the contextual type it gets from there
+         Ty const* type;
+         if (yield->expr.tag == EXPR_IMPLICIT_ANY) {
+-            type = ty_intrinsic(me, TY_UNDEFINED); // A bare `yield`
++            type = ty_intrinsic(me, TY_UNDEFINED_WIDENING); // A bare `yield`
+         } else if (yield->op == UNARY_OP_YIELD_STAR) {
+             u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
+             Ty const* delegate = ty_expr_type(me, &yield->expr);
+diff --git a/src/ty/members.c b/src/ty/members.c
+index d61c85a..c5bd933 100644
+--- a/src/ty/members.c
++++ b/src/ty/members.c
+@@ -2625,6 +2625,12 @@ Ty const* ty_object_literal(
+             builder_push(&builder, index, index[i]);
+         }
+         Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
++        if (kind != OBJECT_SYNTHETIC) {
++            for (u32 i = 0; i < count; i++) {
++                if (!props[i].reuse && props[i].type) fresh->xflags |= props[i].type->xflags;
++            }
++            for (u32 i = 0; i < index_count; i++) fresh->xflags |= index[i].value->xflags;
++        }
+         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
+         fresh->anonymous.free_params_unknown = true;
+         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
+@@ -2831,7 +2837,7 @@ static Ty const* widen_objects(Checker* me, Ty const* ty) {
+ }
+ 
+ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
+-    if (depth > 16) return ty;
++    if (depth > 16 || !(ty->xflags & TYX_CONTAINS_WIDENING)) return ty;
+     if (ty->kind != TY_UNION && (ty->flags & TYF_NULLABLE)) return ty_intrinsic(me, TY_ANY);
+     u64 key[2] = { KEY_WIDENED_NULLABLE, (u64)(uintptr_t)ty };
+     void const* known = intern_get(&my links, key, 2);
+@@ -2887,7 +2893,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
+             // HACK: tsc only widens its widening null and undefined (what the `null` and `undefined` expressions are),
+             // which tttt doesn't tell from written ones: a spread property (`{ ...x }` with `x: { a: undefined }`) keeps
+             // its type
+-            Ty const* widened = type && prop->literal_own ? widen_nullable(me, type, depth + 1) : type;
++            Ty const* widened = type ? widen_nullable(me, type, depth + 1) : type;
+             changed |= widened != type;
+             props[i] = (ObjectLiteralProp){
+                 .name = prop->name,
+diff --git a/src/ty/relate.c b/src/ty/relate.c
+index 0bd34d6..4c609df 100644
+--- a/src/ty/relate.c
++++ b/src/ty/relate.c
+@@ -3573,6 +3573,12 @@ static Ternary structured_related_members(
+         Ty const* source_target = source_self ? source : source->reference.target;
+         Ty const* target_target = target_self ? target : target->reference.target;
+         if (source_target == target_target && use_variances && !is_check_marker(me, source) && !is_check_marker(me, target)) {
++            // `[]` to `never[]` without strictNullChecks (tsc's isEmptyArrayLiteralType)
++            if (!source_self && is_array_target(me, source_target) && !compiler_options()->strict_null_checks &&
++                ty_reference_args(me, source).len == 1 && ty_reference_args(me, source).data[0] == ty_intrinsic(me, TY_UNDEFINED_WIDENING)
++            ) {
++                return TERNARY_TRUE;
++            }
+             Variances const* variances = get_variances(me, source_target);
+             // A recursive measurement of the same variances: tsc assumes related (Ternary.Unknown), which measures
+             // variance only from occurrences that aren't nested in recursive instantiations of the type
+diff --git a/src/ty/ty.h b/src/ty/ty.h
+index ae967cd..df0afa2 100644
+--- a/src/ty/ty.h
++++ b/src/ty/ty.h
+@@ -235,6 +235,7 @@ struct Ty {
+     u32 id;
+     u32 kind; // TyKind
+     u32 flags; // TyFlags
++    u32 xflags; // TYX_*: flags that propagate like tsc's ObjectFlags.PropagatingFlags
+     // How to print the type if it was made by a type alias (tsc's aliasSymbol/aliasTypeArguments)
+     Symbol const* alias;
+     TyList alias_args;
+@@ -624,6 +625,8 @@ static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message =
+ #define g_class_key TyReportLine, ty_report_line
+ #include <cleat/generic/vec.h>
+ 
++enum { TYX_CONTAINS_WIDENING = 1 }; // tsc's ObjectFlags.ContainsWideningType
++
+ typedef enum TyIntrinsic {
+     // Creation order copies tsc's, since union members print in id order
+     TY_ANY,
+@@ -651,6 +654,10 @@ typedef enum TyIntrinsic {
+     TY_IMPLICIT_NEVER, // The element type of `[]` under strictNullChecks (tsc's implicitNeverType)
+     TY_UNREACHABLE_NEVER, // Control flow: after a call that never returns. A reference there has its declared type
+     TY_NON_PRIMITIVE,
++    // Without strictNullChecks, what the `null`/`undefined` expressions, `void e` and `[]`'s element are (tsc's
++    // nullWideningType/undefinedWideningType): only these widen to any. The regular ones under strictNullChecks
++    TY_UNDEFINED_WIDENING,
++    TY_NULL_WIDENING,
+     TY_INTRINSIC_COUNT,
+ } TyIntrinsic;
+ 

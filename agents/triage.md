@@ -23,3 +23,9 @@ duplicated webpack), hacks.md (`string_to_double`).
   most suite tests have one file, so there is nothing to overlap). Irrelevant for one CLI run; a persistent pool
   (which stage 1's load pool would be) fixes it if a watch/LSP mode or a threaded harness ever wants it. Also, with
   fewer checked files than checkers, the empty checkers still build their global types (~0.2 ms each).
+- **`Array<T>` annotation display depends on when the global Array type was first built** (plan 37 D side finding):
+  creating Array early passes genericFunctionsWithOptionalParameters1/2, jsdocTypeGenericInstantiationAttempt,
+  unusedLocalsAndParametersTypeAliases (`Array<T>` vs `T[]`). An order dependence: find what the printer keys on.
+- **Type-predicate narrowing should return the candidate unchanged** (tsc's getNarrowedType; plan 37 B finding):
+  tttt prints `A | B` where tsc has `Both` (flowControlTypeGuardThenSwitch, partiallyDiscriminantedUnions,
+  stringLiteralCheckedInIf02).

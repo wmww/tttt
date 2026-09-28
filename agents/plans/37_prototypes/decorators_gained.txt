@@ -1,0 +1,14 @@
+potentiallyUncalledDecorators
+constructableDecoratorOnClass01
+decoratorChecksFunctionBodies
+decoratorOnClass8
+decoratorOnClassMethod10
+decoratorOnClassMethod6
+decoratorOnClassMethod8
+decoratorOnClassProperty11
+decoratorOnClassProperty6
+decoratorOnClassProperty7
+decoratorCallGeneric
+legacyDecorators-contextualTypes
+esDecorators-arguments
+esDecorators-contextualTypes

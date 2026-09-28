@@ -1,0 +1,424 @@
+diff --git a/src/class_decl.c b/src/class_decl.c
+index e1a9b96..d3a3904 100644
+--- a/src/class_decl.c
++++ b/src/class_decl.c
+@@ -118,6 +118,8 @@ static Ty const* field_type_from_assignments(Checker* checker, ClassItem const*
+     return nullptr;
+ }
+ 
++static Span decorator_span(Expr const* decorator);
++
+ Ty const* class_item_field_evaluate_type(ClassItem* me) {
+     check(my tag == CLASS_ITEM_FIELD);
+     Checker* checker = current_checker;
+@@ -1173,6 +1175,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
+     }
+ 
+     for_each (i, vec_expr, &my decorators) {
++        if (!(compiler_options()->experimental_decorators && my is_expression)) {
++            ty_check_decorator(current_checker, i, (DecoratorSite){ .class_decl = me, .param_index = -1, .at = decorator_span(i) }, errs);
++        }
+         expr_typecheck(i, errs);
+     }
+     if (!my is_ambient) class_check_static_name_conflicts(me, errs);
+@@ -1244,12 +1249,26 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
+             FunctionArg const* arg = vec_function_arg_at(&function->args, a);
+             if (!vec_expr_size(&arg->decorators) || !span_valid(arg->span)) continue;
+             bool getter = i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_GET;
+-            if (legacy && function->has_body && !getter && !my is_expression) continue;
++            if (legacy && function->has_body && !getter && !my is_expression) {
++                bool has_this = false;
++                FunctionArg const* first = vec_function_arg_at(&function->args, 0);
++                has_this = first->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(first->initializer.binding.content_span, "this");
++                if (has_this && a == 0) continue;
++                for_each (decorator, vec_expr, &arg->decorators) {
++                    ty_check_decorator(current_checker, decorator, (DecoratorSite){ .class_decl = me, .item = i,
++                        .param_index = (i32)(a - (has_this ? 1 : 0)), .at = decorator_span(decorator) }, errs);
++                }
++                continue;
++            }
+             Span at = arg->span;
+             at.sv = csview_from_n(span_start_ptr(arg->span), 1);
+             error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
+         }
+         for_each (decorator, vec_expr, &i->decorators) {
++            if (!decorator_error) {
++                ty_check_decorator(current_checker, decorator, (DecoratorSite){ .class_decl = me, .item = i, .param_index = -1,
++                    .at = decorator_span(decorator) }, errs);
++            }
+             expr_typecheck(decorator, errs);
+         }
+     }
+diff --git a/src/ty/call.c b/src/ty/call.c
+index b26580b..b6e7be0 100644
+--- a/src/ty/call.c
++++ b/src/ty/call.c
+@@ -40,8 +40,19 @@ typedef struct Args {
+     u32 len;
+     i32 spread_index; // first `spread` argument, -1 if none
+     bool incomplete; // An incomplete tagged template: too few arguments are fine (tsc's callIsIncomplete)
++    // A decorator: 0 no, 1 as many as there are, 2 ES (1-2 by the signature), 3 legacy method (2-3 by the signature)
++    uint8_t decorator_mode;
+ } Args;
+ 
++typedef struct DecoratorCall {
++    Ty const* params[3];
++    u32 count;
++    Ty const* ret; // What it may return, null: not checked
++    unsigned head_code; // 1238-1241
++    uint8_t mode; // Args.decorator_mode
++    bool void_only; // TS1271 rather than TS1270
++} DecoratorCall;
++
+ // The parameters of a signature as a call sees them: a rest parameter of tuple type is spread out
+ typedef struct ParamShape {
+     Ty const** types;
+@@ -83,6 +94,7 @@ typedef struct CallInfo {
+     bool* would_report;
+     // `new f()` on something with call signatures only, resolved as a call (tsc's resolveNewExpression)
+     bool new_as_call;
++    DecoratorCall const* decorator; // A decorator (tsc's resolveDecorator): its synthetic arguments
+ } CallInfo;
+ 
+ static void mark_would_report(CallInfo const* info) {
+@@ -118,6 +130,13 @@ static bool calls_generic_function_returning_function(Checker* me, Expr const* e
+ static Args collect_args(Checker* me, CallInfo const* info) {
+     CallExpr const* call = info->call;
+     Args args = { .spread_index = -1 };
++    if (info->decorator) {
++        for (u32 i = 0; i < info->decorator->count; i++) {
++            args_push(&args, (Arg){ .expr = &call->callable, .type = info->decorator->params[i], .part_of_spread = true });
++        }
++        args.decorator_mode = info->decorator->mode;
++        return args;
++    }
+     if (info->tagged_template) {
+         Symbol const* strings = program_get_global(my program, c_sv("TemplateStringsArray"), SYMBOL_TYPE);
+         Ty const* type = strings ? ty_declared_type_of(me, strings) : ty_empty_object_type(me);
+@@ -254,7 +273,21 @@ static void check_args(Checker* me, ParamShape const* shape, Args* args, bool sk
+     }
+ }
+ 
++// tsc's getDecoratorArgumentCount
++static u32 effective_arg_count(ParamShape const* shape, Args const* args) {
++    u32 params = shape->count + (shape_has_rest(shape) ? 1 : 0);
++    switch (args->decorator_mode) {
++        case 2: return params < 1 ? 1 : params > 2 ? 2 : params;
++        case 3: return params <= 2 ? 2 : 3;
++        default: return args->len;
++    }
++}
++
+ static bool has_correct_arity(ParamShape const* shape, Args const* args) {
++    if (args->decorator_mode) {
++        u32 len = effective_arg_count(shape, args);
++        return len >= shape->min && (shape_has_rest(shape) || len <= shape->count);
++    }
+     if (args->spread_index >= 0) {
+         return (u32)args->spread_index >= shape->min && (shape_has_rest(shape) || (u32)args->spread_index < shape->count);
+     }
+@@ -1115,7 +1148,14 @@ static void report_arity(
+     } else {
+         Span span = args->len > max && !has_rest ? span_of_args(args, max, args->len - 1) : name_span;
+         Error* error;
+-        if (has_rest) {
++        if (info->decorator) {
++            // (tsc's getArgumentArityError for a decorator: too many at the expression, too few at the decorator)
++            span = args->len > max && !has_rest ? info->call->callable.outer_span : info->call_span;
++            error = error_ctx_error_d(errs, span, has_rest ? 1279 : 1278, "The runtime will invoke the decorator with ", args->len,
++                " arguments, but the decorator expects ", has_rest ? "at least " : "", min);
++            if (!has_rest && min != max) cstr_append_d(&error->message, DEFAULT_DISPLAY, "-", max);
++            cstr_append_d(&error->message, DEFAULT_DISPLAY, ".");
++        } else if (has_rest) {
+             error = error_ctx_error_d(errs, span, 2555, "Expected at least ", min, " arguments, but got ", args->len, ".");
+         } else if (min == max) {
+             error = error_ctx_error_d(errs, span, 2554, "Expected ", min, " arguments, but got ", args->len, ".");
+@@ -1740,7 +1780,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
+             cstr rendered = ty_to_cstr(me, apparent);
+             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no construct signatures.");
+             cstr_drop(&rendered);
+-        } else if (other_count && !info->tagged_template) { // (tsc's resolveCallExpression only)
++        } else if (other_count && !info->tagged_template && !info->decorator) { // (tsc's resolveCallExpression only)
+             cstr rendered = ty_to_cstr(me, callee);
+             error_ctx_error_d(errs, call->callable.outer_span, 2348,
+                 "Value of type '", rendered, "' is not callable. Did you mean to include 'new'?");
+@@ -2274,3 +2314,233 @@ Ty const* ty_awaited_returned(Checker* me, Ty const* ty) {
+ }
+ // HACK: iteration and generator types use this where tsc has Awaited<T> too, which tttt can't relate to T yet
+ Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty) { return awaited_type(me, ty, false); }
++
++// ---- Decorators checked as calls (plan 37 prototype) ----
++
++static Ty const* global_generic(Checker* me, char const* name, Ty const* const* args, u32 len) {
++    Symbol const* symbol = program_get_global(my program, csview_from(name), SYMBOL_TYPE);
++    if (!symbol) return nullptr;
++    Ty const* declared = ty_declared_type_of(me, symbol);
++    if (declared->kind != TY_DECLARED || declared->declared.type_params.len != len) return nullptr;
++    return ty_reference(me, declared, (TyList){ .data = (Ty const**)args, .len = len });
++}
++
++static Ty const* union2(Checker* me, Ty const* a, Ty const* b) {
++    Ty const* both[2] = { a, b };
++    return ty_union(me, both, 2, nullptr, (TyList){0});
++}
++
++// tsc's getClassElementPropertyKeyType
++static Ty const* member_key_type(Checker* me, ClassItem* item) {
++    Expr const* computed = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key :
++        item->tag == CLASS_ITEM_METHOD ? item->method.computed_key : nullptr;
++    if (computed) {
++        Ty const* key = ty_expr_type(me, computed);
++        return key->flags & TYF_ES_SYMBOL_LIKE ? key : ty_intrinsic(me, TY_STRING);
++    }
++    cstr const* name = item->tag == CLASS_ITEM_FIELD ? &item->field.name_string : &item->method.name_string;
++    return ty_string_literal(me, cstr_sv(name));
++}
++
++static Ty const* member_this_type(Checker* me, ClassDecl const* class_decl, ClassItem* item) {
++    return class_item_is_static(item) ? ty_type_of_symbol(me, class_decl->symbol) : ty_declared_type_of(me, class_decl->symbol);
++}
++
++static Signature* decorator_signature(Checker* me, Ty const* const* params, char const* const* names, u32 count, Ty const* ret) {
++    SigParam* sig_params = arena_new_n(&my arena, SigParam, count);
++    for (u32 i = 0; i < count; i++) sig_params[i] = (SigParam){ .name = checker_atom(me, csview_from(names[i])), .type = params[i] };
++    Signature* sig = arena_new(&my arena, Signature);
++    *sig = (Signature){
++        .state = LAZY_STATE_DONE, .params = sig_params, .param_count = count, .min_args = count,
++        .ret_state = LAZY_STATE_DONE, .ret = ret, .predicate_done = true,
++    };
++    return sig;
++}
++
++// tsc's getLegacyDecoratorCallSignature/getESDecoratorCallSignature, into `out`; false if there is none
++static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, Signature** sig_out) {
++    bool legacy = compiler_options()->experimental_decorators;
++    ClassDecl const* class_decl = site.class_decl;
++    ClassItem* item = site.item;
++    Ty const* void_type = ty_intrinsic(me, TY_VOID);
++    *out = (DecoratorCall){0};
++    static char const* const legacy_names[] = { "target", "propertyKey", "descriptor" };
++    static char const* const param_names[] = { "target", "propertyKey", "parameterIndex" };
++    static char const* const es_names[] = { "target", "context" };
++    char const* const* names = legacy_names;
++    if (!item) {
++        Ty const* class_type = ty_type_of_symbol(me, class_decl->symbol);
++        out->head_code = 1238;
++        if (legacy) {
++            out->params[0] = class_type;
++            out->count = 1;
++            out->mode = 1;
++            out->ret = union2(me, class_type, void_type);
++        } else {
++            Ty const* context = global_generic(me, "ClassDecoratorContext", &class_type, 1);
++            if (!context) return false;
++            out->params[0] = class_type;
++            out->params[1] = context;
++            out->count = 2;
++            out->mode = 2;
++            out->ret = union2(me, class_type, void_type);
++            names = es_names;
++        }
++    } else if (site.param_index >= 0) {
++        if (!legacy) return false;
++        out->head_code = 1239;
++        out->void_only = true;
++        out->params[0] = item->tag == CLASS_ITEM_CONSTRUCTOR ? ty_type_of_symbol(me, class_decl->symbol) : member_this_type(me, class_decl, item);
++        out->params[1] = item->tag == CLASS_ITEM_CONSTRUCTOR ? ty_intrinsic(me, TY_UNDEFINED) : member_key_type(me, item);
++        Value index = value_number(site.param_index);
++        out->params[2] = ty_literal(me, &index);
++        out->count = 3;
++        out->mode = 1;
++        out->ret = void_type;
++        names = param_names;
++    } else if (item->tag == CLASS_ITEM_METHOD || item->tag == CLASS_ITEM_FIELD) {
++        bool field = item->tag == CLASS_ITEM_FIELD;
++        bool auto_accessor = field && item->field.is_auto_accessor;
++        Ty const* value = class_item_get_type(item);
++        Ty const* this_type = member_this_type(me, class_decl, item);
++        out->head_code = field ? 1240 : 1241;
++        if (legacy) {
++            out->params[0] = this_type;
++            out->params[1] = member_key_type(me, item);
++            Ty const* descriptor = global_generic(me, "TypedPropertyDescriptor", &value, 1);
++            if (!descriptor) descriptor = ty_intrinsic(me, TY_ANY);
++            bool has_descriptor = !field || auto_accessor;
++            if (has_descriptor) out->params[2] = descriptor;
++            out->count = has_descriptor ? 3 : 2;
++            out->mode = field ? 1 : 3;
++            out->ret = field ? void_type : union2(me, descriptor, void_type);
++            out->void_only = field;
++        } else {
++            Ty const* pair[2] = { this_type, value };
++            Ty const* target;
++            Ty const* ret;
++            char const* context_name;
++            if (field) {
++                context_name = auto_accessor ? "ClassAccessorDecoratorContext" : "ClassFieldDecoratorContext";
++                target = auto_accessor ? global_generic(me, "ClassAccessorDecoratorTarget", pair, 2) : ty_intrinsic(me, TY_UNDEFINED);
++                if (auto_accessor) {
++                    ret = global_generic(me, "ClassAccessorDecoratorResult", pair, 2);
++                } else {
++                    // (this: This, value: Value) => Value
++                    Signature* mutator = decorator_signature(me, &value, (char const*[]){ "value" }, 1, value);
++                    mutator->this_type = this_type;
++                    ret = ty_signature_type(me, mutator);
++                }
++            } else if (item->method.accessor == CLASS_ACCESSOR_GET) {
++                context_name = "ClassGetterDecoratorContext";
++                target = ret = ty_signature_type(me, decorator_signature(me, nullptr, nullptr, 0, value));
++            } else if (item->method.accessor == CLASS_ACCESSOR_SET) {
++                context_name = "ClassSetterDecoratorContext";
++                target = ret = ty_signature_type(me, decorator_signature(me, &value, (char const*[]){ "value" }, 1, void_type));
++            } else {
++                context_name = "ClassMethodDecoratorContext";
++                target = ret = value;
++            }
++            Ty const* context = global_generic(me, context_name, pair, 2);
++            if (!context || !target || !ret) return false;
++            // & { name: "x"; private: boolean; static: boolean } (tsc's getClassMemberDecoratorContextOverrideType)
++            bool is_private = span_valid(class_item_private_name(item));
++            cstr const* name_string = field ? &item->field.name_string : &item->method.name_string;
++            Ty const* name_type = is_private ? ty_string_literal(me, cstr_sv(name_string)) : member_key_type(me, item);
++            ObjectLiteralProp props[3] = {
++                { .name = checker_atom(me, c_sv("name")), .type = name_type },
++                { .name = checker_atom(me, c_sv("private")), .type = ty_intrinsic(me, is_private ? TY_TRUE : TY_FALSE) },
++                { .name = checker_atom(me, c_sv("static")), .type = ty_intrinsic(me, class_item_is_static(item) ? TY_TRUE : TY_FALSE) },
++            };
++            Ty const* override = ty_object_literal(me, props, 3, nullptr, 0, OBJECT_SYNTHETIC);
++            Ty const* both[2] = { context, override };
++            out->params[0] = target;
++            out->params[1] = ty_intersection(me, both, 2, nullptr, (TyList){0});
++            out->count = 2;
++            out->mode = 2;
++            out->ret = union2(me, ret, void_type);
++            names = es_names;
++        }
++    } else {
++        return false;
++    }
++    if (sig_out) *sig_out = decorator_signature(me, out->params, names, out->count, out->ret);
++    return true;
++}
++
++// tsc's getContextualTypeForDecorator
++Ty const* ty_decorator_contextual_type(Checker* me, DecoratorSite site) {
++    DecoratorCall dc;
++    Signature* sig = nullptr;
++    if (!decorator_call(me, site, &dc, &sig)) return nullptr;
++    return ty_signature_type(me, sig);
++}
++
++// tsc's checkDecorator: resolveDecorator, then the return type against what the decorator may return
++void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, ErrorCtx* errs) {
++    DecoratorCall dc;
++    Signature* sig = nullptr;
++    if (!decorator_call(me, site, &dc, &sig)) return;
++    Ty const* callee = ty_check_expr(me, decorator, ty_signature_type(me, sig));
++    Ty const* apparent = ty_apparent_type(me, callee);
++    if ((apparent->flags & TYF_ANY) || apparent == ty_intrinsic(me, TY_ERROR)) return;
++    // tsc's isPotentiallyUncalledDecorator
++    if (apparent->flags & TYF_OBJECT) {
++        Members const* members = ty_members(me, apparent);
++        bool uncalled = members->call_count > 0;
++        for (u32 i = 0; i < members->call_count && uncalled; i++) {
++            Signature const* s = members->call[i];
++            signature_resolve(me, s);
++            u32 params = s->param_count;
++            u32 count = dc.mode == 2 ? (params < 1 ? 1 : params > 2 ? 2 : params) :
++                dc.mode == 3 ? (params <= 2 ? 2 : 3) : dc.count;
++            uncalled = s->min_args == 0 && !ty_signature_has_rest(s) && params < count;
++        }
++        if (uncalled && span_eq(decorator->outer_span, decorator->inner_span)) {
++            Span at = site.at;
++            Error* e = error_ctx_error_d(errs, at, 1329, "'", decorator->inner_span.sv,
++                "' accepts too few arguments to be used as a decorator here. Did you mean to call it first and write '@",
++                decorator->inner_span.sv, "()'?");
++            (void)e;
++            return;
++        }
++    }
++    CallExpr call = { .callable = *decorator, .args = vec_expr_init() };
++    CallInfo info = { .call = &call, .decorator = &dc, .call_span = site.at };
++    ErrorCtx collected = error_ctx_init();
++    collected.phase = errs->phase;
++    Ty const* ret = resolve_call(me, callee, &info, site.at, &collected);
++    static char const* const heads[] = {
++        "Unable to resolve signature of class decorator when called as an expression.",
++        "Unable to resolve signature of parameter decorator when called as an expression.",
++        "Unable to resolve signature of property decorator when called as an expression.",
++        "Unable to resolve signature of method decorator when called as an expression.",
++    };
++    bool failed = !error_ctx_empty(&collected);
++    for_each (e, vec_error, &collected.errors) {
++        Error head = { .ts_code = dc.head_code, .phase = e->phase, .span = e->span, .message = cstr_from(heads[dc.head_code - 1238]) };
++        VecError related = {0};
++        Error line = { .message = e->message };
++        // (the elaboration of what went wrong goes under the head, its related information stays related)
++        for_each (sub, vec_error, &e->sub_errors) vec_error_push(span_valid(sub->span) ? &related : &line.sub_errors, *sub);
++        e->sub_errors.size = 0;
++        vec_error_drop(&e->sub_errors);
++        vec_error_push(&head.sub_errors, line);
++        for_each (r, vec_error, &related) vec_error_push(&head.sub_errors, *r);
++        related.size = 0;
++        vec_error_drop(&related);
++        error_ctx_append_error(errs, head);
++    }
++    collected.errors.size = 0;
++    error_ctx_drop(&collected);
++    (void)failed;
++    if (ret->flags & TYF_ANY) return;
++    if (ty_is_related(me, ret, dc.ret, TY_RELATION_ASSIGNABLE)) return;
++    cstr source_str, target_str;
++    ty_report_pair_cstr(me, ret, dc.ret, &source_str, &target_str);
++    cstr head = dc.void_only ?
++        cstr_d("Decorator function return type is '", source_str, "' but is expected to be 'void' or 'any'.") :
++        cstr_d("Decorator function return type '", source_str, "' is not assignable to type '", target_str, "'.");
++    c_drop(cstr, &source_str, &target_str);
++    ty_check_assignable_with_head(me, ret, dc.ret, dc.void_only ? 1271 : 1270, head, decorator->outer_span, errs);
++}
+diff --git a/src/ty/check.c b/src/ty/check.c
+index d48b42c..e89139c 100644
+--- a/src/ty/check.c
++++ b/src/ty/check.c
+@@ -743,6 +743,11 @@ void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span s
+     check_assignable(me, HEAD_TYPE, source, target, span, nullptr, errs);
+ }
+ 
++void ty_check_assignable_with_head(Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, Span span, ErrorCtx* errs) {
++    if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) { cstr_drop(&head); return; }
++    report_unassignable_with_head(me, source, target, ts_code, head, false, span, errs);
++}
++
+ bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs) {
+     return check_assignable(me, HEAD_TYPE, source, target, span, expr, errs);
+ }
+diff --git a/src/ty/ty.h b/src/ty/ty.h
+index ae967cd..a0f7ba4 100644
+--- a/src/ty/ty.h
++++ b/src/ty/ty.h
+@@ -1387,6 +1387,7 @@ void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param,
+ // The same for a source that is `expr`'s type: a literal or arrow function is reported at what inside it doesn't fit
+ // (tsc's elaborateError). Returns whether it was assignable
+ void ty_check_enum_member_value(Checker* me, Ty const* source, Span span, ErrorCtx* errs);
++void ty_check_assignable_with_head(Checker* me, Ty const* source, Ty const* target, unsigned ts_code, cstr head, Span span, ErrorCtx* errs);
+ bool ty_check_assignable_expr(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs);
+ // A `using` (TS2850) or `await using` (TS2851) initializer: disposable, null or undefined
+ void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Span span, ErrorCtx* errs);
+@@ -1518,6 +1519,17 @@ void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty c
+ // A tagged template `` tag`a${x}` ``, the EXPR_TEMPLATE: a call of the tag with a TemplateStringsArray and the substitutions
+ Ty const* ty_tagged_template_return_type(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual);
+ void ty_tagged_template_typecheck(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual, ErrorCtx* errs);
++// A decorator checked as a call (tsc's checkDecorator/resolveDecorator): of the class, of `item`, or of its
++// parameter `param_index` (-1: not a parameter). `at`: the whole decorator from its `@`
++struct ClassItem;
++typedef struct DecoratorSite {
++    ClassDecl const* class_decl;
++    struct ClassItem* item;
++    i32 param_index;
++    Span at;
++} DecoratorSite;
++void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, ErrorCtx* errs);
++Ty const* ty_decorator_contextual_type(Checker* me, DecoratorSite site);
+ Ty const* ty_awaited(Checker* me, Ty const* ty);
+ Ty const* ty_promise_like_of(Checker* me, Ty const* ty);
+ Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);

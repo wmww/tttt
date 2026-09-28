@@ -33,8 +33,9 @@ property reads, relations, `removeMissingType`, display), then the messages are 
   `{ cancelable: any; }` (inferFromAnnotatedParameters with a generic rest): inferredRestTypeFixedOnce.
 - `unknown` where tsc infers a type: intraExpressionInferences, mappedTypeRecursiveInference; mappedTypeMultiInference
   (`K` of `...cssSets: { [P in K]?: Style }[]` inferred from the first rest argument only: spurious TS2353).
-- Reverse mapped types (plan 08) are eager objects, no arrays/tuples, cut at depth 4 (`reverse_mapped_type`); tsc's
-  are lazy. Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key.
+- Reverse mapped types (plan 08) are eager (arrays/tuples included), cut at depth 4 (`reverse_mapped_type`); tsc's
+  are lazy. Plan 37 measured: cut 6 changes nothing in 385 mapped/infer tests, 12 hangs the suite; only
+  reverseMappedTypeRecursiveInference plausibly needs laziness. Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key.
 - Contextual signature of a type with several call signatures (tsc's getIntersectedSignatures:
   signatureCombiningRestParameters2, spurious TS7019). 107 tests have a spurious TS7006: sample them.
 - promiseTry (spurious TS2578): `Promise.try(cb, ...args)` with `U extends unknown[]` inferred from both the callback's

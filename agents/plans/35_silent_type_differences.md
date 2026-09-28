@@ -59,13 +59,13 @@ The queue below from stage 1, worked top to bottom, and what the buckets showed 
 TS tests by the kind of their first differing line: underlines/order 106 (display), line-missing 72, shape-other/
 declaration 59, union-order 56 (display), we-any/declaration 50, signature-differs/declaration 50, union-differs/
 declaration 44, our-typeof 42, object-differs/declaration 38. Mechanisms seen, roughly by size:
-1. **Non-widening null/undefined** (~25 non-strict tests, 11 fixed by it alone: bestCommonTypeOfTuple(2),
+1. **Now plan 37 A** (prototype +48). **Non-widening null/undefined** (~25 non-strict tests, 11 fixed by it alone: bestCommonTypeOfTuple(2),
    tupleLengthCheck, castingTuple, indexerWithTuple, noImplicitAnyIndexing...): tsc has undefinedWideningType /
    nullWideningType for the `undefined`/`null` expressions, `void`, `[]`; only those widen to any. tttt widens every
    null/undefined (`widen_nullable()` HACK, and now inference too). Needs two more intrinsics (non-strict only,
    printing the same) that `widen_nullable` alone widens, union/intersection construction treating both as nullable,
    and the `== ty_intrinsic(TY_UNDEFINED)` comparisons (~47 in ty/) checked. Medium, risky; measure first.
-2. **Decorators contextually typed as calls** (esDecorators-contextualTypes, legacyDecorators-contextualTypes: `t`,
+2. **Now plan 37 C** (prototype +14). **Decorators contextually typed as calls** (esDecorators-contextualTypes, legacyDecorators-contextualTypes: `t`,
    `c : ClassDecoratorContext<...>`): a decorator expression is checked like a call with the decorated thing's
    arguments (tsc's getEffectiveCallArguments for Decorator). A feature, ~2 big tests plus whatever the corpora use.
 3. **BigInt literals are doubles** (`Value.bigint`): parseBigInt, localesObjectArgument print rounded values.

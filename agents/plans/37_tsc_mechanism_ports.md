@@ -1,37 +1,149 @@
 # Plan 37: port the tsc mechanisms the long tail keeps working around
-Written by the insights of 2026-09-28 as a brief for a **planning session**; that session replaces this file's
-"Candidates" with ranked, derisked sub-plans (in this file or `37a_*.md`...).
+Brief by the insights of 2026-09-28; ranked and derisked by the planning session of the same day (todo entry 3),
+which prototyped every candidate in a worktree (one Opus sub-agent each). **Every port below has a working prototype
+at 3337e91 in `37_prototypes/*.patch`** (all apply cleanly to 3337e91, null_widening + union_origins together too),
+with the measured gained tests next to it (`*_gained.txt`). Execution = clean up and land the prototype, not design.
 
 ## Why
-Four windows of small-fix sessions have moved the suite from 8202 to 10215. More and more of those sessions end
-with "the real fix is tsc's X, which tttt doesn't have", and add another approximation around X (hacks.md "Type
-core", "Calls and inference"). Each approximation costs a little every time a later fix runs into it, and some
-block whole buckets outright. Plans 29-30 (deferred references, substitution types) showed that porting a named
-tsc mechanism in place pays: suite up, corpus counts down, approximations deleted.
+Four windows of small fixes moved the suite from 8202 to 10215, and sessions kept ending with "the real fix is tsc's
+X, which tttt doesn't have". Plans 29-30 showed porting a named tsc mechanism in place pays.
 
-## Candidates (unranked; the planning session measures each)
-- **Missing type** (tsc's `missingType`, exactOptionalPropertyTypes): `bugs/type_core.md` "exactOptionalPropertyTypes"
-  (23 configurations, TS2375/TS2379/TS2412 absent, zod-root's one missing diagnostic), hacks.md "No missing type",
-  `exact_missing_flag()`. Also optional tuple element display (`string?`) and `'a' in x` narrowing.
-- **Non-widening null/undefined** (tsc's `undefinedWideningType`/`nullWideningType`, non-strict only): plan 35 queue
-  item 1 (~25 tests, 11 alone), the `widen_nullable()` HACK, inference widening.
-- **Evolving arrays and `let x;`** (tsc's `autoArrayType`/`autoType` with flow): HACKs in `binding.c`, `ty/flow.c`,
-  `ty/expr.c` (grep "evolving"). ~100 failing tests contain `let x = [];` / `let x;` (an upper bound, not the count).
-- **Decorators checked as calls** (tsc's `checkDecorator`, getEffectiveCallArguments for decorators, TS1238/TS1241/
-  TS1270, contextual types of decorator arguments): plan 35 queue item 2; 52 failing tests use decorators; nest
-  (the decorator-heavy corpus) can't show what isn't checked.
-- **Union and keyof origins** (display: `bugs/display.md`; also the relation budget's HACK in hacks.md).
-- **Context-free return-only signatures** for sensitive arguments (`bugs/type_core.md` "Inference": the
-  `SkipContextSensitive` first round) and **fixing without candidates** (call.c's gate).
-- **Lazy reverse mapped types** (eager, cut at depth 4 today), **permissive instantiation** leftovers,
-  **intersection reduction by constraint** (`bugs/type_core.md` "Relations").
+## Ranking (measured: full suite on the prototype vs 3337e91's 10217, 0 tests lost in every row)
+| # | port | suite | corpora | HACKs deleted | sessions | risk | perf (instr, K=1) |
+|---|------|-------|---------|---------------|----------|------|-------------------|
+| A | non-widening null/undefined | **+48** (+4 improved) | none (all strict) | `widen_nullable`, `[]` display fake | 1 (+1 opt.) | low-med | +0.15% |
+| B | union / keyof origins | **+37** (+47 components) | same counts; webpack messages print aliases | relation budget's only case, display.md origins | 1 (+1 opt.) | low | valibot **+3.0%**, zod +0.5% |
+| C | decorators checked as calls | **+14** | nest's 532 decorators checked, still 0 | "decorators as expressions" + 3 TODOs | 1 | low | nest < 0.5% |
+| D | evolving arrays (autoArrayType) | **+8** | unchanged (webpack's `var x = []` evolves now) | 3 (binding.c, ty/flow.c, flow.h) | 1 | low | +0.2% |
+| E | missing type (exactOptional) | **+3** (+10 components) | zod-root +1 (its one missing TS2412) | `exact_missing_flag()` | 1 | low | -0.2..-0.8% |
+| F | return-only signatures | +1 | fires 0 times | "no returnOnlyType" | 0.3 | very low | none |
+| - | fixing without candidates | +1 / **-8** naive | zod +2 spurious TS2769 | (the gate) | 2-3 | high | ? |
+| - | lazy reverse mapped types | ~1 | none | - | 1-2 | medium (perf) | cut 4 -> 12 hangs the suite |
+| - | permissive instantiation | not measured | - | - | - | - | - |
 
-## What the planning session does
-1. For each candidate: which tests (and corpus diagnostics) it blocks, measured, not estimated from greps (e.g.
-   prototype the rule, or list tests whose diff mentions it); which HACKs it deletes; what it risks (the relation
-   and inference paths it touches, perf: check zod/valibot instructions).
-2. Rank by (tests + corpus + hacks deleted) / (sessions x risk). Prototype the top two or three far enough to know
-   the shape (the plan 36 approach: measurement code, thrown away).
-3. Write a sub-plan for each of the top ones with stages and validation (suite no losses, corpora unchanged or
-   better, instruction counts on zod/valibot/tsc), and a short verdict line for the ones not worth it now.
-4. Update todo.md's entries 4-5 to name the chosen ports.
+A-E together: ~+110 tests for ~5 sessions, plus the hacks. The earlier estimates were off both ways: evolving arrays
+"~100 tests" is really 18 failing tests with `x = []` (`let x;` already had TY_AUTO); null widening "~25" is 48.
+Verdicts on the rest: **fixing without candidates, not now**: tttt decides up front which type parameters an argument
+fixes by probing shapes (`fixed_by_argument`/`fixed_by_expr`/`fixed_by_type`/`fixed_by_function`), tsc fixes lazily
+(only what instantiating a contextual signature for unannotated parameters touches); the port is `assign_contextual_
+signature()` + `Checker.contextual_fixing_mapper` fixing lazily, then instantiateContextualType at instantiable
+positions (the risky part), then deleting the probes, the "only where it would be unknown" stand-in and the gate.
+It needs a precise "mentions type parameter P" walk (`collect_free_params` gives up on functions), which is also what
+permissive instantiation's leftovers need. Losses to keep: `37_prototypes/fixing_gate_lost.txt`; zod's `Array.from({
+length: n}, (_, i) => ...)` must stay clean. Measured gain +1: revisit when a corpus needs it. **Lazy reverse mapped
+types, not now**: arrays/tuples are reverse mapped already (bugs/type_core.md's note was stale, fixed), only
+reverseMappedTypeRecursiveInference plausibly needs laziness.
+
+## A. Non-widening null/undefined (`null_widening.patch`, `null_widening_gained.txt`)
+tsc, non-strict only: `undefinedWideningType`/`nullWideningType` print as `undefined`/`null`, carry
+ContainsWideningType, come from the `null`/`undefined` expressions, `void e`, bare `yield`, `[]`'s element, and a union
+of only widening nullables; the flag spreads into unions, references and object literals; `getWidenedType` widens only
+those to `any`. Prototype: `Ty.xflags` (`TYX_CONTAINS_WIDENING`, in padding), `TY_UNDEFINED_WIDENING`/`TY_NULL_WIDENING`
+(aliases of the plain ones under strictNullChecks), OR'd in `intern_composite`, `ty_reference_with_this`,
+`ty_object_literal`; `ty_union` keeps a union of only nullables widening unless a non-widening member is present;
+made in `compute_inner`, `check_unary` (void), `check_array` (`[]`), `infer_generator_type`; `widen_nullable` exits
+early without the flag. Three tsc widening sites tttt lacked (all 72 intermediate losses came from them): for-of
+variables (`for_each_loop_statement_evaluate_var_type`), the object of a called/assigned property access (tsc's
+`isMethodAccessForCall`: new `PropertyExpr.method_call`, set in the resolve walk's EXPR_CALL), and relate.c's
+`isEmptyArrayLiteralType` (`[]` to `never[]` non-strict). Plus tsc's reportErrorsFromWidening under noImplicitAny
+(`report_errors_from_widening` in binding.c: TS7018 / TS7005 / TS7006).
+- **Stage 1 (1 session)**: land it; delete the `if (false)` branch and the dead helper the prototype left in the
+  test traversal; skip the flag ORs under strictNullChecks; delete hacks.md `widen_nullable`, bugs/display.md's `[]`
+  TS2345 entry; document `Ty.xflags` in documentation.md.
+- **Stage 2 (optional)**, the remaining widening errors, ~8-10 tests read from diffs: TS7031 on binding elements
+  (wideningTuples5, noImplicitAnyDestructuring*), TS7010/7011/7025 on widened inferred returns (wideningTuples7,
+  implicitAnyGenericTypeInference), TS7008 class fields, TS7018 through a spread (noImplicitAnyUnionNormalizedObject
+  Literal1: spread copies lose `literal_own`), `extends null` vs nullWideningType (classExtendsNull3), `export {
+  undefined }` (reExportUndefined1), IIFE missing arguments.
+
+## B. Union and keyof origins (`union_origins.patch`, `union_origins_gained.txt`)
+Prototype: `Ty.composite.origin` (a non-interned `Ty`: union of named unions + members, an intersection, or a
+`keyof`); `intern_composite_origin` keys on it (tsc: same members, different origins = different types);
+`union_with_origin` = old `ty_union` + tsc's named-union handling (`add_named_unions`: `A | <A's members>` is `A`);
+`ty_union_filtered`/`filtered_origin` keep the origin through narrowing (`Animal | undefined` -> `Animal`); `ty_keyof`
+keeps `keyof X` for aliased/class/interface/reference operands; `intersection()` does tsc's flat
+getCrossProductIntersections with the intersection as origin; relate.c `structured_related_members` gets tsc's two
+origin shortcuts; `ty_display.c` prints origins. Also changed `malloc` -> `calloc` in `ty_non_nullable`: check why.
+- **Stage 1 (1 session)**: land it; **recover valibot's +3%**: skip the named-union pass when no input union has an
+  alias/origin, compact the origin in the interning key (target: valibot/zod within +1%; the prototype's getenv
+  switches in hot paths measured +6%, keep them out); grep for union pointer comparisons meaning "same member set"
+  (caches, "did narrowing change it"); run `./threadcheck.sh` and `./checkerdiff.py` (not done by the prototype).
+  Delete hacks.md "Relation budget" (relationComplexityError's f1 is gone; f2 reports TS2859 once, tsc twice) and the
+  "Unions have no tsc `origin`" sentence, bugs/display.md "Union/keyof origins".
+- **Stage 2 (optional, ~5-15 tests, a guess)**: origins semantically: instantiate the origin in `instantiate_inner`'s
+  union case (re-intersect for intersection origins: reverseMappedTupleContext, keyofIntersection,
+  checkJsxChildrenProperty3), map over origin members in the union-mapping helper (tsc's mapType: `await`/narrowing keep
+  `IteratorResult<number, void>`: privateNameMethodAsync), `keyof (A & B)` per getIndexType. Remaining list:
+  `union_origins_remaining.txt`. Not origins (triage): type-predicate narrowing should return the candidate unchanged
+  (tsc's getNarrowedType: flowControlTypeGuardThenSwitch, partiallyDiscriminantedUnions, stringLiteralCheckedInIf02).
+
+## C. Decorators checked as calls (`decorators.patch`, `decorators_gained.txt`)
+Prototype: tsc's resolveDecorator as a `CallInfo` flag with synthetic arguments (`DecoratorCall` in ty.h, like
+tagged templates), argument count per tsc (TS1278/TS1279 wording), heads TS1238-1241, TS1270/1271 on returns,
+ES decorator contexts (`ClassMethodDecoratorContext`...) and legacy descriptors. Gains include plan 35 queue item 2
+(esDecorators-contextualTypes, legacyDecorators-contextualTypes), potentiallyUncalledDecorators, decoratorOnClass*.
+- **Stage 1 (1 session)**: cache the decorator signature per decorated node; make explicit that parameter
+  decorators get their contextual type from the class check before the function check re-checks them (implicit in
+  the prototype); TS2318 for missing decorator globals (missingDecoratorType then passes); probes (generic factory,
+  overloads, union callee, wrong ES return, constructor parameter decorator, private/computed names); delete hacks.md
+  "Decorators are typechecked as ordinary expressions" and the "only checked as expressions" TODOs in class_decl.h /
+  function_impl.h. Validation: nest stays 0 and threadcheck-identical, nest instructions within 1%.
+- **Stage 2 (small, triage-sized)**: `this` inside an ES decorator is the outer `this` (outerThisReference x4,
+  privateFieldAccess, decoratorOnClassMethod11: name resolution scoping). esDecorators-contextualTypes.2 needs `This`
+  inferred through a generic decorator (inference). Rest: `decorators_remaining.txt`.
+
+## D. Evolving arrays (`evolving_arrays.patch`, `evolving_arrays_gained.txt`)
+Prototype: binder `FLOW_ARRAY_MUTATION` nodes (`flow_maybe_array_mutation()` after a non-chain call's arguments and
+a plain `=`; only when the target may be auto-typed, `may_evolve()`, which is what got perf from +0.75% to +0.2%),
+the operation-target mark (`.length`/`push`/`unshift`, `x[i] = v`); ty/flow.c `evolving_array`, `finalize_evolving`,
+`add_evolving_element`, `union_or_evolving`, `type_at_array_mutation`; `identifier_flow_type` treats TY_AUTO and the
+auto array alike, TS7034/TS7005 say `'any[]'` and are gated on noImplicitAny like tsc. TY_AUTO gets
+`TYF_NON_INFERRABLE` (inferenceShouldFailOnEvolvingArrays). **Ordering trap**: the auto array type needs the lowest
+array id (tsc's autoArrayType) to win subtype reduction against `any[]`; the prototype makes it in `ty_array()` when
+Array resolves. The Expr size must not grow (the prototype shares the `this_function` slot: 144 bytes stays).
+- **Stage 1 (1 session)**: a real representation for the evolving type (the prototype abuses a TY_INTRINSIC with the
+  element in `alias_args`), with its final array cached; an enum for the operation-target flag; tsc gaps the suite
+  doesn't cover (`x?.push(v)` mutation nodes, a `const x = []` read in a closure doesn't evolve outside it, the `x!`
+  rule for auto types); probes (loops, closures, non-numeric `x[i]`, `(x = [], x).push`). Delete the binding.c and
+  ty/flow.c HACKs, flow.h's comment, hacks.md "No array mutation flow nodes" + the evolving half of the `x!` entry,
+  bugs/type_core.md "Evolving arrays". Out of scope: yieldExpressionInControlFlow (TS7005 from a nested evaluation).
+- Side finding (not in the port, triage): creating the global Array type early passes 4 more tests
+  (genericFunctionsWithOptionalParameters1/2, jsdocTypeGenericInstantiationAttempt, unusedLocalsAndParametersType
+  Aliases): an `Array<T>` annotation prints `Array<T>` or `T[]` depending on when Array was first built.
+
+## E. The missing type (`missing_type.patch`, `missing_type_gained.txt`)
+Small in the suite (few exactOptional tests) but valibot, type-fest and zod are exactOptional projects, and it deletes
+`exact_missing_flag()`. Every new path runs only under exactOptionalPropertyTypes. Prototype: `TY_MISSING` intrinsic
+(prints `undefined`, dropped next to undefined in `ty_union`), `ty_undefined_or_missing`/`ty_contains_missing`/
+`ty_remove_missing`/`ty_optional_prop_type`; reads (`access()`, `tuple_element_type`, `prop_or_index_type`) add
+missing; written `T["a"]` turns it into undefined; write targets read the declared type (`ty_access_write_type`);
+`optional_adds_undefined()` at the relation's add-undefined sites; `tuples_related` removes missing per element;
+`identity_prop_type` still adds undefined (**valibot's expect-type checks broke with 52 TS2554 without that**: tsc's
+identity treats missing = undefined); spreads keep the declared optional type (**zod broke with 6 spurious** without
+that: `spread_props_of`, `spread_into`); `'a' in x` / hasOwnProperty narrow the missing away; `[string?]` display;
+array holes are optional missing elements; TS2375 (`ty_has_exact_optional_unassignable`), TS2379, TS2412 (in
+`elaborate_element` and `x.a = v` via a `HEAD_EXACT_PROP` head).
+- **Stage 1 (1 session, or half of one)**: land it; delete `exact_missing_flag()` + 3 call sites (`PROP_STRIP_
+  UNDEFINED` stays for `-?`); fix the ty.h comment the prototype mangled (`ty_without_undefined`'s "Removes undefined
+  only" landed on `ty_optional_prop_type`); assert/document that `ty_contains_missing` relies on missing sorting first;
+  `./threadcheck.sh valibot zod`. Delete hacks.md "No missing type", trim bugs/type_core.md "exactOptionalProperty
+  Types" to the leftovers, mark plan 19's zod-root TS2412 fixed (zod-root 91 -> 92 total, the added one is tsc's).
+- **Stage 2 (with other inference work, 2-3 tests)**: inferred candidates drop missing (contextuallyTypedOptional
+  Property), inferring `T` from `Partial<T>` makes properties required (strictOptionalProperties1), JSDoc `[value]`
+  optional properties (strictOptionalProperties3).
+
+## F. Return-only signatures (`inference.patch`: `return_only_type()` in ty/expr.c; ignore the P37_* toggles)
+tsc's returnOnlyType under SkipContextSensitive: a non-inferrable signature whose return is the body checked against
+the contextual return, cached under `KEY_CONTEXT_FREE`; `infer_from_signatures` skips non-inferrable parameters.
+Fires in 6 suite tests, 0 corpus sites; +1 (badInferenceLowerPriorityThanGoodInference). Before landing: the shared
+`p37_returns` buffer is reset by recursion (collect into a local), async/generator functions should get it too, drop
+the getenv toggles. A side task for whichever session has room; deletes hacks.md "Skip-sensitive first pass"'s
+returnOnlyType part and bugs/type_core.md "Context-free type of return-sensitive functions".
+
+## Order and validation
+A, then B (they touch the same `intern_composite`: A ORs flags there, B adds the origin key; whichever lands second
+rebases), then C + D (independent, one session could take both if C's stage 1 is quick), E, F as filler. Every stage:
+`./fasttest.sh --summary` gains at least the listed tests with 0 lost, every corpus unchanged (E: zod-root +1),
+`./threadcheck.sh` + `./checkerdiff.py` clean, `perf stat -e instructions:u ./release/tttt --checkers 1 --threads 1`
+on zod/valibot (and nest for C, tsc/webpack for D) within the column above. The patches are against 3337e91: expect
+small conflicts later, apply with `git apply -3` or by hand. Delete `37_prototypes/` entries as they land.

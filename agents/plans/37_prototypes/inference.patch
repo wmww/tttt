@@ -1,0 +1,213 @@
+diff --git a/src/ty/call.c b/src/ty/call.c
+index b26580b..d2d1850 100644
+--- a/src/ty/call.c
++++ b/src/ty/call.c
+@@ -434,15 +434,22 @@ static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape,
+ // typed for good, so what they mention is decided. The contextual return type isn't (tsc instantiates it with the
+ // non-fixing mapper), except for the parameters of a function it returns (`() => x => x.length`), which are typed for
+ // good too. Anything other than a single signature is taken to decide everything it mentions
++static _Thread_local bool p37_precise;
++static bool probe_changes(Checker* me, Ty const* ty, TyMapper const* probe) {
++    Ty const* inst = ty_instantiate(me, ty, probe);
++    if (inst == ty) return false;
++    return !p37_precise || !ty_is_related(me, inst, ty, TY_RELATION_IDENTITY);
++}
++
+ static bool fixed_by_type(Checker* me, Ty const* type, TyMapper const* probe, bool top, u32 depth) {
+     Members const* members = type->kind == TY_ANONYMOUS ? ty_members(me, type) : nullptr;
+     if (!members || members->call_count != 1 || members->prop_count || members->construct_count) {
+-        return top && ty_instantiate(me, type, probe) != type;
++        return top && probe_changes(me, type, probe);
+     }
+     Signature const* contextual = members->call[0];
+     signature_resolve(me, contextual);
+     for (u32 i = 0; i < contextual->param_count; i++) {
+-        if (ty_instantiate(me, contextual->params[i].type, probe) != contextual->params[i].type) return true;
++        if (probe_changes(me, contextual->params[i].type, probe)) return true;
+     }
+     return depth < 8 && fixed_by_type(me, signature_return_type(me, contextual), probe, false, depth + 1);
+ }
+@@ -454,9 +461,9 @@ static bool fixed_by_function(Checker* me, FunctionImpl const* function, Signatu
+     for (u32 i = 0; i < sig->param_count; i++) {
+         FunctionArg const* arg = i < (u32)vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, i) : nullptr;
+         if (arg && !arg->rest && arg->initializer.binding.has_explicit_type) continue;
+-        if (ty_instantiate(me, sig->params[i].type, probe) != sig->params[i].type) return true;
++        if (probe_changes(me, sig->params[i].type, probe)) return true;
+     }
+-    if (sig->this_type && ty_instantiate(me, sig->this_type, probe) != sig->this_type) return true;
++    if (sig->this_type && probe_changes(me, sig->this_type, probe)) return true;
+     return fixed_by_type(me, signature_return_type(me, sig), probe, false, 1);
+ }
+ 
+@@ -702,10 +709,12 @@ static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper
+ }
+ 
+ // `*inferred_out`: the type parameters of generic function arguments that the return type is now generic in
++static bool p37_fix_all;
+ static TyMapper const* infer_type_arguments(
+     Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic,
+     TyList* inferred_out
+ ) {
++    p37_fix_all = getenv("P37_FIX") != nullptr;
+     Ty const* contextual = info->contextual;
+     Ty const* this_arg = info->this_arg;
+     Inference inf;
+@@ -811,7 +820,7 @@ static TyMapper const* infer_type_arguments(
+             // The rest of an object or array literal with a context-sensitive function in it is inferred from already
+             // (tsc's CheckMode.SkipContextSensitive): `{ schema, onSubmit: (values) => {} }`
+             Ty const* param_type = shape_type_at(&shape, i);
+-            if (arg->context_sensitive && arg->expr->tag != EXPR_FUNCTION && !arg->spread && !arg->part_of_spread && param_type) {
++            if (arg->context_sensitive && (arg->expr->tag != EXPR_FUNCTION || !getenv("P37_NO_RO")) && !arg->spread && !arg->part_of_spread && param_type) {
+                 my outer_inference = &self;
+                 Ty const* context = return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
+                 GenericFunctionMode mode = {0};
+@@ -928,7 +937,10 @@ static TyMapper const* infer_type_arguments(
+         TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
+         bool any_candidates = false;
+         for (u32 j = 0; j < inf.len; j++) {
+-            if (!inf.params[j].co_len && !inf.params[j].contra_len) continue;
++            if (!inf.params[j].co_len && !inf.params[j].contra_len) {
++                if (p37_fix_all && !inf.params[j].fixed) { p37_precise = getenv("P37_PRECISE") != nullptr; bool f = fixed_by_argument(me, arg, param_type, sig->type_params.data[j]); p37_precise = false; if (f) inf.params[j].fixed = so_far->targets[j]; }
++                continue;
++            }
+             any_candidates = true;
+             if (fixed_by_argument(me, arg, param_type, sig->type_params.data[j])) inf.params[j].fixed = so_far->targets[j];
+         }
+diff --git a/src/ty/expr.c b/src/ty/expr.c
+index 5866d48..2f0a520 100644
+--- a/src/ty/expr.c
++++ b/src/ty/expr.c
+@@ -36,6 +36,7 @@ typedef struct ExprCtx {
+ } ExprCtx;
+ 
+ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx);
++static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx);
+ static Ty const* check_template(Checker* me, Expr const* expr, ExprCtx ctx);
+ 
+ static Ty const* any_type(Checker* me) { return ty_intrinsic(me, TY_ANY); }
+@@ -128,11 +129,61 @@ static bool in_const_context(Checker* me, Expr const* expr, ExprCtx ctx) {
+         is_const_context_kind(expr) && ty_is_const_type_variable(me, ctx.contextual, 0));
+ }
+ 
++
++static _Thread_local struct { Expr const* data[256]; u32 len; } p37_returns;
++static bool p37_collect(Expr const* e) { if (p37_returns.len < 256) p37_returns.data[p37_returns.len++] = e; return false; }
++// PROTOTYPE (plan 37): tsc's returnOnlyType in checkFunctionExpressionOrObjectLiteralMethod under SkipContextSensitive
++static Ty const* return_only_type(Checker* me, FunctionImpl const* function, Ty const* contextual) {
++    if (getenv("P37_NO_RO")) return ty_any_function_type(me);
++    if (function->ret_explicit || !function->has_body || !span_valid(function->arrow_span) ||
++        function->is_async || function->is_generator || !contextual) {
++        return ty_any_function_type(me);
++    }
++    for_each (i, vec_function_arg, &function->args) {
++        if (!i->initializer.binding.has_explicit_type) return ty_any_function_type(me);
++    }
++    Signature const* csig = ty_single_signature(me, contextual, false, false);
++    if (!csig) return ty_any_function_type(me);
++    signature_resolve(me, csig);
++    Ty const* cret = signature_return_type(me, csig);
++    if (!(cret->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty_any_function_type(me);
++    u64 key[2] = { KEY_CONTEXT_FREE, (u64)(uintptr_t)function };
++    void const** slot = intern_slot(me, &my links, key, 2);
++    if (*slot) return *slot;
++    Ty const* body;
++    if (function->expression_body) {
++        Statement const* ret_stmt = vec_statement_at(&function->body.statements, 0);
++        body = check_with(me, &ret_stmt->expr, (ExprCtx){ .contextual = cret, .skip_sensitive = true });
++    } else {
++        p37_returns.len = 0;
++        statements_any_return(&function->body.statements, p37_collect);
++        TyBuf types = {0};
++        for (u32 i = 0; i < p37_returns.len; i++) {
++            ty_buf_push(&types, check_with(me, p37_returns.data[i], (ExprCtx){ .contextual = cret, .skip_sensitive = true }));
++        }
++        if (!types.len) { ty_buf_drop(&types); return ty_any_function_type(me); }
++        FlowReachability end = ty_function_end_reachability(me, function);
++        if (compiler_options()->strict_null_checks && (function->has_bare_return || end == FLOW_REACH_YES)) {
++            ty_buf_push(&types, ty_intrinsic(me, TY_UNDEFINED));
++        }
++        body = ty_union_subtype_reduced(me, types.data, types.len);
++        ty_buf_drop(&types);
++    }
++    body = ty_widened_return_type(me, body, cret);
++    Signature* sig = arena_new(&my arena, Signature);
++    *sig = (Signature){ .flags = SIGNATURE_NON_INFERRABLE, .state = LAZY_STATE_DONE, .ret_state = LAZY_STATE_DONE, .ret = body, .predicate_done = true };
++    Ty* type = (Ty*)ty_signature_type(me, sig);
++    type->flags |= TYF_NON_INFERRABLE;
++    *slot = type;
++    if (getenv("P37_TRACE")) fprintf(stderr, "P37RO fired\n");
++    return type;
++}
++
+ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
+     ctx.is_const = in_const_context(me, expr, ctx);
+     if (ctx.skip_sensitive) {
+         if (ty_expr_is_context_sensitive(expr)) {
+-            if (expr->tag == EXPR_FUNCTION) return ty_any_function_type(me);
++            if (expr->tag == EXPR_FUNCTION) return return_only_type(me, expr->function, ctx.contextual);
+             return compute(me, expr, ctx);
+         }
+         ctx.skip_sensitive = false;
+diff --git a/src/ty/infer.c b/src/ty/infer.c
+index 4636447..e056bb7 100644
+--- a/src/ty/infer.c
++++ b/src/ty/infer.c
+@@ -255,7 +255,7 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const*
+     bool saved_bivariant = inf->bivariant;
+     inf->bivariant |= (target->flags & SIGNATURE_METHOD) != 0;
+     if (flip) inf->contravariant = !inf->contravariant;
+-    infer_from_params(me, inf, (InferStep){0}, source, target, base);
++    if (!(source->flags & SIGNATURE_NON_INFERRABLE)) infer_from_params(me, inf, (InferStep){0}, source, target, base);
+     if (flip) inf->contravariant = !inf->contravariant;
+     inf->bivariant = saved_bivariant;
+     infer_from_returns(me, inf, (InferStep){0}, source, target, base);
+@@ -438,6 +438,7 @@ static Ty const* reverse_mapped_prop_type(Checker* me, Ty const* source, MappedI
+ // The T for which `{ [K in keyof T]: Template }` would be `source` (tsc's createReverseMappedType), eagerly. Null if
+ // the source isn't an object with properties or a string index
+ static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand);
++static u32 p37_rm_max(void) { char const* e = getenv("P37_RM"); return e ? (u32)atoi(e) : 4; }
+ 
+ // Cached like tsc's reverseHomomorphicMappedCache: `keyof T & ("a" | "b" | ...)` as the constraint asks for the same
+ // one once per member (tsc's createComputedCompilerOptions, 135 of them). Only at the top level, where the depth
+@@ -507,7 +508,7 @@ static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, Map
+         return nullptr;
+     }
+     if (ty_is_array(me, source) || ty_tuple_shape(source)) {
+-        if (my reverse_mapped_depth >= 4) return nullptr;
++        if (my reverse_mapped_depth >= p37_rm_max()) return nullptr;
+         my reverse_mapped_depth++;
+         Ty const* ret = reverse_mapped_array_like(me, source, mapped, operand);
+         my reverse_mapped_depth--;
+@@ -525,7 +526,7 @@ static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, Map
+     if (!members->prop_count && !has_string_index) return nullptr;
+     // A recursive mapped type (`{ [K in keyof V]: Foo<V[K]> }`) reverse maps its property types again, all the way
+     // down: tsc's reverse mapped types resolve their members lazily, these are built right away and cut off
+-    if (my reverse_mapped_depth >= 4) return nullptr;
++    if (my reverse_mapped_depth >= p37_rm_max()) return nullptr;
+     my reverse_mapped_depth++;
+     ObjectLiteralProp* props = calloc(members->prop_count + 1, sizeof(ObjectLiteralProp));
+     panic_if(!props, "out of memory");
+diff --git a/src/ty/ty.h b/src/ty/ty.h
+index ae967cd..c7e7d0f 100644
+--- a/src/ty/ty.h
++++ b/src/ty/ty.h
+@@ -448,6 +448,7 @@ typedef enum SignatureFlags {
+     SIGNATURE_CONSTRUCT = 1 << 0,
+     SIGNATURE_ABSTRACT  = 1 << 1,
+     SIGNATURE_METHOD    = 1 << 2, // declared with method syntax: parameters are bivariant even under strictFunctionTypes
++    SIGNATURE_NON_INFERRABLE = 1 << 3, // tsc's SignatureFlags.IsNonInferrable: a return-only signature
+ } SignatureFlags;
+ 
+ typedef struct SigParam {
+diff --git a/src/ty/ty_internal.h b/src/ty/ty_internal.h
+index 9bea300..1ead094 100644
+--- a/src/ty/ty_internal.h
++++ b/src/ty/ty_internal.h
+@@ -94,6 +94,7 @@ enum {
+     KEY_DISCRIMINANT_CONFLICT, // (intersection member ids) -> 1 + whether they have conflicting discriminants
+     KEY_SIGNATURE_INSTANCE, // (Signature, type argument ids) -> ty_signature_instantiation()
+     KEY_SIGNATURE_TYPE, // Signature -> ty_signature_type()
++    KEY_CONTEXT_FREE, // FunctionImpl -> return-only type (tsc's links.contextFreeType)
+     KEY_EMIT_HELPERS,   // helpers module Symbol -> EmitHelper mask already checked; SourceFile -> TS2354 said (helpers.c)
+ };
+ 
