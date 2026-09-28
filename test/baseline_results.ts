@@ -15606,7 +15606,7 @@ const baselines = {
         types: false,
     },
     'giant': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24701,7 +24701,7 @@ const baselines = {
         types: true,
     },
     'optionalPropertiesSyntax': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -64776,7 +64776,7 @@ const baselines = {
         types: true,
     },
     'methodSignaturesWithOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
