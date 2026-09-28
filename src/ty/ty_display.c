@@ -1093,6 +1093,11 @@ void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig) {
     display_signature(me, d, sig, ": ", (sig->flags & SIGNATURE_CONSTRUCT) != 0);
 }
 
+// tsc's signatureToString without a kind: a construct signature prints like a call signature
+void ty_display_call_signature(Checker* me, TyDisplay d, Signature const* sig) {
+    display_signature(me, d, sig, ": ", false);
+}
+
 static Atom const* numbered_name(Checker* me, csview base, char const* suffix_format, u32 n) {
     char buf[256];
     int len = snprintf(buf, sizeof buf, "%.*s", (int)base.size, base.buf);
@@ -1232,7 +1237,9 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         }
     }
     signature_resolve(me, root);
-    if (root != sig && !this_only && !class_default && !mentions_mapped(me, sig, root)) sig = root;
+    // (Unless its own type parameters were instantiated away: a call's candidate with what was inferred)
+    bool own_instantiated = root->type_params.len && !sig->type_params.len;
+    if (root != sig && !this_only && !class_default && !own_instantiated && !mentions_mapped(me, sig, root)) sig = root;
     bool instantiated = root != sig;
     if (instantiated && root->type_params.len && !this_only) d.fresh_params = root->type_params;
     // (A class's constructor has its parameters reused, but it returns the class)

@@ -1313,6 +1313,20 @@ static void move_error_into_chain(Error* error, Error* parent, VecError* related
     vec_error_push(&parent->sub_errors, line);
 }
 
+// The signature a candidate was checked as (tsc's checkCandidate: the instantiation with what was inferred)
+static Signature const* candidate_instantiation(Checker* me, Candidate const* candidate) {
+    Signature const* sig = candidate->sig;
+    if (!candidate->mapper || !sig->type_params.len) return sig;
+    Ty const* stack_args[16];
+    u32 len = sig->type_params.len;
+    Ty const** args = len <= c_arraylen(stack_args) ? stack_args : malloc(sizeof(Ty const*) * len);
+    panic_if(!args, "out of memory");
+    for (u32 i = 0; i < len; i++) args[i] = ty_instantiate(me, sig->type_params.data[i], candidate->mapper);
+    Signature const* ret = ty_signature_instantiation(me, sig, (TyList){ .data = args, .len = len });
+    if (args != stack_args) free(args);
+    return ret;
+}
+
 static void report_no_match(
     Checker* me, Candidate const* unfit, u32 unfit_count, u32 signature_count, Args* args, CallInfo const* info,
     Span call_span, ErrorCtx* errs
@@ -1368,7 +1382,7 @@ static void report_no_match(
     for (u32 i = 0; i < unfit_count; i++) {
         if (max > 1 && i != min_index) continue;
         cstr rendered = cstr_null;
-        ty_display_signature(me, (TyDisplay){ .target = &rendered }, unfit[i].sig);
+        ty_display_call_signature(me, (TyDisplay){ .target = &rendered }, candidate_instantiation(me, &unfit[i]));
         for_each (e, vec_error, &per[i]) {
             if (!any) common_span = e->span;
             any = true;
