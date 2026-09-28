@@ -1646,6 +1646,21 @@ static Ty const* binding_rest_elements(Checker* me, Ty const* object, u32 start)
     return ty_reference(me, ty_tuple_target(me, &rest_shape), (TyList){ .data = elements.data + start, .len = rest_shape.arity });
 }
 
+// The elements of a tuple from `start` on, or of each member of a union of tuples; null for anything else (tsc's
+// `everyType(sourceType, isTupleType) ? mapType(sourceType, t => sliceTupleType(t, start))` of a rest element)
+Ty const* ty_tuple_rest_slice(Checker* me, Ty const* source, u32 start) {
+    if (ty_is_tuple(source)) return binding_rest_elements(me, source, start);
+    if (source->kind != TY_UNION) return nullptr;
+    TyList types = source->composite.types;
+    for (u32 i = 0; i < types.len; i++) {
+        if (!ty_is_tuple(types.data[i])) return nullptr;
+    }
+    TyBuf sliced = {0};
+    for (u32 i = 0; i < types.len; i++) ty_buf_push(&sliced, binding_rest_elements(me, types.data[i], start));
+    Ty const* ret = ty_union(me, sliced.data, sliced.len, nullptr, (TyList){0});
+    ty_buf_drop(&sliced);
+    return ret;
+}
 
 // `const { a } = x.y` after `if (x.y.a)`: an element of a top-level object pattern whose initializer is a reference
 // has the flow type of `x.y.a` there (tsc's getFlowTypeOfDestructuring, through a synthetic access made once)

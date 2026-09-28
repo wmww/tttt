@@ -97,8 +97,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   source character after the field's name.
 - `parse_generic_decl_item` parses and drops `in`/`out` type parameter modifiers (`const` is kept): they don't print
   and don't set variances.
-- `parse_object_item`: `{ a = 1 }` keeps the default in `ObjectExprItem.shorthand_default` only to resolve its names
-  (not checked, not in the baselines). Object literal methods are plain `EXPR_FUNCTION` values.
+- `parse_object_item`: `{ a = 1 }` keeps the default in `ObjectExprItem.shorthand_default` (resolved, checked by
+  `assignment_target_typecheck`, not in the types baseline). Object literal methods are plain `EXPR_FUNCTION` values.
 - Class accessors (`ClassItem.method.accessor`, `class_item_accessor_evaluate_type`): paired by name+staticness in
   `class_decl_lookup_names` (raw pointers between items of one vec); readonly only means "no setter".
   Interface/type-literal accessors become properties in `parse_interface` (`InterfaceMember.write_type`,
@@ -414,8 +414,7 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   intersection-target re-check of nested properties. Union discrimination is `discriminated_union_target` without the
   key-property map. Contextual union members are reduced (`string | "a"` is `string`; tsc noReductions), also in
   `contextual_array_element_type`/`ty_tuple_slice_element_type`.
-- Destructuring assignments (`assignment_target_typecheck`): array/object rest elements and non-array iterables aren't
-  checked (null source); `{ a = 1 } = o` isn't checked (expr.c HACK). The for-of destructuring check (statement.c HACK)
+- Destructuring assignments (`assignment_target_typecheck`): object rest elements aren't checked (null source). The for-of destructuring check (statement.c HACK)
   relates the regular element type (tsc: property by property). Array literal targets type as arrays, not tuples (tsc's
   inDestructuringPattern), and a binding pattern isn't its initializer's contextual type.
 - Expando assignments to functions (`foo.constructor = 1`) are checked against the existing member;

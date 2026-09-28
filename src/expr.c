@@ -1702,7 +1702,16 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
             for_each (i, vec_expr, &target->array) {
                 Ty const* element = iterated;
                 if (i->tag == EXPR_SPREAD) {
-                    assignment_target_typecheck(i->spread, nullptr, nullptr, errs); // TODO: the rest of the array or tuple
+                    // The rest of a tuple, else an array of the elements (tsc's checkArrayLiteralDestructuringElementAssignment)
+                    Ty const* rest = nullptr;
+                    if (source) {
+                        rest = ty_tuple_rest_slice(checker, source, index);
+                        if (!rest) {
+                            if (array_like) element = ty_access(checker, source, ty_intrinsic(checker, TY_NUMBER));
+                            rest = element ? ty_array(checker, element, false) : nullptr;
+                        }
+                    }
+                    assignment_target_typecheck(i->spread, rest, nullptr, errs);
                 } else if (i->tag == EXPR_LITERAL && i->outer_span.sv.size == 0) {
                     // A hole
                 } else {
@@ -1738,7 +1747,20 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                 if (i->tag == OBJECT_ITEM_SPREAD) {
                     assignment_target_typecheck(&i->value, nullptr, nullptr, errs); // TODO: the rest of the object
                 } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
-                    // HACK: `{ a = 1 } = o`: the default (`shorthand_default`) is resolved but not checked
+                    // `{ a = 1 } = o`: the default is assigned to `a` (checked with a's type as its contextual type),
+                    // and so is the property, without undefined unless the default can be undefined too (tsc's
+                    // checkDestructuringAssignment of a ShorthandPropertyAssignment)
+                    Ty const* declared = ty_expr_type(checker, &i->value);
+                    Ty const* default_type = ty_check_expr(checker, i->shorthand_default, declared);
+                    expr_typecheck(i->shorthand_default, errs);
+                    assignment_target_typecheck(&i->value, default_type, i->shorthand_default, errs);
+                    if (property && compiler_options()->strict_null_checks &&
+                        !(default_type->flags & (TYF_ANY | TYF_UNKNOWN)) &&
+                        ty_without_undefined(checker, default_type) == default_type
+                    ) {
+                        property = ty_without_undefined(checker, property);
+                    }
+                    assignment_target_typecheck(&i->value, property, nullptr, errs);
                 } else if (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) {
                     assignment_target_typecheck(&i->value, property, nullptr, errs);
                 }
