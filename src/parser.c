@@ -4123,6 +4123,13 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
         JsDocRange range = comments->data[i];
         VecJsDocTag earlier = {0};
         parse_jsdoc_comment(parent, range, &earlier);
+        // An `@extends` of a comment that isn't the host's last has no host (tsc's getJSDocHost), so
+        // checkJSDocAugmentsTag reports TS8022 at nothing: a diagnostic without a position
+        for_each (t, vec_jsdoc_tag, &earlier) {
+            if (t->kind != JSDOC_TAG_EXTENDS || t->nested || !parent->shared->source->is_js) continue;
+            jsdoc_error(parent, span_null, 8022, "JSDoc '@", t->tag_name.sv, "' is not attached to a class.");
+            break;
+        }
         if (!csview_contains(csview_from_range(range.start, range.end), "@overload")) {
             vec_jsdoc_tag_drop(&earlier);
             continue;
@@ -13091,6 +13098,21 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
         parse_source_directives(&p, &source->ast.statements);
         hop_whitespace(&p);
         parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, source_file_start(source), &source->ast.statements);
+        if (source->is_js) {
+            // A comment at the end of the file is the end-of-file token's (tsc's JSDoc host, which checkSourceFile
+            // checks): an `@extends` there is TS8022 at it
+            const char* end = source_file_start(source) + cstr_size(&source->contents);
+            VecJsDocTag tags = {0};
+            if (jsdoc_before(&p, end, &tags)) {
+                for_each (i, vec_jsdoc_tag, &tags) {
+                    if (i->kind != JSDOC_TAG_EXTENDS || i->earlier || i->nested) continue;
+                    jsdoc_error(&p, span_make(source, end, end), 8022, "JSDoc '@", i->tag_name.sv,
+                        "' is not attached to a class.");
+                    break;
+                }
+            }
+            vec_jsdoc_tag_drop(&tags);
+        }
     }
     if (shared.unterminated_comment) {
         const char* end = source_file_start(source) + cstr_size(&source->contents);
@@ -13166,7 +13188,11 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
                 other->span.sv.size == error->span.sv.size;
         }
         if (seen) continue;
-        error_ctx_append_error(errs, *error);
+        if (!span_valid(error->span)) {
+            error_ctx_global_error_s(errs, error->ts_code, error->message);
+        } else {
+            error_ctx_append_error(errs, *error);
+        }
         *error = (Error){0};
     }
 

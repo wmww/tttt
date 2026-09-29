@@ -51856,7 +51856,7 @@ const baselines = {
         types: true,
     },
     'extendsTag2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51866,7 +51866,7 @@ const baselines = {
         types: true,
     },
     'extendsTag4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
