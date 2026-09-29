@@ -2958,6 +2958,8 @@ static bool is_global_nan(Expr const* me) {
 }
 
 // Nothing is equal to NaN (tsc's checkNaNEquality)
+static void commonjs_typedef_conflicts(BinaryOpExpr const* assignment, Ty const* right, ErrorCtx* errs);
+
 static void nan_equality_typecheck(Expr const* me, ErrorCtx* errs) {
     Expr const* left = &my binary_op->left;
     Expr const* right = &my binary_op->right;
@@ -3090,6 +3092,9 @@ static bool binary_op_typecheck(
         }   break;
 
         case BINARY_OP_EQUAL:
+            if (right && expr->outer_span.source && expr->outer_span.source->is_js) {
+                commonjs_typedef_conflicts(expr->binary_op, right, errs);
+            }
             if (is_container_declaration(expr->binary_op)) break;
             // Nor is `module.exports = v` of an object type, which the module's other exports add to
             if (right && (right->flags & TYF_OBJECT) &&
@@ -3381,6 +3386,32 @@ static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
     } else if (module < MODULE_KIND_ES2020 && module != MODULE_KIND_SYSTEM) {
         error_ctx_error_d(errs, my inner_span, 1343, "The 'import.meta' meta-property is only allowed when the "
             "'--module' option is 'es2020', 'es2022', 'esnext', 'system', 'node16', 'node18', or 'nodenext'.");
+    }
+}
+
+// tsc's checkAssignmentDeclaration: a class that JavaScript `module.exports = v` exports as a property of v, under the
+// name of a `@typedef` the file has, is a duplicate of it (TS2300 on both, each pointing at the other)
+static void commonjs_typedef_conflicts(BinaryOpExpr const* assignment, Ty const* right, ErrorCtx* errs) {
+    Expr const* left = &assignment->left;
+    if (!(right->flags & TYF_OBJECT) || expr_is_perenthisized(left) || !expr_is_module_exports(left)) return;
+    SourceFile const* file = left->outer_span.source;
+    Symbol const* module = file && file->scope ? file->scope->container : nullptr;
+    if (!module || !module->exports) return;
+    Checker* checker = current_checker;
+    Members const* members = ty_members(checker, right);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        Span prop_name = prop->decl->name_span;
+        if (!span_valid(prop_name) || prop_name.source != file) continue;
+        Ty const* type = ty_prop_type_of(checker, right, prop->name);
+        if (!type || type->kind != TY_DECLARED || type->declared.kind != TY_DECLARED_CLASS_STATIC) continue;
+        Symbol const* typedef_symbol = symbol_table_get(module->exports, atom_sv(prop->name));
+        TypeDecl const* typedef_decl = typedef_symbol ? symbol_find_node(typedef_symbol, SYMBOL_DECL_TYPE_ALIAS) : nullptr;
+        if (!typedef_decl || !typedef_decl->jsdoc) continue;
+        Error* error = error_ctx_error_d(errs, typedef_decl->name, 2300, "Duplicate identifier '", prop_name, "'.");
+        error_add_related_d(error, prop_name, 6203, "'", prop_name, "' was also declared here.");
+        error = error_ctx_error_d(errs, prop_name, 2300, "Duplicate identifier '", prop_name, "'.");
+        error_add_related_d(error, typedef_decl->name, 6203, "'", prop_name, "' was also declared here.");
     }
 }
 
