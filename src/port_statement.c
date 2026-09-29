@@ -88,9 +88,16 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
     if (!my jsdoc && !top && !my in_namespace && (my module_ref || is_import_alias || port_statement_is_export_declaration(me))) {
         my wrong_context = true;
         bool is_export = csview_equals(my keyword_span.sv, "export");
-        error_ctx_error_d(scope->errs, my keyword_span, is_export ? 1233 : 1232, is_export ?
-            "An export declaration can only be used at the top level of a namespace or module." :
-            "An import declaration can only be used at the top level of a namespace or module.");
+        // (A JavaScript file has no namespaces to mention)
+        if (my keyword_span.source && my keyword_span.source->is_js) {
+            error_ctx_error_d(scope->errs, my keyword_span, is_export ? 1474 : 1473, is_export ?
+                "An export declaration can only be used at the top level of a module." :
+                "An import declaration can only be used at the top level of a module.");
+        } else {
+            error_ctx_error_d(scope->errs, my keyword_span, is_export ? 1233 : 1232, is_export ?
+                "An export declaration can only be used at the top level of a namespace or module." :
+                "An import declaration can only be used at the top level of a namespace or module.");
+        }
         return;
     }
 
