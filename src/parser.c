@@ -59,7 +59,11 @@ typedef struct ParserShared {
     // What moduleDetection looks at (SourceFile.has_import_meta, has_jsx): set by attempts that backtrack too
     bool saw_import_meta;
     bool saw_jsx;
-    Span module_exports_span; // See SourceFile.module_exports_span
+    // Every `module.exports` of a JavaScript file (malloc'd, attempts that backtrack too), and where the first thing
+    // that makes it CommonJS starts: SourceFile.module_exports_span is the first of them from there on
+    Span* module_exports_accesses;
+    u32 module_exports_access_count;
+    const char* commonjs_start;
     bool saw_commonjs; // A `require()` call, an assignment to `exports.x` or `module.exports` (a JavaScript file's)
     // Top-level variables of a JavaScript file initialized to `module.exports`, `exports` or another of them (malloc'd):
     // `M.x = v` with one of them makes the file CommonJS too (tsc's isExportsOrModuleExportsOrAlias)
@@ -6659,6 +6663,10 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
 
 static bool is_exports_alias_name(Parser const* p, Expr const* e);
 
+static void note_commonjs_start(ParserShared* shared, const char* start) {
+    if (!shared->commonjs_start || start < shared->commonjs_start) shared->commonjs_start = start;
+}
+
 static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     Parser p = parser(parent);
 
@@ -6706,6 +6714,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
             is_exports_alias_name(&p, &left_and_ret->property->expr)))
     ) {
         p.shared->saw_commonjs = true;
+        note_commonjs_start(p.shared, span_start_ptr(left_and_ret->outer_span));
     }
     expr_mark_binary_operand(left_and_ret);
     expr_mark_binary_operand(&right);
@@ -7296,6 +7305,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         if (p.shared->source->is_js && !optional_chain && expr_is_require_call(left_and_ret)) {
             // tsc's collectRequireCalls: `require("m")` names a module in a JavaScript file, wherever it is
             p.shared->saw_commonjs = true;
+            note_commonjs_start(p.shared, span_start_ptr(left_and_ret->outer_span));
             left_and_ret->call->callable.identifier.require_call = true;
             Expr const* arg = vec_expr_at(&left_and_ret->call->args, 0);
             if (arg->tag == EXPR_LITERAL && arg->literal.tag == VALUE_STRING) {
@@ -7353,9 +7363,12 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             parse_error(&p, prop_name, 18030, "An optional chain cannot contain private identifiers.");
         }
         if (p.shared->source->is_js && expr_is_module_exports(left_and_ret)) {
-            Span module = left_and_ret->property->expr.inner_span;
-            Span* first = &p.shared->module_exports_span;
-            if (!span_valid(*first) || span_start_ptr(module) < span_start_ptr(*first)) *first = module;
+            u32 n = p.shared->module_exports_access_count++;
+            if (!(n & (n - 1))) {
+                p.shared->module_exports_accesses = realloc(p.shared->module_exports_accesses, sizeof(Span) * (n ? n * 2 : 1));
+                panic_if(!p.shared->module_exports_accesses, "out of memory");
+            }
+            p.shared->module_exports_accesses[n] = left_and_ret->property->expr.inner_span;
         }
         return parse_success(&p);
     }
@@ -10948,7 +10961,19 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     source->has_import_meta = shared.saw_import_meta;
     source->has_commonjs = shared.saw_commonjs;
     free(shared.exports_aliases);
-    source->module_exports_span = shared.module_exports_span;
+    // tsc's binder declares `module` at the first `module.exports` it binds once the file is CommonJS (binding goes
+    // in source order, a node before its children)
+    source->module_exports_span = span_null;
+    for (u32 i = 0; shared.commonjs_start && i < shared.module_exports_access_count; i++) {
+        Span access = shared.module_exports_accesses[i];
+        Span* first = &source->module_exports_span;
+        if (span_start_ptr(access) >= shared.commonjs_start &&
+            (!span_valid(*first) || span_start_ptr(access) < span_start_ptr(*first))
+        ) {
+            *first = access;
+        }
+    }
+    free(shared.module_exports_accesses);
     source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;
     for_each (i, vec_error, &shared.errors) {
