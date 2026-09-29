@@ -345,6 +345,10 @@ src` finds the code-side markers; every significant one has an entry here.
   6c7de767, reverted) cost bulletproof-react +14% instructions, valibot +1%; tsc does the same walk, so tttt probably
   misses a cache. Redo with a profile.
 - `props_related`: the same-symbol skip is recognised only for object literal accessors of one function.
+- `spread_base_constraint` (HACK): only the spread check takes an indexed access whose constraints' access finds
+  nothing as having no base constraint (tsc's getIndexedAccessTypeOrUndefined in computeBaseConstraint);
+  `base_constraint` has unknown there, because doing it there made xstate's ToTestStateValue (`NonNullable<T[K]>`
+  satisfying StateValue inside `{ [K in keyof T]?: ... }`) fail: some other rule of tsc's is missing.
 - `generic_mapped_target_related` (HACK): a generic source failing isGenericMappedType falls through to member
   comparison, which memberless mapped types pass (`Readonly<T>` to `T`); arrays, non-variadic tuples and objects
   without properties don't (tsc: nothing but a mapped source does). What still needs it: zod's `SortItem<output<T>>`

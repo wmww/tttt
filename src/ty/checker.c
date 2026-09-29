@@ -2274,6 +2274,13 @@ static Ty const* indexed(Checker* me, Ty const* object, Ty const* index, bool wr
 }
 
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) { return indexed(me, object, index, false, false); }
+
+// tsc's getIndexedAccessTypeOrUndefined: null where the access finds nothing (ty_indexed() has unknown there)
+Ty const* ty_indexed_or_null(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
+    Ty const* ret = indexed(me, object, index, true, include_undefined);
+    if (ret == my intrinsics[TY_ERROR] && !((object->flags | index->flags) & TYF_ERROR)) return nullptr;
+    return ret;
+}
 Ty const* ty_indexed_written(Checker* me, Ty const* object, Ty const* index) { return indexed(me, object, index, true, false); }
 Ty const* ty_indexed_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
     return indexed(me, object, index, false, include_undefined);
