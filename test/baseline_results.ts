@@ -10263,12 +10263,12 @@ const baselines = {
     'duplicateIdentifierBindingElementInParameterDeclaration1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicateIdentifierBindingElementInParameterDeclaration2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicateIdentifierComputedName': {
         errors: true,

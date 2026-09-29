@@ -2334,13 +2334,21 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
                 has_computed |= item->computed_key != nullptr;
                 continue;
             }
-            props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
-            panic_if(!props, "out of memory");
-            props[count++] = (ObjectLiteralProp){
+            ObjectLiteralProp prop = {
                 .name = name,
                 .flags = item->target.default_value ? PROP_OPTIONAL : 0,
                 .type = binding_element_implied_type(me, &item->target, include_pattern), // (tsc's symbol has no declaration)
             };
+            // (A name the pattern takes twice is one property, the last one's: tsc's members.set)
+            u32 at = 0;
+            while (at < count && props[at].name != name) at++;
+            if (at < count) {
+                props[at] = prop;
+                continue;
+            }
+            props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
+            panic_if(!props, "out of memory");
+            props[count++] = prop;
         }
         Ty const* ret = ty_object_literal(me, props, count, index_count ? &index : nullptr, index_count, OBJECT_SYNTHETIC);
         free(props);
