@@ -2319,6 +2319,15 @@ static TypeNode jsdoc_synthesized(TypeNode node) {
     return node;
 }
 
+// `T | null` of `?T`, `T | undefined` of `T=`: a union of its own, not merged with a union T (tsc's JSDocNullableType
+// and JSDocOptionalType, which print as a parenthesized union in a union)
+static TypeNode jsdoc_union(TypeNode type, TypeNode added) {
+    TypeNode ret = { .tag = TYPE_UNION, .parsed = true, .composite = vec_type_init() };
+    vec_type_push(&ret.composite, type);
+    vec_type_push(&ret.composite, added);
+    return ret;
+}
+
 // The names tsc gives the parameters of a JSDoc function type (`arg0`...), which aren't written anywhere
 static Span jsdoc_parameter_name(SourceFile const* source, u32 index) {
     static const char* const names[] = {
@@ -2441,7 +2450,7 @@ static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
         }
         TypeNode inner;
         expect_type(&p, TYPE_PRECEDENCE_NULL, &inner);
-        *ret = type_composite_without_simplify(TYPE_UNION, inner, jsdoc_synthesized(type_null));
+        *ret = jsdoc_union(inner, jsdoc_synthesized(type_null));
         return parse_success(&p);
     }
     if (hop_char(&p, '!')) {
@@ -2462,7 +2471,7 @@ static void hop_jsdoc_optional(Parser* parent, TypeNode* type) {
         return;
     }
     p.pos++;
-    *type = type_composite_without_simplify(TYPE_UNION, *type, jsdoc_synthesized(type_undefined));
+    *type = jsdoc_union(*type, jsdoc_synthesized(type_undefined));
     type->jsdoc_optional = true;
     type->parsed = true;
     parse_success(&p);
@@ -2480,7 +2489,7 @@ static bool parse_jsdoc_postfix_type(Parser* parent, char const* left_start, Typ
         bool type_follows = is_type_start_char(*next.pos) && !(next.pos[0] == '*' && next.pos[1] == '/');
         parse_fail(&next);
         if (!type_follows) {
-            *left_and_ret = type_composite_without_simplify(TYPE_UNION, *left_and_ret, jsdoc_synthesized(type_null));
+            *left_and_ret = jsdoc_union(*left_and_ret, jsdoc_synthesized(type_null));
             p.shared->jsdoc_postfix_nullable_start = left_start;
             p.shared->jsdoc_postfix_nullable_end = p.pos;
             return parse_success(&p);
@@ -3543,16 +3552,20 @@ static FunctionImpl* jsdoc_function_of(Expr* expr) {
 
 // `@type {(a: A) => R}` (or `{{(a: A): R}}`) on a function declares its signature (tsc's getSignatureOfTypeTag): the
 // written signature's parameter and return types move into the function's slots
+// The one signature a written function type or `{(...): R}` literal is, null for anything else
+static FunctionImpl* jsdoc_single_signature(TypeNode* type) {
+    if (type->tag == TYPE_CALLABLE) return type->callable->function;
+    if (type->tag == TYPE_INTERFACE && vec_interface_member_size(&type->interface.members) == 1) {
+        InterfaceMember* member = vec_interface_member_at_mut(&type->interface.members, 0);
+        if (member->key.tag == INTERFACE_KEY_CALLABLE && member->type.tag == TYPE_CALLABLE) return member->type.callable->function;
+    }
+    return nullptr;
+}
+
 static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
     if (!tag) return;
-    FunctionImpl* signature = nullptr;
-    if (tag->type.tag == TYPE_CALLABLE) {
-        signature = tag->type.callable->function;
-    } else if (tag->type.tag == TYPE_INTERFACE && vec_interface_member_size(&tag->type.interface.members) == 1) {
-        InterfaceMember* member = vec_interface_member_at_mut(&tag->type.interface.members, 0);
-        if (member->key.tag == INTERFACE_KEY_CALLABLE && member->type.tag == TYPE_CALLABLE) signature = member->type.callable->function;
-    }
+    FunctionImpl* signature = jsdoc_single_signature(&tag->type);
     if (!signature || signature->is_constructor) return;
     // `(this: T) => R`: the function's `this` parameter, unless it has one (or is an arrow function), and not a
     // position to match the parameters by
@@ -3853,8 +3866,13 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
         }
         i->jsdoc_variadic = variadic && !i->rest;
         if (variadic && i->rest) {
+            // TODO: `{...T=}` is optional of variadic in tsc (parseJSDocType), which types the parameter any and prints
+            // as `T[] | undefined` (getTypeFromJSDocVariadicType sees no parameter tag above it)
             binding->explicit_type = type_array(c_new(TypeNode, binding->explicit_type), false);
             binding->explicit_type.parsed = true;
+        } else if (variadic) {
+            // Not a rest parameter: T | undefined (tsc's getTypeFromJSDocVariadicType: addOptionality)
+            binding->explicit_type = jsdoc_union(binding->explicit_type, jsdoc_synthesized(type_undefined));
         }
         binding->explicit_type.from_jsdoc = true;
     }
@@ -3884,7 +3902,7 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
 
 // The function type of a `@callback` tag and its `@param`/`@returns` tags (tsc's JSDocSignature)
 static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isize count) {
-    FunctionImpl function = { .args = vec_function_arg_init(), .jsdoc_type = true };
+    FunctionImpl function = { .args = vec_function_arg_init(), .jsdoc_type = true, .jsdoc_callback = true };
     for (isize i = 0; i < count; i++) {
         JsDocTag* tag = &children[i];
         if (tag->kind == JSDOC_TAG_RETURNS) {
@@ -3911,7 +3929,7 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
             type = jsdoc_take_type(tag, nullptr);
             type.from_jsdoc = false;
         } else {
-            type = type_any;
+            type = jsdoc_synthesized(type_any); // (No type node: tsc's printer makes an `any`)
         }
         if (type.jsdoc_optional || tag->bracketed) arg.explicit_optional = true;
         if (tag->variadic) {
@@ -10835,6 +10853,12 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
             jsdoc_apply_satisfies_initializer(p, &tags, initializer);
             FunctionImpl* function = jsdoc_function_of(&initializer->value);
+            if (function && !function->ret_explicit && initializer->binding.has_explicit_type &&
+                initializer->binding.explicit_type.from_jsdoc
+            ) {
+                FunctionImpl const* signature = jsdoc_single_signature(&initializer->binding.explicit_type);
+                if (signature && signature->ret_explicit) function->jsdoc_tag_ret = &signature->ret;
+            }
             if (function) jsdoc_apply_function(&tags, function);
             if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_class(&tags, initializer->value.class_decl);
         }   break;

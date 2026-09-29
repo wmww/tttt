@@ -526,9 +526,13 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
         return false;
     }
     if (!vec_span_size(&identifier->namespaces)) {
+        // (`array`, `promise` and `Object` mean something else only without type arguments and noImplicitAny)
         static char const* const intended[] = { "Function", "function", "array", "promise", "Object" };
+        bool plain = !compiler_options()->no_implicit_any && !vec_spanned_type_size(&identifier->generic_params);
         for (u32 i = 0; i < c_arraylen(intended); i++) {
-            if (csview_equals(identifier->name.sv, intended[i])) return false;
+            if (csview_equals(identifier->name.sv, intended[i])) {
+                if (i < 2 || plain) return false;
+            }
         }
     }
     Ty const* type = node_type(me, d, node);
@@ -827,11 +831,18 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
 
 static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list, char const* separator) {
     bool first = true;
+    bool union_list = separator[1] == '|';
     for_each (i, vec_type, list) {
         if (i->placeholder) continue;
         if (!first) out(d, csview_from(separator));
         first = false;
+        // A member that needs parentheses without having them written: JSDoc's `?T`, `T=` of a union or function
+        // type (tsc's printer parenthesizes what it transformed them into)
+        bool parens = !i->parenthesized && (i->tag == TYPE_CALLABLE || i->tag == TYPE_UNION ||
+            (!union_list && i->tag == TYPE_INTERSECTION));
+        if (parens) out(reused_if(d, false), c_sv("("));
         display_node(me, d, i);
+        if (parens) out(reused_if(d, false), c_sv(")"));
     }
 }
 
@@ -1354,9 +1365,11 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             out(reused_if(d, (d.reused && (!name_binding || written)) || (param->decl && written)), atom_sv(param->name));
         }
         if (param->optional) out_lit(d, "?");
-        out(reused_if(d, d.reused || (syntactic && param->decl)), c_sv(": "));
+        // (A function expression's parameter typed by a JSDoc `@type` signature: tsc types it contextually)
+        bool contextual_jsdoc = function && function->is_expression && param->decl && span_valid(param->decl->jsdoc_span);
+        out(reused_if(d, d.reused || (syntactic && param->decl && !contextual_jsdoc)), c_sv(": "));
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
-        bool reused = reusable && binding && binding->has_explicit_type &&
+        bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&
             (!instantiated || (param->type == root->params[i].type && !mentions(me, param->type, d.fresh_params)));
         TyDisplay param_d = reused_if(d, false);
         // A parameter whose initializer is a function expression gets the function's type syntactically (tsc's
@@ -1375,7 +1388,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     TyPredicate const* predicate = signature_predicate(me, sig);
     Ty const* ret = signature_return_type(me, sig);
     TypeNode const* ret_annotation = !reusable || root->class_instance ? nullptr : function->ret_explicit ? &function->ret :
-        single_return_assertion(me, function, signature_return_type(me, root));
+        function->jsdoc_tag_ret ? function->jsdoc_tag_ret : single_return_assertion(me, function, signature_return_type(me, root));
     bool reused = ret_annotation &&
         (!instantiated || (ret == signature_return_type(me, root) && !mentions(me, ret, d.fresh_params)));
     if (predicate) {

@@ -773,6 +773,7 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
 
 // A signature written as a type, or an overload signature. A parameter without a type is `any`
 static void collect_free_params_of_function(Checker* me, FunctionImpl const* function, FreeParams* out) {
+    if (function->jsdoc_callback) out->unknown = true;
     collect_free_params_of_generic(me, &function->generic, out);
     for_each (i, vec_function_arg, &function->args) {
         if (i->initializer.binding.has_explicit_type) collect_free_params(me, &i->initializer.binding.explicit_type, out);
