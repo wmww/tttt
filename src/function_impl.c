@@ -573,6 +573,18 @@ bool function_impl_return_void_any_or_undefined(FunctionImpl const* me, Ty const
     return unwrapped && (ty_maybe_void(unwrapped) || unwrapped->flags & (TYF_ANY | TYF_UNDEFINED));
 }
 
+FunctionImpl const* function_impl_jsdoc_tag_signature(FunctionImpl const* me) {
+    TypeNode const* tag = my jsdoc_signature_type ? my jsdoc_signature_type : my jsdoc_host_type;
+    if (!tag) return nullptr;
+    if (tag->tag == TYPE_CALLABLE) return tag->callable->function;
+    if (tag->tag == TYPE_INTERFACE && vec_interface_member_size(&tag->interface.members) == 1 &&
+        tag->interface.members.data[0].key.tag == INTERFACE_KEY_CALLABLE && tag->interface.members.data[0].type.tag == TYPE_CALLABLE
+    ) {
+        return tag->interface.members.data[0].type.callable->function;
+    }
+    return nullptr;
+}
+
 // tsc: checkAllCodePathsInNonVoidFunctionReturnOrThrow(). Only when it is certain that control can fall off the end
 // (ty_function_end_reachability())
 static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
@@ -599,13 +611,7 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
         // that signature's return type node if it's written (getJSDocReturnType)
         type = ty_jsdoc_tag_return_type(checker, me);
         if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
-        TypeNode const* tag = my jsdoc_signature_type ? my jsdoc_signature_type : my jsdoc_host_type;
-        FunctionImpl const* signature = tag->tag == TYPE_CALLABLE ? tag->callable->function : nullptr;
-        if (tag->tag == TYPE_INTERFACE && vec_interface_member_size(&tag->interface.members) == 1 &&
-            tag->interface.members.data[0].key.tag == INTERFACE_KEY_CALLABLE && tag->interface.members.data[0].type.tag == TYPE_CALLABLE
-        ) {
-            signature = tag->interface.members.data[0].type.callable->function;
-        }
+        FunctionImpl const* signature = function_impl_jsdoc_tag_signature(me);
         if (signature && signature->ret_explicit && span_valid(signature->ret_span)) at = signature->ret_span;
     }
     if (type && type->flags & TYF_NEVER) {
@@ -849,8 +855,10 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_check_widened_return(me, errs);
     // (A JSDoc `@type` signature's return type is the function's, what it returns is checked against it: tsc's
     // getReturnTypeFromAnnotation)
-    Ty const* tagged_return = !my ret_explicit && !my is_async && !my is_generator &&
+    Ty const* tagged_return = !my ret_explicit && !my is_generator &&
         (my jsdoc_signature_type || my jsdoc_host_type) ? ty_jsdoc_tag_return_type(current_checker, me) : nullptr;
+    // (An async function's returns are checked against what it awaits to)
+    if (tagged_return && my is_async) tagged_return = ty_unwrap_return_type(current_checker, me, tagged_return);
     BlockTypecheckCtx ctx = {
         .ambient = my ambient,
         .ambient_reported = true,

@@ -519,16 +519,21 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
 // The annotation of an async function names the global Promise, from ES2015 on (tsc's checkAsyncFunctionReturnType;
 // TODO: below ES2015, what it names has to be a Promise-compatible constructor value, TS1055)
 void ty_check_async_return_annotation(Checker* me, FunctionImpl const* function, ErrorCtx* errs) {
-    if (!function->is_async || function->is_generator || !function->ret_explicit) return;
+    if (!function->is_async || function->is_generator) return;
+    // (Or the written return type of a JSDoc `@type` signature: tsc's getEffectiveReturnTypeNode)
+    FunctionImpl const* tag = function->ret_explicit ? nullptr : function_impl_jsdoc_tag_signature(function);
+    if (!function->ret_explicit && !(tag && tag->ret_explicit && span_valid(tag->ret_span))) return;
     if (compiler_options()->target < SCRIPT_TARGET_ES2015) return;
-    Ty const* ret = ty_from_node(me, &function->ret, (LowerCtx){ .generic = true });
+    Ty const* ret = tag ? ty_jsdoc_tag_return_type(me, function) : ty_from_node(me, &function->ret, (LowerCtx){ .generic = true });
+    if (!ret) return;
+    Span ret_span = tag ? tag->ret_span : function->ret_span;
     if (ret->flags & TYF_ERROR) return;
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
     Ty const* promise = promise_symbol ? ty_declared_type_of(me, promise_symbol) : nullptr;
     if (!promise || promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return;
     if (ret == promise || (ret->kind == TY_REFERENCE && ret->reference.target == promise)) return;
     Ty const* awaited = ty_awaited_no_alias(me, ret);
-    error_ctx_error_d(errs, function->ret_span, 1064, "The return type of an async function or method must be the global "
+    error_ctx_error_d(errs, ret_span, 1064, "The return type of an async function or method must be the global "
         "Promise<T> type. Did you mean to write 'Promise<", awaited ? awaited : ty_intrinsic(me, TY_VOID), ">'?");
 }
 
@@ -603,6 +608,12 @@ static bool check_assignable(
     if (errs && elaborate_error(me, head, expr, source, target, errs)) return false;
     // (The head is about the target as relations see it: a substitution type's base, getNormalizedType)
     while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
+    // An arrow function whose block body spans lines is reported on its first line (tsc's getErrorSpanForArrowFunction)
+    if (expr && expr->tag == EXPR_FUNCTION && span_valid(expr->function->arrow_span) && span_eq(span, expr->outer_span) &&
+        !expr_is_perenthisized(expr)
+    ) {
+        span = function_error_span(expr->function);
+    }
     Error* error = report_unassignable(me, head, source, target, span, errs);
     // A namespace import whose value would have fit: likely the wrong kind of import (tsc's checkTypeRelatedTo with
     // links.originatingImport)
