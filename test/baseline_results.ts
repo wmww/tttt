@@ -20871,9 +20871,9 @@ const baselines = {
         types: false,
     },
     'mappedTypeGenericWithKnownKeys': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mappedTypeIndexedAccess': {
         errors: false,

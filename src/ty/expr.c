@@ -3917,6 +3917,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                     return ty_intrinsic(me, TY_ERROR);
                 }
             }
+            // (Written to, a generic object's index signatures don't apply: TS2339/TS2862, errorType)
+            if (ty_generic_write_index_info(me, expr->property, object, key)) return ty_intrinsic(me, TY_ERROR);
             // (A compound assignment reads it too: tsc's AccessFlags.ExpressionPosition unless Definite)
             Ty const* ret = expr->property->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, key) :
                 ty_access_reading(me, object, key);

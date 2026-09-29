@@ -1588,19 +1588,39 @@ bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed) {
     return true;
 }
 
-void ty_check_generic_index_write(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs) {
-    if (access->form != PROPERTY_EXPR_DOT || !access->assignment_target || access->private_class) return;
-    if (object->kind == TY_TYPE_PARAM ? object->param.state->is_this : !ty_is_generic_object(me, object)) return;
-    Ty const* key = ty_regular(me, ty_access_key_type(me, access));
-    Atom const* name = ty_literal_name(me, key);
+// Written to, a generic object's index signatures (its constraint's) don't apply: tsc's checkPropertyAccessExpression-
+// OrQualifiedName takes no index info for an assignment to a generic object, checkElementAccess's
+// AccessFlags.NoIndexSignatures leaves only a number one. The index signature that would have been used, else null
+IndexInfo const* ty_generic_write_index_info(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* key) {
+    if (!access->assignment_target || access->private_class) return nullptr;
+    if (object->kind == TY_TYPE_PARAM ? object->param.state->is_this : !ty_is_generic_object(me, object)) return nullptr;
+    key = ty_regular(me, key);
+    if (ty_is_generic_index(key) || (key->flags & (TYF_ANY | TYF_NEVER | TYF_NULLABLE)) || key->kind == TY_UNION) return nullptr;
     Ty const* apparent = ty_apparent_type(me, object);
-    if (!name || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) || ty_find_prop(me, apparent, name).found) return;
-    // (TODO: a generic mapped type's known keys, `Record<keyof T | "k", V>`: tsc's getLowerBoundOfKeyType)
-    if ((apparent->flags & TYF_OBJECT) && ty_members(me, apparent)->mapped) return;
-    if (!ty_access(me, apparent, key)) return; // (check_access()'s TS2339)
+    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
+    Atom const* name = ty_literal_name(me, key);
+    if (access->form == PROPERTY_EXPR_DOT && !name) return nullptr;
+    if (name && ty_find_prop(me, apparent, name).found) return nullptr;
+    IndexInfo const* info = ty_applicable_index_info(me, apparent, key);
+    if (access->form == PROPERTY_EXPR_DOT) return info;
+    if (!info) {
+        Members const* members = ty_members(me, apparent);
+        for (u32 i = 0; i < members->index_count && !info; i++) {
+            if (members->index[i].key == ty_intrinsic(me, TY_STRING)) info = &members->index[i];
+        }
+    }
+    return info && info->key != ty_intrinsic(me, TY_NUMBER) ? info : nullptr;
+}
+
+void ty_check_generic_index_write(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
+    Ty const* key = ty_access_key_type(me, access);
+    if (!ty_generic_write_index_info(me, access, object, key)) return;
+    if (access->form == PROPERTY_EXPR_DOT) {
+        report_no_property(me, object, ty_regular(me, key), 2339, access->prop.outer_span, false, errs);
+        return;
+    }
     cstr object_str = ty_to_cstr(me, object);
-    error_ctx_error_d(errs, access->prop.outer_span, 2339, "Property '", atom_sv(name), "' does not exist on type '",
-        object_str, "'.");
+    error_ctx_error_d(errs, span, 2862, "Type '", object_str, "' is generic and can only be indexed for reading.");
     cstr_drop(&object_str);
 }
 

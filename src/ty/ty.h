@@ -1708,7 +1708,8 @@ void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index
 // TS2536 for `o[k]` with k generic (tsc's checkIndexedAccessIndexType; the expression's type is the error type)
 // tsc's checkPropertyAccessExpressionOrQualifiedName: `t.x = v` of a generic `t` doesn't write through an index
 // signature of its constraint (TS2339)
-void ty_check_generic_index_write(Checker* me, struct PropertyExpr const* access, Ty const* object, ErrorCtx* errs);
+void ty_check_generic_index_write(Checker* me, struct PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
+IndexInfo const* ty_generic_write_index_info(Checker* me, struct PropertyExpr const* access, Ty const* object, Ty const* key);
 void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs);
 Ty const* ty_invalid_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object);
 bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed);

@@ -2065,7 +2065,8 @@ static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty, u32 depth) {
             changed |= part != types.data[i];
             ty_buf_push(&parts, part);
         }
-        Ty const* ret = !changed ? ty : ty->kind == TY_UNION ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) :
+        // (A union without reductions, tsc's mapType with noReductions: `keyof T | "k"` with T's keys string keeps "k")
+        Ty const* ret = !changed ? ty : ty->kind == TY_UNION ? ty_union_unreduced(me, parts.data, parts.len) :
             ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
         ty_buf_drop(&parts);
         return ret;
