@@ -14,6 +14,13 @@ typedef struct JsDocParamIssue {
     Span left; // The object a qualified name needs a tag of, invalid for a plain name
 } JsDocParamIssue;
 
+// A JSDoc `@param` tag that names no parameter: its type is only resolved and checked (tsc checks every tag)
+typedef struct JsDocUnmatchedParam {
+    Span name;
+    TypeNode type; // Owned
+    bool variadic; // `{...T}` (type is T)
+} JsDocUnmatchedParam;
+
 typedef struct FunctionArg {
     Span span;
     // Declared by a JSDoc `@type` signature of the function: that parameter (where messages point, like tsc's)
@@ -121,6 +128,13 @@ typedef struct FunctionImpl {
     struct JsDocParamIssue* jsdoc_param_issues; // Owned
     u32 jsdoc_param_issue_count;
     bool jsdoc_params_checked;
+    JsDocUnmatchedParam* jsdoc_unmatched; // Owned
+    u32 jsdoc_unmatched_count;
+    // The last `@param` tag when it names no parameter (an index into jsdoc_unmatched, else -1): what `arguments` could
+    // be (tsc's checkUnmatchedJSDocParameters: TS8029 unless its type is an array)
+    int jsdoc_arguments_candidate;
+    // Its JSDoc is its return statement's: tsc's getHostSignatureFromJSDoc doesn't find it (a `{...T}` tag isn't an array)
+    bool jsdoc_indirect_host;
     Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
     Span variable_name; // A function expression or arrow function that initializes a variable: its name (display)
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)

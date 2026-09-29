@@ -2735,6 +2735,13 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
                 element = ty_without_undefined(me, params[count - 1].type); // (Its `T | undefined`: T)
                 count--;
                 if (sig->min_args > count) sig->min_args = count;
+            } else if (!count) {
+                // (Without parameters every `@param` tag is the last parameter's: the first `{...T}` among them)
+                for (u32 i = 0; i < function->jsdoc_unmatched_count; i++) {
+                    if (!function->jsdoc_unmatched[i].variadic) continue;
+                    element = ty_of_node(&function->jsdoc_unmatched[i].type);
+                    break;
+                }
             }
             params[count++] = (SigParam){
                 .name = checker_atom(me, c_sv("args")), .type = ty_array(me, element, false), .rest = true,

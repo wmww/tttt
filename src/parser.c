@@ -3020,6 +3020,7 @@ typedef struct JsDocTag {
     Span name; // `@param {T} name`, `@typedef {T} Name`, `@template T`: the name (maybe dotted: `o.a`)
     bool bracketed; // `[name]`, `[name=default]`: optional
     bool name_first; // `@param name {T}` or no type at all (tsc's isNameFirst)
+    Span missing_name; // Zero width, where the name of an `@param` without one should be (tsc's missing identifier)
     bool is_const; // `@template const T`
     bool is_in, is_out; // `@template in T`, `@template out T`
     Span const_span, in_span, out_span; // Of those modifiers, for the checks that depend on the host (TS1277, TS1274)
@@ -3217,6 +3218,7 @@ static const char* parse_jsdoc_param_like(Parser* parent, const char* c, const c
         c = jsdoc_parse_name(c, end, &tag->name, source);
     }
     if (!span_valid(tag->name)) {
+        tag->missing_name = span_make(source, c, c);
         // tsc's parseJSDocIdentifierName: TS1003 where the name should start (not again where an error is)
         VecError const* errors = &parent->shared->jsdoc_errors;
         bool reported = errors->size && span_start_ptr(errors->data[errors->size - 1].span) == c;
@@ -3892,14 +3894,25 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
 // The `@param` tags that name no parameter (see FunctionImpl.jsdoc_param_issues). A dotted tag right after the tag of
 // its object (`{Object}`/`{object}`, maybe an array) is part of that object's type (tsc's parseNestedTypeLiteral),
 // any other is a tag of its own
-static void jsdoc_find_param_issues(VecJsDocTag const* tags, FunctionImpl* function) {
+static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
     if (function->jsdoc_params_checked) return;
     function->jsdoc_params_checked = true;
+    function->jsdoc_arguments_candidate = -1;
     Span objects[8]; // The chain of object tags the next child may be under
     u32 depth = 0;
     isize index = 0;
     for_each (i, vec_jsdoc_tag, tags) {
-        if (i->kind != JSDOC_TAG_PARAM || i->nested || i->earlier || !span_valid(i->name)) continue;
+        if (i->kind != JSDOC_TAG_PARAM || i->nested || i->earlier) continue;
+        if (!span_valid(i->name)) {
+            // (A missing name is an identifier '' to tsc, which no parameter has)
+            if (!span_valid(i->missing_name) || i->name_first) continue;
+            index++;
+            function->jsdoc_param_issues = realloc(function->jsdoc_param_issues,
+                sizeof(JsDocParamIssue) * (function->jsdoc_param_issue_count + 1));
+            panic_if(!function->jsdoc_param_issues, "out of memory");
+            function->jsdoc_param_issues[function->jsdoc_param_issue_count++] = (JsDocParamIssue){ i->missing_name, span_null };
+            continue;
+        }
         csview name = i->name.sv;
         char const* dot = nullptr;
         for (isize k = name.size; k-- > 0 && !dot;) if (name.buf[k] == '.') dot = name.buf + k;
@@ -3933,6 +3946,21 @@ static void jsdoc_find_param_issues(VecJsDocTag const* tags, FunctionImpl* funct
             sizeof(JsDocParamIssue) * (function->jsdoc_param_issue_count + 1));
         panic_if(!function->jsdoc_param_issues, "out of memory");
         function->jsdoc_param_issues[function->jsdoc_param_issue_count++] = (JsDocParamIssue){ i->name, left };
+        if (!dot && i->has_type) {
+            function->jsdoc_unmatched = realloc(function->jsdoc_unmatched,
+                sizeof(JsDocUnmatchedParam) * (function->jsdoc_unmatched_count + 1));
+            panic_if(!function->jsdoc_unmatched, "out of memory");
+            TypeNode type = jsdoc_take_type(i, nullptr);
+            // (The last tag: the one `arguments` could be)
+            bool last = true;
+            for (JsDocTag const* j = i + 1; j < tags->data + tags->size && last; j++) {
+                last = !(j->kind == JSDOC_TAG_PARAM && !j->nested && !j->earlier);
+            }
+            if (last) function->jsdoc_arguments_candidate = (int)function->jsdoc_unmatched_count;
+            function->jsdoc_unmatched[function->jsdoc_unmatched_count++] = (JsDocUnmatchedParam){
+                .name = i->name, .type = type, .variadic = i->variadic,
+            };
+        }
     }
 }
 
@@ -4047,8 +4075,17 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             binding->explicit_type = type_array(c_new(TypeNode, binding->explicit_type), false);
             binding->explicit_type.parsed = true;
         } else if (variadic) {
-            // Not a rest parameter: T | undefined (tsc's getTypeFromJSDocVariadicType: addOptionality)
+            // Not a rest parameter: T | undefined (tsc's getTypeFromJSDocVariadicType: addOptionality). Unless it's the
+            // last parameter it's TS1014 (checkJSDocVariadicType), at the `...T`
             binding->explicit_type = jsdoc_union(binding->explicit_type, jsdoc_synthesized(type_undefined));
+            binding->explicit_type.jsdoc_variadic = true;
+            if (i + 1 < function->args.data + function->args.size && span_valid(binding->explicit_type_span)) {
+                Span type = binding->explicit_type_span;
+                const char* dots = span_start_ptr(type);
+                while (dots > source_file_start(type.source) && dots[-1] == '.') dots--;
+                jsdoc_error(p, span_make(type.source, dots, span_end_ptr(type)), 1014,
+                    "A rest parameter must be last in a parameter list.");
+            }
         }
         binding->explicit_type.from_jsdoc = true;
     }
@@ -11184,6 +11221,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
             FunctionImpl* function = jsdoc_function_of(&statement->expr);
             if (function) {
+                function->jsdoc_indirect_host = statement->tag == STATEMENT_RETURN_EXPR;
                 jsdoc_apply_function(p, &tags, function);
             } else if (statement->tag == STATEMENT_EXPORT_DEFAULT_EXPR && !statement->export_equals) {
                 // `/** @type {T} */ export default e`: e is checked against T and T is the export's type (tsc's

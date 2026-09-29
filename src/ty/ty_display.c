@@ -920,6 +920,16 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             }
             break;
         case TYPE_UNION:
+            if (node->jsdoc_variadic && vec_type_size(&node->composite) == 2) {
+                TypeNode const* element = vec_type_at(&node->composite, 0);
+                bool parens = !element->parenthesized && (element->tag == TYPE_UNION || element->tag == TYPE_INTERSECTION ||
+                    element->tag == TYPE_CALLABLE);
+                if (parens) out(reused_if(d, false), c_sv("("));
+                display_node(me, d, element);
+                if (parens) out(reused_if(d, false), c_sv(")"));
+                out_lit(d, "[]");
+                break;
+            }
             display_node_list(me, d, &node->composite, " | ");
             break;
         case TYPE_INTERSECTION:

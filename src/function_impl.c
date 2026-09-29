@@ -33,6 +33,8 @@ void function_impl_drop(FunctionImpl* me) {
     for (u32 i = 0; i < my jsdoc_overload_count; i++) type_drop(&my jsdoc_overloads[i]);
     free(my jsdoc_overloads);
     free(my jsdoc_param_issues);
+    for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_drop(&my jsdoc_unmatched[i].type);
+    free(my jsdoc_unmatched);
 }
 
 void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted, bool declared) {
@@ -222,6 +224,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         names = scope_new_generic(names, &my generic, owner, method_of ? class_decl_display_name(method_of) : span_null, errs);
     }
 
+    for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_lookup_names(&my jsdoc_unmatched[i].type, names, errs);
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
     function_scope->flow = &flow;
     function_scope->function = me;
@@ -749,7 +752,18 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     if (my ret_explicit) type_typecheck(&my ret, errs);
     ty_check_async_return_annotation(current_checker, me, errs);
     function_check_arguments_collision(me, errs);
-    // (tsc's checkUnmatchedJSDocParameters; a body that uses `arguments` may take more, TS8029 isn't reported)
+    for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_typecheck(&my jsdoc_unmatched[i].type, errs);
+    // (tsc's checkUnmatchedJSDocParameters: a body that uses `arguments` only has its last tag checked, which could
+    // stand for it with an array type: a `{...T}` of a function without parameters is one)
+    if (my uses_arguments && my jsdoc_arguments_candidate >= 0 && (u32)my jsdoc_arguments_candidate < my jsdoc_unmatched_count) {
+        JsDocUnmatchedParam const* last = &my jsdoc_unmatched[my jsdoc_arguments_candidate];
+        bool array = last->variadic ? !my jsdoc_indirect_host && !vec_function_arg_size(&my args) :
+            ty_is_array(current_checker, ty_of_node(&last->type));
+        if (!array) {
+            error_ctx_error_d(errs, last->name, 8029, "JSDoc '@param' tag has name '", last->name,
+                "', but there is no parameter with that name. It would match 'arguments' if it had an array type.");
+        }
+    }
     for (u32 i = 0; i < my jsdoc_param_issue_count && !my uses_arguments; i++) {
         JsDocParamIssue const* issue = &my jsdoc_param_issues[i];
         if (span_valid(issue->left)) {
