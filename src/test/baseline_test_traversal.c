@@ -1330,6 +1330,8 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
             return;
         }
         if (!symbol) {
+            // (`this.m = function () { this }`: the `this` of the constructor, the class)
+            if (type && type->kind == TY_TYPE_PARAM && type->param.state->is_this) type = ty_apparent_type(checker, type);
             if (type && type->kind == TY_REFERENCE) type = type->reference.target;
             if (type && type->kind == TY_DECLARED) symbol = type->declared.symbol;
             // (`o.m = function () { this }` where o is a namespace value, a function with expandos: its symbol)
