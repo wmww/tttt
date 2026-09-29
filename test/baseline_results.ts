@@ -13896,7 +13896,7 @@ const baselines = {
         types: true,
     },
     'functionArgShadowing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

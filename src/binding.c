@@ -32,6 +32,7 @@ void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNa
         case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
+            my is_parameter = props.is_function_arg;
             // TODO: somehow abstract literals on the exported value only (see defaultNamedExportWithType1)
             scope_init_declaration(scope, &my symbol, (DeclProps){
                 .name = my content_span,
@@ -285,7 +286,11 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
     Error* e = error_ctx_error_d(errs, my content_span, 2403,
         "Subsequent variable declarations must have the same type.  Variable '", my content_span, "' must be of type '",
         type_str, "', but here has type '", declared_str, "'.");
-    error_add_related_d(e, first->name, 6203, "'", my content_span, "' was also declared here.");
+    // (tsc's createDiagnosticForNode of the value declaration: a parameter's starts at its modifiers)
+    Binding const* first_binding = first->kind == SYMBOL_DECL_VARIABLE ? first->node : nullptr;
+    bool first_parameter = first_binding && first_binding->is_parameter && !first_binding->parent;
+    Span first_at = first_parameter && span_valid(first->full) ? first->full : first->name;
+    error_add_related_d(e, first_at, 6203, "'", my content_span, "' was also declared here.");
     c_drop(cstr, &type_str, &declared_str);
 }
 

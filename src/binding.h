@@ -27,6 +27,7 @@ typedef struct Binding {
     Expr* default_value; // Owned, `x = 1` as an element of a pattern. Null if there's none
     bool definitely_assigned; // `let x!: T`
     bool ambient; // Declared in an ambient context, set by binding_add_names()
+    bool is_parameter; // Of a function's parameter (the parameter itself when it has no parent), see binding_add_names()
     bool optional_parameter; // `x?: T` of a function: read as `T | undefined`
     bool has_explicit_type; // If the type was explicitly specified and explicit_type is meaningful
     Span explicit_type_span; // Only valid if has_explicit_type
