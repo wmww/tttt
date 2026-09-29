@@ -1201,7 +1201,7 @@ const baselines = {
         types: true,
     },
     'arrayDestructuringInSwitch1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28948,7 +28948,7 @@ const baselines = {
     'spreadTupleAccessedByTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadTypeRemovesReadonly': {
         errors: true,
@@ -42278,7 +42278,7 @@ const baselines = {
     'restElementWithNullInitializer': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restPropertyWithBindingPattern': {
         errors: false,

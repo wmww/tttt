@@ -492,6 +492,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   caching a call's first resolved signature (links.resolvedSignature); plan 38 stage 2 item 5.
 
 ## Expressions (`ty/expr.c`), contextual typing
+- Array pattern rest elements (`ty_binding_type` in lower.c): tsc goes by the pattern's unwidened parent type (a `= null`
+  default is null, and `[...r] = null` reports TS2461 and makes `any[]`), tttt's parent type is widened (any), so the
+  "any parent is any" rule looks at the root initializer's expression type to tell the two apart.
 - `intersection_prop_context` (`ty/expr.c`): tsc's getTypeOfPropertyOfContextualType over an intersection sees type
   variable members through getApparentTypeOfIntersectionType, and the intersection distributes over a member whose
   constraint is a union; tttt instead asks each such member's apparent union/intersection on its own (`context_map`)

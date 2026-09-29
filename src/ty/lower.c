@@ -1937,6 +1937,10 @@ static Ty const* binding_rest_elements(Checker* me, Ty const* object, u32 start)
     return ty_reference(me, ty_tuple_target(me, &rest_shape), (TyList){ .data = elements.data + start, .len = rest_shape.arity });
 }
 
+static bool ty_is_tuple_target_empty(Ty const* ty) {
+    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET && !ty->declared.tuple->arity;
+}
+
 // The elements of a tuple from `start` on, or of each member of a union of tuples; null for anything else (tsc's
 // `everyType(sourceType, isTupleType) ? mapType(sourceType, t => sliceTupleType(t, start))` of a rest element)
 Ty const* ty_tuple_rest_slice(Checker* me, Ty const* source, u32 start) {
@@ -2550,7 +2554,26 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         Ty const* element = ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr);
         ret = binding->rest ? ty_array(me, element, false) : element;
     } else if (binding->rest && in_array) {
-        ret = binding_rest_elements(me, object, binding->parent_index);
+        // Of a tuple (or a union of them, or a type variable constrained to one), the tuple of the elements from here
+        // on; of anything else a mutable array of its elements (tsc's getTypeForBindingElement)
+        Ty const* base = object;
+        if (object->kind == TY_TYPE_PARAM || (object->flags & TYF_DEFERRED)) {
+            Ty const* constraint = ty_base_constraint(me, object);
+            if (constraint && constraint != object && !(constraint->flags & TYF_UNKNOWN)) base = constraint;
+        }
+        // (Of any, any: tsc's getBindingElementTypeFromParentType. Not of the any a `= null` initializer widens to,
+        // whose unwidened null tsc goes by)
+        bool any_parent = (object->flags & TYF_ANY) != 0;
+        if (any_parent && !parent->parent && parent->source && parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
+            InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
+            if (initialized->value.tag != EXPR_IMPLICIT_ANY && (ty_expr_type(me, &initialized->value)->flags & TYF_NULLABLE)) {
+                any_parent = false;
+            }
+        }
+        ret = any_parent ? object : ty_tuple_rest_slice(me, base, binding->parent_index);
+        if (!ret && ty_is_tuple_target_empty(base)) ret = base;
+        if (!ret) ret = ty_is_array(me, object) && object->reference.target != ty_readonly_array_target(me) ? object :
+            ty_array(me, ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr), false);
     } else if (binding->rest) {
         ret = object_rest_type(me, object, parent);
     } else if (in_array) {
