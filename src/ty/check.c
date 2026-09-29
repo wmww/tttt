@@ -262,6 +262,9 @@ static bool elaborate_element(
             return true;
         }
     }
+    // (tsc's getPropertyOfType also finds the members of the global Object type, declared in the lib)
+    Ty const* global_object = !declared && item->name ? ty_global_object_type(me) : nullptr;
+    if (global_object && ty_get_prop(me, global_object, item->name)) return true;
     Span decl = declared ? ty_prop_decl_span(declared) : (Span){0};
     if (!span_valid(decl)) decl = type_decl_span(me, target);
     if (in_lib(decl)) return true;
