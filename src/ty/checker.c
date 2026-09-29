@@ -680,24 +680,35 @@ static void insert_by_id(TyBuf* buf, Ty const* t) {
 
 // String literals that a pattern in the same union already has (tsc's removeStringLiteralsMatchedByTemplateLiterals):
 // `"ab" | `a${string}`` is `a${string}`. Returns the new length
+// Whether a string starts with a template's first text and ends with its last: what a match needs first
+static bool template_ends_fit(Atom const* string, Ty const* pattern) {
+    Atom const* head = pattern->template_literal.texts[0];
+    Atom const* tail = pattern->template_literal.texts[pattern->template_literal.types.len];
+    if (head->len + tail->len > string->len) return false;
+    return memcmp(string->str, head->str, head->len) == 0 &&
+        memcmp(string->str + string->len - tail->len, tail->str, tail->len) == 0;
+}
+
 static u32 remove_literals_matched_by_patterns(Checker* me, Ty const** types, u32 len) {
-    bool any_pattern = false;
-    for (u32 i = 0; i < len && !any_pattern; i++) any_pattern = ty_is_pattern_literal(types[i]);
-    if (!any_pattern) return len;
+    // (The patterns once, up front: a union of many literals with a few patterns is typical, `${K}.${P}` paths)
+    TyBuf patterns = {0};
+    for (u32 i = 0; i < len; i++) if (ty_is_pattern_literal(types[i])) ty_buf_push(&patterns, types[i]);
+    if (!patterns.len) return len;
     u32 out = 0;
     for (u32 i = 0; i < len; i++) {
         Ty const* t = types[i];
         bool matched = false;
         if (t->kind == TY_LITERAL && (t->flags & TYF_STRING_LITERAL)) {
-            for (u32 j = 0; j < len && !matched; j++) {
-                Ty const* pattern = types[j];
-                if (!ty_is_pattern_literal(pattern)) continue;
+            for (u32 j = 0; j < patterns.len && !matched; j++) {
+                Ty const* pattern = patterns.data[j];
                 matched = pattern->kind == TY_TEMPLATE_LITERAL ?
-                    ty_template_matches(me, t, pattern) : ty_string_mapping_contains(me, t, pattern);
+                    template_ends_fit(t->literal.string, pattern) && ty_template_matches(me, t, pattern) :
+                    ty_string_mapping_contains(me, t, pattern);
             }
         }
         if (!matched) types[out++] = t;
     }
+    ty_buf_drop(&patterns);
     return out;
 }
 
