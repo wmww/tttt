@@ -31,7 +31,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    its errors come from that resolution, it resolves with the raw contextual type; replay record, `speculative` and
    `would_report` deleted. Suite 12316 -> 12318, 0 lost, xstate 14 -> 12, zod-root identical, instructions -0.1..-9.4%
    (tsc -2.2%, valibot -9.4%). Leftovers in plan 38 "Stage 3" (resolvingSignature, effects signature, JSX).
-9. **Planning: plan 41** (project references; stub in `plans/41_project_references.md`), including pinning
-   TypeScript's own `src/tsconfig.json` (references) as the corpus that validates it.
+9. Done 2026-09-29: plan 41 planned (tsc's source redirect, one program per project, `-b`; three stages: semantics +
+   the `tsc-src` corpus, `-b` perf, corpora to zero with typescript-eslint as the second corpus). Measured: `-p` on
+   TypeScript's sub-projects today gives 66 mechanism errors + 11 real checker bugs; `tsc -b src` is clean, 15.6 s.
+   Oracle: scenarios mined from tsc's tsbuild/tsc baselines. Execution is for the next insights to schedule.
 10. **Triage.**
 11. **Insights.**
