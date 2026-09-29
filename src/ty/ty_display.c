@@ -2074,6 +2074,7 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
 }
 
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
+    if (ty == my display_of) ty = my display_as;
     if (ty->kind == TY_SUBSTITUTION) {
         // Its base (tsc's typeToTypeNodeHelper)
         if (!ty_is_no_infer(ty)) {

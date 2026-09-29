@@ -447,6 +447,9 @@ src` finds the code-side markers; every significant one has an entry here.
   conditional instance is re-reported only within its epoch; later hits only bump `instantiation_limit_hits`.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
+- `ty_check_static_heritage()` relates to a synthetic object literal (tsc's getTypeWithoutSignatures, which keeps the
+  class symbol and so prints `typeof Base`); `Checker.display_of`/`display_as` make messages print the named static
+  side for it while explaining. A synthetic anonymous type that remembers the symbol it prints as would replace it.
 - `check_access` (TS2339, HACKs): lets through generic mapped types and unresolved bases; bracket access never reports;
   fires on modules too (wrong resolution shows as TS2339 next to TS2307). `ty_indexed_access_index_ok` lacks TS4105.
   `ty_check_element_implicit_any` (TS7053, HACK) skips generic mapped types and unresolved bases.

@@ -811,6 +811,10 @@ struct Checker {
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
     bool circular_bindings; // Whether a KEY_CIRCULAR_BINDING was recorded (it's rare: most checkers skip the lookup)
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
+    // While explaining a relation to a synthetic type that stands for a named one (the base static side without
+    // signatures, tsc's getTypeWithoutSignatures keeps the symbol): messages print `display_as` for `display_of`
+    Ty const* display_of;
+    Ty const* display_as;
     u32 relation_complexity_hits; // How many relations ran out of their budget (TS2859, counted in the above too)
     // The typecheck walk inside the true branches of conditional types: `A` is `A & X` in `A extends X ? A['k'] : ...`
     // where indexed access types are checked (tsc's substitution types, see ty_check_indexed_access_type())

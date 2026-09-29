@@ -819,8 +819,13 @@ bool ty_check_static_heritage(Checker* me, Ty const* static_type, Ty const* base
     }
     cstr derived_str = ty_to_cstr(me, static_type);
     cstr base_str = ty_to_cstr(me, shown);
+    if (shown != target) {
+        my display_of = target;
+        my display_as = shown;
+    }
     report_unassignable_with_head(me, static_type, target, 2417, cstr_d("Class static side '", derived_str,
         "' incorrectly extends base class static side '", base_str, "'."), false, span, errs);
+    my display_of = my display_as = nullptr;
     c_drop(cstr, &derived_str, &base_str);
     return false;
 }

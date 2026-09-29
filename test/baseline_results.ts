@@ -35856,7 +35856,7 @@ const baselines = {
         types: true,
     },
     'derivedClassOverridesProtectedMembers3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35911,12 +35911,12 @@ const baselines = {
         types: true,
     },
     'derivedClassWithPrivateStaticShadowingProtectedStatic': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'derivedClassWithPrivateStaticShadowingPublicStatic': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
