@@ -12686,7 +12686,7 @@ const baselines = {
         types: true,
     },
     'exportClassExtendingIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -35081,9 +35081,9 @@ const baselines = {
         types: true,
     },
     'genericClassExpressionInFunction': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'modifierOnClassExpressionMemberInFunction': {
         errors: true,

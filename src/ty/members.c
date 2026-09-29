@@ -491,40 +491,26 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
 
 // Classes
 
-// A base constructor signature a class that writes no type arguments gets (tsc's getInstantiatedConstructorsForTypeArguments
-// and getDefaultConstructSignatures with none written): one without type parameters, or whose type parameters all have
-// defaults, which the mapper (null if there are no type parameters) fills in. False if the signature doesn't qualify
-static bool base_signature_without_type_args(Checker* me, Signature const* base_sig, TyMapper const** mapper) {
-    signature_resolve(me, base_sig);
-    TyList params = base_sig->type_params;
-    *mapper = nullptr;
-    if (!params.len) return true;
-    Ty const** defaults = arena_new_n(&my arena, Ty const*, params.len);
-    for (u32 j = 0; j < params.len; j++) {
-        defaults[j] = ty_param_default(me, params.data[j]);
-        if (!defaults[j]) return false;
-    }
-    *mapper = ty_mapper_new(me, params, (TyList){ .data = defaults, .len = params.len });
-    return true;
-}
-
-// A construct signature of a base constructor that takes the written type arguments (tsc's
-// getInstantiatedConstructorsForTypeArguments: as many as it has type parameters, or fewer if the rest have defaults):
-// what it constructs with them. Null if it doesn't take them
-static Ty const* base_signature_with_type_args(
-    Checker* me, Signature const* base_sig, VecSpannedType const* written, LowerCtx ctx
+// A construct signature of a base constructor that takes the written type arguments (none if `written` is null): as
+// many as it has type parameters, or fewer if the rest have defaults (tsc's getInstantiatedConstructorsForTypeArguments
+// and getDefaultConstructSignatures). The mapper (null if it has no type parameters) fills them in. False if the
+// signature doesn't take them
+static bool base_signature_type_args(
+    Checker* me, Signature const* base_sig, VecSpannedType const* written, LowerCtx ctx, TyMapper const** mapper
 ) {
     signature_resolve(me, base_sig);
     TyList params = base_sig->type_params;
-    u32 count = (u32)vec_spanned_type_size(written);
-    if (count > params.len) return nullptr;
-    Ty const** args = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    u32 count = written ? (u32)vec_spanned_type_size(written) : 0;
+    *mapper = nullptr;
+    if (count > params.len) return false;
+    if (!params.len) return true;
+    Ty const** args = arena_new_n(&my arena, Ty const*, params.len);
     for (u32 j = 0; j < params.len; j++) {
         args[j] = j < count ? ty_from_node(me, &vec_spanned_type_at(written, j)->type, ctx) : ty_param_default(me, params.data[j]);
-        if (!args[j]) return nullptr;
+        if (!args[j]) return false;
     }
-    Ty const* ret = signature_return_type(me, base_sig);
-    return params.len ? ty_instantiate(me, ret, ty_mapper_new(me, params, (TyList){ .data = args, .len = params.len })) : ret;
+    *mapper = ty_mapper_new(me, params, (TyList){ .data = args, .len = params.len });
+    return true;
 }
 
 // An object type, `object`, a type parameter constrained to one or an intersection of them (tsc's isValidBaseType).
@@ -586,12 +572,8 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         Members const* members = ty_members(me, constructor);
         Ty const* constructed = nullptr;
         for (u32 i = 0; i < members->construct_count && !constructed; i++) {
-            if (written_args) {
-                constructed = base_signature_with_type_args(me, members->construct[i], written_args, ctx);
-                continue;
-            }
             TyMapper const* mapper;
-            if (!base_signature_without_type_args(me, members->construct[i], &mapper)) continue;
+            if (!base_signature_type_args(me, members->construct[i], written_args, ctx, &mapper)) continue;
             constructed = signature_return_type(me, members->construct[i]);
             if (mapper) constructed = ty_instantiate(me, constructed, mapper);
         }
@@ -1180,12 +1162,14 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         Members const* base_members = base_static ? ty_members(me, base_static) : nullptr;
         Members const* expr_members = base_expr_constructor ? ty_members(me, base_expr_constructor) : nullptr;
         if (!base_members && expr_members && expr_members->construct_count) {
-            // tsc's getDefaultConstructSignatures: the base constructor's signatures that take no type arguments (none
-            // are written: class_base() gives up on those), returning this class
+            // tsc's getDefaultConstructSignatures: the base constructor's signatures that take the written type
+            // arguments, returning this class
+            Expr const* extends = &class_decl->extends;
+            VecSpannedType const* written = extends->tag == EXPR_GENERIC_PARAMS ? &extends->generic_params->params : nullptr;
             for (u32 i = 0; i < expr_members->construct_count; i++) {
                 Signature const* base_sig = expr_members->construct[i];
                 TyMapper const* mapper;
-                if (!base_signature_without_type_args(me, base_sig, &mapper)) continue;
+                if (!base_signature_type_args(me, base_sig, written, ctx, &mapper)) continue;
                 Signature* sig = class_construct_signature(me, class_decl, instance);
                 sig->target = base_sig;
                 sig->mapper = mapper;
