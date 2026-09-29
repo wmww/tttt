@@ -848,14 +848,20 @@ static Ty const* map_fresh(Checker* me, Ty const* ty, void const* arg) {
     return ty_fresh_literal(me, ty);
 }
 
-// What is left of a declared union type after `assigned` was assigned to it
+// What is left of a declared union type after `assigned` was assigned to it. Cached like tsc's getAssignmentReducedType
+// (every assignment to a variable of a big union type is related to each of its members)
 static Ty const* assignment_reduced_type(Checker* me, Ty const* declared, Ty const* assigned) {
     if (declared == assigned || (assigned->flags & TYF_NEVER)) return assigned;
+    u64 key[3] = { KEY_ASSIGNMENT_REDUCED, declared->id, assigned->id };
+    Ty const* cached = intern_get(&my links, key, 3);
+    if (cached) return cached;
     Ty const* reduced = filter_type(me, declared, assigned_is_assignable, assigned);
     // `flag = true` leaves a fresh `true`, which widens again: `let copy = flag` is boolean
     if (ty_is_fresh(assigned) && (assigned->flags & TYF_BOOLEAN_LITERAL)) reduced = map_type(me, reduced, map_fresh, nullptr);
     // (An erroneous assignment doesn't narrow)
-    return ty_is_related(me, assigned, reduced, TY_RELATION_ASSIGNABLE) ? reduced : declared;
+    Ty const* ret = ty_is_related(me, assigned, reduced, TY_RELATION_ASSIGNABLE) ? reduced : declared;
+    *intern_slot(me, &my links, key, 3) = ret;
+    return ret;
 }
 
 static Ty const* for_each_element_type(Checker* me, ForEachLoopStatement const* for_each) {

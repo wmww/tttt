@@ -385,6 +385,11 @@ static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper c
     return true;
 }
 
+static bool ty_list_contains(TyList list, Ty const* ty) {
+    for (u32 i = 0; i < list.len; i++) if (list.data[i] == ty) return true;
+    return false;
+}
+
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
     if (ty->anonymous.applies_type_args) {
         // An instantiation expression whose type arguments mention the type parameters: `typeof C<O>` in `type R<O>`
@@ -445,7 +450,12 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     Ty const** sources = pairs;
     Ty const** targets = pairs + cap;
     u32 len = 0;
+    TyList free_params = target->anonymous.free_params;
+    bool free_params_unknown = target->anonymous.free_params_unknown;
     for (u32 i = 0; inner && i < inner->len; i++) {
+        // (What the node doesn't mention is dropped below anyway: not instantiated, like tsc's getObjectTypeInstantiation
+        // maps only the outer type parameters it mentions)
+        if (!free_params_unknown && !ty_list_contains(free_params, inner->sources[i])) continue;
         Ty const* mapped = ty_instantiate(me, inner->targets[i], mapper);
         if (mapped != inner->sources[i]) { // Identity mappings say nothing
             sources[len] = inner->sources[i];
@@ -454,14 +464,13 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     }
     for (u32 i = 0; i < mapper->len; i++) {
         bool shadowed = mapper->sources[i] == mapper->targets[i];
-        for (u32 j = 0; inner && j < inner->len; j++) shadowed |= inner->sources[j] == mapper->sources[i];
+        if (!shadowed && !free_params_unknown && !ty_list_contains(free_params, mapper->sources[i])) continue;
+        for (u32 j = 0; inner && j < inner->len && !shadowed; j++) shadowed = inner->sources[j] == mapper->sources[i];
         if (!shadowed) {
             sources[len] = mapper->sources[i];
             targets[len++] = mapper->targets[i];
         }
     }
-    TyList free_params = target->anonymous.free_params;
-    bool free_params_unknown = target->anonymous.free_params_unknown;
     u32 flags = TYF_OBJECT | (free_params_unknown ? TYF_COULD_CONTAIN_TYPE_VARIABLES : 0);
     if (!free_params_unknown) {
         u32 kept = 0;

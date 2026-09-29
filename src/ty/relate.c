@@ -1741,7 +1741,9 @@ static Ternary props_related_impl(
             if (same && same->decl->function == target_prop->decl->function && !same->target && same->flags == target_prop->flags) continue;
         }
         FoundProp source_prop = find_prop(me, source, target_prop->name, 0);
-        if (optionals_only && (!source_prop.found || source_prop.prop == target_prop)) continue;
+        if (optionals_only && !source_prop.found) continue;
+        // The same property (tsc's `sourceProp !== targetProp`): a member a derived class inherits against its base
+        if (source_prop.found && source_prop.prop == target_prop) continue;
         if (!source_prop.found) {
             if (is_static_private_name(me, target_prop)) continue;
             // Subtypes need the optional properties too, unless an object literal, [] or a tuple leaves them out
