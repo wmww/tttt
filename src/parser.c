@@ -385,6 +385,7 @@ static bool expr_ends_with_arrow(Expr const* e);
 static bool jsx_generic_arrow_start(Parser* parent);
 static bool parse_binding_content(Parser* parent, Binding* ret);
 static bool is_reserved_word(csview word);
+static bool is_regex_space(char c);
 static bool parse_binding_identifier(Parser* parent);
 static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, u32 code, char const* message);
 static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
@@ -1625,6 +1626,7 @@ typedef enum ParsingContext {
     PARSING_VARIABLE_DECLARATIONS,
     PARSING_HERITAGE_CLAUSES,
     PARSING_HERITAGE_CLAUSE_ELEMENT,
+    PARSING_ARRAY_BINDING_ELEMENTS,
     PARSING_CONTEXT_COUNT,
 } ParsingContext;
 
@@ -1698,6 +1700,10 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
             return tok_is(t, "extends") || tok_is(t, "implements");
         case PARSING_HERITAGE_CLAUSE_ELEMENT:
             return tok_is_heritage_clause_element(p, t, true);
+        case PARSING_ARRAY_BINDING_ELEMENTS:
+            // (tsc's isBindingIdentifierOrPrivateIdentifierOrPattern)
+            return tok_is(t, ",") || tok_is(t, "...") || tok_is(t, "{") || tok_is(t, "[") ||
+                (*t.start == '#' && tok_is_word(t)) || (tok_is_identifier(t) && !is_reserved_word((csview){ t.start, t.end - t.start }));
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1731,6 +1737,8 @@ static bool list_is_terminator(ParsingContext ctx, Tok t) {
             return tok_is(t, "{") || tok_is(t, "}");
         case PARSING_HERITAGE_CLAUSE_ELEMENT:
             return tok_is(t, "{") || tok_is(t, "extends") || tok_is(t, "implements");
+        case PARSING_ARRAY_BINDING_ELEMENTS:
+            return tok_is(t, "]");
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1793,6 +1801,9 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
             break;
         case PARSING_HERITAGE_CLAUSE_ELEMENT:
             parse_error(p, span, 1109, "Expression expected.");
+            break;
+        case PARSING_ARRAY_BINDING_ELEMENTS:
+            parse_error(p, span, 1181, "Array element destructuring pattern expected.");
             break;
         case PARSING_CONTEXT_COUNT: impossible;
     }
@@ -2608,6 +2619,26 @@ static bool parse_jsdoc_postfix_type(Parser* parent, char const* left_start, Typ
 }
 
 // `left_start`: where the type on the left began (the span of `T[K]`)
+// tsc's parseFunctionOrConstructorTypeToError: a function or constructor type written as a union or intersection
+// member (its return type takes the rest of the union), on its range from the operator's end
+static void check_unparenthesized_function_type(Parser* p, const char* operand_pos, TypeNode const* type, bool in_union) {
+    if (type->tag != TYPE_CALLABLE || type->parenthesized || p->shared->in_jsdoc) return;
+    const char* start = operand_pos;
+    while (is_regex_space(*start)) start++;
+    if (*start != '(' && *start != '<' && *start != 'n' && *start != 'a') return;
+    const char* end = p->pos;
+    while (end > operand_pos && is_regex_space(end[-1])) end--;
+    bool constructor = type->callable->function->is_constructor;
+    Span span = span_make(p->shared->source, operand_pos, end);
+    if (constructor) {
+        parse_error(p, span, in_union ? 1386 : 1388, "Constructor type notation must be parenthesized when used in ",
+            in_union ? "a union" : "an intersection", " type.");
+    } else {
+        parse_error(p, span, in_union ? 1385 : 1387, "Function type notation must be parenthesized when used in ",
+            in_union ? "a union" : "an intersection", " type.");
+    }
+}
+
 static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence, char const* left_start, TypeNode* left_and_ret) {
     Parser p = parser(parent);
     TypeNode type;
@@ -2648,10 +2679,12 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
     if (TYPE_PRECEDENCE_INTERSECTION >= min_precedence) {
         if (hop_char(&p, '&') && *p.pos != '&' && *p.pos != '=') {
+            const char* operand_pos = p.pos;
             hop_whitespace(&p);
 
             // One level tighter: the caller's loop takes the next `&`, so a long chain doesn't recurse per member
             expect_type(&p, TYPE_PRECEDENCE_OPERATOR, &type);
+            check_unparenthesized_function_type(&p, operand_pos, &type, false);
             *left_and_ret = type_composite_without_simplify(TYPE_INTERSECTION, *left_and_ret, type);
             return parse_success(&p);
         }
@@ -2659,10 +2692,12 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
     if (TYPE_PRECEDENCE_UNION >= min_precedence) {
         if (hop_char(&p, '|') && *p.pos != '|' && *p.pos != '=') {
+            const char* operand_pos = p.pos;
             hop_whitespace(&p);
 
             // Same: generated unions of thousands of members exist (icon names)
             expect_type(&p, TYPE_PRECEDENCE_INTERSECTION, &type);
+            check_unparenthesized_function_type(&p, operand_pos, &type, true);
             *left_and_ret = type_composite_without_simplify(TYPE_UNION, *left_and_ret, type);
             return parse_success(&p);
         }
@@ -9456,6 +9491,53 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
     }
 }
 
+static bool ascii_prefix_equals_ci(const char* a, const char* b, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        char x = a[i], y = b[i];
+        if (x >= 'A' && x <= 'Z') x = (char)(x - 'A' + 'a');
+        if (y >= 'A' && y <= 'Z') y = (char)(y - 'A' + 'a');
+        if (x != y) return false;
+    }
+    return true;
+}
+
+static bool is_regex_space(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\v' || c == '\f';
+}
+
+// tsc's getNamedArgRegEx on a comment [start, end): `\sname\s*=\s*` and a quoted value, case-insensitively
+static bool triple_slash_has_arg(const char* start, const char* end, const char* name) {
+    size_t len = strlen(name);
+    for (const char* c = start; c + 1 + len <= end; c++) {
+        if (!is_regex_space(*c) || !ascii_prefix_equals_ci(c + 1, name, len)) continue;
+        const char* v = c + 1 + len;
+        while (v < end && is_regex_space(*v)) v++;
+        if (v >= end || *v != '=') continue;
+        v++;
+        while (v < end && is_regex_space(*v)) v++;
+        if (v >= end || (*v != '"' && *v != '\'')) continue;
+        if (memchr(v + 1, *v, (size_t)(end - v - 1))) return true;
+    }
+    return false;
+}
+
+// tsc's tripleSlashXMLCommentStartRegEx (`///\s*<(\S+)\s.*?/>`) names a `<reference>` pragma, which then needs
+// `path`, `types`, `lib` or `no-default-lib` (processPragmasIntoFields: TS1084 on the comment)
+static bool triple_slash_invalid_reference(const char* start, const char* end) {
+    if (end - start < 3 || memcmp(start, "///", 3) != 0) return false;
+    const char* c = start + 3;
+    while (c < end && is_regex_space(*c)) c++;
+    if (c >= end || *c != '<') return false;
+    const char* tag = ++c;
+    while (c < end && !is_regex_space(*c)) c++;
+    if (c >= end || c - tag != 9 || !ascii_prefix_equals_ci(tag, "reference", 9)) return false;
+    bool closed = false;
+    for (const char* d = c + 1; d + 1 < end && !closed; d++) closed = d[0] == '/' && d[1] == '>';
+    if (!closed) return false;
+    return !triple_slash_has_arg(start, end, "types") && !triple_slash_has_arg(start, end, "lib") &&
+        !triple_slash_has_arg(start, end, "path") && !triple_slash_has_arg(start, end, "no-default-lib");
+}
+
 static void parse_source_directives(Parser* parent, VecStatement* ret) {
     bool seen_amd_module = false;
     while (true) {
@@ -9473,6 +9555,10 @@ static void parse_source_directives(Parser* parent, VecStatement* ret) {
         bool amd_module_name = false;
         Anchor comment_a = anchor(parent);
         bool is_directive = parse_source_directive(parent, &directive, &amd_module_name);
+        if (!is_directive && triple_slash_invalid_reference(comment_a.start, comment_end)) {
+            parent->pos = comment_end;
+            parse_error(parent, span_from(comment_a), 1084, "Invalid 'reference' directive syntax.");
+        }
         if (amd_module_name) {
             // tsc's processPragmasIntoFields: every `<amd-module name>` pragma after the first, on its whole comment
             if (seen_amd_module) {
@@ -10019,6 +10105,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
         hop_whitespace(&p);
         ret->tag = BINDING_ARRAY;
         ret->array = vec_binding_init();
+        u32 saved_context = list_enter(&p, PARSING_ARRAY_BINDING_ELEMENTS);
         while (*p.pos && *p.pos != ']') {
             binding = (Binding){0};
             if (parse_binding_element(&p, &binding)) {
@@ -10029,13 +10116,15 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                     .tag = BINDING_NOOP,
                 });
             } else {
-                break;
+                if (list_abort_or_skip(&p, PARSING_ARRAY_BINDING_ELEMENTS)) break;
+                continue;
             }
             hop_whitespace(&p);
 
             ignore( *p.pos == ']' || expect_char(&p, ',') );
             hop_whitespace(&p);
         }
+        list_leave(&p, saved_context);
         expect_char(&p, ']');
     } else if (hop_char(&p, '{')) {
         hop_whitespace(&p);

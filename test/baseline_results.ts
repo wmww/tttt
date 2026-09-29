@@ -18636,7 +18636,7 @@ const baselines = {
         types: true,
     },
     'invalidReferenceSyntax1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32236,12 +32236,12 @@ const baselines = {
         types: true,
     },
     'unparenthesizedConstructorTypeInUnionOrIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'unparenthesizedFunctionTypeInUnionOrIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -44821,7 +44821,7 @@ const baselines = {
         types: true,
     },
     'VariableDeclaration13_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
