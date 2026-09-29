@@ -539,6 +539,9 @@ struct Signature {
     TyList class_type_params;
     Span name_span; // For the symbols baseline
     Span decl_span;
+    // A combination of signatures (tsc's combineSignaturesOfUnionMembers): the one whose declaration it has, whose
+    // parameters' declarations its own (synthesized) parameters don't have
+    struct Signature const* declared_by;
     bool drops_mapped_type_params; // Part of an instantiation expression, see Ty.anonymous.applies_type_args
     LowerCtx ctx;
     Signature const* target;

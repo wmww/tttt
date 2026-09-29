@@ -1377,6 +1377,9 @@ static void report_arity(
         // The first parameter without an argument of the signature that needs the fewest
         SigParam const* missing = args->len < min && closest && args->len < closest->param_count ?
             &closest->params[args->len] : nullptr;
+        // (A combined signature's are synthesized: tsc looks at its declaration's parameters)
+        Signature const* declared_by = missing && !missing->decl ? closest->declared_by : nullptr;
+        if (declared_by && args->len < declared_by->param_count) missing = &declared_by->params[args->len];
         if (missing && missing->decl) {
             Binding const* binding = &missing->decl->initializer.binding;
             Span at = span_valid(missing->decl->jsdoc_span) ? missing->decl->jsdoc_span : missing->decl->span;

@@ -5745,6 +5745,7 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
             ((left->flags | right->flags) & (SIGNATURE_ABSTRACT | SIGNATURE_SOME_ABSTRACT) ? SIGNATURE_SOME_ABSTRACT : 0),
         .name_span = left->name_span,
         .decl_span = left->decl_span,
+        .declared_by = left->declared_by ? left->declared_by : left,
         .state = LAZY_STATE_DONE,
         .type_params = left->type_params.len ? left->type_params : right->type_params,
         .params = params,
