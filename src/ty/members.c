@@ -297,15 +297,12 @@ static void builder_add_interface_member(
                     .readonly = i->readonly,
                     .decl_span = vec_span_size(&i->declarations) ? *vec_span_at(&i->declarations, 0) : (Span){0},
                 };
-                // `[k: A | B]` is a signature for each valid key type of the union (tsc's getIndexInfosOfIndexSymbol)
+                // `[k: A | B]` is a signature for each valid key type of the union, the first one for a key type counts
+                // (tsc's getIndexInfosOfIndexSymbol)
                 Ty const* key = info.key;
-                if (key->kind != TY_UNION || (key->flags & TYF_BOOLEAN)) {
-                    // (`[k: any]`, `[k: RegExp]` (TS1268) is no signature at all)
-                    if (ty_is_valid_index_key(key)) builder_push(builder, index, info);
-                    break;
-                }
-                for (u32 k = 0; k < key->composite.types.len; k++) {
-                    Ty const* member = key->composite.types.data[k];
+                bool single = key->kind != TY_UNION || (key->flags & TYF_BOOLEAN);
+                for (u32 k = 0; k < (single ? 1 : key->composite.types.len); k++) {
+                    Ty const* member = single ? key : key->composite.types.data[k];
                     if (!ty_is_valid_index_key(member)) continue;
                     bool seen = false;
                     for (u32 j = 0; j < builder->index_count && !seen; j++) seen = builder->index[j].key == member;

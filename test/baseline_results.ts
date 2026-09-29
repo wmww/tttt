@@ -31181,7 +31181,7 @@ const baselines = {
         types: true,
     },
     'typeOfEnumAndVarRedeclarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64268,7 +64268,7 @@ const baselines = {
     'duplicateNumericIndexers': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicatePropertyNames': {
         errors: true,
@@ -64278,7 +64278,7 @@ const baselines = {
     'duplicateStringIndexers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexSignatures1': {
         errors: true,
@@ -64733,12 +64733,12 @@ const baselines = {
     'multipleNumericIndexers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'multipleStringIndexers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericIndexerConstrainsPropertyDeclarations': {
         errors: true,
