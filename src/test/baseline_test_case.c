@@ -1535,7 +1535,7 @@ void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span
     cstr underline = cstr_null;
     TyParamNames param_names = { .in_scope = { .data = my scope_params, .len = my scope_params_len } };
     ty_display(current_checker, (TyDisplay){
-        .target = &rendered, .enclosing = my enclosing, .underline = &underline, .unique_symbols = true,
+        .target = &rendered, .enclosing = my enclosing, .underline = &underline,
         .param_names = &param_names, .at = inner_span,
     }, type);
     free(param_names.given);

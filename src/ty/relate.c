@@ -590,7 +590,7 @@ static cstr display_for_report(Checker* me, Ty const* ty, bool widen) {
 
 static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen) {
     cstr ret = cstr_null;
-    ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen, .fully_qualified = true }, ty);
+    ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen, .fully_qualified = true, .typeof_unique_symbols = true }, ty);
     return ret;
 }
 
@@ -619,8 +619,23 @@ static Ty const* apparent_intersection(Checker* me, Ty const* ty) {
     return ret;
 }
 
+// tsc's isLiteralType: a unit type or a union of them (booleans and enums included)
+static bool is_literal_type(Ty const* ty) {
+    u32 unit = TYF_LITERAL | TYF_ENUM_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE | TYF_BOOLEAN;
+    if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!(ty->composite.types.data[i]->flags & unit)) return false;
+        }
+        return true;
+    }
+    return (ty->flags & unit) != 0;
+}
+
 static void display_pair(Checker* me, Ty const* source, bool widen, Ty const* target, cstr* source_out, cstr* target_out) {
-    *source_out = display_for_report(me, source, widen);
+    // A widened literal source is shown by tsc's getTypeNameForErrorDisplay (reportRelationError's generalizedSource):
+    // fully qualified, a unique symbol as `typeof sym`
+    *source_out = widen && is_literal_type(source) ? display_fully_qualified(me, source, widen) :
+        display_for_report(me, source, widen);
     *target_out = display_for_report(me, target, false);
     if (!cstr_eq(source_out, target_out)) return;
     c_drop(cstr, source_out, target_out);

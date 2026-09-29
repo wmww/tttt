@@ -13536,7 +13536,7 @@ const baselines = {
         types: true,
     },
     'extractInferenceImprovement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32161,7 +32161,7 @@ const baselines = {
         types: false,
     },
     'uniqueSymbolAllowsIndexInObjectWithIndexSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -2121,10 +2121,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 break;
             }
             if (ty->flags & TYF_UNIQUE_ES_SYMBOL) {
-                // The types baseline says `unique symbol` (tsc's AllowUniqueESSymbolType), messages name the symbol, and
-                // so does an annotation that is reused (it says `typeof sym`: the one that says `unique symbol` declares
-                // the symbol, and tsc doesn't reuse that one)
-                if (d.unique_symbols && !d.reused) {
+                // `unique symbol` (tsc's AllowUniqueESSymbolType, in typeToString's default flags) unless asked to name
+                // the symbol, as an annotation that is reused does (it says `typeof sym`: the one that says `unique
+                // symbol` declares the symbol, and tsc doesn't reuse that one)
+                if (!d.typeof_unique_symbols && !d.reused) {
                     out_lit(d, "unique symbol");
                 } else {
                     out_lit(d, "typeof ");

@@ -1864,7 +1864,9 @@ typedef struct TyDisplay {
     // The type parameters of an instantiated generic signature being printed: tsc gives it fresh ones, so nothing that
     // mentions them is reused inside of it
     TyList fresh_params;
-    bool unique_symbols; // Print unique symbol types as `unique symbol` rather than `typeof sym` (types baseline)
+    // Print unique symbol types as `typeof sym` rather than `unique symbol` (tsc's typeToString without
+    // AllowUniqueESSymbolType, which its default flags have: messages' fully qualified names, getTypeNameForErrorDisplay)
+    bool typeof_unique_symbols;
     TyList infer_params; // Inside the extends type of a conditional type: its own `infer` type parameters
     // Reprinting an annotation of this instantiated signature (tsc's context.mapper): its type parameters that the
     // instantiation maps aren't reused, they print what they're mapped to

@@ -1156,7 +1156,7 @@ static cstr index_type_str(Checker* me, Ty const* index, Span index_span) {
         return cstr_lit("bigint");
     }
     cstr ret = cstr_null;
-    ty_display(me, (TyDisplay){ .target = &ret, .unique_symbols = true }, index);
+    ty_display(me, (TyDisplay){ .target = &ret }, index);
     return ret;
 }
 
