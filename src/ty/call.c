@@ -2096,9 +2096,40 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             }
             return any;
         }
+        // Some member has none: the union isn't callable, and the first such member is named (tsc's
+        // invocationErrorDetails). Not for `super(...)`, `new` of something callable, or tagged templates and decorators,
+        // which the member by member resolution below still covers
+        bool some_have = false;
+        Ty const* lacking = nullptr;
+        for (u32 i = 0; i < apparent->composite.types.len; i++) {
+            Members const* members = ty_members(me, ty_apparent_type(me, apparent->composite.types.data[i]));
+            bool has = construct ? members->construct_count > 0 : members->call_count > 0;
+            some_have |= has;
+            if (!has && !lacking) lacking = apparent->composite.types.data[i];
+        }
+        if (lacking && !super_call && !info->tagged_template && !info->decorator && !info->jsx) {
+            mark_would_report(info);
+            if (errs) {
+                cstr rendered = ty_to_cstr(me, apparent);
+                Error* e = error_ctx_error_d(errs, invocation_error_span(info), construct ? 2351 : 2349,
+                    construct ? "This expression is not constructable." : "This expression is not callable.");
+                if (!some_have) {
+                    error_sub_error_d(e, span_null, TS_CODE_NONE, "No constituent of type '", rendered, "' is ",
+                        construct ? "constructable." : "callable.");
+                } else {
+                    cstr member = ty_to_cstr(me, lacking);
+                    error_sub_error_d(e, span_null, TS_CODE_NONE, "Not all constituents of type '", rendered, "' are ",
+                        construct ? "constructable." : "callable.");
+                    error_sub_error_d(vec_error_back_mut(&e->sub_errors), span_null, TS_CODE_NONE, "Type '", member, "' has no ",
+                        construct ? "construct" : "call", " signatures.");
+                    cstr_drop(&member);
+                }
+                cstr_drop(&rendered);
+            }
+            return any;
+        }
     }
     if (apparent->kind == TY_UNION && !union_sigs) {
-        // TODO: tsc's errors for unions with members that can't be called ("Not all constituents of type ...")
         Ty const** return_types = malloc(sizeof(Ty const*) * apparent->composite.types.len);
         for (u32 i = 0; i < apparent->composite.types.len; i++) {
             return_types[i] = resolve_call(me, apparent->composite.types.data[i], info, call_span, errs);

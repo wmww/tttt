@@ -2351,7 +2351,7 @@ const baselines = {
         types: true,
     },
     'betterErrorForUnionCall': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23281,7 +23281,7 @@ const baselines = {
         types: true,
     },
     'newOperator': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

@@ -34,7 +34,6 @@ properties, suggestions, type-only imports), and the harness dropping the commen
   packageJsonImportsExportsOptionCompat x5), requireOfAnEmptyFile1. Diff them directly.
 - `chain:deeper: Type _ is not assignable to type _.` (7): tttt elaborates one level further than tsc somewhere
   other than type parameter constraints; `chain:missing: Property _ is missing` (6).
-- Unions with non-callable members: "Not all constituents of type 'X' are callable" (`resolve_call()` TODO).
 - Related info still missing: TS2793 (overload implementation), TS6203, TS2771, TS2738, TS2728 on computed
   symbol-named members (`[Symbol.iterator]` declared here, TS2411).
 
