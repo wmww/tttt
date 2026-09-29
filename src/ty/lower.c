@@ -435,7 +435,8 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         }
     }
     if (!decl) {
-        if (identifier->keyword || !span_valid(identifier->name)) return ty_intrinsic(me, TY_ERROR);
+        // (A missing name, `a.` at the end of a line: no node to reuse, errorType)
+        if (identifier->keyword || !span_valid(identifier->name) || !identifier->name.sv.size) return ty_intrinsic(me, TY_ERROR);
         cstr name = cstr_null;
         for_each (i, vec_span, &identifier->namespaces) {
             cstr_append_sv(&name, i->sv);

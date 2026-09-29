@@ -56972,8 +56972,8 @@ const baselines = {
     },
     'parserUnfinishedTypeNameBeforeKeyword1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserUnterminatedGeneric1': {
         errors: false,

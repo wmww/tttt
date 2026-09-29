@@ -703,6 +703,17 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             }
             vec_span_drop(&so_far);
             if (!span_valid(my identifier->name)) break; // A bare `import("./a")`
+            if (!my identifier->name.sv.size && !my identifier->import_ref) {
+                // A missing name (`a.` at the end of a line): tsc's unknownSymbol, shown where the next token starts
+                const char* at = my identifier->name.sv.buf;
+                while (*at == ' ' || *at == '\t' || *at == '\r' || *at == '\n') at++;
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .allow_declaration_empty = true,
+                    .span = span_make(my identifier->name.source, at, at),
+                    .text = cstr_lit("unknown"),
+                });
+                break;
+            }
             Symbol const* shown = shown_declaration(my identifier->symbol, my identifier->target);
             if (!(heritage && !shown)) baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_clone(my identifier->namespaces),

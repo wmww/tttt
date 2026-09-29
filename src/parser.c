@@ -2766,9 +2766,18 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
             break;
         }
         vec_span_push(&namespaces, name);
+        const char* after_dot = p.pos;
         hop_whitespace(&p);
-        // After the dot any identifier name goes, keywords too (`AtRule.default`)
+        // After the dot any identifier name goes, keywords too (`AtRule.default`), but `a.` followed by two words on
+        // the next line is missing its name, reported right after the dot (tsc's parseRightSideOfDot)
         Anchor member = anchor(&p);
+        Tok t = tok_peek(&p);
+        if (t.newline_before && tok_is_word(t) && tok_is_word(tok_next(&p, t)) && !tok_next(&p, t).newline_before) {
+            name = span_make(p.shared->source, after_dot, after_dot);
+            parse_error(&p, name, 1003, "Identifier expected.");
+            end = after_dot;
+            break;
+        }
         if (parse_identifier_or_keyword(&p, nullptr)) {
             name = span_from(member);
         } else {
