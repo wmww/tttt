@@ -1002,7 +1002,8 @@ static Ty const* annotated_expando_type(Checker* me, Symbol const* symbol) {
     Binding const* binding = symbol_find_node(host, SYMBOL_DECL_VARIABLE);
     if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER || !binding->has_explicit_type) return nullptr;
     Ty const* annotation = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
-    return ty_prop_type_of(me, annotation, checker_atom(me, symbol->name));
+    // (An optional property's type is read with its undefined: tsc's getTypeOfPropertyOfType)
+    return ty_access(me, annotation, ty_string_literal(me, symbol->name));
 }
 
 // What a declaring assignment (`exports.x = v`, `f.x = v`) assigns, before widening object literals (tsc's
