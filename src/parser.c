@@ -5765,9 +5765,12 @@ static bool parse_function_args_inner(
                 if (initializer.binding.tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(&initializer.value, false);
                 hop_whitespace(&p);
 
-                // tsc's skipParameterStart: only a name or pattern that parses without errors counts
-                if (vec_function_arg_is_empty(&ret->args) && initializer.binding.has_explicit_type &&
-                    p.shared->errors_attempted == errors_before_param
+                // tsc's skipParameterStart: only a name or pattern that parses without errors counts. In a type
+                // (isUnambiguouslyStartOfFunctionType) a `,`, `?` or `=` after it commits too
+                if (vec_function_arg_is_empty(&ret->args) && p.shared->errors_attempted == errors_before_param &&
+                    (initializer.binding.has_explicit_type || (parse_type_return_syntax && !rest &&
+                        (explicit_optional || initializer.value.tag != EXPR_IMPLICIT_ANY || initializer.value.missing ||
+                            *p.pos == ',')))
                 ) {
                     is_definitely_function = true;
                 }
