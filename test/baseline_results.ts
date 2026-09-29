@@ -25347,7 +25347,7 @@ const baselines = {
     },
     'parseErrorIncorrectReturnToken': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parseGenericArrowRatherThanLeftShift': {
