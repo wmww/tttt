@@ -22881,9 +22881,9 @@ const baselines = {
         types: true,
     },
     'narrowingMutualSubtypes': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingNoInfer1': {
         errors: true,
@@ -52821,7 +52821,7 @@ const baselines = {
         types: true,
     },
     'checkJsxChildrenProperty4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

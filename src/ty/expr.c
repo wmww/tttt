@@ -4093,6 +4093,40 @@ Ty const* ty_element_index_type(Checker* me, Expr const* index) {
     return ty_expr_type(me, index);
 }
 
+// Whether an index signature keyed by `key` is among a type's own (tsc's getIndexInfoOfType)
+static bool has_index_key(Members const* members, Ty const* key) {
+    for (u32 i = 0; i < members->index_count; i++) {
+        if (members->index[i].key == key) return true;
+    }
+    return false;
+}
+
+// tsc's hasNumericPropertyNames: the only index signature of the type is a number one. A union's index signatures are
+// the keys every member has (tsc's getUnionIndexInfos)
+static bool has_numeric_property_names(Checker* me, Ty const* type) {
+    if (type->kind != TY_UNION) {
+        Ty const* object = ty_apparent_type(me, type);
+        if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false; // (getIndexInfosOfType)
+        Members const* members = ty_members(me, object);
+        return members->index_count == 1 && (members->index[0].key->flags & TYF_NUMBER);
+    }
+    TyList types = type->composite.types;
+    Members const* first = ty_members(me, ty_apparent_type(me, types.data[0]));
+    u32 count = 0;
+    bool numeric = false;
+    for (u32 i = 0; i < first->index_count; i++) {
+        Ty const* key = first->index[i].key;
+        bool everywhere = true;
+        for (u32 t = 1; t < types.len && everywhere; t++) {
+            everywhere = has_index_key(ty_members(me, ty_apparent_type(me, types.data[t])), key);
+        }
+        if (!everywhere) continue;
+        count++;
+        numeric = key->flags & TYF_NUMBER;
+    }
+    return count == 1 && numeric;
+}
+
 // tsc's isForInVariableForNumericPropertyNames: `k` of `for (const k in xs)` where xs has only a number index
 // signature (an array) indexes as a number. TODO: only inside the loop's body
 static bool is_for_in_numeric_variable(Checker* me, Expr const* index) {
@@ -4123,10 +4157,7 @@ static bool is_for_in_numeric_variable(Checker* me, Expr const* index) {
         loop = candidate;
     }
     if (!loop) return false;
-    Ty const* object = ty_apparent_type(me, ty_non_nullable(me, ty_expr_type(me, &loop->iterable)));
-    if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false; // (getIndexInfosOfType)
-    Members const* members = ty_members(me, object);
-    return members->index_count == 1 && (members->index[0].key->flags & TYF_NUMBER);
+    return has_numeric_property_names(me, ty_non_nullable(me, ty_expr_type(me, &loop->iterable)));
 }
 
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {

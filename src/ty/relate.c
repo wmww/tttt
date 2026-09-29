@@ -191,6 +191,13 @@ void ty_init_global_types(Checker* me) {
         if (bind_call_apply && !compiler_options()->strict_bind_call_apply) continue;
         Symbol const* decl = program_get_global(my program, csview_from(names[i]), SYMBOL_TYPE);
         if (decl && decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) ty_declared_type_of(me, decl);
+        // (anyArrayType right after RegExp (ty_array() makes autoArrayType before it), anyReadonlyArrayType after ReadonlyArray)
+        if (!strcmp(names[i], "RegExp") && program_get_global(my program, csview_from("Array"), SYMBOL_TYPE)) {
+            ty_array(me, ty_intrinsic(me, TY_ANY), false);
+        }
+        if (!strcmp(names[i], "ReadonlyArray") && program_get_global(my program, csview_from("Array"), SYMBOL_TYPE)) {
+            ty_array(me, ty_intrinsic(me, TY_ANY), true);
+        }
     }
 }
 
