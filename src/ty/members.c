@@ -506,7 +506,13 @@ static bool base_signature_type_args(
     if (!params.len) return true;
     Ty const** args = arena_new_n(&my arena, Ty const*, params.len);
     for (u32 j = 0; j < params.len; j++) {
-        args[j] = j < count ? ty_from_node(me, &vec_spanned_type_at(written, j)->type, ctx) : ty_param_default(me, params.data[j]);
+        if (j < count) {
+            args[j] = ty_from_node(me, &vec_spanned_type_at(written, j)->type, ctx);
+        } else {
+            // A default can mention the parameters before it (tsc's fillMissingTypeArguments)
+            args[j] = ty_param_default(me, params.data[j]);
+            if (args[j] && j) args[j] = ty_instantiate(me, args[j], ty_mapper_new(me, (TyList){ .data = params.data, .len = j }, (TyList){ .data = args, .len = j }));
+        }
         if (!args[j]) return false;
     }
     *mapper = ty_mapper_new(me, params, (TyList){ .data = args, .len = params.len });
@@ -607,6 +613,10 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
                 ty_is_related(me, fallback, ty_empty_object_type(me), TY_RELATION_IDENTITY))
             ) {
                 fallback = nullptr;
+            }
+            if (fallback && i) {
+                // A default can mention the parameters before it (tsc's fillMissingTypeArguments)
+                fallback = ty_instantiate(me, fallback, ty_mapper_new(me, (TyList){ .data = params.data, .len = i }, (TyList){ .data = args, .len = i }));
             }
             args[i] = fallback ? fallback : ty_intrinsic(me, TY_ANY);
         }
