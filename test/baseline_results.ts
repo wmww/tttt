@@ -15851,7 +15851,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyDeclareMemberWithoutType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15861,7 +15861,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyDeclareTypePropertyWithoutType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23511,7 +23511,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyForwardReferencedInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23526,7 +23526,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyInBareInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23566,7 +23566,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23601,7 +23601,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyParametersInInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23611,7 +23611,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyReferencingDeclaredInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -56,6 +56,15 @@ Span span_with_semicolon(Span statement) {
     return statement;
 }
 
+Span span_with_member_separator(Span member) {
+    if (!span_valid(member) || !member.source) return member;
+    char const* end = span_end_ptr(member);
+    char const* file_end = cstr_str(&member.source->contents) + cstr_size(&member.source->contents);
+    while (end < file_end && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) end++;
+    if (end < file_end && (*end == ';' || *end == ',')) member.sv.size = end + 1 - member.sv.buf;
+    return member;
+}
+
 Span span_between(Span const a, Span const b) {
     if (!span_valid(a)) {
         return b;

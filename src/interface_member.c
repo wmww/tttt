@@ -188,7 +188,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                 vec_span_size(&my declarations) && vec_span_at(&my declarations, 0)->source &&
                 !vec_span_at(&my declarations, 0)->source->is_js
             ) {
-                Span at = *vec_span_at(&my declarations, 0);
+                Span at = span_with_member_separator(*vec_span_at(&my declarations, 0));
                 if (my type.callable->function->is_constructor) {
                     error_ctx_error_d(errs, at, 7013, "Construct signature, which lacks return-type annotation, implicitly has an 'any' return type.");
                 } else {
