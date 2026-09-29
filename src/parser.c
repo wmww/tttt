@@ -1436,6 +1436,14 @@ static bool tok_is_binary_operator(Tok t) {
     return tok_is_word(t) ? tok_is_one_of(t, words) : tok_is_one_of(t, ops);
 }
 
+// tsc's isAssignmentOperator
+static bool tok_is_assignment_operator(Tok t) {
+    static const char* const ops[] = {
+        "=", "+=", "-=", "*=", "/=", "%=", "**=", "<<=", ">>=", ">>>=", "&=", "|=", "^=", "&&=", "||=", "?\?=", nullptr,
+    };
+    return tok_is_one_of(t, ops);
+}
+
 static bool tok_is_start_of_left_hand_side_expression(Parser* p, Tok t) {
     static const char* const words[] = { "this", "super", "null", "true", "false", "function", "class", "new", nullptr };
     if (tok_is_number(t) || tok_is_string(t) || tok_is_template(t)) return true;
@@ -9102,9 +9110,10 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     // (At a decorator tsc has a MissingDeclaration, which is no expression: parseDecoratedExpression)
     ret->missing = *parent->pos != '@';
     // tsc's isStartOfExpression takes a binary operator for a missing left operand and goes on with the binary
-    // expression (`{ ...*o }`, `x = * y`). Not `<` (a type assertion) or `/` (a regex)
+    // expression (`{ ...*o }`, `x = * y`). Not `<` (a type assertion) or `/` (a regex). The missing name is a
+    // left-hand side, so an assignment goes on too (`if (x ^= {})` missing its `)`: `<missing> ^= {}`)
     Tok t = tok_peek(parent);
-    if (tok_is_binary_operator(t) && !tok_is(t, "<") && !tok_is(t, "/")) {
+    if ((tok_is_binary_operator(t) && !tok_is(t, "<") && !tok_is(t, "/")) || tok_is_assignment_operator(t)) {
         while (parse_expr_right_side(parent, ctx, ret)) {}
     }
     return false;
@@ -11806,11 +11815,13 @@ static inline bool expect_statement(Parser* parent, bool toplevel, Statement* re
         parse_statement_semicolon(parent, ret);
         return true;
     } else {
-        expected_expression_error(parent);
-        *ret = (Statement){
-            .tag = STATEMENT_EXPR,
-            .expr = expr_implicit_any(span_from_pos(parent)),
-        };
+        // tsc's parseStatement has no failure: an expression statement whose expression is missing
+        const char* start = parent->pos;
+        *ret = (Statement){ .tag = STATEMENT_EXPR };
+        expect_expr(parent, expr_ctx_null, &ret->expr);
+        parse_comma_ops_right_side(parent, &ret->expr);
+        ret->span = span_make(parent->shared->source, start, parent->pos);
+        parse_statement_semicolon(parent, ret);
         return false;
     }
 }
