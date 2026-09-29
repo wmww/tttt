@@ -24,9 +24,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 6. Done 2026-09-29: plan 40 planned (three stages: the walk + isolatedDeclarations, accessibility through the
    printer's tracker, TS2742 with plan 41's specifiers). 41 tests; tsc's compiler, valibot, nest and drizzle enable
    declarations and are its false-positive oracles. Execution is for the next insights to schedule.
-7. **Suite checker bugs 7** (four Opus sub-agents by failstats bucket, as entries 5 of the last window): the 237
-   tests with the right codes at the right positions but other text first (`./errtextdiff.py`, plan 34), then
-   single-code tests (`bugs/missing_checks.md`).
+7. Done 2026-09-29: suite checker bugs 7 (four Opus sub-agents on disjoint test lists: related info/parser spans,
+   header printing, elaboration chains, checker underlines, then single-code tests): suite 12058 -> 12316, 0 lost,
+   errtextdiff bucket 236 -> 45, xstate 18 -> 14, drizzle instructions -14%, others +-0.8%. Leftovers in triage.md.
 8. **Planning: plan 38 stage 3** (resolve once: a call's resolution cached per node, the replay record and
    `LazyMemo.speculative` deleted). Prototype and measure suite, xstate, and the instructions (repeated resolution is
    also a perf cost). May conclude "not worth it"; then say so in plan 38 and stop.

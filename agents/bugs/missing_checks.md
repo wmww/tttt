@@ -4,14 +4,17 @@ Each is small (one check, a few tests). Find fresh buckets with `./failstats.py`
 one code alone in `build/failstats/tests.tsv`) and `./unimplemented_codes.sh` (codes `src/` never mentions). Test
 statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (suite checker bugs 4).
 
-## Buckets (tests whose errors fail on this one code, 2026-09-28, after suite checker bugs 6, suite 10830)
-- Single-code tests: missing TS2322 12 (relation-engine leftovers), missing TS2742 10 (declaration emit: needs a
-  simulation of emit's type serialization and module specifiers, plan-sized), spurious TS2339 8, spurious TS1005 7
-  (parser), missing/spurious TS2304 5+5 (escaped identifiers were some, fixed 2026-09-29), missing TS2345 5,
-  missing TS2300 5, missing TS7023 4, spurious TS2749 4 (`export =` of a dotted name, triage), misplaced TS2322 5 and
-  TS2769 4, spurious TS2741 4. `./unimplemented_codes.sh` is now syntax and isolatedDeclarations (TS90xx) at the top;
-  TS2744 (type parameter defaults referencing later ones: needs a type-node walker) 15 in 4 tests.
-  Errors component: 232 tests where tsc reports errors and tttt none (was 382).
+## Buckets (tests whose errors fail on this one code, 2026-09-29, after suite checker bugs 7, suite 12316)
+- Single-code tests: missing TS2742 10 (plan 40), missing TS2322 8, missing TS7023 4 (tsc's re-entry through
+  error-message printing, triage), spurious TS2345 4, missing TS2589 4, missing TS2344 4 (generic arguments: the
+  HACK in `ty_check_type_reference_constraints`), missing TS2304 4, spurious TS2339 4, spurious TS2307 3, missing
+  TS4023 3 (plan 40), then parser codes (TS1009, TS1099). 223 single-code rows in all. Errors component: 462 failing
+  (was 790), 106 of them tests where tsc reports errors and tttt none.
+- Done by suite checker bugs 7 (besides error text): TS4111, TS18055, TS18057, TS2467, TS18027, TS2668, TS2664,
+  TS2671, TS2439, TS2306, TS6137, TS5061, TS18007, TS6807, TS2398, TS2717 (private names, computed), TS2317, TS2434,
+  TS2484, TS2715, TS2341 in patterns, TS2815, TS2513, TS2542, TS2371, TS2862, TS2635, TS2729, TS2206/TS2207,
+  TS2490/TS2767, TS2498, TS2540, TS2666/TS2667, TS7055/TS7025, const enum TS2475/TS2748/TS2476, TS2526, TS2461,
+  TS2700, TS7032/TS7033, TS7031, TS2608, TS2639, mapped type key checks (TS2322), union calls (TS2349/TS2351).
 - Done by suite checker bugs 6: TS2774/TS2801/TS2845 conditions, TS2564/TS2565 and definite assignment grammar,
   TS2313, TS7023/TS7024, TS2401/TS2376, overload agreement (TS2385/TS2386/TS2512, TS2386 for method signatures too),
   TS2818, TS2686, TS7036, TS2708 for `export import`, TS17012, TS1147/TS1194, TS2452, TS2702/TS2713, TS8024/TS8032,

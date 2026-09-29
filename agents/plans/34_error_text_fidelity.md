@@ -19,19 +19,13 @@ type, TS2719 (two types with the same name), TS2720's suffix, TS2694 fully quali
 namespace imports in messages, property names as written (`["a"]`, `2.0`, `'1'`), related-info spans (parameter
 properties, suggestions, type-only imports), and the harness dropping the comments before the first `@filename`.
 
-## Left, by tests fixed alone (2026-09-27 numbers)
-- **Non-augmenting subtypes** (tsc's `getSingleBaseForNonAugmentingSubtype` in `getNormalizedType`): a class or
-  interface that declares no members and has a single base relates as its base, so structural messages name the base
-  (`Property 'name' is private in type 'C2'` for `class C5 extends C2 {}`; the heads keep the original). Needs a
-  per-declared-type "own member count" and "single base" (tsc's rule: class base expression a plain (dotted) name).
-  ~6-8 tests (`chain:text: Property _ is private...`), and it affects TS2741/TS2739 wording elsewhere.
-- **`header:TS2322 other`** (12): mixed; look at them one by one (some are `keyof A` for private names, some the
-  union/intersection target choice in the chain).
-- **Underlines** (60 over ~20 codes): error node choice per diagnostic, mostly parser codes (TS1127/TS1115/TS1206/
-  TS1116) and TS2345/TS2348/TS7013. Each code is its own small rule.
-- **`outside diagnostics`** (12): the errors.txt differs outside the per-diagnostic parts: diagnostics in lib files
-  (`lib.es5.d.ts(--,--)`, duplicateNumericIndexers), global diagnostics order/text (importAssertion1,
-  packageJsonImportsExportsOptionCompat x5), requireOfAnEmptyFile1. Diff them directly.
+## Left (2026-09-29, after suite checker bugs 7: 45 tests, from 236)
+Suite checker bugs 7 did the non-augmenting subtypes (`getSingleBaseForNonAugmentingSubtype`), almost all
+underlines (parser and checker codes), most related info (TS2771, TS1007, TS2773, TS2793, TS2728, TS2208, TS6203,
+TS6210, TS6500/TS6502) and ~50 chain tests. Tests fixed by one kind now: `header:TS2322 other` 7 (look one by one),
+`outside diagnostics` 6 (lib-file diagnostics under `skipDefaultLibCheck: false`, the harness's pre/post-emit
+counts: see triage), chain text 5, TS6500/TS1376/TS1377 related positions, and singles. Leftovers each agent wrote
+up are in `triage.md`.
 - Elaboration chain (2026-09-29 session C: its 69-test queue is down to ~20). Left there, each needing more than a
   message rule: `The intersection 'A & B' was reduced to 'never'` (tsc's elaborateNeverIntersection needs the reduced
   intersection, tttt makes plain never at construction: intersectionReduction(Strict), intersectionWithConflictingPrivates,
@@ -40,8 +34,6 @@ properties, suggestions, type-only imports), and the harness dropping the commen
   intersection (keyofAndIndexedAccessErrors); subclassThisTypeAssignable01 (a relation difference, not text);
   jsxChildrenWrongType (an optional tuple element's missing type prints as `undefined` under exactOptionalPropertyTypes);
   bigintWithLib (tsc repeats one line three times: a relation through the Symbol.toStringTag overloads?).
-- Related info still missing: TS2793 (overload implementation), TS6203, TS2771, TS2738, TS2728 on computed
-  symbol-named members (`[Symbol.iterator]` declared here, TS2411).
 
 ## Validation
 Each fix: `./fasttest.sh -s` with no lost components (`./resultdiff.py --lost`), the corpora unchanged (a message
