@@ -1427,7 +1427,15 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 error_ctx_grammar_error_d(errs, block_first_token(my span), 1108,
                     "A 'return' statement can only be used within a function body.");
             }
-            expr_lookup_names(&my expr, names, errs);
+            if (container || !errs) {
+                expr_lookup_names(&my expr, names, errs);
+            } else {
+                // (tsc's checkReturnStatement stops there: nothing in the expression is reported)
+                ErrorCtx ignored = error_ctx_init();
+                ignored.phase = errs->phase;
+                expr_lookup_names(&my expr, names, &ignored);
+                error_ctx_drop(&ignored);
+            }
             if (!flow->dead) {
                 if (statement_is_bare_return(me)) flow->has_bare_return = true;
                 flow->has_explicit_return = true;

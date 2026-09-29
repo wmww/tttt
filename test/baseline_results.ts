@@ -25348,7 +25348,7 @@ const baselines = {
     'parseErrorIncorrectReturnToken': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parseGenericArrowRatherThanLeftShift': {
         errors: true,
@@ -56761,7 +56761,7 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ModuleElement1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

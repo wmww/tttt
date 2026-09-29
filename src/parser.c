@@ -5671,6 +5671,9 @@ static bool parse_function_args_inner(
             ret->ret_span = span_from(ret_a);
             ret->ret_explicit = true;
             hop_whitespace(&p);
+        } else if (is_definitely_function && parse_type_return_syntax && *args_start.start == '(') {
+            // A function type is committed (tsc's parseFunctionOrConstructorType): its return type is missing
+            parse_error(&p, span_from_token_or_eof(&p), 1110, "Type expected.");
         } else {
             goto drop_and_fail;
         }
@@ -5890,6 +5893,29 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
     return parse_success(&p);
 }
 
+// tsc's shouldParseReturnType(ColonToken, isType = true): a signature in a type takes a `=>` for its `:` (TS1005)
+static void signature_arrow_return_type(Parser* parent, FunctionImpl* func) {
+    if (func->ret_explicit) return;
+    Parser p = parser(parent);
+    hop_whitespace(&p);
+    if (p.pos[0] != '=' || p.pos[1] != '>') {
+        parse_fail(&p);
+        return;
+    }
+    parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 2), 1005, "':' expected.");
+    p.pos += 2;
+    hop_whitespace(&p);
+    Anchor ret_a = anchor(&p);
+    TypeNode type;
+    if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+        type_drop(&func->ret);
+        func->ret = type;
+        func->ret_span = span_from(ret_a);
+        func->ret_explicit = true;
+    }
+    parse_success(&p);
+}
+
 static bool parse_function_header(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
     ignore flags;
     Parser p = parser(parent);
@@ -5898,6 +5924,7 @@ static bool parse_function_header(Parser* parent, FunctionFlags flags, FunctionI
     if (!parse_function_args(&p, false, false, true, true, ret)) {
         return parse_fail(&p);
     }
+    signature_arrow_return_type(&p, ret);
 
     ret->full_span = span_from(a);
     return parse_success(&p);
@@ -7123,6 +7150,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 member->key.mapped.readonly = 1;
             }
         } else if (parse_function_args(&p, true, false, true, false, &func)) {
+            if (is_type) signature_arrow_return_type(&p, &func);
             check_modifiers(&p, &modifiers, (ModifiedNode){
                 .kind = MODIFIED_METHOD_SIGNATURE,
                 .parent = is_type ? MODIFIED_IN_TYPE : MODIFIED_IN_CLASS,
