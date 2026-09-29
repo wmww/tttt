@@ -84,7 +84,8 @@ typedef struct ParserShared {
     // an optional element (tsc's parseTupleElementType)
     const char* jsdoc_postfix_nullable_start;
     const char* jsdoc_postfix_nullable_end;
-    // The type alias an `@enum` on the statement just parsed declares, for the statement list to append after it
+    // The type alias an `@enum` on the statement just parsed declares (or the scope-level `@template`s of a variable
+    // statement), for the statement list to append after it
     Statement* jsdoc_enum;
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
     // Where the statements being parsed are, for the modifier checks (modifier_list_check_grammar())
@@ -11049,6 +11050,27 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
             jsdoc_apply_satisfies_initializer(p, &tags, initializer);
             FunctionImpl* function = jsdoc_function_of(&initializer->value);
+            if (!function && initializer->value.tag != EXPR_CLASS_DECL && !p->shared->jsdoc_enum) {
+                // `@template T` here declares T in the enclosing scope: tsc's host for it is a signature, and there is
+                // none (getHostSignatureFromJSDoc), so bindTypeParameter declares it in the container
+                bool alias = false, templates = false;
+                for_each (i, vec_jsdoc_tag, &tags) {
+                    alias |= i->kind == JSDOC_TAG_TYPEDEF || i->kind == JSDOC_TAG_CALLBACK;
+                    templates |= i->kind == JSDOC_TAG_TEMPLATE && !i->earlier && span_valid(i->name);
+                }
+                if (templates && !alias) {
+                    Generic generic = jsdoc_template_generic(&tags);
+                    Span span = statement->span;
+                    p->shared->jsdoc_enum = c_new(Statement, (Statement){
+                        .tag = STATEMENT_DECL_TYPE,
+                        .decl.type = {
+                            .full_span = span, .generic = generic, .type = type_any, .jsdoc = true,
+                            .jsdoc_check_only = true, .jsdoc_free_templates = true,
+                        },
+                        .span = span,
+                    });
+                }
+            }
             if (function && !function->ret_explicit && initializer->binding.has_explicit_type &&
                 initializer->binding.explicit_type.from_jsdoc
             ) {
