@@ -1168,7 +1168,7 @@ const baselines = {
     'arrayBindingPatternOmittedExpressions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayBufferIsViewNarrowsType': {
         errors: true,
@@ -7638,7 +7638,7 @@ const baselines = {
     'declarationEmitBindingPatternWithReservedWord': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitBindingPatterns': {
         errors: true,
@@ -7928,7 +7928,7 @@ const baselines = {
     'declarationEmitDestructuring5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitDestructuringArrayPattern1': {
         errors: true,
@@ -23483,7 +23483,7 @@ const baselines = {
     'noImplicitAnyDestructuringInPrivateMethod': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noImplicitAnyDestructuringParameterDeclaration': {
         errors: false,
@@ -37838,7 +37838,7 @@ const baselines = {
     'controlFlowElementAccessNoCrash1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowForInStatement': {
         errors: true,

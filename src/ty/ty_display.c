@@ -1522,6 +1522,18 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     display_annotated(me, ret_d, reused ? ret_annotation : nullptr, ret, false);
 }
 
+// The pattern ends with a comma before its `]` or `}` (tsc's NodeArray.hasTrailingComma, which the printer keeps)
+static bool pattern_has_trailing_comma(Binding const* binding) {
+    csview text = binding->content_span.sv;
+    isize_t i = text.size - 1; // On the closing bracket
+    while (i-- > 0) {
+        char c = text.buf[i];
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
+        return c == ',';
+    }
+    return false;
+}
+
 // A destructured parameter's name the way tsc prints it in a signature: the pattern without its defaults
 static void append_binding_pattern(cstr* out, Binding const* binding) {
     if (binding->rest) cstr_append_sv(out, c_sv("..."));
@@ -1531,6 +1543,7 @@ static void append_binding_pattern(cstr* out, Binding const* binding) {
             if (i) cstr_append_sv(out, c_sv(", "));
             append_binding_pattern(out, &binding->array.data[i]);
         }
+        if (binding->array.size && pattern_has_trailing_comma(binding)) cstr_append_sv(out, c_sv(","));
         cstr_append_sv(out, c_sv("]"));
     } else if (binding->tag == BINDING_OBJECT) {
         if (!binding->object.size) {
@@ -1549,6 +1562,7 @@ static void append_binding_pattern(cstr* out, Binding const* binding) {
             }
             append_binding_pattern(out, &item->target);
         }
+        if (pattern_has_trailing_comma(binding)) cstr_append_sv(out, c_sv(","));
         cstr_append_sv(out, c_sv(" }"));
     } else {
         cstr_append_sv(out, binding->content_span.sv);
