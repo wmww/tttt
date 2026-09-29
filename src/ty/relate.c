@@ -4203,7 +4203,7 @@ static Ternary structured_related_members(
                 ty_buf_push(&keys, ty_keyof(me, tuple_as_array(me, operand)));
                 Ty const* known = ty_union(me, keys.data, keys.len, nullptr, (TyList){0});
                 ty_buf_drop(&keys);
-                Ternary related = is_related_to(me, st, source, known, false);
+                Ternary related = is_related_to(me, st, source, known, report);
                 if (related) return related;
             }
             // Through the simplified operand, or its constraint (tsc's getSimplifiedTypeOrConstraint)
@@ -4211,7 +4211,7 @@ static Ternary structured_related_members(
             if (constraint && constraint != operand) {
                 Ty const* keys = ty_keyof(me, constraint);
                 if (keys != target) {
-                    Ternary related = is_related_to(me, st, source, keys, false);
+                    Ternary related = is_related_to(me, st, source, keys, report);
                     if (related == TERNARY_TRUE) return related;
                 }
             } else if (!constraint && operand->kind == TY_ANONYMOUS && ty_members(me, operand)->mapped &&
@@ -4225,7 +4225,7 @@ static Ternary structured_related_members(
                     Ty const* both[2] = { apparent_mapped_type_keys(me, mapped), mapped->name_type };
                     keys = ty_union(me, both, 2, nullptr, (TyList){0});
                 }
-                Ternary related = is_related_to(me, st, source, keys, false);
+                Ternary related = is_related_to(me, st, source, keys, report);
                 if (related == TERNARY_TRUE) return related;
             }
         }   break;

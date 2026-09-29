@@ -20341,7 +20341,7 @@ const baselines = {
         types: true,
     },
     'keyofIsLiteralContexualType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
