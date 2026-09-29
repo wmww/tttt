@@ -1329,6 +1329,10 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         if (!symbol) {
             if (type && type->kind == TY_REFERENCE) type = type->reference.target;
             if (type && type->kind == TY_DECLARED) symbol = type->declared.symbol;
+            // (`o.m = function () { this }` where o is a namespace value, a function with expandos: its symbol)
+            if (type && type->kind == TY_DECLARED && !symbol && type->declared.kind == TY_DECLARED_NAMESPACE) {
+                symbol = type->declared.namespace_symbol;
+            }
         }
     }
     if (!symbol || !symbol->decl_count) return;
