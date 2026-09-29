@@ -760,10 +760,17 @@ bool ty_is_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* conte
     return any_literal_of_contextual_type(me, ty, contextual);
 }
 
-// tsc's checkExpressionForMutableLocation: the type a property or element gets from its initializer
+// tsc's isTypeAssertion: `x as T` or `<T>x` (parenthesized or not; `satisfies` isn't one)
+static bool is_type_assertion(Expr const* expr) {
+    return expr->tag == EXPR_AS_TYPE && !expr->as_type->is_satisfies;
+}
+
+// tsc's checkExpressionForMutableLocation: the type a property or element gets from its initializer. What a type
+// assertion says stays as it is (`{ a: S as typeof S }` keeps the unique symbol)
 static Ty const* check_for_mutable_location(Checker* me, Expr const* expr, ExprCtx ctx) {
     Ty const* type = check_with(me, expr, ctx);
     if (in_const_context(me, expr, ctx)) return ty_regular(me, type);
+    if (is_type_assertion(expr)) return type;
     if (any_literal_of_contextual_type(me, type, ty_instantiate_contextual_type(me, ctx.contextual))) return ty_regular(me, type);
     return widen_literals(me, type);
 }
@@ -3346,6 +3353,7 @@ Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, JsxAttribut
 
 Ty const* ty_mutable_location_type(Checker* me, Expr const* expr, Ty const* contextual) {
     Ty const* type = ty_expr_type(me, expr);
+    if (is_type_assertion(expr)) return type;
     if (contextual && any_literal_of_contextual_type(me, type, contextual)) return ty_regular(me, type);
     return widen_literals(me, type);
 }

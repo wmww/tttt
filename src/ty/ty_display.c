@@ -1971,8 +1971,10 @@ static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
     // `(readonly T[])[]`, `(readonly [K, V])[]`: a type operator
     bool readonly = ty->kind == TY_REFERENCE && (ty->reference.target == my readonly_array_target ||
         (ty_is_tuple(ty) && ty->reference.target->declared.tuple->readonly));
+    // (`(unique symbol)[]`, `(typeof sym)[]`: a type operator or query)
+    bool unique_symbol = ty->kind == TY_LITERAL && (ty->flags & TYF_UNIQUE_ES_SYMBOL);
     return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || ty->kind == TY_CONDITIONAL || ty->kind == TY_KEYOF ||
-        type_query || readonly || is_function_like(me, d, ty);
+        type_query || readonly || unique_symbol || is_function_like(me, d, ty);
 }
 
 static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyList args) {
