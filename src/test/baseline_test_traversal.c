@@ -80,6 +80,34 @@ static void commonjs_symbol_overrides(Expr const* left, BaselineTestCase* ctx) {
     }
 }
 
+// `exports.x = undefined` is an alias of undefined to tsc, whose `undefined` shows the file's first such export
+// (getSymbolAtLocation of the name in an alias declaration)
+static void commonjs_undefined_override(BinaryOpExpr const* assignment, BaselineTestCase* ctx) {
+    Expr const* value = &assignment->right;
+    if (value->tag != EXPR_LITERAL || value->literal.tag != VALUE_UNDEFINED || expr_is_perenthisized(value)) return;
+    SourceFile const* file = value->inner_span.source;
+    Symbol const* module = file && file->scope ? file->scope->container : nullptr;
+    if (!module || !module->exports) return;
+    Symbol const* first = nullptr;
+    char const* first_at = nullptr;
+    for (u32 i = 0; i < module->exports->count; i++) {
+        // (One whose last declaration assigns undefined: an alias resolves by its last declaration)
+        Symbol const* symbol = module->exports->entries[i].symbol;
+        SymbolDecl const* last = symbol->decl_count ? &symbol->decls[symbol->decl_count - 1] : nullptr;
+        Expr const* node = last && last->kind == SYMBOL_DECL_ASSIGNMENT ? last->node : nullptr;
+        if (!node || node->tag != EXPR_LITERAL || node->literal.tag != VALUE_UNDEFINED) continue;
+        if (!first_at || span_start_ptr(node->inner_span) < first_at) {
+            first = symbol;
+            first_at = span_start_ptr(node->inner_span);
+        }
+    }
+    // (named like the export, with no declarations)
+    if (!first || ctx->symbol_override_count >= c_arraylen(ctx->symbol_overrides)) return;
+    ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+        .span = value->inner_span, .text = symbol_text(ctx, first), .declarations = vec_span_init(),
+    };
+}
+
 // JavaScript `F.prototype.x = v` (tsc's getSpecialPropertyAssignmentSymbol): `F.prototype` and `x` are the member x
 // of F, the access as a whole has no symbol
 static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
@@ -1753,7 +1781,13 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
                 vec_span_drop(&ctx->symbol_overrides[ctx->symbol_override_count].declarations);
             }
+            if (binary_commonjs_declaration(my binary_op, nullptr)) commonjs_undefined_override(my binary_op, ctx);
             expr_compile_test_info(&my binary_op->right, ctx);
+            while (ctx->symbol_override_count > overrides) {
+                ctx->symbol_override_count--;
+                cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
+                vec_span_drop(&ctx->symbol_overrides[ctx->symbol_override_count].declarations);
+            }
         }   break;
 
         case EXPR_UNARY_OP:
