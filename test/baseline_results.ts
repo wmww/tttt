@@ -2391,7 +2391,7 @@ const baselines = {
         types: true,
     },
     'bigintWithoutLib': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -45501,7 +45501,7 @@ const baselines = {
         types: true,
     },
     'exponentiationOperatorSyntaxError2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

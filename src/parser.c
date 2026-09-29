@@ -9749,6 +9749,17 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             .type = t,
             .angle_bracket_syntax = true,
         }));
+        {
+            // tsc's parseUnaryExpressionOrHigher: `<T>x ** 2` is ambiguous (still read as `(<T>x) ** 2`)
+            Parser lookahead = parser(&p);
+            hop_whitespace(&lookahead);
+            bool exponent = lookahead.pos[0] == '*' && lookahead.pos[1] == '*' && lookahead.pos[2] != '=';
+            parse_fail(&lookahead);
+            if (exponent) {
+                parse_error(&p, span_from(a), 17007, "A type assertion expression is not allowed in the left-hand side of "
+                    "an exponentiation expression. Consider enclosing the expression in parentheses.");
+            }
+        }
         if (source_is_mts_or_cts(&p)) {
             // (tsc's checkAssertion)
             grammar_error(&p, span_from(a), 7059,

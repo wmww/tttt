@@ -3464,7 +3464,13 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     expr_get_type((Expr*)me);
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: break;
-        case EXPR_LITERAL: break;
+        case EXPR_LITERAL:
+            // (tsc's checkGrammarBigIntLiteral: expressions only, not literal types)
+            if (my literal.tag == VALUE_BIGINT && compiler_options()->target < SCRIPT_TARGET_ES2020) {
+                error_ctx_grammar_error_d(errs, my inner_span, 2737,
+                    "BigInt literals are not available when targeting lower than ES2020.");
+            }
+            break;
 
         case EXPR_IDENTIFIER: identifier_expr_typecheck(&my identifier, errs); break;
 
