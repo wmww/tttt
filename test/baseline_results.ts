@@ -65808,7 +65808,7 @@ const baselines = {
     'unionsOfTupleTypes1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'variadicTuples1': {
         errors: false,

@@ -2517,10 +2517,16 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         // (Read like an expression: noUncheckedIndexedAccess's undefined, tsc's AccessFlags.ExpressionPosition)
         ret = ty_access_reading(me, object, ty_literal(me, &index));
         // Past the end of a tuple (TS2493, binding_typecheck()) is undefined (tsc's getIndexedAccessTypeOrUndefined)
-        TupleShape const* shape = ty_tuple_shape(object);
-        bool has_rest = false;
-        for (u32 i = 0; shape && i < shape->arity; i++) has_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
-        if (shape && !has_rest && binding->parent_index >= shape->arity) ret = ty_intrinsic(me, TY_UNDEFINED);
+        // (Of every member of a union of tuples too)
+        TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
+        bool past_end = parts.len > 0;
+        for (u32 p = 0; p < parts.len && past_end; p++) {
+            TupleShape const* shape = ty_tuple_shape(parts.data[p]);
+            bool has_rest = false;
+            for (u32 i = 0; shape && i < shape->arity; i++) has_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+            past_end = shape && !has_rest && binding->parent_index >= shape->arity;
+        }
+        if (past_end) ret = ty_intrinsic(me, TY_UNDEFINED);
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
     } else if (compiler_options()->strict_null_checks && !parent->parent && !parent->has_explicit_type &&
         !(object->flags & TYF_ANY) && ty_can_be_nullish(me, object) && ty_non_nullable(me, object) != object &&

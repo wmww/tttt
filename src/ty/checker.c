@@ -2231,6 +2231,13 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
     if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return nullptr;
     index = ty_string_index_only_key(me, object, index);
     Ty const* ret = ty_access_without_node(me, object, index); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
+    // Past the end of tuples (TS2493 where written) is undefined (tsc's getTupleElementTypeOutOfStartCount)
+    if (!ret && (index->flags & TYF_NUMBER_LITERAL) && index->literal.value.number >= 0) {
+        TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
+        bool tuples = parts.len > 0;
+        for (u32 i = 0; i < parts.len && tuples; i++) tuples = ty_tuple_shape(parts.data[i]) != nullptr;
+        if (tuples) return my intrinsics[TY_UNDEFINED];
+    }
     // What isn't there is unknown, or the error type where it's written (tsc's getIndexedAccessType: the access node
     // reported it)
     return ret ? ret : my intrinsics[written ? TY_ERROR : TY_UNKNOWN_];
