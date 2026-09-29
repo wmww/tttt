@@ -1034,7 +1034,8 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                 });
             }
             ctx->any_keeps_underline = true;
-            baseline_test_case_add_symbol_value(ctx, i->source_name, i->symbol);
+            if (!quoted) baseline_test_case_add_symbol_value(ctx, i->source_name, i->symbol);
+            else ctx->any_keeps_underline = false;
         }
         port_item_add_alias(i, ctx, my main.type_only);
     }
@@ -1340,6 +1341,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = declaration_get_spans(my symbol),
         .span = my name,
+        .text = baseline_test_case_module_alias_text(ctx, my symbol),
     });
     // The declared type as the new core knows it, which carries the alias name where tsc would
     baseline_test_case_add_type(

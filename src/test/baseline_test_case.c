@@ -15,6 +15,7 @@
 #include <cleat/filesystem.h>
 #include "binding.h"
 #include "scope.h"
+#include "symbol_chain.h"
 
 typedef struct LineNumberedStr {
     unsigned line;
@@ -1583,6 +1584,19 @@ void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, TypeNode 
     baseline_test_case_add_type(me, span, ty_of_node(node));
 }
 
+cstr baseline_test_case_module_alias_text(BaselineTestCase const* me, Symbol const* declaration) {
+    cstr text = cstr_init();
+    if (declaration && declaration->parent && declaration->parent->is_module && my enclosing) {
+        SymbolChain chain = symbol_chain_at(my enclosing, declaration, 0, false);
+        // (Only the module's own export, not an export specifier re-exporting it under another name: tsc doesn't
+        // name `export { f as g } from "./self"` through `self.g` there. Why is unverified)
+        if (chain.len > 1 && (chain.items[0]->flags & SYMBOL_ALIAS) && chain.items[chain.len - 1] == declaration) {
+            symbol_chain_append(&text, my enclosing, &chain);
+        }
+    }
+    return text;
+}
+
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol const* declaration) {
     if (!declaration) {
         log_error("baseline_test_case_add_declaration() called with null declaration");
@@ -1593,6 +1607,7 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol 
         .declarations = symbol_declaration_spans(declaration),
         .span = span,
         .name = declaration->name_span,
+        .text = baseline_test_case_module_alias_text(me, declaration),
     });
     // (An alias here is a variable declared by `require()` in JavaScript)
     if (declaration->flags & (SYMBOL_VALUE | SYMBOL_ALIAS)) {

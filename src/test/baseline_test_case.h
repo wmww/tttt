@@ -188,6 +188,9 @@ typedef struct BaselineSym {
 // These are used by traversial to assemble the test case data while the test is being run. After the test has completed
 // (and run_baseline_test_case() has returned) these should no longer be called.
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data);
+// The symbols baseline's name of a module's export at its declaration when an alias of the module reaches it (`import
+// * as self from "./self"` makes it `self.x`: tsc's symbolToString goes by the accessible chain), else empty
+cstr baseline_test_case_module_alias_text(BaselineTestCase const* me, Symbol const* declaration);
 void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type);
 // A type line that is already text (nothing in it is reused)
 void baseline_test_case_add_type_text(BaselineTestCase* me, Span span, csview text);
