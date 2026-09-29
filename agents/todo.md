@@ -16,13 +16,11 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 4. Done 2026-09-29: plan 39 stage 2 (annotated bindings, pattern names, signature returns, interface bases on the
    stack; TS2502/TS2577/TS2310; defaults_in_flight and jsdoc_values_in_flight gone): suite 12052 -> 12057, 0 lost,
    corpora unchanged, +0.0..0.4% instr. Leftovers in plan 39 "Stage 3" (mostly wait on plan 38 stage 3).
-5. **Plan-sized hacks** (Opus sub-agents in worktrees, one each; they are listed in hacks.md): instantiation-limit
-   poisoning (signatures/members/variances memoized past `ty_instantiation_limit_reached`), `check_assignable`
-   letting `any` through to `never` (25 tests depend on flow typing yielding `any` where tsc has `never`), conditional
-   skipTrue (sharing of conditional instantiations; zod perf, `first_unfit_argument`), `ty_non_nullable` ->
-   `ty_non_nullish_part` with `NonNullable<T>` printing, `chain_object_type` (TS18048 on `a?.b.c`: an `optional`
-   marker type). Each is a tsc mechanism port: land it only at 0 lost and corpora unchanged; a sub-agent that finds
-   it is bigger writes a plan instead.
+5. Done 2026-09-29: all five plan-sized hacks gone (five Opus sub-agents, one each, no plans needed): `any` to
+   `never` (the real bug: declarations without an initializer were checked), instantiation limit (results of an
+   exhausted budget memoized like tsc), skipTrue (sharing was already there), `NonNullable<T>` (tsc's
+   getNonNullableType), the `optional` marker for chains. Suite 12057 -> 12058, 0 lost, xstate 19 -> 18, drizzle
+   8 -> 6, others unchanged, instructions -0.8..+0.2%.
 6. **Planning: plan 40** (declaration-emit diagnostics without emit: TS2742, TS4xxx, isolatedDeclarations; 45
    failing tests, 41 fail only on these). Stub in `plans/40_declaration_diagnostics.md`.
 7. **Suite checker bugs 7** (four Opus sub-agents by failstats bucket, as entries 5 of the last window): the 237

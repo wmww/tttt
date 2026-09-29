@@ -47,3 +47,6 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
 - (skipTrue session) An array literal `[]` whose contextual type is a deferred conditional type of tuple branches
   (`const x: ConditionalRequired<[options?: O], IsNotNever<K<T>>> = []`) is `never[]`, not `[]`, so TS2322; tsc takes
   the tuple-likeness from the conditional's constraint (both branches) and reports nothing.
+- `??`, `||` and optional chains call `ty_non_nullish_part()` directly, which filters null/undefined even without
+  strictNullChecks (tsc's getNonNullableType is the identity there). Test-neutral today; switch them to
+  `ty_non_nullable()` if a non-strict test shows it (2026-09-29 NonNullable port leftover).
