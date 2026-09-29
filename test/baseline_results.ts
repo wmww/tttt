@@ -64361,7 +64361,7 @@ const baselines = {
         types: true,
     },
     'objectTypeWithStringAndNumberIndexSignatureToAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

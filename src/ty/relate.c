@@ -596,6 +596,13 @@ static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen) {
 
 // A source and target as messages show them side by side: told apart by their full names if they'd print the same
 // (tsc's getTypeNamesForErrorDisplay)
+// A deferred reference as tsc's getNormalizedType makes it for the relation: a plain reference, without the alias
+// name of the alias whose body it is (what structural messages below the head print)
+static Ty const* normalized_reference(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_REFERENCE || !ty->reference.deferred || !ty->alias) return ty;
+    return ty_reference(me, ty->reference.target, ty_reference_args(me, ty));
+}
+
 static void display_pair(Checker* me, Ty const* source, bool widen, Ty const* target, cstr* source_out, cstr* target_out) {
     *source_out = display_for_report(me, source, widen);
     *target_out = display_for_report(me, target, false);
@@ -1742,14 +1749,14 @@ static Ternary props_related_impl(
     // A primitive is shown as itself, not as the global interface its properties come from
     if (report && !source_is_apparent && !optionals_only && should_report_unmatched_property(me, source, target)) {
         // Missing properties get a message of their own instead of the generic head
-        Atom const* missing[5];
+        Prop const* missing[5];
         Prop const* missing_prop = nullptr;
         u32 missing_count = 0;
         for (u32 i = 0; i < target_members->prop_count; i++) {
             Prop const* target_prop = target_members->props[i];
             if ((target_prop->flags & PROP_OPTIONAL) || find_prop(me, source, target_prop->name, 0).found) continue;
             if (is_static_private_name(me, target_prop)) continue;
-            if (missing_count < c_arraylen(missing)) missing[missing_count] = target_prop->name;
+            if (missing_count < c_arraylen(missing)) missing[missing_count] = target_prop;
             if (!missing_count) missing_prop = target_prop;
             missing_count++;
         }
@@ -1771,7 +1778,8 @@ static Ternary props_related_impl(
         }
         if (missing_count) {
             cstr source_str, target_str;
-            display_pair(me, source, true, target, &source_str, &target_str);
+            display_pair(me, normalized_reference(me, source), true, normalized_reference(me, target), &source_str,
+                &target_str);
             if (missing_count == 1) {
                 cstr name = ty_prop_written_name(me, missing_prop);
                 report_line(st, 2741, cstr_d(
@@ -1789,7 +1797,7 @@ static Ternary props_related_impl(
                 u32 shown = missing_count > 5 ? 4 : missing_count;
                 for (u32 i = 0; i < shown; i++) {
                     if (i) cstr_append_lit(&names, ", ");
-                    cstr name = ty_prop_name_cstr(me, missing[i]);
+                    cstr name = ty_prop_written_name(me, missing[i]);
                     cstr_append_s(&names, name);
                     cstr_drop(&name);
                 }
