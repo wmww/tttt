@@ -479,6 +479,9 @@ static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* ar
 static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     if (identifier->jsdoc_intrinsic || !identifier->target) return false;
+    // A value used as a type (an expando `Outer.Inner = class {}`: tsc's getTypeFromJSDocValueReference) isn't found by
+    // a type lookup, which reuse needs
+    if (!(identifier->target->flags & (SYMBOL_TYPE | SYMBOL_ALIAS | SYMBOL_NAMESPACE))) return false;
     Symbol const* first = vec_span_size(&identifier->namespaces) ?
         (vec_symbol_cptr_size(&identifier->namespace_symbols) ? *identifier->namespace_symbols.data : nullptr) : identifier->symbol;
     if (first && first->flags & SYMBOL_ALIAS && first->decl_count && first->decls[0].kind == SYMBOL_DECL_ALIAS &&
