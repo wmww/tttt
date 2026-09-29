@@ -82,6 +82,9 @@ typedef struct SourceFile {
     // tsc names such a file by its absolute path, which the harness writes before it strips its `/.src/` (it shows in
     // the types baseline's underlines of `typeof import("m")`)
     bool loaded_by_import;
+    // A JavaScript file of a package the program followed imports into (maxNodeModuleJsDepth): how many such files deep
+    // (tsc's currentNodeModulesDepth), 0 for the project's own. Such a file is never checked (isSourceFileFromExternalLibrary)
+    u32 node_modules_js_depth;
     u32 program_order; // Its index in the program's files (tsc's host.getSourceFiles()), set once loaded
     bool is_module;
     // The first statement that makes this file a module (tsc's externalModuleIndicator, as getErrorSpanForNode spans it:

@@ -239,6 +239,15 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
     STRING_OPTION("tsbuildinfofile", ts_build_info_file)
     STRING_OPTION("typescriptversion", typescript_version)
 #undef STRING_OPTION
+    if (name_equals(name, "maxnodemodulejsdepth")) {
+        u32 depth = 0;
+        for (isize i = 0; i < value.size; i++) {
+            if (value.buf[i] < '0' || value.buf[i] > '9') return COMPILER_OPTION_BAD_VALUE;
+            depth = depth * 10 + (u32)(value.buf[i] - '0');
+        }
+        my max_node_module_js_depth = depth;
+        return COMPILER_OPTION_OK;
+    }
     if (name_equals(name, "baseurl")) {
         cstr_take(&my base_url, cstr_from_sv(value));
         my base_url_set = true;

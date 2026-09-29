@@ -410,12 +410,18 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
                 break;
             }
-            // JavaScript of a package isn't part of the program even with allowJs (tsc's maxNodeModuleJsDepth is 0)
+            // JavaScript of a package is part of the program only down to maxNodeModuleJsDepth (0 by default)
             // (a package that is a link to somewhere outside of any node_modules is the project's own code)
-            if (my options.allow_js && !(resolved.is_external_library &&
-                csview_find_sv(cstr_sv(&resolved.path), c_sv("/node_modules/")) != c_NPOS)
-            ) {
+            bool package_js = resolved.is_external_library &&
+                csview_find_sv(cstr_sv(&resolved.path), c_sv("/node_modules/")) != c_NPOS;
+            if (my options.allow_js && (!package_js || source->node_modules_js_depth < my options.max_node_module_js_depth)) {
+                bool is_new = !program_find_source(me, cstr_sv(&resolved.path));
                 ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+                // (tsc's maxNodeModuleJsDepth: a package's JavaScript, as deep as allowed, never checked)
+                if (ref->file && package_js && is_new) {
+                    ref->file->node_modules_js_depth = source->node_modules_js_depth + 1;
+                    ref->file->unchecked = true;
+                }
             } else {
                 ref->failure = MODULE_REF_IS_JS;
                 cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));

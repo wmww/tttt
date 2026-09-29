@@ -193,6 +193,8 @@ typedef struct CompilerOptions {
     StrList custom_conditions;
     StrList removed_options; // Options tsc no longer has that were given a value anyway (TS5102), in tsc's spelling
     bool base_url_set, paths_set, type_roots_set, types_set;
+    // How deep into packages the program follows JavaScript imports (tsc's maxNodeModuleJsDepth, default 0)
+    u32 max_node_module_js_depth;
 
     // Which options were given explicitly, the rest get their defaults from compiler_options_resolve()
     bool is_set[COMPILER_BOOL_OPTION_COUNT];
