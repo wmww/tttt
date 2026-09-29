@@ -159,7 +159,8 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
             InterfaceDecl const* interface_decl = symbol->decls[i].node;
             if (&interface_decl->generic != first) unify_type_params(me, local, &interface_decl->generic);
         }
-        if (kind == TY_DECLARED_CLASS_INSTANCE || interface_has_this(symbol, 0)) {
+        // (A class merged with an interface is a class: tsc's getDeclaredTypeOfClassOrInterface)
+        if (kind == TY_DECLARED_CLASS_INSTANCE || (symbol->flags & SYMBOL_CLASS) || interface_has_this(symbol, 0)) {
             ret->declared.this_param = ty_this_type_param(me, ret);
         }
         ret->declared.raw = arena_new(&my arena, TyObjectState);

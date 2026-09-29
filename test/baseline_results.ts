@@ -8913,12 +8913,12 @@ const baselines = {
     'declarationMerging1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationMerging2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationNoDanglingGenerics': {
         errors: true,
@@ -18058,7 +18058,7 @@ const baselines = {
     'interfaceClassMerging': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceClassMerging2': {
         errors: true,
@@ -21113,7 +21113,7 @@ const baselines = {
     'mergedDeclarations6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mergedDeclarations7': {
         errors: false,
