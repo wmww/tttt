@@ -591,6 +591,16 @@ static void jsdoc_keep_errors(Parser* me) {
     my error_count = 0;
 }
 
+// An error about a JSDoc comment that isn't a parse error of its text (tsc's checker reports it about the tags), kept
+// like those
+static void jsdoc_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
+    vec_error_push(&my shared->jsdoc_errors, (Error){
+        .message = message, .span = span, .ts_code = ts_code, .phase = ERROR_PHASE_RESOLVE_NAMES,
+    });
+}
+
+#define jsdoc_error(me, span, ts_code, ...) jsdoc_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+
 static intptr_t error_mark(Parser const* me) {
     return vec_error_size(&my shared->errors);
 }
@@ -3468,6 +3478,13 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
         vec_jsdoc_tag_drop(&earlier);
     }
     parse_jsdoc_comment(parent, comments->data[lo], tags);
+    // (tsc's checkJSDocSatisfiesTag)
+    bool satisfies = false;
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind != JSDOC_TAG_SATISFIES || i->earlier) continue;
+        if (satisfies) jsdoc_error(parent, i->tag_name, 1223, "'satisfies' tag already specified.");
+        satisfies = true;
+    }
     return true;
 }
 
@@ -10747,6 +10764,33 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
 // What a statement's JSDoc says (tsc's getJSDocCommentsAndTags / getNextJSDocCommentLocation, from the host down):
 // a variable statement's `@type` is its single declaration's annotation, and like the tags of an assignment statement
 // or `return` its `@param`s/`@returns` are for the function it gives
+// `/** @satisfies {T} */ const x = v`: v is checked like `v satisfies T` (tsc's checkDeclarationInitializer and
+// getContextualTypeForVariableLikeDeclaration: tryGetJSDocSatisfiesTypeNode). A second `@satisfies` of the host is
+// TS1223 (tsc's checkJSDocSatisfiesTag: `/** @satisfies {T} */ (v)` is the first of the initializer's)
+static void jsdoc_apply_satisfies_initializer(Parser* p, VecJsDocTag* tags, InitializedBinding* initializer) {
+    JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_SATISFIES);
+    // (Not an empty object literal: that's a JavaScript container, whose type isn't the initializer's, tsc's
+    // getJSContainerObjectType)
+    if (!tag || initializer->value.tag == EXPR_IMPLICIT_ANY ||
+        (initializer->value.tag == EXPR_OBJECT && !initializer->value.object.size)
+    ) {
+        return;
+    }
+    Expr* value = &initializer->value;
+    if (value->tag == EXPR_AS_TYPE && value->as_type->is_jsdoc && value->as_type->is_satisfies) {
+        jsdoc_error(p, tag->tag_name, 1223, "'satisfies' tag already specified.");
+        return;
+    }
+    Expr inner = *value;
+    *value = expr_as_type(inner.outer_span, c_new(AsTypeExpr, {
+        .expr = inner,
+        .keyword_span = tag->tag_name,
+        .type = jsdoc_take_type(tag, nullptr),
+        .is_satisfies = true,
+        .is_jsdoc = true,
+    }));
+}
+
 static void jsdoc_apply_statement(Parser* p, const char* start, Statement* statement) {
     VecJsDocTag tags = {0};
     if (!jsdoc_before(p, start, &tags)) return;
@@ -10778,6 +10822,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 });
             }
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
+            jsdoc_apply_satisfies_initializer(p, &tags, initializer);
             FunctionImpl* function = jsdoc_function_of(&initializer->value);
             if (function) jsdoc_apply_function(&tags, function);
             if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_class(&tags, initializer->value.class_decl);

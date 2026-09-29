@@ -1882,6 +1882,8 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             baseline_test_case_add_type_recursive(ctx, my outer_span, parenthesized, ty_regular(current_checker, expr_get_type(me)));
         }
     } else if (my tag == EXPR_GENERIC_PARAMS) {
+    } else if (my tag == EXPR_AS_TYPE && my as_type->is_jsdoc && span_eq(my outer_span, my as_type->expr.outer_span)) {
+        // `/** @satisfies {T} */ const x = v`: v isn't parenthesized, the satisfies expression isn't tsc's
     } else if (my tag == EXPR_IDENTIFIER && my identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
         // The `import` of `import("m")` and `import.meta` isn't an expression of its own
     } else {
