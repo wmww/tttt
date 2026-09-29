@@ -2187,7 +2187,7 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
             // marker
             bool optional = false;
             type = ty_optional_expression_type(me, type, false, &optional);
-            return propagate_optional(me, ty_non_nullish_part(me, type), unary->continues_chain, optional);
+            return propagate_optional(me, ty_non_nullable(me, type), unary->continues_chain, optional);
         }
     }
     impossible;
@@ -3943,7 +3943,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // `x!` has the contextual type of its operand
             if (expr->unary_op->op == UNARY_OP_RIGHT_BANG && ctx.contextual) {
                 Ty const* type = check_with(me, &expr->unary_op->expr, (ExprCtx){ .contextual = ctx.contextual });
-                return compiler_options()->strict_null_checks ? ty_non_nullish_part(me, type) : type;
+                return ty_non_nullable(me, type);
             }
             // tsc's getContextualTypeForAwaitOperand: what the context awaits to, or a promise of it
             if (expr->unary_op->op == UNARY_OP_AWAIT && ctx.contextual) {

@@ -2419,50 +2419,48 @@ Ty const* ty_check_non_null_callee(Checker* me, Ty const* callee, Span span, Err
     if (facts == 3) error_ctx_error_d(errs, span, 2723, "Cannot invoke an object which is possibly 'null' or 'undefined'.");
     else if (facts == 1) error_ctx_error_d(errs, span, 2722, "Cannot invoke an object which is possibly 'undefined'.");
     else error_ctx_error_d(errs, span, 2721, "Cannot invoke an object which is possibly 'null'.");
+    // (void goes too: tsc's getNonNullableType removes what IsUndefinedOrNull says)
     Ty const* rest = ty_non_nullable(me, callee);
-    if (rest->kind == TY_UNION) {
-        // (void goes too: tsc's getNonNullableType removes what IsUndefinedOrNull says)
-        TyList members = rest->composite.types;
-        Ty const** kept = malloc(sizeof(Ty const*) * members.len);
-        u32 len = 0;
-        for (u32 i = 0; i < members.len; i++) if (!(members.data[i]->flags & TYF_VOID)) kept[len++] = members.data[i];
-        if (len != members.len) rest = ty_union(me, kept, len, nullptr, (TyList){0});
-        free(kept);
-    }
     return rest->flags & (TYF_NULLABLE | TYF_NEVER | TYF_VOID) ? ty_intrinsic(me, TY_ERROR) : rest;
 }
 
+// Whether a type may have the facts of null or undefined (and not be only null, undefined or void), by its flags
+// alone: a plain object or primitive type can't
+static bool may_be_nullish(Ty const* ty) {
+    return ty->kind == TY_INTERSECTION ||
+        (ty->flags & (TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_INTERSECTION));
+}
+
+// tsc's getNonNullableType: without strictNullChecks nothing is nullable; with it, null, undefined and void go and a
+// generic that may still be nullish is `NonNullable<T>` (`T & {}`)
 Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
-    if (ty->flags & TYF_NULLABLE) return ty_intrinsic(me, TY_NEVER);
-    if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
-        // HACK: tsc says `T & {}`. Only when the constraint allows null or undefined, and at the price of T
-        Ty const* constraint = ty_base_constraint(me, ty);
-        if (!constraint || constraint == ty) return ty;
-        Ty const* stripped = ty_non_nullable(me, constraint);
-        return stripped == constraint ? ty : stripped;
+    if (!compiler_options()->strict_null_checks) return ty;
+    // (What plainly can or can't be nullish by its flags goes without the type facts, which resolve an object's
+    // members: most callers pass an object type or an optional one's union)
+    u32 const nullish = TYF_NULLABLE | TYF_VOID;
+    if (ty->kind != TY_UNION) {
+        if (may_be_nullish(ty)) return ty_non_nullish_part(me, ty);
+        return ty->flags & nullish ? ty_intrinsic(me, TY_NEVER) : ty;
     }
-    if (ty->kind != TY_UNION) return ty;
     TyList members = ty->composite.types;
+    for (u32 i = 0; i < members.len; i++) if (may_be_nullish(members.data[i])) return ty_non_nullish_part(me, ty);
     // (calloc: with ty_union_filtered inlined, gcc's -Wmaybe-uninitialized can't tell kept[0] is written when len is 1)
     Ty const** kept = calloc(members.len, sizeof(Ty const*));
     u32 len = 0;
-    // A generic member that can only be null or undefined goes too (tsc filters by type facts, which a type parameter
-    // or conditional type takes from its constraint: `T | (string extends T ? undefined : never)`)
-    bool mapped = false;
-    for (u32 i = 0; i < members.len; i++) {
-        Ty const* member = members.data[i];
-        if (member->flags & TYF_NULLABLE) continue;
-        if (member->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
-            Ty const* stripped = ty_non_nullable(me, member);
-            if (stripped->flags & TYF_NEVER) continue;
-            mapped |= stripped != member;
-            member = stripped;
-        }
-        kept[len++] = member;
-    }
-    Ty const* ret = mapped ? ty_union(me, kept, len, nullptr, (TyList){0}) : ty_union_filtered(me, ty, kept, len);
+    for (u32 i = 0; i < members.len; i++) if (!(members.data[i]->flags & nullish)) kept[len++] = members.data[i];
+    Ty const* ret = ty_union_filtered(me, ty, kept, len);
     free(kept);
     return ret;
+}
+
+// Nothing but null and undefined, or never (tsc's `filterType(t, t => !!(t.flags & ~TypeFlags.Nullable)) === neverType`,
+// what JavaScript widens to any)
+bool ty_only_nullable(Ty const* ty) {
+    if (ty->flags & (TYF_NULLABLE | TYF_NEVER)) return true;
+    if (ty->kind != TY_UNION) return false;
+    TyList members = ty->composite.types;
+    for (u32 i = 0; i < members.len; i++) if (!(members.data[i]->flags & TYF_NULLABLE)) return false;
+    return true;
 }
 
 Ty const* ty_without_undefined(Checker* me, Ty const* type) {

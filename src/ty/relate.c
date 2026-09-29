@@ -1177,7 +1177,7 @@ static bool is_instantiated_generic_param(Checker* me, Signature const* sig, u32
 // The one call signature of a callback parameter's type, if it is one
 static Signature const* callback_signature(Checker* me, Signature const* sig, u32 i, Ty const* type) {
     if (is_instantiated_generic_param(me, sig, i)) return nullptr;
-    Signature const* ret = ty_single_signature(me, ty_non_nullable(me, type), false, false);
+    Signature const* ret = ty_single_signature_non_nullable(me, type, false, false);
     return ret && !signature_predicate(me, ret) ? ret : nullptr;
 }
 

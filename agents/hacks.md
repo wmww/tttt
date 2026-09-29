@@ -301,9 +301,6 @@ src` finds the code-side markers; every significant one has an entry here.
   `satisfies` doesn't narrow. Literal ids follow tsc only where made in the same order (`1 | 0` vs `0 | 1`).
 - `ty_apply_type_arguments` (instantiation expressions): ill-fitting signatures kept; `instantiate_anonymous`
   (instantiate.c HACK) skips object types that also mention the parameters; display is the expanded object.
-- `ty_non_nullable` (checker.c HACK): a generic whose constraint allows nullish gives the stripped constraint (tsc:
-  `T & {}` printed `NonNullable<T>`). The real getNonNullableType is `ty_non_nullish_part()` (flow only): switch the
-  ~24 callers and print `{}` intersections as `NonNullable<T>`.
 - `ty_access` skips nullish union members silently (TS18047/18048 come from `check_access`). `member_refs()` (check.c)
   duplicates `access()`'s walk to get `Prop`s without creating types.
 - `PropertyExpr`'s four resolve-walk pointers cost 32 bytes per access; a `Scope const*` would do.

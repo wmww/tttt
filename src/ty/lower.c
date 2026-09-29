@@ -1166,7 +1166,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 SourceFile const* file = decl->full.source;
                 bool undefined_alias = value->tag == EXPR_LITERAL && value->literal.tag == VALUE_UNDEFINED;
                 if (file && file->is_js && !undefined_alias && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY &&
-                    ty_non_nullable(me, type)->flags & TYF_NEVER
+                    ty_only_nullable(type)
                 ) {
                     *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = symbol;
                     return ty_intrinsic(me, TY_ANY);
@@ -1445,7 +1445,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     }
     // Nothing but null and undefined is any in JavaScript
     SourceFile const* file = symbol->decls[0].full.source;
-    if (file && file->is_js && ty_non_nullable(me, ret)->flags & TYF_NEVER) {
+    if (file && file->is_js && ty_only_nullable(ret)) {
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)2;
         return ty_intrinsic(me, TY_ANY);
     }

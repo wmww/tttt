@@ -679,7 +679,7 @@ static Ty const* extract_string_type(Checker* me, Ty const* keys) {
 }
 
 Ty const* ty_for_in_key_type(Checker* me, Ty const* iterable) {
-    Ty const* keys = ty_keyof(me, ty_non_nullable(me, iterable));
+    Ty const* keys = ty_keyof(me, ty_non_nullable_if_needed(me, iterable));
     if ((keys->kind != TY_TYPE_PARAM && keys->kind != TY_KEYOF) || !(keys->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         return ty_intrinsic(me, TY_STRING);
     }
@@ -687,6 +687,6 @@ Ty const* ty_for_in_key_type(Checker* me, Ty const* iterable) {
 }
 
 Ty const* ty_for_in_index_type_or_string(Checker* me, Ty const* iterable) {
-    Ty const* keys = extract_string_type(me, ty_keyof(me, ty_non_nullable(me, iterable)));
+    Ty const* keys = extract_string_type(me, ty_keyof(me, ty_non_nullable_if_needed(me, iterable)));
     return keys->flags & TYF_NEVER ? ty_intrinsic(me, TY_STRING) : keys;
 }

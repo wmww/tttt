@@ -395,6 +395,9 @@ static u32 type_facts(Checker* me, Ty const* ty, u32 mask) {
         u32 possible = TF_ALL & ~TF_IS_UNDEFINED_OR_NULL;
         if (!(mask & possible)) return 0;
         u32 nullish = strict ? 0 : TF_MAYBE_NULLISH;
+        // (What every object type has or lacks, empty or a function or not, without resolving its members to tell)
+        u32 const settled = TF_NOT_NULLISH | TF_TRUTHY | TF_IS_UNDEFINED_OR_NULL | TF_EQ_UNDEFINED | TF_EQ_NULL | TF_EQ_UNDEFINED_OR_NULL;
+        if (strict && !(mask & ~settled)) return (TF_NOT_NULLISH | TF_TRUTHY) & mask;
         if (is_empty_anonymous_object(me, ty)) {
             return strict ? TF_ALL & ~(TF_EQ_UNDEFINED | TF_EQ_NULL | TF_EQ_UNDEFINED_OR_NULL | TF_IS_UNDEFINED_OR_NULL) :
                 TF_ALL & ~TF_IS_UNDEFINED_OR_NULL;
@@ -549,6 +552,10 @@ static Ty const* adjusted_type_with_facts(Checker* me, Ty const* ty, u32 facts) 
 // What the operators in expr.c make of their operands
 Ty const* ty_truthy_part(Checker* me, Ty const* ty) { return adjusted_type_with_facts(me, ty, TF_TRUTHY); }
 Ty const* ty_non_nullish_part(Checker* me, Ty const* ty) { return adjusted_type_with_facts(me, ty, TF_NE_UNDEFINED_OR_NULL); }
+// tsc's getNonNullableTypeIfNeeded: a type that can't be null or undefined stays as it is (an unconstrained T too)
+Ty const* ty_non_nullable_if_needed(Checker* me, Ty const* ty) {
+    return has_type_facts(me, ty, TF_IS_UNDEFINED_OR_NULL) ? ty_non_nullable(me, ty) : ty;
+}
 Ty const* ty_remove_definitely_falsy(Checker* me, Ty const* ty) { return type_with_facts(me, ty, TF_TRUTHY); }
 bool ty_can_be_truthy(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_TRUTHY); }
 bool ty_can_be_falsy(Checker* me, Ty const* ty) { return has_type_facts(me, ty, TF_FALSY); }
@@ -1104,13 +1111,13 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
         *out = (FlowType){ q->declared, false };
         return true;
     }
-    // `for (const k in ref)` acts as a non-null on ref (tsc's getTypeAtFlowAssignment)
+    // `for (const k in ref)` acts as a non-null on ref (tsc's getTypeAtFlowAssignment: getNonNullableTypeIfNeeded)
     if (assign->kind == FLOW_ASSIGN_DECLARATION && assign->for_each) {
         Expr const* object = &assign->for_each->iterable;
         if (is_matching_reference(me, q->reference, object) || optional_chain_contains_reference(me, object, q->reference)) {
             FlowType before = type_at_flow_node(q, flow->antecedent);
             Ty const* type = final_array_type(me, before.type);
-            if (compiler_options()->strict_null_checks) type = ty_non_nullable(me, type);
+            type = ty_non_nullable_if_needed(me, type);
             *out = (FlowType){ type, before.incomplete };
             return true;
         }
@@ -1178,7 +1185,7 @@ static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_stat
     if (is_statement) {
         callee = type_of_dotted_name(me, callee_expr);
     } else if (callee_expr->tag != EXPR_IDENTIFIER || callee_expr->identifier.keyword != KEYWORD_IDENTIFIER_SUPER) {
-        callee = ty_non_nullable(me, ty_flow_expr_type(me, callee_expr));
+        callee = ty_non_nullable_if_needed(me, ty_flow_expr_type(me, callee_expr));
     }
     my flow_uncached++;
     CallEffects effects = ty_call_effects(me, callee, call);

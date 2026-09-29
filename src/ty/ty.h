@@ -1025,6 +1025,7 @@ Ty const* ty_conditional(
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 TyList ty_conditional_own_infers(Checker* me, Ty const* root); // The `infer` type parameters its extends type declares
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
+bool ty_only_nullable(Ty const* ty);
 // tsc's getTypeFacts(type, IsUndefinedOrNull) as bits: 1 possibly undefined (void too), 2 possibly null. A type
 // parameter goes by its constraint
 u32 ty_nullable_facts(Checker* me, Ty const* ty);
@@ -1043,6 +1044,7 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs);
 // tsc's getSingleSignature: the one call (or construct) signature of an object type that has none of the other kind.
 // `allow_members`: properties and index signatures may be there too
 Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, bool allow_members);
+Signature const* ty_single_signature_non_nullable(Checker* me, Ty const* ty, bool construct, bool allow_members);
 Ty const* ty_without_undefined(Checker* me, Ty const* ty); // Removes undefined only (tsc's getTypeWithFacts(NEUndefined))
 Ty const* ty_undefined_or_missing(Checker* me); // tsc's undefinedOrMissingType
 Ty const* ty_remove_missing(Checker* me, Ty const* ty, bool optional); // tsc's removeMissingType
@@ -1569,6 +1571,7 @@ IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* 
 // Type facts, for the operators
 Ty const* ty_truthy_part(Checker* me, Ty const* ty); // What is left of x where `x` was truthy
 Ty const* ty_non_nullish_part(Checker* me, Ty const* ty);
+Ty const* ty_non_nullable_if_needed(Checker* me, Ty const* ty);
 Ty const* ty_remove_definitely_falsy(Checker* me, Ty const* ty); // Without the members that are always falsy
 Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty); // `"a"` -> string, `true` -> boolean
 bool ty_can_be_truthy(Checker* me, Ty const* ty);

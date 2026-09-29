@@ -714,6 +714,13 @@ Signature const* ty_single_signature(Checker* me, Ty const* ty, bool construct, 
     return members->call_count == 1 && !members->construct_count ? members->call[0] : nullptr;
 }
 
+// tsc's getSingleCallSignature(getNonNullableType(ty)) (or construct): only an object type has one, and only a union can
+// become an object type without its null and undefined, the rest skips making `NonNullable<T>`
+Signature const* ty_single_signature_non_nullable(Checker* me, Ty const* ty, bool construct, bool allow_members) {
+    if (ty->kind == TY_UNION) ty = ty_non_nullable(me, ty);
+    return ty_single_signature(me, ty, construct, allow_members);
+}
+
 // The generic signature of a generic function argument whose parameter wants a single non-generic signature of the
 // same kind (the one in `*contextual`), else null
 static Signature const* generic_function_argument(Checker* me, Ty const* arg_type, Ty const* param_type, Signature const** contextual) {
@@ -723,7 +730,7 @@ static Signature const* generic_function_argument(Checker* me, Ty const* arg_typ
         if (!sig) continue;
         signature_resolve(me, sig);
         if (!sig->type_params.len) return nullptr;
-        Signature const* wanted = ty_single_signature(me, ty_non_nullable(me, param_type), construct, false);
+        Signature const* wanted = ty_single_signature_non_nullable(me, param_type, construct, false);
         if (!wanted) return nullptr;
         signature_resolve(me, wanted);
         if (wanted->type_params.len) return nullptr;
