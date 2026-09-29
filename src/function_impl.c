@@ -966,6 +966,9 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         if (span_valid(body)) error_ctx_error_d(errs, body, 1183, "An implementation cannot be declared in ambient contexts.");
     }
     function_check_widened_return(me, errs);
+    // A function expression's return type is computed when it is checked, whoever else asks (tsc's
+    // checkFunctionExpressionOrObjectLiteralMethodDeferred): what only that computation reports is said (TS2705)
+    if (my is_expression && my has_body && !my ret_explicit) ty_function_return_type(current_checker, me);
     // (A JSDoc `@type` signature's return type is the function's, what it returns is checked against it: tsc's
     // getReturnTypeFromAnnotation)
     Ty const* tagged_return = !my ret_explicit && !my is_generator &&
