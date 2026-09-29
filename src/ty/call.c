@@ -299,10 +299,16 @@ static bool waits_for_sensitive(Arg const* arg) {
 
 // `skip_sensitive`: leave out the context-sensitive arguments, which a contextual type would type for good (tsc's
 // CheckMode.SkipContextSensitive, while it's not known yet which overload they'll be checked against)
-static void check_args(Checker* me, ParamShape const* shape, Args* args, bool skip_sensitive) {
+static void check_args_skipping(Checker* me, ParamShape const* shape, Args* args, bool skip_sensitive, bool skip_generic_functions) {
     for (u32 i = 0; i < args->len; i++) {
-        if (!skip_sensitive || !waits_for_sensitive(&args->data[i])) check_arg(me, shape, args, i);
+        if (skip_sensitive && waits_for_sensitive(&args->data[i])) continue;
+        if (skip_generic_functions && args->data[i].generic_function) continue;
+        check_arg(me, shape, args, i);
     }
+}
+
+static void check_args(Checker* me, ParamShape const* shape, Args* args, bool skip_sensitive) {
+    check_args_skipping(me, shape, args, skip_sensitive, false);
 }
 
 // tsc's getDecoratorArgumentCount: for a signature of `params` parameters (a rest parameter counts once)
@@ -837,9 +843,12 @@ static void infer_rest_variadic(Checker* me, Inference* inf, ParamShape const* s
 }
 
 // `*inferred_out`: the type parameters of generic function arguments that the return type is now generic in
+// `skip_generic`: leave out generic function arguments and the generic calls among the arguments (an overload failure's
+// fallback, tsc's inferSignatureInstantiationForOverloadFailure). `skip_generic_functions`: only the generic functions
+// (tsc's CheckMode.SkipGenericFunctions of a candidate's first inference; not yet those nested in literals)
 static TyMapper const* infer_type_arguments(
     Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic,
-    TyList* inferred_out
+    bool skip_generic_functions, TyList* inferred_out
 ) {
     Ty const* contextual = info->contextual;
     Ty const* this_arg = info->this_arg;
@@ -1023,7 +1032,7 @@ static TyMapper const* infer_type_arguments(
     for (u32 i = 0; any_sensitive && i < args->len; i++) {
         Arg* arg = &args->data[i];
         if (i >= shape.count && shape.rest_variadic) break;
-        if (arg->generic_function && !skip_generic) {
+        if (arg->generic_function && !skip_generic && !skip_generic_functions) {
             Ty const* param_type = shape_type_at(&shape, i);
             Signature const* contextual = nullptr;
             Signature const* generic = generic_function_argument(me, arg->type, param_type, &contextual);
@@ -1056,7 +1065,7 @@ static TyMapper const* infer_type_arguments(
             continue;
         }
         if (arg->generic_call) {
-            if (skip_generic || skip_sensitive) continue;
+            if (skip_generic || skip_sensitive || skip_generic_functions) continue;
             // Checked like in the first pass, but now the calls in it see what the other arguments inferred
             my outer_inference = &self;
             check_arg(me, &shape, args, i);
@@ -1120,13 +1129,14 @@ static TyMapper const* infer_type_arguments(
 
 // The first argument that doesn't fit, -1 if they all do. `*param_type` is what it should have fit, `*arg_type` what
 // it is (a tuple of the remaining arguments for a variadic rest parameter)
-static i32 first_unfit_argument(
+static i32 first_unfit_argument_skipping(
     Checker* me, ParamShape const* shape, Args const* args, TyRelation relation, bool skip_sensitive,
-    Ty const** arg_type, Ty const** param_type
+    bool skip_generic_functions, Ty const** arg_type, Ty const** param_type
 ) {
     for (u32 i = 0; i < args->len; i++) {
         Arg const* arg = &args->data[i];
-        if (skip_sensitive && waits_for_sensitive(arg)) {
+        // (A generic function argument skipped by the inference is tsc's anyFunctionType, which fits)
+        if ((skip_sensitive && waits_for_sensitive(arg)) || (skip_generic_functions && arg->generic_function)) {
             if (i >= shape->count && shape->rest_variadic) break;
             continue;
         }
@@ -1186,6 +1196,13 @@ static i32 first_unfit_skipped_literal(Checker* me, ParamShape const* shape, Arg
 
 // The parameters a call's arguments are checked against. A JSX element has one argument, its attributes, which any
 // signature takes (tsc's hasCorrectArity: a class's argumentless constructor too), as the props of the signature
+static i32 first_unfit_argument(
+    Checker* me, ParamShape const* shape, Args const* args, TyRelation relation, bool skip_sensitive,
+    Ty const** arg_type, Ty const** param_type
+) {
+    return first_unfit_argument_skipping(me, shape, args, relation, skip_sensitive, false, arg_type, param_type);
+}
+
 static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper) {
     if (!info->jsx) {
         ParamShape shape = param_shape(me, sig, mapper);
@@ -1585,14 +1602,21 @@ static bool check_type_argument_constraints(
 }
 
 // `skip_generic`: generic function arguments aren't inferred from either (tsc's SkipGenericFunctions)
-static Candidate make_candidate(
-    Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic
+static Candidate make_candidate_skipping(
+    Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic,
+    bool skip_generic_functions
 ) {
     Candidate ret = { .sig = sig };
     if (!sig->type_params.len) return ret;
     ret.mapper = info->type_arg_nodes ? explicit_type_arguments(me, sig, info) :
-        infer_type_arguments(me, sig, args, info, skip_sensitive, skip_generic, &ret.inferred_type_params);
+        infer_type_arguments(me, sig, args, info, skip_sensitive, skip_generic, skip_generic_functions, &ret.inferred_type_params);
     return ret;
+}
+
+static Candidate make_candidate(
+    Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic
+) {
+    return make_candidate_skipping(me, sig, args, info, skip_sensitive, skip_generic, false);
 }
 
 static Resolution resolve_with_signatures(
@@ -1626,7 +1650,16 @@ static Resolution resolve_with_signatures(
             bool generic_rest = uninstantiated.rest_variadic != nullptr;
             free(uninstantiated.types);
             if (!arity_ok) continue;
-            Candidate candidate = make_candidate(me, sig, args, info, skip_sensitive, false);
+            // A candidate's first inference leaves generic function arguments out, and they fit its first check (tsc's
+            // CheckMode.SkipGenericFunctions): a candidate whose other arguments don't fit is reported as that
+            // inference has it, before a generic function argument's type parameters could flow into it
+            Candidate candidate = make_candidate_skipping(me, sig, args, info, skip_sensitive, false, true);
+            bool skipped_generic = false;
+            if (sig->type_params.len && !info->type_arg_nodes) {
+                // (A call of a generic function that returns a function is left out too: tsc's resolveCallExpression
+                // under SkipGenericFunctions)
+                for (u32 a = 0; a < args->len; a++) skipped_generic |= args->data[a].generic_function || args->data[a].generic_call;
+            }
             if (info->type_arg_nodes && candidate.mapper &&
                 !check_type_argument_constraints(me, sig, candidate.mapper, info, nullptr)
             ) {
@@ -1645,14 +1678,17 @@ static Resolution resolve_with_signatures(
                 }
             }
             ParamShape shape = call_param_shape(me, info, sig, candidate.mapper);
-            check_args(me, &shape, args, skip_sensitive);
+            // (With a generic function left out, the generic calls among the arguments wait too: checking them now
+            // would type their functions for good against what isn't inferred yet)
+            check_args_skipping(me, &shape, args, skip_sensitive || skipped_generic, skipped_generic);
             Ty const* arg_type;
             Ty const* param_type;
-            bool fits = first_unfit_argument(me, &shape, args, rounds[round], skip_sensitive, &arg_type, &param_type) < 0;
+            bool fits = first_unfit_argument_skipping(me, &shape, args, rounds[round], skip_sensitive || skipped_generic,
+                skipped_generic, &arg_type, &param_type) < 0;
             if (fits && skip_sensitive && count > 1 && !sig->type_params.len) {
                 fits = first_unfit_skipped_literal(me, &shape, args, rounds[round]) < 0;
             }
-            if (fits && skip_sensitive) {
+            if (fits && (skip_sensitive || skipped_generic)) {
                 // Again with everything, for this candidate and the ones after it
                 skip_sensitive = false;
                 free(shape.types);
