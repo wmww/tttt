@@ -116,7 +116,6 @@ typedef struct BaselineTestCase {
     Span shorthand_alias;
     cstr lib_list;
     cstr lib_files; // `@libFiles: react.d.ts,lib.d.ts`: files of tsc's tests/lib (at /.lib) that are roots too
-    cstr last_unit; // The name of the test's last unit (the only one whose content ends where the test file does)
     bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
     cstr formatted_errors;
     cstr formatted_pretty_errors;

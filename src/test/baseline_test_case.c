@@ -447,7 +447,6 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         cstr_append(&source_contents, "\r\n");
     }
 
-    cstr_take(&my last_unit, cstr_from_sv(current_filename));
     try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
         cstr_drop(&unparsed_contents);
     }
@@ -918,7 +917,6 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     free(my error_ctx);
     cstr_drop(&my lib_list);
     cstr_drop(&my lib_files);
-    cstr_drop(&my last_unit);
     cstr_drop(&my formatted_errors);
     cstr_drop(&my formatted_pretty_errors);
     cstr_drop(&my formatted_global_errors);
@@ -1000,8 +998,7 @@ static CodeLines split_code_lines(csview contents) {
 // an empty line before a run of code lines that don't follow the last result's line directly (unless the first of them
 // is blank or a lone brace), the file's rest, a final line break
 static void render_types_or_symbols_file(
-    cstr* target, const char* source_path, csview source_contents, VecLineNumberedStr const* lines, bool is_last_file,
-    bool drop_any_underlines
+    cstr* target, const char* source_path, csview source_contents, VecLineNumberedStr const* lines, bool drop_any_underlines
 ) {
     cstr_append_d(target, DEFAULT_DISPLAY, "=== ", source_path, " ===\r\n");
     CodeLines code = split_code_lines(source_contents);
@@ -1172,13 +1169,6 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     }
 }
 
-static bool is_last_unit(BaselineTestCase const* me, BaselineTestFile const* file) {
-    csview a = cstr_sv(&file->path), b = cstr_sv(&my last_unit);
-    if (csview_starts_with(a, "/")) a = csview_slice(a, 1, a.size);
-    if (csview_starts_with(b, "/")) b = csview_slice(b, 1, b.size);
-    return csview_equals_sv(a, b);
-}
-
 // tsc's Utils.removeTestPathPrefixes on what was appended to target from `from` on: `/.src/`, `/.lib/` and `/.ts/`
 // disappear (`file:///.src/` keeps its `file:///`)
 static void remove_test_path_prefixes(cstr* target, isize from) {
@@ -1204,7 +1194,7 @@ void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me)
         if (!i->source) continue;
         isize from = cstr_size(target);
         render_types_or_symbols_file(target, cstr_str(&i->path), cstr_sv(&i->source->contents), &i->symbols,
-            is_last_unit(me, i), false);
+            false);
         remove_test_path_prefixes(target, from);
     }
 }
@@ -1219,7 +1209,7 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, b
         if (!i->source) continue;
         isize from = cstr_size(target);
         render_types_or_symbols_file(target, cstr_str(&i->path), cstr_sv(&i->source->contents), &i->types,
-            is_last_unit(me, i), !had_errors);
+            !had_errors);
         remove_test_path_prefixes(target, from);
     }
 }
