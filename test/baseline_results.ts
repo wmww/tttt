@@ -39792,8 +39792,8 @@ const baselines = {
     },
     'symbolDeclarationEmit10': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'symbolDeclarationEmit11': {
         errors: true,

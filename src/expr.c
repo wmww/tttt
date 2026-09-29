@@ -1845,9 +1845,14 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     // tsc's getContainingObjectLiteral: methods, accessors, `a: function () {}` (not arrows)
                     if (!span_valid(i->value.function->arrow_span)) i->value.function->this_literal = me;
                 }
-                if (i->tag == OBJECT_ITEM_SETTER && !i->computed_key) {
+                // (A computed name pairs when late bound, an entity name or a literal, by its text like a class's)
+                Expr const* own_key = i->computed_key;
+                if (i->tag == OBJECT_ITEM_SETTER && (!own_key || own_key->tag == EXPR_LITERAL || expr_is_entity_name(own_key))) {
                     for_each (other, vec_object_expr_item, &my object) {
-                        if (other->tag == OBJECT_ITEM_GETTER && !other->computed_key && cstr_eq(&other->name_string, &i->name_string)) {
+                        if (other->tag == OBJECT_ITEM_GETTER && !other->computed_key == !own_key && (own_key ?
+                            csview_equals_sv(other->computed_key->outer_span.sv, own_key->outer_span.sv) :
+                            cstr_eq(&other->name_string, &i->name_string))
+                        ) {
                             function_impl_pair_setter(i->value.function, other->value.function);
                             break;
                         }

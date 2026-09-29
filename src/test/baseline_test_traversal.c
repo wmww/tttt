@@ -2054,6 +2054,17 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         // (Its symbol: with the other accessor, alone if it conflicts with what came first)
                         ObjectExprItem const* accessor_first = nullptr;
                         declarations = object_member_symbol_decls(&my object, i, &accessor_first);
+                    } else if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) &&
+                        (i->computed_key->tag == EXPR_LITERAL || expr_is_entity_name(i->computed_key))
+                    ) {
+                        // A late bound name: the accessors written with the same name (see the pairing in expr.c)
+                        for_each (other, vec_object_expr_item, &my object) {
+                            if ((other->tag == OBJECT_ITEM_GETTER || other->tag == OBJECT_ITEM_SETTER) && other->computed_key &&
+                                csview_equals_sv(other->computed_key->outer_span.sv, i->computed_key->outer_span.sv)
+                            ) {
+                                vec_span_push(&declarations, other->span);
+                            }
+                        }
                     } else {
                         vec_span_push(&declarations, i->span);
                     }
