@@ -514,7 +514,9 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
         if (ty->kind == TY_INTERSECTION) {
             return ty_intersection(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
         }
-        bool deferred = ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL;
+        // (A deferred reference, `type L1<V> = L2<V>` of `type L2<V> = L3<V>`, goes by the new name too: tsc's
+        // getObjectTypeInstantiation keys it on the alias)
+        bool deferred = ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || (ty->kind == TY_REFERENCE && ty->reference.deferred);
         if (!deferred && (ty->kind != TY_ANONYMOUS || (!ty->anonymous.target && !ty->anonymous.realiased) ||
             ty->anonymous.applies_type_args)
         ) {
@@ -537,6 +539,9 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
         } else if (ty->kind == TY_CONDITIONAL) {
             // The root stays the unnamed one; instantiation puts the name back on (instantiate_inner)
             fresh->conditional = ty->conditional;
+        } else if (ty->kind == TY_REFERENCE) {
+            fresh->reference = ty->reference; // (The same node and mapper: the same arguments)
+            fresh->reference.state = arena_new(&my arena, TyObjectState);
         } else {
             fresh->anonymous = ty->anonymous;
             fresh->anonymous.realiased = true;

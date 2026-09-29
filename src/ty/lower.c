@@ -1846,11 +1846,17 @@ Ty const* ty_deferred_reference(
         }
     }
     u64 stack_key[64];
-    u32 count = 2 + kept * 2;
+    // (The alias is part of the key: an instance of a reference that is an alias's body goes by the alias whose
+    // instantiation made it, `L2<1>` and `L1<1>` with `type L1<V> = L2<V>`, see ty_realias())
+    u32 count = 2 + kept * 2 + (alias ? 1 + alias_args.len : 0);
     u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
     key[0] = KEY_DEFERRED_REFERENCE;
     key[1] = (u64)(uintptr_t)node;
     for (u32 i = 0; i < kept * 2; i++) key[2 + i] = pairs[i]->id;
+    if (alias) {
+        key[2 + kept * 2] = (u64)(uintptr_t)alias;
+        for (u32 i = 0; i < alias_args.len; i++) key[3 + kept * 2 + i] = alias_args.data[i]->id;
+    }
     Ty const* ret = intern_get(&my links, key, count);
     if (!ret) {
         if (kept != (mapper ? mapper->len : 0)) {
@@ -1872,8 +1878,7 @@ Ty const* ty_deferred_reference(
         deferred->ctx = ctx; // Still resolved by the alias, syntactically (tsc's isResolvedByTypeAlias)
         deferred->mapper = mapper;
         fresh->reference.deferred = deferred;
-        // An array or tuple written as the body of an alias goes by the alias name. The node says which alias, so the
-        // name isn't part of the key
+        // An array or tuple written as the body of an alias goes by the alias name
         fresh->alias = alias;
         fresh->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
         *intern_slot(me, &my links, key, count) = fresh;

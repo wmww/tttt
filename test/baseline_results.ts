@@ -33276,9 +33276,9 @@ const baselines = {
         types: true,
     },
     'varianceReferences': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'varianceRepeatedlyPropegatesWithUnreliableFlag': {
         errors: true,
@@ -64178,7 +64178,7 @@ const baselines = {
     'mappedTypeRelationships': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeWithAny': {
         errors: true,
