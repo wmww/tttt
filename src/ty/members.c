@@ -1167,7 +1167,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     Prop* prototype = prop_new(me);
     prototype->name = checker_atom(me, c_sv("prototype"));
     prototype->parent = instance_decl;
-    prototype->flags = PROP_STATIC; // Not readonly: tsc's prototype symbol is a plain property
+    prototype->flags = PROP_STATIC | PROP_PROTOTYPE; // Not readonly: tsc's prototype symbol is a plain property
     if (instance->declared.type_params.len) {
         u32 len = instance->declared.type_params.len;
         Ty const** args = arena_new_n(&my arena, Ty const*, len);

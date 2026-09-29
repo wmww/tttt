@@ -1966,6 +1966,8 @@ static Ternary props_related_impl(
     for (u32 i = 0; i < target_members->prop_count; i++) {
         Prop const* target_prop = target_members->props[i];
         if (optionals_only && !(target_prop->flags & PROP_OPTIONAL)) continue;
+        // (A class's `prototype` is what its construct signatures return: tsc's propertiesRelatedTo skips it)
+        if (target_prop->flags & PROP_PROTOTYPE) continue;
         // The same accessor of the same object literal, typed or not (tsc's `sourceProp !== targetProp`: the literal's
         // types share the declaration's symbol). Not typing it matters when the literal is rechecked against what was
         // inferred from it, in the initializer its getter refers back to

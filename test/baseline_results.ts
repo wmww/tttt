@@ -9221,7 +9221,7 @@ const baselines = {
         types: true,
     },
     'deeplyNestedAssignabilityErrorsCombined': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30296,7 +30296,7 @@ const baselines = {
         types: true,
     },
     'thisConditionalOnMethodReturnOfGenericInstance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -40686,7 +40686,7 @@ const baselines = {
         types: true,
     },
     'typeArgumentInferenceWithClassExpression2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61171,7 +61171,7 @@ const baselines = {
         types: true,
     },
     'everyTypeWithAnnotationAndInvalidInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

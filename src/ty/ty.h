@@ -432,6 +432,7 @@ typedef enum PropFlags {
     // Optional because a destructuring pattern's element has a default (`{ x = 1 } = a`): tsc only sets the flag, the
     // type doesn't get undefined added like a declared `x?: T` (which tttt adds when printing)
     PROP_PATTERN_OPTIONAL = 1 << 13,
+    PROP_PROTOTYPE = 1 << 14, // A class's `prototype` (tsc's SymbolFlags.Prototype): relations skip it as a target
 } PropFlags;
 
 // How a property's name prints (tsc's getPropertyNameNodeForSymbol), from how its declarations wrote it. Without
