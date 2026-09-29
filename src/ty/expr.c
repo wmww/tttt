@@ -60,7 +60,16 @@ static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* 
     // What a JavaScript object literal made has every property, except in a JavaScript file that isn't checked (tsc's
     // checkPropertyAccessExpressionOrQualifiedName: isUncheckedJSSuggestion makes it a suggestion and errorType)
     SourceFile const* file = expr->outer_span.source;
-    if (!(file && file->is_js && file->unchecked) && ty_is_js_literal_type(me, object)) return any_type(me);
+    bool unchecked_js = file && file->is_js && file->unchecked;
+    // (Not when what it's a property of was declared in another global file: approximated by the object's name)
+    Expr const* object_expr = &expr->property->expr;
+    if (unchecked_js && object_expr->tag == EXPR_IDENTIFIER && object_expr->identifier.target &&
+        object_expr->identifier.target->decl_count
+    ) {
+        SourceFile const* declared = object_expr->identifier.target->decls[0].full.source;
+        if (declared && declared != file && !declared->is_module) unchecked_js = false;
+    }
+    if (!unchecked_js && ty_is_js_literal_type(me, object)) return any_type(me);
     return ty_intrinsic(me, TY_ERROR);
 }
 
