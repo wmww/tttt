@@ -35592,8 +35592,8 @@ const baselines = {
     },
     'quotedConstructors': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'derivedClassConstructorWithoutSuperCall': {
         errors: true,

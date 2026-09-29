@@ -7192,7 +7192,11 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             .private_name = *span_start_ptr(name_span) == '#',
             .name = name_span,
         };
-        if (!is_type && !name_is_value && span_equals(name_span, "constructor")) {
+        // (`"constructor"()` is one too: tsc's tryParseConstructorDeclaration takes a string literal followed by `(`)
+        bool quoted_constructor = !is_type && name_is_value && name_span.sv.size &&
+            (name_span.sv.buf[0] == '"' || name_span.sv.buf[0] == '\'') && cstr_equals(&name_string, "constructor") &&
+            !optional && !span_valid(definite) && *p.pos == '(';
+        if (!is_type && ((!name_is_value && span_equals(name_span, "constructor")) || quoted_constructor)) {
             modified.kind = MODIFIED_CONSTRUCTOR;
             check_modifiers(&p, &modifiers, modified);
             Span keyword = name_span;
