@@ -2775,10 +2775,10 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
                 if (sig->min_args > count) sig->min_args = count;
             } else if (!count) {
                 // (Without parameters every `@param` tag is the last parameter's: the first `{...T}` among them)
-                for (u32 i = 0; i < function->jsdoc_unmatched_count; i++) {
+                for (u32 i = 0; i < function->jsdoc_unmatched_count && !variadic_tag; i++) {
                     if (!function->jsdoc_unmatched[i].variadic) continue;
                     element = ty_of_node(&function->jsdoc_unmatched[i].type);
-                    break;
+                    variadic_tag = true;
                 }
             }
             Ty const* rest_type = ty_array(me, element, false);
