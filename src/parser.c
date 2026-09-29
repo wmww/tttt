@@ -2797,6 +2797,14 @@ static bool parse_import_keyword_expr(Parser* parent, IdentifierExpr* ret) {
     return parse_success(&p);
 }
 
+// `import` not followed by `(`, `.` or `<` (tsc's parseMemberExpressionOrHigher: not an import call or `import.meta`)
+static bool import_keyword_not_expr(Parser* parent) {
+    Tok t = tok_peek(parent);
+    if (!tok_is(t, "import")) return false;
+    Tok next = tok_next(parent, t);
+    return !tok_is(next, "(") && !tok_is(next, ".") && !tok_is(next, "<");
+}
+
 static bool parse_unique_symbol_type(Parser* parent) {
     Parser p = parser(parent);
 
@@ -8888,6 +8896,9 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         }
     } else if (c == 'i' && parse_import_keyword_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
+    } else if (c == 'i' && import_keyword_not_expr(&p)) {
+        // `import` starts no other expression (tsc's parseMemberExpressionOrHigher: the expression is missing)
+        return parse_fail(&p);
     } else if (word && !yield_await_is_keyword_here(&p) && parse_identifier_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
         inner_span_set = true;
@@ -8972,6 +8983,8 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     }
     expected_expression_error(parent);
     *ret = expr_implicit_any(span_from_pos(parent));
+    // (At a decorator tsc has a MissingDeclaration, which is no expression: parseDecoratedExpression)
+    ret->missing = *parent->pos != '@';
     // tsc's isStartOfExpression takes a binary operator for a missing left operand and goes on with the binary
     // expression (`{ ...*o }`, `x = * y`). Not `<` (a type assertion) or `/` (a regex)
     Tok t = tok_peek(parent);
@@ -9353,7 +9366,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     Anchor statement_start = a;
     PortStatement statement = {0};
 
-    bool is_export = false;
+    bool is_export = false, no_clause = false;
     if (hop_start_if_ends_on_word_break(&p, "import")) {
     } else if (hop_start_if_ends_on_word_break(&p, "export")) {
         is_export = true;
@@ -9462,7 +9475,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         statement.main.tag = PORT_EXPORT_AS_NAMESPACE;
         statement.main.not_top_level = p.shared->statement_parent != MODIFIED_IN_SOURCE_FILE;
         a = statement_start; // (the statement declares the alias, `export` included)
-    } else if (!is_export && parse_identifier(&p, &statement.main.decl_name)) {
+    } else if (!is_export && tok_is_identifier(tok_peek(&p)) && parse_identifier(&p, &statement.main.decl_name)) {
         hop_whitespace(&p);
         statement.main.tag = PORT_IMPORT_DEFAULT;
 
@@ -9487,13 +9500,19 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         }
     } else if (parse_import_item_list(&p, &statement)) {
         statement.main.tag = PORT_NOOP; // Only the item list is imported, no main import
+    } else if (!is_export && !statement.main.type_only && tok_is_word(tok_peek(&p))) {
+        // `import` and a reserved word (tsc's isStartOfDeclaration says it's an import declaration): no import
+        // clause, the module specifier is an expression (tsc's parseModuleSpecifier)
+        statement.main.tag = PORT_NOOP;
+        no_clause = true;
     } else {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
 
     statement.requires_target = true;
-    if (!hop_start_if_ends_on_word_break(&p, "from")) {
+    if (no_clause) {
+    } else if (!hop_start_if_ends_on_word_break(&p, "from")) {
         if (is_export) {
             statement.requires_target = false;
         } else {
@@ -9524,6 +9543,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             expr_drop(&path_expr);
             statement.attributes = parse_import_attributes(&p);
         } else {
+            if (path_expr.tag == EXPR_IMPLICIT_ANY) statement.missing_specifier = path_expr.inner_span;
             expr_drop(&path_expr); // (what expect_expr() made of a missing operand's binary expression)
         }
     }

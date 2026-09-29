@@ -447,7 +447,7 @@ void initialized_binding_compile_test_info(
     BaselineTestCase* ctx
 ) {
     binding_compile_test_info(&my binding, ctx);
-    if (my value.tag != EXPR_IMPLICIT_ANY) {
+    if (my value.tag != EXPR_IMPLICIT_ANY || my value.missing) {
         Expr const* literal = ctx->variable_literal;
         Span literal_name = ctx->variable_literal_name;
         if (my value.tag == EXPR_OBJECT && my binding.tag == BINDING_IDENTIFIER) {
@@ -975,6 +975,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         }
         port_item_add_alias(i, ctx, my main.type_only);
     }
+    if (span_valid(my missing_specifier)) baseline_test_case_add_type(ctx, my missing_specifier, ty_intrinsic(current_checker, TY_ANY));
     // `with { type: "json" }`: the keys written as identifiers are any
     if (my attributes) {
         for_each (i, vec_import_attribute, &my attributes->elements) {

@@ -138,6 +138,9 @@ typedef struct Expr {
     bool assignment_pattern;
     // An object literal that initializes a JavaScript `/** @enum {T} */` variable: not open-ended (set by the parser)
     bool jsdoc_enum_literal;
+    // An EXPR_IMPLICIT_ANY that stands for a missing expression (`var x = ;`, parse error), not for an absent optional
+    // one (`var x;`): the baselines show it like tsc's missing identifier
+    bool missing;
     union {
         Value literal;
         IdentifierExpr identifier;

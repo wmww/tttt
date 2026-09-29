@@ -38861,14 +38861,14 @@ const baselines = {
         types: true,
     },
     'importCallExpressionIncorrect1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importCallExpressionIncorrect2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importCallExpressionNestedAMD': {
         errors: true,
@@ -48603,7 +48603,7 @@ const baselines = {
     'negateOperatorInvalidOperations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'negateOperatorWithAnyOtherType': {
         errors: true,
@@ -58403,7 +58403,7 @@ const baselines = {
     'parserSkippedTokens16': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserSkippedTokens17': {
         errors: false,
