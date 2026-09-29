@@ -3533,6 +3533,26 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
 // The JSDoc comment that ends right before `pos` (only whitespace between), parsed into `tags`: false if there is
 // none. tsc attaches every JSDoc comment of the leading trivia, but takes the tags of the last one only
 // (filterOwnedJSDocTags; the others' `@overload` tags aside)
+// Where the line comment of the line from `line` to `end` starts (skipping block comments and string literals), null if
+// it has none
+static const char* jsdoc_line_comment_start(const char* line, const char* end) {
+    for (const char* c = line; c + 1 < end; c++) {
+        if (c[0] == '/' && c[1] == '/') return c;
+        if (c[0] == '/' && c[1] == '*') {
+            const char* close = c + 2;
+            while (close + 1 < end && !(close[0] == '*' && close[1] == '/')) close++;
+            if (close + 1 >= end) return nullptr;
+            c = close + 1;
+        } else if (*c == '"' || *c == '\'' || *c == '`') {
+            char quote = *c;
+            c++;
+            while (c < end && *c != quote) c += *c == '\\' ? 2 : 1;
+            if (c >= end) return nullptr;
+        }
+    }
+    return nullptr;
+}
+
 static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
     VecJsDocRange const* comments = &parent->shared->jsdoc_comments;
     if (!comments->size) return false;
@@ -3560,13 +3580,13 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
             c = open - 2;
             continue;
         }
-        // A line that is a line comment
+        // A line comment ending the line: before its `//` (what comes before it on the line may be trivia too:
+        // `/** @type {T} */ // why`)
         const char* line = c;
         while (line > file_start && line[-1] != '\n' && line[-1] != '\r') line--;
-        const char* text = line;
-        while (text < c && is_js_ascii_space(*text)) text++;
-        if (c - text >= 2 && text[0] == '/' && text[1] == '/' && line < c) {
-            c = line;
+        const char* comment = jsdoc_line_comment_start(line, c);
+        if (comment) {
+            c = comment;
             continue;
         }
         return false;
@@ -3592,10 +3612,9 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
             }
             const char* line = start;
             while (line > file_start && line[-1] != '\n' && line[-1] != '\r') line--;
-            const char* text = line;
-            while (text < start && is_js_ascii_space(*text)) text++;
-            if (start - text >= 2 && text[0] == '/' && text[1] == '/' && line < start) {
-                start = line;
+            const char* comment = jsdoc_line_comment_start(line, start);
+            if (comment) {
+                start = comment;
                 continue;
             }
             break;
