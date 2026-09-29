@@ -3661,7 +3661,10 @@ static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx)
     // What the generator is sent (tsc's checkAndAggregateYieldOperandTypes: getContextualType of each yield)
     if (ctx.contextual && yield->op == UNARY_OP_YIELD) {
         u64 key[2] = { KEY_YIELD_CONTEXT, (u64)(uintptr_t)yield };
-        if (!intern_get(&my links, key, 2)) *intern_slot(me, &my links, key, 2) = ctx.contextual;
+        // (A call's type parameter, which the resolved signature has as what this any yield inferred: see
+        // UnaryOpExpr.no_type_params_in_scope)
+        Ty const* sent = ctx.contextual->kind == TY_TYPE_PARAM && yield->no_type_params_in_scope ? ty_intrinsic(me, TY_ANY) : ctx.contextual;
+        if (!intern_get(&my links, key, 2)) *intern_slot(me, &my links, key, 2) = sent;
     }
     if (!generator) {
         if (operand->tag != EXPR_IMPLICIT_ANY && !yield->outside_generator) ty_expr_type(me, operand);

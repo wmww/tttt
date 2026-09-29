@@ -1651,6 +1651,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     expr_lookup_names(operand, names, errs);
                     if (flow->function && flow->function->is_generator) {
                         my unary_op->generator = flow->function;
+                        my unary_op->no_type_params_in_scope = !names->generics;
                         if (flow->yield_count == flow->yield_cap) {
                             flow->yield_cap = flow->yield_cap ? flow->yield_cap * 2 : 4;
                             flow->yields = realloc(flow->yields, sizeof(Expr const*) * flow->yield_cap);
@@ -2878,7 +2879,10 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
         TyIterationTypes const* context = ty_generator_context(checker, generator);
         LazyMemo const* memo = lazy_type_state_peek((LazyType*)&me->lazy_type);
         Ty const* contextual = memo && memo->done ? memo->context : nullptr;
-        if (!context && (!contextual || (contextual->flags & TYF_ANY))) {
+        // (A type parameter that isn't in scope is the one of a call's signature the argument was checked against
+        // while inferring: the resolved signature has it inferred from this yield, which is any)
+        bool call_type_param = contextual && contextual->kind == TY_TYPE_PARAM && yield->no_type_params_in_scope;
+        if (!context && (!contextual || (contextual->flags & TYF_ANY) || call_type_param)) {
             Span keyword = my outer_span; // (the `yield`)
             if (keyword.sv.size > 5) keyword.sv.size = 5;
             error_ctx_error_d(errs, keyword, 7057, "'yield' expression implicitly results in an 'any' type because "

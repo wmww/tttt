@@ -492,6 +492,9 @@ typedef struct UnaryOpExpr {
     // `yield`: what it evaluates to isn't used (an expression statement, a `void` operand, left of a comma, a for loop's
     // afterthought: tsc's expressionResultIsUnused), set when resolving
     bool result_unused;
+    // `yield`: no type parameter list encloses it (its generator's included), so a type parameter as its contextual type
+    // is one of a call's, set when resolving
+    bool no_type_params_in_scope;
     // `!`: an access or call follows (`a?.b!.c`), so it's part of an optional chain its operand is part of (tsc's
     // tryReparseOptionalChain makes it a NonNullChain). Set by the parser
     bool continues_chain;

@@ -50176,9 +50176,9 @@ const baselines = {
         types: true,
     },
     'generatorImplicitAny': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorReturnContextualType': {
         errors: true,
