@@ -449,6 +449,12 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 ty_check_emit_helpers(current_checker, my content_span, EMIT_HELPER_READ, errs);
             }
             Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
+            // (Not widened: `= null` is null, not any, without strictNullChecks. tsc's getTypeForBindingElementParent)
+            Expr const* source = my parent ? my default_value : initializer;
+            if (!my has_explicit_type && source && !(type->flags & TYF_NULLABLE)) {
+                Ty const* assigned = ty_expr_type(current_checker, source);
+                if (assigned->flags & TYF_NULLABLE) type = assigned;
+            }
             ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, empty_pattern ? at : my content_span, errs);
             Ty const* parent = element_parent_type(me, nullptr);
             for_each (i, vec_binding, &my array) {

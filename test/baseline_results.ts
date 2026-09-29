@@ -42276,7 +42276,7 @@ const baselines = {
         types: true,
     },
     'restElementWithNullInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
