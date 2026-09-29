@@ -701,7 +701,7 @@ const baselines = {
         types: true,
     },
     'ambientExternalModuleWithRelativeExternalImportDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

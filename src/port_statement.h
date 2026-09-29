@@ -113,6 +113,9 @@ typedef struct PortStatement {
     // is TS1147, an export declaration TS1194 (unless the namespace is ambient and nothing is re-exported)
     bool in_namespace;
     bool in_ambient_namespace;
+    // Directly in `declare module "m"` of a script (an ambient external module, not an augmentation): it can't name a
+    // relative module (TS2439)
+    bool in_ambient_module;
     bool wrong_context; // In a block or function (TS1232/TS1233): not declared, nothing resolved
     VecExpr decorators; // `@dec import x = y`: TS1206, only resolved (silently) for the baselines
 } PortStatement;

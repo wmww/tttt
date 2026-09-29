@@ -1,4 +1,5 @@
 #include "port_statement.h"
+#include "module_resolution.h"
 #include "error.h"
 #include "program.h"
 #include "source_file.h"
@@ -85,6 +86,8 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         (scope->container && scope->container->is_module);
     my in_namespace = !top && scope->kind == SCOPE_NAMESPACE;
     my in_ambient_namespace = my in_namespace && scope->ambient;
+    my in_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container && scope->container->is_module &&
+        scope->parent && scope->parent->kind != SCOPE_MODULE;
     bool is_import_alias = my main.tag == PORT_IMPORT_ALIAS && csview_equals(my keyword_span.sv, "import");
     if (!my jsdoc && !top && !my in_namespace && (my module_ref || is_import_alias || port_statement_is_export_declaration(me))) {
         my wrong_context = true;
@@ -232,6 +235,11 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         }
     }
     if (!ambient) port_statement_check_emit_helpers(me, span, errs);
+    // tsc's checkExternalImportOrExportDeclaration
+    if (my in_ambient_module && my module_ref && !my jsdoc && module_name_is_relative(cstr_sv(&my target_path))) {
+        error_ctx_error_d(errs, span_with_semicolon(span), 2439, "Import or export declaration in an ambient module "
+            "declaration cannot reference module through relative module name.");
+    }
     // tsc's checkImportEqualsDeclaration: `import x = require()` can't be emitted as an ES module (by the module
     // option, whatever the file's format)
     ModuleKind module_kind = compiler_options()->module;
