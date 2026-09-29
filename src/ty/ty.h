@@ -774,6 +774,10 @@ struct Checker {
     u32 next_type_id;
     Ty const* intrinsics[TY_INTRINSIC_COUNT];
     Ty const* typeof_type; // tsc's typeofType: made with the intrinsics, so its literals get tsc's low ids
+    // Names flow asks about at every narrowing (checker_atom() hashes the name each time)
+    struct Atom const* atom_constructor;
+    struct Atom const* atom_prototype;
+    struct Atom const* atom_bind;
     InternTable atoms;
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()

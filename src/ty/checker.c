@@ -303,6 +303,9 @@ Checker* checker_new(Program* program) {
         for (u32 i = 0; i < c_arraylen(names); i++) types[i] = ty_string_literal(me, csview_from(names[i]));
         my typeof_type = ty_union(me, types, c_arraylen(names), nullptr, (TyList){0});
     }
+    my atom_constructor = checker_atom(me, c_sv("constructor"));
+    my atom_prototype = checker_atom(me, c_sv("prototype"));
+    my atom_bind = checker_atom(me, c_sv("bind"));
     // tsc's initializeTypeChecker makes the global Array type and autoArrayType next: the lowest ids of the arrays
     Checker* saved = current_checker;
     checker_make_current(me);
@@ -1115,12 +1118,26 @@ bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty) {
 
 static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object);
 
+// Intersections without an alias are cached by their members (tsc's intersectionTypes by type list id, which it
+// looks up before distributing over unions, as this does): distributing `SyntaxKind & T` over a big union again at
+// every relation that asks was ~4% of the tsc corpus
+static Ty const* intersection_cached(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object) {
+    if (alias || len < 2 || len > 14) return intersection(me, types, len, alias, alias_args, keep_empty_object);
+    u64 key[16] = { KEY_INTERSECTION_OF, keep_empty_object };
+    for (u32 i = 0; i < len; i++) key[2 + i] = types[i]->id;
+    Ty const* cached = intern_get(&my links, key, len + 2);
+    if (cached) return cached;
+    Ty const* ret = intersection(me, types, len, alias, alias_args, keep_empty_object);
+    *intern_slot(me, &my links, key, len + 2) = ret;
+    return ret;
+}
+
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
-    return intersection(me, types, len, alias, alias_args, false);
+    return intersection_cached(me, types, len, alias, alias_args, false);
 }
 
 Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
-    return intersection(me, types, len, alias, alias_args, true);
+    return intersection_cached(me, types, len, alias, alias_args, true);
 }
 
 static bool union_has(Ty const* ty, u32 flag) {

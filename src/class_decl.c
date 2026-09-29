@@ -542,6 +542,16 @@ static Atom const* item_member_name(Checker* checker, ClassDecl const* me, Class
         is_field ? item->field.computed_key : item->method.computed_key);
 }
 
+// item_member_name(checker, me, item) == name, without atomizing a plain name (the override checks ask this of every
+// member of a class for every property of its bases)
+static bool item_has_member_name(Checker* checker, ClassDecl const* me, ClassItem const* item, Atom const* name) {
+    bool is_field = item->tag == CLASS_ITEM_FIELD;
+    if (!span_valid(class_item_private_name(item)) && !(is_field ? item->field.computed_key : item->method.computed_key)) {
+        return csview_equals_sv(name_cooked(cstr_sv(is_field ? &item->field.name_string : &item->method.name_string)), atom_sv(name));
+    }
+    return item_member_name(checker, me, item) == name;
+}
+
 // What an instance member of a class is, for tsc's checkKindsOfPropertyMemberOverrides()
 bool class_item_field_is_definite(ClassItem const* me) {
     check(my tag == CLASS_ITEM_FIELD);
@@ -619,7 +629,7 @@ static MemberInfo class_instance_member(Checker* checker, ClassDecl const* me, A
     MemberInfo ret = {0};
     for_each (i, vec_class_item, &my items) {
         if ((i->tag != CLASS_ITEM_FIELD && i->tag != CLASS_ITEM_METHOD) || class_item_is_static((ClassItem*)i)) continue;
-        if (item_member_name(checker, me, i) != name) continue;
+        if (!item_has_member_name(checker, me, i, name)) continue;
         if (i->tag == CLASS_ITEM_FIELD) {
             ret.kind = i->field.is_auto_accessor ? MEMBER_ACCESSOR : MEMBER_PROPERTY;
             ret.is_abstract = i->field.is_abstract;

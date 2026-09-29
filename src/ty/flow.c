@@ -325,7 +325,7 @@ static bool is_function_object(Checker* me, Ty const* ty) {
     if (members->call_count || members->construct_count) return true;
     Ty const* function = ty_global_function_type(me);
     return function && (ty == function || (
-        ty_get_prop(me, ty, checker_atom(me, c_sv("bind"))) && ty_is_related(me, ty, function, TY_RELATION_SUBTYPE)
+        ty_get_prop(me, ty, my atom_bind) && ty_is_related(me, ty, function, TY_RELATION_SUBTYPE)
     ));
 }
 
@@ -2070,9 +2070,8 @@ static bool is_matching_constructor_reference(FlowQuery* q, Expr const* expr) {
     PropertyExpr const* access = expr->property;
     if (access->private_class) return false;
     Expr const* key = &access->prop;
-    bool named = access->form == PROPERTY_EXPR_BRACKET ?
-        key->tag == EXPR_LITERAL && key->literal.tag == VALUE_STRING && access_name(me, access) == checker_atom(me, c_sv("constructor")) :
-        access_name(me, access) == checker_atom(me, c_sv("constructor"));
+    bool named = (access->form != PROPERTY_EXPR_BRACKET || (key->tag == EXPR_LITERAL && key->literal.tag == VALUE_STRING)) &&
+        access_name(me, access) == my atom_constructor;
     return named && is_matching_reference(me, q->reference, &access->expr);
 }
 
@@ -2098,7 +2097,7 @@ static Ty const* narrow_by_constructor(FlowQuery* q, Ty const* type, BinaryOp op
     Ty const* apparent = ty_apparent_type(me, identifier_type);
     bool constructor = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_members(me, apparent)->construct_count;
     if (!function && !constructor) return type;
-    Ty const* candidate = ty_prop_type_of(me, identifier_type, checker_atom(me, c_sv("prototype")));
+    Ty const* candidate = ty_prop_type_of(me, identifier_type, my atom_prototype);
     if (!candidate || (candidate->flags & TYF_ANY)) return type;
     if (candidate == ty_global_object_type(me) || candidate == ty_global_function_type(me)) return type;
     if (type->flags & TYF_ANY) return candidate;
