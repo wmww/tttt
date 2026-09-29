@@ -855,11 +855,7 @@ struct Checker {
     Ty const* disposable_targets[2];
     bool disposable_looked_up[2];
     bool iterable_iterator_reported[2]; // TS2318 for a missing IterableIterator / AsyncIterableIterator (sync, async)
-    // The types whose base constraints are being resolved for circularity (members.c, tsc's pushTypeResolution with
-    // ImmediateBaseConstraint), and whether the walk came back to each
-    Ty const* constraint_walk[50];
-    bool constraint_walk_circular[50];
-    u32 constraint_walk_len;
+    u32 constraint_walk_len; // How deep walk_base_constraint() is (members.c)
 };
 
 // checker.c
@@ -1514,6 +1510,8 @@ typedef enum ResolvingKind {
     RESOLVING_ALIAS,
     RESOLVING_ANNOTATION, // The written type of a Binding
     RESOLVING_SIGNATURE_RETURN,
+    RESOLVING_BASES, // The bases of a declared class or interface type
+    RESOLVING_CONSTRAINT, // A type on the walk to a base constraint (members.c walk_base_constraint())
 } ResolvingKind;
 typedef struct Resolving {
     void const* key;

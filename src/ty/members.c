@@ -1662,6 +1662,9 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             builder_add_assignment_members(me, &builder, decl);
             TyBuf bases = {0};
             bool dynamic = false;
+            // (tsc's getBaseTypes pushing ResolvedBaseTypes: members asked for while the bases are lowered, see
+            // members_reentered())
+            ty_resolving_push(me, RESOLVING_BASES, ty);
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
                 if (node->kind == SYMBOL_DECL_CLASS) {
                     Ty const* base = nullptr;
@@ -1686,6 +1689,12 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                         }
                     }
                 }
+            }
+            if (ty_resolving_pop(me)) {
+                // The bases lead back to the type: it has none (TS2310, see ty_interface_in_base_cycle())
+                ty_symbol_links(me, decl)->base_cycle |= BASE_CYCLE_KNOWN | BASE_CYCLE_IN_CYCLE;
+                bases.len = 0;
+                dynamic = false;
             }
             if (dynamic) {
                 // Members that depend on the type arguments: whoever instantiates these adds the bases' (see
@@ -1833,12 +1842,20 @@ static Members const* resolve_instantiated_members(Checker* me, Ty const* target
     return instantiate_members(me, ty_members(me, target), mapper, applies_type_args, false);
 }
 
+// Members of a class or interface asked for while they are resolved: if it's while its bases are, they are circular
+static void members_reentered(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
+    if (ty->kind == TY_DECLARED) ty_resolving_cycle(me, RESOLVING_BASES, ty);
+}
+
 // The raw members of a class or interface (see resolve_declared_members()), memoised in Ty.declared.raw
 static Members const* declared_raw_members(Checker* me, Ty const* declared) {
     TyObjectState* state = declared->declared.raw;
     switch (state->members_state) {
         case LAZY_STATE_DONE: return state->members;
-        case LAZY_STATE_IN_FLIGHT: return &empty_members; // `interface A extends A`
+        case LAZY_STATE_IN_FLIGHT: // `interface A extends A`
+            members_reentered(me, declared);
+            return &empty_members;
         case LAZY_STATE_NOT_STARTED: break;
     }
     state->members_state = LAZY_STATE_IN_FLIGHT;
@@ -2590,6 +2607,7 @@ Members const* ty_members(Checker* me, Ty const* ty) {
 
         case LAZY_STATE_IN_FLIGHT:
             // Only a type whose own members depend on its own members gets here (`interface A extends A`)
+            members_reentered(me, ty);
             return &empty_members;
 
         case LAZY_STATE_NOT_STARTED:
@@ -3683,21 +3701,22 @@ static void walk_base_constraint_parts(Checker* me, Ty const* ty) {
     }
 }
 
+// Each type on the walk is on the resolution stack (tsc's getResolvedBaseConstraint pushing ImmediateBaseConstraint),
+// with the lowering of a type parameter's declared constraint: a cycle through an alias being resolved is one too
 static void walk_base_constraint(Checker* me, Ty const* ty) {
     if (ty->kind != TY_TYPE_PARAM && !(ty->flags & (TYF_UNION | TYF_INTERSECTION | TYF_DEFERRED))) return;
     if (ty->kind == TY_TYPE_PARAM && ty->param.state->circular) return; // Known (circular: its base is none)
-    for (u32 i = 0; i < my constraint_walk_len; i++) {
-        if (my constraint_walk[i] != ty) continue;
-        for (u32 j = i; j < my constraint_walk_len; j++) my constraint_walk_circular[j] = true;
+    if (ty_resolving_find(me, RESOLVING_CONSTRAINT, ty)) {
+        ty_resolving_cycle(me, RESOLVING_CONSTRAINT, ty);
         return;
     }
     if (my constraint_walk_len == 50) return; // (tsc's safety stop)
-    u32 at = my constraint_walk_len++;
-    my constraint_walk[at] = ty;
-    my constraint_walk_circular[at] = false;
+    my constraint_walk_len++;
+    ty_resolving_push(me, RESOLVING_CONSTRAINT, ty);
     walk_base_constraint_parts(me, ty);
+    bool circular = ty_resolving_pop(me);
     my constraint_walk_len--;
-    if (ty->kind == TY_TYPE_PARAM) ty->param.state->circular = my constraint_walk_circular[at] ? 2 : 1;
+    if (ty->kind == TY_TYPE_PARAM) ty->param.state->circular = circular ? 2 : 1;
 }
 
 // tsc's getConstraintOfTypeParameter: none if the base constraint is circular (`T extends T`, `T extends U, U extends

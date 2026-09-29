@@ -306,7 +306,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
             report_promise_missing(me, function, memo);
             return memo->type;
         case LAZY_STATE_IN_FLIGHT:
-            memo->circular = true;
+            // (Whether it is circular is the stack's to say: not when asked again from under a call's barrier)
             ty_resolving_cycle(me, RESOLVING_FUNCTION_RETURN, function);
             return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;

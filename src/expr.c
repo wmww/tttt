@@ -1858,6 +1858,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (i->value.tag == EXPR_FUNCTION) {
                     i->value.function->accessor = i->tag == OBJECT_ITEM_GETTER ? 1 : i->tag == OBJECT_ITEM_SETTER ? 2 : 0;
                     if (i->tag != OBJECT_ITEM_PROPERTY) i->value.function->member_name = i->name_span;
+                    // (`a: () => {}` is named by the property: tsc's getAssignedName)
+                    else if (!expr_is_perenthisized(&i->value)) i->value.function->variable_name = i->name_span;
                     // tsc's getContainingObjectLiteral: methods, accessors, `a: function () {}` (not arrows)
                     if (!span_valid(i->value.function->arrow_span)) i->value.function->this_literal = me;
                 }
