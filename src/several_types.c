@@ -246,6 +246,16 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             if (i == my namespaces.data /* First namespaces */) {
                 decl = scope_get_namespace(names, i->sv, &found);
                 unused_mark_referenced(names, (Symbol*)found, SYMBOL_NAMESPACE);
+                if (!decl && my jsdoc) {
+                    // (In JSDoc the left of a qualified name may be a value, whose members are looked in: tsc's
+                    // resolveEntityName of a JSDoc type reference falls back to the value meaning)
+                    Symbol const* value_found = nullptr;
+                    Symbol const* value = scope_get_value(names, i->sv, &value_found);
+                    if (value && !value->is_placeholder) {
+                        decl = value;
+                        found = value_found;
+                    }
+                }
                 if (!decl) {
                     Symbol const* type_symbol = nullptr;
                     Symbol const* type = my jsdoc ? nullptr : scope_get_type(names, i->sv, &type_symbol);
