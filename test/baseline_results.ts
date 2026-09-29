@@ -23861,14 +23861,14 @@ const baselines = {
         types: true,
     },
     'nodeNextCjsNamespaceImportDefault1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeNextCjsNamespaceImportDefault2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nodeNextEsmImportsOfPackagesWithExtensionlessMains': {
         errors: true,
@@ -54383,17 +54383,17 @@ const baselines = {
     'nodeModulesAllowJs1(module=node16)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesAllowJs1(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesAllowJs1(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesAllowJsCjsFromJs(module=node16)': {
         errors: true,
@@ -54673,17 +54673,17 @@ const baselines = {
     'nodeModules1(module=node16)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModules1(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModules1(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesCJSEmit1(module=node18)': {
         errors: true,

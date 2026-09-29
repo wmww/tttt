@@ -2071,11 +2071,38 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
 
 // `import * as ns`: a namespace symbol of its own around the module, so that its type prints as `typeof ns` (tsc gets
 // there through symbol accessibility, plan 04 stage 3)
+static bool esm_imports_cjs(PortItem const* item, SourceFile const* target);
+
 static Symbol* make_gather_target(Symbol* me, Symbol* module) {
     PortItem* item = my alias->item;
     Symbol* ret = binder_new_symbol(my binder, port_item_name(item->decl_name), SYMBOL_VALUE_MODULE);
     ret->name_span = item->decl_name;
-    ret->gather_module = module;
+    ModuleKind module_kind = compiler_options()->module;
+    SourceFile const* file = item->module_ref ? item->module_ref->file : nullptr;
+    if (item->tag == PORT_IMPORT_GATHER && file && !file->is_json && module->is_module && module->module->file &&
+        module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT && esm_imports_cjs(item, file)
+    ) {
+        // An ES module's `import * as ns` of a CommonJS one in Node.js: the module's exports, and in its type a
+        // synthetic `default` that is the module, overriding a declared one. A module of its own, not named like the
+        // module (tsc's resolveESModuleSymbol -> getTypeWithSyntheticDefaultImportType, cloneTypeAsModuleType)
+        ret->exports = arena_new(&my binder->arena, SymbolTable);
+        u32 count;
+        SymbolEntry* entries = symbol_collect_exports(module, &count);
+        for (u32 i = 0; i < count; i++) {
+            if (csview_equals(entries[i].name, "default")) continue;
+            symbol_table_insert(ret->exports, &my binder->arena, entries[i].name, entries[i].hash, entries[i].symbol);
+        }
+        free(entries);
+        Symbol* synthetic = binder_new_symbol(my binder, c_sv("default"), SYMBOL_ALIAS);
+        synthetic->parent = module;
+        synthetic->alias = arena_new(&my binder->arena, SymbolAlias);
+        synthetic->alias->scope = my alias->scope;
+        synthetic->alias->target = module;
+        synthetic->alias->state = ALIAS_DONE;
+        ret->synthetic_default = synthetic;
+    } else {
+        ret->gather_module = module;
+    }
     symbol_add_decl(ret, (SymbolDecl){
         .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_VALUE_MODULE, .node = item,
         .name = item->decl_name, .full = item->full_span,

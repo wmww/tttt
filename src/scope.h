@@ -238,6 +238,9 @@ typedef struct Symbol {
     bool exported;
     // `import * as ns`: the module whose exports are the members, see make_gather_target()
     Symbol* gather_module;
+    // `import * as ns` of a CommonJS module into an ES module in Node.js: a `default` of its type (not of its exports)
+    // that is the module, an alias of it. Null otherwise
+    Symbol* synthetic_default;
 
     SymbolAlias* alias; // Every symbol with SYMBOL_ALIAS has one
     SymbolModule* module; // Every is_module symbol has one

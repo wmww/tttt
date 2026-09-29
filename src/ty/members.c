@@ -1698,6 +1698,14 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 if (prop) builder_push(&builder, props, prop);
             }
             free(exports);
+            Symbol const* synthetic_default = ty->declared.namespace_symbol->synthetic_default;
+            if (synthetic_default) {
+                SymbolEntry entry = { .name = c_sv("default"), .hash = symbol_name_hash(c_sv("default")), .symbol = (Symbol*)synthetic_default };
+                Prop* prop = namespace_export_prop(me, &entry);
+                // (Named through the module in the symbols baseline: `d.default`)
+                if (prop) prop->decl->symbol = synthetic_default;
+                if (prop) builder_push(&builder, props, prop);
+            }
             break;
 
         case TY_DECLARED_TUPLE_TARGET:
