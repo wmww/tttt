@@ -45381,7 +45381,7 @@ const baselines = {
         types: true,
     },
     'compoundExponentiationAssignmentLHSIsValue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46766,7 +46766,7 @@ const baselines = {
         types: true,
     },
     'assignmentLHSIsValue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

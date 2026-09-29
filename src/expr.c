@@ -1989,6 +1989,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
             break;
 
         case EXPR_IDENTIFIER:
+            if (target->identifier.keyword == KEYWORD_IDENTIFIER_THIS) break; // (no variable: TS2364)
             // (Not assignable at all: said by identifier_expr_typecheck(), tsc's errorType)
             if (identifier_is_invalid_assignment_target(&target->identifier)) return;
             if (source && target->identifier.target) {
