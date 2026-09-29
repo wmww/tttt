@@ -4536,8 +4536,12 @@ static Ternary structured_related_members(
             }
             // (A readonly array to a mutable tuple fails first, TS4104's: tsc's propertiesRelatedTo)
             bool readonly_to_mutable = source->reference.target == my readonly_array_target && !shape->readonly;
-            if (report && min && !readonly_to_mutable) {
+            bool target_rest = false;
+            for (u32 i = 0; i < shape->arity; i++) target_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+            if (report && !readonly_to_mutable && min) {
                 report_line(st, 2620, cstr_d("Target requires ", min, " element(s) but source may have fewer."));
+            } else if (report && !readonly_to_mutable && !target_rest) {
+                report_line(st, 2621, cstr_d("Target allows only ", shape->arity, " element(s) but source may have more."));
             }
             return TERNARY_FALSE;
         }

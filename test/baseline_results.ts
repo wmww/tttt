@@ -26111,7 +26111,7 @@ const baselines = {
         types: true,
     },
     'promiseEmptyTupleNoException': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
