@@ -52,9 +52,52 @@ static bool shows_alias(TyDisplay d, Ty const* ty) {
     return !type_decl || !type_decl->local;
 }
 
+static bool same_symbol(Checker* me, Symbol const* a, Symbol const* b);
+
+// The symbol a type prints the name of as a plain type reference (`Foo`, `Foo<T>`), if it does
+static Symbol const* reference_name_symbol(Checker* me, TyDisplay d, Ty const* ty) {
+    if (shows_alias(d, ty)) return ty->alias;
+    Ty const* declared = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
+    if (declared->kind != TY_DECLARED || declared == my array_target || declared == my readonly_array_target) return nullptr;
+    if (declared->declared.kind != TY_DECLARED_INTERFACE && declared->declared.kind != TY_DECLARED_CLASS_INSTANCE) return nullptr;
+    return declared->declared.symbol;
+}
+
+// tsc's mapToTypeNodes: members of a list (union, intersection, tuple, type arguments) that would print the same name
+// for different types (`[Yep, Yep]` of two namespaces) are printed fully qualified. Null if none are; else which are
+// (to free)
+static bool* name_collisions(Checker* me, TyDisplay d, TyList list) {
+    if (d.enclosing || d.fully_qualified || list.len < 2 || list.len > 256) return nullptr;
+    Symbol const* stack_symbols[16];
+    Symbol const** symbols = list.len <= c_arraylen(stack_symbols) ? stack_symbols : malloc(sizeof(Symbol const*) * list.len);
+    u32 named = 0;
+    for (u32 i = 0; i < list.len; i++) {
+        symbols[i] = reference_name_symbol(me, d, list.data[i]);
+        named += symbols[i] != nullptr;
+    }
+    bool* ret = nullptr;
+    for (u32 i = 0; named >= 2 && i < list.len; i++) {
+        if (!symbols[i]) continue;
+        for (u32 j = i + 1; j < list.len; j++) {
+            if (!symbols[j] || symbols[j] == symbols[i] || !csview_equals_sv(symbols[j]->name, symbols[i]->name)) continue;
+            if (same_symbol(me, symbols[i], symbols[j])) continue;
+            if (!ret) ret = calloc(list.len, sizeof(bool));
+            ret[i] = ret[j] = true;
+        }
+    }
+    if (symbols != stack_symbols) free((void*)symbols);
+    return ret;
+}
+
+static TyDisplay qualified_if(TyDisplay d, bool const* collisions, u32 i) {
+    if (collisions && collisions[i]) d.fully_qualified = true;
+    return d;
+}
+
 // Type arguments. The first one is parenthesized if it's a generic function type (tsc's parenthesizeTypeArguments:
 // `X<<T>() => T>` would start with `<<`)
 static void display_list(Checker* me, TyDisplay d, TyList list) {
+    bool* collisions = name_collisions(me, d, list);
     for (u32 i = 0; i < list.len; i++) {
         if (i) out_lit(d, ", ");
         Ty const* arg = list.data[i];
@@ -66,9 +109,10 @@ static void display_list(Checker* me, TyDisplay d, TyList list) {
             parens = sig->type_params.len > 0;
         }
         if (parens) out_lit(d, "(");
-        ty_display(me, d, arg);
+        ty_display(me, qualified_if(d, collisions, i), arg);
         if (parens) out_lit(d, ")");
     }
+    free(collisions);
 }
 
 static bool same_symbol(Checker* me, Symbol const* a, Symbol const* b) {
@@ -2007,6 +2051,7 @@ static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
 static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyList args) {
     if (shape->readonly) out_lit(d, "readonly ");
     out_lit(d, "[");
+    bool* collisions = name_collisions(me, d, (TyList){ .data = args.data, .len = shape->arity });
     for (u32 i = 0; i < shape->arity; i++) {
         if (i) out_lit(d, ", ");
         bool rest = shape->flags[i] & TUPLE_ELEMENT_REST;
@@ -2017,12 +2062,13 @@ static void display_tuple(Checker* me, TyDisplay d, TupleShape const* shape, TyL
             out(d, atom_sv(shape->names[i]));
             if (optional) out_lit(d, "?");
             out_lit(d, ": ");
-            ty_display(me, d, element);
+            ty_display(me, qualified_if(d, collisions, i), element);
         } else {
-            display_parenthesized_if(me, d, element, optional && needs_parens_in_array(me, d, element));
+            display_parenthesized_if(me, qualified_if(d, collisions, i), element, optional && needs_parens_in_array(me, d, element));
             if (optional) out_lit(d, "?");
         }
     }
+    free(collisions);
     out_lit(d, "]");
 }
 
@@ -2031,6 +2077,7 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
     TyList types = ty->composite.types;
     bool first = true;
     u32 nullable = 0;
+    bool* collisions = name_collisions(me, d, types);
     for (u32 i = 0; i < types.len; i++) {
         Ty const* t = types.data[i];
         if (t->kind == TY_INTRINSIC && (t->flags & TYF_NULLABLE)) {
@@ -2062,8 +2109,9 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
         }
         bool parens = is_function_like(me, d, t) || (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION ||
             (t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_INTERSECTION)));
-        display_parenthesized_if(me, d, t, parens);
+        display_parenthesized_if(me, qualified_if(d, collisions, i), t, parens);
     }
+    free(collisions);
     if (nullable & TYF_NULL) {
         out(d, first ? c_sv("null") : c_sv(" | null"));
         first = false;
@@ -2313,16 +2361,19 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             display_union(me, d, ty);
             break;
 
-        case TY_INTERSECTION:
+        case TY_INTERSECTION: {
+            bool* collisions = name_collisions(me, d, ty->composite.types);
             for (u32 i = 0; i < ty->composite.types.len; i++) {
                 Ty const* t = ty->composite.types.data[i];
                 if (i) out_lit(d, " & ");
                 // (A union that prints as the `keyof X` it was made from is a type operator, which needs none)
                 bool keyof_origin = t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_KEYOF;
-                display_parenthesized_if(me, d, t, !shows_alias(d, t) && ((t->kind == TY_UNION && !keyof_origin) || t->kind == TY_CONDITIONAL ||
-                    is_function_like(me, d, t) || displays_as_intersection(me, d, t)));
+                display_parenthesized_if(me, qualified_if(d, collisions, i), t, !shows_alias(d, t) &&
+                    ((t->kind == TY_UNION && !keyof_origin) || t->kind == TY_CONDITIONAL || is_function_like(me, d, t) ||
+                    displays_as_intersection(me, d, t)));
             }
-            break;
+            free(collisions);
+        }   break;
 
         case TY_KEYOF:
             out_lit(d, "keyof ");

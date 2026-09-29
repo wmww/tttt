@@ -22661,7 +22661,7 @@ const baselines = {
         types: false,
     },
     'namespaceDisambiguationInUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
