@@ -720,8 +720,18 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - Expandos nested in expressions (`(f.x = 1)`, `if (f.x = 1)`) are declared by the resolve walk
   (`scope_add_nested_expando()`), not the declare step: a statement-level `f.x.y = v` doesn't see a nested `f.x = {}`,
   and FlowBuilder.object_literal_depth stands in for tsc's object-literal container.
-- `exports.x = v` / `module.exports = v` inside functions (IIFEs: moduleExportAliasExports) aren't declared: tsc binds
-  them from any container, `add_nested_commonjs_exports()` only walks top-level statement lists.
+- `exports.x = v` / `module.exports = v` inside functions are declared only in immediately invoked functions
+  (moduleExportAliasExports); tsc binds them from any container. `Object.defineProperty(...)` declarations only as
+  whole statements (`expr_is_define_property_call`; tsc: anywhere).
+- Exported class expressions (`exports.C = class {}`, `module.exports = class {}`) are aliases of the class: the
+  declare step creates the class's scope early and the resolve walk re-parents it (`scope_reparent`), top level only.
+- The export= of a CommonJS module absorbs the module's other exports in place (tsc copies the value and merges into
+  the copy): typedefCrossModule3, moduleExportPropertyAssignmentDefault. `exports.x = a.b` isn't an alias (no symbol
+  when `b` is a member of a type), and `import * as ns` of a CommonJS module has the module's type, not one of its
+  own (nodeModulesAllowJs1's printed names).
+- Plain JavaScript files (allowJs without checkJs or `// @ts-check`) are checked in full and filtered to tsc's
+  plainJSErrors codes afterwards (tsc does the same); `var` is reserved in `parse_identifier()`, with a special case
+  so a type reference may still be named `var` (making the other reserved words reserved broke `as const`).
 - `ParserShared.jsdoc_enum`: a one-slot handoff from `jsdoc_apply_statement()` to the statement list; statements
   parsed outside a list (if arms) drop theirs.
 - `baseline_test_case.c` Decl printing: a declaration starting at an `@` preceded by `*` and spaces is a JSDoc tag and
@@ -800,7 +810,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 ## Modules and program (`module_resolution.c`, `tsconfig.c`, `program.c`, `main.c`)
 - A `.js` file resolved with `allowJs` is parsed as TypeScript (plus JSDoc/CommonJS). `program_load` refuses a `.js`
   root without allowJs (TS6504) while an import is refused by `program_load_module_ref` (`MODULE_REF_IS_JS`): two paths.
-  JavaScript from packages is never loaded (maxNodeModuleJsDepth taken as 0, `program.c`).
+- Module resolution: node10 (and a package name with export maps in play) resolves in two passes, TypeScript
+  extensions first; the second pass for export maps is a HACK that reproduces tsc's selfNameModuleAugmentation behaviour
+  (microsoft/TypeScript#50762) by other means (`module_resolver_resolve`).
 - `apply_realpath` loses the original path; no package ids (`name@version`), so no duplicate-package handling.
 - `/// <reference lib>` in a program file loads the lib only in the CLI (`program_follow_lib_references()`); the
   harness's shared lib program can't be added to (10 suite tests have one). An unknown lib name is silently ignored
