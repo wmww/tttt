@@ -21242,8 +21242,8 @@ const baselines = {
     },
     'mismatchedExplicitTypeParameterAndArgumentType': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mismatchedGenericArguments1': {
         errors: true,
@@ -30303,7 +30303,7 @@ const baselines = {
     'thisExpressionInCallExpressionWithTypeArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisExpressionInIndexExpression': {
         errors: true,

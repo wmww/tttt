@@ -1678,6 +1678,10 @@ static Resolution resolve_with_signatures(
                 if (i == 0 || params > most) most = params, best = i;
             }
             Candidate candidate = { .sig = signatures[best], .mapper = explicit_type_arguments(me, signatures[best], info) };
+            // (The arguments are checked against it: an arrow's parameters get its types)
+            ParamShape shape = call_param_shape(me, info, candidate.sig, candidate.mapper);
+            check_args(me, &shape, args, false);
+            free(shape.types);
             ret.ret = candidate_return_type(me, &candidate);
         } else {
             Ty const** return_types = malloc(sizeof(Ty const*) * count);
