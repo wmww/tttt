@@ -1408,21 +1408,20 @@ static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
     return cstr_from_sv(atom_sv(sig->params[index].name));
 }
 
-// The parameters from `i` on as one type (tsc's getRestTypeAtPosition: a rest parameter there as it is, else the tuple
-// of them), any if that's an array of any (getRestOrAnyTypeAtPosition)
-[[gnu::noinline]] static Ty const* rest_or_any_type_at(Checker* me, Signature const* sig, u32 pos) {
-    // tsc's getEffectiveRestType: a rest parameter that isn't a tuple, else what the tuple has from its first rest or
-    // variadic element on (null if it has none)
+// tsc's getEffectiveRestType: a rest parameter that isn't a tuple (any as any[]), else what the tuple has from its first
+// rest or variadic element on (`...X[]` is X[], `...T` is T), null if it has none
+static Ty const* effective_rest_type(Checker* me, Signature const* sig) {
     Ty const* rest_param = sig->param_count && sig->params[sig->param_count - 1].rest ? sig->params[sig->param_count - 1].type : nullptr;
-    TupleShape const* rest_shape = rest_param ? ty_tuple_shape(rest_param) : nullptr;
-    Ty const* effective = rest_param && !rest_shape ? rest_param : nullptr;
+    if (!rest_param) return nullptr;
+    TupleShape const* rest_shape = ty_tuple_shape(rest_param);
+    Ty const* effective = rest_shape ? nullptr : rest_param;
     if (rest_shape) {
         u32 first = 0;
         while (first < rest_shape->arity && !(rest_shape->flags[first] & TUPLE_ELEMENT_REST)) first++;
         if (first < rest_shape->arity) {
             TyList elements = ty_reference_args(me, rest_param);
             if (first + 1 == rest_shape->arity) {
-                effective = elements.data[first]; // `...X[]` is X[], `...T` is T
+                effective = elements.data[first];
             } else {
                 Ty const** parts = arena_new_n(&my arena, Ty const*, rest_shape->arity - first);
                 for (u32 k = first; k < rest_shape->arity; k++) parts[k - first] = elements.data[k];
@@ -1432,6 +1431,22 @@ static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
         }
     }
     if (effective && (effective->flags & TYF_ANY)) effective = ty_array(me, ty_intrinsic(me, TY_ANY), false);
+    return effective;
+}
+
+// tsc's getNonArrayRestType
+static Ty const* non_array_effective_rest(Checker* me, Signature const* sig) {
+    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
+    Ty const* rest = effective_rest_type(me, sig);
+    return rest && !ty_is_array(me, rest) && !(rest->flags & TYF_ANY) ? rest : nullptr;
+}
+
+// The parameters from `i` on as one type (tsc's getRestTypeAtPosition: a rest parameter there as it is, else the tuple
+// of them), any if that's an array of any (getRestOrAnyTypeAtPosition)
+[[gnu::noinline]] static Ty const* rest_or_any_type_at(Checker* me, Signature const* sig, u32 pos) {
+    Ty const* rest_param = sig->param_count && sig->params[sig->param_count - 1].rest ? sig->params[sig->param_count - 1].type : nullptr;
+    TupleShape const* rest_shape = rest_param ? ty_tuple_shape(rest_param) : nullptr;
+    Ty const* effective = effective_rest_type(me, sig);
     u32 count = ty_signature_param_count(sig);
     Ty const* ret;
     if (effective && pos + 1 >= count) {
@@ -1517,11 +1532,9 @@ static Ternary compare_signatures(
     u32 count = source_count > target_count ? source_count : target_count;
     // With a rest parameter that isn't an array on either side, the positions both have, the last of them relating
     // what's left of each as a whole (tsc's compareSignaturesRelated: restIndex, getRestOrAnyTypeAtPosition)
-    // (Only for a rest that isn't a tuple either: tsc's getEffectiveRestType of a tuple is its rest element's array.
-    // HACK: a variadic tuple (`[a, ...T]`) should count too, it still relates position by position here)
-    Ty const* whole_rest = non_array_rest_type(me, source);
-    if (!whole_rest || ty_tuple_shape(whole_rest)) whole_rest = non_array_rest_type(me, target);
-    if (whole_rest && ty_tuple_shape(whole_rest)) whole_rest = nullptr;
+    // (tsc's getNonArrayRestType: the effective rest, `T` of `...args: [a, ...T]`, isn't an array)
+    Ty const* whole_rest = non_array_effective_rest(me, source);
+    if (!whole_rest) whole_rest = non_array_effective_rest(me, target);
     if (whole_rest) count = source_count < target_count ? source_count : target_count;
     for (u32 i = 0; i < count; i++) {
         // (A position past a rest `[]` has no type: tsc's tryGetTypeAtPosition)

@@ -311,9 +311,6 @@ src` finds the code-side markers; every significant one has an entry here.
 - `ty_unresolved`: unresolved type names are intrinsics with `TYF_ANY | TYF_ERROR` interned by name.
 
 ## Relations (`ty/relate.c`)
-- `compare_signatures()` relates the rest of both parameter lists as a whole (tsc's restIndex) only when a non-array
-  rest parameter isn't a tuple type at all; a variadic tuple rest (`...args: [a, ...T]`, whose getEffectiveRestType is
-  `T`) still goes position by position.
 - relate.c sits at GCC's `inline-unit-growth` limit: code added anywhere in it can cost a hot inlining elsewhere
   (`find_prop` into `props_related_impl`, `global_type` into `apparent_type`: +0.4% instructions on vue from a
   never-executed loop). The reporting helpers (`report_line`, `display_for_report`...) are `[[gnu::cold]]` so the
