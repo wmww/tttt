@@ -767,8 +767,10 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `scope_add_expandos()` runs in `block_add_names()`, so nested top-level blocks write expandos into file-level symbols
   from the resolve walk, and `scope_add_this_property()` writes `Symbol.members` from it: should be a per-file list
   merged after the walks. Only expression statements and `var` initializers are scanned (tsc: every binary expression).
-- Constructor-declared `this.x` is the union of the constructor's assignments (not getFlowTypeInConstructor); reads
-  inside the constructor aren't auto-typed. `F.prototype.m = function` and `this.m = v` are one member (tsc: two).
+- Constructor-declared `this.x` (class constructors and constructor functions) has the flow type at the constructor's
+  end, but reads inside a constructor function aren't auto-typed (only a class constructor's: `constructor_declared_read()`).
+  Every non-arrow, non-method JS function gets a return flow node for it (function_impl.c: it may be a constructor).
+  `F.prototype.m = function` and `this.m = v` are one member (tsc: two).
 - A JS constructor function is its anonymous function type plus a construct signature (`resolve_members()`), with
   `typeof F` special-cased in the printer (`ty_js_constructor_class()`), not a class static type.
 - Other JS gates: `scope_add_port()` has no `export as namespace` alias in JS.

@@ -321,9 +321,6 @@ JS items that were in triage.md (statuses checked then); stage 4, the "Stage 3 l
 - `expandoFunctionSymbolProperty(Js)`: `f[symb] = ...` with a unique symbol key is a late-bound expando (tsc's
   hasDynamicName -> addLateBoundAssignmentDeclarationToSymbol); only static names are expandos so far (spurious TS2741).
   webpack's cleverMerge.js `newFn[DYNAMIC_INFO] = [fn, second]` on a local arrow (TS2322 against DynamicFunction).
-- JS constructor functions (`function F() { this.x = v }`) have no return flow node (function_impl.c makes one for
-  class constructors only, tsc's binder for every JS function), so their `this.x` members are still the union of the
-  constructor's assignments (lower.c's flow_type_in_constructor covers class constructors).
 - JSDoc attachment: tsc attaches a comment on the same line as the previous token only to parameters, type
   parameters, function/arrow expressions, parenthesized expressions, variable declarations and export specifiers
   (getJSDocCommentRanges: trailing + leading comments), not to statements; `jsdoc_before()` attaches any comment that
