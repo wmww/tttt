@@ -1745,11 +1745,12 @@ static Ty const* binary_result(Checker* me, Ty const* left, BinaryOp op, Ty cons
             bool right_string = extends_strict_nulls(me, right, TY_STRING);
             if (left_string || right_string) {
                 bool known = (left_string && !(left->flags & TYF_ANY)) || (right_string && !(right->flags & TYF_ANY));
-                return known ? ty_intrinsic(me, TY_STRING) : any_type(me);
-            }
-            if (extends_strict_nulls(me, left, TY_NUMBER) && extends_strict_nulls(me, right, TY_NUMBER)) {
+                if (known) return ty_intrinsic(me, TY_STRING);
+            } else if (extends_strict_nulls(me, left, TY_NUMBER) && extends_strict_nulls(me, right, TY_NUMBER)) {
                 return ty_intrinsic(me, TY_NUMBER);
             }
+            // (tsc: the error type if either side is)
+            if ((left->flags | right->flags) & TYF_ERROR) return ty_intrinsic(me, TY_ERROR);
             return any_type(me);
         }
 
