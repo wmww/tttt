@@ -506,10 +506,9 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
     Error* error = report_unassignable(me, HEAD_TYPE, source_ret, target_ret, body->outer_span, errs);
     if (!error) return true;
     if (target->kind != TY_UNION) {
+        // (Also in a lib file: tsc's elaborateArrowFunction doesn't check hasNoDefaultLib)
         Span decl = type_decl_span(me, target);
-        if (!in_lib(decl)) {
-            error_add_related_d(error, decl, 6502, "The expected type comes from the return type of this signature.");
-        }
+        error_add_related_d(error, decl, 6502, "The expected type comes from the return type of this signature.");
     }
     // Would it fit as an async function?
     Symbol const* promise_symbol = function->is_async ? nullptr :

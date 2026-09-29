@@ -24336,7 +24336,7 @@ const baselines = {
         types: true,
     },
     'objectGroupBy': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
