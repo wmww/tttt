@@ -75,35 +75,11 @@ static bool same_symbol(Checker* me, Symbol const* a, Symbol const* b) {
     return binder_redirect(binder, a) == binder_redirect(binder, b);
 }
 
-// A JavaScript constructor function assigned to a variable or property is a class of the function expression's own
-// symbol in tsc: named by the function expression (its name, else the name it's assigned to: getNameOfDeclaration's
-// getAssignedName), never qualified. False for any other symbol
-static bool js_assigned_class_name(Symbol const* symbol, csview* name) {
-    if (!(symbol->flags & SYMBOL_CLASS) || symbol_find_decl(symbol, SYMBOL_DECL_CLASS) || symbol_find_decl(symbol, SYMBOL_DECL_FUNCTION)) {
-        return false;
-    }
-    Expr const* value = nullptr;
-    SymbolDecl const* variable = symbol_find_decl(symbol, SYMBOL_DECL_VARIABLE);
-    SymbolDecl const* assignment = symbol_find_decl(symbol, SYMBOL_DECL_ASSIGNMENT);
-    if (variable) {
-        Binding const* binding = variable->node;
-        if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
-        value = &((InitializedBinding const*)binding)->value;
-    } else if (assignment) {
-        value = assignment->node;
-    }
-    if (!value || value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span)) return false;
-    SourceFile const* file = value->inner_span.source;
-    if (!file || !file->is_js) return false;
-    *name = span_valid(value->function->name) ? value->function->name.sv : ty_symbol_display_name(symbol).sv;
-    return true;
-}
-
 // With TyDisplay.enclosing, qualified as far as needed from there (symbol_chain.h), else bare or fully qualified (error
 // messages)
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     csview js_name;
-    if (js_assigned_class_name(symbol, &js_name)) {
+    if (ty_js_assigned_class_name(symbol, &js_name)) {
         out(d, js_name);
         return;
     }
@@ -1946,7 +1922,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             if (js_class) {
                 out_lit(d, "typeof ");
                 csview js_name;
-                out(d, js_assigned_class_name(js_class, &js_name) ? js_name : js_class->name);
+                out(d, ty_js_assigned_class_name(js_class, &js_name) ? js_name : js_class->name);
                 break;
             }
             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };

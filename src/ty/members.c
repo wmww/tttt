@@ -2567,6 +2567,30 @@ static void clone_type_params(Checker* me, Signature* sig) {
     sig->type_params = (TyList){ .data = fresh, .len = params.len };
 }
 
+// A JavaScript constructor function assigned to a variable or property is a class of the function expression's own
+// symbol in tsc: named by the function expression (its name, else the name it's assigned to: getNameOfDeclaration's
+// getAssignedName), never qualified. False for any other symbol
+bool ty_js_assigned_class_name(Symbol const* symbol, csview* name) {
+    if (!(symbol->flags & SYMBOL_CLASS) || symbol_find_decl(symbol, SYMBOL_DECL_CLASS) || symbol_find_decl(symbol, SYMBOL_DECL_FUNCTION)) {
+        return false;
+    }
+    Expr const* value = nullptr;
+    SymbolDecl const* variable = symbol_find_decl(symbol, SYMBOL_DECL_VARIABLE);
+    SymbolDecl const* assignment = symbol_find_decl(symbol, SYMBOL_DECL_ASSIGNMENT);
+    if (variable) {
+        Binding const* binding = variable->node;
+        if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
+        value = &((InitializedBinding const*)binding)->value;
+    } else if (assignment) {
+        value = assignment->node;
+    }
+    if (!value || value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span)) return false;
+    SourceFile const* file = value->inner_span.source;
+    if (!file || !file->is_js) return false;
+    *name = span_valid(value->function->name) ? value->function->name.sv : ty_symbol_display_name(symbol).sv;
+    return true;
+}
+
 Symbol const* ty_js_constructor_class(FunctionImpl const* function) {
     if (function->is_type || span_valid(function->arrow_span) || function->this_literal) return nullptr;
     Symbol const* symbol = function->class_symbol ? function->class_symbol : function->is_expression ? nullptr : function->symbol;

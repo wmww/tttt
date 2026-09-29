@@ -1279,11 +1279,18 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         Expr const* init = variable ? &((InitializedBinding const*)variable->node)->value : nullptr;
         // (A function expression assigned to a property, `exports.F = function () {}`, is declared by itself)
         bool own = my this_function->class_symbol == js_class && my this_function->is_expression;
+        // (Assigned to a property, `ns.F = function () {}`, the class is the function expression, named by itself or
+        // the property: from its prototype's methods too)
+        SymbolDecl const* assignment = variable ? nullptr : symbol_find_decl(js_class, SYMBOL_DECL_ASSIGNMENT);
+        Expr const* assigned = assignment ? assignment->node : nullptr;
+        csview class_name;
+        bool assigned_class = assigned && assigned->tag == EXPR_FUNCTION && ty_js_assigned_class_name(js_class, &class_name);
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = init ? vec_span_single(init->outer_span) :
+                assigned_class ? vec_span_single(assigned->function->full_span) :
                 own ? vec_span_single(my this_function->full_span) : declaration_get_spans(js_class),
             .span = my name,
-            .text = symbol_text(ctx, js_class),
+            .text = assigned_class ? cstr_from_sv(class_name) : symbol_text(ctx, js_class),
         });
         return;
     }
