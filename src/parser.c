@@ -4635,6 +4635,10 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
                 function.ret = jsdoc_take_type(tag, &function.ret_span);
                 function.ret.from_jsdoc = false;
                 function.ret_explicit = true;
+                if (tag->predicate) {
+                    function.predicate = tag->predicate;
+                    tag->predicate = nullptr;
+                }
             }
             continue;
         }

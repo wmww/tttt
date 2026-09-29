@@ -3006,8 +3006,12 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
             predicate->type = ty_from_node(me, &node->type, ctx);
         }
         sig->predicate = predicate;
-    } else if (sig->function && !sig->function->ret_explicit && sig->param_count) {
-        sig->predicate = ty_infer_type_predicate(me, sig->function);
+    } else if (sig->function && !sig->function->ret_explicit) {
+        // A JavaScript function typed by `@type {F}`: the predicate of F's signature (tsc's getTypePredicateOfSignature
+        // with getSignatureOfTypeTag), else one inferred from the body
+        Signature const* tagged = jsdoc_tag_single_signature(me, sig->function);
+        if (tagged && tagged != sig) sig->predicate = signature_predicate(me, tagged);
+        if (!sig->predicate && sig->param_count) sig->predicate = ty_infer_type_predicate(me, sig->function);
     }
     return sig->predicate;
 }

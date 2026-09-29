@@ -51088,7 +51088,7 @@ const baselines = {
     'assertionsAndNonReturningFunctions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callOfPropertylessConstructorFunction': {
         errors: true,
@@ -52581,9 +52581,9 @@ const baselines = {
         types: true,
     },
     'returnTagTypeGuard': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'seeTag1': {
         errors: true,
