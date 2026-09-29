@@ -40997,23 +40997,23 @@ const baselines = {
     },
     'computedPropertyNames38_ES5': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNames38_ES6': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNames39_ES5': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNames39_ES6': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNames3_ES5': {
         errors: true,
@@ -41317,23 +41317,23 @@ const baselines = {
     },
     'computedPropertyNamesDeclarationEmit1_ES5': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNamesDeclarationEmit1_ES6': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNamesDeclarationEmit2_ES5': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNamesDeclarationEmit2_ES6': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNamesDeclarationEmit3_ES5': {
         errors: true,

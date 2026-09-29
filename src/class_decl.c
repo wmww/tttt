@@ -442,7 +442,12 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
             );
         }
         if (i->tag == CLASS_ITEM_METHOD && i->method.accessor) {
+            // (A computed name that isn't a literal or an entity name, `["" + ""]`, is a symbol of its own: tsc's
+            // isLateBindableName)
+            Expr const* own_key = i->method.computed_key;
+            bool bindable = !own_key || own_key->tag == EXPR_LITERAL || expr_is_entity_name(own_key);
             for_each (other, vec_class_item, &my items) {
+                if (!bindable && other != i) continue;
                 if (other->tag == CLASS_ITEM_METHOD &&
                     other->method.accessor &&
                     other->method.is_static == i->method.is_static &&
