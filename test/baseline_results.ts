@@ -27626,7 +27626,7 @@ const baselines = {
         types: true,
     },
     'restInvalidArgumentType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
