@@ -52,6 +52,11 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 - Reverse mapped types refuse generic intersection sources (`T & {...}`), which tsc accepts (tttt's are eager).
 
 ## Relations, instantiation, reduction
+- compareSignaturesRelated's restIndex (getRestOrAnyTypeAtPosition when either side has a non-array rest) isn't
+  ported: `(a, b) => void` against `(...args: readonly [1, "1"] | readonly [2, "2"]) => any` compares per position
+  (contextualTupleTypeParameterReadonly). A straight port (`rest_or_any_type_at` in compare_signatures) broke 5 tests
+  (genericFunctionInference1, restTuplesFromContextualTypes...): generic rest `T` against a params tuple needs care.
+  restTuplesFromContextualTypes line 56 (`(a, b, ...x) => {}` against `(x: number, ...args: T)`) is related.
 - Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
   `g2<T extends unknown[]>(x: [...{ [K in keyof T]: S2<T[K]> }])` widens `g2(['a'])` to `[string]`, tsc `["a"]` (its
   forConstraint constraint of `S2<T[number]>` keeps the true branch with T's implied `string`).

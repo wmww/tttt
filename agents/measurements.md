@@ -10,6 +10,13 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Triage (2026-09-29, todo entry 10, 82c3cac9)
+Suite **12040 / 13540** (errors 12730, symbols 13003, types 12768; 0 lost), JS 898 / 1049, `./failstats.py` errors
+component fails in 810 tests, checker log_error output empty. Corpora unchanged (webpack 6, xstate 19, the rest 0).
+Instructions (same setup as below) types session end -> triage end: tsc 5.181 -> 5.212 G (+0.6%), type-fest 3.467,
+valibot 5.615, react 2.089, nest 1.259 (+1.0%), webpack 4.025 (+1.0%), zod 4.635 (+0.8%), xstate 2.970 (+0.6%), after
+gating the escaped-name cooking and the JS TS2565 check (they had cost +1.9% on tsc).
+
 ## Suite (2026-09-29, types session, todo entry 9, bc2752f2)
 **11962 / 13540** full pass (errors 12681, symbols 12952, types 12733; session start 11472, 0 components lost). The
 types component fails in 807 tests (1368 at the start). `./displaydiff.py`, tests (errors pass, types fail) 467 (73

@@ -34,6 +34,8 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 9. ~~Types component~~ done (four Opus sub-agents by first differing line kind): suite 11472 -> 11962 (0 lost), types
    component failures 1368 -> 807, JS 885 -> 892, corpora unchanged, instructions +0.3-1.2%. Plan 35 "Queue (after
    stage 3)" has the leftovers; no second types session is needed before the insights.
-10. **Triage**, including a pass over hacks.md (811 lines: merge, delete what plans 37/38 made stale) and the two
-    log_error tests (`Error added with invalid span`, TS2503/TS2304 on `_`).
+10. ~~Triage~~ done (three Opus sub-agents + a hacks.md one): suite 11962 -> 12040 (0 lost), JS 892 -> 898,
+    log_error output empty, hacks.md 985 -> 523 lines, corpora unchanged (webpack 6, xstate 19, the rest 0),
+    instructions +0.6% on tsc's compiler after gating two regressions. New: plan 39 (resolution stack, a planning
+    stub); triage.md "For the insights session" lists the plan-sized hacks.
 11. **Insights.**

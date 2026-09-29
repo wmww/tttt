@@ -18,7 +18,10 @@ tttt has separate in-flight states that each only flag the one that was re-enter
 Missing TS7022/TS2502/TS7023 at the outer declaration(s): for-of34, for-of35 (`v` when `next()`'s return type is the
 cycle), circularTypeofWithVarOrFunc (TS2502 on `var x: Alias` whose alias is `typeof x`, TS2577), circularGetAccessor
 (`typeof this.foo` in a declared class goes through the accessor LazyType, not the Prop), implicitAnyFromCircularInference,
-recursiveTypesWithTypeof (also spurious TS2403 from the mismatch), circularReferenceInReturnType.
+recursiveTypesWithTypeof (also spurious TS2403 from the mismatch), circularReferenceInReturnType,
+thisConditionalOnMethodReturnOfGenericInstance (a signature's return type requested while it resolves is errorType in
+tsc: spurious TS2417). zod's recursive getter schemas get TS7023 in tttt when a getter's return type is forced early
+(tsc: none), so getter circularity differs too.
 TS7023 tsc gets while printing a type whose return type is in flight: thisInObjectLiterals,
 accessorInferredReturnTypeErrorInReturnStatement, trivialSubtypeReductionNoStructuralCheck,
 checkingObjectWithThisInNamePositionNoCrash, conflictingDeclarationsImportFromNamespace1/2 (tttt's error printing

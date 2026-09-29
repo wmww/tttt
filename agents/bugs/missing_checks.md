@@ -81,7 +81,11 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   createPromiseReturnType, ie only when something asks for an async function's *inferred* return type, which is lazy
   (asyncFunctionNoReturnType reports it, asyncFunctionWithForStatementNoInitializer doesn't); reporting it for every
   unannotated async function was tried and lost 6 tests. Needs a "return type was inferred" signal that matches tsc's
-  demand, not tttt's (tttt infers more eagerly). TS2802 (iteration needs `downlevelIteration`), TS1056 (accessors below
+  demand, not tttt's (tttt infers more eagerly). Computing function expressions' return types when checked (triage 2026-09-29,
+  wt-c bf163ec4/d4805f83, gains destructuringControlFlowNoCrash) was reverted: with getters included it put 6 TS7023
+  in zod's recursive getter schemas (tttt's getter circularity differs from tsc's, plan 39), and eager return types
+  aren't tsc's model anyway. operationsAvailableOnPromisedType also wants TS2773 ("Did you forget to use 'await'?") on
+  operators, calls, property access and iteration. TS2802 (iteration needs `downlevelIteration`), TS1056 (accessors below
   ES5), TS2659 (`super` in an object literal below ES2015), TS2496's other places (`arguments` in ES5 arrows), TS2815
   (`arguments` of an outer function in a field initializer, or in an expression statement directly in a static block:
   tsc's isInPropertyInitializerOrClassStaticBlock; classStaticBlock6, which also wants TS2662 for `arguments` there). Await grammar leftovers: `await` in a class field initializer inside an

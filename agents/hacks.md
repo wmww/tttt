@@ -343,10 +343,17 @@ src` finds the code-side markers; every significant one has an entry here.
   approximation between two spellings.
 - Cache keys are plain (source id, target id). `RelationState.overflow` (100 deep) reports TS2589 (HACK; tsc TS2321).
 - `this` types: `Prop.thisless` follows isThisless; a reference with a this-argument relates structurally.
-- `check_assignable` (check.c HACK): source `any` passes even to `never`. Letting only the error type through cost 25
-  tests (narrowing/exhaustiveness give any where tsc has never).
+- `check_assignable` (check.c HACK): source `any` passes even to `never` (not for arguments any more). Letting only the
+  error type through cost 25-30 tests (narrowing/exhaustiveness give any where tsc has never).
+- Alias variance (`in out` annotations): the reporting pass falls back to the interface's own variances on an
+  invariant failure only for two references to the same target; other shapes keep the old path. The null-base TS2417
+  check takes the first `extends` of the first merged interface, not getBaseTypes.
+- `TY_INDEXED`'s IncludeUndefined (noUncheckedIndexedAccess) is dropped wherever an indexed access is rebuilt from its
+  parts (`simplified_parts`, `ty_actual_type_variable`).
 
 ## Type core (`src/ty/`)
+- `UnaryOpExpr.no_type_params_in_scope` approximates getResolvedSignature's instantiation for `yield` (TS7057): only a
+  bare type parameter counts as a call's, a contextual `T[]` is taken as is.
 - Union origins (`Ty.composite.origin`): not instantiated, dropped by union-mapping helpers (plan 37 B stage 2).
   `dedupe_unions` merges same-member unions with different origins in intersections (display only).
 - `ty_realias`: a renamed object type is a second `Ty` (members resolved twice); renamed deferred types are copies. No
