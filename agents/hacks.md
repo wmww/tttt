@@ -354,10 +354,6 @@ src` finds the code-side markers; every significant one has an entry here.
   against a Flatten-like `{ [K in keyof A | keyof B]: (A & B)[K] }`, `[...Foo<T>]` for a lone spread argument (tsc's
   getSpreadArgumentType has `Foo<T>`, restTypeRetainsMappyness). `write_constraint_of_indexed` (HACK) lacks
   NoIndexSignatures. A TY_KEYOF target over a generic mapped type (HACK) lacks getApparentMappedTypeKeys.
-- Conditional targets: skipFalse yes, skipTrue no (HACK): `ty_definitely_unassignable`'s wildcard instantiation is
-  exponential on zod's union-to-tuple types because shared subterms are re-instantiated under fresh mappers (tsc caches
-  by mapped outer type arguments). Fix the sharing, add skipTrue, then drop `first_unfit_argument`'s HACK (no `[]`
-  check for a missing generic rest; xstate's `ConditionalRequired`).
 - `apparent_type`: indexed/conditional without base constraint stays itself (tsc: `{}`); an intersection member whose
   apparent type is any/unknown stays itself (HACK) because `base_constraint()` of a conditional keeps `any` branches
   (webpack's `Reflect.get(...) & any[]`). Fix base_constraint().

@@ -421,7 +421,8 @@ static bool is_unknown_like_union(Checker* me, Ty const* t) {
 static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s, Ty const* t) {
     u32 sf = s->flags;
     u32 tf = t->flags;
-    if ((tf & TYF_ANY) || (sf & TYF_NEVER)) return true;
+    // (The wildcard of a permissive instantiation relates to everything, never too: tsc's isSimpleTypeRelatedTo)
+    if ((tf & TYF_ANY) || (sf & TYF_NEVER) || s == ty_intrinsic(me, TY_WILDCARD)) return true;
     // (any isn't a strict subtype of unknown, tsc's isSimpleTypeRelatedTo)
     if ((tf & TYF_UNKNOWN) && !(st->relation == TY_RELATION_STRICT_SUBTYPE && (sf & TYF_ANY))) return true;
     if (tf & TYF_NEVER) return false;
@@ -4020,16 +4021,17 @@ static Ternary structured_related_members(
             if (source_root != target_root && !ty_conditional_own_infers(me, target_root).len &&
                 !ty_conditional_distribution_dependent(me, target)
             ) {
-                // (The false branch doesn't count when it can't be picked: tsc's skipFalse, asked only when it isn't
-                // related anyway. HACK: tsc's skipTrue, the true branch when the permissive instantiations aren't
-                // assignable, is left out: instantiating the sides with wildcards is exponential on zod's
-                // union-to-tuple types, whose instantiations tttt doesn't share)
+                // A branch that can't be picked doesn't count: not the true one when not even the permissive
+                // instantiations (type variables the wildcard) are assignable (tsc's skipTrue), not the false one when
+                // the restrictive ones are (skipFalse, asked only when the false branch isn't related anyway)
                 Ty const* check = target->conditional.check;
                 Ty const* extends = target->conditional.extends;
-                Ternary related = is_related_to(me, st, source, ty_conditional_branch(me, target, true), false);
+                bool skip_true = ty_definitely_unassignable(me, check, extends);
+                Ternary related = skip_true ? TERNARY_TRUE :
+                    is_related_to(me, st, source, ty_conditional_branch(me, target, true), false);
                 if (related) {
                     Ternary related_false = is_related_to(me, st, source, ty_conditional_branch(me, target, false), false);
-                    if (!related_false && ty_definitely_assignable(me, check, extends)) related_false = TERNARY_TRUE;
+                    if (!related_false && !skip_true && ty_definitely_assignable(me, check, extends)) related_false = TERNARY_TRUE;
                     related &= related_false;
                 }
                 if (related) return related;

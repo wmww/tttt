@@ -44,3 +44,6 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
   move, but a result computed while something it reads is still in flight (constraints in
   `remove_constrained_type_variables`, members for empty-object checks) is pinned. If an order-dependent union or
   narrowing bug shows up, disable these first.
+- (skipTrue session) An array literal `[]` whose contextual type is a deferred conditional type of tuple branches
+  (`const x: ConditionalRequired<[options?: O], IsNotNever<K<T>>> = []`) is `never[]`, not `[]`, so TS2322; tsc takes
+  the tuple-likeness from the conditional's constraint (both branches) and reports nothing.

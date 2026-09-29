@@ -1170,12 +1170,8 @@ static i32 first_unfit_argument_skipping(
         if (i >= shape->count && shape->rest_variadic) break;
     }
     // No argument for a rest parameter that isn't an array: it still gets `[]` (tsc's checkApplicableSignature with
-    // getNonArrayRestType), reported at the call (the index past the arguments). HACK: not for a generic one, whose
-    // conditional types need tsc's skipTrue to take `[]` (xstate's `...[options]: ConditionalRequired<...>`), see
-    // hacks.md
-    if (shape->rest_variadic && args->len <= shape->count && args->spread_index < 0 && !args->incomplete &&
-        !(shape->rest_variadic->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
-    ) {
+    // getNonArrayRestType), reported at the call (the index past the arguments)
+    if (shape->rest_variadic && args->len <= shape->count && args->spread_index < 0 && !args->incomplete) {
         Ty const* source = rest_args_tuple(me, args, args->len, false, false);
         if (!ty_is_related(me, source, shape->rest_variadic, relation)) {
             *arg_type = source;
