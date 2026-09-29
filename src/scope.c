@@ -3556,6 +3556,9 @@ static void add_expando_member(
             kind == ASSIGNMENT_DECL_PROPERTY ? ASSIGNMENT_DECL_PROTOTYPE_PROPERTY : kind);
         return;
     }
+    // A private name is no expando (tsc's getAssignmentDeclarationPropertyAccessKind: isBindableStaticNameExpression
+    // of the target, only a prototype property doesn't ask)
+    if (name.sv.size && name.sv.buf[0] == '#') return;
     // `F.prototype = { ... }` declares prototype members in JavaScript and nothing elsewhere (tsc's
     // getAssignmentDeclarationKind: only the Property kind outside JavaScript)
     if (span_equals(name, "prototype") && right->tag == EXPR_OBJECT && !(my file && my file->is_js)) return;

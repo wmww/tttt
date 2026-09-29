@@ -102,6 +102,11 @@ static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
         ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
             .span = left->property->prop.outer_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
         };
+    } else if (name.sv.size && name.sv.buf[0] == '#') {
+        // (A private name outside its class has no symbol)
+        ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+            .span = left->property->prop.outer_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
+        };
     } else {
         add_symbol_override(ctx, left->property->prop.outer_span, member);
     }

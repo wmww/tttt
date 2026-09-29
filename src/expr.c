@@ -4012,7 +4012,8 @@ bool expr_is_module_exports(Expr const* me) {
 CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret) {
     if (expr_is_module_exports(left)) return COMMONJS_TARGET_MODULE_EXPORTS;
     Span name = expr_static_property_name(left);
-    if (!span_valid(name)) return COMMONJS_TARGET_NONE;
+    // (`exports.#x` is no export: tsc's isBindableStaticAccessExpression wants an identifier)
+    if (!span_valid(name) || (name.sv.size && name.sv.buf[0] == '#')) return COMMONJS_TARGET_NONE;
     Expr const* object = &left->property->expr;
     if (!expr_is_plain_identifier(object, "exports") && !expr_is_module_exports(object)) return COMMONJS_TARGET_NONE;
     if (name_ret) *name_ret = name;
