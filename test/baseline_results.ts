@@ -9601,7 +9601,7 @@ const baselines = {
         types: true,
     },
     'destructuringControlFlowNoCrash': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
