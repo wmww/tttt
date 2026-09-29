@@ -3917,6 +3917,12 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             AssignmentDeclKind kind = ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
             Expr* assigned_to = (Expr*)this_function->this_assigned_object;
             Expr const* constructor = assigned_to ? expr_prototype_object(assigned_to) : nullptr;
+            // (Not through an import: tsc's lookupSymbolForPropertyAccess finds the alias, which has no valueDeclaration)
+            Expr const* root = constructor;
+            while (root && root->tag == EXPR_PROPERTY) root = &root->property->expr;
+            if (root && root->tag == EXPR_IDENTIFIER && root->identifier.symbol && (root->identifier.symbol->flags & SYMBOL_ALIAS)) {
+                return;
+            }
             if (constructor) {
                 class_symbol = js_constructor_symbol((Symbol*)expr_entity_name_symbol(constructor));
                 kind = ASSIGNMENT_DECL_THIS_IN_METHOD;
