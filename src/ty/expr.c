@@ -2829,17 +2829,29 @@ static void literal_members_push(LiteralMembers* members, LiteralMember member) 
 
 // tsc's getApparentTypeOfContextualType for an object literal: type variables (of a union too) as their constraints,
 // which the literal's members then discriminate
+// (tsc's getApparentTypeOfContextualType maps getApparentType over a union: a primitive member is its wrapper, whose
+// properties say something about the literal's, `string | { normalize?: F }` both String's normalize and F)
+static bool is_wrapped_primitive(Ty const* ty) {
+    return (ty->flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
+        TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE)) && ty->kind != TY_UNION;
+}
+
 static Ty const* apparent_literal_context(Checker* me, Ty const* contextual) {
     if (is_contextual_type_variable(contextual)) {
         Ty const* apparent = ty_apparent_type(me, contextual);
         return apparent->kind == TY_INTRINSIC && (apparent->flags & TYF_UNKNOWN) ? contextual : apparent;
     }
-    if (contextual->kind != TY_UNION || !(contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return contextual;
+    if (contextual->kind != TY_UNION || (contextual->flags & TYF_BOOLEAN)) return contextual;
+    bool primitive = false;
+    for (u32 i = 0; i < contextual->composite.types.len && !primitive; i++) {
+        primitive = is_wrapped_primitive(contextual->composite.types.data[i]);
+    }
+    if (!primitive && !(contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return contextual;
     TyBuf parts = {0};
     bool changed = false;
     for (u32 i = 0; i < contextual->composite.types.len; i++) {
         Ty const* part = contextual->composite.types.data[i];
-        Ty const* apparent = apparent_literal_context(me, part);
+        Ty const* apparent = is_wrapped_primitive(part) ? ty_apparent_type(me, part) : apparent_literal_context(me, part);
         changed |= apparent != part;
         ty_buf_push(&parts, apparent);
     }

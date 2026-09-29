@@ -6096,9 +6096,9 @@ const baselines = {
         types: true,
     },
     'contextualOverloadListFromUnionWithPrimitiveNoImplicitAny': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'contextualPropertyOfGenericFilteringMappedType': {
         errors: true,
