@@ -205,10 +205,7 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
         case LAZY_STATE_DONE: return links->declared_type;
         case LAZY_STATE_IN_FLIGHT:
             // tsc's pushTypeResolution: every alias from this one on is part of the cycle, and fails when it finishes
-            for (u32 i = my aliases_in_flight_len; i-- > 0;) {
-                symbol_links(me, my aliases_in_flight[i])->circular = true;
-                if (my aliases_in_flight[i] == symbol) break;
-            }
+            ty_resolving_cycle(me, RESOLVING_ALIAS, symbol);
             return ty_intrinsic(me, TY_ERROR);
         case LAZY_STATE_NOT_STARTED: break;
     }
@@ -246,14 +243,9 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
                     compiler_options()->strict_builtin_iterator_return;
                 ret = ty_intrinsic(me, undefined ? TY_UNDEFINED : TY_ANY);
             } else {
-                if (my aliases_in_flight_len == my aliases_in_flight_cap) {
-                    my aliases_in_flight_cap = my aliases_in_flight_cap ? my aliases_in_flight_cap * 2 : 16;
-                    my aliases_in_flight = realloc(my aliases_in_flight, sizeof(Symbol const*) * my aliases_in_flight_cap);
-                    panic_if(!my aliases_in_flight, "out of memory");
-                }
-                my aliases_in_flight[my aliases_in_flight_len++] = symbol;
+                ty_resolving_push(me, RESOLVING_ALIAS, symbol);
                 ret = lower(me, body, ctx, symbol, params);
-                my aliases_in_flight_len--;
+                if (ty_resolving_pop(me)) links->circular = true;
                 if (links->circular) {
                     // (An `@enum {T}`'s alias is reported at T: tsc's declaration is the tag, which has no name)
                     Span at = type_decl->jsdoc_enum && type_decl->type.tag == TYPE_IDENTIFIER ?

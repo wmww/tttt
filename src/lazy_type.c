@@ -124,10 +124,16 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     LazyMemo* state = lazy_type_state(me);
 
     if (state->evaluation_started) {
-        // We've already hit this LazyType once, therefore it's self-referential
-        // Circularity is a property of declarations (that is where tsc detects and reports it). An expression on the
-        // way only has to stop a runaway: which of the two is hit first depends on who asks first, and the answer
-        // shouldn't (control flow analysis of a loop re-enters the expressions of the loop body through declarations)
+        // Circularity is a property of declarations (that is where tsc detects and reports it): asked for again while in
+        // flight, a declaration is any, and it and everything resolved since is part of the cycle (tsc's
+        // pushTypeResolution failing, see ty_resolving_push()). What they reach finds out when it finishes
+        if (my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION) {
+            ty_resolving_cycle(current_checker, RESOLVING_DECLARATION, me);
+            return ty_intrinsic(current_checker, TY_CIRCULAR);
+        }
+        // An expression on the way only has to stop a runaway: which of the two is hit first depends on who asks
+        // first, and the answer shouldn't (control flow analysis of a loop re-enters the expressions of the loop body
+        // through declarations). A function's type doesn't depend on its body (tsc's getTypeOfFuncClassEnumModule)
         if (my tag == LAZY_TYPE_EXPR && state->hits < 8) {
             state->hits++;
         } else if (!state->is_self_referential) {
@@ -148,6 +154,8 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     FlowIsolation isolation = {0};
     if (isolate) isolation = ty_flow_isolate(current_checker);
 
+    bool resolving = my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION;
+    if (resolving) ty_resolving_push(current_checker, RESOLVING_DECLARATION, me);
     Ty const* result = nullptr;
     switch (my tag) {
         case LAZY_TYPE_UNINITIALIZED: panic("LazyType is uninitialized");
@@ -179,6 +187,11 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 
     }
     if (isolate) ty_flow_restore(current_checker, isolation);
+    if (resolving && ty_resolving_pop(current_checker)) {
+        // Part of a cycle: any, and the declaration reports it (tsc's reportCircularityError), whatever it evaluated to
+        state->evaluated = ty_intrinsic(current_checker, TY_CIRCULAR);
+        state->done = true;
+    }
 
     if (!state->done) {
         // The calls this function made didn't decide that we're self-referential, result is valid

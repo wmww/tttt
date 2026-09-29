@@ -2667,10 +2667,19 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         case LAZY_STATE_DONE: return prop->type;
         case LAZY_STATE_IN_FLIGHT:
             prop->circular = true;
-            return ty_intrinsic(me, TY_CIRCULAR); // TODO: TS2502 and friends
+            // (An instantiated property isn't resolved on its own: tsc's getTypeOfInstantiatedSymbol asks its target)
+            for (Prop const* p = prop; ; p = p->target) {
+                if (!p->target || p->mapped_type) {
+                    ty_resolving_cycle(me, RESOLVING_PROP, p);
+                    break;
+                }
+            }
+            return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
     }
     prop->type_state = LAZY_STATE_IN_FLIGHT;
+    bool resolving = !prop->target || prop->mapped_type;
+    if (resolving) ty_resolving_push(me, RESOLVING_PROP, prop);
     u32 limit_hits = my instantiation_limit_hits;
     Ty const* type;
     if (prop->flags & (PROP_GETTER | PROP_SETTER) && !prop->target) {
@@ -2705,6 +2714,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     } else {
         type = ty_from_node(me, prop->decl->node, prop->decl->ctx);
     }
+    if (resolving && ty_resolving_pop(me)) prop->circular = true;
     if (prop->circular && prop->mapped_type) {
         // tsc's getTypeOfMappedSymbol when popTypeResolution fails
         prop->type = ty_intrinsic(me, TY_ERROR);

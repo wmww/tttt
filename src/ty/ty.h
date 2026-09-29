@@ -800,10 +800,11 @@ struct Checker {
     u32 instantiation_count;
     struct JsxElement const* jsx_element; // The JSX element being checked (relation errors about its attributes)
     CurrentNode current_node; // See ty_enter_node()
-    // The type aliases being resolved, innermost last (the aliases in tsc's resolutionTargets)
-    Symbol const** aliases_in_flight;
-    u32 aliases_in_flight_len;
-    u32 aliases_in_flight_cap;
+    // What is being resolved, innermost last (tsc's resolutionTargets): see ty_resolving_push()
+    struct Resolving* resolving;
+    u32 resolving_len;
+    u32 resolving_cap;
+    u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
     u32 relation_complexity_hits; // How many relations ran out of their budget (TS2859, counted in the above too)
     // The typecheck walk inside the true branches of conditional types: `A` is `A & X` in `A extends X ? A['k'] : ...`
@@ -1500,6 +1501,31 @@ Ty const* ty_function_return_before_widening(Checker* me, FunctionImpl const* fu
 // see what that call has inferred so far (tsc's getInferenceContext finds the call through the argument)
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function);
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function);
+
+// tsc's pushTypeResolution/popTypeResolution: one stack of what is being resolved (a declaration's type, an inferred
+// return type, a property's type, an alias). When one of them is asked for again while in flight, it and everything
+// pushed after it is part of the cycle: each finds out when it pops and becomes circular (TS7022, TS7023, TS2502...)
+typedef enum ResolvingKind {
+    RESOLVING_DECLARATION, // A LazyType of a declaration
+    RESOLVING_FUNCTION_RETURN,
+    RESOLVING_PROP,
+    RESOLVING_ALIAS,
+} ResolvingKind;
+typedef struct Resolving {
+    void const* key;
+    u32 kind;
+    bool circular;
+} Resolving;
+void ty_resolving_grow(Checker* me);
+static inline void ty_resolving_push(Checker* me, ResolvingKind kind, void const* key) {
+    if (my resolving_len == my resolving_cap) ty_resolving_grow(me);
+    my resolving[my resolving_len++] = (Resolving){ .key = key, .kind = kind };
+}
+// Whether it turned out circular
+static inline bool ty_resolving_pop(Checker* me) {
+    return my resolving[--my resolving_len].circular;
+}
+void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key); // It was asked for while in flight
 
 // Control flow queries (ty/flow.c)
 typedef struct FlowNode FlowNode;

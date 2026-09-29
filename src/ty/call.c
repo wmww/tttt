@@ -1936,7 +1936,21 @@ static void reorder_candidates(Checker* me, Signature** signatures, u32 count) {
     free(result);
 }
 
+static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs);
+
+// A cycle found while resolving a call doesn't reach what is being resolved around the call (tsc's getResolvedSignature
+// setting resolutionStart). HACK: tsc only does that for a call's first resolution: a nested one gets resolvingSignature and
+// sees the whole stack. tttt resolves a call again where tsc would stop at resolvingSignature (plan 38 stage 3), and
+// letting those see the whole stack marks zod's recursive getter schemas circular (plan 39)
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
+    u32 start = my resolving_start;
+    my resolving_start = my resolving_len;
+    Ty const* ret = resolve_call_inner(me, callee, info, call_span, errs);
+    my resolving_start = start;
+    return ret;
+}
+
+static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
     CallExpr const* call = info->call;
     Ty const* any = ty_intrinsic(me, TY_ANY);
     Ty const* apparent = callee->flags & TYF_ANY ? callee : ty_apparent_type(me, callee);

@@ -3376,12 +3376,12 @@ const baselines = {
         types: true,
     },
     'circularGetAccessor(noimplicitany=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'circularGetAccessor(noimplicitany=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42421,17 +42421,17 @@ const baselines = {
         types: true,
     },
     'for-of33': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'for-of34': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'for-of35': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

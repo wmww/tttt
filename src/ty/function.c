@@ -307,10 +307,12 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
             return memo->type;
         case LAZY_STATE_IN_FLIGHT:
             memo->circular = true;
-            return ty_intrinsic(me, TY_CIRCULAR); // TODO: TS7023 implicitly any, references itself
+            ty_resolving_cycle(me, RESOLVING_FUNCTION_RETURN, function);
+            return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
     }
     memo->state = LAZY_STATE_IN_FLIGHT;
+    ty_resolving_push(me, RESOLVING_FUNCTION_RETURN, function);
     FlowIsolation isolation = ty_flow_isolate(me);
     // Unless the function is an argument of the call inferring now, nothing in its body is an argument of that call
     struct OuterInference* outer = my outer_inference;
@@ -319,6 +321,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     memo->type = infer_return_type(me, function);
     memo->promise_missing = inferred_promise_missing;
     inferred_promise_missing = false;
+    if (ty_resolving_pop(me)) memo->circular = true;
     // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
     if (memo->circular) memo->type = ty_intrinsic(me, TY_ANY);
     my outer_inference = outer;

@@ -332,7 +332,7 @@ void checker_drop(Checker* me) {
     free(my intersection_props.entries);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) relation_cache_drop(&my relations[i]);
     free(my flow_loops);
-    free(my aliases_in_flight);
+    free(my resolving);
     free(my flow_shared);
     arena_drop(&my arena);
     free(me);
@@ -1494,7 +1494,14 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
             ty_buf_drop(&buf);
             return ret;
         }
-        if (!is_never && out >= 2 && has_conflicting_discriminants(me, buf.data, out)) is_never = true;
+        if (!is_never && out >= 2) {
+            // (tsc asks this lazily, not while what the intersection is part of is being resolved: a cycle found by
+            // asking early is only this question's, like a call's in resolve_call())
+            u32 start = my resolving_start;
+            my resolving_start = my resolving_len;
+            if (has_conflicting_discriminants(me, buf.data, out)) is_never = true;
+            my resolving_start = start;
+        }
         if (is_never) {
             ret = my intrinsics[TY_NEVER];
         } else if (out == 0) {
@@ -2562,4 +2569,19 @@ Ty const* ty_conditional(
         fresh->conditional.mapper = root ? mapper : nullptr;
     }
     return ret;
+}
+
+void ty_resolving_grow(Checker* me) {
+    my resolving_cap = my resolving_cap ? my resolving_cap * 2 : 64;
+    my resolving = realloc(my resolving, sizeof(Resolving) * my resolving_cap);
+    panic_if(!my resolving, "out of memory");
+}
+
+void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key) {
+    for (u32 i = my resolving_len; i-- > my resolving_start;) {
+        if (my resolving[i].key == key && my resolving[i].kind == kind) {
+            for (u32 j = i; j < my resolving_len; j++) my resolving[j].circular = true;
+            return;
+        }
+    }
 }
