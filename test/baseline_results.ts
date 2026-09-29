@@ -22671,7 +22671,7 @@ const baselines = {
         types: true,
     },
     'namespaceMergedWithImportAliasNoCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63696,7 +63696,7 @@ const baselines = {
         types: true,
     },
     'importTypeLocalMissing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

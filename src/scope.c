@@ -2145,6 +2145,12 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
 cstr symbol_fully_qualified_name(Symbol const* me) {
     if (my is_module && my module) return module_name_for_error(me, nullptr, false);
     if (!my parent || (my parent->is_module && !my parent->module)) return cstr_from_sv(my name);
+    // (A module's local isn't a member of it: tsc's symbol.parent is only set for exports)
+    if (my parent->is_module && my parent->exports && !my is_default_export && !csview_equals(my name, "export=") &&
+        symbol_table_get(my parent->exports, my name) != me
+    ) {
+        return cstr_from_sv(my name);
+    }
     cstr ret = symbol_fully_qualified_name(my parent);
     cstr_append_d(&ret, DEFAULT_DISPLAY, ".", my name);
     return ret;
