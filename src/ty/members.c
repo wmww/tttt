@@ -109,6 +109,12 @@ static Signature* signature_from_function(Checker* me, FunctionImpl const* funct
     return ret;
 }
 
+// A function's own signature, not the JSDoc `@overload`s its type has instead (what they're checked against, TS2394)
+Signature const* ty_implementation_signature(Checker* me, FunctionImpl const* function) {
+    Ty const* type = ty_function_type(me, function);
+    return signature_from_function(me, function, type->anonymous.ctx);
+}
+
 static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, FunctionImpl const* function, LowerCtx ctx) {
     Signature* sig = signature_from_function(me, function, ctx);
     if (sig->flags & SIGNATURE_CONSTRUCT) {

@@ -2639,7 +2639,8 @@ void ty_check_overloads_compatible(
     Checker* me, FunctionImpl const* implementation, Span implementation_name, FunctionImpl const* const* overloads,
     Span const* names, u32 count, ErrorCtx* errs
 ) {
-    Signature const* impl = ty_function_signature(me, implementation);
+    Signature const* impl = implementation->jsdoc_overload_count ? ty_implementation_signature(me, implementation) :
+        ty_function_signature(me, implementation);
     if (!impl) return;
     for (u32 i = 0; i < count; i++) {
         Signature const* overload = ty_function_signature(me, overloads[i]);

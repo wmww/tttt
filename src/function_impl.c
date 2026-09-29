@@ -753,6 +753,27 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     ty_check_async_return_annotation(current_checker, me, errs);
     function_check_arguments_collision(me, errs);
     for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_typecheck(&my jsdoc_unmatched[i].type, errs);
+    // JSDoc `@overload`s: an overload without `@returns` implicitly returns any (TS7012, tsc's reportImplicitAny of a
+    // JSDocSignature), and each has to fit the implementation (TS2394): both at the tag's name
+    if (my jsdoc_overload_count && my has_body) {
+        FunctionImpl const* overloads[32];
+        Span names[32];
+        u32 count = 0;
+        for (u32 i = 0; i < my jsdoc_overload_count && count < c_arraylen(overloads); i++) {
+            if (my jsdoc_overloads[i].tag != TYPE_CALLABLE) continue;
+            FunctionImpl const* overload = my jsdoc_overloads[i].callable->function;
+            Span full = overload->full_span;
+            Span tag_name = span_valid(full) && full.sv.size > 1 ?
+                span_make(full.source, full.sv.buf + 1, full.sv.buf + full.sv.size) : full;
+            if (!overload->ret_explicit && !my is_constructor && compiler_options()->no_implicit_any && span_valid(tag_name)) {
+                error_ctx_error_d(errs, tag_name, 7012,
+                    "This overload implicitly returns the type 'any' because it lacks a return type annotation.");
+            }
+            overloads[count] = overload;
+            names[count++] = tag_name;
+        }
+        if (count && span_valid(my name)) ty_check_overloads_compatible(current_checker, me, my name, overloads, names, count, errs);
+    }
     // (tsc's checkUnmatchedJSDocParameters: a body that uses `arguments` only has its last tag checked, which could
     // stand for it with an array type: a `{...T}` of a function without parameters is one)
     if (my uses_arguments && my jsdoc_arguments_candidate >= 0 && (u32)my jsdoc_arguments_candidate < my jsdoc_unmatched_count) {
