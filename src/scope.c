@@ -1271,6 +1271,20 @@ void scope_add_port(Scope* me, PortItem* item) {
 }
 
 void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type, Span statement, bool export_equals) {
+    // tsc's checkExportAssignment -> checkGrammarModuleElementContext: only in a file or a namespace body (on the
+    // first token; nothing is exported)
+    bool top = my kind == SCOPE_MODULE || my kind == SCOPE_SCRIPT || my kind == SCOPE_GLOBAL_AUGMENTATION ||
+        my kind == SCOPE_NAMESPACE || (my container && my container->is_module && my kind != SCOPE_BLOCK &&
+            my kind != SCOPE_FUNCTION && my kind != SCOPE_STATIC_BLOCK);
+    if (!top && span_valid(statement) && csview_starts_with(statement.sv, "export")) {
+        Span first = span_make(statement.source, statement.sv.buf, statement.sv.buf + 6);
+        if (export_equals) {
+            error_ctx_grammar_error_d(my errs, first, 1231, "An export assignment must be at the top level of a file or module declaration.");
+        } else {
+            error_ctx_grammar_error_d(my errs, first, 1258, "A default export must be at the top level of a file or module declaration.");
+        }
+        return;
+    }
     if (!my container || !my container->is_module) return; // TODO: TS1319 and friends
     symbol_ensure_exports(my container);
     csview export_name = export_equals ? c_sv("export=") : c_sv("default");

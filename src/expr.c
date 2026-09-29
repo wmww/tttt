@@ -950,6 +950,11 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
         }
         return;
     }
+    // (An `await` expression's TS18037 is the parser's; tsc's checkGrammarForInOrForOfStatement for `for await`)
+    if (place == AWAIT_IN_STATIC_BLOCK && kind == AWAIT_KIND_FOR) {
+        error_ctx_grammar_error_d(errs, at, 18038, "'for await' loops cannot be used inside a class static block.");
+        return;
+    }
     if (place != AWAIT_AT_TOP_LEVEL) return;
     SourceFile const* file = at.source;
     CompilerOptions const* options = compiler_options();
