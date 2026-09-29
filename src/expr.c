@@ -3531,6 +3531,19 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
             if (span_valid(my jsx->type_args_trailing_comma)) {
                 error_ctx_grammar_error_d(errs, my jsx->type_args_trailing_comma, 1009, "Trailing comma not allowed.");
             }
+            // tsc's checkGrammarJsxName: a namespaced name whose namespace isn't intrinsic-like, when JSX is transformed
+            JsxKind jsx_kind = compiler_options()->jsx;
+            if (my tag == EXPR_JSX_ELEMENT && my jsx->namespaced &&
+                (jsx_kind == JSX_REACT || jsx_kind == JSX_REACT_JSX || jsx_kind == JSX_REACT_JSXDEV)
+            ) {
+                csview name = my jsx->tag_name.inner_span.sv;
+                isize colon = csview_find(name, ":");
+                csview ns = colon == c_NPOS ? name : csview_trim(csview_slice(name, 0, colon));
+                bool intrinsic_like = ns.size && ((ns.buf[0] >= 'a' && ns.buf[0] <= 'z') || csview_contains(ns, "-"));
+                if (!intrinsic_like) {
+                    error_ctx_grammar_error_d(errs, my jsx->tag_name.inner_span, 2639, "React components cannot include JSX namespace names");
+                }
+            }
             if (span_valid(my jsx->type_args_empty)) {
                 error_ctx_grammar_error_d(errs, my jsx->type_args_empty, 1099, "Type argument list cannot be empty.");
             }
