@@ -6878,6 +6878,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         bool has_initializer = parse_initialization(&p, expr_ctx_null, &initializer);
         if (has_initializer) {
             expr_drop(&initializer);
+            vec_span_push(&ret->key.index.initialized, span_from(param_start));
             hop_whitespace(&p);
         }
 

@@ -38,6 +38,8 @@ typedef struct InterfaceMember {
                 bool valid; // Exactly one parameter, with a type annotation: the signature makes an index info
                 bool grammar_reported; // The parser reported a parameter grammar error: tsc's check stops there
                 bool has_value_type;
+                // The parameters with an initializer (TS2371), each up to its initializer's end
+                VecSpan initialized;
             } index;
             struct {
                 Expr* ref;

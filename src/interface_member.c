@@ -18,6 +18,7 @@ void interface_member_drop(InterfaceMember* me) {
             type_drop(&my key.index.type);
             vec_span_drop(&my key.index.more_names);
             vec_span_drop(&my key.index.more_decls);
+            vec_span_drop(&my key.index.initialized);
             vec_type_drop(&my key.index.more_types);
             break;
         case INTERFACE_KEY_EXPR:
@@ -124,6 +125,10 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             if (span_valid(my key.index.parameter_property)) {
                 error_ctx_error_d(errs, my key.index.parameter_property, 2369,
                     "A parameter property is only allowed in a constructor implementation.");
+            }
+            // (tsc's checkVariableLikeDeclaration of a parameter of a signature without a body)
+            for_each (i, vec_span, &my key.index.initialized) {
+                error_ctx_error_d(errs, *i, 2371, "A parameter initializer is only allowed in a function or constructor implementation.");
             }
             // tsc's checkGrammarIndexSignatureParameters after what the parser reported (the parameter list's shape)
             if (my key.index.grammar_reported) break;

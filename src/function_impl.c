@@ -579,6 +579,29 @@ static void function_impl_check_use_strict_parameters(FunctionImpl const* me, Er
     }
 }
 
+// The defaults in a parameter's binding pattern of a signature without a body (tsc's checkVariableLikeDeclaration of
+// a binding element: isParameterDeclaration and the containing function's body missing), at their names
+static void report_pattern_initializers(Binding const* me, ErrorCtx* errs) {
+    if (my tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &my array) {
+            if (i->default_value) {
+                error_ctx_error_d(errs, i->content_span, 2371,
+                    "A parameter initializer is only allowed in a function or constructor implementation.");
+            }
+            report_pattern_initializers(i, errs);
+        }
+    } else if (my tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &my object) {
+            if (i->target.default_value) {
+                error_ctx_error_d(errs, i->target.content_span, 2371,
+                    "A parameter initializer is only allowed in a function or constructor implementation.");
+            }
+            report_pattern_initializers(&i->target, errs);
+        }
+    }
+}
+
+
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
     if (!my has_body && my full_span.source && !my full_span.source->is_declaration) {
         for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(me, &i->initializer.binding, i, errs);
@@ -633,6 +656,7 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
                 "A parameter initializer is only allowed in a function or constructor implementation."
             );
         }
+        if ((is_type || !my has_body) && is_pattern) report_pattern_initializers(&i->initializer.binding, errs);
 
         if (i->rest) {
             // `(...args: infer A) => any` is fine: the implied constraint of A is `unknown[]`
