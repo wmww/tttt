@@ -1668,7 +1668,7 @@ static Ternary props_related_impl(
             cstr source_str, target_str;
             display_pair(me, source, true, target, &source_str, &target_str);
             if (missing_count == 1) {
-                cstr name = ty_prop_name_cstr(me, missing[0]);
+                cstr name = ty_prop_written_name(me, missing_prop);
                 report_line(st, 2741, cstr_d(
                     "Property '", name, "' is missing in type '", source_str, "' but required in type '", target_str, "'."
                 ));
@@ -3666,7 +3666,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
                     // (tsc names the member the property is in)
                     cstr source_str, target_str;
                     display_pair(me, source, true, members.data[m], &source_str, &target_str);
-                    cstr prop_name = ty_prop_name_cstr(me, name);
+                    cstr prop_name = ty_prop_written_name(me, member->props[i]);
                     report_line(st, 2741, cstr_d(
                         "Property '", prop_name, "' is missing in type '", source_str, "' but required in type '", target_str, "'."
                     ));

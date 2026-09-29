@@ -66366,7 +66366,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithObjectMembersStringNumericNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66881,7 +66881,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithObjectMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66901,7 +66901,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithObjectMembers5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

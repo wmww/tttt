@@ -731,7 +731,7 @@ bool ty_check_heritage(
         Ty const* source = heritage_prop_type(me, prop);
         Ty const* target = heritage_prop_type(me, base_prop);
         if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) continue;
-        cstr name = ty_prop_name_cstr(me, members[i].name);
+        cstr name = ty_prop_written_name(me, prop);
         report_unassignable_with_head(me, source, target, 2416, cstr_d(
             "Property '", name, "' in type '", derived_str, "' is not assignable to the same property in base type '",
             base_str, "'."
