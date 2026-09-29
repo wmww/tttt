@@ -628,7 +628,7 @@ const baselines = {
     'ambientClassMergesOverloadsWithInterface': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ambientClassOverloadForFunction': {
         errors: true,

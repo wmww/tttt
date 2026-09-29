@@ -238,13 +238,16 @@ static void builder_add_interface_member(
                 }
                 if (existing) {
                     // Overloads are separate members in the legacy interface and one method with several signatures here
-                    if (is_method && (existing->flags & PROP_METHOD) && existing->decl->node) {
+                    // (A class's method too, which an interface of the same name adds to)
+                    bool existing_method = existing->decl->node ? existing->decl->node->tag == TYPE_CALLABLE :
+                        existing->decl->function != nullptr;
+                    if (is_method && (existing->flags & PROP_METHOD) && existing_method) {
                         u32 count = existing->decl->overload_count ? existing->decl->overload_count : 1;
                         FunctionImpl const** functions = arena_new_n(&my arena, FunctionImpl const*, count + 1);
                         if (existing->decl->overload_count) {
                             memcpy(functions, existing->decl->overloads, sizeof(FunctionImpl const*) * count);
                         } else {
-                            functions[0] = existing->decl->node->callable->function;
+                            functions[0] = existing->decl->node ? existing->decl->node->callable->function : existing->decl->function;
                         }
                         functions[count] = i->type.callable->function;
                         existing->decl->overloads = functions;

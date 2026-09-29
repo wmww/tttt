@@ -1342,7 +1342,7 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
     for_each (i, vec_type, &my unchecked_extends) heritage_type_compile_test_info(i, ctx);
     for_each (i, vec_expr, &my invalid_extends) heritage_invalid_compile_test_info(i, ctx);
     Ty const* outer_owner = ctx->member_owner;
-    ctx->member_owner = my symbol && !(my symbol->flags & SYMBOL_CLASS) ? ty_declared_type_of(current_checker, my symbol) : nullptr;
+    ctx->member_owner = my symbol ? ty_declared_type_of(current_checker, my symbol) : nullptr;
     Symbol const* outer_container = ctx->member_container;
     ctx->member_container = my symbol;
     interface_compile_test_info(&my type.interface, my name, ctx);
