@@ -275,6 +275,14 @@ CommonJsTarget binary_commonjs_declaration(struct BinaryOpExpr const* assignment
 bool expr_is_module_exports(Expr const* me);
 // `require("m")` with a single argument (tsc's isRequireCall without the string literal requirement)
 bool expr_is_require_call(Expr const* me);
+// `Object.defineProperty(o, "p", descriptor)` with an entity name o (tsc's isBindableObjectDefinePropertyCall).
+// `name_ret` (may be null): p in the source, without its quotes (a name with escapes doesn't qualify)
+bool expr_is_define_property_call(Expr const* me, Span* name_ret);
+// Whether an `Object.defineProperty` call makes a read-only property: a `value` without a `writable` that isn't
+// `false`, or a getter without a setter (tsc's isReadonlyAssignmentDeclaration, read from the object literal)
+bool expr_define_property_readonly(Expr const* call);
+// `exports` or `module.exports` (tsc's isExportsIdentifier || isModuleExportsAccessExpression)
+bool expr_is_exports_object(Expr const* me);
 // tsc's isCommonJsRequire for what the callee of `require(x)` resolves to: its requireSymbol (no `require` in scope)
 // or an ambient function or variable (@types/node's)
 bool expr_symbol_is_commonjs_require(Symbol const* symbol);
@@ -554,6 +562,7 @@ typedef struct CallExpr {
     VecExpr args;
     // The initializer of a declaration that can have a unique symbol type: `Symbol()` makes one (set when resolving)
     UniqueSymbolDecl unique_symbol;
+    Symbol const* declares; // What a JavaScript `Object.defineProperty(o, "x", {...})` declares (set when binding)
 } CallExpr;
 
 // Template

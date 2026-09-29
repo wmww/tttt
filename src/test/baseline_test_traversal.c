@@ -1752,6 +1752,14 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 });
             }
             for_each (i, vec_expr, &my call->args) {
+                // The name `Object.defineProperty(o, "x", ...)` declares (tsc's getSymbolAtLocation of the literal)
+                if (i_index == 1 && my call->declares) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = declaration_get_spans(my call->declares),
+                        .span = i->inner_span,
+                        .text = symbol_text(ctx, my call->declares),
+                    });
+                }
                 expr_compile_test_info(i, ctx);
             }
         }   break;

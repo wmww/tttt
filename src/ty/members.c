@@ -738,6 +738,11 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             if (modifiers & JSDOC_MODIFIER_PRIVATE) prop->flags |= PROP_PRIVATE;
             else if (modifiers & JSDOC_MODIFIER_PROTECTED) prop->flags |= PROP_PROTECTED;
             if (modifiers & JSDOC_MODIFIER_READONLY) prop->flags |= PROP_READONLY;
+            if (member->decl_count && member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY &&
+                expr_define_property_readonly(member->decls[0].node)
+            ) {
+                prop->flags |= PROP_READONLY;
+            }
             builder_push(builder, props, prop);
         }
         vec_span_drop(&spans);
@@ -1159,6 +1164,12 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     prop->name = name;
     prop->decl->symbol = member;
     if (member->is_const) prop->flags |= PROP_READONLY; // tsc's isReadonlySymbol: a `const` variable
+    // (`Object.defineProperty(o, "x", { value: 1 })`: isReadonlyAssignmentDeclaration)
+    if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
+        member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY && expr_define_property_readonly(member->decls[0].node)
+    ) {
+        prop->flags |= PROP_READONLY;
+    }
     // An expando assigned a function is a method (bindPotentiallyNewExpandoMemberToNamespace)
     if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && member->parent &&
         !member->parent->is_module && ((Expr const*)member->decls[0].node)->tag == EXPR_FUNCTION

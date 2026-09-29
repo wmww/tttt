@@ -3938,6 +3938,50 @@ bool expr_symbol_is_commonjs_require(Symbol const* symbol) {
     return !(symbol->flags & SYMBOL_ALIAS) && (symbol->flags & (SYMBOL_FUNCTION | SYMBOL_VARIABLE)) && symbol->is_ambient;
 }
 
+bool expr_is_define_property_call(Expr const* me, Span* name_ret) {
+    if (my tag != EXPR_CALL || my call->uses_new || my call->optional_chain || vec_expr_size(&my call->args) != 3) return false;
+    Expr const* callee = &my call->callable;
+    if (callee->tag != EXPR_PROPERTY || callee->property->form != PROPERTY_EXPR_DOT || callee->property->optional_chain ||
+        !span_equals(callee->property->prop.inner_span, "defineProperty") ||
+        !expr_is_plain_identifier(&callee->property->expr, "Object")
+    ) {
+        return false;
+    }
+    Expr const* key = vec_expr_at(&my call->args, 1);
+    if (key->tag != EXPR_LITERAL || key->literal.tag != VALUE_STRING || expr_is_perenthisized(key)) return false;
+    Span text = key->inner_span;
+    if (text.sv.size < 2 || (isize)cstr_size(&key->literal.string) != text.sv.size - 2) return false;
+    Expr const* target = vec_expr_at(&my call->args, 0);
+    if (!expr_is_entity_name(target)) return false;
+    if (name_ret) *name_ret = span_make(text.source, text.sv.buf + 1, text.sv.buf + text.sv.size - 1);
+    return true;
+}
+
+bool expr_define_property_readonly(Expr const* call) {
+    Expr const* descriptor = vec_expr_at(&call->call->args, 2);
+    if (descriptor->tag != EXPR_OBJECT) return false;
+    ObjectExprItem const* value = nullptr;
+    ObjectExprItem const* writable = nullptr;
+    bool setter = false;
+    for_each (i, vec_object_expr_item, &descriptor->object) {
+        if (i->tag == OBJECT_ITEM_SPREAD || i->computed_key) continue;
+        csview name = cstr_sv(&i->name_string);
+        if (csview_equals(name, "value")) value = i;
+        if (csview_equals(name, "writable")) writable = i;
+        if (csview_equals(name, "set")) setter = true;
+    }
+    if (!value) return !setter;
+    if (!writable) return true;
+    // (`writable: false`: tsc looks at the initializer's own type)
+    Expr const* flag = &writable->value;
+    return writable->tag == OBJECT_ITEM_PROPERTY && flag->tag == EXPR_LITERAL && flag->literal.tag == VALUE_BOOLEAN &&
+        !flag->literal.boolean;
+}
+
+bool expr_is_exports_object(Expr const* me) {
+    return expr_is_plain_identifier(me, "exports") || expr_is_module_exports(me);
+}
+
 bool expr_is_require_call(Expr const* me) {
     return my tag == EXPR_CALL && !my call->uses_new && vec_expr_size(&my call->args) == 1 &&
         expr_is_plain_identifier(&my call->callable, "require");

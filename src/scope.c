@@ -1323,7 +1323,8 @@ static void set_function_class_symbol(Expr* value, Symbol* symbol) {
 }
 
 static void declare_commonjs_export(
-    Scope* me, csview name, Span name_span, Expr* value, TypeNode const* jsdoc_type, Span left, Span statement
+    Scope* me, csview name, Span name_span, Expr* value, TypeNode const* jsdoc_type, Span left, Span statement,
+    AssignmentDeclKind kind
 ) {
     symbol_ensure_exports(my container);
     bool alias = value->tag == EXPR_IDENTIFIER && !value->identifier.keyword;
@@ -1346,8 +1347,8 @@ static void declare_commonjs_export(
         });
     } else {
         symbol_add_decl(symbol, (SymbolDecl){
-            .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_PROPERTY, .node = value, .name = left, .full = statement,
-            .jsdoc_type = jsdoc_type,
+            .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value, .name = left,
+            .full = statement, .jsdoc_type = jsdoc_type,
         });
         set_function_class_symbol(value, symbol);
     }
@@ -1395,6 +1396,14 @@ static Scope* commonjs_module_scope(Scope* me) {
     return me && me->kind == SCOPE_MODULE && me->file && me->file->is_commonjs && me->container ? me : nullptr;
 }
 
+// `Object.defineProperty(exports, "x", {...})` (tsc's bindObjectDefinePropertyExport): an export declared by the call
+static void add_define_property_export(Scope* me, Expr* call) {
+    Span name;
+    if (!expr_is_define_property_call(call, &name) || !expr_is_exports_object(vec_expr_at(&call->call->args, 0))) return;
+    declare_commonjs_export(me, name.sv, name, call, nullptr, call->outer_span, call->outer_span, ASSIGNMENT_DECL_DEFINE_PROPERTY);
+    call->call->declares = symbol_table_get(my container->exports, name.sv);
+}
+
 void scope_add_commonjs_export(Scope* me, Expr* assignment) {
     if (my kind != SCOPE_MODULE || !my file || !my file->is_commonjs || !my container) return;
     // Every assignment of a chain (`exports = module.exports = C`)
@@ -1402,6 +1411,7 @@ void scope_add_commonjs_export(Scope* me, Expr* assignment) {
         add_commonjs_export(me, assignment);
         assignment = &assignment->binary_op->right;
     }
+    add_define_property_export(me, assignment);
 }
 
 // Declared by the assignment expression (tsc's declaration node, `exports = module.exports = C` has two)
@@ -1419,10 +1429,10 @@ static void add_commonjs_export(Scope* me, Expr* assignment) {
             if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || !is_exports_alias(me, object)) break;
             if (span_equals(object->identifier.name, "exports")) break; // (binary_commonjs_declaration()'s)
             left->property->commonjs_export_alias = true;
-            declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, left->outer_span, statement);
+            declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, left->outer_span, statement, ASSIGNMENT_DECL_PROPERTY);
         }   break;
         case COMMONJS_TARGET_EXPORTS_PROPERTY:
-            declare_commonjs_export(me, name.sv, name, &op->right, op->jsdoc_type, op->left.outer_span, statement);
+            declare_commonjs_export(me, name.sv, name, &op->right, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY);
             break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
             Expr* value = rightmost_assigned(&op->right);
@@ -1435,12 +1445,12 @@ static void add_commonjs_export(Scope* me, Expr* assignment) {
                 for_each (i, vec_object_expr_item, &value->object) shorthands &= i->tag == OBJECT_ITEM_SHORTHAND;
                 if (shorthands) {
                     for_each (i, vec_object_expr_item, &value->object) {
-                        declare_commonjs_export(me, i->name_span.sv, i->name_span, &i->value, i->jsdoc_type, i->name_span, i->span);
+                        declare_commonjs_export(me, i->name_span.sv, i->name_span, &i->value, i->jsdoc_type, i->name_span, i->span, ASSIGNMENT_DECL_PROPERTY);
                     }
                     break;
                 }
             }
-            declare_commonjs_export(me, c_sv("export="), op->left.outer_span, value, op->jsdoc_type, op->left.outer_span, statement);
+            declare_commonjs_export(me, c_sv("export="), op->left.outer_span, value, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY);
         }   break;
     }
 }
@@ -1462,6 +1472,7 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
                     add_commonjs_export(module, assignment);
                     assignment = &assignment->binary_op->right;
                 }
+                add_define_property_export(module, assignment);
             }
             break;
         case STATEMENT_DECL_VARIABLE:
@@ -3084,6 +3095,17 @@ OuterGenerics const* symbol_outer_generics(Symbol const* me) {
 // The expression a variable of this initializer is an expando container of (tsc's getDeclaredExpandoInitializer):
 // a function or arrow function, in JavaScript also a class expression or `{}`, possibly defaulted (`var ns = ns || {}`)
 Expr* expando_initializer(Expr* init, Span name, bool js) {
+    // `Object.defineProperty(o, "x", { value: {} })`: the value (tsc's getAssignedExpandoInitializer, hasExpandoValueProperty)
+    if (js && init->tag == EXPR_CALL && expr_is_define_property_call(init, nullptr)) {
+        Expr const* descriptor = vec_expr_at(&init->call->args, 2);
+        if (descriptor->tag != EXPR_OBJECT) return nullptr;
+        for_each (i, vec_object_expr_item, &descriptor->object) {
+            if (i->tag != OBJECT_ITEM_PROPERTY || i->computed_key || !span_equals(i->name_span, "value")) continue;
+            Expr* ret = expando_initializer((Expr*)&i->value, span_null, js);
+            if (ret) return ret;
+        }
+        return nullptr;
+    }
     if (init->tag == EXPR_BINARY_OP && !expr_is_perenthisized(init) &&
         (init->binary_op->op == BINARY_OP_OR_OR || init->binary_op->op == BINARY_OP_EH_EH)
     ) {
@@ -3368,7 +3390,9 @@ static void add_commonjs_export_namespace_decls(Scope* module, Expr const* entit
 
 // JavaScript `F.prototype.x = v` declares an instance member x of F, which makes F a class (tsc's
 // bindPrototypePropertyAssignment)
-static void add_prototype_property(Scope* me, Expr* constructor, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type) {
+static void add_prototype_property(
+    Scope* me, Expr* constructor, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type, AssignmentDeclKind kind
+) {
     SourceFile const* file = my file;
     if (!file || !file->is_js) return;
     Expr* init;
@@ -3391,13 +3415,17 @@ static void add_prototype_property(Scope* me, Expr* constructor, Span name, Expr
         value = &value->binary_op->right;
     }
     host->flags |= SYMBOL_CLASS;
-    declare_assignment_member(me, &host->members, host, name, left, value, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, 0);
+    declare_assignment_member(me, &host->members, host, name, left, value, jsdoc_type, kind, 0);
 }
 
 static Symbol* js_constructor_symbol(Symbol* symbol);
 
 // `f.x = v` (tsc's bindStaticPropertyAssignment -> bindPropertyAssignment for AssignmentDeclarationKind.Property)
 static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level);
+static void add_expando_member(
+    Scope* me, Expr* object, Span name, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level,
+    Expr const* late_bound_key, AssignmentDeclKind kind
+);
 
 static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     if (op->op != BINARY_OP_EQUAL) return;
@@ -3422,9 +3450,28 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
     }
     if (!span_valid(name)) return;
     if (late_bound_key && (expr_prototype_object(object) || !expr_is_entity_name(object))) return;
+    add_expando_member(me, object, name, left, right, jsdoc_type, top_level, late_bound_key, ASSIGNMENT_DECL_PROPERTY);
+}
+
+// `Object.defineProperty(o, "x", {...})` of a container o (tsc's bindObjectDefinePropertyAssignment) or of
+// `F.prototype` (bindObjectDefinePrototypeProperty): declared by the call
+static void add_define_property(Scope* me, Expr* call, bool top_level) {
+    Span name;
+    if (!expr_is_define_property_call(call, &name)) return;
+    Expr* object = (Expr*)vec_expr_at(&call->call->args, 0);
+    if (expr_is_exports_object(object)) return; // (add_define_property_export())
+    add_expando_member(me, object, name, call, call, nullptr, top_level, nullptr, ASSIGNMENT_DECL_DEFINE_PROPERTY);
+}
+
+// Member `name` of what `object` names, declared by `left` (`object.name`, or a call) = `right`
+static void add_expando_member(
+    Scope* me, Expr* object, Span name, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level,
+    Expr const* late_bound_key, AssignmentDeclKind kind
+) {
     Expr* prototype = expr_prototype_object(object);
     if (prototype) {
-        add_prototype_property(me, prototype, name, left, right, jsdoc_type);
+        add_prototype_property(me, prototype, name, left, right, jsdoc_type,
+            kind == ASSIGNMENT_DECL_PROPERTY ? ASSIGNMENT_DECL_PROTOTYPE_PROPERTY : kind);
         return;
     }
     // `F.prototype = { ... }` declares prototype members in JavaScript and nothing elsewhere (tsc's
@@ -3499,10 +3546,11 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
         value = &value->binary_op->right;
     }
     if (late_bound_key && !member->late_bound_key) member->late_bound_key = late_bound_key;
-    left->property->declares = member;
+    if (left->tag == EXPR_PROPERTY) left->property->declares = member;
+    if (left->tag == EXPR_CALL) left->call->declares = member;
     symbol_add_decl(member, (SymbolDecl){
-        .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_PROPERTY, .node = value, .name = left->outer_span,
-        .full = left->outer_span, .jsdoc_type = jsdoc_type,
+        .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
+        .name = left->outer_span, .full = left->outer_span, .jsdoc_type = jsdoc_type,
     });
     set_function_class_symbol(value, member);
     // JavaScript `F.prototype = { ... }` makes F a class (tsc's bindPrototypeAssignment: containerIsClass)
@@ -3590,6 +3638,7 @@ void scope_add_expandos(Scope* me, Block const* block) {
     bool global_this = this_is_global_script(me, &arrow);
     for_each (i, vec_statement, &block->statements) {
         if (i->tag == STATEMENT_EXPR) add_expando_chain(me, &i->expr, top_level);
+        if (i->tag == STATEMENT_EXPR && my file && my file->is_js) add_define_property(me, &i->expr, top_level);
         if (i->tag == STATEMENT_EXPR && global_this) add_global_this_chain(me, &i->expr, arrow);
         // `/** @type {T} */ a.b;` at the top level (tsc's bindSpecialPropertyDeclaration)
         if (i->tag == STATEMENT_EXPR && i->expr_jsdoc_type && top_level) {
@@ -3645,6 +3694,7 @@ static void declare_assignment_member(
         member->exported = true;
     }
     if (left->tag == EXPR_PROPERTY) left->property->declares = member;
+    if (left->tag == EXPR_CALL) left->call->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
         .name = left->outer_span, .full = left->outer_span, .jsdoc_type = jsdoc_type, .jsdoc_modifiers = jsdoc_modifiers,

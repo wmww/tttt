@@ -1008,7 +1008,26 @@ static Ty const* annotated_expando_type(Checker* me, Symbol const* symbol) {
 
 // What a declaring assignment (`exports.x = v`, `f.x = v`) assigns, before widening object literals (tsc's
 // getInitializerTypeFromAssignmentDeclaration): an export keeps its literal type, an expando's is widened
+// `Object.defineProperty(o, "x", descriptor)`: the descriptor's `value`, else its getter's return type, else its setter's
+// parameter type, else any (tsc's getInitializerTypeFromAssignmentDeclaration for a call)
+static Ty const* define_property_type(Checker* me, Expr const* call) {
+    Ty const* descriptor = ty_expr_type(me, vec_expr_at(&call->call->args, 2));
+    Ty const* value = ty_prop_type_of(me, descriptor, checker_atom(me, c_sv("value")));
+    if (value) return value;
+    Ty const* get = ty_prop_type_of(me, descriptor, checker_atom(me, c_sv("get")));
+    Signature const* get_sig = get ? ty_single_signature(me, get, false, true) : nullptr;
+    if (get_sig) return signature_return_type(me, get_sig);
+    Ty const* set = ty_prop_type_of(me, descriptor, checker_atom(me, c_sv("set")));
+    Signature const* set_sig = set ? ty_single_signature(me, set, false, true) : nullptr;
+    if (set_sig) {
+        signature_resolve(me, set_sig);
+        return set_sig->param_count ? ty_signature_param_type_at(me, set_sig, 0) : ty_intrinsic(me, TY_NEVER);
+    }
+    return ty_intrinsic(me, TY_ANY);
+}
+
 static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
+    if (decl->assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY) return define_property_type(me, decl->node);
     Ty const* annotated = annotated_expando_type(me, symbol);
     if (annotated) return annotated;
     Ty const* type = ty_expr_type(me, decl->node);

@@ -7361,6 +7361,12 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 ref->syntax = MODULE_REF_REQUIRE;
                 left_and_ret->call->callable.identifier.module_ref = ref;
             }
+        } else if (p.shared->source->is_js && expr_is_define_property_call(left_and_ret, nullptr) &&
+            expr_is_exports_object(vec_expr_at(&left_and_ret->call->args, 0))
+        ) {
+            // `Object.defineProperty(exports, "x", {...})` makes it CommonJS too (tsc's bindObjectDefinePropertyExport)
+            p.shared->saw_commonjs = true;
+            note_commonjs_start(p.shared, span_start_ptr(left_and_ret->outer_span));
         }
         return parse_success(&p);
     }
