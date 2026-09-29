@@ -11,10 +11,14 @@ the cooked text; `.symbols` print cooked names (`Symbol(a, ...)`), but messages 
 with TS1260 "Keywords cannot contain escape characters." where it's used as one (`var x`), and an ordinary
 identifier where a keyword isn't expected (`var await = 12` is fine outside async code).
 
-Tests (~12): escapedIdentifiers, parserUnicode1, parserS7.6_A4.2_T1, scannerS7.6_A4.2_T1,
+Escaped *keywords* are done (2026-09-29): the keyword probe `hop_start_if_ends_on_word_break()` falls back to
+`hop_escaped_keyword()` when it mismatches at a `\`, which decodes the word and reports TS1260
+(scannerUnicodeEscapeInKeyword1, switchStatementsWithMultipleDefaults pass). What's left is the names.
+
+Tests (~10): escapedIdentifiers, parserUnicode1, parserS7.6_A4.2_T1, scannerS7.6_A4.2_T1,
 extendedUnicodeEscapeSequenceIdentifiers, duplicateObjectLiteralProperty, parserClassDeclaration23 (passes, no
-cross-reference), scannerUnicodeEscapeInKeyword1/2, switchStatementsWithMultipleDefaults (`default:`),
-parser.numericSeparators.decmialNegative (48.ts), unicodeEscapesInNames01/02, invalidUnicodeEscapeSequance3.
+cross-reference), scannerUnicodeEscapeInKeyword2 (types: `var \u0061wait` is named `await`),
+unicodeEscapesInNames01/02, invalidUnicodeEscapeSequance3.
 Real code essentially never escapes identifiers, so this is a fidelity item, not a user-facing one.
 
 Why it isn't a local fix: a `Span` is both the position and the name. Options considered:
@@ -26,6 +30,4 @@ Why it isn't a local fix: a `Span` is both the position and the name. Options co
   property-name strings (`name_string` is already a separate cooked `cstr` for object literal keys). Names with a `\`
   are rare, so a check for `memchr(sv, '\\')` before cooking into an interned string (per `Program`) costs nothing on
   normal names. This is the plausible route; the work is finding every place a name is compared by its span text
-  (`span_equals`, `csview_equals` on `.sv`) that matters for resolution. TS1260 is then the parser seeing a cooked
-  keyword at a keyword probe (`hop_start_if_ends_on_word_break` would need the cooked word: only when the raw text has
-  a `\` at the position).
+  (`span_equals`, `csview_equals` on `.sv`) that matters for resolution. (TS1260 is done without it, see above.)
