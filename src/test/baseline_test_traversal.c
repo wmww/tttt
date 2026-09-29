@@ -1916,6 +1916,15 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                     baseline_test_case_add_type(ctx, my expr.identifier.name, ty_declared_type_of(current_checker, type_symbol));
                     break;
                 }
+                // A namespace without a value: its symbol, and the expression's any
+                Symbol const* namespace = symbol_for_meaning(my expr.identifier.symbol, SYMBOL_NAMESPACE);
+                if (namespace && !namespace->is_placeholder && !symbol_for_meaning(my expr.identifier.symbol, SYMBOL_VALUE)) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = declaration_get_spans(shown_declaration(my expr.identifier.symbol, namespace)),
+                        .span = my expr.identifier.name,
+                        .name = shown_declaration(my expr.identifier.symbol, namespace)->name_span,
+                    });
+                }
             }
             // fallthrough
         case STATEMENT_RETURN_EXPR:
