@@ -39,52 +39,43 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
 - **Module resolution elaboration**: tsc's alternateResult TS2307/TS7016 chains ("There are types at '...', but this
   result could not be resolved under your current 'moduleResolution' setting" / "...when respecting package.json
   \"exports\"", moduleNameResolver.ts nodeModuleNameResolverWorker) and TS6504 for JS files a resolution put in the
-  program: 9 tests (node10AlternateResult_*, resolvesWithoutExportsDiagnostic1, nodeModulesExportsBlocksTypesVersions,
-  resolutionModeImportType1/TypeOnlyImport1(node10)).
+  program (node10AlternateResult_*, resolutionModeImportType1/TypeOnlyImport1(node10)).
 - `declare const B = -1n` under a pre-ES2020 target lacks TS2737.
 - **JS (seen in the 2026-09-28 corpus session)**: TS2565 for a property declared by a JS expression statement
   (`/** @type {F} */ C.prototype.m;`) read in the same flow container (tsc's getFlowTypeOfAccessExpression with
   assumeUninitialized: jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError); TS7032 (a setter without a parameter
   type, `@type` on a setter being ignored) is absent entirely (probe plan19/webpack/jsdoc_accessor_type.ts).
-- **Circularity**: TS2502 for accessors, class properties, parameters (circularAccessorAnnotations,
-  circularGetAccessor, circularOptionalityRemoval; variables are done). TS2310 for cycles found while resolving
-  (circularBaseTypes, circularConstraintYieldsAppropriateError); a cyclic interface still gets its bases' members (tsc:
-  none). TS1176 (`implements` on an interface: interfaceThatInheritsFromItself, parser recovery first).
+- **Circularity** (plan 39 stage 3): circularOptionalityRemoval; TS2310 for cycles found while resolving
+  (circularBaseTypes, circularConstraintYieldsAppropriateError).
 - **Decorators**: TS2449 for a class used in the decorators of its own methods' parameters (tsc counts them; tttt's
   check only knows class and member decorators).
 - **Classes**: TS2383 (overload export agreement); TS2386 across merged
-  interface declarations (interface.c checks per body); TS2687 skips statics and method/accessor pairs. TS4127 (`override` on a
-  dynamic name: overrideLateBindableIndexSignature1). TS2506 across files through namespace-qualified bases
-  (classExtendsItselfIndirectly2). Abstract members satisfied by an interface merged into the class: tsc looks there
+  interface declarations (interface.c checks per body); TS2687 skips statics and method/accessor pairs. Abstract members satisfied by an interface merged into the class: tsc looks there
   before TS2515 (mergedInheritedMembersSatisfyAbstractBase). TS1094 (accessor type parameters).
 - **Accessibility** (plan 13 leftovers): destructuring (`const { priv } = a`, `({ priv } = a)`:
-  privateProtectedMembersAreNotAccessibleDestructuring, destructuringAssignment_private); TS2704 (`delete` of a
+  privateProtectedMembersAreNotAccessibleDestructuring: protected members); TS2704 (`delete` of a
   readonly property); `this.x = v` in the constructor of a class merged with an interface declaring `readonly x`
   (tttt exempts any property whose parent is the class); `globalThis.globalThis = x` (TS2540). Private names: TS18015,
   TS2806 (set-only private accessor), TS2804/TS18010/TS2300/TS2717 duplicates (privateNameDuplicateField).
 - **Declarations**: `export function g() {}` + `function g() {}` is TS2395 here, TS2393 in tsc (re-probed). TS2300
   for a second `export =`. TS1319 (default export outside a module, TODO in `scope_export_default_expr`). TS1330-1335
   (misplaced `unique symbol`, silently `symbol`). TS2475 (const enum used as a value). TS18055/TS18056 (isolatedModules enum string/initializer rules; the enum
-  member value checks are in `enum_decl_typecheck`). TS6203 related info on a static duplicated by a
-  namespace export (duplicateIdentifiersAcrossFileBoundaries). TS2492 (`catch (x) { let x }`:
-  catchClauseWithTypeAnnotation).
+  member value checks are in `enum_decl_typecheck`).
 - **Operators**: `void` operands/objects (UndefinedFacts in tsc: `v.x` with `v: void` is TS18048) aren't checked like
-  undefined. `x **= v` with a non-reference LHS: TS2362 here, TS2364 only in tsc
-  (compoundExponentiationAssignmentLHSIsValue). `for (x in o)` with a non-declaration target: TS2322 here, TS2405 in tsc
+  undefined. `for (x in o)` with a non-declaration target: TS2322 here, TS2405 in tsc
   (re-probed).
 - **Type predicates**: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion
   callee without explicit types), TS1225 (no such parameter), a predicate function returning non-boolean.
 - **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; plan 37 A stage 2: TS7031 on
   binding elements, TS7010/7011/7025 on widened inferred returns, TS7008 class fields, TS7018 through a spread) and of
   generator yield/next types; TS7023 through indirect self-references in return expressions
-  (simpleRecursionWithBaseCase1 `[fn5][0]()`, thisInObjectLiterals, trivialSubtypeReductionNoStructuralCheck);
+  (thisInObjectLiterals, trivialSubtypeReductionNoStructuralCheck);
   TS7031/TS7006 from widening of binding pattern defaults (`function
   f([a1] = [undefined])`, noImplicitAnyDestructuring*);
   TS7051 (a parameter named like a type); TS7041 (`this` captured by a top-level arrow); TS7017 (`typeof globalThis` has
   no index signature); TS7055/TS7057 (generators).
 - **Target/module-gated**: TS2705/TS2468 (async function needs the `Promise` constructor): tsc reports it from
-  createPromiseReturnType, ie only when something asks for an async function's *inferred* return type, which is lazy
-  (asyncFunctionNoReturnType reports it, asyncFunctionWithForStatementNoInitializer doesn't); reporting it for every
+  createPromiseReturnType, ie only when something asks for an async function's *inferred* return type, which is lazy; reporting it for every
   unannotated async function was tried and lost 6 tests. Needs a "return type was inferred" signal that matches tsc's
   demand, not tttt's (tttt infers more eagerly). Computing function expressions' return types when checked (triage 2026-09-29,
   wt-c bf163ec4/d4805f83, gains destructuringControlFlowNoCrash) was reverted: with getters included it put 6 TS7023
@@ -93,13 +84,11 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   operators, calls, property access and iteration. TS2802 (iteration needs `downlevelIteration`), TS1056 (accessors below
   ES5), TS2659 (`super` in an object literal below ES2015), TS2496's other places (`arguments` in ES5 arrows), TS2815
   (`arguments` of an outer function in a field initializer, or in an expression statement directly in a static block:
-  tsc's isInPropertyInitializerOrClassStaticBlock; classStaticBlock6, which also wants TS2662 for `arguments` there). Await grammar leftovers: `await` in a class field initializer inside an
-  async function (awaitInClassInAsyncFunction: the parser's in_async carries into class members), `await` in a
+  tsc's isInPropertyInitializerOrClassStaticBlock; classStaticBlock6, which also wants TS2662 for `arguments` there). Await grammar leftovers: `await` in a
   namespace body counts as top level (tsc: TS1308), TS18037 (await in a static block) is parser territory
   (classStaticBlock6/7/26).
-- **TS2538 with `any`** (8 tests): `any[[]]` (a tuple as an index type on `any`) and `{[z]: x}` parameter patterns
-  with an unresolved `z` (asyncFunctionDeclarationParameterEvaluation, asyncGeneratorParameterEvaluation): tsc's
-  getPropertyTypeForIndexType reports past the `any` object shortcut; find which path.
+- **TS2538 with `any`**: `any[[]]` (a tuple as an index type on `any`): tsc's getPropertyTypeForIndexType reports past
+  the `any` object shortcut (the `{[z]: x}` pattern cases pass now).
 - **Iteration**: TS2489/TS2490 (iterator without `next`/`value`), TS2763-2765 (iterator next-type mismatches);
   generator next types aren't inferred from `yield` uses (tsc's `nextTypes`).
 - **Modules**: exports in non-module containers dropped silently (`scope_add_port()`, TODO TS1194); `import { type
@@ -109,8 +98,7 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   type (expressions are done); TS2664/TS2671 (module augmentation errors); duplicatePackage_globalMerge prints
   TS2306 paths as `/node_modules/...` (tsc `/tests/node_modules/...`); a nested `declare module "m"` gets TS2435 but is
   still bound as a global ambient module (tsc: a local namespace). TS2846 (import of a `.d.ts` by name),
-  TS2877/TS2876 (`rewriteRelativeImportExtensions`), TS2688 where tsc can't resolve a type reference directive and tttt
-  can (typingsLookup3). TS6046 (unknown lib name), TS6278 and TS7016's "npm i @types" elaboration (need package ids).
+  TS2877/TS2876 (`rewriteRelativeImportExtensions`), TS6046 (unknown lib name), TS6278 and TS7016's "npm i @types" elaboration (need package ids).
 - **TS2303 leftovers**: pushTypeGetTypeOfAlias (`exports.blah = exports.someProp`: tsc's isAliasableExpression takes
   dotted names, `declare_commonjs_export` only identifiers; the TS2303 there is getTypeOfAlias's type circularity
   through the module's type, not alias resolution), declarationEmitUnknownImport(2) (`import Foo = Missing` +
@@ -139,10 +127,7 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   'new (...args: any[]) => ...'?"). Plan 32 leftover.
 
 - Override and variance checks exist now (triage 2026-09-28); left: JSDoc `@template in/out/const` grammar errors
-  (jsdocTemplateTag7/8: the owner isn't known when tags are parsed, TODO in `ty_check_variance_annotations`),
-  varianceAnnotationsWithCircularlyReferencesError (tsc's recovery for `type T1<in in>`), varianceReferences' extra
-  TS2322 (line 44, variance of an alias of an interface reference), varianceAnnotations' extra error on
-  `InstanceType<typeof Anon<T>>` of a class expression.
+  (jsdocTemplateTag8), varianceAnnotationsWithCircularlyReferencesError (tsc's recovery for `type T1<in in>`).
 
 ## JavaScript binder leftovers (suite checker bugs 5, 2026-09-28)
 Spurious diagnostics in JS tests whose causes were investigated but not fixed:
@@ -154,33 +139,24 @@ Spurious diagnostics in JS tests whose causes were investigated but not fixed:
   mergeJSSymbols), so `G.q` (declared on m.G) and `m.G.p` (declared on G) resolve.
 - **CommonJS exports inside functions**: tsc binds `exports.x = v` / `module.exports = v` from any container
   (bindExportsPropertyAssignment has no container check); `add_nested_commonjs_exports()` only walks top-level
-  statement lists, so an IIFE's exports are missing (moduleExportAliasExports). Needs a declare-step walk into function
+  statement lists, so an IIFE's exports are missing. Needs a declare-step walk into function
   bodies (the link step must see them, so the resolve walk is too late).
 - **`@typedef` inside a class body** (jsdocTemplateClass): tsc binds it in the class (blockScopeContainer = the class,
   getEnclosingBlockScopeContainer of the host), where the class's `@template T` is visible; tttt's
   `jsdoc_bind_comments()` only lets statement lists claim comments, so the file claims it and `T` is TS2304.
 - **`Object.defineProperty(o, "p", {...})`** declares nothing (tsc's bindObjectDefinePropertyAssignment,
-  isBindableObjectDefinePropertyCall): jsExpandoObjectDefineProperty now passes its errors only because
-  `chrome.devtools.x = {}` declares devtools as a namespace; 32 tests mention defineProperty.
+  isBindableObjectDefinePropertyCall); 32 tests mention defineProperty.
 - **`this.x = v` at the top level of a CommonJS module** should declare an export (bindThisPropertyAssignment, SourceFile
   container with commonJsModuleIndicator); only the script (global) case is done (`add_global_this_chain()`).
 
 ## Wrong codes that are type-core bugs
 Spurious TS2403 ("Subsequent variable declarations must have the same type") means tttt computed two spellings of one
 type differently; each is one type-core bug, good one-per-session material (all re-checked failing 2026-09-27):
-mappedTypeModifiers/mappedTypes4 (`Required<>`/`-?` identity), inferenceOptionalProperties, optionalTupleElementsAndUndefined
-(tsc's optional tuple element types carry `| undefined`), objectLiteralGettersAndSetters, newOperatorConformance (`new
-C()` without inference gives `T<{}>`, tsc `T<unknown>`), anyAssignabilityInInheritance (overload choice with `any`
-arguments), arrayLiteralWidened (`[[], [null, null]]`), booleanFilterAnyArray (`Ari<any> | Ari<unknown>`),
-wrappedAndRecursiveConstraints2 (inference through a recursive constraint).
+mappedTypeModifiers/mappedTypes4 (`Required<>`/`-?` identity), objectLiteralGettersAndSetters (the rest pass since).
 
 ## JSX (`./failstats.py --jsx`)
-Overloaded components don't get tsc's TS2769 report (tsxNotUsingApparentTypeOfSFC,
-tsxStatelessFunctionComponentsWithTypeArguments4); TS6229 isn't checked for union tag types or inside an overload
-chain; TS18042 (a type imported in a .jsx/.js file: jsxCheckJsxNoTypeArgumentsAllowed); TS2608
-(ElementAttributesProperty with several members); TS2639 (tsxNamespacedTagName2); TS2604 on a union of tag types
-(tsxDynamicTagName3). Types-component diffs there are general (contextualTypingOfOptionalMembers: `unknown` where tsc
-infers; `{ [__proto__]: null }` computed names in tsxEmitSpreadAttribute).
+Overloaded components don't get tsc's TS2769 report (tsxStatelessFunctionComponentsWithTypeArguments4); TS6229 isn't
+checked for union tag types or inside an overload chain; TS2604 on a union of tag types (tsxDynamicTagName3).
 
 ## Elaboration (which member or level a relation error descends to; plan 34 is the text of the rest)
 - Into a `NoInfer` member: against `NoInfer<{ type: 'A' }> | Expr` tsc elaborates to `'"B"' is not assignable to
@@ -190,5 +166,5 @@ infers; `{ [__proto__]: null }` computed names in tsxEmitSpreadAttribute).
   member; tttt omits it.
 - xstate meta.test.ts 270/434: elaboration stops one level too high (at `e2:`, tsc goes on to the `meta:` under the
   `@ts-expect-error`). Not reduced.
-- mappedTypes6 / mappedTypeErrors2: `-?` template elaboration (tsc's NonNullable<T[P]> display and chain).
+- mappedTypes6: `-?` template elaboration (tsc's NonNullable<T[P]> display and chain).
 

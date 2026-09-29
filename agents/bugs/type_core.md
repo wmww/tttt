@@ -6,7 +6,7 @@ Wrong types (not missing diagnostics: `missing_checks.md`; not printing: `displa
 `TY_MISSING` (documentation.md "The missing type") fixed 3 of the 23 failing configurations and zod-root's TS2412.
 Known leftovers (plan 37 E stage 2): inferred candidates keep missing where tsc drops it (contextuallyTypedOptional
 Property's TS18048, below under Inference), inferring `T` from `Partial<T>` makes properties required
-(strictOptionalProperties1), JSDoc `[value]` optional properties (strictOptionalProperties3). The rest of `grep -rli
+(strictOptionalProperties1). The rest of `grep -rli
 @exactOptionalPropertyTypes thirdparty/tsc/tests/cases` is unsorted.
 
 ## Inference
@@ -14,23 +14,12 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   anyFunctionType and still infers from the (non-inferrable) literal to anything but a naked type parameter. The tests
   that showed it (mappedTypeContextualTypesApplied, correlatedUnions) pass since plan 38 stage 1 without it; look here
   when one needs it.
-- **A contextually typed function's return type is computed eagerly** (conditionalTypeBasedContextualTypeReturnTypeWidening
-  types): tsc resolves an inner arrow's return type only after the call is resolved, when its contextual signature is
-  itself (S was inferred as the arrow), so `() => 0` keeps the literal; tttt widens to `number` during inference.
-- Still in the "spurious diagnostics" bucket, not investigated in depth: contextualTypeWithTuple (an array literal
-  against `number[] & { length: 2 }` / an interface extending `[]` should be a tuple, tsc's isTupleLikeType of the
-  contextual type), generatorReturnContextualType (async generator `return` against `{ x: 'x' }` TReturn widens),
-  inferenceOfNullableObjectTypesWithCommonBase, contravariantOnlyInferenceFromAnnotatedFunction,
-  optionalParameterInDestructuringWithInitializer, mappedTypeRecursiveInference2.
-- const type parameters with several candidates: `function f4<const T>(x: [T, T]): T; f4([[1, "x"], [2, "y"]])`
-  gives TS2322s where tsc infers `readonly [1, "x"] | readonly [2, "y"]` (jsdocTemplateTag6, plain TS too).
-- `unknown` where tsc infers a type: intraExpressionInferences, mappedTypeRecursiveInference; mappedTypeMultiInference
-  (`K` of `...cssSets: { [P in K]?: Style }[]` inferred from the first rest argument only: spurious TS2353).
+- Still in the "spurious diagnostics" bucket, not investigated in depth: contravariantOnlyInferenceFromAnnotatedFunction,
+  mappedTypeRecursiveInference2.
+- `unknown` where tsc infers a type: mappedTypeRecursiveInference.
 - Reverse mapped types (plan 08) are eager (arrays/tuples included), cut at depth 4 (`reverse_mapped_type`); tsc's
   are lazy. Plan 37 measured: cut 6 changes nothing in 385 mapped/infer tests, 12 hangs the suite; only
   reverseMappedTypeRecursiveInference plausibly needs laziness. Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key.
-- Contextual signature of a type with several call signatures (tsc's getIntersectedSignatures:
-  signatureCombiningRestParameters2, spurious TS7019). 107 tests have a spurious TS7006: sample them.
 - promiseTry (spurious TS2578): `Promise.try(cb, ...args)` with `U extends unknown[]` inferred from both the callback's
   parameters and the rest arguments gets no TS2554 arity error.
 - contextuallyTypedOptionalProperty(exactOptionalPropertyTypes=true): `T` inferred from `match(y => y > 0)` for an
@@ -52,11 +41,6 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 - Reverse mapped types refuse generic intersection sources (`T & {...}`), which tsc accepts (tttt's are eager).
 
 ## Relations, instantiation, reduction
-- compareSignaturesRelated's restIndex (getRestOrAnyTypeAtPosition when either side has a non-array rest) isn't
-  ported: `(a, b) => void` against `(...args: readonly [1, "1"] | readonly [2, "2"]) => any` compares per position
-  (contextualTupleTypeParameterReadonly). A straight port (`rest_or_any_type_at` in compare_signatures) broke 5 tests
-  (genericFunctionInference1, restTuplesFromContextualTypes...): generic rest `T` against a params tuple needs care.
-  restTuplesFromContextualTypes line 56 (`(a, b, ...x) => {}` against `(x: number, ...args: T)`) is related.
 - Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
   `g2<T extends unknown[]>(x: [...{ [K in keyof T]: S2<T[K]> }])` widens `g2(['a'])` to `[string]`, tsc `["a"]` (its
   forConstraint constraint of `S2<T[number]>` keeps the true branch with T's implied `string`).
@@ -79,17 +63,11 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   reduced, so no TS2509 on them; protected access through an intersection names the wrong class).
 - **Permissive instantiation** for conditional types is missing (`ty_conditional_resolve` defers where tsc picks the
   false branch); a flat `TyMapper` can't say "every type parameter -> any". Needs a wildcard type + cached permissive
-  instantiation. (reactHOCSpreadprops, the test it cost, passes now through something else.)
+  instantiation.
 - `mentions_type_variables` (conditional.c) returns "unsure" for a substitution type, so `definitely_related` falls
   back to real constraints. Making it precise made a variance measurement on react-hook-form (bulletproof-react
   form.tsx:40) overflow into TS2589 (check_related's overflow HACK), +30% RSS. Look at why the restrictive relation
   goes that deep first; an overflow while measuring variances should probably mark the measurement unreliable.
-- `in`/`out` variance annotations are parsed and dropped (`parse_generic_decl_item()`, `GenericItem` has no field):
-  tsc takes the variance from them (getVariancesWorker) and checks them: TS2636 (declared variance disagrees with the
-  measured one, marker types), TS2637 (annotation on a type that isn't an object/alias of one), TS1273/TS1274/TS1030
-  (misplaced or repeated modifiers). varianceAnnotations (27 errors), varianceReferences, varianceAnnotationValidation,
-  varianceAnnotationsWithCircularlyReferencesError, jsdocTemplateTag7/8: ~6 tests. One session: store the modifiers,
-  use them in `measure_variances`, port checkVarianceAnnotations.
 - **isTupleLikeType's length half**: an array-like context whose `length` is a number literal isn't tuple-like
   (only the "0" property rule is in `context_is_tuple_like`).
 - **Conditional true branch with `infer`s**: relating a deferred conditional through its true branch with `infer`s as
@@ -97,27 +75,15 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 - conditionalTypes2's remaining errors are elaborations: variance-based `Type 'A' is not assignable to type 'B'` for
   `Covariant<A>` vs `Covariant<B>`, and an intersection source with a bare `T` (`Foo & Bar & T`) reported whole where tsc
   reports its constraint (getEffectiveConstraintOfIntersection).
-- TS2430 leftovers: interfaceExtendsObjectIntersectionErrors (missing), mappedTypesAndObjects (spurious TS2322).
-- contextualTypeShouldBeLiteral: contextual types of union members are reduced (`string | "done"` is `string`,
-  hacks.md), so the discriminant widens and the wrong member is picked (spurious TS2353 + TS2322).
+- TS2430 leftovers: interfaceExtendsObjectIntersectionErrors (missing).
 - genericMappedTypeAsClause: `{ a, b }` against the generic `MappedModel<T>` is TS2322 where tsc says TS2353 (the
   excess check doesn't look at the resolved members of a generic mapped type); TS2312 missing.
-- genericClassExpressionInFunction: `s.genericVar = 12` on an instance of a class extending a generic class
-  expression is "not assignable to type 'V'" (the base's type parameter isn't instantiated).
-- genericRecursiveImplicitConstructorErrors3: TS2314 missing, spurious TS2355 (an erroneous return annotation isn't
-  `any`-like), spurious TS2339. A failed type-argument-arity call returns `any` where tsc still resolves a signature.
 - mergeSymbolReexportedTypeAliasInstantiation: a `type Row2<T>` added by `declare module '.'` to a module re-exporting an
   interface Row2 resolves to the interface (spurious TS2315).
-- mappedTypeAsClauseRelationships: one elaboration line too many for `+?` with a remapping `as`.
 - A homomorphic mapped type over a `satisfies`/const object doesn't resolve its keys (the `computedOptions` mapped
   type in the tsc corpus's `utilities.ts` printed a huge `keyof "a" & keyof "b"` key). Not re-probed.
 - Module augmentation / `export =` merges don't add members (moduleAugmentationsImports3/4,
-  moduleAugmentationDoesInterfaceMergeOfReexport; umd-augmentation-1..4 and augmentExportEquals6_1 fail symbols/types).
-  moduleAssignmentCompat1-4: `Symbol(A)` without a Decl for a non-instantiated namespace used as a value.
-
-- `infer X extends C`: C is resolved in the scope of the whole extends type (`type_lookup_names`), so another `infer`
-  of the same clause isn't visible (tsc: TS2304, inferTypesWithExtends2 passes); unchecked: an `infer` of an *outer*
-  conditional's extends type in C.
+  moduleAugmentationDoesInterfaceMergeOfReexport; umd-augmentation-1..4 fail symbols/types).
 
 - Base constraint of an indexed access comes out wrong in valibot: in
   `library/src/methods/required/requiredAsync.ts` (the `'~run'` member's `InferIssue<TSchema>`, TSchema constrained
@@ -127,19 +93,6 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   a small repro (a two-member union of interfaces with an optional `'~types'` under exactOptionalPropertyTypes is
   fine). Possibly a constraint computed while an alias or the type parameter's constraint is in flight and memoized.
 
-- **Unreduced unions in contextual types** (unionTypeWithIndexAndTuple): tsc's getContextualTypeForElementExpression
-  and getTypeOfPropertyOfContextualType map a union contextual type with `noReductions`, and getUnionType with
-  UnionReduction.None doesn't let `any` absorb the rest: the element contextual type of `["a"] | I` (I with a number
-  index signature of any) is the union `"a" | any`, which keeps the literal `"a"` (isLiteralOfContextualType sees the
-  `"a"` member), so `f(["a"])` passes. tttt's `ty_union` always reduces to any, so the literal widens and `[string]`
-  fails. Needs a non-reducing union (a union Ty that may hold any) for contextual types, or computing literal-ness per
-  member before the union.
-- **Alias variance of an alias whose body is a type reference** (varianceReferences): `type VarianceShape<in out V> =
-  Shape<V>` gets TS2637 (annotations only for object/function/mapped aliases), and tsc then relates
-  `VarianceShape<1>` to `VarianceShape<1 | 2>` covariantly (no error on line 44), while tttt applies the invalid `in
-  out` annotation through the alias variance path. Also tsc names `VarianceDeepShape<1 | 2>` where tttt names the
-  innermost alias `Level2of3Shape<1 | 2>`. Needs a look at which aliases tsc attaches to (deferred) type references
-  and whether getAliasVariances is even reached there.
 - **`awaitedTypeStrictNull` overflows the stack** in `instantiate_mapped_over_list` under the debug build + valgrind
   (8MB main stack; the release build passes). Deep but maybe not infinite recursion; worth checking whether the
   recursion is bounded.
@@ -185,11 +138,6 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   types). computedPropertyNames49/50 pass errors now, fail symbols/types.
 - Duplicate class/interface members show as separate symbols (tsc: one merged symbol).
 - multipleDeclarations (JS): `F.prototype.m = function` next to `this.m = v` is two symbols in tsc, one member here.
-- abstractClassUnionInstantiation fails alone (`-f`) and passes in the full run: its TS2511 errors land on an invalid
-  span (see `harness.md`); something order-dependent in the shared lib state.
-
-- In node16, a default import of a CommonJS file from ESM is `module.exports` (`obj2.default`:
-  nodeModulesTripleSlashReferenceModeDeclarationEmit7).
 
 ## Narrowing and flow
 - dependentDestructuredVariables: narrowing destructured variables by each other (tsc's
@@ -197,12 +145,6 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   plan 39).
 - The JSX attribute types (`KEY_JSX_ATTRIBUTE`) and an IIFE parameter's contextual type depend on check order (the
   last check wins).
-- **Destructuring assignment flow order** (controlFlowAssignmentPatternOrder, 12 spurious TS2322;
-  controlFlowBindingPatternOrder): assignments in a pattern's computed keys and defaults happen in tsc's evaluation
-  order, which the flow builder doesn't follow.
-- taggedPrimitiveNarrowing: `typeof hash !== "string"` then `throw` narrows `string & { __hash: true }` to never.
-- tsc's requiresScopeChange exceptions are done (the `.2` tests pass); `({ f } = this)` inside method f counts as a
-  read of the private f (tsc's rightIsThis self access): noUnusedLocals_destructuringAssignment.
 - Destructuring assignment targets are checked as a whole, not property by property (for-of47/48: tsc's
   checkDestructuringAssignment reports at the default). The `{ a = dflt }` default of a shorthand assignment pattern is
   resolved but not checked (`ObjectExprItem.shorthand_default`).

@@ -1,12 +1,5 @@
 # Harness, CLI and tools
-- **`@pretty: true`** (14 tests: prettyFileWithErrorsAndTabs, duplicateIdentifierRelatedSpans1-7,
-  manyCompilerErrorsInTheTwoFiles, multiLineContextDiagnosticWithPretty...): the errors baseline starts with tsc's
-  formatDiagnosticsWithColorAndContext output (ANSI colours, source line with gutter, `~` underline, related info,
-  "Found N errors") before the usual section. The CLI could use the same formatter.
-- `error.c` "Error added with invalid span": 29 lines per suite run (2026-09-28), in two tests:
-  modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib (`@lib: es2015.core` alone: 27 diagnostics inside lib
-  files, `Cannot find name '_'`, which error_ctx_error_s() drops; harmless, but find what in the lib refers to `_`)
-  and reservedWords3 (plan 27 leftovers). `grep "invalid span" build/failstats/stderr.txt`.
+- `@pretty: true` is done except manyCompilerErrorsInTheTwoFiles (errors and types).
 - tsc's harness adds `error TS-1: Pre-emit (N) and post-emit (M) diagnostic counts do not match!` with the excess
   diagnostics as related info when the emit resolver adds a semantic error (parseErrorIncorrectReturnToken,
   templateInsideCallback). tttt's harness has no emit and can't produce it; those tests can only pass their errors if

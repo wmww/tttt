@@ -32,18 +32,13 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 - **union_signatures_with_intersection.ts**: union member order and `(A | B) & C` vs `(A & C) | (B & C)` of signature
   types; `T & readonly [...]` where tsc prints T's constraint.
 - **Numeric-named properties**: tsc prints a property declared with a numeric literal name as written (`1.1`,
-  `9.671406556917009e+24`) and a string-literal one quoted (`{ "1": string }`); tttt quotes by the name's shape
-  (objectTypeWithNumericProperty, binaryIntegerLiteral, octalIntegerLiteral,
-  emitAccessExpressionOfCastedObjectLiteralExpressionInArrowFunctionES5). A computed negative number name prints
+  `9.671406556917009e+24`) and a string-literal one quoted (`{ "1": string }`); the suite's cases pass now. A computed negative number name prints
   `[-1]` (computedPropertyNamesDeclarationEmit6): `Prop.name_is_value` doesn't tell a number name from a string one.
 - The same for object literals: `{ "0": 0 }` prints `{ 0: number; }`, tsc `{ "0": number; }` (probe: `var m:
   MyMap<number> = { "0": 0 }`, types baseline).
 - `{ 2n: 1 }` is `{ 2: number }` here, `{}` in tsc (plus TS1539, `bugs/missing_checks.md`).
-- `A & ({} | undefined)` for a truthiness-narrowed generic (typePredicatesOptionalChaining1,
-  assertionFunctionWildcardImport2). Lone surrogates `"\u{D800}"` print `""` (unicodeExtendedEscapesInStrings10/11,
-  InTemplates10/11: types only).
 - `this` of the contextual signature in a function expression's type (`data : (this: Readonly<...> & Instance) =>
-  ...`): vueLikeDataAndPropsInference(2), json.stringify.
+  ...`): json.stringify.
 - tttt instantiates member signatures of generic classes/interfaces that can't reference the mapped type parameters;
   tsc keeps them (getObjectTypeInstantiation filters with isTypeParameterPossiblyReferenced). Display compensates
   (`mentions_mapped()`, hacks.md); doing it in `instantiate.c` would be correct and cheaper. Measure on valibot/type-fest.
@@ -67,10 +62,10 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   bundledDtsLateExportRenaming, declarationEmitTopLevelNodeFromCrossFile2, declarationsForInferredTypeFromOtherFile.
 - **`import * as ns` of a CommonJS file from an ES module file (node16+)** is a clone of the module in tsc
   (resolveESModuleSymbol, cloneTypeAsModuleType): its type is `typeof ns` by that alias, and the symbol chain doesn't
-  name the module through it (nodeModules1: `typeof m26` via `import m26 = require`, not the earlier `import * as
+  name the module through it (`typeof m26` via `import m26 = require`, not an earlier `import * as
   m4`). tttt's namespace import is the module itself. Tried making the chain skip such imports
   (symbol_chain.c candidate_list): the import lines then print `typeof import("index")`, since the type itself must
-  be a per-alias clone. ~24 node16 tests (nodeModules1, nodeModulesAllowJs1, *PackageExports*, *PatternExports*: those
+  be a per-alias clone. Node16 tests (*PackageExports*, *PatternExports*: those
   also print `typeof cjsi.cjs.mjs` where tsc's DFS goes through the `cjs` export whose exports table is a distinct
   object, then `mjs`).
 
@@ -87,7 +82,7 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 
 ## Symbols baseline
 - An augmentation of an `export =` module (`declare module "./file1" {}`): tsc's symbol at its name prints
-  `Symbol("./file1", ...)`, tttt names it through an alias in scope (`Symbol(x, ...)`): augmentExportEquals3-6.
+  `Symbol("./file1", ...)`, tttt names it through an alias in scope (`Symbol(x, ...)`): augmentExportEquals4-6.
 - A module's own exports reached through an alias of the module (`import * as self from "./self"`) are named
   `self.x` at their declarations (baseline_test_case_module_alias_text): only function/variable declarations
   (add_declaration) and type aliases ask; classes, interfaces, enums, namespaces don't yet.
