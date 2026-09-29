@@ -10503,6 +10503,8 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             (!statement_start_needs_check(&p) || list_is_element(&p, ctx, tok_peek(&p))) &&
             (jsdoc_drop_enum(&p), parse_statement(&p, toplevel, &statement))
         ) {
+            // (Its index: the JSDoc declarations that follow it are pushed after it)
+            isize statement_index = vec_statement_size(ret);
             vec_statement_push(ret, statement);
             if (p.shared->jsdoc_enum) {
                 vec_statement_push(ret, *p.shared->jsdoc_enum);
@@ -10518,7 +10520,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             if (*p.pos == ';' && statement_takes_semicolon(&statement)) {
                 // tsc's parseSemicolon(): also after a newline or a brace (`x = {}\n;`), which is no empty statement
                 p.pos++;
-                Statement* pushed = vec_statement_back_mut(ret);
+                Statement* pushed = vec_statement_at_mut(ret, statement_index);
                 pushed->span = span_make(p.shared->source, span_start_ptr(pushed->span), p.pos);
             } else if (p.whitespace == WHITESPACE_NEWLINE ||
                 statement.tag == STATEMENT_NOOP ||
@@ -10527,7 +10529,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                 *p.pos == '}'
             ) {
             } else if (hop_char(&p, ';')) {
-                Statement* pushed = vec_statement_back_mut(ret);
+                Statement* pushed = vec_statement_at_mut(ret, statement_index);
                 pushed->span = span_make(p.shared->source, span_start_ptr(pushed->span), p.pos);
             } else if (*p.pos) {
                 if (statement.tag == STATEMENT_EXPR &&
