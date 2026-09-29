@@ -1394,8 +1394,12 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
     if (state.kind == MODULE_RESOLUTION_CLASSIC) {
         result = classic_try_resolve(&state, specifier, EXT_TS | EXT_DTS, &found, &external);
         if (result == SEARCH_CONTINUE) result = classic_try_resolve(&state, specifier, secondary, &found, &external);
-    } else if (state.use_exports) {
-        // With export maps in play a `types` condition anywhere beats any JavaScript
+    } else if (state.kind == MODULE_RESOLUTION_NODE10 || (state.use_exports && !module_name_is_relative(specifier))) {
+        // node10 resolves with the TypeScript extensions first (tsc's nodeModuleNameResolverWorker:
+        // priorityExtensions), `./dir` is dir/index.ts before dir.js; the others take all extensions at once (dir.js).
+        // HACK: a package name with export maps in play is resolved in two passes too (a `types` condition anywhere
+        // beats any JavaScript), which is how tsc ends up in its selfNameModuleAugmentation behaviour (microsoft/
+        // TypeScript#50762) by other means
         result = node_try_resolve(&state, specifier, EXT_TS | EXT_DTS, &found, &external);
         if (result != SEARCH_FOUND) {
             Search second = node_try_resolve(&state, specifier, secondary, &found, &external);
