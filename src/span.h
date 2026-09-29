@@ -89,6 +89,9 @@ Span span_between(Span a, Span b);
 Span span_with_semicolon(Span statement);
 // A type member's node ends after its `;` or `,` (tsc's parseTypeMemberSemicolon)
 Span span_with_member_separator(Span member);
+// Whether only whitespace and comments (and one `;` if allowed) are between the two positions: tsc's `a.end === b.pos`
+// for adjacent nodes
+bool span_only_trivia_between(char const* from, char const* to, bool allow_semicolon);
 int span_cmp(Span a, Span b);
 void cstr_append_span(cstr* target, Span me);
 

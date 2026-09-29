@@ -56,6 +56,26 @@ Span span_with_semicolon(Span statement) {
     return statement;
 }
 
+bool span_only_trivia_between(char const* from, char const* to, bool allow_semicolon) {
+    while (from < to) {
+        if (*from == ' ' || *from == '\t' || *from == '\n' || *from == '\r' || *from == '\f' || *from == '\v') {
+            from++;
+        } else if (from + 1 < to && from[0] == '/' && from[1] == '/') {
+            while (from < to && *from != '\n') from++;
+        } else if (from + 1 < to && from[0] == '/' && from[1] == '*') {
+            from += 2;
+            while (from + 1 < to && !(from[0] == '*' && from[1] == '/')) from++;
+            from += 2;
+        } else if (*from == ';' && allow_semicolon) {
+            allow_semicolon = false;
+            from++;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
 Span span_with_member_separator(Span member) {
     if (!span_valid(member) || !member.source) return member;
     char const* end = span_end_ptr(member);

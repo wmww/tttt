@@ -1750,11 +1750,31 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
     isize count = vec_statement_size(statements);
     for (isize i = 0; i < count; i++) {
         FunctionImpl const* overload = function_declaration(vec_statement_at(statements, i));
-        if (!overload || overload->has_body || overload->body_missing || !span_valid(overload->name) || !overload->name.sv.size) continue;
+        if (!overload || !span_valid(overload->name) || !overload->name.sv.size) continue;
         // A declaration file is ambient
         SourceFile const* file = overload->name.source;
         if (file->is_declaration) return;
         FunctionImpl const* next = i + 1 < count ? function_declaration(vec_statement_at(statements, i + 1)) : nullptr;
+        if (next && name_equals(next->name.sv, overload->name.sv)) {
+            // A declaration the next one of the function doesn't directly follow (a token was skipped in between) is
+            // missing its implementation, body or not, unless the next is a second implementation (tsc's
+            // checkFunctionOrConstructorSymbol: previousDeclaration.end !== node.pos)
+            Statement const* here = vec_statement_at(statements, i);
+            Statement const* after = vec_statement_at(statements, i + 1);
+            bool adjacent = span_only_trivia_between(span_end_ptr(here->span), span_start_ptr(after->span),
+                !overload->has_body && !overload->body_missing);
+            bool some_body = false;
+            for (isize j = 0; j <= i && next->has_body && !some_body; j++) {
+                FunctionImpl const* other = function_declaration(vec_statement_at(statements, j));
+                some_body = other && other->has_body && name_equals(other->name.sv, overload->name.sv);
+            }
+            if (!adjacent && !(next->has_body && some_body)) {
+                error_ctx_error_d(errs, overload->name, 2391,
+                    "Function implementation is missing or not immediately following the declaration.");
+                continue;
+            }
+        }
+        if (overload->has_body || overload->body_missing) continue;
         if (next && name_equals(next->name.sv, overload->name.sv)) continue; // It goes on
         // Not followed by its implementation. An error if the list declares more of it later (tsc's consecutive
         // declarations), or if nothing declares more of it (the last declaration has no body)

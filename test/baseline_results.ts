@@ -24876,7 +24876,7 @@ const baselines = {
         types: true,
     },
     'overloadConsecutiveness': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

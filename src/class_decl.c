@@ -1256,7 +1256,7 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
         FunctionImpl const* func = overloadable(item);
-        if (!func || func->has_body) continue;
+        if (!func) continue;
         bool is_constructor = item->tag == CLASS_ITEM_CONSTRUCTOR;
         if (!is_constructor && !bindable_method(item)) continue;
         if (!is_constructor && item->method.is_declare) continue; // (Ambient: tsc's checkFunctionOrConstructorSymbol)
@@ -1264,6 +1264,30 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         if (!is_constructor && span_valid(item->method.name_span) && !item->method.name_span.sv.size) continue;
         ClassItem const* next = i + 1 < count ? vec_class_item_at(&my items, i + 1) : nullptr;
         if (next && !overloadable(next)) next = nullptr;
+        if (next && same_member(item, next) && !span_only_trivia_between(span_end_ptr(item->span),
+            span_start_ptr(next->span), !func->has_body && !func->body_missing)
+        ) {
+            // Not directly followed by the next declaration (a token was skipped in between): missing its
+            // implementation, body or not, unless the next is a second implementation (tsc's
+            // checkFunctionOrConstructorSymbol: previousDeclaration.end !== node.pos)
+            bool some_body = false;
+            for (isize j = 0; j <= i && overloadable(next)->has_body && !some_body; j++) {
+                ClassItem const* other = vec_class_item_at(&my items, j);
+                some_body = overloadable(other) && overloadable(other)->has_body && same_member(item, other);
+            }
+            if (!(overloadable(next)->has_body && some_body)) {
+                if (is_constructor) {
+                    error_ctx_error_d(errs, overload_name(item), 2390, "Constructor implementation is missing.");
+                } else if (item->method.is_abstract) {
+                    error_ctx_error_d(errs, overload_name(item), 2516, "All declarations of an abstract method must be consecutive.");
+                } else {
+                    error_ctx_error_d(errs, overload_name(item), 2391,
+                        "Function implementation is missing or not immediately following the declaration.");
+                }
+                continue;
+            }
+        }
+        if (func->has_body) continue;
         if (next && same_member(item, next)) {
             bool is_static = !is_constructor && item->method.is_static;
             if (!is_constructor && is_static != next->method.is_static) {
