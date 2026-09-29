@@ -2254,6 +2254,12 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                 if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
                     Ty const* key = ty_string_literal(checker, cstr_sv(&i->name_string));
                     property = ty_access_reading(checker, source, key);
+                    // (Narrowed like the reference `source.name` would be there: tsc's getFlowTypeOfDestructuring)
+                    Expr const* reference = source_expr ? skip_outer_expressions(source_expr) : nullptr;
+                    if (property && reference && (reference->tag == EXPR_IDENTIFIER || reference->tag == EXPR_PROPERTY)) {
+                        Value name = { .tag = VALUE_STRING, .string = i->name_string };
+                        property = ty_destructured_assignment_flow_type(checker, i, reference, name, i->name_span, property);
+                    }
                     ty_check_destructured_member(checker, source, key, i->name_span, errs);
                     // What the source lacks is TS2339, on the source as it is: null and undefined too (tsc's
                     // checkObjectLiteralDestructuringPropertyAssignment). An object literal source may lack a property

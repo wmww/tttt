@@ -1981,6 +1981,7 @@ Ty const* ty_tuple_rest_slice(Checker* me, Ty const* source, u32 start) {
 // tsc's getSyntheticElementAccess: `x.y.a` for the `a` of `const { a } = x.y`, and `x.b.c` / `x[0]` for the elements of
 // nested patterns (`const { b: { c } } = x`, `const [d] = x`), made once per binding. Null if the initializer isn't a
 // reference with a flow node. `flow` is set to that node
+static Expr const* synthetic_access(Checker* me, void const* owner, Expr const* object, Value key, Span key_span, FlowNode* flow);
 static Expr const* synthetic_element_access(Checker* me, Binding const* binding, FlowNode** flow) {
     Binding const* parent = binding->parent;
     if (!parent || binding->rest) return nullptr;
@@ -2010,7 +2011,12 @@ static Expr const* synthetic_element_access(Checker* me, Binding const* binding,
             object->tag == EXPR_PROPERTY ? object->property->flow : nullptr;
         if (!*flow) return nullptr;
     }
-    u64 memo_key[2] = { KEY_SYNTHETIC_ACCESS, (u64)(uintptr_t)binding };
+    return synthetic_access(me, binding, object, key, key_span, *flow);
+}
+
+// `object.key` (or `object[key]`) at `flow`, made once per `owner`
+static Expr const* synthetic_access(Checker* me, void const* owner, Expr const* object, Value key, Span key_span, FlowNode* flow) {
+    u64 memo_key[2] = { KEY_SYNTHETIC_ACCESS, (u64)(uintptr_t)owner };
     Expr const* access = intern_get(&my links, memo_key, 2);
     if (access) return access;
     PropertyExpr* property = arena_new(&my arena, PropertyExpr);
@@ -2018,7 +2024,7 @@ static Expr const* synthetic_element_access(Checker* me, Binding const* binding,
         .expr = *object,
         .prop = expr_literal(key_span, key),
         .form = key.tag == VALUE_STRING ? PROPERTY_EXPR_DOT : PROPERTY_EXPR_BRACKET,
-        .flow = *flow,
+        .flow = flow,
     };
     Expr* synthetic = arena_new(&my arena, Expr);
     *synthetic = (Expr){
@@ -2027,6 +2033,14 @@ static Expr const* synthetic_element_access(Checker* me, Binding const* binding,
     };
     *intern_slot(me, &my links, memo_key, 2) = synthetic;
     return synthetic;
+}
+
+// The same for a property of a destructuring assignment `({ a } = x.y)` (tsc's getFlowTypeOfDestructuring of an
+// assignment pattern's property): `owner` the pattern's item, `source` the assigned reference
+Ty const* ty_destructured_assignment_flow_type(Checker* me, void const* owner, Expr const* source, Value key, Span key_span, Ty const* declared) {
+    FlowNode* flow = source->tag == EXPR_IDENTIFIER ? source->identifier.flow : source->tag == EXPR_PROPERTY ? source->property->flow : nullptr;
+    if (!flow) return declared;
+    return ty_flow_type(me, synthetic_access(me, owner, source, key, key_span, flow), declared, declared, flow);
 }
 
 // `const { a } = x.y` after `if (x.y.a)`: an element of a pattern whose initializer is a reference has the flow type of

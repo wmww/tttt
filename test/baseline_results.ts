@@ -41576,7 +41576,7 @@ const baselines = {
         types: true,
     },
     'destructuringControlFlow': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

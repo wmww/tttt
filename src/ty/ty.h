@@ -1359,6 +1359,9 @@ Ty const* ty_parameter_narrowed_type(Checker* me, struct Binding const* binding,
 // An element of a pattern (no default, not `...`) read from `object` as its pattern's type: the property or element,
 // with the flow type of the destructured reference and the widening of an unannotated pattern. Null if it has none
 Ty const* ty_binding_element_type_from(Checker* me, struct Binding const* binding, Ty const* object);
+Ty const* ty_destructured_assignment_flow_type(
+    Checker* me, void const* owner, Expr const* source, Value key, Span key_span, Ty const* declared
+);
 // ty_access() of an expression that reads: with noUncheckedIndexedAccess, index signatures give undefined too
 Ty const* ty_access_reading(Checker* me, Ty const* object, Ty const* index);
 

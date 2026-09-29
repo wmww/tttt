@@ -76,3 +76,8 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
   - Inference: K of `setState<K extends keyof S>(s: Pick<S, K>)` from `{ a }` with a generic `S & State<T>` comes out as
     the constraint `"a" | keyof S` (indexedAccessRelation); `(n: Object) => 1` keeps its literal return
     in tsc when inferred for U (genericCallWithGenericSignatureArguments3).
+- A tuple's members (from Array<T>) have the array, not the tuple, as their `this` type: `sort(): this` of
+  `[number, number, number]` returns `number[]`, so the tuple isn't assignable to `interface J extends Array<Number> {
+  2: number }` (tsc: its sort returns the tuple). Relations also turn a tuple into its array against any declared
+  interface without a literal `length` (structured_related_members, before the reference case), which loses `2`.
+  destructuringArrayBindingPatternAndAssignment2.
