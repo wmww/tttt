@@ -5827,7 +5827,16 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
     hop_whitespace(&p);
 
     Tok body_start = tok_peek(&p);
-    if (*p.pos != '{' && !tok_is(body_start, ";") && !tok_is(body_start, "function") && !tok_is(body_start, "class") &&
+    if (ret->arrow_span.sv.size == 0 && *p.pos != '{') {
+        // No `=>`: the body is a missing identifier (tsc's parseParenthesizedArrowFunctionExpression), what follows
+        // continues the arrow function (`(x: any).props`)
+        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+        Expr expr = expr_implicit_any(span_from_pos(&p));
+        p.pos = span_end_ptr(ret->arrow_span);
+        ret->body = (Block){0};
+        vec_statement_push(&ret->body.statements, (Statement){ .tag = STATEMENT_RETURN_EXPR, .expr = expr });
+        ret->expression_body = true;
+    } else if (*p.pos != '{' && !tok_is(body_start, ";") && !tok_is(body_start, "function") && !tok_is(body_start, "class") &&
         tok_is_start_of_statement(&p, body_start) && !tok_is_start_of_expression(&p, body_start)
     ) {
         // A statement that is no expression: a block missing its `{` (tsc's parseArrowFunctionExpressionBody,
@@ -5840,7 +5849,8 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         expect_char(&p, '}');
     } else if (!parse_block(&p, false, &ret->body)) {
         Expr expr;
-        if (!expect_expr(&p, ctx, &expr)) {
+        const char* body_pos = p.pos;
+        if (!expect_expr(&p, ctx, &expr) && p.pos == body_pos) {
             p.pos = span_end_ptr(ret->arrow_span);
         }
         ret->body = (Block){0};
@@ -6122,7 +6132,9 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     } else {
         const char* name_start = p.pos;
         if (!parse_name_or_value(&p, &item.name_span, &item.name_string, &name_is_value)) {
-            if (!flags.is_generator) return parse_fail(&p);
+            // `{ a.b }`: the `.` is a list element to tsc (a missing name, then a missing ':' and `<missing>.b`)
+            bool dot = *p.pos == '.' && p.pos[1] != '.';
+            if (!flags.is_generator && !dot) return parse_fail(&p);
             // `{ *() {} }`: committed to a generator method by the `*`, the name is missing
             parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
             item.name_span = span_from_pos(&p);
@@ -9399,7 +9411,9 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     // expression (`{ ...*o }`, `x = * y`). Not `<` (a type assertion) or `/` (a regex). The missing name is a
     // left-hand side, so an assignment goes on too (`if (x ^= {})` missing its `)`: `<missing> ^= {}`)
     Tok t = tok_peek(parent);
-    if ((tok_is_binary_operator(t) && !tok_is(t, "<") && !tok_is(t, "/")) || tok_is_assignment_operator(t)) {
+    if ((tok_is_binary_operator(t) && !tok_is(t, "<") && !tok_is(t, "/")) || tok_is_assignment_operator(t) ||
+        tok_is(t, ".")
+    ) {
         while (parse_expr_right_side(parent, ctx, ret)) {}
     }
     return false;

@@ -43111,14 +43111,14 @@ const baselines = {
         types: true,
     },
     'objectLiteralShorthandPropertiesErrorFromNotUsingIdentifier': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'objectLiteralShorthandPropertiesErrorWithModule': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'objectLiteralShorthandPropertiesFunctionArgument': {
         errors: true,
