@@ -1678,12 +1678,22 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             if (module && vec_expr_size(&my call->args) && vec_expr_at(&my call->args, 0)->tag == EXPR_LITERAL) {
                 // (a file's module is declared by the file, and named by its path without the extension)
                 SourceFile const* file = module->module ? module->module->file : nullptr;
+                // (unless an alias in scope names it: `var m = require("./m")`, tsc's getAccessibleSymbolChain)
+                bool aliased = false;
+                if (file) {
+                    SymbolChain chain = symbol_chain_at(ctx->enclosing, module, 0, false);
+                    // (Only a require alias: an ES namespace import can be a clone of the module, tsc's
+                    // resolveESModuleSymbol, which the chain doesn't know about)
+                    Symbol const* first = chain.len ? chain.items[0] : nullptr;
+                    aliased = first && first != module && (first->flags & SYMBOL_ALIAS) && first->alias &&
+                        first->alias->item && first->alias->item->is_require;
+                }
                 Span file_start = file ? (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) } : span_null;
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = file ? vec_span_single(file_start) : declaration_get_spans(module),
                     .allow_declaration_empty = true,
                     .span = vec_expr_at(&my call->args, 0)->inner_span,
-                    .text = file ? module_name_for_error(module, nullptr, false) : symbol_text(ctx, module),
+                    .text = file && !aliased ? module_name_for_error(module, nullptr, false) : symbol_text(ctx, module),
                 });
             }
             for_each (i, vec_expr, &my call->args) {
