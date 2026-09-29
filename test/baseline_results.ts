@@ -22091,9 +22091,9 @@ const baselines = {
         types: true,
     },
     'moduleResolutionAsTypeReferenceDirectiveScoped': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionNoResolve': {
         errors: true,
@@ -31521,9 +31521,9 @@ const baselines = {
         types: true,
     },
     'typeReferenceDirectiveScopedPackageCustomTypeRoot': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeReferenceDirectiveWithFailedFromTypeRoot': {
         errors: true,

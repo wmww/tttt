@@ -1264,13 +1264,23 @@ static StrList effective_type_roots(ModuleResolver* me) {
     return ret;
 }
 
+// tsc's getCandidateFromTypeRoot(): a scoped name is mangled in a `node_modules/@types` root
+static cstr candidate_from_type_root(csview root, csview name) {
+    bool at_types = csview_ends_with(root, "/node_modules/@types") || csview_ends_with(root, "/node_modules/@types/");
+    if (!at_types) return join(root, name);
+    cstr mangled = mangle_scoped_name(name);
+    cstr ret = join(root, cstr_sv(&mangled));
+    cstr_drop(&mangled);
+    return ret;
+}
+
 // tsc's resolveFromTypeRoot(): the last resort of a node-style lookup of a module name
 static bool load_from_type_roots(State* me, csview name, Found* out) {
     if (!my resolver->options->type_roots_set) return false;
     StrList roots = effective_type_roots(my resolver);
     bool found = false;
     for (isize i = 0; i < roots.count && !found; i++) {
-        cstr candidate = join(cstr_sv(&roots.items[i]), name);
+        cstr candidate = candidate_from_type_root(cstr_sv(&roots.items[i]), name);
         if (directory_exists(me, cstr_sv(&roots.items[i]))) {
             found = load_file(me, cstr_sv(&candidate), EXT_DTS, out);
             if (!found && directory_exists(me, cstr_sv(&candidate))) {
@@ -1548,7 +1558,7 @@ ResolvedModule module_resolver_resolve_type_reference(
     // Primary: the type roots
     StrList roots = effective_type_roots(me);
     for (isize i = 0; i < roots.count && !resolved; i++) {
-        cstr candidate = join(cstr_sv(&roots.items[i]), name);
+        cstr candidate = candidate_from_type_root(cstr_sv(&roots.items[i]), name);
         if (directory_exists(&state, cstr_sv(&roots.items[i]))) {
             // Custom type roots resolve as file or directory, like modules
             if (my options->type_roots_set) resolved = load_file(&state, cstr_sv(&candidate), EXT_DTS, &found);
