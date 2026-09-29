@@ -27803,7 +27803,7 @@ const baselines = {
     'reverseMappedTupleContext': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypeAssignableToIndex': {
         errors: true,
@@ -27831,7 +27831,7 @@ const baselines = {
         types: true,
     },
     'reverseMappedTypeIntersectionConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

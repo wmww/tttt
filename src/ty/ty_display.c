@@ -2311,7 +2311,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             for (u32 i = 0; i < ty->composite.types.len; i++) {
                 Ty const* t = ty->composite.types.data[i];
                 if (i) out_lit(d, " & ");
-                display_parenthesized_if(me, d, t, !shows_alias(d, t) && (t->kind == TY_UNION || t->kind == TY_CONDITIONAL ||
+                // (A union that prints as the `keyof X` it was made from is a type operator, which needs none)
+                bool keyof_origin = t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_KEYOF;
+                display_parenthesized_if(me, d, t, !shows_alias(d, t) && ((t->kind == TY_UNION && !keyof_origin) || t->kind == TY_CONDITIONAL ||
                     is_function_like(me, d, t) || displays_as_intersection(me, d, t)));
             }
             break;
