@@ -26,8 +26,11 @@ void identifier_type_drop(IdentifierType* me) {
 
 // Member of a namespace by meaning, TS2694 if there is none (TS2724 with a close enough name, when `suggest`: not in
 // an import type). *found is the member as declared (maybe an alias)
+// `shown`: the namespace as the error names it, if not `namespace` (an import type's names are the exports as
+// declared, aliases included: tsc's getTypeFromImportTypeNode keeps them unresolved)
 static Symbol const* get_symbol_from_namespace(
     Symbol const* namespace,
+    Symbol const* shown,
     Span item_name,
     u32 meaning,
     bool suggest,
@@ -40,7 +43,7 @@ static Symbol const* get_symbol_from_namespace(
     Symbol const* decl = symbol_for_meaning(member, meaning);
     if (!decl && meaning == SYMBOL_TYPE) decl = symbol_for_meaning(member, SYMBOL_ANY_MEANING); // TS2749 below
     if (!decl) {
-        cstr qualified = symbol_fully_qualified_name(namespace);
+        cstr qualified = symbol_fully_qualified_name(shown ? shown : namespace);
         if (!suggest || !scope_report_misspelled_export(namespace, item_name, cstr_sv(&qualified), errs)) {
             error_ctx_error_d(errs, item_name, 2694,
                 "Namespace '", qualified, "' has no exported member '", item_name, "'.");
@@ -155,13 +158,16 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             }
         }
     }
+    Symbol const* shown = nullptr;
     for_each (i, vec_span, &my namespaces) {
         Symbol const* found;
-        container = get_symbol_from_namespace(container, *i, SYMBOL_NAMESPACE, false, &found, errs);
+        container = get_symbol_from_namespace(container, shown, *i, SYMBOL_NAMESPACE, false, &found, errs);
         if (!container || container->is_placeholder) return;
         vec_symbol_cptr_push(&my namespace_symbols, found);
+        shown = found;
     }
-    my target = get_symbol_from_namespace(container, my name, my import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, false, &my symbol, errs);
+    my target = get_symbol_from_namespace(container, shown, my name, my import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, false,
+        &my symbol, errs);
 }
 
 // tsc's resolveNameHelper at a class: a static member can't see the class's type parameters (TS2302)
@@ -291,7 +297,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                         "' in '", *i, "' with '", *i, "[\"", right, "\"]'?");
                     decl = nullptr;
                 } else {
-                    decl = get_symbol_from_namespace(namespace, *i, SYMBOL_NAMESPACE, true, &found, errs);
+                    decl = get_symbol_from_namespace(namespace, nullptr, *i, SYMBOL_NAMESPACE, true, &found, errs);
                 }
             }
             // Everything looked up in a placeholder is any
@@ -302,7 +308,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             vec_symbol_cptr_push(&my namespace_symbols, found);
         }
         if (namespace) {
-            my target = get_symbol_from_namespace(namespace, my name, SYMBOL_TYPE, true, &my symbol, errs);
+            my target = get_symbol_from_namespace(namespace, nullptr, my name, SYMBOL_TYPE, true, &my symbol, errs);
         }
     } else if (my jsdoc && jsdoc_lookup_intended(me, names)) {
     } else if (my keyword) {
