@@ -36841,7 +36841,7 @@ const baselines = {
         types: true,
     },
     'privateNamesAndDecorators': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

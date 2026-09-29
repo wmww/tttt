@@ -1809,7 +1809,14 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         // tsc's checkGrammarProperty/Method/Accessor (not for an ambient class's accessors)
         Span private_name = class_item_private_name(i);
         bool ambient_accessor = i->tag == CLASS_ITEM_METHOD && i->method.accessor && my symbol && my symbol->is_ambient;
-        if (span_valid(private_name) && compiler_options()->target < SCRIPT_TARGET_ES2015 && !ambient_accessor) {
+        // (Not after the decorators' grammar error: checkGrammarModifiers comes first, one grammar error per member)
+        Span first_char = i->span;
+        first_char.sv = csview_from_n(span_start_ptr(i->span), span_valid(i->span) ? 1 : 0);
+        bool decorators_rejected = vec_expr_size(&i->decorators) && span_valid(i->span) &&
+            (error_ctx_find(errs, first_char, 1206) || error_ctx_find(errs, first_char, 1249));
+        if (span_valid(private_name) && compiler_options()->target < SCRIPT_TARGET_ES2015 && !ambient_accessor &&
+            !decorators_rejected
+        ) {
             error_ctx_grammar_error_d(errs, private_name, 18028,
                 "Private identifiers are only available when targeting ECMAScript 2015 and higher.");
         } else if (i->tag == CLASS_ITEM_FIELD && i->field.is_auto_accessor && compiler_options()->target < SCRIPT_TARGET_ES2015 &&
