@@ -8680,6 +8680,7 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
 
         // Any identifier name will do: `default as a`, `a as default`
         if (parse_module_export_name(&p, &item.source_name) || expect_identifier(&p, &item.source_name)) {
+            const char* end = p.pos;
             hop_whitespace(&p);
 
             if (hop_start_if_ends_on_word_break(&p, "as")) {
@@ -8687,11 +8688,12 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
                 if (!parse_module_export_name(&p, &item.decl_name)) {
                     expect_identifier(&p, &item.decl_name);
                 }
+                end = p.pos;
             } else {
                 item.decl_name = item.source_name;
             }
 
-            item.full_span = span_from(a);
+            item.full_span = span_make(p.shared->source, a.start, end);
             vec_port_item_push(&ret->items, item);
         } else {
             hop_token(&p);

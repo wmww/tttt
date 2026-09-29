@@ -171,7 +171,8 @@ static void port_item_check_js_type(PortStatement const* me, PortItem const* ite
         default:
             return;
     }
-    if (!item->symbol || !item->symbol->alias || item->jsdoc || item->value_only) return;
+    // (A type-only one has its TS8006 already: tsc's isTypeOnlyImportOrExportDeclaration)
+    if (!item->symbol || !item->symbol->alias || item->jsdoc || item->value_only || item->type_only || my main.type_only) return;
     Symbol const* target = symbol_resolve_alias(item->symbol);
     if (!target || target->is_placeholder || target->is_unresolved || symbol_resolved_flags(target) & SYMBOL_VALUE) return;
     Span at = span_valid(item->source_name) ? item->source_name : item->decl_name;
