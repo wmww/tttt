@@ -118,6 +118,9 @@ typedef struct ClassDecl {
     OuterGenerics const* outer_generics; // The type parameters it captures (set by the resolve walk)
     Expr extends;
     Span extends_clause; // `extends A<T>`
+    // JavaScript: the type of an `@augments`/`@extends` tag naming the class `extends` names, which stands for the clause
+    // (tsc's getEffectiveBaseTypeNode): where its type arguments are checked
+    Span jsdoc_extends;
     VecSpannedType implements; // The first `implements` clause's entity names (`A.B<T>`)
     // Heritage tsc parses but doesn't check (the parser reports checkGrammarClassDeclarationHeritageClauses' TS1172-
     // TS1175 about it): the elements after the base (`extends A, B`, a second `extends` clause) and those of later

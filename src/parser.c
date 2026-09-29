@@ -3885,6 +3885,11 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     }
     if (class_decl->extends.tag == EXPR_IMPLICIT_ANY || class_decl->extends.tag == EXPR_GENERIC_PARAMS) return;
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
+    if (tag && tag->type.tag == TYPE_IDENTIFIER && span_valid(extends_name) &&
+        csview_equals_sv(tag->type.identifier->name.sv, extends_name.sv)
+    ) {
+        class_decl->jsdoc_extends = tag->type_span;
+    }
     if (!tag || tag->type.tag != TYPE_IDENTIFIER || !vec_spanned_type_size(&tag->type.identifier->generic_params)) return;
     VecSpannedType params = tag->type.identifier->generic_params;
     tag->type.identifier->generic_params = (VecSpannedType){0};

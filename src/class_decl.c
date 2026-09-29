@@ -1304,7 +1304,10 @@ static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
     if (base->tag != EXPR_IDENTIFIER || base->identifier.keyword || expr_is_perenthisized(base)) return;
     Symbol const* target = base->identifier.target;
     if (!target || target->is_placeholder || !(target->flags & SYMBOL_CLASS)) return;
-    several_types_check_arity(target, arg_count, my extends.outer_span, missing_extends, errs);
+    // (An `@augments` tag is the heritage clause: its type arguments, reported at it)
+    if (span_valid(my jsdoc_extends)) missing_extends = false;
+    several_types_check_arity(target, arg_count, span_valid(my jsdoc_extends) ? my jsdoc_extends : my extends.outer_span,
+        missing_extends, errs);
 }
 
 // tsc's checkClassForStaticPropertyNameConflicts: a static member named like a property every function has (TS2699).
