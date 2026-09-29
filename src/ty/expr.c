@@ -2936,7 +2936,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (ctx.is_const) flags |= PROP_READONLY;
         if (pattern_context) {
             Prop const* implied = ty_get_prop(me, pattern_context, name);
-            if (implied && (implied->flags & PROP_OPTIONAL)) flags |= PROP_OPTIONAL;
+            if (implied && (implied->flags & PROP_OPTIONAL)) flags |= PROP_OPTIONAL | PROP_PATTERN_OPTIONAL;
         }
         // A destructuring target's member with a default is optional (tsc's checkObjectLiteral inDestructuringPattern)
         if (expr->assignment_pattern && ((i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) ||

@@ -47463,12 +47463,12 @@ const baselines = {
     'contextuallyTypedIife': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedIifeStrict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeOfThisInFunctionExpression': {
         errors: true,
