@@ -5067,14 +5067,25 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
     // signature takes every name it applies to)
     Ty const* best = nullptr;
     if (structured_source) {
-        Members const* members = ty_members(me, source);
+        // (Of an intersection, every member's properties; the types aren't needed otherwise)
+        u32 prop_count;
+        SourceProp* props = nullptr;
+        if (source->kind == TY_INTERSECTION) {
+            props = source_props(me, source, nullptr, &prop_count);
+        } else {
+            Members const* members = ty_members(me, source);
+            prop_count = members->prop_count;
+            props = malloc(sizeof(SourceProp) * (prop_count ? prop_count : 1));
+            panic_if(!props, "out of memory");
+            for (u32 p = 0; p < prop_count; p++) props[p] = (SourceProp){ .prop = members->props[p] };
+        }
         u32 best_count = 0;
         for (u32 i = 0; i < types.len; i++) {
             Ty const* t = types.data[i];
             if (!(t->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
             u32 count = 0;
-            for (u32 p = 0; p < members->prop_count; p++) {
-                Atom const* name = members->props[p]->name;
+            for (u32 p = 0; p < prop_count; p++) {
+                Atom const* name = props[p].prop->name;
                 count += find_prop(me, apparent_type(me, t), name, 0).found ||
                     ty_applicable_index_info(me, t, ty_prop_name_literal(me, name));
             }
@@ -5083,6 +5094,7 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
                 best_count = count;
             }
         }
+        free(props);
     }
     return best;
 }

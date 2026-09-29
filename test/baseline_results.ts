@@ -63731,7 +63731,7 @@ const baselines = {
         types: true,
     },
     'intersectionAndUnionTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
