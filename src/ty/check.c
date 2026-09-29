@@ -2138,6 +2138,27 @@ static Ty const* this_parameter_class(Checker* me, PropertyExpr const* access) {
     return kind == TY_DECLARED_CLASS_INSTANCE || kind == TY_DECLARED_INTERFACE ? this_type : nullptr;
 }
 
+static bool span_contains(Span outer, char const* at) {
+    return at >= span_start_ptr(outer) && at < span_end_ptr(outer);
+}
+
+// The class that declares prop as an abstract property or accessor (not a method: tsc's symbolHasNonMethodDeclaration),
+// null if it isn't one
+static ClassDecl const* abstract_property_class(Prop const* prop) {
+    while (prop->target) prop = prop->target;
+    if ((prop->flags & PROP_METHOD) || !prop->parent || !span_valid(prop->decl->name_span)) return nullptr;
+    ClassDecl const* class_decl = class_decl_of(prop->parent);
+    if (!class_decl) return nullptr;
+    char const* name_at = span_start_ptr(prop->decl->name_span);
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (!span_contains(i->span, name_at)) continue;
+        bool is_abstract = i->tag == CLASS_ITEM_FIELD ? i->field.is_abstract :
+            i->tag == CLASS_ITEM_METHOD && i->method.accessor ? i->method.is_abstract : false;
+        return is_abstract ? class_decl : nullptr;
+    }
+    return nullptr;
+}
+
 // tsc's checkPropertyAccessibilityAtLocation for one (constituent) property, false if it reported
 static bool check_accessibility(
     Checker* me, PropertyExpr const* site, Prop const* prop, Ty const* containing, bool is_super, ErrorCtx* errs
@@ -2166,6 +2187,19 @@ static bool check_accessibility(
     if ((prop->flags & PROP_ACCESSOR) && site->assignment_target) {
         modifiers = (prop->flags & PROP_SET_PRIVATE ? PROP_PRIVATE : 0) |
             (prop->flags & PROP_SET_PROTECTED ? PROP_PROTECTED : 0);
+    }
+    // An abstract property read through `this` while the class initializes (tsc's isNodeUsedDuringClassInitialization:
+    // directly in a constructor, or a field's initializer)
+    if (is_keyword(&site->expr, KEYWORD_IDENTIFIER_THIS) && ((site->containing_function &&
+        site->containing_function->constructed_class) || site->initializer_context == INITIALIZER_INSTANCE_FIELD ||
+        site->initializer_context == INITIALIZER_STATIC_FIELD)
+    ) {
+        ClassDecl const* abstract_class = abstract_property_class(prop);
+        if (abstract_class && span_valid(abstract_class->name)) {
+            error_ctx_error_d(errs, span, 2715, "Abstract property '", atom_sv(prop->name), "' in class '",
+                abstract_class->name, "' cannot be accessed in the constructor.");
+            return false;
+        }
     }
     if (!modifiers || !prop->parent) return true;
     ClassDecl const* declaring = class_decl_of(prop->parent);
@@ -2957,9 +2991,6 @@ static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview nam
     return false;
 }
 
-static bool span_contains(Span outer, char const* at) {
-    return at >= span_start_ptr(outer) && at < span_end_ptr(outer);
-}
 
 // tsc's checkPropertyNotUsedBeforeDeclaration with isBlockScopedNameDeclaredBeforeUse: `this.x` (or `o.x`) in a field
 // initializer or a static block, where x isn't initialized yet (TS2729). Any property declared later in the file
