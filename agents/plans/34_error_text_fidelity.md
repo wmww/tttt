@@ -32,8 +32,14 @@ properties, suggestions, type-only imports), and the harness dropping the commen
 - **`outside diagnostics`** (12): the errors.txt differs outside the per-diagnostic parts: diagnostics in lib files
   (`lib.es5.d.ts(--,--)`, duplicateNumericIndexers), global diagnostics order/text (importAssertion1,
   packageJsonImportsExportsOptionCompat x5), requireOfAnEmptyFile1. Diff them directly.
-- `chain:deeper: Type _ is not assignable to type _.` (7): tttt elaborates one level further than tsc somewhere
-  other than type parameter constraints; `chain:missing: Property _ is missing` (6).
+- Elaboration chain (2026-09-29 session C: its 69-test queue is down to ~20). Left there, each needing more than a
+  message rule: `The intersection 'A & B' was reduced to 'never'` (tsc's elaborateNeverIntersection needs the reduced
+  intersection, tttt makes plain never at construction: intersectionReduction(Strict), intersectionWithConflictingPrivates,
+  typeGuardsWithInstanceOf, mixinPrivateAndProtected); a generic source explained through its constraint before an
+  intersection target's members (conditionalTypes1: `T` to `NonNullable<T>`); keyof targets whose constraint is an
+  intersection (keyofAndIndexedAccessErrors); subclassThisTypeAssignable01 (a relation difference, not text);
+  jsxChildrenWrongType (an optional tuple element's missing type prints as `undefined` under exactOptionalPropertyTypes);
+  bigintWithLib (tsc repeats one line three times: a relation through the Symbol.toStringTag overloads?).
 - Related info still missing: TS2793 (overload implementation), TS6203, TS2771, TS2738, TS2728 on computed
   symbol-named members (`[Symbol.iterator]` declared here, TS2411).
 
