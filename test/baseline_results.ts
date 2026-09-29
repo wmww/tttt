@@ -22561,12 +22561,12 @@ const baselines = {
         types: true,
     },
     'multipleExportAssignments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'multipleExportAssignmentsInAmbientDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48771,7 +48771,7 @@ const baselines = {
         types: true,
     },
     'duplicateExportAssignments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -548,13 +548,14 @@ bool scope_has_function(Scope const* me) {
 
 // Declaring
 
-static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
+// `display`: the name to say when it isn't the declaration's text (tsc's getDisplayName: `export=`)
+static Error* report_conflict_named(ErrorCtx* errs, Span at, unsigned code, csview display) {
     if (!span_valid(at) || !at.source || at.source->is_stdlib) return nullptr;
     // Once per declaration: a later conflict adds to the error that's there (tsc's lookupOrIssueError)
     Error* existing = error_ctx_find(errs, at, code == 2567 || code == 2451 ? code : 2300);
     if (existing) return existing;
     // (A missing name is tsc's "__missing", shown as "(Missing)")
-    csview name = at.sv.size ? at.sv : c_sv("(Missing)");
+    csview name = display.size ? display : at.sv.size ? at.sv : c_sv("(Missing)");
     switch (code) {
         case 2567:
             return error_ctx_error_d(errs, at, 2567,
@@ -564,6 +565,10 @@ static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
         default:
             return error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", name, "'.");
     }
+}
+
+static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
+    return report_conflict_named(errs, at, code, (csview){0});
 }
 
 // tsc's addDuplicateDeclarationError: the checker's merges (across files) point each error at the other side's
@@ -612,7 +617,9 @@ static void report_multiple_defaults(ErrorCtx* errs, Symbol const* existing, Spa
     }
 }
 
-static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, u32 includes, bool related) {
+static void report_conflicts(
+    ErrorCtx* errs, Symbol const* existing, Span name, u32 includes, bool related, csview display
+) {
     if (existing->is_global_this) {
         // tsc's mergeSymbol is silent about the built-in `globalThis`: what a script declares by that name is
         // initializeTypeChecker's error (a module's `declare global` declarations aren't)
@@ -645,11 +652,11 @@ static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, 
     for (u32 i = 0; i < existing->decl_count; i++) {
         Span at = existing->decls[i].name;
         if (!same_file && at.source && at.source->plain_js) continue;
-        Error* error = report_conflict(errs, at, code);
+        Error* error = report_conflict_named(errs, at, code, display);
         if (related) add_duplicate_related(error, at, name);
     }
     if (!same_file && name.source && name.source->plain_js) return;
-    Error* error = report_conflict(errs, name, code);
+    Error* error = report_conflict_named(errs, name, code, display);
     for (u32 i = 0; related && i < existing->decl_count; i++) {
         add_duplicate_related(error, name, existing->decls[i].name);
     }
@@ -800,7 +807,7 @@ static Symbol* declare_symbol(
         Symbol* inherited = symbol_table_lookup(table->parent, name, hash);
         if (inherited) {
             if (inherited->flags & excludes) {
-                report_conflicts(scope->errs, inherited, name_span, includes, false);
+                report_conflicts(scope->errs, inherited, name_span, includes, false, (csview){0});
                 return binder_new_symbol(binder, name, includes);
             }
             existing = clone_parent_symbol(binder, inherited);
@@ -816,7 +823,8 @@ static Symbol* declare_symbol(
             !(table == &binder->globals && global_merges_by_assignment(scope, existing, name))
         ) {
             if (default_export && existing->decl_count) report_multiple_defaults(scope->errs, existing, name_span);
-            else report_conflicts(scope->errs, existing, name_span, includes, false);
+            else report_conflicts(scope->errs, existing, name_span, includes, false,
+                csview_equals(name, "export=") ? name : (csview){0});
             return binder_new_symbol(binder, name, includes);
         }
         existing->decl_flags_before = existing->flags;
@@ -2706,7 +2714,7 @@ static void merge_symbol(Binder* binder, Symbol* target, Symbol* source, ErrorCt
         return;
     }
     if (target->flags & excluded_flags(source->flags)) {
-        report_conflicts(errs, target, source->decls[0].name, source->flags, true);
+        report_conflicts(errs, target, source->decls[0].name, source->flags, true, (csview){0});
         for (u32 i = 1; i < source->decl_count; i++) report_conflict(errs, source->decls[i].name, 2300);
         return;
     }
