@@ -1917,15 +1917,15 @@ static Ty const* binary_result(Checker* me, Ty const* left, BinaryOp op, Ty cons
 
         case BINARY_OP_OR_OR: {
             if (!ty_can_be_falsy(me, left)) return left;
-            // (tsc's getNonNullableType of it: a T that may be nullish is NonNullable<T>)
-            Ty const* types[2] = { ty_non_nullish_part(me, remove_definitely_falsy(me, left)), right };
+            // (tsc's getNonNullableType of it: a T that may be nullish is NonNullable<T>, the identity without strictNullChecks)
+            Ty const* types[2] = { ty_non_nullable(me, remove_definitely_falsy(me, left)), right };
 
             return ty_union_subtype_reduced(me, types, 2);
         }
 
         case BINARY_OP_EH_EH: {
             if (!ty_can_be_nullish(me, left)) return left;
-            Ty const* types[2] = { ty_non_nullish_part(me, left), right };
+            Ty const* types[2] = { ty_non_nullable(me, left), right };
             return ty_union_subtype_reduced(me, types, 2);
         }
 
