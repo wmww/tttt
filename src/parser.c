@@ -3150,12 +3150,25 @@ static bool parse_jsdoc_bare_type(Parser* parent, const char** pos, const char* 
     return parsed;
 }
 
+static int identifier_escape_size(const char* c);
+static cstr jsx_name_value(csview name);
+
+// A JSDoc name is a parameter's name, `\u0061` for `a` (tsc's scanner decodes escapes in identifiers)
+static bool jsdoc_name_is(csview jsdoc_name, csview name) {
+    if (!memchr(jsdoc_name.buf, '\\', (size_t)jsdoc_name.size)) return csview_equals_sv(jsdoc_name, name);
+    cstr decoded = jsx_name_value(jsdoc_name);
+    bool ret = csview_equals_sv(cstr_sv(&decoded), name);
+    cstr_drop(&decoded);
+    return ret;
+}
+
 static const char* jsdoc_parse_name(const char* c, const char* end, Span* ret, SourceFile const* source) {
     const char* start = c;
     while (c < end && (is_identifier_char(*c) || *c == '.' || (uint8_t)*c >= 0x80 ||
-        (*c == '[' && c[1] == ']'))
+        (*c == '[' && c[1] == ']') || identifier_escape_size(c))
     ) {
-        c += *c == '[' ? 2 : 1;
+        int escape = identifier_escape_size(c);
+        c += escape ? escape : *c == '[' ? 2 : 1;
     }
     *ret = c > start ? span_make(source, start, c) : span_null;
     return c;
@@ -3530,7 +3543,7 @@ static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function
     Binding const* binding = &arg->initializer.binding;
     if (binding->tag == BINDING_IDENTIFIER) {
         for_each (i, vec_jsdoc_tag, tags) {
-            if (i->kind == JSDOC_TAG_PARAM && !i->nested && span_valid(i->name) && csview_equals_sv(i->name.sv, binding->content_span.sv)) {
+            if (i->kind == JSDOC_TAG_PARAM && !i->nested && span_valid(i->name) && jsdoc_name_is(i->name.sv, binding->content_span.sv)) {
                 return i->has_type ? i : nullptr;
             }
         }
@@ -3766,7 +3779,7 @@ static void jsdoc_find_param_issues(VecJsDocTag const* tags, FunctionImpl* funct
             bool found = i->name_first;
             for_each (a, vec_function_arg, &function->args) {
                 Binding const* binding = &a->initializer.binding;
-                found |= binding->tag == BINDING_IDENTIFIER && csview_equals_sv(binding->content_span.sv, name);
+                found |= binding->tag == BINDING_IDENTIFIER && jsdoc_name_is(name, binding->content_span.sv);
             }
             if (found) continue;
         }

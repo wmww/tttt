@@ -174,7 +174,8 @@ static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names, ErrorCtx* er
         my target = scope_get_type(names, csview_from(global), &my symbol);
         return true;
     }
-    if (span_equals(my name, "Object") && (vec_spanned_type_size(&my generic_params) == 2 || (no_args && implicit_any))) {
+    // (`Object<T>` with another number of arguments is TS2315, and any too)
+    if (span_equals(my name, "Object") && (vec_spanned_type_size(&my generic_params) == 2 || implicit_any)) {
         // (tsc's isJSDocIndexSignature: a string or number key)
         TypeNode const* key = no_args ? nullptr : &vec_spanned_type_at(&my generic_params, 0)->type;
         bool index = key && (key->tag == TYPE_STRING || key->tag == TYPE_NUMBER);
