@@ -1269,10 +1269,20 @@ static Ty const* narrow_directly_related(Checker* me, Ty const* t, void const* a
                                        : ty_intrinsic(me, TY_NEVER);
 }
 
-// A type parameter whose constraint the candidate member fits is both
+// Some member of `ty` is instantiable (tsc's maybeTypeOfKind(t, TypeFlags.Instantiable))
+static bool maybe_instantiable(Ty const* ty) {
+    if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) return true;
+    if (ty->kind != TY_UNION && ty->kind != TY_INTERSECTION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (maybe_instantiable(ty->composite.types.data[i])) return true;
+    }
+    return false;
+}
+
+// A generic member (`T`, `T & {}`) whose constraint the candidate member fits is both
 static Ty const* narrow_generic_related(Checker* me, Ty const* t, void const* arg) {
     NarrowArg const* a = arg;
-    if (!(t->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) return ty_intrinsic(me, TY_NEVER);
+    if (!maybe_instantiable(t)) return ty_intrinsic(me, TY_NEVER);
     Ty const* constraint = ty_base_constraint(me, t);
     if (!constraint || constraint == t) constraint = ty_intrinsic(me, TY_UNKNOWN_);
     if (!(a->check_derived ? ty_is_type_derived_from(me, a->c, constraint) : is_subtype(me, a->c, constraint))) {

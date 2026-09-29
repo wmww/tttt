@@ -16796,9 +16796,9 @@ const baselines = {
         types: false,
     },
     'inKeywordAndUnknown': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inKeywordNarrowingWithNoUncheckedIndexedAccess': {
         errors: true,
