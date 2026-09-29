@@ -5560,6 +5560,10 @@ static Tristate arrow_function_tristate(Parser* p) {
             return tok_is(third, "as") ? TRISTATE_FALSE : TRISTATE_TRUE;
         }
         if (!tok_is_identifier(second) && !tok_is(second, "this")) return TRISTATE_FALSE;
+        // (tsc's isIdentifier(): not `yield` in a generator or `await` in an async function)
+        if ((p->shared->in_generator && tok_is(second, "yield")) || (p->shared->in_async && tok_is(second, "await"))) {
+            return TRISTATE_FALSE;
+        }
         if (tok_is(third, ":")) return TRISTATE_TRUE;
         if (tok_is(third, "?")) {
             Tok fourth = tok_next(p, third);
@@ -5594,7 +5598,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_ARROW_FUNCTION);
     Anchor a = anchor(&p);
     bool is_definitely_function = false;
-    Span lone_arg_name;
+    Span lone_arg_name = span_null;
 
     // In a JSX file `<T>(x) => x` is an element: a generic arrow function is written `<T,>` or `<T extends X>`
     if (*p.pos == '<' && p.shared->source->is_jsx && !jsx_generic_arrow_start(&p)) {
@@ -5634,7 +5638,12 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
 
     Anchor arrow_a = anchor(&p);
     if (!hop_start(&p, "=>")) {
-        if (is_definitely_function) {
+        // tsc's parseParenthesizedArrowFunctionExpression takes a parameter list followed by `{` as an arrow function
+        // missing its `=>` even when the tri-state lookahead was unsure (`(x) { }`)
+        // (only where tsc's parseAssignmentExpressionOrHigher looks for arrow functions: not in `extends (B) {}`)
+        if (is_definitely_function || (*p.pos == '{' && *a.start == '(' && !span_valid(lone_arg_name) &&
+                !ctx.reject_operators && ctx.min_precedence < ternary_precedence)
+        ) {
             expected_token_error(&p, "=>");
         } else {
             function_impl_drop(ret);
