@@ -1122,7 +1122,14 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             u32 saved_generic = baseline_test_case_enter_generic(ctx, &my method.func.generic);
             VecSpan declarations = {0};
             Span written_name = my method.name_span;
-            if (my method.accessor && my method.accessor_first) {
+            ClassItem const* symbol_items[64];
+            u32 symbol_count = class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
+            if (symbol_count) {
+                // The declarations of its symbol (tsc's binder: see class_item_symbol_items())
+                for (u32 k = 0; k < symbol_count; k++) vec_span_push(&declarations, symbol_items[k]->span);
+                ClassItem const* first = symbol_items[0];
+                written_name = first->tag == CLASS_ITEM_METHOD ? first->method.name_span : first->field.name_span;
+            } else if (my method.accessor && my method.accessor_first) {
                 // Both halves of an accessor pair declare the same property. Items live in one vec, so walk forward
                 // from the first
                 ClassItem* first = my method.accessor_first;
@@ -1185,12 +1192,28 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
         }   break;
 
         case CLASS_ITEM_FIELD: {
+            ClassItem const* symbol_items[64];
+            u32 symbol_count = class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
+            VecSpan declarations = vec_span_init();
+            for (u32 k = 0; k < symbol_count; k++) vec_span_push(&declarations, symbol_items[k]->span);
+            if (!symbol_count) vec_span_push(&declarations, my span);
+            ClassItem const* first = symbol_count ? symbol_items[0] : me;
+            Span written_name = first->tag == CLASS_ITEM_METHOD ? first->method.name_span : first->field.name_span;
             add_member_symbol(ctx, (BaselineSym){
-                .declarations = vec_span_single(my span),
+                .declarations = declarations,
                 .span = my field.name_span,
-                .text = member_text(ctx, ctx->class_symbol, class_name, my field.name_span.sv, false),
+                .text = member_text(ctx, ctx->class_symbol, class_name, written_name.sv, false),
             }, my field.computed_key);
-            baseline_test_case_add_type(ctx, my field.name_span, optional_member_type(class_item_get_type(me), my field.is_optional));
+            Ty const* type = optional_member_type(class_item_get_type(me), my field.is_optional);
+            // (Joined into a symbol something else made first: that symbol's type)
+            if (first != me && ctx->class_symbol) {
+                Checker* checker = current_checker;
+                Ty const* owner = my field.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
+                    ty_declared_type_of(checker, ctx->class_symbol);
+                Prop const* prop = ty_get_prop(checker, owner, checker_atom(checker, cstr_sv(&my field.name_string)));
+                if (prop) type = prop_type(checker, prop);
+            }
+            baseline_test_case_add_type(ctx, my field.name_span, type);
             if (my field.computed_key) computed_member_name_compile_test_info(my field.computed_key, ctx);
 
             if (my field.has_explicit_type) {

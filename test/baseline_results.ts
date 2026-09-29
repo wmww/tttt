@@ -4017,8 +4017,8 @@ const baselines = {
     },
     'classWithDuplicateIdentifier': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'classWithEmptyTypeParameter': {
         errors: true,
@@ -10217,8 +10217,8 @@ const baselines = {
     },
     'duplicateClassElements': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'duplicateConstructSignature': {
         errors: true,
@@ -13012,7 +13012,7 @@ const baselines = {
     },
     'exportEqualsClassRedeclarationError': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportEqualsCommonJs': {
@@ -15597,8 +15597,8 @@ const baselines = {
     },
     'gettersAndSettersErrors': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'gettersAndSettersTypesAgree': {
         errors: true,
@@ -24177,7 +24177,7 @@ const baselines = {
     },
     'numericClassMembers1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'numericEnumMappedType': {
@@ -26692,8 +26692,8 @@ const baselines = {
     },
     'reassignStaticProp': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'reboundBaseClassSymbol': {
         errors: true,
@@ -29112,7 +29112,7 @@ const baselines = {
     },
     'staticModifierAlreadySeen': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'staticMustPrecedePublic': {
@@ -36397,7 +36397,7 @@ const baselines = {
     },
     'privateNameDuplicateField': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'privateNameES5Ban': {
@@ -37522,8 +37522,8 @@ const baselines = {
     },
     'propertyAndAccessorWithSameName': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'propertyAndFunctionWithSameName': {
         errors: true,
@@ -37652,7 +37652,7 @@ const baselines = {
     },
     'twoAccessorsWithSameName2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'staticIndexSignature1': {
@@ -57162,7 +57162,7 @@ const baselines = {
     },
     'parser0_004152': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parser768531': {
@@ -64272,7 +64272,7 @@ const baselines = {
     },
     'duplicatePropertyNames': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateStringIndexers': {
@@ -64832,7 +64832,7 @@ const baselines = {
     },
     'stringNamedPropertyDuplicates': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'assignFromBooleanInterface': {

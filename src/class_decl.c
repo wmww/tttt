@@ -334,6 +334,72 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
     }
 }
 
+// A class member's written name, staticness and binder flags, false if it has none (computed names are late bound)
+enum { BIND_PROPERTY = 1, BIND_METHOD = 2, BIND_GET = 4, BIND_SET = 8 };
+static bool member_binding(ClassItem const* item, cstr const** name, bool* is_static, u32* flags) {
+    if (item->tag == CLASS_ITEM_FIELD && !item->field.computed_key) {
+        *name = &item->field.name_string;
+        *is_static = item->field.is_static;
+        *flags = BIND_PROPERTY;
+        return true;
+    }
+    if (item->tag == CLASS_ITEM_METHOD && !item->method.computed_key) {
+        *name = &item->method.name_string;
+        *is_static = item->method.is_static;
+        *flags = item->method.accessor == CLASS_ACCESSOR_GET ? BIND_GET :
+            item->method.accessor == CLASS_ACCESSOR_SET ? BIND_SET : BIND_METHOD;
+        return true;
+    }
+    return false;
+}
+
+// tsc's binder for the members of a class, in order: a member joins the symbol the first one of its name made unless
+// that symbol has a meaning it excludes (PropertyExcludes is nothing; a method excludes everything but methods, an
+// accessor everything but the other accessor), then it stands alone and isn't a member
+static void bind_member_symbols(ClassDecl* me) {
+    for_each (i, vec_class_item, &my items) {
+        cstr const* name;
+        bool is_static;
+        u32 flags;
+        i->symbol_first = nullptr;
+        if (!member_binding(i, &name, &is_static, &flags)) continue;
+        i->symbol_first = i;
+        // The symbol in the table: the first of the name, what joined it so far
+        ClassItem* first = nullptr;
+        u32 existing = 0;
+        for (ClassItem* j = my items.data; j < i; j++) {
+            cstr const* other_name;
+            bool other_static;
+            u32 other_flags;
+            if (!j->symbol_first || !member_binding(j, &other_name, &other_static, &other_flags)) continue;
+            if (other_static != is_static || !cstr_eq(other_name, name)) continue;
+            if (!first) first = j;
+            if (j->symbol_first == first) existing |= other_flags;
+        }
+        if (!first) continue;
+        u32 excludes = flags == BIND_PROPERTY ? 0 : flags == BIND_METHOD ? (u32)~BIND_METHOD :
+            flags == BIND_GET ? (u32)~BIND_SET : (u32)~BIND_GET;
+        if (!(existing & excludes)) i->symbol_first = first;
+    }
+}
+
+u32 class_item_symbol_items(ClassItem const* me, VecClassItem const* items, ClassItem const** out, u32 cap) {
+    u32 len = 0;
+    if (!my symbol_first) return 0;
+    bool alone = my symbol_first == me;
+    for (ClassItem const* j = items->data; alone && j < items->data + items->size; j++) {
+        if (j != me && j->symbol_first == me) alone = false;
+    }
+    if (alone) {
+        if (cap) out[len++] = me;
+        return len;
+    }
+    for (ClassItem const* j = items->data; j < items->data + items->size; j++) {
+        if (j->symbol_first == my symbol_first && len < cap) out[len++] = j;
+    }
+    return len;
+}
+
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     if (vec_expr_size(&my decorators)) {
         Scope* scope = scope_new(names, SCOPE_BLOCK);
@@ -367,6 +433,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         }
     }
 
+    bind_member_symbols(me);
     for_each (i, vec_class_item, &my items) {
         if (i->tag == CLASS_ITEM_FIELD && i->field.is_static && i->field.is_readonly && !i->field.computed_key) {
             unique_symbol_decl_mark(
@@ -379,7 +446,8 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                 if (other->tag == CLASS_ITEM_METHOD &&
                     other->method.accessor &&
                     other->method.is_static == i->method.is_static &&
-                    cstr_eq(&other->method.name_string, &i->method.name_string)
+                    cstr_eq(&other->method.name_string, &i->method.name_string) &&
+                    other->symbol_first == i->symbol_first
                 ) {
                     if (!i->method.accessor_first) {
                         i->method.accessor_first = other;
