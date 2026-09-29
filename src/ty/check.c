@@ -1063,6 +1063,10 @@ static bool is_valid_spread_type(Checker* me, Ty const* ty, u32 depth) {
     return false;
 }
 
+bool ty_is_valid_spread_type(Checker* me, Ty const* type) {
+    return is_valid_spread_type(me, type, 0);
+}
+
 // `...x` in an object literal or JSX attributes: x must be an object (TS2698)
 void ty_check_spread_type(Checker* me, Ty const* type, Span span, ErrorCtx* errs) {
     if (!is_valid_spread_type(me, type, 0)) {

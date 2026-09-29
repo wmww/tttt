@@ -2762,9 +2762,12 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (builder.count || builder.index_count) spread_acc_props(me, &spread, &builder);
             literal_builder_drop(&builder);
             // (Its contextual type is the literal's as given: tsc's getContextualType of a SpreadAssignment)
-            spread_acc_type(me, &spread, check_with(me, &i->value, (ExprCtx){
+            Ty const* spread_type = check_with(me, &i->value, (ExprCtx){
                 .contextual = written_context, .sig_contextual = written_sig_context, .skip_sensitive = ctx.skip_sensitive,
-            }));
+            });
+            // (A spread of no object is TS2698 and makes the literal errorType, tsc's checkObjectLiteral)
+            if (!ty_is_valid_spread_type(me, spread_type)) spread.any = true;
+            else spread_acc_type(me, &spread, spread_type);
             continue;
         }
 

@@ -1625,6 +1625,7 @@ Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number)
 void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_type, ErrorCtx* errs);
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS2345
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
+bool ty_is_valid_spread_type(Checker* me, Ty const* type); // tsc's isValidSpreadType
 void ty_check_spread_type(Checker* me, Ty const* type, Span span, ErrorCtx* errs); // `...x` in a literal: TS2698
 typedef struct TyWrittenProp {
     Atom const* name;
