@@ -23406,7 +23406,7 @@ const baselines = {
         types: true,
     },
     'noDefaultLib': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

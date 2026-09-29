@@ -1940,8 +1940,24 @@ static void program_report_missing_global_types(Program* me) {
     for (u32 i = 0; i < c_arraylen(names); i++) {
         bool bind_call_apply = !strcmp(names[i], "CallableFunction") || !strcmp(names[i], "NewableFunction");
         if (bind_call_apply && !my options.strict_bind_call_apply) continue;
-        if (program_get_global(me, csview_from(names[i]), SYMBOL_TYPE)) continue;
-        error_ctx_global_error_d(my errs, 2318, "Cannot find global type '", names[i], "'.");
+        Symbol const* symbol = program_get_global(me, csview_from(names[i]), SYMBOL_TYPE);
+        if (!symbol) {
+            error_ctx_global_error_d(my errs, 2318, "Cannot find global type '", names[i], "'.");
+            continue;
+        }
+        // (tsc's getTypeOfGlobalSymbol: as many type parameters as the checker uses, at the first declaration)
+        u32 arity = !strcmp(names[i], "Array") ? 1 : 0;
+        Generic const* generic = symbol_type_generic(symbol);
+        u32 count = generic ? (u32)vec_generic_item_size(&generic->items) : 0;
+        if (count == arity) continue;
+        for (u32 d = 0; d < symbol->decl_count; d++) {
+            SymbolDecl const* decl = &symbol->decls[d];
+            if (decl->kind != SYMBOL_DECL_INTERFACE && decl->kind != SYMBOL_DECL_CLASS) continue;
+            if (!decl->name.source || decl->name.source->is_stdlib) break;
+            error_ctx_error_d(my errs, decl->name, 2317, "Global type '", names[i], "' must have ", arity,
+                " type parameter(s).");
+            break;
+        }
     }
 }
 
