@@ -141,6 +141,9 @@ typedef struct Expr {
     // An EXPR_IMPLICIT_ANY that stands for a missing expression (`var x = ;`, parse error), not for an absent optional
     // one (`var x;`): the baselines show it like tsc's missing identifier
     bool missing;
+    // An array literal spread into the arguments of a call or `new` (`f(...[1, "a"])`): a tuple (tsc's
+    // isSpreadIntoCallOrNew)
+    bool spread_into_call;
     union {
         Value literal;
         IdentifierExpr identifier;

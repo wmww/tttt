@@ -3000,7 +3000,8 @@ static Ty const* tuple_of(Checker* me, Ty const* const* elements, unsigned char 
 static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
     u32 len = (u32)vec_expr_size(&expr->array);
     // (A destructuring assignment target is a tuple of its targets: tsc's inDestructuringPattern)
-    bool as_tuple = ctx.is_const || expr->assignment_pattern || context_is_tuple_like(me, ctx.contextual, 0);
+    bool as_tuple = ctx.is_const || expr->assignment_pattern || expr->spread_into_call ||
+        context_is_tuple_like(me, ctx.contextual, 0);
     Ty const** elements = malloc(sizeof(Ty const*) * (len ? len : 1));
     unsigned char* flags = calloc(len ? len : 1, 1);
     u32 count = 0;

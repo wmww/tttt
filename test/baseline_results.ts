@@ -14356,9 +14356,9 @@ const baselines = {
         types: true,
     },
     'functionParameterArityMismatch': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionReturn': {
         errors: true,
@@ -23238,7 +23238,7 @@ const baselines = {
     'newLexicalEnvironmentForConvertedLoop': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newLineFlagWithCRLF': {
         errors: true,
@@ -38743,7 +38743,7 @@ const baselines = {
     'importCallExpressionGrammarError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importCallExpressionInAMD1': {
         errors: true,
@@ -43156,9 +43156,9 @@ const baselines = {
         types: true,
     },
     'arraySpreadInCall': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iteratorSpreadInArray': {
         errors: true,
@@ -45583,7 +45583,7 @@ const baselines = {
     'trailingCommasInFunctionParametersAndArguments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'trailingCommasInGetter': {
         errors: true,
@@ -47343,7 +47343,7 @@ const baselines = {
     'callWithSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callWithSpread2': {
         errors: true,
@@ -47368,7 +47368,7 @@ const baselines = {
     'callWithSpreadES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forgottenNew': {
         errors: false,

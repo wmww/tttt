@@ -7591,6 +7591,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
             }
             expect_expr(&p, expr_ctx_null, &arg);
         }
+        if (arg.tag == EXPR_SPREAD && arg.spread->tag == EXPR_ARRAY) arg.spread->spread_into_call = true;
         vec_expr_push(args, arg);
         hop_whitespace(&p);
         if (hop_char(&p, ',')) {
@@ -9584,6 +9585,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     ret->assignment_pattern = false;
     ret->jsdoc_enum_literal = false;
     ret->missing = false;
+    ret->spread_into_call = false;
     // Most branches below need a particular first character: test it before trying the branch
     char c = *p.pos;
     bool word = identifier_char_size(p.pos, true);
