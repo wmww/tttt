@@ -53416,7 +53416,7 @@ const baselines = {
         types: true,
     },
     'tsxFragmentErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

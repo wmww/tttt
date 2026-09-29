@@ -9361,6 +9361,42 @@ static const char* parse_jsx_attributes(Parser* p, const char* end, VecJsxAttrib
     return end;
 }
 
+// Where the trivia (whitespace and comments) before `pos` starts: the end of the token before it (tsc's full start)
+static const char* trivia_start_before(const char* file_start, const char* pos) {
+    while (true) {
+        while (pos > file_start && strchr(" \t\r\n", pos[-1])) pos--;
+        if (pos - file_start >= 2 && pos[-1] == '/' && pos[-2] == '*') {
+            // A block comment ends here: back to its `/*`
+            const char* c = pos - 2;
+            while (c > file_start && !(c[-1] == '/' && c[0] == '*')) c--;
+            if (c == file_start) return pos;
+            pos = c - 1;
+            continue;
+        }
+        // A line comment on this line: the first `//` outside a string or block comment
+        const char* line = pos;
+        while (line > file_start && line[-1] != '\n' && line[-1] != '\r') line--;
+        char quote = 0;
+        const char* comment = nullptr;
+        for (const char* c = line; c < pos && !comment; c++) {
+            if (quote) {
+                if (*c == '\\') c++;
+                else if (*c == quote) quote = 0;
+            } else if (*c == '"' || *c == '\'' || *c == '`') {
+                quote = *c;
+            } else if (c[0] == '/' && c[1] == '*') {
+                const char* end = strstr(c + 2, "*/");
+                if (!end || end >= pos) break;
+                c = end + 1;
+            } else if (c[0] == '/' && c[1] == '/') {
+                comment = c;
+            }
+        }
+        if (!comment) return pos;
+        pos = comment;
+    }
+}
+
 static bool jsx_is_line_break(char c) {
     return c == '\n' || c == '\r';
 }
@@ -9531,10 +9567,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         // tsc reports at the opening fragment node, whose range starts before the trivia in an expression (a child's
         // is part of the text before it)
         const char* fragment_start = a.start;
-        if (in_expression_context) {
-            const char* file_start = cstr_str(&p.shared->source->contents);
-            while (fragment_start > file_start && strchr(" \t\r\n", fragment_start[-1])) fragment_start--;
-        }
+        if (in_expression_context) fragment_start = trivia_start_before(cstr_str(&p.shared->source->contents), a.start);
         parse_jsx_children(&p, el, is_fragment, fragment_start);
         JsxChild* last = vec_jsx_child_size(&el->children) ? vec_jsx_child_back_mut(&el->children) : nullptr;
         JsxElement* inner = last && last->expr.tag == EXPR_JSX_ELEMENT ? last->expr.jsx : nullptr;
