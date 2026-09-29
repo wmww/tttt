@@ -794,23 +794,39 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
 // A class member named by an expression of type string, number or symbol (not a literal or unique symbol, which name
 // it) makes an index signature for that key of every member of the class (tsc's getIndexInfosOfIndexSymbol with
 // hasLateBindableIndexSignature), unless the class declares one itself
+// What a class member's computed name makes of it (tsc's hasLateBindableIndexSignature and the isSymbolWith*Name
+// tests of getObjectLiteralIndexInfo): bit 0 its value goes into a string index signature, bit 1 a number one, bit 2 a
+// symbol one; bit 3 the name makes that kind of index signature itself (string 0, number 1, symbol 2) in bits 4-5.
+// 0 for a name that isn't late bindable as an index signature
+static u32 computed_index_kind(Checker* me, ClassItem const* item, bool static_side) {
+    bool field = item->tag == CLASS_ITEM_FIELD;
+    if (!field && item->tag != CLASS_ITEM_METHOD) return 0;
+    if ((field ? item->field.is_static : item->method.is_static) != static_side) return 0;
+    Expr const* key = field ? item->field.computed_key : item->method.computed_key;
+    if (!key || !expr_is_entity_name(key)) return 0;
+    Ty const* key_type = ty_regular(me, ty_expr_type(me, key));
+    // (A literal or unique symbol names a property, late bound: tsc's isLateBindableName comes first)
+    if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM | TYF_NEVER)) return 0;
+    Ty const* keys[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
+    if (!ty_is_related(me, key_type, ty_union(me, keys, 3, nullptr, (TyList){0}), TY_RELATION_ASSIGNABLE)) return 0;
+    bool number = ty_is_related(me, key_type, keys[1], TY_RELATION_ASSIGNABLE);
+    bool symbol = ty_is_related(me, key_type, keys[2], TY_RELATION_ASSIGNABLE);
+    u32 makes = number ? 1 : symbol ? 2 : 0;
+    return (symbol ? 0 : 1) | (number ? 2 : 0) | (symbol ? 4 : 0) | 8 | (makes << 4);
+}
+
+// A class member named by an expression of type string, number or symbol (not a literal or unique symbol, which name
+// it; any counts as a number) makes an index signature for that key of every member of the class (tsc's
+// getIndexInfosOfIndexSymbol with hasLateBindableIndexSignature), unless the class declares one itself
 static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builder, ClassDecl const* class_decl, bool static_side) {
     static TyIntrinsic const keys[3] = { TY_STRING, TY_NUMBER, TY_ES_SYMBOL };
     bool computed[3] = {0}, readonly[3] = { true, true, true };
     for_each (i, vec_class_item, &class_decl->items) {
-        bool field = i->tag == CLASS_ITEM_FIELD;
-        if (!field && i->tag != CLASS_ITEM_METHOD) continue;
-        if ((field ? i->field.is_static : i->method.is_static) != static_side) continue;
-        Expr const* key = field ? i->field.computed_key : i->method.computed_key;
-        if (!key || !expr_is_entity_name(key)) continue;
-        Ty const* key_type = ty_regular(me, ty_expr_type(me, key));
-        if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM | TYF_ANY | TYF_NEVER)) continue;
-        u32 k = ty_is_related(me, key_type, ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE) ? 1 :
-            ty_is_related(me, key_type, ty_intrinsic(me, TY_ES_SYMBOL), TY_RELATION_ASSIGNABLE) ? 2 :
-            ty_is_related(me, key_type, ty_intrinsic(me, TY_STRING), TY_RELATION_ASSIGNABLE) ? 0 : 3;
-        if (k == 3) continue;
+        u32 kind = computed_index_kind(me, i, static_side);
+        if (!kind) continue;
+        u32 k = kind >> 4;
         computed[k] = true;
-        readonly[k] &= field && i->field.is_readonly;
+        readonly[k] &= i->tag == CLASS_ITEM_FIELD && i->field.is_readonly;
     }
     for (u32 k = 0; k < 3; k++) {
         if (!computed[k]) continue;
@@ -820,6 +836,13 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
         if (declared) continue;
         // The value is what every member of that kind of name has: the computed ones and the others (getObjectLiteralIndexInfo)
         TyBuf types = {0};
+        for_each (i, vec_class_item, &class_decl->items) {
+            u32 kind = computed_index_kind(me, i, static_side);
+            if (!(kind & (1u << k))) continue;
+            bool field = i->tag == CLASS_ITEM_FIELD;
+            if (!field && i->method.accessor && i->method.accessor_first != i) continue; // One type per accessor pair
+            ty_buf_push(&types, field || i->method.accessor ? class_item_get_type((ClassItem*)i) : ty_function_type(me, &i->method.func));
+        }
         for (u32 j = 0; j < builder->props_count; j++) {
             Atom const* name = builder->props[j]->name;
             bool symbol_name = ty_unique_symbol_of_name(me, name) != nullptr;
@@ -827,18 +850,6 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
             // (A class's `prototype` isn't one of its members in tsc, it's made with the static side's type)
             if (static_side && csview_equals(atom_sv(name), "prototype")) continue;
             if (included) ty_buf_push(&types, prop_type(me, builder->props[j]));
-        }
-        for_each (i, vec_class_item, &class_decl->items) {
-            bool field = i->tag == CLASS_ITEM_FIELD;
-            if (!field && i->tag != CLASS_ITEM_METHOD) continue;
-            if ((field ? i->field.is_static : i->method.is_static) != static_side) continue;
-            Expr const* name_expr = field ? i->field.computed_key : i->method.computed_key;
-            if (!name_expr || !expr_is_entity_name(name_expr)) continue;
-            Ty const* key_type = ty_regular(me, ty_expr_type(me, name_expr));
-            if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM | TYF_ANY | TYF_NEVER)) continue;
-            if (!ty_is_related(me, key_type, key, TY_RELATION_ASSIGNABLE) && k != 0) continue;
-            if (!field && i->method.accessor && i->method.accessor_first != i) continue; // One type per accessor pair
-            ty_buf_push(&types, field || i->method.accessor ? class_item_get_type((ClassItem*)i) : ty_function_type(me, &i->method.func));
         }
         IndexInfo info = {
             .key = key,

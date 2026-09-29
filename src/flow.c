@@ -198,7 +198,12 @@ bool expr_is_optional_chain(Expr const* me) {
 }
 
 bool expr_is_entity_name(Expr const* me) {
-    while (my tag == EXPR_PROPERTY && my property->form == PROPERTY_EXPR_DOT) me = &my property->expr;
+    while (my tag == EXPR_PROPERTY && my property->form == PROPERTY_EXPR_DOT) {
+        // (`a.#x` isn't one: tsc's isPropertyAccessEntityNameExpression wants an identifier)
+        Span name = my property->prop.inner_span;
+        if (name.sv.size && name.sv.buf[0] == '#') return false;
+        me = &my property->expr;
+    }
     return my tag == EXPR_IDENTIFIER && !my identifier.keyword;
 }
 

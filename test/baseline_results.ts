@@ -33518,12 +33518,12 @@ const baselines = {
     'ES5SymbolProperty2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5SymbolProperty3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5SymbolProperty4': {
         errors: true,
@@ -33538,12 +33538,12 @@ const baselines = {
     'ES5SymbolProperty6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5SymbolProperty7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5SymbolType1': {
         errors: true,
@@ -47968,12 +47968,12 @@ const baselines = {
     'superSymbolIndexedAccess5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superSymbolIndexedAccess6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisInInvalidContexts': {
         errors: true,
