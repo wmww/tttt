@@ -197,8 +197,10 @@ static Ty const* homomorphic_variable(Checker* me, Ty const* ty, MappedInfo cons
     MappedInfo const* mapped = ty_members(me, root)->mapped;
     // (tsc's getHomomorphicTypeVariable looks at the lowered constraint: a `keyof T` substituted in a true branch of
     // `keyof T extends ...` isn't homomorphic, but a type parameter substituted in a true branch is still the one)
+    // It's the lowered constraint's operand, not the modifiers type: `keyof (T & Required<T>)` lowers to `keyof T`
+    // (vue's LooseRequired), homomorphic over T
     if (!mapped || !mapped->modifiers_type || mapped->constraint->kind != TY_KEYOF) return nullptr;
-    Ty const* variable = ty_actual_type_variable(me, mapped->modifiers_type);
+    Ty const* variable = ty_actual_type_variable(me, mapped->constraint->keyof.operand);
     if (variable->kind != TY_TYPE_PARAM) return nullptr;
     if (mapped_out) *mapped_out = mapped;
     return variable;
