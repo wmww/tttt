@@ -38,6 +38,11 @@ typedef SourceFile* SourceFilePtr;
 #define g_val SourceFilePtr, source_file_ptr
 #include <cleat/generic/hmap.h>
 
+typedef uint8_t PackageFlag; // Program.packages: whether a declaration file of the package was found
+#define g_pro_key SvStr, svstr
+#define g_val PackageFlag, package_flag
+#include <cleat/generic/hmap.h>
+
 // Where the standard library is unless program_set_lib_dir() says otherwise (the repo root is the working directory)
 static const csview default_lib_dir = c_sv_const_init("thirdparty/lib");
 
@@ -82,6 +87,9 @@ typedef struct Program {
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
     HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
+    // tsc's getPackagesMap: the package name of every module resolution that found a file of a package, whether one of
+    // them was a declaration file
+    HMapPackageFlag packages;
     Checker* checker; // Created by program_make_current(), checks the first share of the files
     Checker** checkers; // malloc'd, checker_count of them once typechecked: checker and the others
     u32 checker_count;
@@ -152,6 +160,7 @@ static void program_drop(Program* me) {
     checker_drop(my checker);
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
+    hmap_package_flag_drop(&my packages);
     vec_source_file_ptr_drop(&my source_files_ordered);
     module_resolver_destroy(my resolver);
     cstr_drop(&my lib_dir);
@@ -323,6 +332,10 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
         else error_ctx_global_error_s(my errs, code, message);
         cstr_drop(&shown);
     }
+    if (cstr_size(&resolved.package_name)) {
+        auto entry = hmap_package_flag_insert(&my packages, cstr_clone(resolved.package_name), 0);
+        if (resolved.kind == RESOLVED_DTS) entry.ref->second = 1;
+    }
     if (my options.no_resolve) {
         // Nothing is added to the program, but a name may still mean a file that is part of it
         if (resolved.kind != RESOLVED_NONE) ref->file = program_find_source(me, cstr_sv(&resolved.path));
@@ -368,6 +381,7 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
             } else {
                 ref->failure = MODULE_REF_IS_JS;
                 cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+                if (!module_name_is_relative(cstr_sv(&ref->path))) ref->package_name = cstr_clone(resolved.package_name);
             }
             break;
         case RESOLVED_JSON:
@@ -1716,6 +1730,29 @@ void program_resolve_names(Program* me) {
                 ModuleRef* ref = source->module_refs[j];
                 if ((!ref->is_declaration || source->is_module) && !ref->ambient_only) program_load_module_ref(me, source, ref);
             }
+        }
+    }
+
+    // What TS7016 suggests for a JavaScript module of a package, by what the whole program found (tsc's
+    // createModuleNotFoundChain)
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
+        for (u32 j = 0; j < source->module_ref_count; j++) {
+            ModuleRef* ref = source->module_refs[j];
+            if (ref->failure != MODULE_REF_IS_JS || !cstr_size(&ref->package_name)) continue;
+            csview name = cstr_sv(&ref->package_name);
+            cstr types = cstr_lit("@types/");
+            if (name.size && name.buf[0] == '@') {
+                isize slash = csview_find_sv(name, c_sv("/"));
+                if (slash != c_NPOS) cstr_append_d(&types, DEFAULT_DISPLAY, csview_slice(name, 1, slash), "__", csview_slice(name, slash + 1, name.size));
+                else cstr_append_sv(&types, name);
+            } else {
+                cstr_append_sv(&types, name);
+            }
+            auto bundles = hmap_package_flag_get(&my packages, name);
+            ref->package_hint = hmap_package_flag_get(&my packages, cstr_sv(&types)) ? MODULE_REF_HINT_TYPES_EXIST :
+                bundles && bundles->second ? MODULE_REF_HINT_BUNDLES_TYPES : MODULE_REF_HINT_INSTALL_TYPES;
+            cstr_drop(&types);
         }
     }
 

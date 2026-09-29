@@ -75,6 +75,7 @@ void source_file_drop(SourceFile* me) {
     for (u32 i = 0; i < my module_ref_count; i++) {
         cstr_drop(&my module_refs[i]->path);
         cstr_drop(&my module_refs[i]->resolved_path);
+        cstr_drop(&my module_refs[i]->package_name);
         free(my module_refs[i]);
     }
     free(my module_refs);
@@ -154,9 +155,37 @@ void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
         case MODULE_REF_IS_JS:
             // The import is `any`, which is only worth a word when that has to be explicit
             if (options->no_implicit_any) {
-                error_ctx_error_d(errs, my span, 7016,
+                Error* error = error_ctx_error_d(errs, my span, 7016,
                     "Could not find a declaration file for module '", my path, "'. '", my resolved_path,
                     "' implicitly has an 'any' type.");
+                // (tsc's mangleScopedPackageName: `@scope/name` is `scope__name` in DefinitelyTyped)
+                csview name = cstr_sv(&my package_name);
+                cstr mangled = cstr_from_sv(name);
+                if (name.size && name.buf[0] == '@') {
+                    isize slash = csview_find_sv(name, c_sv("/"));
+                    if (slash != c_NPOS) {
+                        cstr_take(&mangled, cstr_d(csview_slice(name, 1, slash), "__", csview_slice(name, slash + 1, name.size)));
+                    }
+                }
+                cstr hint = cstr_null;
+                switch (my package_hint) {
+                    case MODULE_REF_HINT_NONE: break;
+                    case MODULE_REF_HINT_TYPES_EXIST:
+                        hint = cstr_d("If the '", name, "' package actually exposes this module, consider sending a pull request "
+                            "to amend 'https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/", mangled, "'");
+                        break;
+                    case MODULE_REF_HINT_BUNDLES_TYPES:
+                        hint = cstr_d("If the '", name, "' package actually exposes this module, try adding a new declaration "
+                            "(.d.ts) file containing `declare module '", my path, "';`");
+                        break;
+                    case MODULE_REF_HINT_INSTALL_TYPES:
+                        hint = cstr_d("Try `npm i --save-dev @types/", mangled, "` if it exists or add a new declaration (.d.ts) "
+                            "file containing `declare module '", my path, "';`");
+                        break;
+                }
+                if (error && cstr_size(&hint)) error_sub_error_s(error, span_null, 7016, hint);
+                else cstr_drop(&hint);
+                cstr_drop(&mangled);
             }
             return;
         case MODULE_REF_ARBITRARY_EXTENSION:
@@ -252,8 +281,10 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* e
             if (error && (ts || js || csview_ends_with(name, ".tsx") || csview_ends_with(name, ".jsx"))) {
                 const char* rename = ts ? ".mts" : js ? ".mjs" : nullptr;
                 cstr hint = cstr_lit("To convert this file to an ECMAScript module, ");
-                if (rename) cstr_append_d(&hint, DEFAULT_DISPLAY, "change its file extension to '", rename, "', or ");
-                if (cstr_size(&from->package_json) && !from->package_has_type) {
+                bool add_field = cstr_size(&from->package_json) && !from->package_has_type;
+                // (Only the package.json message has a comma before its "or")
+                if (rename) cstr_append_d(&hint, DEFAULT_DISPLAY, "change its file extension to '", rename, add_field ? "', or " : "' or ");
+                if (add_field) {
                     cstr_append_d(&hint, DEFAULT_DISPLAY,
                         "add the field `\"type\": \"module\"` to '", from->package_json, "'.");
                 } else {

@@ -40,6 +40,15 @@ typedef struct ModuleRef {
     SourceFile* file; // What the program's module resolution found, may be null
     ModuleRefFailure failure; // Without a file
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
+    // MODULE_REF_IS_JS in a package (tsc's packageId): what TS7016 suggests (createModuleNotFoundChain), set once the
+    // program is loaded
+    enum {
+        MODULE_REF_HINT_NONE,
+        MODULE_REF_HINT_INSTALL_TYPES, // `npm i --save-dev @types/x`
+        MODULE_REF_HINT_TYPES_EXIST, // @types/x is in the program: a pull request to DefinitelyTyped
+        MODULE_REF_HINT_BUNDLES_TYPES, // The package has declaration files: `declare module`
+    } package_hint;
+    cstr package_name;
     cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any
     Symbol* module; // Memo of binder_module_of_ref()
     bool jsx_runtime_reported; // SourceFile.jsx_runtime_ref: that it can't be found was said (once per file, like tsc)

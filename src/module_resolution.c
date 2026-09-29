@@ -89,6 +89,7 @@ void resolved_module_drop(ResolvedModule* me) {
     cstr_drop(&my path);
     cstr_drop(&my suggested_extension);
     cstr_drop(&my package_id);
+    cstr_drop(&my package_name);
     cstr_drop(&my ambiguous_root_entry);
     cstr_drop(&my ambiguous_root_package_json);
     *me = (ResolvedModule){0};
@@ -99,6 +100,7 @@ static ResolvedModule resolved_module_clone(ResolvedModule const* me) {
     ret.path = cstr_clone(my path);
     ret.suggested_extension = cstr_clone(my suggested_extension);
     ret.package_id = cstr_clone(my package_id);
+    ret.package_name = cstr_clone(my package_name);
     ret.ambiguous_root_entry = cstr_clone(my ambiguous_root_entry);
     ret.ambiguous_root_package_json = cstr_clone(my ambiguous_root_package_json);
     return ret;
@@ -394,7 +396,7 @@ static PackageJson const* package_json_of(State* me, csview directory) {
 
 // tsc's parseNodeModuleFromPath + withPackageId: the package directory after the last node_modules (`@scope/name`
 // for a scoped one) and what its package.json says
-static cstr package_id_of(State* me, csview path) {
+static cstr package_id_of(State* me, csview path, cstr* package_name) {
     isize at = -1;
     for (isize i = csview_find_sv(path, c_sv("/node_modules/")); i != c_NPOS;) {
         at = i;
@@ -414,6 +416,7 @@ static cstr package_id_of(State* me, csview path) {
     csview name = json_get_string(&package->json, "name");
     csview version = json_get_string(&package->json, "version");
     if (!name.size || !version.size) return cstr_null;
+    *package_name = cstr_from_sv(name);
     return cstr_d(name, csview_from_n(path.buf + end, path.size - end), "@", version);
 }
 
@@ -1408,7 +1411,7 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
         ret.is_external_library = external;
         ret.used_ts_extension = found.used_ts_extension;
         ret.arbitrary_extension = found.arbitrary_extension;
-        ret.package_id = package_id_of(&state, cstr_sv(&ret.path));
+        ret.package_id = package_id_of(&state, cstr_sv(&ret.path), &ret.package_name);
         apply_realpath(me, &ret);
     } else {
         ret.json_without_option = state.json_without_option;
