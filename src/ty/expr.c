@@ -2903,7 +2903,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         bool own_symbol = (i->tag == OBJECT_ITEM_METHOD && !(existing && (existing->flags & PROP_METHOD))) || is_accessor;
         if (existing && !own_symbol) name_form = ty_prop_name_form_merge(existing->name_form, name_form);
         u32 flags = 0;
-        if (i->tag == OBJECT_ITEM_METHOD) flags |= PROP_METHOD;
+        if (i->tag == OBJECT_ITEM_METHOD) flags |= PROP_METHOD | (i->optional_method ? PROP_OPTIONAL : 0);
         if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER | PROP_READONLY; // Until a setter shows up
         if (i->tag == OBJECT_ITEM_SETTER) flags |= PROP_SETTER;
         if (ctx.is_const) flags |= PROP_READONLY;
@@ -2993,7 +2993,11 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
     // (Unless a later spread replaced it)
     bool own = prop && (!prop->decl->decl_span_count || span_eq(prop->decl->decl_spans[0], item->span) ||
         (prop->decl->decl_span_count == 2 && span_eq(prop->decl->decl_spans[1], item->span)));
-    if (prop && own) return prop_type(me, prop);
+    if (prop && own) {
+        // (An optional method's symbol has undefined in its type, tsc's getTypeOfFuncClassEnumModule)
+        if ((prop->flags & PROP_OPTIONAL) && (prop->flags & PROP_METHOD)) return ty_optional_prop_type(me, prop_type(me, prop));
+        return prop_type(me, prop);
+    }
     // A computed key that made no property
     Ty const* value = ty_expr_type(me, &item->value);
     if (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) {

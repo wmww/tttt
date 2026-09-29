@@ -253,6 +253,8 @@ static void builder_add_interface_member(
                         existing->decl->overloads = functions;
                         existing->decl->overload_count = count + 1;
                         existing->thisless &= function_is_thisless(i->type.callable->function);
+                        // (Optional if any overload is: tsc's binder adds SymbolFlags.Optional per declaration)
+                        if (i->optional) existing->flags |= PROP_OPTIONAL;
                         prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
                     } else if (!is_method && !(existing->flags & PROP_METHOD) && existing->decl->node && !i->has_write_type &&
                         !i->computed_accessor

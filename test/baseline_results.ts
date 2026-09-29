@@ -24458,7 +24458,7 @@ const baselines = {
     'objectLiteralMemberWithQuestionMark1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralMemberWithoutBlock1': {
         errors: false,
@@ -37973,7 +37973,7 @@ const baselines = {
     'definiteAssignmentAssertionsWithObjectShortHand': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'dependentDestructuredVariables': {
         errors: false,
@@ -64778,7 +64778,7 @@ const baselines = {
     'methodSignaturesWithOverloads': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'methodSignaturesWithOverloads2': {
         errors: true,

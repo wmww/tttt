@@ -609,6 +609,7 @@ typedef struct ObjectExprItem {
     cstr name_string; // Empty for spreads and computed keys
     Span name_span; // Includes the brackets of a computed key
     bool name_is_value;
+    bool optional_method; // `m?() {}` (TS1162): still an optional member to tsc's binder
     Expr* computed_key; // Owned, null unless the key is `[expr]`
     Expr value;
     // Owned, `{ a = 1 }` (a destructuring assignment target): the default. Only its names are looked up (TODO: check it

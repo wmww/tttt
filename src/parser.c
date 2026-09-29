@@ -6456,6 +6456,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         }
         if (item.tag == OBJECT_ITEM_PROPERTY) {
             item.tag = OBJECT_ITEM_METHOD;
+            item.optional_method = span_valid(question);
         }
         // (tsc's getJSSyntacticDiagnosticsForFile: a method declaration's `?`)
         if (span_valid(question)) js_syntax_error(&p, question, 8009, "The '?' modifier can only be used in TypeScript files.");
