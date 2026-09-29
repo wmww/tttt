@@ -485,6 +485,9 @@ src` finds the code-side markers; every significant one has an entry here.
 - `member_value()` (enums.c) counts a reference to a string enum member as syntactically a string (TS18055 under
   isolatedModules): tsc keeps the referenced member's own isSyntacticallyString, so a member initialized with a
   non-syntactic string would be reported again where another member references it.
+- `ty_check_class_duplicate_members()`: a late-bound member name (`[k]`, `[Symbol.x]`) conflicts with what the member
+  table has (the static `prototype`) without joining it; tsc's source of that TS2300 isn't pinned down, and tsc also
+  reports an early `a` against a later `get [k]` (k = "a") at both, with the late text '[k]', which this doesn't.
 
 ## JavaScript and JSDoc (plan 26)
 - JSDoc is consumed at parse time, not stored: `jsdoc_before()` re-parses the last comment before the host into

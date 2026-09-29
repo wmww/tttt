@@ -39801,7 +39801,7 @@ const baselines = {
         types: true,
     },
     'symbolDeclarationEmit12': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -40046,7 +40046,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty44': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -2583,7 +2583,22 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         u32 kind = is_field ? (i->field.is_auto_accessor ? MEMBER_GET | MEMBER_SET : MEMBER_PROPERTY) :
             i->method.accessor == CLASS_ACCESSOR_GET ? MEMBER_GET :
             i->method.accessor == CLASS_ACCESSOR_SET ? MEMBER_SET : MEMBER_METHOD;
-        declare_member(tables, name, is_static, kind, name_span, errs);
+        // A late-bound name (not a literal) isn't in the binder's tables: two of them only conflict by the meanings
+        // below (tsc's lateBindMember leaves classes to checkClassForDuplicateDeclarations). HACK: one still conflicts
+        // with what the table has (the static side's `prototype`, where tsc reports TS2300 from somewhere not pinned
+        // down), without joining it
+        Expr const* computed_key = is_field ? i->field.computed_key : i->method.computed_key;
+        bool late_bound = computed_key && computed_key->tag != EXPR_LITERAL && !(computed_key->tag == EXPR_UNARY_OP &&
+            computed_key->unary_op->expr.tag == EXPR_LITERAL);
+        if (!late_bound) {
+            declare_member(tables, name, is_static, kind, name_span, errs);
+        } else {
+            MemberEntry* entry = find_member(tables, name, is_static);
+            if (entry && entry->has_member && (entry->flags & symbol_excludes(kind))) {
+                for (u32 d = 0; d < entry->decl_count; d++) report_duplicate(entry->decls[d], errs);
+                report_duplicate(name_span, errs);
+            }
+        }
         uint8_t meaning = is_field ? MEANING_GET_OR_SET : kind == MEMBER_GET ? MEANING_GET :
             kind == MEMBER_SET ? MEANING_SET : MEANING_METHOD;
         if (span_valid(private_name) && is_static) meaning |= MEANING_PRIVATE_STATIC;
