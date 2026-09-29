@@ -1784,7 +1784,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                     // (An optional field's declared type has undefined: tsc's getTypeOfSymbol, addOptionality)
                     Ty const* contextual = ty_from_node(current_checker, &i->field.explicit_type, (LowerCtx){ .generic = true });
                     if (i->field.is_optional) contextual = ty_optional_prop_type(current_checker, contextual);
-                    ty_check_expr(current_checker, &i->field.value, contextual->flags & TYF_ANY ? nullptr : contextual);
+                    ty_check_expr(current_checker, &i->field.value, contextual);
                 }
                 expr_typecheck(&i->field.value, errs);
                 class_field_check_implicit_any(me, i, errs);

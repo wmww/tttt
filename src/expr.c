@@ -3637,7 +3637,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             if (!my as_type->is_satisfies && !as_type_is_const_assertion(my as_type)) {
                 // The asserted type is the contextual type of the operand, which nobody has looked at yet
                 Ty const* asserted = ty_of_node(&my as_type->type);
-                ty_check_expr(current_checker, &my as_type->expr, asserted->flags & TYF_ANY ? nullptr : asserted);
+                ty_check_expr(current_checker, &my as_type->expr, asserted);
             }
             expr_typecheck(&my as_type->expr, errs);
             type_typecheck(&my as_type->type, errs);

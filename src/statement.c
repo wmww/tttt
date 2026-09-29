@@ -2205,7 +2205,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 // (Checked with it as the contextual type, then related without elaborating: tsc's checkTypeAssignableTo)
                 type_typecheck(my expr_jsdoc_type, errs);
                 Ty const* declared = ty_of_node(my expr_jsdoc_type);
-                Ty const* type = ty_check_expr(current_checker, &my expr, declared->flags & TYF_ANY ? nullptr : declared);
+                Ty const* type = ty_check_expr(current_checker, &my expr, declared);
                 expr_typecheck(&my expr, errs);
                 ty_check_assignable(current_checker, type, declared, my expr.outer_span, errs);
                 break;

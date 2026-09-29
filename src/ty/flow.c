@@ -928,7 +928,7 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
         if (binding->has_explicit_type && ty_expr_is_context_sensitive(&initialized->value)) {
             // Typed by the annotation, like in the walk (see FLOW_ASSIGN_EXPR below)
             Ty const* annotated = ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
-            return ty_check_expr(me, &initialized->value, annotated->flags & TYF_ANY ? nullptr : annotated);
+            return ty_check_expr(me, &initialized->value, annotated);
         }
         return ty_flow_expr_type(me, &initialized->value);
     }

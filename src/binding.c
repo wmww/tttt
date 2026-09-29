@@ -589,7 +589,6 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
     Ty const* contextual = nullptr;
     if (my binding.has_explicit_type) {
         contextual = ty_from_node(checker, &my binding.explicit_type, (LowerCtx){ .generic = true });
-        if (contextual->flags & TYF_ANY) contextual = nullptr;
     } else if (binding_is_parameter(&my binding) && ty_contextual_parameter_type(checker, me)) {
         // A parameter's contextual type (an immediately invoked function's argument: tsc's
         // getContextuallyTypedParameterType), before what its pattern implies
