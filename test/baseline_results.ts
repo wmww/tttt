@@ -37976,7 +37976,7 @@ const baselines = {
         types: true,
     },
     'dependentDestructuredVariables': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

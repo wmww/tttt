@@ -2585,3 +2585,20 @@ void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key) {
         }
     }
 }
+
+void ty_resolving_pattern_cycle(Checker* me, void const* key, Binding const* pattern) {
+    for (u32 i = my resolving_len; i-- > my resolving_start;) {
+        if (my resolving[i].key != key || my resolving[i].kind != RESOLVING_PATTERN) continue;
+        // From the first of its names resolved since: tsc re-enters that one (the pattern's type isn't memoized, nor
+        // pushed: without one of its names in between, there's no cycle)
+        for (u32 j = i + 1; j < my resolving_len; j++) {
+            if (my resolving[j].kind != RESOLVING_BINDING) continue;
+            Binding const* root = my resolving[j].key;
+            while (root->parent) root = root->parent;
+            if (root != pattern) continue;
+            for (u32 k = j; k < my resolving_len; k++) my resolving[k].circular = true;
+            return;
+        }
+        return;
+    }
+}

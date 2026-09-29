@@ -117,6 +117,13 @@ Ty const* lazy_type_evaluate(LazyType* me) {
     return ret;
 }
 
+// A destructuring parameter or variable: tsc gives it no symbol of its own to push, its names are what's circular
+static Binding const* lazy_type_pattern_root(LazyType const* me) {
+    if (my tag != LAZY_TYPE_INITIALIZED_BINDING) return nullptr;
+    Binding const* binding = &c_container_of(me, InitializedBinding, lazy_type)->binding;
+    return binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT ? binding : nullptr;
+}
+
 static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     if (my tag == LAZY_TYPE_EVALUATED) return ty_intrinsic(current_checker, TY_ANY);
 
@@ -128,7 +135,9 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         // flight, a declaration is any, and it and everything resolved since is part of the cycle (tsc's
         // pushTypeResolution failing, see ty_resolving_push()). What they reach finds out when it finishes
         if (my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION) {
-            ty_resolving_cycle(current_checker, RESOLVING_DECLARATION, me);
+            Binding const* pattern = lazy_type_pattern_root(me);
+            if (pattern) ty_resolving_pattern_cycle(current_checker, me, pattern);
+            else ty_resolving_cycle(current_checker, RESOLVING_DECLARATION, me);
             return ty_intrinsic(current_checker, TY_CIRCULAR);
         }
         // An expression on the way only has to stop a runaway: which of the two is hit first depends on who asks
@@ -155,7 +164,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     if (isolate) isolation = ty_flow_isolate(current_checker);
 
     bool resolving = my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION;
-    if (resolving) ty_resolving_push(current_checker, RESOLVING_DECLARATION, me);
+    if (resolving) ty_resolving_push(current_checker, lazy_type_pattern_root(me) ? RESOLVING_PATTERN : RESOLVING_DECLARATION, me);
     Ty const* result = nullptr;
     switch (my tag) {
         case LAZY_TYPE_UNINITIALIZED: panic("LazyType is uninitialized");

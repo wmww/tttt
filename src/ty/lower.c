@@ -511,13 +511,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                 init->tag == EXPR_FUNCTION ? ty_js_constructor_class(init->function) : nullptr;
             if (class_symbol) return ty_class_instance_type(me, class_symbol);
         }
-        for (u32 i = 0; i < my jsdoc_values_in_flight_count; i++) {
-            if (my jsdoc_values_in_flight[i] == decl) return ty_intrinsic(me, TY_CIRCULAR);
-        }
-        if (my jsdoc_values_in_flight_count >= c_arraylen(my jsdoc_values_in_flight)) return ty_intrinsic(me, TY_ANY);
-        my jsdoc_values_in_flight[my jsdoc_values_in_flight_count++] = decl;
         Ty const* type = ty_type_of_symbol(me, decl);
-        my jsdoc_values_in_flight_count--;
         // `import("./m").C` of a value whose type is a class is the class (tsc's getTypeFromJSDocValueReference: the
         // type reference of the value type's symbol)
         if (span_valid(identifier->import_span) && span_valid(identifier->name) && type->kind == TY_DECLARED &&
@@ -2484,7 +2478,6 @@ static InitializedBinding const* root_initialized(Binding const* root) {
 }
 
 static Ty const* binding_element_context(Checker* me, Binding const* element);
-static Ty const* binding_default_type(Checker* me, Binding const* element);
 
 // tsc's getContextualTypeForVariableLikeDeclaration: what a pattern (or one of its elements) is expected to be
 static Ty const* binding_declared_context(Checker* me, Binding const* binding) {
@@ -2516,17 +2509,6 @@ static Ty const* binding_element_context(Checker* me, Binding const* element) {
 }
 
 Ty const* ty_binding_default_type(Checker* me, Binding const* element) {
-    for (u32 i = 0; i < my defaults_in_flight_count; i++) {
-        if (my defaults_in_flight[i] == element) return ty_expr_type(me, element->default_value);
-    }
-    if (my defaults_in_flight_count >= c_arraylen(my defaults_in_flight)) return ty_expr_type(me, element->default_value);
-    my defaults_in_flight[my defaults_in_flight_count++] = element;
-    Ty const* ret = binding_default_type(me, element);
-    my defaults_in_flight_count--;
-    return ret;
-}
-
-static Ty const* binding_default_type(Checker* me, Binding const* element) {
     Ty const* contextual = binding_element_context(me, element);
     // (tsc's getContextualTypeForInitializerExpression: else what a non-empty pattern implies)
     if (!contextual && ((element->tag == BINDING_OBJECT && vec_object_binding_item_size(&element->object)) ||
@@ -2677,28 +2659,32 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
 
 // The type of a binding: what is written, else what is assigned. `ctx` is what a written type is lowered with
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx) {
-    if (binding->has_explicit_type) {
-        // A written type that reaches the binding again is any, and TS2502 (tsc's getTypeOfVariableOrParameterOrProperty
-        // pushing the symbol). The lowered annotation has no memo, so a circular one is remembered
-        Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
-        u64 key[2] = { KEY_CIRCULAR_ANNOTATION, (u64)(uintptr_t)binding };
-        if (my circular_annotations && intern_get(&my links, key, 2)) return circular;
-        if (ty_resolving_find(me, RESOLVING_ANNOTATION, binding)) {
-            ty_resolving_cycle(me, RESOLVING_ANNOTATION, binding);
-            return circular;
-        }
-        ty_resolving_push(me, RESOLVING_ANNOTATION, binding);
-        Ty const* type = ty_from_node(me, &binding->explicit_type, ctx);
-        if (ty_resolving_pop(me)) {
-            my circular_annotations = true;
-            *intern_slot(me, &my links, key, 2) = (void*)binding;
-            return circular;
-        }
-        // A catch variable annotated with anything but any or unknown is any (TS1196)
-        if (!binding->parent && !binding->source && !(type->flags & (TYF_ANY | TYF_UNKNOWN))) return ty_intrinsic(me, TY_ANY);
-        return type;
+    // A written type, or the name of an element of a pattern: resolved like tsc's getTypeOfVariableOrParameterOrProperty
+    // pushing the symbol (a root pattern has none, see lazy_type.c), which reaching it again makes any (TS2502, TS7022).
+    // Neither has a memo of its own, so a circular one is remembered
+    if (!binding->has_explicit_type && !(binding->parent && binding->tag == BINDING_IDENTIFIER)) {
+        return ty_binding_assigned_type(me, binding);
     }
-    return ty_binding_assigned_type(me, binding);
+    Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
+    u64 key[2] = { KEY_CIRCULAR_BINDING, (u64)(uintptr_t)binding };
+    if (my circular_bindings && intern_get(&my links, key, 2)) return circular;
+    if (ty_resolving_find(me, RESOLVING_BINDING, binding)) {
+        ty_resolving_cycle(me, RESOLVING_BINDING, binding);
+        return circular;
+    }
+    ty_resolving_push(me, RESOLVING_BINDING, binding);
+    Ty const* type = binding->has_explicit_type ? ty_from_node(me, &binding->explicit_type, ctx) :
+        ty_binding_assigned_type(me, binding);
+    if (ty_resolving_pop(me)) {
+        my circular_bindings = true;
+        *intern_slot(me, &my links, key, 2) = (void*)binding;
+        return circular;
+    }
+    // A catch variable annotated with anything but any or unknown is any (TS1196)
+    if (binding->has_explicit_type && !binding->parent && !binding->source && !(type->flags & (TYF_ANY | TYF_UNKNOWN))) {
+        return ty_intrinsic(me, TY_ANY);
+    }
+    return type;
 }
 
 static bool is_naked_type_param_node(TypeNode const* node) {

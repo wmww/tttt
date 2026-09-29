@@ -173,8 +173,8 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
   without lib es2015). Probe: test/probes/plan08/alias_optional_chain.ts minus its `@target`.
 - `check_with()` (ty/expr.c) computes an expression with a contextual type outside the LazyType, so no cycle detection
-  (`ty_binding_default_type` guards `let [x = x] = []` with `defaults_in_flight`; other contextual self-references can
-  still overflow the stack).
+  (`let [x = x] = []` is stopped by the pattern's names being on the resolution stack, plan 39; other contextual
+  self-references can still overflow the stack).
 - selfReferentialDefaultNoStackOverflow wants TS7022 on `export default { mixins: [DefaultSpinner] }` importing itself.
 
 ## Classes and declarations

@@ -200,7 +200,8 @@ src` finds the code-side markers; every significant one has an entry here.
   `key.expr.owned` + `ref` on interface members; `LAZY_TYPE_FUNCTION` memoises the already interned
   `ty_function_type()`.
 - `ty_binding_assigned_type`: not memoised; a default replaces only an all-undefined element (tsc: undefined removed
-  first). `ty_binding_default_type` bypasses its LazyType (`defaults_in_flight`); `binding_element_implied_type` runs
+  first). `ty_binding_default_type` bypasses its LazyType (a pattern's names on the resolution stack stop `[x = x]`,
+  see `ty_binding_type`); `binding_element_implied_type` runs
   defaults under `flow_uncached`. `binding_element_context` includes index signatures (tsc's getTypeOfPropertyOfType
   doesn't).
 - Array pattern rest (`ty_binding_type`): the parent type is widened, so "any parent is any" peeks at the root

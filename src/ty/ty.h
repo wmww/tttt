@@ -806,7 +806,7 @@ struct Checker {
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
-    bool circular_annotations; // Whether a KEY_CIRCULAR_ANNOTATION was recorded (it's rare: most checkers skip the lookup)
+    bool circular_bindings; // Whether a KEY_CIRCULAR_BINDING was recorded (it's rare: most checkers skip the lookup)
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
     u32 relation_complexity_hits; // How many relations ran out of their budget (TS2859, counted in the above too)
     // The typecheck walk inside the true branches of conditional types: `A` is `A & X` in `A extends X ? A['k'] : ...`
@@ -828,14 +828,6 @@ struct Checker {
     // contextualBindingPatterns): a reference inside one to its own elements is `any` (`const [a, b = a] = [1]`)
     struct Binding const* contextual_patterns[16];
     u32 contextual_pattern_count;
-    // The pattern elements whose defaults ty_binding_default_type() is checking: a binding element's type has no memo of
-    // its own, the default's LazyType is what detects `[x = x]` (a contextual check doesn't go through it)
-    struct Binding const* defaults_in_flight[16];
-    u32 defaults_in_flight_count;
-    // The values whose types a JSDoc value reference (`@param {x} x`) is taking: the annotation has no memo of its own,
-    // this is what detects the cycle (TS2502)
-    struct Symbol const* jsdoc_values_in_flight[16];
-    u32 jsdoc_values_in_flight_count;
     u32 flow_incomplete_seen; // Counts incomplete loop types handed out
     u32 flow_key_count; // Reference keys made
     u32 flow_expr_generation; // Which cache ty_flow_expr_type() uses while a loop is in progress: one per back edge walk
@@ -1508,7 +1500,8 @@ typedef enum ResolvingKind {
     RESOLVING_FUNCTION_RETURN,
     RESOLVING_PROP,
     RESOLVING_ALIAS,
-    RESOLVING_ANNOTATION, // The written type of a Binding
+    RESOLVING_BINDING, // An annotated Binding, or an identifier in a pattern (see ty_binding_type())
+    RESOLVING_PATTERN, // A LazyType of a root binding pattern (see lazy_type.c)
     RESOLVING_SIGNATURE_RETURN,
     RESOLVING_BASES, // The bases of a declared class or interface type
     RESOLVING_CONSTRAINT, // A type on the walk to a base constraint (members.c walk_base_constraint())
@@ -1528,6 +1521,9 @@ static inline bool ty_resolving_pop(Checker* me) {
     return my resolving[--my resolving_len].circular;
 }
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key); // It was asked for while in flight
+// A root binding pattern's LazyType (`key`) was asked for while in flight: the cycle starts at the first of its names
+// resolved since, if any was
+void ty_resolving_pattern_cycle(Checker* me, void const* key, struct Binding const* pattern);
 // Whether it is being resolved above the barrier (for what has no in-flight state of its own, tsc's
 // findResolutionCycleStartIndex: below a barrier it is resolved again, what it reaches has in-flight states that stop it)
 static inline bool ty_resolving_find(Checker* me, ResolvingKind kind, void const* key) {
