@@ -109,6 +109,9 @@ typedef struct FunctionFlags {
     bool is_async;
     bool is_generator;
     Span asterisk; // The `*` of a generator
+    // What came before commits to a function (`function f`, a member's `*`, `constructor`): a missing parameter list
+    // is TS1005 '(' expected and the function goes on without one (tsc's parseParameters)
+    bool committed;
 } FunctionFlags;
 
 static const FunctionFlags function_flags_null = {0};
@@ -5572,11 +5575,11 @@ static bool parse_function_header(Parser* parent, FunctionFlags flags, FunctionI
     return parse_success(&p);
 }
 
-static bool parse_non_arrow_function_inner(Parser* parent, FunctionImpl* ret);
+static bool parse_non_arrow_function_inner(Parser* parent, bool committed, FunctionImpl* ret);
 
 static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
     FunctionCtx saved = function_ctx_enter(parent, flags);
-    bool success = parse_non_arrow_function_inner(parent, ret);
+    bool success = parse_non_arrow_function_inner(parent, flags.committed, ret);
     function_ctx_leave(parent, saved);
     if (success) {
         ret->is_async = flags.is_async;
@@ -5587,11 +5590,24 @@ static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, Functi
     return success;
 }
 
-static bool parse_non_arrow_function_inner(Parser* parent, FunctionImpl* ret) {
+static bool parse_non_arrow_function_inner(Parser* parent, bool committed, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (!parse_function_args(&p, false, false, true, true, ret)) {
+    if (committed && *p.pos != '(' && *p.pos != '<') {
+        expected_token_error(&p, "(");
+        *ret = (FunctionImpl){0};
+        ret->args_span = span_from_pos(&p);
+        if (*p.pos == ':') {
+            p.pos++;
+            hop_whitespace(&p);
+            Anchor ret_a = anchor(&p);
+            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
+                ret->ret_span = span_from(ret_a);
+                ret->ret_explicit = true;
+            }
+        }
+    } else if (!parse_function_args(&p, false, false, true, true, ret)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -5601,14 +5617,18 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionImpl* ret) {
     } else if (*p.pos == ';' || *p.pos == '}' || !*p.pos || p.whitespace == WHITESPACE_NEWLINE) {
         ret->body = (Block){0};
     } else {
+        // tsc's parseFunctionBlock: a body whose `{` is missing, empty
         parse_error(&p, span_from_token(&p), 1144, "'{' or ';' expected.");
+        ret->body = (Block){0};
+        ret->body_missing = true;
     }
 
     ret->full_span = span_from(a);
     return parse_success(&p);
 }
 
-static bool parse_function_keyword_function(Parser* parent, bool is_async, FunctionImpl* ret) {
+// `name_required`: a declaration that isn't `export default` (tsc's parseFunctionDeclaration, TS1003)
+static bool parse_function_keyword_function(Parser* parent, bool is_async, bool name_required, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -5617,7 +5637,7 @@ static bool parse_function_keyword_function(Parser* parent, bool is_async, Funct
     }
     hop_whitespace(&p);
 
-    FunctionFlags flags = { .is_async = is_async };
+    FunctionFlags flags = { .is_async = is_async, .committed = true };
     if (hop_char(&p, '*')) {
         flags.is_generator = true;
         flags.asterisk = span_from_previous_char(&p);
@@ -5627,6 +5647,7 @@ static bool parse_function_keyword_function(Parser* parent, bool is_async, Funct
     Span name;
     if (!parse_identifier(&p, &name)) {
         name = span_null;
+        if (name_required) parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
     }
     hop_whitespace(&p);
 
@@ -6444,6 +6465,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     } else if (!is_type && hop_char(&p, '*')) {
         function_flags.is_generator = true;
         function_flags.asterisk = span_from_previous_char(&p);
+        function_flags.committed = true;
         hop_whitespace(&p);
     }
 
@@ -6524,7 +6546,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             if (span_valid(keyword) && span_end_ptr(keyword) >= span_start_ptr(name_span)) {
                 name_span = span_make(name_span.source, span_start_ptr(name_span), span_end_ptr(keyword));
             }
-            if (!parse_function_fn(&p, function_flags_null, &func)) {
+            if (!parse_function_fn(&p, (FunctionFlags){ .committed = true }, &func)) {
                 parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
                 func = (FunctionImpl){0};
             } else if (!func.has_body && reports_js_syntax(&p)) {
@@ -8155,7 +8177,7 @@ static bool parse_async_function_expr(Parser* parent, ExprCtx ctx, FunctionImpl*
         return parse_fail(&p);
     }
 
-    if (!parse_function_keyword_function(&p, true, ret) &&
+    if (!parse_function_keyword_function(&p, true, false, ret) &&
         !parse_arrow_function(&p, ctx, (FunctionFlags){ .is_async = true }, arrow_tristate == TRISTATE_TRUE, ret)
     ) {
         return parse_fail(&p);
@@ -8825,7 +8847,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if ((!word || c == 'd' || c == 'a' || c == 'y' || c == 't' || c == 'v') &&
         parse_left_unary_op_expr(&p, ctx, ret)
     ) {
-    } else if (c == 'f' && parse_function_keyword_function(&p, false, &parsed.function)) {
+    } else if (c == 'f' && parse_function_keyword_function(&p, false, false, &parsed.function)) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (c == 'a' && parse_async_function_expr(&p, ctx, &parsed.function)) {
@@ -8959,7 +8981,7 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     return false;
 }
 
-static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret) {
+static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret, bool* amd_module_name) {
     Parser p = parser(parent);
     if (!hop_start(&p, "///")) {
         return parse_fail(&p);
@@ -8970,9 +8992,12 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
     }
     hop_whitespace_full(&p, false, false);
     Span xml_tag;
+    Anchor tag_a = anchor(&p);
     if (!parse_identifier_or_keyword(&p, &xml_tag)) {
         return parse_fail(&p);
     }
+    while (*p.pos == '-' && hop_char(&p, '-') && parse_identifier_or_keyword(&p, &xml_tag)) {}
+    xml_tag = span_from(tag_a);
     hop_whitespace_full(&p, false, false);
     bool found_reference_attr = false;
     typeof(ret->tag) reference_attr;
@@ -9014,6 +9039,9 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
             }
         }
 
+        if (span_equals(xml_tag, "amd-module") && span_equals(attr, "name") && !cstr_is_empty(&value)) {
+            *amd_module_name = true;
+        }
         if (span_equals(xml_tag, "reference")) {
             if (!found_reference_attr) {
                 if ((span_equals(attr, "path")  && (reference_attr = SOURCE_DIRECTIVE_REFERENCE_PATH,  true)) ||
@@ -9062,6 +9090,7 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
 }
 
 static void parse_source_directives(Parser* parent, VecStatement* ret) {
+    bool seen_amd_module = false;
     while (true) {
         hop_whitespace_full(parent, false, true);
 
@@ -9074,7 +9103,18 @@ static void parse_source_directives(Parser* parent, VecStatement* ret) {
         parse_fail(&p);
 
         SourceDirectiveStatement directive;
-        if (parse_source_directive(parent, &directive)) {
+        bool amd_module_name = false;
+        Anchor comment_a = anchor(parent);
+        bool is_directive = parse_source_directive(parent, &directive, &amd_module_name);
+        if (amd_module_name) {
+            // tsc's processPragmasIntoFields: every `<amd-module name>` pragma after the first, on its whole comment
+            if (seen_amd_module) {
+                parent->pos = comment_end;
+                parse_error(parent, span_from(comment_a), 2458, "An AMD module cannot have multiple name assignments.");
+            }
+            seen_amd_module = true;
+        }
+        if (is_directive) {
             vec_statement_push(ret, (Statement){
                 .tag = STATEMENT_SOURCE_DIRECTIVE,
                 .source_directive = c_new(SourceDirectiveStatement, directive),
@@ -11141,7 +11181,8 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .variable = parsed.variable,
             },
         };
-    } else if (parse_function_keyword_function(&p, modifiers.includes[MODIFIER_ASYNC], &parsed.function)) {
+    } else if (parse_function_keyword_function(&p, modifiers.includes[MODIFIER_ASYNC],
+        decl_props.exported != DECL_EXPORTED_YES_DEFAULT, &parsed.function)) {
         modified.kind = MODIFIED_FUNCTION;
         parsed.function.full_span = span_from(a);
         *ret = (Statement){

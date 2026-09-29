@@ -1061,12 +1061,12 @@ static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) 
 // followed by the implementation (TS2391, TS2389, TS2390, TS2516, TS2387/TS2388), one implementation (TS2393)
 static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
     SourceFile const* file = my name.source ? my name.source : my full_span.source;
-    if ((my symbol && my symbol->is_ambient) || !file || file->is_declaration || file->has_parse_errors) return;
+    if ((my symbol && my symbol->is_ambient) || !file || file->is_declaration) return;
     isize count = vec_class_item_size(&my items);
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
         FunctionImpl const* func = overloadable(item);
-        if (!func || func->has_body) continue;
+        if (!func || func->has_body || func->body_missing) continue;
         bool is_constructor = item->tag == CLASS_ITEM_CONSTRUCTOR;
         if (!is_constructor && item->method.computed_key) continue;
         ClassItem const* next = i + 1 < count ? vec_class_item_at(&my items, i + 1) : nullptr;

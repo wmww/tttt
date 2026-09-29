@@ -115,6 +115,9 @@ typedef struct FunctionImpl {
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow;
     bool has_body;
+    // The parser lost the body's `{` (`function f() => 4`, tsc's missing Block): no body, but not an overload waiting
+    // for its implementation either (tsc checks `!body` there)
+    bool body_missing;
     bool private_ambient; // A private method of an ambient class: no implicit any errors (tsc's isPrivateWithinAmbient)
     bool ambient; // Declared in an ambient context (`declare`, a declaration file), where it can't have a body
     bool expression_body; // An arrow function whose body is an expression (a synthesized `return`)

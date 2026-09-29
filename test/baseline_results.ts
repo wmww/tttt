@@ -851,7 +851,7 @@ const baselines = {
         types: true,
     },
     'amdModuleName2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3726,7 +3726,7 @@ const baselines = {
         types: true,
     },
     'classFieldsBrokenConstructorEmitNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13466,7 +13466,7 @@ const baselines = {
         types: true,
     },
     'externModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25081,7 +25081,7 @@ const baselines = {
         types: true,
     },
     'overloadingStaticFunctionsInFunctions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -29161,7 +29161,7 @@ const baselines = {
         types: true,
     },
     'staticsInAFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42711,9 +42711,9 @@ const baselines = {
         types: false,
     },
     'MemberFunctionDeclaration6_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'MemberFunctionDeclaration7_es6': {
         errors: true,
@@ -44116,9 +44116,9 @@ const baselines = {
         types: true,
     },
     'templateStringWithEmbeddedYieldKeyword': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithEmbeddedYieldKeywordES6': {
         errors: true,
@@ -55847,7 +55847,7 @@ const baselines = {
     },
     'parser.asyncGenerators.classMethods.es2018': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parser.asyncGenerators.functionDeclarations.es2018': {
@@ -56431,7 +56431,7 @@ const baselines = {
         types: true,
     },
     'parserConstructorDeclaration8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56891,7 +56891,7 @@ const baselines = {
         types: true,
     },
     'parserEqualsGreaterThanAfterFunction1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

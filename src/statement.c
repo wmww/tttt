@@ -1736,10 +1736,10 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
     isize count = vec_statement_size(statements);
     for (isize i = 0; i < count; i++) {
         FunctionImpl const* overload = function_declaration(vec_statement_at(statements, i));
-        if (!overload || overload->has_body || !span_valid(overload->name)) continue;
-        // A declaration file is ambient; after a parse error the body may be what the parser lost
+        if (!overload || overload->has_body || overload->body_missing || !span_valid(overload->name)) continue;
+        // A declaration file is ambient
         SourceFile const* file = overload->name.source;
-        if (file->is_declaration || file->has_parse_errors) return;
+        if (file->is_declaration) return;
         FunctionImpl const* next = i + 1 < count ? function_declaration(vec_statement_at(statements, i + 1)) : nullptr;
         if (next && csview_equals_sv(next->name.sv, overload->name.sv)) continue; // It goes on
         // Not followed by its implementation. An error if the list declares more of it later (tsc's consecutive
