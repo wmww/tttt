@@ -3539,6 +3539,15 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
 // Where the line comment of the line from `line` to `end` starts (skipping block comments and string literals), null if
 // it has none
 static const char* jsdoc_line_comment_start(const char* line, const char* end) {
+    // Most lines have no `//` at all: find that out with memchr before walking strings and block comments
+    bool any = false;
+    for (const char* p = line; p + 1 < end && (p = memchr(p, '/', end - p - 1)); p++) {
+        if (p[1] == '/') {
+            any = true;
+            break;
+        }
+    }
+    if (!any) return nullptr;
     for (const char* c = line; c + 1 < end; c++) {
         if (c[0] == '/' && c[1] == '/') return c;
         if (c[0] == '/' && c[1] == '*') {
