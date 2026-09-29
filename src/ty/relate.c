@@ -409,7 +409,9 @@ static bool is_unknown_like_union(Checker* me, Ty const* t) {
 static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s, Ty const* t) {
     u32 sf = s->flags;
     u32 tf = t->flags;
-    if ((tf & (TYF_ANY | TYF_UNKNOWN)) || (sf & TYF_NEVER)) return true;
+    if ((tf & TYF_ANY) || (sf & TYF_NEVER)) return true;
+    // (any isn't a strict subtype of unknown, tsc's isSimpleTypeRelatedTo)
+    if ((tf & TYF_UNKNOWN) && !(st->relation == TY_RELATION_STRICT_SUBTYPE && (sf & TYF_ANY))) return true;
     if (tf & TYF_NEVER) return false;
     if (sf & TYF_ANY) return !is_subtype_relation(st->relation);
     if ((sf & TYF_STRING_LIKE) && (tf & TYF_STRING)) return true;
