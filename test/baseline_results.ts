@@ -9516,7 +9516,7 @@ const baselines = {
         types: true,
     },
     'destructionAssignmentError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46768,7 +46768,7 @@ const baselines = {
     'assignmentLHSIsValue': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentTypeNarrowing': {
         errors: true,

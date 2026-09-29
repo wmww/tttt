@@ -12071,6 +12071,18 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     hop_whitespace(&p);
 
     expect_closing(&p, '}', open);
+    // tsc's parseBlock: `{ a } = b` is a destructuring assignment missing its parentheses, the `=` is skipped
+    Parser eq = parser(&p);
+    hop_whitespace(&eq);
+    if (*eq.pos == '=' && eq.pos[1] != '=' && eq.pos[1] != '>') {
+        parse_error(&eq, span_from_token(&eq), 2809, "Declaration or statement expected. This '=' follows a block of "
+            "statements, so if you intended to write a destructuring assignment, you might need to wrap the whole "
+            "assignment in parentheses.");
+        eq.pos++;
+        parse_success(&eq);
+    } else {
+        parse_fail(&eq);
+    }
     return parse_success(&p);
 }
 
