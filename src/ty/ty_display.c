@@ -1987,6 +1987,14 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 out(d, ty_js_assigned_class_name(js_class, &js_name) ? js_name : js_class->name);
                 break;
             }
+            // A function a CommonJS module exports with the module's other exports merged in (tsc's
+            // getCommonJsExportEquals clone, a ValueModule too)
+            Symbol const* exported = ty->anonymous.merged_value ? ty->anonymous.merged_value->merged_export_equals_of : nullptr;
+            if (exported && (exported->flags & SYMBOL_FUNCTION) && span_valid(exported->name_span)) {
+                out_lit(d, "typeof ");
+                out(d, exported->name_span.sv);
+                break;
+            }
             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
             d.visiting = &visit;
             display_structure(me, d, ty);
