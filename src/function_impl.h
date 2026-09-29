@@ -149,6 +149,7 @@ typedef struct FunctionImpl {
     // Its JSDoc is its return statement's: tsc's getHostSignatureFromJSDoc doesn't find it (a `{...T}` tag isn't an array)
     bool jsdoc_indirect_host;
     Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
+    struct Symbol const* static_method_of; // A static method's class (display: `typeof C.m`), set by the resolve walk
     Span variable_name; // A function expression or arrow function that initializes a variable: its name (display)
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
     // A getter without a return type annotation whose setter's parameter has one: that annotation, which is the

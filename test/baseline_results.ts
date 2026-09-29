@@ -7106,7 +7106,7 @@ const baselines = {
         types: true,
     },
     'crashInsourcePropertyIsRelatableToTargetProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7523,7 +7523,7 @@ const baselines = {
     'declFileTypeofFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileTypeofInAnonymousType': {
         errors: true,
@@ -14373,7 +14373,7 @@ const baselines = {
     'functionReturningItself': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionSignatureAssignmentCompat1': {
         errors: true,
@@ -19901,7 +19901,7 @@ const baselines = {
         types: true,
     },
     'jsxElementType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -26708,7 +26708,7 @@ const baselines = {
     'rectype': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recur1': {
         errors: true,
@@ -26873,7 +26873,7 @@ const baselines = {
     'recursiveFunctionTypes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveFunctionTypes1': {
         errors: true,
@@ -26923,7 +26923,7 @@ const baselines = {
     'recursiveIdenticalOverloadResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveInference1': {
         errors: true,
@@ -35683,12 +35683,12 @@ const baselines = {
     'privateClassPropertyAccessibleWithinClass': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateClassPropertyAccessibleWithinNestedClass': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateInstanceMemberAccessibility': {
         errors: true,
@@ -35718,12 +35718,12 @@ const baselines = {
     'protectedClassPropertyAccessibleWithinClass': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'protectedClassPropertyAccessibleWithinNestedClass': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'protectedClassPropertyAccessibleWithinNestedSubclass': {
         errors: true,
@@ -44953,12 +44953,12 @@ const baselines = {
     'YieldExpression7_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression8_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression9_es6': {
         errors: true,
@@ -51418,7 +51418,7 @@ const baselines = {
     'jsDeclarationsDefault': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsDefaultsErr': {
         errors: true,

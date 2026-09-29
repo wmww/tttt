@@ -92,6 +92,20 @@ static bool global_shadowed_by_type_param(Checker* me, TyParamNames const* names
 
 // With TyDisplay.enclosing, qualified as far as needed from there (symbol_chain.h), else bare or fully qualified (error
 // messages)
+// tsc's isNonLocalFunctionSymbol: a function with a parent symbol or declared directly in a file or namespace block
+static bool is_non_local_function(Symbol const* symbol) {
+    if (!(symbol->flags & SYMBOL_FUNCTION)) return false;
+    if (symbol->parent) return true;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        Scope const* block = symbol->decls[i].block;
+        if (block && (block->kind == SCOPE_SCRIPT || block->kind == SCOPE_MODULE || block->kind == SCOPE_NAMESPACE ||
+            block->kind == SCOPE_GLOBAL_AUGMENTATION)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     csview js_name;
     if (ty_js_assigned_class_name(symbol, &js_name)) {
@@ -2127,10 +2141,27 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             // An anonymous type inside its own rendering prints as `any`, like tsc's elided information placeholder
             // (`function f() { return f }` is `() => any`)
             for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
-                if (i->ty == ty) {
-                    out_lit(d, "any");
+                if (i->ty != ty) continue;
+                // (A function declared in a file or namespace prints as `typeof f` instead: tsc's
+                // shouldWriteTypeOfFunctionSymbol)
+                Symbol const* function = ty->anonymous.function && !ty->anonymous.target ? ty->anonymous.function->symbol : nullptr;
+                if (function && is_non_local_function(function)) {
+                    out_lit(d, "typeof ");
+                    out_symbol_name(me, d, function, SYMBOL_VALUE);
                     return;
                 }
+                // (and a static method as `typeof C.m`)
+                FunctionImpl const* method = ty->anonymous.function && !ty->anonymous.target ? ty->anonymous.function : nullptr;
+                Symbol const* owner = method ? method->static_method_of : nullptr;
+                if (owner && span_valid(owner->name_span) && span_valid(method->member_name)) {
+                    out_lit(d, "typeof ");
+                    out_symbol_name(me, d, owner, SYMBOL_VALUE);
+                    out_lit(d, ".");
+                    out(d, method->member_name.sv);
+                    return;
+                }
+                out_lit(d, "any");
+                return;
             }
             // A JavaScript constructor function is a class
             Symbol const* js_class = ty->anonymous.function && !ty->anonymous.target ?

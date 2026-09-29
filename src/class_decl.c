@@ -324,6 +324,9 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
                 scope = scope_new(this_scope, SCOPE_BLOCK);
                 scope->decorated_static_field = true;
             }
+            if (static_members && i->tag == CLASS_ITEM_METHOD && !i->method.computed_key && !i->method.accessor) {
+                i->method.func.static_method_of = my symbol;
+            }
             class_item_lookup_names(i, scope, errs);
         }
     }
