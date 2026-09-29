@@ -247,6 +247,15 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             break;
         }
     }
+    // tsc's checkExportDeclaration: `export *` (as ns or not) of a module with `export =`
+    if ((my main.tag == PORT_REEXPORT_SPLAT || my main.tag == PORT_REEXPORT_GATHER) && my module_ref && !my jsdoc) {
+        Symbol* module = binder_module_of_ref(current_checker->binder, my module_ref);
+        if (module && module->exports && symbol_table_get(module->exports, c_sv("export="))) {
+            cstr name = module_name_for_error(module, my module_ref, false);
+            error_ctx_error_d(errs, my target_path_span, 2498, "Module '", name, "' uses 'export =' and cannot be used with 'export *'.");
+            cstr_drop(&name);
+        }
+    }
     if (!ambient) port_statement_check_emit_helpers(me, span, errs);
     // `export * from "./script"` (tsc's checkExportDeclaration: resolveExternalModuleName; aliases say it themselves)
     if (my main.tag == PORT_REEXPORT_SPLAT && my module_ref && my module_ref->file && !my jsdoc && !my wrong_context &&

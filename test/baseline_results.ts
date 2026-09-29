@@ -39451,7 +39451,7 @@ const baselines = {
         types: true,
     },
     'exportAsNamespace_exportAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
