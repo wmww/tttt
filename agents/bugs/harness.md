@@ -3,7 +3,16 @@
 - tsc's harness adds `error TS-1: Pre-emit (N) and post-emit (M) diagnostic counts do not match!` with the excess
   diagnostics as related info when the emit resolver adds a semantic error (parseErrorIncorrectReturnToken,
   templateInsideCallback). tttt's harness has no emit and can't produce it; those tests can only pass their errors if
-  the harness learns which diagnostics tsc's emit resolver would add.
+  the harness learns which diagnostics tsc's emit resolver would add. 5 tests. Mechanism (triage 2026-09-29): the TS
+  transformer asks `resolver.getConstantValue()` of every property/element access (const enum inlining), which does
+  `checkExpressionCached()` on accesses the checker never visited: the operand of a top-level `return` after TS1108
+  (multiLinePropertyAccessAndArrowFunctionIndent1, parserStatementIsNotAMemberVariableDeclaration1: TS2304/TS2503 of
+  the operand's names, the arrow parameters' annotations included), a recovered method body
+  (parseErrorIncorrectReturnToken `n.toString()`). Emulation: after checking, walk the file for property/element
+  accesses without a cached type, check them into a separate ErrorCtx, and print the TS-1 header plus `!!! related
+  TSnnnn file:line:col: text` lines. templateInsideCallback (TS7012 of JS `@overload`s) and unicodeEscapesInNames02
+  (es5, TS2532 at `new Foo().\u{102A7}`) come from other emit paths, not investigated. Low value (harness-only, the
+  CLI never shows these).
 - STC's `cregex` silently matches nothing once a `-f` pattern gets long (~100 alternatives); the harness says so when
   a filter selected no tests. Use `-f @names.txt`.
 - `@baselineFile`, `@fullEmitPaths` are ignored; bad option values are ignored (tsc's harness throws).
