@@ -323,6 +323,12 @@ src` finds the code-side markers; every significant one has an entry here.
   reports through the immediate one like tsc. `base_constraint()` and the other users keep the base version: the
   immediate one there stops at unions of conditional types (flow's constraint substitution showed them). Real fix:
   tsc's constraint functions (getConstraintOfType vs getBaseConstraintOfType) as two separate, cached functions.
+- `structured_related_members` TY_CONDITIONAL source (HACK): the first try of the true/false branches pushes the
+  target on the deep-nesting stack too, where tsc relates its default constraint with RecursionFlags.Source only (the
+  other generic-source constraint steps follow tsc). With tsc's flags react-hook-form's Path/FieldPathValue chains
+  explore ~10% more of the react corpus; the indexed-access step's tsc flags still cost it 4%: nested `T[a][b]...`
+  constraint chains are related level by level, the Maybe results inside aren't cached, and each variant is computed
+  about 12 times (see the commit "Conditional sources' first branch check pushes the target again").
 - Error reporting (plan 34): `flush_incompatible()` reads the property name back out of its message; `headMessage`
   approximated by `RelationState.at_top`; `report_truncate()` doesn't restore `skipped_source/target`,
   `override_next_head`. `intersection_props_related`'s TS2741 member choice fitted to one probe

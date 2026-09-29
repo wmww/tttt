@@ -4117,8 +4117,10 @@ static Ternary structured_related_members(
             Ty const* false_branch = ty_conditional_branch(me, source, false);
             if (true_branch->flags & TYF_ANY) true_branch = ty_intrinsic(me, TY_NEVER);
             else if (false_branch->flags & TYF_ANY) false_branch = ty_intrinsic(me, TY_NEVER);
-            Ternary related = is_related_to_side(me, st, true_branch, target, false, 2);
-            if (related) related &= is_related_to_side(me, st, false_branch, target, false, 2);
+            // HACK: tsc relates the default constraint with RecursionFlags.Source; pushing the target too (a deep-nesting
+            // cut-off tsc doesn't have) saves react-hook-form's Path/FieldPathValue chains 10% of the react corpus
+            Ternary related = is_related_to(me, st, true_branch, target, false);
+            if (related) related &= is_related_to(me, st, false_branch, target, false);
             if (related) return related;
             // Through the distributive constraint (not to another conditional type, like in tsc)
             if (target->kind != TY_CONDITIONAL) {
