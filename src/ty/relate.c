@@ -4982,13 +4982,22 @@ static Ty const* discriminated_union_target(
     unsigned char include_buf[64];
     unsigned char* include = types.len <= sizeof(include_buf) ? include_buf : malloc(types.len);
     for (u32 i = 0; i < types.len; i++) include[i] = !(types.data[i]->kind == TY_INTRINSIC || types.data[i]->kind == TY_LITERAL);
-    Members const* members = ty_members(me, source);
+    // (Of an intersection, the properties of its members, with the types they have together)
+    u32 prop_count;
+    SourceProp* props = nullptr;
+    Members const* members = nullptr;
+    if (source->kind == TY_INTERSECTION) {
+        props = source_props(me, source, nullptr, &prop_count);
+    } else {
+        members = ty_members(me, source);
+        prop_count = members->prop_count;
+    }
     bool discriminated = false;
-    for (u32 p = 0; p < members->prop_count; p++) {
-        Prop const* prop = members->props[p];
+    for (u32 p = 0; p < prop_count; p++) {
+        Prop const* prop = props ? props[p].prop : members->props[p];
         if (!ty_is_discriminant_property(me, target, prop->name)) continue;
         *discriminants = true;
-        Ty const* prop_ty = prop_type(me, prop);
+        Ty const* prop_ty = props ? props[p].type : prop_type(me, prop);
         TyList parts = prop_ty->kind == TY_UNION ? prop_ty->composite.types : (TyList){ .data = &prop_ty, .len = 1 };
         bool matched = false;
         for (u32 i = 0; i < types.len; i++) {
@@ -5005,6 +5014,7 @@ static Ty const* discriminated_union_target(
             if (include[i] == 2) include[i] = !matched;
         }
     }
+    free(props);
     TyBuf kept = {0};
     for (u32 i = 0; i < types.len; i++) {
         if (include[i]) ty_buf_push(&kept, types.data[i]);
