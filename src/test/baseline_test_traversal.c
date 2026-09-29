@@ -127,7 +127,8 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     SymbolTable const* table = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = this->target->members;
     if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;
-    Symbol const* js_class = this->this_kind == THIS_ANY && this->this_function ? ty_js_this_class(this->this_function) : nullptr;
+    Symbol const* js_class = (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) && this->this_function ?
+        ty_js_this_class(this->this_function) : nullptr;
     if (js_class) table = js_class->members;
     Symbol const* member = table ? symbol_table_get(table, name.sv) : nullptr;
     // (Not when the class body declares it)

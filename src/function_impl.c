@@ -239,6 +239,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         ) {
             function_scope->this_ref = (ThisRef){
                 .kind = THIS_PARAMETER, .symbol = i->initializer.binding.symbol, .type_boundary = this_is_any,
+                // (A JavaScript `@this {T}`: `this.x = v` still declares x, see scope_add_this_property())
+                .function = i->jsdoc_this ? me : nullptr,
             };
         }
     }

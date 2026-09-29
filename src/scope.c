@@ -3849,6 +3849,9 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             }
             declare_assignment_member(me, &class_symbol->exports, class_symbol, name, left, value, jsdoc_type, ASSIGNMENT_DECL_THIS_IN_METHOD, jsdoc_modifiers);
         }   break;
+        case THIS_PARAMETER: // (Of a JSDoc `@this {T}`: tsc's binder doesn't look at it)
+            if (!this->this_function) break;
+            // fallthrough
         case THIS_ANY: {
             FunctionImpl* this_function = (FunctionImpl*)this->this_function;
             if (!this_function || this_function != function) return;
