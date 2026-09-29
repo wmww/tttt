@@ -7395,6 +7395,8 @@ static bool yield_is_operator_outside_generator(Parser* parent) {
 }
 
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
+    // (the tokens `!=`, `+=` and `-=` are no unary operators)
+    if ((*parent->pos == '!' || *parent->pos == '+' || *parent->pos == '-') && parent->pos[1] == '=') return false;
     if (hop_start(parent, "!")) {
         *op = UNARY_OP_LEFT_BANG;
     } else if (hop_start_if_ends_on_word_break(parent, "delete")) {

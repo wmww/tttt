@@ -1417,12 +1417,9 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 error_ctx_grammar_error_d(errs, block_first_token(my span), 18041,
                     "A 'return' statement cannot be used inside a class static block.");
             } else if (!container) {
-                error_ctx_error_d(
-                    errs,
-                    my expr.outer_span,
-                    1108,
-                    "A 'return' statement can only be used within a function body."
-                );
+                // (grammarErrorOnFirstToken: the `return`, not reported in a file with parse errors)
+                error_ctx_grammar_error_d(errs, block_first_token(my span), 1108,
+                    "A 'return' statement can only be used within a function body.");
             }
             expr_lookup_names(&my expr, names, errs);
             if (!flow->dead) {

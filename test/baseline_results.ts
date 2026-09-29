@@ -26341,7 +26341,7 @@ const baselines = {
         types: true,
     },
     'propertyWrappedInTry': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46808,7 +46808,7 @@ const baselines = {
     'compoundAssignmentLHSIsValue': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'additionOperatorWithAnyAndEveryType': {
         errors: true,
@@ -50681,7 +50681,7 @@ const baselines = {
         types: true,
     },
     'interfaceExtendingClass2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59321,7 +59321,7 @@ const baselines = {
         types: true,
     },
     'parserNotRegex1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
