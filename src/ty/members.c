@@ -2762,7 +2762,8 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             memcpy(grown, params, sizeof(SigParam) * count);
             params = grown;
             Ty const* element = ty_intrinsic(me, TY_ANY);
-            if (count && params[count - 1].decl && params[count - 1].decl->jsdoc_variadic) {
+            bool variadic_tag = count && params[count - 1].decl && params[count - 1].decl->jsdoc_variadic;
+            if (variadic_tag) {
                 element = ty_without_undefined(me, params[count - 1].type); // (Its `T | undefined`: T)
                 count--;
                 if (sig->min_args > count) sig->min_args = count;
@@ -2774,8 +2775,13 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
                     break;
                 }
             }
+            Ty const* rest_type = ty_array(me, element, false);
+            if (!variadic_tag) {
+                Ty const* contextual = ty_contextual_synthetic_rest_type(me, function, count);
+                if (contextual) rest_type = contextual;
+            }
             params[count++] = (SigParam){
-                .name = checker_atom(me, c_sv("args")), .type = ty_array(me, element, false), .rest = true,
+                .name = checker_atom(me, c_sv("args")), .type = rest_type, .rest = true,
             };
         }
         if (count && params[0].name == checker_atom(me, c_sv("this"))) {
