@@ -544,7 +544,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                         parent->anonymous.object_literal)
                     ) {
                         Span key_span = i->computed_key->outer_span;
-                        ty_check_indexed_access_type(current_checker, parent, expr_get_type(i->computed_key), key_span,
+                        ty_check_destructuring_indexed_access(current_checker, parent, expr_get_type(i->computed_key),
                             key_span, errs);
                     }
                     if (parent && !i->target.rest) {

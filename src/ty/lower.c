@@ -2652,8 +2652,10 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         ret = ty_intrinsic(me, TY_ERROR);
     } else {
         ObjectBindingItem const* item = binding->parent_item;
-        ret = ty_access_reading(me, object,
-            item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));
+        Ty const* key = item->computed_key ? ty_regular(me, ty_expr_type(me, item->computed_key)) : ty_literal(me, &item->source);
+        ret = ty_access_reading(me, object, key);
+        // (A generic key is a deferred `T[K]`: tsc's getIndexedAccessType)
+        if (!ret && item->computed_key && ty_is_generic_index(key)) ret = ty_indexed(me, object, key);
         // A property an object literal lacks is undefined when there's a default, which decides (tsc's
         // AccessFlags.AllowMissing)
         if (!ret && binding->default_value && object->kind == TY_ANONYMOUS && object->anonymous.object_literal) {

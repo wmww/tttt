@@ -1239,9 +1239,9 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     if (span_valid(span) && !span.sv.size) return;
     cstr name = index_name(me, index);
     // (A binding element's is about the apparent type: tsc's getIndexedAccessType reports on getReducedApparentType,
-    // `{}` for `object`)
+    // `{}` for `object`, the constraint's for a type parameter)
     u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
-        TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_NON_PRIMITIVE;
+        TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_NON_PRIMITIVE | TYF_TYPE_PARAM | TYF_DEFERRED;
     cstr object_str = ty_to_cstr(me, destructured && (object->flags & primitive) ? ty_apparent_type(me, object) : object);
     Error* error;
     // (Nor does it suggest anything: tsc's getPropertyTypeForIndexType only does for element access expressions)
@@ -1747,6 +1747,18 @@ void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index
     } else {
         check_indexed_access_part(me, apparent, index, index_span, errs);
     }
+}
+
+// `{ [k]: x } = o` and `const { [k]: x } = o`: getIndexedAccessType with the computed name as the access node, an
+// expression rather than an `O[K]` type, so only a generic key defers it; else it's about o's apparent type
+void ty_check_destructuring_indexed_access(Checker* me, Ty const* object, Ty const* index, Span index_span, ErrorCtx* errs) {
+    index = ty_regular(me, index);
+    if ((object->flags & TYF_ERROR) || ty_is_generic_index(index)) return;
+    if (!(index->flags & TYF_ERROR) && ty_is_generic_object(me, object)) {
+        object = ty_apparent_type(me, object);
+        if (ty_is_generic_object(me, object)) return;
+    }
+    ty_check_indexed_access_type(me, object, index, index_span, index_span, errs);
 }
 
 // tsc's getSuggestionForNonexistentIndexSignature: `o[k]` on something with a `get(k)` (`set(k, v)` when written)

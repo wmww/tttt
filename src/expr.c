@@ -2326,7 +2326,7 @@ static void assignment_target_typecheck(
                     Ty const* key = ty_regular(checker, ty_expr_type(checker, i->computed_key));
                     Span key_span = i->computed_key->outer_span;
                     if (!(has_default && source->kind == TY_ANONYMOUS && source->anonymous.object_literal)) {
-                        ty_check_indexed_access_type(checker, source, key, key_span, key_span, errs);
+                        ty_check_destructuring_indexed_access(checker, source, key, key_span, errs);
                     }
                     ty_check_destructured_member(checker, source, key, i->name_span, from_this, site, errs);
                     property = ty_access_reading(checker, source, key);

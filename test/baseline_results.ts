@@ -9573,7 +9573,7 @@ const baselines = {
     'destructuredMaappedTypeIsNotImplicitlyAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringAssignmentWithDefault': {
         errors: true,
