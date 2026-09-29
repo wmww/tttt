@@ -1206,7 +1206,18 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         // To the simplified form of an indexed access too, which may expose bare type parameters: `{ [P in K]: X<P> }[K]`
         // is X<K> (tsc's inferFromTypes)
         Ty const* simplified = ty_simplified(me, target, false);
-        if (simplified != target) infer_from(me, inf, source, simplified);
+        if (simplified != target) {
+            infer_from(me, inf, source, simplified);
+        } else {
+            // A generic index doesn't distribute when relating, but here it can: `(Readonly<T> & U)[P]` is
+            // `T[P] & U[P]`, exposing the T[P] a reverse mapped type infers to (tsc's inferFromTypes)
+            Ty const* index = ty_simplified(me, target->indexed.index, false);
+            if (index->kind == TY_TYPE_PARAM || (index->flags & TYF_DEFERRED)) {
+                Ty const* object = ty_simplified(me, target->indexed.object, false);
+                Ty const* distributed = ty_distribute_index_over_object(me, object, index);
+                if (distributed && distributed != target) infer_from(me, inf, source, distributed);
+            }
+        }
     }
     if (source == target && (source->kind == TY_UNION || source->kind == TY_INTERSECTION)) {
         // The same union or intersection: each member to itself (a generic signature related to its own instantiation

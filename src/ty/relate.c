@@ -2597,6 +2597,16 @@ static Ty const* compute_simplified(Checker* me, Ty const* ty, bool writing) {
     return ty;
 }
 
+// tsc's distributeIndexOverObjectType for reading: `(T | U)[K]` is T[K] | U[K], `(T & U)[K]` T[K] & U[K]. Null if the
+// object is neither (or an intersection that defers its index)
+Ty const* ty_distribute_index_over_object(Checker* me, Ty const* object, Ty const* index) {
+    if (object->kind == TY_UNION) return simplified_parts(me, object, index, object->composite.types, false, false, false);
+    if (object->kind == TY_INTERSECTION && !defers_index(me, object)) {
+        return simplified_parts(me, object, index, object->composite.types, false, true, false);
+    }
+    return nullptr;
+}
+
 // `T extends U ? T : never` is T when T is always a U, never when it never is, and `T extends U ? never : T` the other
 // way around (tsc's getSimplifiedConditionalType)
 static Ty const* compute_simplified_conditional(Checker* me, Ty const* ty, bool writing) {

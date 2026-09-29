@@ -1175,6 +1175,7 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstr
 bool ty_param_constraint_is_circular(Checker* me, Ty const* param); // TS2313
 Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param); // Of an `infer X` without `extends`, from its position
 Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing);
+Ty const* ty_distribute_index_over_object(Checker* me, Ty const* object, Ty const* index); // relate.c
 Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const* key); // tsc's getSimplifiedType, relate.c
 Ty const* ty_base_constraint(Checker* me, Ty const* ty); // of a type parameter or deferred type, null if there's none
 Ty const* ty_conditional_constraint(Checker* me, Ty const* conditional); // tsc's getConstraintOfConditionalType, relate.c
