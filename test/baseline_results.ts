@@ -30751,7 +30751,7 @@ const baselines = {
         types: true,
     },
     'tsxNotUsingApparentTypeOfSFC': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53836,7 +53836,7 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponentsWithTypeArguments2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

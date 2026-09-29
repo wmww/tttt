@@ -721,7 +721,11 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     // hasNonCircularBaseConstraint: `Extract<T, string>` as a constraint of T is resolved through T's. Another type
     // parameter is no such target: instantiating it leaves it, and its own constraint mentions the original)
     if (constraint_resolves_through(target, source, declared)) return;
-    cstr target_str = display_for_report(me, target, false);
+    // (tsc's typeToString(target, the type parameter's declaration): names as reachable from there, `JSX.X`)
+    Symbol const* param_symbol = item ? item->owned_symbol : infer_symbol;
+    Scope const* enclosing = param_symbol && param_symbol->decl_count ? param_symbol->decls[0].block : nullptr;
+    cstr target_str = cstr_null;
+    ty_display(me, (TyDisplay){ .target = &target_str, .enclosing = enclosing }, target);
     report_related(st, 2208, cstr_d("This type parameter might need an `extends ", target_str, "` constraint."),
         item ? item->name : infer_symbol->decls[0].name);
     cstr_drop(&target_str);
