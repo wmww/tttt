@@ -12523,17 +12523,17 @@ const baselines = {
     'expandoFunctionNullishProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionSymbolProperty': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'expandoFunctionSymbolPropertyJs': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'experimentalDecoratorMetadataUnresolvedTypeObjectInEmit': {
         errors: true,
@@ -60873,7 +60873,7 @@ const baselines = {
     'typeFromPropertyAssignment36': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment37': {
         errors: true,

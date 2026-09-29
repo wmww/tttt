@@ -118,6 +118,22 @@ static Symbol const* export_equals_clone_of(Symbol const* function) {
     return assigned && assigned->merged_export_equals_of == function ? function : nullptr;
 }
 
+// A function with expando properties that is local (declared in a function or block): tsc prints a non-local one as
+// `typeof f`, a local one's type like any function's (observed; the non-local rule is shouldWriteTypeOfFunctionSymbol's
+// isNonLocalFunctionSymbol, why the expando members make it apply without recursion isn't pinned down)
+static bool is_nested_expando_function(Ty const* ty) {
+    Symbol const* symbol = ty->declared.kind == TY_DECLARED_NAMESPACE ? ty->declared.namespace_symbol : nullptr;
+    if (!symbol) symbol = ty->declared.symbol;
+    if (!symbol || !(symbol->flags & SYMBOL_FUNCTION) || symbol->parent) return false;
+    bool expando = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind == SYMBOL_DECL_NAMESPACE || decl->kind == SYMBOL_DECL_CLASS) return false;
+        if (decl->kind == SYMBOL_DECL_EXPANDO) expando = true;
+    }
+    return expando && !is_non_local_function(symbol);
+}
+
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     csview js_name;
     if (ty_js_assigned_class_name(symbol, &js_name)) {
@@ -2104,7 +2120,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 case TY_DECLARED_CLASS_STATIC:
                 case TY_DECLARED_ENUM_OBJECT:
                 case TY_DECLARED_NAMESPACE:
-                    if (!ty->declared.name->len || is_mixin_static_side(me, ty)) {
+                    if (!ty->declared.name->len || is_mixin_static_side(me, ty) || is_nested_expando_function(ty)) {
                         display_structure(me, d, ty); // A module nobody named
                         break;
                     }
