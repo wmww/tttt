@@ -463,6 +463,19 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             for_each (i, vec_tuple_element, &my tuple.elements) {
                 type_typecheck(&i->type, errs);
             }
+            // tsc's checkTupleType: a variadic element (`...T`, T no array type syntactically) must be array-like
+            for_each (i, vec_tuple_element, &my tuple.elements) {
+                if (!i->rest || !span_valid(i->span) || i->type.tag == TYPE_ARRAY) continue;
+                if (i->type.tag == TYPE_TUPLE) continue;
+                Ty const* type = ty_of_node(&i->type);
+                // HACK: only type parameters of the generic types (a mapped type over T[K] can be array-like by its
+                // constraint, which tttt's relation doesn't see)
+                if (type->kind != TY_TYPE_PARAM && ty_is_generic_type(current_checker, type)) continue;
+                if (!ty_extends_array(current_checker, type)) {
+                    error_ctx_error_d(errs, i->span, 2574, "A rest element type must be an array type.");
+                    break;
+                }
+            }
             break;
 
         case TYPE_INDEXED: indexed_type_typecheck(my indexed, errs); break;

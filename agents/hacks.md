@@ -178,6 +178,8 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   `parsed_file_is_module()`, a copy of program.c's rules (statements, moduleDetection, extensions, react-jsx) made
   before the program decides; "saw an `await` identifier" is noted by identifier expressions and bindings, also in
   attempts that backtrack (a spurious reparse only costs time).
+- TS2574 (`type_typecheck()`, TYPE_TUPLE): a variadic element whose type is generic is only checked if it's a type
+  parameter; tttt's relation can't see that a mapped type over `T[K]` is array-like by its constraint.
 - `CallExpr` argument types recomputed per use; `Value.object` refcount churn; `IdentifierType` could be split into a
   small common case; `CallableType`/`FunctionImpl` are two allocations (PERF comments).
 

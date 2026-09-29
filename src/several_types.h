@@ -108,6 +108,7 @@ void inferred_type_drop(InferredType* me);
 // Tuple
 
 typedef struct TupleElement {
+    Span span; // The element (tsc's node: from a `...` to the end of its type), invalid in JSDoc
     Span maybe_name;
     TypeNode type;
     bool rest;

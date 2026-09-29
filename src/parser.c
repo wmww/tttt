@@ -2410,6 +2410,7 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
 
     while (*p.pos && *p.pos != ']') {
         TupleElement elem = {0};
+        char const* element_start = p.pos;
 
         if (hop_start(&p, "...")) {
             elem.rest = true;
@@ -2442,8 +2443,23 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
             elem.optional = false;
         }
 
+        // tsc's checkNamedTupleMember: `...a?: T` (TS5085), `a: ...T` (TS5087, still a rest element)
+        bool type_rest = false;
+        char const* type_rest_start = p.pos;
+        if (named && hop_start(&p, "...")) {
+            type_rest = true;
+            elem.rest = true;
+            hop_whitespace(&p);
+        }
         char const* type_start = p.pos;
         expect_type(&p, TYPE_PRECEDENCE_NULL, &elem.type);
+        if (!p.shared->in_jsdoc) elem.span = span_make(p.shared->source, element_start, p.pos);
+        if (named && type_rest) {
+            parse_error(&p, span_make(p.shared->source, type_rest_start, p.pos), 5087,
+                "A labeled tuple element is declared as rest with a '...' before the name, rather than before the type.");
+        } else if (named && elem.rest && elem.optional) {
+            parse_error(&p, span_make(p.shared->source, element_start, p.pos), 5085, "A tuple member cannot be both optional and rest.");
+        }
         // JSDoc `[T?]`: the postfix `?` that would make `T | null` marks an optional element instead
         if (!named && p.shared->in_jsdoc && p.shared->jsdoc_postfix_nullable_start == type_start &&
             p.shared->jsdoc_postfix_nullable_end == p.pos && elem.type.tag == TYPE_UNION) {
@@ -2458,10 +2474,14 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
             }
             elem.optional = true;
         }
-        // Likewise outside JSDoc, where `T?` is a TYPE_JSDOC (tsc's parseTupleElementType)
-        if (!named && elem.type.tag == TYPE_JSDOC && elem.type.jsdoc->postfix && !elem.type.jsdoc->non_null &&
+        // Likewise outside JSDoc, where `T?` is a TYPE_JSDOC (tsc's parseTupleElementType; after a name it's TS5086)
+        if (!type_rest && elem.type.tag == TYPE_JSDOC && elem.type.jsdoc->postfix && !elem.type.jsdoc->non_null &&
             span_start_ptr(elem.type.jsdoc->span) == type_start
         ) {
+            if (named) {
+                parse_error(&p, elem.type.jsdoc->span, 5086, "A labeled tuple element is declared as optional with a question "
+                    "mark after the name and before the colon, rather than after the type.");
+            }
             TypeNode* nullable = &elem.type.jsdoc->type;
             TypeNode inner = *vec_type_front(&nullable->composite);
             vec_type_pop(&nullable->composite); // (The synthesized null)
@@ -12660,7 +12680,7 @@ static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
         1079, 1089, 1090, 1096, 1097, 1120, 1123, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
-        1013, 1106, 1171, 1197, 1211, 1248, 1253, 1358, 18006, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019, 8020, 1183, 7061,
+        1013, 1106, 1171, 1197, 1211, 1248, 1253, 1358, 18006, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019, 8020, 1183, 7061, 5085, 5086, 5087,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;
