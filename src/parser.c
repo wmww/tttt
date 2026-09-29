@@ -739,6 +739,10 @@ static inline Span span_from_previous_char(Parser* me) {
 }
 
 static Span span_from_token(Parser* me) {
+    // (The end of a JSDoc comment is its scanner's end of file: no length)
+    if (my shared->in_jsdoc && my shared->jsdoc_end && my pos >= my shared->jsdoc_end) {
+        return span_make(my shared->source, my pos, my pos);
+    }
     Parser p = parser(me);
     Anchor a = anchor(&p);
     hop_token(&p);
@@ -10390,9 +10394,12 @@ static ImportAttributes* parse_import_attributes(Parser* parent) {
     }
     ImportAttributes* ret = c_new(ImportAttributes, { .keyword = span_from(a), .is_assert = is_assert });
     ret->elements = vec_import_attribute_init();
+    char const* keyword_end = p.pos;
     hop_whitespace(&p);
+    char const* body_start = p.pos;
     parse_import_attributes_body(&p, ret);
-    ret->span = span_from(a);
+    // (Without its body the node ends at the keyword: tsc's finishNode)
+    ret->span = span_make(p.shared->source, a.start, p.pos == body_start ? keyword_end : p.pos);
     parse_success(&p);
     return ret;
 }
