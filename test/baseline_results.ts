@@ -36396,7 +36396,7 @@ const baselines = {
         types: true,
     },
     'privateNameDuplicateField': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

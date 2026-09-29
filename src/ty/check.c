@@ -2533,7 +2533,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
     // A field after another member of its name and staticness: the symbols merge (a property excludes nothing), and
     // the field is a secondary declaration
     for_each (i, vec_class_item, &class_decl->items) {
-        if (i->tag != CLASS_ITEM_FIELD || i->field.computed_key || span_valid(class_item_private_name(i))) continue;
+        if (i->tag != CLASS_ITEM_FIELD || i->field.computed_key) continue;
         for_each (first, vec_class_item, &class_decl->items) {
             if (first == i) break;
             bool is_field = first->tag == CLASS_ITEM_FIELD;
