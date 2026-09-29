@@ -45341,7 +45341,7 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck63': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
