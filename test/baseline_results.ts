@@ -23796,7 +23796,7 @@ const baselines = {
         types: true,
     },
     'noUnusedLocals_destructuringAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52966,7 +52966,7 @@ const baselines = {
         types: false,
     },
     'jsxParsingError1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

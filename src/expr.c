@@ -1441,8 +1441,24 @@ static void jsx_lookup_factory(Expr* expr, Scope* names, ErrorCtx* errs) {
 }
 
 // tsc's checkGrammarJsxElement for the attributes: the first repeated name (TS17001) or empty `x={}` (TS17000)
+// tsc's checkJsxExpression: `{a, b}` in an attribute or child (a parenthesized one is fine)
+static void jsx_check_comma_expression(Expr const* expr, ErrorCtx* errs) {
+    if (expr->tag != EXPR_BINARY_OP || expr->binary_op->op != BINARY_OP_COMMA || expr_is_perenthisized(expr)) return;
+    error_ctx_grammar_error_d(errs, expr->outer_span, 18007,
+        "JSX expressions may not use the comma operator. Did you mean to write an array?");
+}
+
+static void jsx_check_children_grammar(JsxElement const* el, ErrorCtx* errs) {
+    for_each (i, vec_jsx_child, &el->children) {
+        if (i->tag == JSX_CHILD_EXPR) jsx_check_comma_expression(&i->expr, errs);
+    }
+}
+
 static void jsx_check_attributes_grammar(JsxElement const* el, ErrorCtx* errs) {
     VecJsxAttribute const* attributes = &el->attributes.jsx_attributes;
+    for_each (i, vec_jsx_attribute, attributes) {
+        if (i->tag == JSX_ATTRIBUTE_EXPR) jsx_check_comma_expression(&i->value, errs);
+    }
     for (isize i = 0; i < vec_jsx_attribute_size(attributes); i++) {
         JsxAttribute const* attr = vec_jsx_attribute_at(attributes, i);
         if (attr->tag == JSX_ATTRIBUTE_SPREAD) continue;
@@ -1469,6 +1485,7 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
         case EXPR_JSX_FRAGMENT: {
             jsx_lookup_factory(me, names, errs);
             if (my tag == EXPR_JSX_ELEMENT) jsx_check_attributes_grammar(my jsx, errs);
+            jsx_check_children_grammar(my jsx, errs);
             // A value tag (`<Comp />`, `<this.x />`) is a reference, an intrinsic one (`<div />`) is a name
             // (a missing name, after a parse error, is nothing)
             bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
