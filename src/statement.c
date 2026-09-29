@@ -514,13 +514,38 @@ static SymbolDecl const* first_non_ambient_class_or_function(Symbol const* symbo
     return nullptr;
 }
 
+// The symbol of the other export status that tsc's local symbol merges with `symbol` in the block `decl` is in: an
+// exported one's local, or a local's export (tsc's declareModuleMember makes one local symbol of both)
+static Symbol const* same_block_counterpart(Symbol const* symbol, SymbolDecl const* decl) {
+    Scope const* block = decl ? decl->block : nullptr;
+    if (!block || !block->container || !block->container->exports) return nullptr;
+    Symbol const* exported = symbol_table_get(block->container->exports, symbol->name);
+    Symbol const* local = symbol_table_get(&((Scope*)block)->locals, symbol->name);
+    Symbol const* other = exported == symbol ? local : local == symbol ? exported : nullptr;
+    if (!other || other == symbol) return nullptr;
+    for (u32 i = 0; i < other->decl_count; i++) {
+        if (other->decls[i].block == block) return other;
+    }
+    return nullptr;
+}
+
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) {
     // tsc's checkModuleDeclaration: an instantiated namespace merged with a class or function comes after it, in the
     // same file
-    if (!declared && !my is_global && !my is_ambient_module && my symbol && my symbol->decl_count > 1 &&
+    SymbolDecl const* own = nullptr;
+    for (u32 i = 0; my symbol && i < my symbol->decl_count && !own; i++) {
+        if (my symbol->decls[i].node == me) own = &my symbol->decls[i];
+    }
+    Symbol const* counterpart = own && !declared ? same_block_counterpart(my symbol, own) : nullptr;
+    if (!declared && !my is_global && !my is_ambient_module && my symbol && (my symbol->decl_count > 1 || counterpart) &&
         namespace_decl_is_instantiated(me)
     ) {
         SymbolDecl const* first = first_non_ambient_class_or_function(my symbol);
+        // (Declarations of the other export status in this block are the same symbol to tsc)
+        SymbolDecl const* other = counterpart ? first_non_ambient_class_or_function(counterpart) : nullptr;
+        if (other && other->block == own->block && (!first || span_start_ptr(other->full) < span_start_ptr(first->full))) {
+            first = other;
+        }
         if (first && first->full.source != my full_span.source) {
             error_ctx_error_d(errs, my name, 2433,
                 "A namespace declaration cannot be in a different file from a class or function with which it is merged.");

@@ -10476,7 +10476,7 @@ const baselines = {
         types: true,
     },
     'duplicateSymbolsExportMatching': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
