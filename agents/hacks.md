@@ -346,7 +346,10 @@ src` finds the code-side markers; every significant one has an entry here.
   misses a cache. Redo with a profile.
 - `props_related`: the same-symbol skip is recognised only for object literal accessors of one function.
 - `generic_mapped_target_related` (HACK): a generic source failing isGenericMappedType falls through to member
-  comparison, which memberless mapped types pass (`Readonly<T>` to `T`). `write_constraint_of_indexed` (HACK) lacks
+  comparison, which memberless mapped types pass (`Readonly<T>` to `T`); arrays, non-variadic tuples and objects
+  without properties don't (tsc: nothing but a mapped source does). What still needs it: zod's `SortItem<output<T>>`
+  against a Flatten-like `{ [K in keyof A | keyof B]: (A & B)[K] }`, `[...Foo<T>]` for a lone spread argument (tsc's
+  getSpreadArgumentType has `Foo<T>`, restTypeRetainsMappyness). `write_constraint_of_indexed` (HACK) lacks
   NoIndexSignatures. A TY_KEYOF target over a generic mapped type (HACK) lacks getApparentMappedTypeKeys.
 - Conditional targets: skipFalse yes, skipTrue no (HACK): `ty_definitely_unassignable`'s wildcard instantiation is
   exponential on zod's union-to-tuple types because shared subterms are re-instantiated under fresh mappers (tsc caches

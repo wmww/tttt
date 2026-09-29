@@ -694,10 +694,19 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
         Ty const* constraint = ty_param_constraint(me, contextual);
         return constraint && constraint != contextual && context_is_tuple_like(me, constraint, depth + 1);
     }
-    // A generic homomorphic mapped type (tsc's checkArrayLiteral: `{ [K in keyof T]: X }` could map a tuple)
-    if (contextual->kind == TY_ANONYMOUS && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+    // A generic homomorphic mapped type (tsc's checkArrayLiteral: `{ [K in keyof T]: X }` could map a tuple). Whether
+    // it's homomorphic goes by the declaration (tsc's getHomomorphicTypeVariable of the target), whose T must be a type
+    // parameter: `{ [K in keyof T["a"]]: X }` isn't
+    if (contextual->kind == TY_ANONYMOUS && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+        ty_members(me, contextual)->mapped
+    ) {
         MappedInfo const* mapped = ty_members(me, contextual)->mapped;
-        if (mapped && !mapped->name_type && mapped->modifiers_type &&
+        Ty const* root = contextual->anonymous.target ? contextual->anonymous.target : contextual;
+        MappedInfo const* declared = root != contextual && (root->flags & TYF_OBJECT) ? ty_members(me, root)->mapped : mapped;
+        if (!declared) declared = mapped;
+        Ty const* variable = declared->modifiers_type && declared->keyof_constraint ?
+            ty_actual_type_variable(me, declared->modifiers_type) : nullptr;
+        if (!mapped->name_type && mapped->modifiers_type && variable && variable->kind == TY_TYPE_PARAM &&
             (mapped->modifiers_type->kind == TY_TYPE_PARAM || (mapped->modifiers_type->flags & TYF_DEFERRED))
         ) {
             return true;

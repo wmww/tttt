@@ -2779,6 +2779,17 @@ static Ternary mapped_related(Checker* me, RelationState* st, MappedInfo const* 
     return result & is_related_to(me, st, ty_instantiate(me, source_template, mapper), target_template, report);
 }
 
+// A tuple with a variadic element (a rest element that isn't an array: tsc's ElementFlags.Variadic)
+static bool has_variadic_element(Checker* me, Ty const* ty) {
+    if (!ty_is_tuple(ty)) return false;
+    TupleShape const* shape = ty_tuple_shape(ty);
+    TyList args = ty_reference_args(me, ty);
+    for (u32 i = 0; i < shape->arity && i < args.len; i++) {
+        if ((shape->flags[i] & TUPLE_ELEMENT_REST) && !ty_is_array(me, args.data[i]) && !ty_is_tuple(args.data[i])) return true;
+    }
+    return false;
+}
+
 static Ternary generic_mapped_target_related(
     Checker* me, RelationState* st, Ty const* source, MappedInfo const* mapped, bool report
 ) {
@@ -4049,11 +4060,13 @@ static Ternary structured_related_members(
         // homomorphic Readonly<T> and T, and the like, which don't exist here yet
         if (related || !(source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return related;
         // (tsc's structuredTypeRelatedToWorker returns False for a generic mapped target unless the source is a mapped
-        // type too, whatever else it is; generic_mapped_target_related() isn't complete enough to rely on that. Only an
-        // object type without properties is done here: its keys (index signatures aside) are never, which a generic
-        // `{ [P in K]: X }` wants more of)
+        // type too, whatever else it is; generic_mapped_target_related() isn't complete enough to rely on that: zod's
+        // SortItem<output<T>> against its Flatten-like `{ [K in keyof A | keyof B]: (A & B)[K] }` needs the fallback.
+        // Only an object type without properties and an array or tuple are done here: `W<T>[]` isn't
+        // `{ [K in keyof T["a"]]: X }`. Variadic tuples still fall through: `[...Foo<T>]` of a spread argument, where
+        // tsc has `Foo<T>` (getSpreadArgumentType), passes restTypeRetainsMappyness that way)
         if ((source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && !ty_members(me, source)->mapped &&
-            !ty_members(me, source)->prop_count
+            (!ty_members(me, source)->prop_count || ty_is_array(me, source) || (ty_is_tuple(source) && !has_variadic_element(me, source)))
         ) {
             return related;
         }
