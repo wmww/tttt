@@ -222,6 +222,23 @@ static bool may_map_specially(Checker* me, Ty const* ty, TyMapper const* mapper,
     }
 }
 
+// A `?` mapped type adds undefined to what an array or rest element maps to under strictNullChecks (tsc's
+// instantiateMappedTypeTemplate for instantiateMappedArrayType/instantiateMappedTupleType): Partial<string[]> is
+// (string | undefined)[]. A `-?` one takes it out of an array's elements (`is_optional`: they are)
+static Ty const* mapped_element_optionality(Checker* me, MappedInfo const* mapped, Ty const* element, bool is_optional) {
+    if (!compiler_options()->strict_null_checks) return element;
+    if (mapped->optional < 0 && is_optional) return ty_without_undefined(me, element);
+    if (mapped->optional <= 0) return element;
+    if (element->flags & (TYF_UNDEFINED | TYF_VOID | TYF_ANY | TYF_UNKNOWN)) return element;
+    if (element->kind == TY_UNION) {
+        for (u32 i = 0; i < element->composite.types.len; i++) {
+            if (element->composite.types.data[i]->flags & (TYF_UNDEFINED | TYF_VOID)) return element;
+        }
+    }
+    Ty const* parts[2] = { element, ty_intrinsic(me, TY_UNDEFINED) };
+    return ty_union(me, parts, 2, nullptr, (TyList){0});
+}
+
 // A homomorphic mapped type (`{ [P in keyof T]: X }`) instantiated with an array or tuple for T is an array or tuple of
 // the template, not an object with the array methods mapped, with a union for T a union, and with a primitive for T the
 // primitive (tsc's instantiateMappedType). Null if this isn't that
@@ -279,7 +296,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (ty_is_array(me, list)) {
         bool readonly = mapped->readonly ? mapped->readonly > 0 : list->reference.target == my readonly_array_target;
         TyMapper const* element_mapper = ty_mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
-        return ty_array(me, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), readonly);
+        return ty_array(me, mapped_element_optionality(me, mapped, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), true), readonly);
     }
     if (!ty_is_tuple(list)) return nullptr;
     TupleShape const* shape = list->reference.target->declared.tuple;
@@ -304,7 +321,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
             if (!ty_is_array(me, array)) return nullptr;
             TyMapper const* element_mapper = ty_mapper_with(me, ty_mapper_with(me, mapper, variable, array),
                 mapped->type_param, ty_intrinsic(me, TY_NUMBER));
-            Ty const* mapped_element = ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper);
+            Ty const* mapped_element = mapped_element_optionality(me, mapped, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), false);
             mapped_elements[i] = rest ? ty_array(me, mapped_element, false) : mapped_element;
             continue;
         }

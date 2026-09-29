@@ -208,7 +208,8 @@ Ty const* ty_global_regexp_type(Checker* me) {
 }
 
 static bool is_array_target(Checker* me, Ty const* target) {
-    return target == my array_target || target == my readonly_array_target;
+    if (target == my array_target) return true;
+    return target->kind == TY_DECLARED && target == ty_readonly_array_target(me);
 }
 
 static bool is_tuple(Ty const* ty) {

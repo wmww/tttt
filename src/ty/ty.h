@@ -959,6 +959,7 @@ Ty const* ty_array(Checker* me, Ty const* element, bool readonly);
 // tsc's autoArrayType: `any[]` of TY_AUTO (prints as `any[]`), the declared type of `let x = []`, which control flow
 // evolves (flow.c's TY_EVOLVING_ARRAY)
 Ty const* ty_auto_array(Checker* me);
+Ty const* ty_readonly_array_target(Checker* me); // checker.c
 // tsc's isEvolvingArrayOperationTarget: `x` of `x.length`, `x.push(v)`, `x.unshift(v)`, `x[i] = v` with a number-like
 // i (IdentifierExpr.evolving_op). There `let x = []` is the auto array, not what it evolved to (flow.c)
 bool ty_is_evolving_array_operation_target(Checker* me, struct Expr const* reference);

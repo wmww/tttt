@@ -1840,6 +1840,13 @@ static Ty const* global_generic_target(Checker* me, char const* name) {
     return make_synthetic_target(me, name);
 }
 
+// ReadonlyArray's target, looked up if no `readonly T[]` did yet: a written `ReadonlyArray<T>` is a readonly array
+// (tsc looks the global types up when it starts)
+Ty const* ty_readonly_array_target(Checker* me) {
+    if (!my readonly_array_target) my readonly_array_target = global_generic_target(me, "ReadonlyArray");
+    return my readonly_array_target;
+}
+
 Ty const* ty_array(Checker* me, Ty const* element, bool readonly) {
     Ty const** target = readonly ? &my readonly_array_target : &my array_target;
     if (!*target) {
