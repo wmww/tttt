@@ -3868,7 +3868,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // The type of `e as T` doesn't depend on e, which is checked when the statement walk gets there (tsc defers
             // it too): `const data = get(id) as Data` in a loop that assigns id from data isn't circular
             if (!as_type->is_satisfies) return type;
-            return ty_check_expr(me, &as_type->expr, type->flags & TYF_ANY ? nullptr : type);
+            Ty const* checked = ty_check_expr(me, &as_type->expr, type->flags & TYF_ANY ? nullptr : type);
+            return type->flags & TYF_ERROR ? type : checked; // (tsc's checkSatisfiesExpressionWorker)
         }
 
         case EXPR_TERNARY:
