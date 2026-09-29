@@ -1890,6 +1890,21 @@ static bool is_js_container_declaration(BinaryOpExpr const* binary) {
     return !vec_object_expr_item_size(&value->object) || span_equals(expr_static_property_name(left), "prototype");
 }
 
+// tsc's getContextualTypeForAssignmentDeclaration for `exports.x = v` and `module.exports = v`: the JSDoc `@type` of
+// the export's value declaration (the first assignment that declares it), else none
+static Ty const* commonjs_declaration_context(BinaryOpExpr const* binary) {
+    if (binary->jsdoc_type) return ty_of_node(binary->jsdoc_type);
+    SourceFile const* file = binary->left.outer_span.source;
+    Symbol const* module = file && file->scope ? file->scope->container : nullptr;
+    if (!module || !module->exports) return nullptr;
+    Span name = span_null;
+    CommonJsTarget target = binary_commonjs_declaration(binary, &name);
+    Symbol const* symbol = target == COMMONJS_TARGET_EXPORTS_PROPERTY ? symbol_table_get(module->exports, name.sv) :
+        target == COMMONJS_TARGET_MODULE_EXPORTS ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
+    if (!symbol || !symbol->decl_count || symbol->decls[0].kind != SYMBOL_DECL_ASSIGNMENT) return nullptr;
+    return symbol->decls[0].jsdoc_type ? ty_of_node(symbol->decls[0].jsdoc_type) : nullptr;
+}
+
 static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx ctx) {
     check_left_spine(me, binary, ctx);
     Ty const* left;
@@ -1900,7 +1915,7 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
                 // `exports.x = v` declares x: it is what v is (no context but a JSDoc type, tsc's
                 // getContextualTypeForAssignmentDeclaration). `module.exports = v` has the type of its target
                 // (checkBinaryLikeExpression: isAssignmentDeclaration), `exports.x = v` v's, unless v is a container
-                right = ty_check_expr(me, &binary->right, nullptr);
+                right = ty_check_expr(me, &binary->right, commonjs_declaration_context(binary));
                 if (is_js_container_declaration(binary) || expr_is_module_exports(&binary->left)) {
                     return ty_expr_type(me, &binary->left);
                 }
