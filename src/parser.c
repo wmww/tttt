@@ -9708,9 +9708,8 @@ static void note_require_declaration(InitializedBinding* initializer) {
     Expr* value = &initializer->value;
     Span accessed = span_null;
     // (`require("m").a.b` too: the alias is of b, looked up in the module, tsc's getCommonJSPropertyAccess)
-    while (value->tag == EXPR_PROPERTY && !expr_is_perenthisized(value) && value->property->form == PROPERTY_EXPR_DOT &&
-        !value->property->optional_chain
-    ) {
+    // (`require("m")?.a` too: tsc's getLeftmostAccessExpression goes through optional chains)
+    while (value->tag == EXPR_PROPERTY && !expr_is_perenthisized(value) && value->property->form == PROPERTY_EXPR_DOT) {
         if (!span_valid(accessed)) accessed = value->property->prop.inner_span;
         value = &value->property->expr;
     }
