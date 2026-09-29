@@ -8587,6 +8587,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 "Tagged template expressions are not permitted in an optional chain.");
         }
         cstr plain_string = cstr_null;
+        if (left_and_ret->tag == EXPR_TEMPLATE && !expr_is_perenthisized(left_and_ret)) left_and_ret->template_->is_tag = true;
         if (!parse_template(&p, &parsed.args, nullptr)) {
             parsed.args = vec_expr_init();
             parse_string_or_tagged(&p, &plain_string, false);

@@ -43708,12 +43708,12 @@ const baselines = {
     'templateStringInTaggedTemplate': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInTaggedTemplateES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInTypeAssertion': {
         errors: true,

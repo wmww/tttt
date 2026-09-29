@@ -4012,7 +4012,7 @@ static Ty const* check_template(Checker* me, Expr const* expr, ExprCtx ctx) {
     }
     Ty const* ret = nullptr;
     cstr evaluated = cstr_null;
-    if (ty_evaluate_string(me, expr, &evaluated)) {
+    if (!template->is_tag && ty_evaluate_string(me, expr, &evaluated)) {
         ret = ty_fresh_literal(me, ty_string_literal(me, cstr_sv(&evaluated)));
         cstr_drop(&evaluated);
     } else if (ctx.is_const || ctx.template_context || (ctx.contextual && is_template_contextual(me, ctx.contextual))) {
