@@ -5856,11 +5856,14 @@ static bool parse_function_args_inner(
             ret->ret_span = span_from(ret_a);
             ret->ret_explicit = true;
             hop_whitespace(&p);
-        } else if (unambiguous_function_type || (is_definitely_function && parse_type_return_syntax && *args_start.start == '(')) {
-            // A function type is committed (tsc's parseFunctionOrConstructorType): missing its return type, tsc's
-            // parseTypeOrTypePredicate reports it, any
+        } else if (unambiguous_function_type ||
+            (is_definitely_function && (parse_type_return_syntax ? *args_start.start == '(' : commit_on_paren))
+        ) {
+            // A function type is committed (tsc's parseFunctionOrConstructorType), so is a function whose parameter
+            // list was (a definite arrow function, a declaration): its return type is missing (tsc's
+            // parseTypeOrTypePredicate reports it; a missing type reference, an explicit any)
             expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret);
-            ret->ret_span = span_from(ret_a);
+            ret->ret_span = span_from_pos(&p);
             ret->ret_explicit = true;
         } else {
             goto drop_and_fail;
