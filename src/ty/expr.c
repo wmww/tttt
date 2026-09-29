@@ -702,6 +702,12 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
         Ty const* constraint = ty_param_constraint(me, contextual);
         return constraint && constraint != contextual && context_is_tuple_like(me, constraint, depth + 1);
     }
+    // An indexed access or conditional type: what its constraint is (tsc's getApparentTypeOfContextualType, the base
+    // constraint: of a conditional both branches, `C extends true ? Required<[a?: A]> : [a?: A]`)
+    if (contextual->flags & TYF_DEFERRED) {
+        Ty const* constraint = ty_base_constraint(me, contextual);
+        return constraint && constraint != contextual && context_is_tuple_like(me, constraint, depth + 1);
+    }
     // A generic homomorphic mapped type (tsc's checkArrayLiteral: `{ [K in keyof T]: X }` could map a tuple). Whether
     // it's homomorphic goes by the declaration (tsc's getHomomorphicTypeVariable of the target), whose T must be a type
     // parameter: `{ [K in keyof T["a"]]: X }` isn't

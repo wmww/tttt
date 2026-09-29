@@ -858,6 +858,15 @@ static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* n
     u64 key[2] = { KEY_CONDITIONAL_OUTER, root->id };
     if (intern_get(&my links, key, 2)) return;
     TyConditionalOuter* outer = collect_outer_params(me, node);
+    char const* block = node->ternary->enclosing_block;
+    Ty const* check = root->conditional.check;
+    if (block && check->kind == TY_TYPE_PARAM && check->param.symbol && span_valid(check->param.symbol->name_span)) {
+        // (Type parameters are declared before the bodies of what declares them: one declared inside the Block is
+        // on a declaration between it and the node)
+        Span decl = check->param.symbol->name_span;
+        csview text = cstr_sv(&decl.source->contents);
+        outer->check_outside_block = block >= text.buf && block < text.buf + text.size && decl.sv.buf < block;
+    }
     *intern_slot(me, &my links, key, 2) = outer;
 }
 

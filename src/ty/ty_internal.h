@@ -124,6 +124,9 @@ enum {
 typedef struct TyConditionalOuter {
     TyList params;
     bool unknown; // It has parts that aren't syntax (`this`, `typeof x`): every type parameter could matter
+    // A Block lies between the node and its check type parameter's declaration (the parameter is declared before the
+    // innermost Block it's written in): tsc's isTypeParameterPossiblyReferenced says the branches may mention it
+    bool check_outside_block;
 } TyConditionalOuter;
 TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root); // lower.c, null if never lowered
 

@@ -113,6 +113,8 @@ typedef struct ParserShared {
     // tsc's DisallowConditionalTypes context: parsing a conditional type's extends type or an `infer X extends C`
     // constraint, where a type operator's operands can't be conditional types (a primary type's insides can)
     bool disallow_conditional;
+    // The `{` of the innermost Block (statement block, function body) being parsed, for TernaryType.enclosing_block
+    const char* block_open;
     ModifiedParent statement_parent;
     bool in_namespace_body; // The module block is a `namespace N {}`'s, not an ambient module's
     u32 ambient_module_depth; // Inside `declare module "m" {}` bodies (augmentations too)
@@ -2444,6 +2446,7 @@ static bool parse_ternary_type(Parser* parent, TypeNode* left_and_ret) {
         .maybe_super = maybe_super,
         .if_true = if_true,
         .if_false = if_false,
+        .enclosing_block = p.shared->block_open,
     }));
     return parse_success(&p);
 }
@@ -12916,9 +12919,12 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     hop_whitespace(&p);
 
     *ret = (Block){0};
+    const char* outer_block = p.shared->block_open;
+    p.shared->block_open = toplevel ? nullptr : open; // (A namespace body is no Block: tsc's ModuleBlock)
     if (!parse_append_statement_sequence(&p, toplevel, PARSING_BLOCK_STATEMENTS, open + 1, &ret->statements)) {
         *ret = (Block){0};
     }
+    p.shared->block_open = outer_block;
     hop_whitespace(&p);
 
     expect_closing(&p, '}', open);

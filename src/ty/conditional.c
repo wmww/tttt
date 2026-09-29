@@ -216,6 +216,9 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
 bool ty_conditional_distribution_dependent(Checker* me, Ty const* conditional) {
     Ty const* root = conditional->conditional.root ? conditional->conditional.root : conditional;
     if (!root->conditional.distributive || root->conditional.check->kind != TY_TYPE_PARAM) return false;
+    // (Written in a Block its check type parameter is declared outside of: possibly referenced, syntactically)
+    TyConditionalOuter const* outer = ty_conditional_outer(me, root);
+    if (outer && outer->check_outside_block) return true;
     MentionWalk walk = { .only = root->conditional.check };
     bool ret = mentions_type_variables(me, ty_conditional_branch(me, root, true), &walk, 0) ||
         mentions_type_variables(me, ty_conditional_branch(me, root, false), &walk, 0);
