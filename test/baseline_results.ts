@@ -15873,7 +15873,7 @@ const baselines = {
     'implicitAnyFromCircularInference': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implicitAnyFunctionInvocationWithAnyArguements': {
         errors: true,
@@ -65171,9 +65171,9 @@ const baselines = {
         types: true,
     },
     'recursiveTypesWithTypeof': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeQueryOnClass': {
         errors: true,
@@ -65896,9 +65896,9 @@ const baselines = {
         types: true,
     },
     'directDependenceBetweenTypeAliases': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericTypeAliases': {
         errors: true,

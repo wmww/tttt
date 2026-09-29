@@ -2678,7 +2678,22 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
 // The type of a binding: what is written, else what is assigned. `ctx` is what a written type is lowered with
 Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx) {
     if (binding->has_explicit_type) {
+        // A written type that reaches the binding again is any, and TS2502 (tsc's getTypeOfVariableOrParameterOrProperty
+        // pushing the symbol). The lowered annotation has no memo, so a circular one is remembered
+        Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
+        u64 key[2] = { KEY_CIRCULAR_ANNOTATION, (u64)(uintptr_t)binding };
+        if (my circular_annotations && intern_get(&my links, key, 2)) return circular;
+        if (ty_resolving_find(me, RESOLVING_ANNOTATION, binding)) {
+            ty_resolving_cycle(me, RESOLVING_ANNOTATION, binding);
+            return circular;
+        }
+        ty_resolving_push(me, RESOLVING_ANNOTATION, binding);
         Ty const* type = ty_from_node(me, &binding->explicit_type, ctx);
+        if (ty_resolving_pop(me)) {
+            my circular_annotations = true;
+            *intern_slot(me, &my links, key, 2) = (void*)binding;
+            return circular;
+        }
         // A catch variable annotated with anything but any or unknown is any (TS1196)
         if (!binding->parent && !binding->source && !(type->flags & (TYF_ANY | TYF_UNKNOWN))) return ty_intrinsic(me, TY_ANY);
         return type;

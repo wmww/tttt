@@ -805,6 +805,7 @@ struct Checker {
     u32 resolving_len;
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
+    bool circular_annotations; // Whether a KEY_CIRCULAR_ANNOTATION was recorded (it's rare: most checkers skip the lookup)
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
     u32 relation_complexity_hits; // How many relations ran out of their budget (TS2859, counted in the above too)
     // The typecheck walk inside the true branches of conditional types: `A` is `A & X` in `A extends X ? A['k'] : ...`
@@ -1510,6 +1511,7 @@ typedef enum ResolvingKind {
     RESOLVING_FUNCTION_RETURN,
     RESOLVING_PROP,
     RESOLVING_ALIAS,
+    RESOLVING_ANNOTATION, // The written type of a Binding
 } ResolvingKind;
 typedef struct Resolving {
     void const* key;
@@ -1526,6 +1528,14 @@ static inline bool ty_resolving_pop(Checker* me) {
     return my resolving[--my resolving_len].circular;
 }
 void ty_resolving_cycle(Checker* me, ResolvingKind kind, void const* key); // It was asked for while in flight
+// Whether it is being resolved above the barrier (for what has no in-flight state of its own, tsc's
+// findResolutionCycleStartIndex: below a barrier it is resolved again, what it reaches has in-flight states that stop it)
+static inline bool ty_resolving_find(Checker* me, ResolvingKind kind, void const* key) {
+    for (u32 i = my resolving_len; i-- > my resolving_start;) {
+        if (my resolving[i].key == key && my resolving[i].kind == kind) return true;
+    }
+    return false;
+}
 
 // Control flow queries (ty/flow.c)
 typedef struct FlowNode FlowNode;
