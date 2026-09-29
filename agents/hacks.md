@@ -281,6 +281,14 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `UnaryOpExpr.outside_generator` (`yield x` outside a generator: TS1163): the operand is resolved with a null ErrorCtx
   and not typechecked, the same trick as `with` (tsc's checkYieldExpression returns before checking it).
 
+- Class member binding happens at name lookup (`bind_member_symbols`, accessor pairing in `class_decl_lookup_names`):
+  tsc's binder rules for written names, but computed names are paired by their source text when they are entity
+  names, whatever their type. tsc late-binds only literal / unique symbol typed names (isLateBindableName): `get
+  [name]()`/`set [name](v)` with `name: string` are two `__computed` symbols, the setter's `v` any
+  (computedPropertyNames2). Needs the pairing (and `function_impl_pair_setter`'s effects) decided lazily in the checker.
+  `ty_member_name()` (duplicate checks) still evaluates every computed key, while members only come from literal and
+  entity-name keys (`computed_key_may_name`).
+
 ## Control flow graph (`flow.c`, builders in `expr.c`/`statement.c`/`function_impl.c`)
 - Array mutation nodes (`flow_array_mutation`) only for objects that may be auto-typed variables (`may_evolve`: a
   binder-time look at the declaration), tsc makes them for every narrowable operand. `x.push` is an evolving array
