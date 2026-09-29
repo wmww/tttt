@@ -752,11 +752,45 @@ static bool member_printed(Checker* me, InterfaceMember const* member) {
         ty_expr_type(me, member->key.expr.ref)->kind == TY_LITERAL;
 }
 
+// A JSDoc type literal the way tsc's printer reprints it, one member per line, which the types baseline flattens:
+// `{    a: number;    b?: number;}` (the indentation, names, types and braces reused, the rest not). An optional
+// member's type has undefined under strictNullChecks, which isn't the node's
+static void display_node_jsdoc_literal(Checker* me, TyDisplay d, Interface const* interface) {
+    uint8_t depth = (uint8_t)(d.jsdoc_literal_depth + 1);
+    TyDisplay inner = d;
+    inner.jsdoc_literal_depth = depth;
+    out_lit(d, "{");
+    for_each (i, vec_interface_member, &interface->members) {
+        if (!member_printed(me, i)) continue;
+        for (uint8_t k = 0; k < depth; k++) out_lit(d, "    ");
+        out(d, i->key.span.sv);
+        out(reused_if(d, false), i->optional ? c_sv("?: ") : c_sv(": "));
+        if (i->optional && compiler_options()->strict_null_checks) {
+            Ty const* type = ty_of_node(&i->type);
+            ty_display(me, reused_if(inner, false), ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2,
+                nullptr, (TyList){0}));
+        } else if (i->type.parsed) {
+            display_node(me, inner, &i->type);
+        } else {
+            out(reused_if(d, false), c_sv("any"));
+        }
+        out(reused_if(d, false), c_sv(";"));
+    }
+    for (uint8_t k = 0; k + 1 < depth; k++) out_lit(d, "    ");
+    out_lit(d, "}");
+}
+
 static void display_node_interface(Checker* me, TyDisplay d, Interface const* interface) {
     bool empty = true;
     for_each (i, vec_interface_member, &interface->members) empty &= !member_printed(me, i);
     if (empty) {
         out_lit(d, "{}");
+        return;
+    }
+    bool names_only = true;
+    for_each (i, vec_interface_member, &interface->members) names_only &= i->key.tag == INTERFACE_KEY_NAME;
+    if (interface->jsdoc_literal && names_only) {
+        display_node_jsdoc_literal(me, d, interface);
         return;
     }
     out_lit(d, "{ ");

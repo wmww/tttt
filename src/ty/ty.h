@@ -1766,6 +1766,7 @@ typedef struct TyDisplay {
     // The annotation being reprinted is an array's element type: a part of it that prints its type instead is
     // parenthesized as needed (tsc's factory, parenthesizeElementTypeOfArrayType). Only for the node itself
     bool array_element_node;
+    uint8_t jsdoc_literal_depth; // Inside that many JSDoc type literals being reprinted (their indentation)
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);

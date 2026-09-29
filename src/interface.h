@@ -14,6 +14,9 @@ g_declare_vec(TypeNode, type);
 typedef struct Interface {
     VecInterfaceMember members;
     bool parsed : 1;
+    // A JSDoc type literal made of `@param`/`@property` tags: tsc's printer reprints it on several lines (which the
+    // types baseline flattens), see display_node_interface()
+    bool jsdoc_literal : 1;
     Span span; // From `{` to `}` (invalid for interface declarations' bodies)
 } Interface;
 

@@ -3816,7 +3816,7 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
             jsdoc_tag_decl_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type
         ));
     }
-    TypeNode ret = type_interface((Interface){ .members = members, .parsed = true, .span = span });
+    TypeNode ret = type_interface((Interface){ .members = members, .parsed = true, .jsdoc_literal = true, .span = span });
     ret.parsed = true;
     return ret;
 }
