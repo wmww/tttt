@@ -441,6 +441,18 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             ) {
                 error_ctx_error_d(errs, my interface.span, 7039, "Mapped object type implicitly has an 'any' template type.");
             }
+            // (Its keys, the `as` type if any, must be property keys: tsc's checkMappedType)
+            if (vec_interface_member_size(&my interface.members) &&
+                vec_interface_member_at(&my interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED
+            ) {
+                InterfaceMember const* mapped = vec_interface_member_at(&my interface.members, 0);
+                bool as = mapped->key.mapped.has_as_type;
+                Ty const* keys = ty_of_node(as ? &mapped->key.mapped.as_type : &mapped->key.mapped.in_type);
+                Checker* checker = current_checker;
+                Ty const* all[3] = { ty_intrinsic(checker, TY_STRING), ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_ES_SYMBOL) };
+                ty_check_assignable(checker, keys, ty_union(checker, all, 3, nullptr, (TyList){0}),
+                    as ? mapped->key.mapped.as_type_span : mapped->key.mapped.in_type_span, errs);
+            }
             {
                 VecInterfaceMember const* list = &my interface.members;
                 ty_check_object_type_duplicate_members(current_checker, &list, 1, errs);

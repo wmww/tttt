@@ -63516,7 +63516,7 @@ const baselines = {
         types: true,
     },
     'inferTypes1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -64146,7 +64146,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeErrors2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -6765,7 +6765,9 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
         hop_whitespace(&p);
         ret->key.mapped.has_as_type = true;
 
+        Anchor as_type_a = anchor(&p);
         expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.as_type);
+        ret->key.mapped.as_type_span = span_from(as_type_a);
         hop_whitespace(&p);
     }
 
