@@ -897,23 +897,52 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
     return ret;
 }
 
+// The initializer of a declaration's root binding, null if it has none
+static InitializedBinding const* root_initializer(Binding const* root) {
+    if (root->parent || !root->source || root->source->tag != LAZY_TYPE_INITIALIZED_BINDING) return nullptr;
+    InitializedBinding const* initialized = c_container_of(root->source, InitializedBinding, lazy_type);
+    return initialized->value.tag == EXPR_IMPLICIT_ANY ? nullptr : initialized;
+}
+
+// What a declaration assigns to a binding (tsc's getInitialType): the root's initializer, and an element of an
+// annotated pattern is the element of that, not of the annotation (`let [x]: [string | number] = [1]` is number)
+static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
+    Checker* me = q->me;
+    if (!binding->parent) {
+        InitializedBinding const* initialized = root_initializer(binding);
+        if (!initialized) return ty_binding_assigned_type(me, binding);
+        if (binding->has_explicit_type && ty_expr_is_context_sensitive(&initialized->value)) {
+            // Typed by the annotation, like in the walk (see FLOW_ASSIGN_EXPR below)
+            Ty const* annotated = ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
+            return ty_check_expr(me, &initialized->value, annotated->flags & TYF_ANY ? nullptr : annotated);
+        }
+        return ty_flow_expr_type(me, &initialized->value);
+    }
+    Binding const* parent = binding->parent;
+    Binding const* root = parent;
+    while (root->parent) root = root->parent;
+    if (!root->has_explicit_type || binding->rest || !root_initializer(root)) return ty_binding_assigned_type(me, binding);
+    Ty const* object = initial_binding_type(q, parent);
+    Ty const* key;
+    if (parent->tag == BINDING_ARRAY) {
+        Value index = value_number(binding->parent_index);
+        key = ty_literal(me, &index);
+    } else {
+        ObjectBindingItem const* item = binding->parent_item;
+        key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+    }
+    Ty const* ret = object->flags & TYF_ANY ? nullptr : ty_access_reading(me, object, key);
+    if (!ret) return ty_binding_assigned_type(me, binding);
+    // (tsc's getTypeWithDefault)
+    if (binding->default_value) ret = union_of(me, type_with_facts(me, ret, TF_NE_UNDEFINED), ty_flow_expr_type(me, binding->default_value));
+    return ret;
+}
+
 static Ty const* initial_or_assigned_type(FlowQuery* q, FlowAssign const* assign) {
     Checker* me = q->me;
     switch (assign->kind) {
-        case FLOW_ASSIGN_DECLARATION: {
-            Binding const* binding = assign->binding;
-            if (!binding->parent && binding->source && binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
-                InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-                if (initialized->value.tag == EXPR_IMPLICIT_ANY) return ty_binding_assigned_type(me, binding);
-                if (binding->has_explicit_type && ty_expr_is_context_sensitive(&initialized->value)) {
-                    // Typed by the annotation, like in the walk (see FLOW_ASSIGN_EXPR below)
-                    Ty const* annotated = ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
-                    return ty_check_expr(me, &initialized->value, annotated->flags & TYF_ANY ? nullptr : annotated);
-                }
-                return ty_flow_expr_type(me, &initialized->value);
-            }
-            return ty_binding_assigned_type(me, binding);
-        }
+        case FLOW_ASSIGN_DECLARATION:
+            return initial_binding_type(q, assign->binding);
         case FLOW_ASSIGN_EXPR: {
             // A function expression is typed by its target, like the walk over the statement does (tsc finds the
             // contextual type up the tree, so asking bottom-up gets the same). Anything else goes without context

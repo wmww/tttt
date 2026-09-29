@@ -37818,7 +37818,7 @@ const baselines = {
     'controlFlowDestructuringDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowDoWhileStatement': {
         errors: true,
@@ -65408,7 +65408,7 @@ const baselines = {
     'stringLiteralTypesAndTuples01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesAsTags01': {
         errors: true,
