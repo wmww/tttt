@@ -2565,10 +2565,12 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
             ty_member_name(me, is_field ? &i->field.name_string : &i->method.name_string,
                 is_field ? i->field.computed_key : i->method.computed_key);
         if (!name) continue;
-        u32 kind = is_field ? MEMBER_PROPERTY : i->method.accessor == CLASS_ACCESSOR_GET ? MEMBER_GET :
+        // (An auto-accessor binds as a get/set accessor pair: tsc's bindPropertyWorker, SymbolFlags.Accessor)
+        u32 kind = is_field ? (i->field.is_auto_accessor ? MEMBER_GET | MEMBER_SET : MEMBER_PROPERTY) :
+            i->method.accessor == CLASS_ACCESSOR_GET ? MEMBER_GET :
             i->method.accessor == CLASS_ACCESSOR_SET ? MEMBER_SET : MEMBER_METHOD;
         declare_member(tables, name, is_static, kind, name_span, errs);
-        uint8_t meaning = kind == MEMBER_PROPERTY ? MEANING_GET_OR_SET : kind == MEMBER_GET ? MEANING_GET :
+        uint8_t meaning = is_field ? MEANING_GET_OR_SET : kind == MEMBER_GET ? MEANING_GET :
             kind == MEMBER_SET ? MEANING_SET : MEANING_METHOD;
         if (span_valid(private_name) && is_static) meaning |= MEANING_PRIVATE_STATIC;
         add_meaning(meanings, &meaning_count, c_arraylen(meanings), name, span_valid(private_name) ? 2 : is_static,
