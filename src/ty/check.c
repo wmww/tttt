@@ -1213,9 +1213,10 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     // A name the parser found missing (`o.` then something else) has said enough (tsc: `right.escapedText &&`)
     if (span_valid(span) && !span.sv.size) return;
     cstr name = index_name(me, index);
-    // (A binding element's is about the apparent type: tsc's getIndexedAccessType reports on getReducedApparentType)
+    // (A binding element's is about the apparent type: tsc's getIndexedAccessType reports on getReducedApparentType,
+    // `{}` for `object`)
     u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
-        TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE;
+        TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_NON_PRIMITIVE;
     cstr object_str = ty_to_cstr(me, destructured && (object->flags & primitive) ? ty_apparent_type(me, object) : object);
     Error* error;
     // (Nor does it suggest anything: tsc's getPropertyTypeForIndexType only does for element access expressions)
