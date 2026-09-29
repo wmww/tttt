@@ -132,6 +132,7 @@ typedef struct BaselineTestCase {
     VecCStr directives; // (key, value) pairs, to be applied again over the tsconfig's options
     csview current_unit; // While the test source is read: the `@filename` directives apply to
     VecCStr links; // `@link: target -> link` directives as (target, link) pairs, made once the files exist
+    VecCStr display_paths; // Owns the display_path_override of program files the test doesn't write
 } BaselineTestCase;
 
 // Never prints to stdout, only prints to stderr if noisy is true, or if it panics. show_logs leaves the checker's

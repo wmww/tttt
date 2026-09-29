@@ -890,6 +890,23 @@ BaselineTestCase run_baseline_test_case(
             try (fs_read_file(mock_fs_get_fs(fs), cstr_sv(&i->path), &i->raw_contents)) or_panic;
         }
     }
+    // A file of the program the test doesn't write, outside the current directory (the other path of a symlink): tsc
+    // names it by its absolute path, not relative to /.src
+    // (Pointers into the vector once it's complete: pushing moves the strings)
+    for (int pass = 0, named = 0; pass < 2; pass++) {
+        for (u32 i = 0, count = program_source_count(program); i < count; i++) {
+            SourceFile* source = program_source_at(program, i);
+            if (source->display_path_override || source->is_stdlib || !csview_starts_with(cstr_sv(&source->canonical_path), "../")) continue;
+            if (pass == 1) {
+                source->display_path_override = cstr_str(vec_cstr_at(&ret.display_paths, named++));
+                continue;
+            }
+            cstr cwd = cstr_null;
+            try (fs_get_cwd(mock_fs_get_fs(fs), &cwd)) or_panic;
+            vec_cstr_push(&ret.display_paths, absolute_path_of(cstr_sv(&cwd), cstr_sv(&source->canonical_path)));
+            cstr_drop(&cwd);
+        }
+    }
 
     // tsc reports type errors next to parse errors (getPreEmitDiagnostics() is all of them)
     program_resolve_names(program);
@@ -940,6 +957,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     cstr_drop(&my formatted_global_errors);
     vec_baseline_test_file_drop(&my files);
     vec_cstr_drop(&my links);
+    vec_cstr_drop(&my display_paths);
     vec_cstr_drop(&my directives);
     str_list_drop(&my tsconfig_roots);
     free(my scope_params);

@@ -2575,7 +2575,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
             // tsc, whose checkJSDocImportTag doesn't resolve them: not at all here)
             if (item->module_ref->file && !item->jsdoc) {
                 error_ctx_error_d(errs, item->module_ref->span, 2306,
-                    "File '", source_file_display_path(item->module_ref->file), "' is not a module.");
+                    "File '", module_ref_file_display_path(item->module_ref), "' is not a module.");
             }
             return nullptr;
         }

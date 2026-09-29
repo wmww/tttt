@@ -10431,7 +10431,7 @@ const baselines = {
         types: false,
     },
     'duplicatePackage_globalMerge': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22291,7 +22291,7 @@ const baselines = {
         types: true,
     },
     'moduleResolutionWithSymlinks_preserveSymlinks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27941,7 +27941,7 @@ const baselines = {
         types: true,
     },
     'selfReferencingFile2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

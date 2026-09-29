@@ -38,6 +38,9 @@ typedef struct ModuleRef {
     // ImportResolutionOverride (import_attributes.h): `resolution-mode` of a type-only import or an import type
     uint8_t resolution_override;
     SourceFile* file; // What the program's module resolution found, may be null
+    // The second copy of a package (same name and version) that `file`, the first, stands in for: messages name it
+    // (tsc's redirect source file keeps its own fileName)
+    SourceFile* redirected_from;
     ModuleRefFailure failure; // Without a file
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
     // MODULE_REF_IS_JS in a package (tsc's packageId): what TS7016 suggests (createModuleNotFoundChain), set once the
@@ -191,6 +194,11 @@ static inline bool source_file_is_checked(SourceFile const* me) {
 // How messages name the file: the way the test wrote it under the harness, else the canonical path
 static inline csview source_file_display_path(SourceFile const* me) {
     return my display_path_override ? csview_from(my display_path_override) : cstr_sv(&my canonical_path);
+}
+
+// How messages name the file a module name found (TS2306)
+static inline csview module_ref_file_display_path(ModuleRef const* me) {
+    return source_file_display_path(my redirected_from ? my redirected_from : my file);
 }
 
 // What there is to say about a module name that did find its file (TS5097)

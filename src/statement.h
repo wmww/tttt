@@ -277,7 +277,7 @@ typedef struct SourceDirectiveStatement {
     bool preserve;
     // `resolution-mode="import"`/`"require"` on a types reference (ImportResolutionOverride, import_attributes.h)
     uint8_t resolution_override;
-    // Set by the program when what is named wasn't found: the path as messages name it (TS6053), the name (TS2688)
+    // Set by the program when what is named wasn't found: the path (TS6053) or name (TS2688) as written
     cstr not_found;
     bool not_found_extensionless; // A path without extension that no .ts/.tsx/.d.ts completes: TS6231
 } SourceDirectiveStatement;

@@ -261,7 +261,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     if (my main.tag == PORT_REEXPORT_SPLAT && my module_ref && my module_ref->file && !my jsdoc && !my wrong_context &&
         !binder_module_of_ref(current_checker->binder, my module_ref)
     ) {
-        error_ctx_error_d(errs, my module_ref->span, 2306, "File '", source_file_display_path(my module_ref->file),
+        error_ctx_error_d(errs, my module_ref->span, 2306, "File '", module_ref_file_display_path(my module_ref),
             "' is not a module.");
     }
     // tsc's checkExternalImportOrExportDeclaration

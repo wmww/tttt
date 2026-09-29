@@ -49,6 +49,9 @@ void program_load_automatic_types(Program* me);
 
 // The file at path if it is part of the program (loaded or imported), null otherwise
 SourceFile* program_find_source(Program const* me, csview path);
+// The program's files, in the order they were added
+u32 program_source_count(Program const* me);
+SourceFile* program_source_at(Program const* me, u32 index);
 
 // Loads the standard library file based on the name (such as es5 or es2015.collection)
 failable program_load_stdlib(Program* me, csview name, returns SourceFile*);

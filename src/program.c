@@ -398,6 +398,7 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 if (cstr_size(&resolved.package_id) && ref->file) {
                     auto first = hmap_source_file_ptr_get(&my files_by_package_id, cstr_sv(&resolved.package_id));
                     if (first) {
+                        if (first->second != ref->file) ref->redirected_from = ref->file;
                         ref->file = first->second;
                     } else {
                         hmap_source_file_ptr_insert(&my files_by_package_id, cstr_clone(resolved.package_id), ref->file);
@@ -501,17 +502,11 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                         statement->source_directive->path_span,
                         cstr_sv(&statement->source_directive->path)
                     )) {
-                        // Reported when names are resolved: it is no reason not to typecheck
-                        cstr cwd = cstr_null;
-                        try (fs_get_cwd(my fs, &cwd)) or_panic;
-                        cstr dir = absolute_path_of(cstr_sv(&cwd), dirname_of(cstr_sv(&source->canonical_path)));
-                        cstr absolute = absolute_path_of(cstr_sv(&dir), cstr_sv(&statement->source_directive->path));
-                        cstr_take(&statement->source_directive->not_found, program_path_for_message(me, cstr_sv(&absolute)));
+                        // Reported when names are resolved (it is no reason not to typecheck), named after the file's
+                        // name as messages have it by then
+                        cstr_assign_sv(&statement->source_directive->not_found, cstr_sv(&statement->source_directive->path));
                         statement->source_directive->not_found_extensionless =
                             !path_has_extension(cstr_sv(&statement->source_directive->path));
-                        cstr_drop(&absolute);
-                        cstr_drop(&dir);
-                        cstr_drop(&cwd);
                     }
                     break;
                 case SOURCE_DIRECTIVE_REFERENCE_TYPES:
@@ -1033,6 +1028,14 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
     }
 
     return ok(main_source);
+}
+
+u32 program_source_count(Program const* me) {
+    return (u32)vec_source_file_ptr_size(&my source_files_ordered);
+}
+
+SourceFile* program_source_at(Program const* me, u32 index) {
+    return *vec_source_file_ptr_at(&my source_files_ordered, index);
 }
 
 SourceFile* program_find_source(Program const* me, csview path) {
