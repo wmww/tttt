@@ -8628,7 +8628,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
 
     // (A tagged template is part of a member expression, `new` included: tsc's parseMemberExpressionRest). After `?.`
-    // too, which the checker refuses (TS1358 on the template's first token)
+    // too, which the checker refuses (TS1358)
     bool optional_template = false;
     if (!ctx.entity_name && new_keyword_precedence >= ctx.min_precedence && p.pos[0] == '?' && p.pos[1] == '.') {
         Parser q = parser(&p);
@@ -8640,18 +8640,15 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
     if (!ctx.entity_name && new_keyword_precedence >= ctx.min_precedence && *p.pos == '`') {
         Anchor template_a = anchor(&p);
-        if (optional_template) {
-            char const* end = template_a.start + 1;
-            while (*end && *end != '`' && !(end[0] == '$' && end[1] == '{')) end += end[0] == '\\' && end[1] ? 2 : 1;
-            end += *end == '`' ? 1 : *end ? 2 : 0;
-            parse_error(&p, span_make(p.shared->source, template_a.start, end), 1358,
-                "Tagged template expressions are not permitted in an optional chain.");
-        }
         cstr plain_string = cstr_null;
         if (left_and_ret->tag == EXPR_TEMPLATE && !expr_is_perenthisized(left_and_ret)) left_and_ret->template_->is_tag = true;
         if (!parse_template(&p, &parsed.args, nullptr)) {
             parsed.args = vec_expr_init();
             parse_string_or_tagged(&p, &plain_string, false);
+        }
+        // (tsc's checkGrammarTaggedTemplateChain: grammarErrorOnNode of the whole template)
+        if (optional_template) {
+            parse_error(&p, span_from(template_a), 1358, "Tagged template expressions are not permitted in an optional chain.");
         }
         *left_and_ret = expr_template(
             span_from(a),
