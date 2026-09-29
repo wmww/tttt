@@ -5763,6 +5763,16 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             if (tag && !(function && signature) && !accessor) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
             if (function && accessor) function->accessor = item.tag == OBJECT_ITEM_GETTER ? 1 : 2; // (Set again by the resolve walk)
             if (function) jsdoc_apply_function(&p, &tags, function);
+            if (tag && function && signature && item.tag == OBJECT_ITEM_PROPERTY) {
+                // The signature typed the function; it's also the property's declared type, which tsc's printer
+                // reuses (getEffectiveTypeAnnotationNode of the PropertyAssignment): the comment again for a copy
+                VecJsDocTag again = {0};
+                if (jsdoc_before(&p, a.start, &again)) {
+                    JsDocTag* copy = jsdoc_find_typed(&again, JSDOC_TAG_TYPE);
+                    if (copy) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(copy, nullptr));
+                }
+                vec_jsdoc_tag_drop(&again);
+            }
         }
         vec_jsdoc_tag_drop(&tags);
     }
