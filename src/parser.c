@@ -9967,7 +9967,13 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         const char* declaration_start = p.pos;
         if (empty_for_of || !parse_binding_content_or_private_name(&p, &initializer.binding, 18029,
                 "Private identifiers are not allowed in variable declarations.")) {
-            if (span_valid(comma_span)) {
+            if (span_valid(comma_span) && !list_is_terminator(PARSING_VARIABLE_DECLARATIONS, tok_peek(&p))) {
+                // `var a, ""`: TS1134 (tsc's abortParsingListOrMoveToNextToken)
+                if (!list_abort_or_skip(&p, PARSING_VARIABLE_DECLARATIONS)) {
+                    comma_span = span_null;
+                    continue;
+                }
+            } else if (span_valid(comma_span)) {
                 parse_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(comma_span);
             } else if (vec_initialized_binding_is_empty(&ret->initializers)) {
@@ -9984,6 +9990,8 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                     s.sv.size = 0;
                     parse_error(&p, s, 1123, "Variable declaration list cannot be empty.");
                 }
+            } else if (list_is_terminator(PARSING_VARIABLE_DECLARATIONS, tok_peek(&p))) {
+                // After a missing `,` or a skipped token (`var v = (a): => {}` ends at the `=>`)
             } else if (!list_abort_or_skip(&p, PARSING_VARIABLE_DECLARATIONS)) {
                 // (tsc's abortParsingListOrMoveToNextToken: `var x = {} : 1` skips the `:`)
                 comma_span = span_null;
@@ -10621,7 +10629,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             } else if (p.whitespace == WHITESPACE_NEWLINE ||
                 statement.tag == STATEMENT_NOOP ||
                 !*p.pos ||
-                ended_on_brace ||
+                (ended_on_brace && !statement_takes_semicolon(&statement)) ||
                 *p.pos == '}'
             ) {
             } else if (hop_char(&p, ';')) {
@@ -11562,6 +11570,12 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
                 return parse_fail(&p);
             }
         }
+    } else if (strchr("|&^=!>*%?i", c) && c && tok_is_binary_operator(tok_peek(&p))) {
+        // A binary operator starts an expression with a missing left operand (tsc's isStartOfExpression): `|| a;`
+        ret->tag = STATEMENT_EXPR;
+        ret->expr_jsdoc_type = nullptr;
+        expect_expr(&p, expr_ctx_null, &ret->expr);
+        parse_comma_ops_right_side(&p, &ret->expr);
     } else {
         return parse_fail(&p);
     }

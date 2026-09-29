@@ -13601,7 +13601,7 @@ const baselines = {
         types: true,
     },
     'fatarrowfunctionsOptionalArgs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42721,9 +42721,9 @@ const baselines = {
         types: true,
     },
     'MemberFunctionDeclaration8_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'anonymousDefaultExportsAmd': {
         errors: true,
@@ -48431,7 +48431,7 @@ const baselines = {
         types: true,
     },
     'bitwiseNotOperatorInvalidOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56131,9 +56131,9 @@ const baselines = {
         types: true,
     },
     'parserArrowFunctionExpression2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrowFunctionExpression3': {
         errors: false,
@@ -56626,7 +56626,7 @@ const baselines = {
         types: true,
     },
     'ArrowFunction3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56641,7 +56641,7 @@ const baselines = {
         types: true,
     },
     'parserX_ArrowFunction3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
