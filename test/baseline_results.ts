@@ -6243,7 +6243,7 @@ const baselines = {
     'contextualTypeForInitalizedVariablesFiltersUndefined': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeFunctionObjectPropertyIntersection': {
         errors: true,

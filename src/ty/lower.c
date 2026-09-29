@@ -2523,8 +2523,10 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         if (shape && !has_rest && binding->parent_index >= shape->arity) ret = ty_intrinsic(me, TY_UNDEFINED);
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
     } else if (compiler_options()->strict_null_checks && !parent->parent && !parent->has_explicit_type &&
-        !binding_is_parameter(parent) && !(object->flags & TYF_ANY) && ty_can_be_nullish(me, object) &&
-        ty_non_nullable(me, object) != object
+        !(object->flags & TYF_ANY) && ty_can_be_nullish(me, object) && ty_non_nullable(me, object) != object &&
+        (!binding_is_parameter(parent) || (!parent->ambient &&
+            c_container_of(parent, InitializedBinding, binding)->value.tag != EXPR_IMPLICIT_ANY &&
+            ty_can_be_nullish(me, ty_expr_type(me, &c_container_of(parent, InitializedBinding, binding)->value))))
     ) {
         // `const { s } = t` with t possibly undefined: the property of the whole type, which undefined lacks (TS2339 by
         // binding_typecheck(), tsc's getBindingElementTypeFromParentType keeps undefined when the initializer has it)
