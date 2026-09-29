@@ -560,7 +560,7 @@ void scope_add_port(Scope* me, PortItem* item);
 void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool export_equals);
 // An assignment in a CommonJS file: `exports.x = v`, `module.exports.x = v` and `module.exports = v` declare exports
 // (tsc's bindExportsPropertyAssignment, bindModuleExportsAssignment). Anything else is ignored
-void scope_add_commonjs_export(Scope* me, Expr* assignment, Span statement);
+void scope_add_commonjs_export(Scope* me, Expr* assignment);
 // The `module` of a CommonJS file that mentions `module.exports` (tsc declares it at the first such access)
 void scope_add_commonjs_module(Scope* me);
 // The expandos of the statements of a block (declared in `me`): `f.x = v` where f is a function declared in the block

@@ -885,7 +885,7 @@ void function_collect_local_value_names(FunctionImpl const* function, VecSpan* o
 void statement_add_names(Statement* me, Scope* scope) {
     switch (my tag) {
         case STATEMENT_EXPR:
-            scope_add_commonjs_export(scope, &my expr, my span);
+            scope_add_commonjs_export(scope, &my expr);
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:

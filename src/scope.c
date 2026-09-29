@@ -1355,7 +1355,7 @@ static Expr* rightmost_assigned(Expr* value) {
     return value;
 }
 
-static void add_commonjs_export(Scope* me, BinaryOpExpr* op, Span statement);
+static void add_commonjs_export(Scope* me, Expr* assignment);
 
 // tsc's isExportsOrModuleExportsOrAlias: `exports`, `module.exports`, or a variable of the module initialized with one
 // of them (through assignments: `var a = module.exports = {}`)
@@ -1389,16 +1389,19 @@ static Scope* commonjs_module_scope(Scope* me) {
     return me && me->kind == SCOPE_MODULE && me->file && me->file->is_commonjs && me->container ? me : nullptr;
 }
 
-void scope_add_commonjs_export(Scope* me, Expr* assignment, Span statement) {
+void scope_add_commonjs_export(Scope* me, Expr* assignment) {
     if (my kind != SCOPE_MODULE || !my file || !my file->is_commonjs || !my container) return;
     // Every assignment of a chain (`exports = module.exports = C`)
     while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL) {
-        add_commonjs_export(me, assignment->binary_op, statement);
+        add_commonjs_export(me, assignment);
         assignment = &assignment->binary_op->right;
     }
 }
 
-static void add_commonjs_export(Scope* me, BinaryOpExpr* op, Span statement) {
+// Declared by the assignment expression (tsc's declaration node, `exports = module.exports = C` has two)
+static void add_commonjs_export(Scope* me, Expr* assignment) {
+    BinaryOpExpr* op = assignment->binary_op;
+    Span statement = assignment->outer_span;
     Span name = span_null;
     switch (binary_commonjs_declaration(op, &name)) {
         case COMMONJS_TARGET_NONE: {
@@ -1450,7 +1453,7 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
             if (nested) {
                 Expr* assignment = &statement->expr;
                 while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL) {
-                    add_commonjs_export(module, assignment->binary_op, statement->span);
+                    add_commonjs_export(module, assignment);
                     assignment = &assignment->binary_op->right;
                 }
             }
@@ -1462,7 +1465,7 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
                 while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL &&
                     !expr_is_perenthisized(assignment)
                 ) {
-                    add_commonjs_export(module, assignment->binary_op, statement->span);
+                    add_commonjs_export(module, assignment);
                     assignment = &assignment->binary_op->right;
                 }
             }
