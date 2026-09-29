@@ -14763,7 +14763,7 @@ const baselines = {
     'genericCallWithoutArgs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallbackInvokedInsideItsContainingFunction1': {
         errors: true,
@@ -17938,7 +17938,7 @@ const baselines = {
     'instanceofOnInstantiationExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instanceofOperator': {
         errors: true,
@@ -24608,22 +24608,22 @@ const baselines = {
     'optionalChainWithInstantiationExpression1(target=es2019)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalChainWithInstantiationExpression1(target=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalChainWithInstantiationExpression2(target=es2019)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalChainWithInstantiationExpression2(target=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalConstructorArgInSuper': {
         errors: true,
@@ -57398,12 +57398,12 @@ const baselines = {
     'parserMemberAccessExpression1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserMemberAccessOffOfGenericType1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserObjectCreation1': {
         errors: true,

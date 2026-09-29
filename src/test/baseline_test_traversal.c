@@ -16,6 +16,8 @@
 #include "ty/ty.h"
 #include "symbol_chain.h"
 
+static void callee_compile_test_info(Expr* me, BaselineTestCase* ctx);
+
 // What the symbols baseline shows for a reference: the declarations of the symbol the name found (an alias shows its
 // import, not what it resolves to), or of the declaration when there is no symbol (keywords, synthetic nodes)
 static inline Symbol const* shown_declaration(Symbol const* symbol, Symbol const* decl) {
@@ -812,7 +814,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_TYPEOF:
-            expr_compile_test_info(my typeof_->expr, ctx);
+            // (`typeof f<T>`'s type arguments are the type query's)
+            callee_compile_test_info(my typeof_->expr, ctx);
             break;
 
         case TYPE_TERNARY:
@@ -1913,7 +1916,11 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_CALL: {
-            expr_compile_test_info(&my call->callable, ctx);
+            // (`f<T>?.()` is `f<T>` then an optional call: tsc's parseCallExpressionRest; `f?.<T>()` has the call's)
+            const char* after_callee = span_end_ptr(my call->callable.outer_span);
+            while (*after_callee == ' ' || *after_callee == '\t' || *after_callee == '\n' || *after_callee == '\r') after_callee++;
+            if (my call->optional_chain && after_callee[0] == '?' && after_callee[1] == '.') expr_compile_test_info(&my call->callable, ctx);
+            else callee_compile_test_info(&my call->callable, ctx);
             // The specifier of `import("./a")` names the module (tsc's getSymbolAtLocation of a module name)
             ModuleRef const* ref = my call->callable.tag == EXPR_IDENTIFIER ? my call->callable.identifier.module_ref : nullptr;
             Symbol const* module = ref ? ref->module : nullptr;
@@ -2059,7 +2066,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_TEMPLATE:
             if (my template_->tag) {
-                expr_compile_test_info(my template_->tag, ctx);
+                callee_compile_test_info(my template_->tag, ctx);
                 if (vec_expr_is_empty(&my template_->substitutions)) {
                     // Don't clone the string, and don't drop the type
                     TypeNode t = type_value(value_string(my template_->plain_string));
@@ -2101,6 +2108,13 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     }
 }
 
+// The callee of a call or tagged template, or a type query's expression: `f<T>(x)`'s type arguments are the call's
+// (tsc has no node for `f<T>`), only a parenthesized `(f<T>)(x)` is an instantiation expression of its own
+static void callee_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    if (my tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(me)) expr_compile_test_info_inner(me, ctx);
+    else expr_compile_test_info(me, ctx);
+}
+
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     if (my tag == EXPR_IMPLICIT_ANY && my missing_decorators) { // (tsc's MissingDeclaration: no expression of its own)
         for_each (i, vec_expr, my missing_decorators) expr_compile_test_info(i, ctx);
@@ -2118,7 +2132,8 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             Span parenthesized = span_make(my inner_span.source, start - 1, end + 1);
             baseline_test_case_add_type_recursive(ctx, my outer_span, parenthesized, ty_regular(current_checker, expr_get_type(me)));
         }
-    } else if (my tag == EXPR_GENERIC_PARAMS) {
+    } else if (my tag == EXPR_GENERIC_PARAMS && my generic_params->heritage) {
+        // (A class's `extends B<T>` is tsc's ExpressionWithTypeArguments, which the type writer skips)
     } else if (my tag == EXPR_AS_TYPE && my as_type->is_jsdoc && span_eq(my outer_span, my as_type->expr.outer_span)) {
         // `/** @satisfies {T} */ const x = v`: v isn't parenthesized, the satisfies expression isn't tsc's
     } else if (my tag == EXPR_IDENTIFIER && my identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
