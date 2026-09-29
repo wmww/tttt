@@ -6634,7 +6634,8 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
     }
     list_leave(&p, saved_context);
 
-    expect_closing(&p, ']', open);
+    // (A missing `]` is at the next token's full start: the literal ends with its last token)
+    if (!expect_closing(&p, ']', open)) unhop_trivia(&p);
 
     return parse_success(&p);
 }
@@ -7696,6 +7697,7 @@ static bool parse_ternary_expr(Parser* parent, ExprCtx ctx, Expr* ret_yes, Expr*
     hop_whitespace(&p);
 
     if (!expect_char(&p, ':')) {
+        unhop_trivia(&p); // (tsc's missing colon and branch are at the next token's full start)
         *ret_no = expr_implicit_any(span_from_pos(&p));
         ret_no->missing = true;
         return parse_success(&p);
@@ -8412,6 +8414,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
             hop_whitespace(&p);
             if (!expect_char(&p, '}')) {
                 missing_tail = true;
+                unhop_trivia(&p); // (tsc's missing template tail is at the token's full start)
                 break;
             }
         } else if (*p.pos == '\r') {
@@ -8836,6 +8839,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
             hop_whitespace(&p);
             if (!expect_char(&p, '}')) {
                 missing_tail = true;
+                unhop_trivia(&p); // (tsc's missing template tail is at the token's full start)
                 break;
             }
         } else {
@@ -9633,6 +9637,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             // A type assertion is no member expression (tsc's parseMemberExpressionOrHigher): `new <T>F()` is `new`
             // of a missing expression, then `< T > F()`
             expected_expression_error(&p);
+            unhop_trivia(&p); // (tsc's missing node is at the `<`'s full start)
             call.callable = expr_implicit_any(span_from_pos(&p));
         } else {
             expect_expr(&p, sub_ctx, &call.callable);

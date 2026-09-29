@@ -18013,7 +18013,7 @@ const baselines = {
     'intTypeCheck': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interMixingModulesInterfaces0': {
         errors: true,
@@ -23223,7 +23223,7 @@ const baselines = {
     'newExpressionWithCast': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newExpressionWithTypeParameterConstrainedToOuterTypeParameter': {
         errors: true,
@@ -30113,12 +30113,12 @@ const baselines = {
     'taggedTemplatesWithIncompleteTemplateExpressions4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplatesWithIncompleteTemplateExpressions5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplatesWithIncompleteTemplateExpressions6': {
         errors: true,
@@ -43278,7 +43278,7 @@ const baselines = {
     'TemplateExpression1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsPlainCharactersThatArePartsOfEscapes01': {
         errors: true,
@@ -56618,7 +56618,7 @@ const baselines = {
     'parserErrorRecoveryArrayLiteralExpression3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ArrowFunction1': {
         errors: true,
@@ -57073,7 +57073,7 @@ const baselines = {
     'parserTypeAssertionInObjectCreationExpression1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserUnaryExpression1': {
         errors: true,
@@ -58148,7 +58148,7 @@ const baselines = {
     'parser509630': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser509667': {
         errors: true,
@@ -65273,7 +65273,7 @@ const baselines = {
     'objectSpreadNegativeParse': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectSpreadNoTransform': {
         errors: true,
@@ -65328,7 +65328,7 @@ const baselines = {
     'spreadNonObject1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadNonPrimitive': {
         errors: true,
@@ -65353,7 +65353,7 @@ const baselines = {
     'spreadTypeVariable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadUnion': {
         errors: true,
