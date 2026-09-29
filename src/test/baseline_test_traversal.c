@@ -515,9 +515,21 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                     }
                 }
             }
+            // A property declared again (TS2717) is one symbol, of the first declaration's type (tsc's getTypeOfSymbol)
+            Prop const* redeclared = nullptr;
+            if (!my key.name_is_member_function && ctx->member_owner && !my has_write_type) {
+                Checker* checker = current_checker;
+                Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
+                if (prop && !(prop->flags & PROP_METHOD) && prop->decl->decl_span_count > 1 && prop->decl->node &&
+                    !prop->decl->write_node
+                ) {
+                    redeclared = prop;
+                }
+            }
             VecSpan declarations = vec_span_init();
-            if (merged && merged->decl->decl_span_count) {
-                for (u32 i = 0; i < merged->decl->decl_span_count; i++) vec_span_push(&declarations, merged->decl->decl_spans[i]);
+            if ((merged && merged->decl->decl_span_count) || redeclared) {
+                Prop const* shown = merged ? merged : redeclared;
+                for (u32 i = 0; i < shown->decl->decl_span_count; i++) vec_span_push(&declarations, shown->decl->decl_spans[i]);
             } else {
                 declarations = vec_span_clone(my declarations);
             }
@@ -527,6 +539,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
             });
             Ty const* type = merged ? prop_type(current_checker, merged) : optional_member_type(ty_of_node(&my type), my optional);
+            if (redeclared) type = prop_type(current_checker, redeclared);
             bool method = my key.name_is_member_function && my type.tag == TYPE_CALLABLE;
             u32 saved = method ? baseline_test_case_enter_generic(ctx, &my type.callable->function->generic) : 0;
             baseline_test_case_add_type(ctx, my key.span, type);

@@ -3317,7 +3317,7 @@ const baselines = {
     },
     'checkTypePredicateForRedundantProperties': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'checkerInitializationCrash': {
@@ -10352,7 +10352,7 @@ const baselines = {
     },
     'duplicateInterfaceMembers1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateLabel1': {
@@ -18072,8 +18072,8 @@ const baselines = {
     },
     'interfaceDeclaration1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'interfaceDeclaration2': {
         errors: true,
@@ -24702,7 +24702,7 @@ const baselines = {
     },
     'optionalPropertiesSyntax': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'optionalPropertiesTest': {
@@ -26337,7 +26337,7 @@ const baselines = {
     },
     'propertySignatures': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'propertyWrappedInTry': {
@@ -48012,12 +48012,12 @@ const baselines = {
     },
     'duplicatePropertiesInTypeAssertions01': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicatePropertiesInTypeAssertions02': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeAssertions': {
@@ -50412,12 +50412,12 @@ const baselines = {
     },
     'mergedInterfacesWithConflictingPropertyNames': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mergedInterfacesWithConflictingPropertyNames2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergedInterfacesWithIndexers': {

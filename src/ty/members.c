@@ -251,6 +251,11 @@ static void builder_add_interface_member(
                         existing->decl->overload_count = count + 1;
                         existing->thisless &= function_is_thisless(i->type.callable->function);
                         prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
+                    } else if (!is_method && !(existing->flags & PROP_METHOD) && existing->decl->node && !i->has_write_type &&
+                        !i->computed_accessor
+                    ) {
+                        // A property declared again (TS2717): one symbol, the first declaration's type
+                        prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
                     }
                     break;
                 }
