@@ -3709,6 +3709,14 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
     free(args);
 }
 
+void ty_assign_iife_parameter_types(Checker* me, CallExpr const* call) {
+    Expr const* callee = &call->callable;
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    if (callee->tag == EXPR_FUNCTION && callee->function->is_iife && !call->uses_new) {
+        assign_iife_parameter_types(me, callee->function, call);
+    }
+}
+
 static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, ExprCtx ctx) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
@@ -3721,9 +3729,7 @@ static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, E
         void const** slot = intern_slot(me, &my links, key, 2);
         if (!*slot) *slot = ctx.contextual;
     }
-    if (callee->tag == EXPR_FUNCTION && callee->function->is_iife && !call->uses_new) {
-        assign_iife_parameter_types(me, callee->function, call);
-    }
+    ty_assign_iife_parameter_types(me, call);
     bool optional = false;
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
     // An incomplete `never` of control flow calls to nothing (tsc's silentNeverSignature)

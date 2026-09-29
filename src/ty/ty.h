@@ -1530,6 +1530,9 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
 // The return type of a function: its annotation, else inferred from the `return`s of its body
 bool ty_is_recursive_return(Checker* me, Expr const* returned); // `return f()` in f: not part of f's return type
 Ty const* ty_jsdoc_tag_return_type(Checker* me, FunctionImpl const* function); // members.c
+// The parameter types an immediately invoked function gets from its call's arguments, for whoever types the function
+// before the call is checked (tsc pulls them: getContextuallyTypedParameterType; tttt pushes them from the call)
+void ty_assign_iife_parameter_types(Checker* me, CallExpr const* call);
 u32 ty_iife_effective_arg_count(Checker* me, FunctionImpl const* function); // expr.c
 bool ty_function_return_circular(Checker* me, FunctionImpl const* function); // TS7023/TS7024
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);

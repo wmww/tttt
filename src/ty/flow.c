@@ -805,6 +805,7 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
             return nullptr;
         }
     }
+    ty_assign_iife_parameter_types(me, call);
     Ty const* callee = in_flow ? ty_flow_expr_type(me, &call->callable) : ty_expr_type(me, &call->callable);
     if (!(callee->flags & TYF_OBJECT)) return nullptr;
     Members const* members = ty_members(me, callee);
