@@ -1791,9 +1791,22 @@ static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
     TyList members = apparent->composite.types;
     Ty const** elements = malloc(sizeof(Ty const*) * members.len);
     bool readonly = false;
+    Atom const* method = checker_atom(me, cstr_sv(&name->literal.string));
     for (u32 i = 0; i < members.len; i++) {
         Ty const* array = ty_apparent_type(me, members.data[i]);
         if (ty_is_tuple(array)) array = ty_tuple_as_array(me, array);
+        if (!ty_is_array(me, array) && (array->flags & TYF_OBJECT)) {
+            // An interface extending Array (RegExpMatchArray): the method is Array's, at its element type (tsc goes
+            // by the method's declaring symbol and mapper)
+            Prop const* prop = ty_get_prop(me, array, method);
+            Symbol const* array_symbol = ty_array(me, ty_intrinsic(me, TY_ANY), false)->reference.target->declared.symbol;
+            Symbol const* readonly_symbol = ty_readonly_array_target(me)->declared.symbol;
+            if (prop && prop->parent && (prop->parent == array_symbol || prop->parent == readonly_symbol)) {
+                readonly |= prop->parent == readonly_symbol;
+                elements[i] = ty_indexed(me, array, ty_intrinsic(me, TY_NUMBER));
+                continue;
+            }
+        }
         if (!ty_is_array(me, array)) {
             free(elements);
             return nullptr;
