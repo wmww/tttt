@@ -1115,10 +1115,28 @@ static FunctionImpl const* overloadable(ClassItem const* item) {
     return nullptr;
 }
 
+// The name a method's computed key binds, null if it's dynamic (tsc's hasBindableName: a literal, or an entity name
+// whose type is a literal or unique symbol, which is late bound)
+static Atom const* bindable_computed_name(ClassItem const* item) {
+    Expr const* key = item->method.computed_key;
+    if (key->tag != EXPR_LITERAL && !expr_is_entity_name(key)) return nullptr;
+    return ty_member_name(current_checker, &item->method.name_string, key);
+}
+
+// Whether a method's name is known (not a dynamic computed name)
+static bool bindable_method(ClassItem const* item) {
+    return item->tag != CLASS_ITEM_METHOD || !item->method.computed_key || bindable_computed_name(item);
+}
+
 static bool same_member(ClassItem const* a, ClassItem const* b) {
     if (a->tag != b->tag) return false;
     if (a->tag == CLASS_ITEM_CONSTRUCTOR) return true;
-    return !a->method.computed_key && !b->method.computed_key && cstr_eq(&a->method.name_string, &b->method.name_string);
+    if (!a->method.computed_key && !b->method.computed_key) return cstr_eq(&a->method.name_string, &b->method.name_string);
+    Atom const* a_name = a->method.computed_key ? bindable_computed_name(a) :
+        checker_atom(current_checker, cstr_sv(&a->method.name_string));
+    Atom const* b_name = b->method.computed_key ? bindable_computed_name(b) :
+        checker_atom(current_checker, cstr_sv(&b->method.name_string));
+    return a_name && a_name == b_name;
 }
 
 // tsc's checkConstructorDeclarationDiagnostics: without standard class fields, a derived class with initialized
@@ -1178,7 +1196,7 @@ static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) 
     isize count = vec_class_item_size(&my items);
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
-        if (item->tag != CLASS_ITEM_METHOD || item->method.accessor || item->method.computed_key) continue;
+        if (item->tag != CLASS_ITEM_METHOD || item->method.accessor || !bindable_method(item)) continue;
         bool first = true, overloads = false;
         ClassItem const* implementation = nullptr;
         u32 some_flags = 0, all_flags = ~0u;
@@ -1236,7 +1254,7 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         FunctionImpl const* func = overloadable(item);
         if (!func || func->has_body) continue;
         bool is_constructor = item->tag == CLASS_ITEM_CONSTRUCTOR;
-        if (!is_constructor && item->method.computed_key) continue;
+        if (!is_constructor && !bindable_method(item)) continue;
         if (!is_constructor && item->method.is_declare) continue; // (Ambient: tsc's checkFunctionOrConstructorSymbol)
         // (A missing name: tsc's reportImplementationExpectedError says nothing)
         if (!is_constructor && span_valid(item->method.name_span) && !item->method.name_span.sv.size) continue;
@@ -1275,7 +1293,7 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
         FunctionImpl const* func = overloadable(item);
-        if (!func || (item->tag == CLASS_ITEM_METHOD && item->method.computed_key)) continue;
+        if (!func || !bindable_method(item)) continue;
         bool first = true;
         FunctionImpl const* implementation = nullptr;
         Span implementation_name = span_null;
@@ -1306,7 +1324,7 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
         FunctionImpl const* func = overloadable(item);
-        if (!func || item->tag == CLASS_ITEM_CONSTRUCTOR || item->method.computed_key) continue;
+        if (!func || item->tag == CLASS_ITEM_CONSTRUCTOR || !bindable_method(item)) continue;
         bool first = true, is_static = item->method.is_static;
         u32 bodies = 0;
         for (isize j = 0; j < count; j++) {

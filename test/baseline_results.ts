@@ -25106,7 +25106,7 @@ const baselines = {
         types: true,
     },
     'overloadsWithComputedNames': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -40016,7 +40016,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty39': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -40036,12 +40036,12 @@ const baselines = {
         types: true,
     },
     'symbolProperty42': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'symbolProperty43': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -41026,12 +41026,12 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames40_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'computedPropertyNames40_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
