@@ -9871,7 +9871,7 @@ const baselines = {
         types: true,
     },
     'dissallowSymbolAsWeakType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17751,7 +17751,7 @@ const baselines = {
         types: true,
     },
     'inheritedConstructorWithRestParams2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42101,7 +42101,7 @@ const baselines = {
         types: true,
     },
     'iterableArrayPattern28': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42451,7 +42451,7 @@ const baselines = {
         types: true,
     },
     'for-of39': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

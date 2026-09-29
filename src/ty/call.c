@@ -1249,6 +1249,18 @@ static Span callee_span(CallInfo const* info) {
     return callee->inner_span;
 }
 
+// Where tsc's getErrorNodeForCallNode puts TS2769 when its overloads' errors are in different places: the callee (its
+// name if a property access) of a call or `new` alike, a tagged template's tag
+static Span overload_error_span(CallInfo const* info) {
+    if (info->jsx || !info->call->uses_new || !span_valid(info->call_span)) return callee_span(info);
+    Expr const* callee = &info->call->callable;
+    while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
+    if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
+        return callee->property->prop.inner_span;
+    }
+    return callee->inner_span;
+}
+
 // Where tsc's invocationError reports TS2349/TS2351: the callee, but a call's (not `new`'s) is at the method name like
 // getDiagnosticSpanForCallNode's
 static Span invocation_error_span(CallInfo const* info) {
@@ -1586,7 +1598,7 @@ static void report_no_match(
     for_each (r, vec_error, &related) vec_error_push(&head.sub_errors, *r);
     related.size = 0;
     vec_error_drop(&related);
-    head.span = any && same_span && span_valid(common_span) ? common_span : callee_span(info);
+    head.span = any && same_span && span_valid(common_span) ? common_span : overload_error_span(info);
     add_implementation_success(me, &unfit[0], args, info, call_span, &head);
     error_ctx_append_error(errs, head);
 }
