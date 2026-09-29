@@ -2995,6 +2995,14 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
     if (!sig) return any_type(me);
     // (An annotated getter's type is as written: `get s(): typeof S` stays the unique symbol)
     if (getter) return accessor->ret_explicit ? signature_return_type(me, sig) : widen_literals(me, signature_return_type(me, sig));
+    // A setter without a getter: its parameter's annotation, else any (tsc's getTypeOfAccessors, whatever the context
+    // or an initializer would make of the parameter)
+    for_each (i, vec_function_arg, &accessor->args) {
+        Binding const* binding = &i->initializer.binding;
+        if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+        if (!binding->has_explicit_type && !i->initializer.getter) return any_type(me);
+        break;
+    }
     signature_resolve(me, sig);
     return sig->param_count ? sig->params[0].type : any_type(me);
 }
