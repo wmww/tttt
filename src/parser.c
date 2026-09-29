@@ -1650,6 +1650,7 @@ typedef enum ParsingContext {
     PARSING_HERITAGE_CLAUSE_ELEMENT,
     PARSING_ARRAY_BINDING_ELEMENTS,
     PARSING_IMPORT_OR_EXPORT_SPECIFIERS,
+    PARSING_OBJECT_BINDING_ELEMENTS,
     PARSING_CONTEXT_COUNT,
 } ParsingContext;
 
@@ -1723,6 +1724,8 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
             return tok_is(t, "extends") || tok_is(t, "implements");
         case PARSING_HERITAGE_CLAUSE_ELEMENT:
             return tok_is_heritage_clause_element(p, t, true);
+        case PARSING_OBJECT_BINDING_ELEMENTS:
+            return tok_is(t, "[") || tok_is(t, "...") || tok_is_literal_property_name(t);
         case PARSING_ARRAY_BINDING_ELEMENTS:
             // (tsc's isBindingIdentifierOrPrivateIdentifierOrPattern)
             return tok_is(t, ",") || tok_is(t, "...") || tok_is(t, "{") || tok_is(t, "[") ||
@@ -1766,6 +1769,8 @@ static bool list_is_terminator(ParsingContext ctx, Tok t) {
             return tok_is(t, "{") || tok_is(t, "extends") || tok_is(t, "implements");
         case PARSING_ARRAY_BINDING_ELEMENTS:
             return tok_is(t, "]");
+        case PARSING_OBJECT_BINDING_ELEMENTS:
+            return tok_is(t, "}");
         case PARSING_IMPORT_OR_EXPORT_SPECIFIERS:
             return tok_is(t, "}");
         case PARSING_CONTEXT_COUNT: break;
@@ -1833,6 +1838,9 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
             break;
         case PARSING_ARRAY_BINDING_ELEMENTS:
             parse_error(p, span, 1181, "Array element destructuring pattern expected.");
+            break;
+        case PARSING_OBJECT_BINDING_ELEMENTS:
+            parse_error(p, span, 1180, "Property destructuring pattern expected.");
             break;
         case PARSING_IMPORT_OR_EXPORT_SPECIFIERS:
             if (tok_is(t, "from")) {
@@ -10275,6 +10283,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
         hop_whitespace(&p);
         ret->tag = BINDING_OBJECT;
         ret->object = vec_object_binding_item_init();
+        u32 saved_context = list_enter(&p, PARSING_OBJECT_BINDING_ELEMENTS);
         while (*p.pos && *p.pos != '}') {
             Anchor key_anchor = anchor(&p);
             Span name;
@@ -10326,7 +10335,8 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             } else if (parse_type_compat_literal(&p, &key) && (key.tag == VALUE_STRING || key.tag == VALUE_NUMBER)) {
                 name = span_from(key_anchor);
             } else {
-                break;
+                if (list_abort_or_skip(&p, PARSING_OBJECT_BINDING_ELEMENTS)) break;
+                continue;
             }
             hop_whitespace(&p);
 
@@ -10375,6 +10385,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             ignore( *p.pos == '}' || expect_char(&p, ',') );
             hop_whitespace(&p);
         }
+        list_leave(&p, saved_context);
         expect_char(&p, '}');
     } else {
         return parse_fail(&p);
@@ -10725,7 +10736,6 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         vec_initialized_binding_push(&ret->initializers, initializer);
 
         if (*p.pos == ';' ||
-            *p.pos == ')' ||
             *p.pos == '}' ||
             *p.pos == '\0' ||
             (*p.pos == '=' && p.pos[1] == '>') || // (tsc's isVariableDeclaratorListTerminator)
@@ -10868,30 +10878,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    if (hop_start(&p, ";")) {
-        hop_whitespace(&p);
-
-        if (parse_expr(&p, expr_ctx_null, &left_expr)) {
-            parse_comma_ops_right_side(&p, &left_expr);
-        } else {
-            left_expr = expr_literal(span_from_pos(&p), value_boolean(true));
-        }
-        hop_whitespace(&p);
-
-        if (expect_char(&p, ';')) {
-            hop_whitespace(&p);
-            if (parse_expr(&p, expr_ctx_null, &right_expr)) {
-                parse_comma_ops_right_side(&p, &right_expr);
-            } else {
-                right_expr = expr_undefined(span_from_pos(&p));
-            }
-            hop_whitespace(&p);
-        } else {
-            right_expr = expr_undefined(span_from_pos(&p));
-            hop_token(&p);
-        }
-
-    } else if ((statement.tag == STATEMENT_EXPR || statement.tag == STATEMENT_DECL_VARIABLE) && (
+    if ((statement.tag == STATEMENT_EXPR || statement.tag == STATEMENT_DECL_VARIABLE) && (
         hop_start_if_ends_on_word_break(&p, "of") ||
         (hop_start_if_ends_on_word_break(&p, "in") && (keyword_is_in = true)) // control flow is my passion
     )) {
@@ -10915,19 +10902,30 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         }
         hop_whitespace(&p);
     } else {
-        // Unclear why "',' expected" is the error message in this case
-        expected_token_error(&p, ",");
-        left_expr = expr_undefined(span_from_pos(&p));
-        right_expr = expr_undefined(span_from_pos(&p));
+        // tsc's parseForOrForInOrForOfStatement: `;`, an optional condition, `;`, an optional incrementor, whatever
+        // is missing
+        expect_char(&p, ';');
+        hop_whitespace(&p);
+        if (*p.pos != ';' && *p.pos != ')') {
+            if (expect_expr(&p, expr_ctx_null, &left_expr)) parse_comma_ops_right_side(&p, &left_expr);
+        } else {
+            left_expr = expr_literal(span_from_pos(&p), value_boolean(true));
+        }
+        hop_whitespace(&p);
+        expect_char(&p, ';');
+        hop_whitespace(&p);
+        if (*p.pos != ')') {
+            if (expect_expr(&p, expr_ctx_null, &right_expr)) parse_comma_ops_right_side(&p, &right_expr);
+        } else {
+            right_expr = expr_undefined(span_from_pos(&p));
+        }
+        hop_whitespace(&p);
     }
     hop_whitespace(&p);
 
-    if (expect_char(&p, ')')) {
-        hop_whitespace(&p);
-        expect_statement(&p, false, &body);
-    } else {
-        body = statement_noop;
-    }
+    expect_char(&p, ')');
+    hop_whitespace(&p);
+    expect_statement(&p, false, &body);
 
     if (is_for_each) {
         *ret = (Statement){
