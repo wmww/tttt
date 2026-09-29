@@ -24063,12 +24063,12 @@ const baselines = {
     'nonNullableReduction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonNullableReductionNonStrict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonNullableTypes1': {
         errors: true,

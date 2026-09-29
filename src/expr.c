@@ -1762,15 +1762,16 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     }
                 }
             }
+            Expr* callee = &my call->callable;
+            while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+            // (tsc's isConstraintPosition: the callee of any call, an optional one too)
+            if (callee->tag == EXPR_IDENTIFIER) callee->identifier.constraint_position = true;
+            if (callee->tag == EXPR_PROPERTY) callee->property->constraint_position = true;
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
                 flow_array_mutation(flow, me); // `x?.push(v)`
                 break;
             }
-            Expr* callee = &my call->callable;
-            while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
-            if (callee->tag == EXPR_IDENTIFIER) callee->identifier.constraint_position = true;
-            if (callee->tag == EXPR_PROPERTY) callee->property->constraint_position = true;
             if (callee->tag == EXPR_PROPERTY) callee->property->method_call = true;
             if (callee->tag == EXPR_FUNCTION && !my call->uses_new) {
                 // An immediately invoked function expression is part of this flow, after its arguments
