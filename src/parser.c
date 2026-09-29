@@ -121,6 +121,9 @@ typedef struct FunctionFlags {
     // What came before commits to a function (`function f`, a member's `*`, `constructor`): a missing parameter list
     // is TS1005 '(' expected and the function goes on without one (tsc's parseParameters)
     bool committed;
+    // A body that isn't there and can't be left out is '{' expected (object literal methods and accessors, tsc's
+    // parseFunctionBlockOrSemicolon without a message), not TS1144
+    bool brace_expected;
 } FunctionFlags;
 
 static const FunctionFlags function_flags_null = {0};
@@ -3088,10 +3091,8 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
             .keyword = KEYWORD_IDENTIFIER_THIS,
         }));
     } else if (hop_start_if_ends_on_word_break(&p, "super")) {
-        *ret = type_identifier(c_new(IdentifierType, {
-            .name = span_from(a),
-            .keyword = KEYWORD_IDENTIFIER_THIS,
-        }));
+        // (A type reference to tsc, which finds no type called super: TS2304)
+        *ret = type_identifier(c_new(IdentifierType, { .name = span_from(a) }));
     } else if (hop_start_if_ends_on_word_break(&p, "readonly")) {
         *ret = type_string;
     } else if (hop_start_if_ends_on_word_break(&p, "keyof")) {
@@ -5533,8 +5534,9 @@ static bool parse_function_args_inner(
                 } else if (!is_definitely_function) {
                     vec_expr_drop(&decorators);
                     goto drop_and_fail;
-                } else if (p.pos == before_param) {
-                    // Nothing of a parameter: the list's recovery (tsc's parseDelimitedList)
+                } else if (p.pos == before_param && !tok_is_start_of_parameter(tok_peek(&p))) {
+                    // Nothing of a parameter: the list's recovery (tsc's parseDelimitedList). What tsc's
+                    // isStartOfParameter takes (a type's start, `function f(\`x\`)`) is a parameter missing its name
                     vec_expr_drop(&decorators);
                     if (list_abort_or_skip(&p, PARSING_PARAMETERS)) break;
                     continue;
@@ -5881,7 +5883,7 @@ static bool parse_function_header(Parser* parent, FunctionFlags flags, FunctionI
     return parse_success(&p);
 }
 
-static bool parse_non_arrow_function_inner(Parser* parent, bool committed, FunctionImpl* ret);
+static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, FunctionImpl* ret);
 
 // An accessor in a type: a signature, with a body if one follows (tsc's parseFunctionBlockOrSemicolon with
 // SignatureFlags.Type: no `{` means the member simply ends)
@@ -5908,7 +5910,7 @@ static bool parse_type_accessor(Parser* parent, FunctionFlags flags, FunctionImp
 
 static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
     FunctionCtx saved = function_ctx_enter(parent, flags);
-    bool success = parse_non_arrow_function_inner(parent, flags.committed, ret);
+    bool success = parse_non_arrow_function_inner(parent, flags, ret);
     function_ctx_leave(parent, saved);
     if (success) {
         ret->is_async = flags.is_async;
@@ -5919,11 +5921,11 @@ static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, Functi
     return success;
 }
 
-static bool parse_non_arrow_function_inner(Parser* parent, bool committed, FunctionImpl* ret) {
+static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (committed && *p.pos != '(' && *p.pos != '<') {
+    if (flags.committed && *p.pos != '(' && *p.pos != '<') {
         expected_token_error(&p, "(");
         *ret = (FunctionImpl){0};
         ret->args_span = span_from_pos(&p);
@@ -5947,7 +5949,8 @@ static bool parse_non_arrow_function_inner(Parser* parent, bool committed, Funct
         ret->body = (Block){0};
     } else {
         // tsc's parseFunctionBlock: a body whose `{` is missing, empty
-        parse_error(&p, span_from_token(&p), 1144, "'{' or ';' expected.");
+        if (flags.brace_expected) expected_token_error(&p, "{");
+        else parse_error(&p, span_from_token(&p), 1144, "'{' or ';' expected.");
         ret->body = (Block){0};
         ret->body_missing = true;
     }
@@ -6051,7 +6054,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
 
     ObjectExprItem item = { .tag = OBJECT_ITEM_PROPERTY };
     bool must_be_method = false;
-    FunctionFlags flags = {0};
+    FunctionFlags flags = { .brace_expected = true };
     // tsc parses modifiers in front of any member and reports them from the checker (a grammar error)
     ModifierList modifiers;
     parse_modifier_list(&p, true, &modifiers);
@@ -6794,8 +6797,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     bool is_getter = false, is_setter = false;
     if (hop_member_keyword(&p, "get", true)) {
         is_getter = true;
+        function_flags.brace_expected = true;
     } else if (hop_member_keyword(&p, "set", true)) {
         is_setter = true;
+        function_flags.brace_expected = true;
     } else if (!is_type && hop_char(&p, '*')) {
         function_flags.is_generator = true;
         function_flags.asterisk = span_from_previous_char(&p);
@@ -7002,7 +7007,13 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 }
             }
 
-            if (p.whitespace != WHITESPACE_NEWLINE) {
+            if (!is_type && *p.pos == '(') {
+                // tsc's parseSemicolonAfterPropertyName: `a: super();`
+                parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1441,
+                    "Cannot start a function call in a type annotation.");
+                p.pos++;
+                hop_whitespace(&p);
+            } else if (p.whitespace != WHITESPACE_NEWLINE) {
                 switch (*p.pos) {
                     case ';': case ',': case '}': case '\0': break;
                     case '@':
@@ -9797,7 +9808,8 @@ static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret) 
             parse_string(p, &ignored);
             cstr_drop(&ignored);
         } else if (!parse_identifier_or_keyword(p, nullptr)) {
-            parse_error(p, span_from_token(p), 1003, "Identifier expected.");
+            // (tsc's parsingContextErrors for ImportAttributes)
+            parse_error(p, span_from_token(p), 1478, "Identifier or string literal expected.");
             break;
         }
         attribute.name = span_from(name_anchor);

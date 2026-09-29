@@ -35606,9 +35606,9 @@ const baselines = {
         types: true,
     },
     'derivedClassSuperCallsInNonConstructorMembers': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'derivedClassSuperCallsWithThisArg': {
         errors: true,
@@ -43556,14 +43556,14 @@ const baselines = {
         types: true,
     },
     'templateStringInFunctionParameterType': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'templateStringInFunctionParameterTypeES6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'templateStringInInOperator': {
         errors: true,
@@ -64606,7 +64606,7 @@ const baselines = {
         types: true,
     },
     'callSignaturesWithParameterInitializers2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -64791,7 +64791,7 @@ const baselines = {
         types: true,
     },
     'objectTypesWithOptionalProperties2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
