@@ -1176,7 +1176,11 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
     return ret;
 }
 
-static void report_no_property(Checker* me, Ty const* object, Ty const* index, unsigned ts_code, Span span, ErrorCtx* errs) {
+// destructured: a binding element's property (tsc's getIndexedAccessType reports it, without saying which union member
+// lacks it)
+static void report_no_property(Checker* me, Ty const* object, Ty const* index, unsigned ts_code, Span span, bool destructured,
+    ErrorCtx* errs
+) {
     // A name the parser found missing (`o.` then something else) has said enough (tsc: `right.escapedText &&`)
     if (span_valid(span) && !span.sv.size) return;
     cstr name = index_name(me, index);
@@ -1213,7 +1217,7 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     } else {
         error = error_ctx_error_d(errs, span, ts_code, "Property '", name, "' does not exist on type '", object_str, "'.");
     }
-    if (error && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
+    if (error && !destructured && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
         // Which member it is that lacks it
         for (u32 i = 0; i < object->composite.types.len; i++) {
             Ty const* member = object->composite.types.data[i];
@@ -1320,7 +1324,7 @@ static void check_access(
         // (tsc's getBindingElementTypeFromParentType: getIndexedAccessType, no checkNonNullType)
         if ((has_null || has_undefined) && compiler_options()->strict_null_checks && !span_valid(object_span)) {
             // (null and undefined have no properties)
-            if (error_if_not_found && !opaque) report_no_property(me, object, index, 2339, index_span, errs);
+            if (error_if_not_found && !opaque) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
             return;
         }
         if ((has_null || has_undefined) && compiler_options()->strict_null_checks) {
@@ -1353,7 +1357,7 @@ static void check_access(
             return;
         }
         if (opaque || !error_if_not_found) return;
-        if (!ty_access(me, object, index)) report_no_property(me, object, index, 2339, index_span, errs);
+        if (!ty_access(me, object, index)) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         return;
     }
     // `this` is checked as its apparent type, the class with this-argument `this` (tsc's isThisTypeParameter case of
@@ -1365,7 +1369,7 @@ static void check_access(
         // strictNullChecks: no properties at all, not even Object's
         Ty const* apparent = ty_apparent_type(me, object);
         if (apparent->flags & TYF_UNKNOWN) {
-            report_no_property(me, object, index, 2339, index_span, errs);
+            report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
             return;
         }
         // (Possibly null or undefined is checkNonNullExpression's business)
@@ -1381,7 +1385,7 @@ static void check_access(
             if (members->mapped && (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
             if (ty_has_unresolved_base(me, apparent)) return;
         }
-        if (!ty_access(me, apparent, index)) report_no_property(me, object, index, 2339, index_span, errs);
+        if (!ty_access(me, apparent, index)) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         return;
     }
     if (object->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) return;
@@ -1390,10 +1394,10 @@ static void check_access(
         if (!compiler_options()->strict_null_checks) {
             // (Its apparent type is `{}`, which has Object's members: tsc's getApparentType)
             if (error_if_not_found && !ty_access(me, ty_empty_object_type(me), index)) {
-                report_no_property(me, object, index, 2339, index_span, errs);
+                report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
             }
         } else if (!span_valid(object_span)) {
-            if (error_if_not_found) report_no_property(me, object, index, 2339, index_span, errs);
+            if (error_if_not_found) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         } else if (object_is_named) {
             cstr name = entity_name_text(object_span);
             error_ctx_error_d(errs, object_span, 18046, "'", name, "' is of type 'unknown'.");
@@ -1425,7 +1429,7 @@ static void check_access(
     if (!error_if_not_found) return;
     // `never` has no properties (tsc: only the silent never of inference passes is any-like)
     if (object->flags & TYF_NEVER) {
-        report_no_property(me, object, index, 2339, index_span, errs);
+        report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         return;
     }
     // An object literal of a JavaScript file is open-ended (tsc's isJSLiteralType)
@@ -1438,7 +1442,7 @@ static void check_access(
     }
     if (object->flags & TYF_NULLABLE) {
         // A destructured property of null or undefined doesn't exist (a property access is TS18050 in tsc: TODO)
-        if (!span_valid(object_span)) report_no_property(me, object, index, 2339, index_span, errs);
+        if (!span_valid(object_span)) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         return;
     }
     if (ty_access(me, object, index)) return;
@@ -1448,14 +1452,14 @@ static void check_access(
         Atom const* name = ty_literal_name(me, index);
         Symbol const* global = name ? symbol_get_export(object->declared.namespace_symbol, atom_sv(name)) : nullptr;
         if (global && (global->flags & GLOBAL_BLOCK_SCOPED)) {
-            report_no_property(me, object, index, 2339, index_span, errs);
+            report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         } else if (compiler_options()->no_implicit_any) {
             error_ctx_error_d(errs, index_span, 7017,
                 "Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.");
         }
         return;
     }
-    report_no_property(me, object, index, 2339, index_span, errs);
+    report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
 }
 
 void ty_check_property_access(
@@ -1674,7 +1678,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         Atom const* name = ty_literal_name(me, key);
         Symbol const* global = name ? symbol_get_export(object->declared.namespace_symbol, atom_sv(name)) : nullptr;
         if (global && (global->flags & GLOBAL_BLOCK_SCOPED)) {
-            report_no_property(me, object, key, 2339, span, errs);
+            report_no_property(me, object, key, 2339, span, false, errs);
             return;
         }
     }
@@ -1687,7 +1691,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL) &&
             !ty_access(me, object, key)
         ) {
-            report_no_property(me, object, key, 2339, access->prop.outer_span, errs);
+            report_no_property(me, object, key, 2339, access->prop.outer_span, false, errs);
         }
         return;
     }

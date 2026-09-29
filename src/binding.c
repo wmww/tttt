@@ -257,6 +257,7 @@ void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initial
 // tsc's checkVariableLikeDeclaration for a declaration that isn't the symbol's first (`var x: A; var x: B`): the same
 // type (TS2403)
 static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
+    if (!my content_span.sv.size) return; // (a missing name: recovery's, nothing is said about it)
     Symbol const* symbol = my symbol;
     SymbolDecl const* first = nullptr;
     // (The namespace an expando makes of a name isn't its value declaration: tsc's setValueDeclaration)
