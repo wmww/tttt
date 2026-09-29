@@ -1313,7 +1313,7 @@ const baselines = {
     'arraySigChecking': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arraySlice': {
         errors: true,
@@ -57508,7 +57508,7 @@ const baselines = {
     'parserIndexSignature8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserIndexSignature9': {
         errors: true,
@@ -65238,7 +65238,7 @@ const baselines = {
     'genericTypeReferenceWithoutTypeArgument2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericTypeReferenceWithoutTypeArgument3': {
         errors: true,

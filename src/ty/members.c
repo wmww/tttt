@@ -287,7 +287,8 @@ static void builder_add_interface_member(
                 // `[k: A | B]` is a signature for each valid key type of the union (tsc's getIndexInfosOfIndexSymbol)
                 Ty const* key = info.key;
                 if (key->kind != TY_UNION || (key->flags & TYF_BOOLEAN)) {
-                    builder_push(builder, index, info);
+                    // (`[k: any]`, `[k: RegExp]` (TS1268) is no signature at all)
+                    if (ty_is_valid_index_key(key)) builder_push(builder, index, info);
                     break;
                 }
                 for (u32 k = 0; k < key->composite.types.len; k++) {
