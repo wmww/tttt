@@ -1011,7 +1011,8 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
     panic_if(!source_done, "out of memory");
     bool* target_done = source_done + sources.len;
 
-    // Identical members cancel out, then closely matched ones are inferred between and cancel out
+    // Identical members are inferred between and cancel out, then closely matched ones (tsc's inferFromMatchingTypes:
+    // identical isn't the same, `IK<number>` is identical to `IK<T>` when the alias doesn't use T)
     for (u32 pass = 0; pass < 2; pass++) {
         for (u32 t = 0; t < targets.len; t++) {
             if (target_done[t]) continue;
@@ -1021,7 +1022,7 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
                     is_identical_or_base(me, sources.data[s], targets.data[t]) :
                     is_closely_matched(sources.data[s], targets.data[t]);
                 if (!matches) continue;
-                if (pass == 1) infer_from(me, inf, sources.data[s], targets.data[t]);
+                infer_from(me, inf, sources.data[s], targets.data[t]);
                 source_done[s] = true;
                 target_done[t] = true;
             }
