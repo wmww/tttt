@@ -3840,7 +3840,9 @@ static Ty const* generic_element_access(Checker* me, PropertyExpr const* access,
         // (A compound assignment reads it too: tsc's AccessFlags.ExpressionPosition unless Definite)
         return access->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, string) : ty_access_reading(me, object, string);
     }
-    Ty const* ret = ty_indexed(me, object, key);
+    // (A read under noUncheckedIndexedAccess: tsc's AccessFlags.IncludeUndefined on the deferred type)
+    bool include_undefined = compiler_options()->no_unchecked_indexed_access && access->assignment_target != FLOW_TARGET_DEFINITE;
+    Ty const* ret = ty_indexed_include_undefined(me, object, key, include_undefined);
     // (What tsc's checkIndexedAccessIndexType rejects is the error type, reported as TS2536 by the typecheck pass)
     return ret->kind == TY_INDEXED && !ty_indexed_access_index_ok(me, ret) ? ty_intrinsic(me, TY_ERROR) : ret;
 }

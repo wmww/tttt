@@ -2555,7 +2555,7 @@ static Ty const* simplified_parts(Checker* me, Ty const* object, Ty const* index
     panic_if(!parts, "out of memory");
     for (u32 i = 0; i < over.len; i++) {
         // (tsc's getIndexedAccessType without an access node: what isn't there is unknown)
-        Ty const* part = over_index ? ty_indexed_instantiated(me, object, over.data[i]) : ty_indexed_instantiated(me, over.data[i], index);
+        Ty const* part = over_index ? ty_indexed_instantiated(me, object, over.data[i], false) : ty_indexed_instantiated(me, over.data[i], index, false);
         parts[i] = ty_simplified(me, part, writing);
     }
     Ty const* ret = intersect ? ty_intersection(me, parts, over.len, nullptr, (TyList){0}) : ty_union(me, parts, over.len, nullptr, (TyList){0});
@@ -2628,10 +2628,17 @@ Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
 }
 
 // tsc's getIndexedAccessTypeOrUndefined without an access node: null for a property that isn't there
+static Ty const* indexed_or_null_flagged(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
+    if (ty_is_generic_object(me, object) || ty_is_generic_index(index) || (object->flags & TYF_ANY) ||
+        (index->flags & (TYF_ERROR | TYF_NEVER))
+    ) {
+        return ty_indexed_include_undefined(me, object, index, include_undefined);
+    }
+    return ty_access_without_node_include_undefined(me, object, index, include_undefined);
+}
+
 static Ty const* indexed_or_null(Checker* me, Ty const* object, Ty const* index) {
-    if (ty_is_generic_object(me, object) || ty_is_generic_index(index)) return ty_indexed(me, object, index);
-    if ((object->flags & TYF_ANY) || (index->flags & (TYF_ERROR | TYF_NEVER))) return ty_indexed(me, object, index);
-    return ty_access_without_node(me, object, index);
+    return indexed_or_null_flagged(me, object, index, false);
 }
 
 // `{ [P in K]: E }[X]` with K known and X generic (tsc's isMappedTypeGenericIndexedAccess): its constraint is E with X
@@ -2675,13 +2682,14 @@ static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed) {
     Ty const* object = indexed->indexed.object;
     Ty const* index = indexed->indexed.index;
     Ty const* index_constraint = simplified_or_constraint(me, index);
+    bool include_undefined = indexed->indexed.include_undefined;
     if (index_constraint && index_constraint != index) {
-        Ty const* ret = indexed_or_null(me, object, index_constraint);
+        Ty const* ret = indexed_or_null_flagged(me, object, index_constraint, include_undefined);
         if (ret && ret != indexed) return ret;
     }
     Ty const* object_constraint = simplified_or_constraint(me, object);
     if (object_constraint && object_constraint != object) {
-        Ty const* ret = indexed_or_null(me, object_constraint, index);
+        Ty const* ret = indexed_or_null_flagged(me, object_constraint, index, include_undefined);
         if (ret != indexed) return ret;
     }
     return nullptr;
@@ -2936,7 +2944,8 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             Ty const* object_constraint = base_constraint(me, object, depth + 1);
             Ty const* index_constraint = base_constraint(me, index, depth + 1);
             if (!object_constraint && !index_constraint) return nullptr;
-            Ty const* ret = ty_indexed(me, object_constraint ? object_constraint : object, index_constraint ? index_constraint : index);
+            Ty const* ret = ty_indexed_include_undefined(me, object_constraint ? object_constraint : object,
+                index_constraint ? index_constraint : index, ty->indexed.include_undefined);
             if (ret == ty) return nullptr;
             if (ret->kind == TY_UNION) {
                 Ty const* base = base_constraint(me, ret, depth + 1);
@@ -3843,7 +3852,7 @@ static Ternary structured_related_members(
             if (is_subtype_relation(st->relation)) break;
             Ty const* constraint = write_constraint_of_indexed(me, target);
             if (constraint) {
-                Ternary related = is_related_to(me, st, source, constraint, false);
+                Ternary related = is_related_to(me, st, source, constraint, report);
                 if (related) return related;
             }
         }   break;

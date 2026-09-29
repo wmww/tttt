@@ -59951,9 +59951,9 @@ const baselines = {
         types: true,
     },
     'noUncheckedIndexedAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noUncheckedIndexedAccessDestructuring': {
         errors: true,

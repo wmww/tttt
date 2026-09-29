@@ -218,6 +218,7 @@ bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty); // tsc's isEmptyAn
 // ty_access() as tsc's getIndexedAccessTypeOrUndefined without an access node (constraints): a symbol key reads the
 // string index signature when nothing else applies
 Ty const* ty_access_without_node(Checker* me, Ty const* object, Ty const* index);
+Ty const* ty_access_without_node_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined);
 Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip);
 
 // A generic function nested in a literal argument whose contextual type wants a single non-generic signature (tsc's

@@ -349,6 +349,10 @@ struct Ty {
         struct {
             Ty const* object;
             Ty const* index;
+            // An element access read under noUncheckedIndexedAccess (tsc's AccessFlags.IncludeUndefined, which it keeps
+            // on the IndexedAccessType): what an index signature gives includes undefined once resolved, and so does
+            // its constraint. A type of its own, printed the same
+            bool include_undefined;
         } indexed;
         struct {
             Ty const* check;
@@ -997,7 +1001,9 @@ bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty 
 Ty const* ty_template_literal_for_constraint(Checker* me, Ty const* source, Ty const* constraint);
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index);
 Ty const* ty_indexed_written(Checker* me, Ty const* object, Ty const* index); // An IndexedAccessTypeNode's: a missing property is the error type
-Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index);
+Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index, bool include_undefined);
+// ty_indexed() of a read under noUncheckedIndexedAccess (see TY_INDEXED's include_undefined)
+Ty const* ty_indexed_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined);
 // tsc's getSubstitutionType: `base` itself if the constraint says nothing about it
 Ty const* ty_substitution(Checker* me, Ty const* base, Ty const* constraint);
 Ty const* ty_no_infer(Checker* me, Ty const* ty); // tsc's getNoInferType

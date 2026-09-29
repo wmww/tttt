@@ -731,7 +731,8 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             Ty const* ret = ty_indexed_instantiated(
                 me,
                 ty_instantiate(me, ty->indexed.object, mapper),
-                ty_instantiate(me, ty->indexed.index, mapper)
+                ty_instantiate(me, ty->indexed.index, mapper),
+                ty->indexed.include_undefined
             );
             return ret->kind == TY_INDEXED ? instantiate_alias(me, ty, ret, mapper) : ret;
         }

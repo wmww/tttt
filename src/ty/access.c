@@ -356,6 +356,10 @@ Ty const* ty_access(Checker* me, Ty const* object, Ty const* index) {
     return access(me, object, ty_regular(me, index), 0, 0); // `o["a"]`: keys are regular
 }
 
+Ty const* ty_access_without_node_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
+    return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE | (include_undefined ? ACCESS_INCLUDE_UNDEFINED : 0));
+}
+
 Ty const* ty_access_without_node(Checker* me, Ty const* object, Ty const* index) {
     return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE);
 }

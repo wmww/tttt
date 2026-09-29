@@ -2228,7 +2228,7 @@ static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index)
 }
 
 // The access itself is ty_access() (access.c), the same lookup property access expressions get
-static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index, bool written) {
+static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index, bool written, bool include_undefined) {
     if ((object->flags & TYF_ANY) || (index->flags & TYF_ERROR)) return object->flags & TYF_ANY ? object : index;
     if (index->flags & TYF_NEVER) return index;
     // An element before the variadic part of a generic tuple is known (`[S, ...T][0]` is S, tsc's indexTypeLessThan
@@ -2238,7 +2238,7 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
     }
     if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return nullptr;
     index = ty_string_index_only_key(me, object, index);
-    Ty const* ret = ty_access_without_node(me, object, index); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
+    Ty const* ret = ty_access_without_node_include_undefined(me, object, index, include_undefined); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
     // Past the end of tuples (TS2493 where written) is undefined (tsc's getTupleElementTypeOutOfStartCount)
     if (!ret && (index->flags & TYF_NUMBER_LITERAL) && index->literal.value.number >= 0) {
         TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
@@ -2251,23 +2251,27 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
     return ret ? ret : my intrinsics[written ? TY_ERROR : TY_UNKNOWN_];
 }
 
-static Ty const* indexed(Checker* me, Ty const* object, Ty const* index, bool written) {
+static Ty const* indexed(Checker* me, Ty const* object, Ty const* index, bool written, bool include_undefined) {
     if (object == my intrinsics[TY_WILDCARD] || index == my intrinsics[TY_WILDCARD]) return my intrinsics[TY_WILDCARD];
     index = ty_regular(me, index);
-    Ty const* resolved = try_resolve_indexed(me, object, index, written);
+    Ty const* resolved = try_resolve_indexed(me, object, index, written, include_undefined);
     if (resolved) return resolved;
-    u64 key[3] = { KEY_INDEXED, object->id, index->id };
+    u64 key[4] = { KEY_INDEXED, object->id, index->id, 1 };
     Ty* fresh;
-    Ty const* ret = intern_deferred(me, key, 3, TY_INDEXED, object->flags | index->flags, &fresh);
+    Ty const* ret = intern_deferred(me, key, include_undefined ? 4 : 3, TY_INDEXED, object->flags | index->flags, &fresh);
     if (fresh) {
         fresh->indexed.object = object;
         fresh->indexed.index = index;
+        fresh->indexed.include_undefined = include_undefined;
     }
     return ret;
 }
 
-Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) { return indexed(me, object, index, false); }
-Ty const* ty_indexed_written(Checker* me, Ty const* object, Ty const* index) { return indexed(me, object, index, true); }
+Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) { return indexed(me, object, index, false, false); }
+Ty const* ty_indexed_written(Checker* me, Ty const* object, Ty const* index) { return indexed(me, object, index, true, false); }
+Ty const* ty_indexed_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
+    return indexed(me, object, index, false, include_undefined);
+}
 
 static Ty const* make_substitution(Checker* me, Ty const* base, Ty const* constraint) {
     u64 key[3] = { KEY_SUBSTITUTION, base->id, constraint->id };
@@ -2323,8 +2327,8 @@ Ty const* ty_actual_type_variable(Checker* me, Ty const* ty) {
 // What an instantiation makes of `O[K]`: like ty_indexed(), but a non-generic access that finds nothing is unknown
 // (tsc's getIndexedAccessType without an access node; the error was the declaration's to report): falso's
 // `O['length'] extends number ? T[] : T` with `O = { withAccents: false }` takes the false branch
-Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index) {
-    Ty const* ret = ty_indexed(me, object, index);
+Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
+    Ty const* ret = indexed(me, object, index, false, include_undefined);
     if (ret->kind != TY_INDEXED || is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return ret;
     // (Only if it is this access that stayed deferred: a property whose type is an indexed access, `{ a: U["x"] }["a"]`,
     // resolved fine)
