@@ -831,6 +831,10 @@ struct Checker {
     // of a bare call to it was left out (tsc's checkAndAggregateReturnExpressionTypes, hasReturnOfTypeNever)
     FunctionImpl const* return_inference_of;
     struct EnumCase const* enum_evaluating; // The enum member whose initializer is being evaluated (ty_resolve_enum())
+    // The typecheck walk (expr.c's check_const_enum_access): the expression where a const enum object may be, and
+    // whether it is inside a type
+    struct Expr const* const_enum_object_ok;
+    u32 type_only_site_depth;
     bool return_inference_skipped;
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null
