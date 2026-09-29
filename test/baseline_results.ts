@@ -10378,12 +10378,12 @@ const baselines = {
     'duplicateLocalVariable1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicateLocalVariable2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicateLocalVariable3': {
         errors: true,
