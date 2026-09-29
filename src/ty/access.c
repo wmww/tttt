@@ -336,11 +336,10 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         if (prop.found) return prop.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, prop.type) : prop.type;
     }
     Ty const* value = access_index_infos(me, object, index);
-    if (!value && (flags & ACCESS_NO_NODE) && (ty_key_flags(index) & TYF_ES_SYMBOL_LIKE) && (object->flags & TYF_OBJECT)) {
-        Members const* members = ty_members(me, object);
-        for (u32 i = 0; i < members->index_count && !value; i++) {
-            if (members->index[i].key->flags & TYF_STRING) value = members->index[i].value;
-        }
+    // A symbol reads the string index signature when none applies (tsc's getPropertyTypeForIndexType), an
+    // intersection's too
+    if (!value && (flags & ACCESS_NO_NODE) && (ty_key_flags(index) & TYF_ES_SYMBOL_LIKE)) {
+        value = access_index_infos(me, object, ty_intrinsic(me, TY_STRING));
     }
     // (Not an enum object indexed by its own members: `E[E.A]`)
     bool own_enum = (index->flags & TYF_ENUM_LITERAL) && object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT &&
