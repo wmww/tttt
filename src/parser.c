@@ -11207,6 +11207,20 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 });
             }
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
+            if (initializer->binding.has_explicit_type && initializer->require_port_count) {
+                // `/** @type {T} */ const x = require("m")` is a variable, whose initializer is checked against T
+                // (tsc's bindVariableDeclarationOrBindingElement: isVariableDeclarationInitializedToBareOrAccessedRequire
+                // doesn't apply with a type tag)
+                for (u32 i = 0; i < initializer->require_port_count; i++) port_item_drop(&initializer->require_ports[i]);
+                free(initializer->require_ports);
+                initializer->require_ports = nullptr;
+                initializer->require_port_count = 0;
+                Expr* call = &initializer->value;
+                while (call->tag == EXPR_PROPERTY) call = &call->property->expr;
+                if (call->tag == EXPR_CALL && call->call->callable.tag == EXPR_IDENTIFIER) {
+                    call->call->callable.identifier.require_call = true;
+                }
+            }
             jsdoc_apply_satisfies_initializer(p, &tags, initializer);
             FunctionImpl* function = jsdoc_function_of(&initializer->value);
             if (!function && initializer->value.tag != EXPR_CLASS_DECL && !p->shared->jsdoc_enum) {
