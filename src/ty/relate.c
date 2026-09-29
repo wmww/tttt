@@ -3115,15 +3115,19 @@ static Ternary generic_mapped_target_related(
     Checker* me, RelationState* st, Ty const* source, MappedInfo const* mapped, bool report
 ) {
     Ty const* template = ty_mapped_template(me, mapped);
+    // (Only a generic mapped source relates as a mapped type: `{ [P in string]: X }` is an object with an index
+    // signature, whose keys are none, tsc's isGenericMappedType(source))
+    bool generic_source = false;
     if (source->kind == TY_ANONYMOUS && (source->flags & TYF_OBJECT) && ty_members(me, source)->mapped) {
-        return mapped_related(me, st, ty_members(me, source)->mapped, mapped, report);
+        mapped_info_of(me, source, &generic_source);
     }
+    if (generic_source) return mapped_related(me, st, ty_members(me, source)->mapped, mapped, report);
     if (!mapped->name_type && template->kind == TY_INDEXED && template->indexed.object == source &&
         template->indexed.index == mapped->type_param
     ) {
         return TERNARY_TRUE;
     }
-    if (mapped->optional < 0 || (source->kind == TY_ANONYMOUS && ty_members(me, source)->mapped)) return TERNARY_FALSE;
+    if (mapped->optional < 0) return TERNARY_FALSE;
     Ty const* target_keys = mapped->name_type ? mapped->name_type : mapped->constraint;
     // (The source's property names: its index signatures don't make it have every key, IndexFlags.NoIndexSignatures)
     Ty const* source_keys = ty_keyof_without_index_signatures(me, source);
@@ -3183,6 +3187,19 @@ static Ternary generic_mapped_target_related(
 // the access on the base constraints, if that isn't generic any more. Through a union of keys, a value has to fit
 // every key's property, so it's the intersection; a union object is read like any union (the union of the members'
 // properties). HACK: tsc also ignores index signatures when the object is a constraint (AccessFlags.NoIndexSignatures)
+// Whether `object[key]` would be read from an index signature whose key isn't number (tsc's getPropertyTypeForIndexType:
+// not a property the literal key names)
+[[gnu::noinline, gnu::cold]] static bool through_non_number_index(Checker* me, Ty const* object, Ty const* key) {
+    if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+    if (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL)) {
+        bool is_number = false;
+        Atom const* name = key->kind == TY_LITERAL ? ty_property_name_of_key(me, key, &is_number) : nullptr;
+        if (name && ty_get_prop(me, object, name)) return false;
+    }
+    IndexInfo const* info = ty_applicable_index_info(me, object, key);
+    return info && !(info->key->flags & TYF_NUMBER);
+}
+
 static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
     Ty const* object = indexed->indexed.object;
     Ty const* index = indexed->indexed.index;
@@ -3191,13 +3208,20 @@ static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
     if (!base_object) base_object = object;
     if (!base_index) base_index = index;
     if (ty_is_generic_object(me, base_object) || ty_is_generic_index(base_index)) return nullptr;
-    if (base_index->kind != TY_UNION || (base_index->flags & TYF_BOOLEAN)) return indexed_or_null(me, base_object, base_index);
+    // (Through the object's constraint, not its index signatures other than a number one: tsc's
+    // AccessFlags.NoIndexSignatures, writing `T[keyof T]` with `T extends { [k: string]: number }` isn't safe)
+    bool no_index_signatures = base_object != object;
+    if (base_index->kind != TY_UNION || (base_index->flags & TYF_BOOLEAN)) {
+        if (no_index_signatures && through_non_number_index(me, base_object, base_index)) return nullptr;
+        return indexed_or_null(me, base_object, base_index);
+    }
     TyList members = base_index->composite.types;
     Ty const** parts = malloc(sizeof(Ty const*) * members.len);
     panic_if(!parts, "out of memory");
     bool resolved = true;
     for (u32 i = 0; i < members.len && resolved; i++) {
-        parts[i] = indexed_or_null(me, base_object, members.data[i]);
+        parts[i] = no_index_signatures && through_non_number_index(me, base_object, members.data[i]) ? nullptr :
+            indexed_or_null(me, base_object, members.data[i]);
         resolved = parts[i] != nullptr;
     }
     Ty const* ret = resolved ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : nullptr;

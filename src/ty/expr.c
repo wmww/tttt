@@ -3815,6 +3815,9 @@ static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* 
 // What `o[k] = v` takes for a union of keys: every key's property, the intersection of their (write) types (tsc's
 // getIndexedAccessType with AccessFlags.Writing). Null when a key has none (the read reports it)
 static Ty const* union_key_write_type(Checker* me, Ty const* object, Ty const* key) {
+    // (A generic object with keys that aren't: its apparent type's, like tsc's getIndexedAccessType of an element access
+    // expression, which only defers for a generic index or tuple)
+    if (ty_is_generic_object(me, object)) object = ty_apparent_type(me, object);
     if (ty_is_generic_object(me, object)) return nullptr;
     TyList keys = key->composite.types;
     TyBuf parts = {0};
