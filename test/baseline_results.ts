@@ -8081,7 +8081,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitExpressionInExtends4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

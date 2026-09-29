@@ -1574,6 +1574,24 @@ static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
     u32 arg_count;
     bool missing_extends;
     Symbol const* target = class_base_reference(me, &arg_count, &missing_extends);
+    Expr const* base = my extends.tag == EXPR_GENERIC_PARAMS ? &my extends.generic_params->expr : &my extends;
+    if (!target && base->tag != EXPR_IMPLICIT_ANY && !span_valid(my jsdoc_extends)) {
+        // Any other expression (tsc's resolveBaseTypesOfClass): a constructor type that is a class's static side, when
+        // the class has no outer type parameters, is a reference to that class, type arguments and all
+        // (getTypeFromClassOrInterfaceReference); else a construct signature has to take that many (TS2508)
+        Checker* checker = current_checker;
+        Ty const* constructor = ty_apparent_type(checker, ty_expr_type(checker, base));
+        if (constructor->kind == TY_DECLARED && constructor->declared.kind == TY_DECLARED_CLASS_STATIC) {
+            Ty const* instance = ty_declared_type_of(checker, constructor->declared.symbol);
+            if (instance->kind == TY_DECLARED && !instance->declared.outer_count) target = constructor->declared.symbol;
+        }
+        if (!target && (constructor->flags & (TYF_OBJECT | TYF_INTERSECTION)) &&
+            !ty_base_constructors_fit(checker, constructor, arg_count, my extends.outer_span.source->is_js)
+        ) {
+            error_ctx_error_d(errs, base->outer_span, 2508, "No base constructor has the specified number of type arguments.");
+            return;
+        }
+    }
     if (!target) return;
     // (An `@augments` tag is the heritage clause: its type arguments, reported at it)
     if (span_valid(my jsdoc_extends)) missing_extends = false;

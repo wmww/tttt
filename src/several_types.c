@@ -495,7 +495,9 @@ bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, b
     u32 min = 0;
     Generic const* params = generic_kind ? declared_type_params(symbol, &min) : nullptr;
     if (!params) {
-        error_ctx_error_d(errs, span, 2315, "Type '", symbol->name, "' is not generic.");
+        // (tsc's symbolToString of a class expression without a name)
+        csview name = symbol->name.size || !(symbol->flags & SYMBOL_CLASS) ? symbol->name : c_sv("(Anonymous class)");
+        error_ctx_error_d(errs, span, 2315, "Type '", name, "' is not generic.");
         return true;
     }
     u32 count = (u32)vec_generic_item_size(&params->items);

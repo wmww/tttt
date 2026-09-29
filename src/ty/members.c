@@ -567,6 +567,24 @@ static bool base_signature_type_args(
     return true;
 }
 
+// tsc's getConstructorsForTypeArguments is not empty: a construct signature takes `count` type arguments (at least as
+// many as it requires, outside JavaScript). True without construct signatures: that is TS2507's
+bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, bool is_js) {
+    Members const* members = ty_members(me, constructor);
+    if (!members->construct_count) return true;
+    for (u32 i = 0; i < members->construct_count; i++) {
+        Signature const* sig = members->construct[i];
+        signature_resolve(me, sig);
+        TyList params = sig->type_params;
+        u32 min = 0;
+        for (u32 j = 0; j < params.len; j++) {
+            if (!ty_param_default(me, params.data[j])) min = j + 1;
+        }
+        if ((is_js || count >= min) && count <= params.len) return true;
+    }
+    return false;
+}
+
 // An object type, `object`, a type parameter constrained to one or an intersection of them (tsc's isValidBaseType).
 // Unlike tsc, not `any`: a class extending `any` has no base as far as class_base() goes
 static bool is_valid_base_type(Checker* me, Ty const* ty, u32 depth) {

@@ -1706,6 +1706,7 @@ typedef struct HeritageMember {
     Span span;
 } HeritageMember;
 Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl); // What it extends, null if nothing
+bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, bool is_js);
 bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target);
 // Whether the interface is on a cycle of `extends` (tsc reports TS2310 on each declaration of the interfaces in a
 // cycle of base types, not on those that merely extend one)
