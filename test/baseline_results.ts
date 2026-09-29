@@ -65308,12 +65308,12 @@ const baselines = {
     'spreadDuplicate': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadDuplicateExact': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadExcessProperty': {
         errors: true,
@@ -65368,7 +65368,7 @@ const baselines = {
     'spreadUnion3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadUnion4': {
         errors: true,

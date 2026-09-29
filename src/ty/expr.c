@@ -3019,8 +3019,8 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
         name = checker_atom(me, cstr_sv(&item->name_string));
     }
     Prop const* prop = name && (type->flags & TYF_OBJECT) ? ty_get_prop(me, type, name) : nullptr;
-    // (Unless a later spread replaced it)
-    bool own = prop && (!prop->decl->decl_span_count || span_eq(prop->decl->decl_spans[0], item->span) ||
+    // (Unless a later spread replaced it, or merged its optional property in)
+    bool own = prop && prop->decl->literal_own && (!prop->decl->decl_span_count || span_eq(prop->decl->decl_spans[0], item->span) ||
         (prop->decl->decl_span_count == 2 && span_eq(prop->decl->decl_spans[1], item->span)));
     if (prop && own) {
         // (An optional method's symbol has undefined in its type, tsc's getTypeOfFuncClassEnumModule)
