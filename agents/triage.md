@@ -15,6 +15,9 @@ generatorImplicitAny). Their perf cost was bisected and gated (tsc corpus +0.6% 
 asyncFunctionNoReturnType, jsdocCallbackAndType, unionTypeWithIndexAndTuple. Routed: circularity to plan 39 (a
 planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboration" section) and plan 26 "Leftovers".
 
+- (instantiation limit session) TS2589 location for a call: `const r1 = a.get()` whose return type runs out of tail
+  recursions is reported by tsc at the declaration name `r1` (4,7), tttt at `a.get()` (probe
+  `test/probes/instantiation_limit/call_location.ts`); a property access (`a.x`) is at the access in both.
 - (vue dts-test session) Overload failure fallback: tsc's pickLongestCandidateSignature takes the first candidate with
   enough parameters (getLongestCandidateIndex over all overloads), `resolve_with_signatures` the last unfit one; the
   failed call's type differs (probe `plan19/vue/overload_first_check_skips_generic_functions.ts`, types only).

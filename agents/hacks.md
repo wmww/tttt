@@ -445,8 +445,10 @@ src` finds the code-side markers; every significant one has an entry here.
   the plain `"#x"` atom. Object literal accessors have no `Prop.write_node`.
 - `Checker.current_node` (TS2589/TS2615/TS4110/TS1062 location): `lower()` makes a generic reference current while
   lowering it (a guess at tsc's order). `Foo<X>` isn't lowered in the walk (resolving every alias changed type ids).
-- Instantiation limit: property types computed past `ty_instantiation_limit_reached` aren't memoized, but signatures,
-  members and variances keep what an exhausted budget produced: one TS2589 can poison later users.
+- Instantiation limit: what an exhausted budget produced is memoized like tsc's (errorType stays in links/instantiation
+  caches: later users are silently any, `test/probes/instantiation_limit/`), but tttt instantiates more eagerly than
+  tsc, so a tttt-only TS2589 (variance measurement, eager members) poisons what tsc would still compute. A cut-short
+  conditional instance is re-reported only within its epoch; later hits only bump `instantiation_limit_hits`.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `check_access` (TS2339, HACKs): lets through generic mapped types and unresolved bases; bracket access never reports;

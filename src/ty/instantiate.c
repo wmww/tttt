@@ -667,8 +667,12 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
     }
     Ty const* const* cached = intern_get(&my types, key, len + 2);
     // (One cut short by the limits is only good until the instantiation count starts over)
-    if (cached && (uintptr_t)cached[2] && (uintptr_t)cached[2] != (uintptr_t)my instantiation_epoch + 1) cached = nullptr;
-    if (cached && (uintptr_t)cached[2]) ty_instantiation_limit_reached(me);
+    if (cached && (uintptr_t)cached[2]) {
+        // One cut short by the limits stays what it is, like tsc's (root.instantiations keeps the errorType): reported
+        // again only while the count that ran out lasts (the same node, deduplicated), later users are only told
+        if ((uintptr_t)cached[2] == (uintptr_t)my instantiation_epoch + 1) ty_instantiation_limit_reached(me);
+        else my instantiation_limit_hits++;
+    }
     Ty const* ret = nullptr;
     if (cached) {
         ret = cached[0];

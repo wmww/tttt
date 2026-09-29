@@ -2698,7 +2698,6 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     prop->type_state = LAZY_STATE_IN_FLIGHT;
     bool resolving = !prop->target || prop->mapped_type;
     if (resolving) ty_resolving_push(me, RESOLVING_PROP, prop);
-    u32 limit_hits = my instantiation_limit_hits;
     Ty const* type;
     if (prop->flags & (PROP_GETTER | PROP_SETTER) && !prop->target) {
         // (An unannotated getter has the type of its setter's annotation: tsc's getTypeOfAccessors)
@@ -2749,12 +2748,6 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     if (prop->circular && !prop->target && !prop->mapped_type && span_valid(prop_annotation_circularity_span(prop))) {
         Span name = prop_annotation_circularity_span(prop);
         ty_error_at(me, name, 2502, cstr_d("'", name.sv, "' is referenced directly or indirectly in its own type annotation."));
-    }
-    // What ran into the instantiation limits (TS2589, reported where it happened) is the error type only for now: a
-    // later statement starts the count over and gets the real type, not an any that depends on what was checked first
-    if (my instantiation_limit_hits != limit_hits) {
-        prop->type_state = LAZY_STATE_NOT_STARTED;
-        return type;
     }
     prop->type = type;
     prop->type_state = LAZY_STATE_DONE;
