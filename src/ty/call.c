@@ -1237,10 +1237,10 @@ static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature 
 }
 
 // What the errors about a call are reported at (tsc's getDiagnosticForCallNode): the name of a method, else the callee;
-// the whole expression of `new`; a JSX element's tag name
+// the whole expression of `new` or a tagged template; a JSX element's tag name
 static Span callee_span(CallInfo const* info) {
     if (info->jsx) return info->jsx->tag_name.inner_span;
-    if (info->call->uses_new && span_valid(info->call_span)) return info->call_span;
+    if ((info->call->uses_new || info->tagged_template) && span_valid(info->call_span)) return info->call_span;
     Expr const* callee = &info->call->callable;
     while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
     if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {

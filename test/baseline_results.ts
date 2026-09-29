@@ -43351,12 +43351,12 @@ const baselines = {
         types: true,
     },
     'taggedTemplateStringsWithOverloadResolution3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'taggedTemplateStringsWithOverloadResolution3_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
