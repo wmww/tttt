@@ -62,6 +62,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   per directory + name + mode; not visible in profiles so far).
 
 ## Parser
+- Strings are UTF-8, so a lone surrogate escape (`"\u{D800}"`, `"\uDC00"`) becomes U+FFFD (`append_code_point()`),
+  which is what node writes for it in the baselines: all lone surrogates are the same string to the checker, and
+  `"\u{D83D}\u{DE00}"` (a pair written as two braced escapes) isn't the emoji it is in JavaScript.
 - Escaped identifiers (`\u0061`) are scanned (`identifier_char_size()`) but named by their raw text: `\u0061` and `a`
   are different names (`bugs/escaped_identifiers.md`), and escaped keywords are identifiers (no TS1260). JSX names
   are compared by value (`jsx_name_value`) but resolved by raw text too.

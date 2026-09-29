@@ -219,6 +219,9 @@ static int hex_digit_value(char c) {
 }
 
 static void append_code_point(cstr* str, u32 code) {
+    // A lone surrogate has no UTF-8 encoding: U+FFFD, what node writes for it in the baselines. HACK: "\uD800" and
+    // "\uDC00" are the same string then (see hacks.md)
+    if (code >= 0xD800 && code <= 0xDFFF) code = 0xFFFD;
     char buf[8];
     int n = cutf8_encode(buf, code);
     cstr_append_n(str, buf, n);

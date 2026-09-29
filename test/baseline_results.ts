@@ -44448,22 +44448,22 @@ const baselines = {
     'unicodeExtendedEscapesInStrings10(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings10(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings11(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings11(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings12(target=es5)': {
         errors: true,
@@ -44698,22 +44698,22 @@ const baselines = {
     'unicodeExtendedEscapesInTemplates10(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates10(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates11(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates11(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates12(target=es5)': {
         errors: true,
