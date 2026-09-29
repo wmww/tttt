@@ -605,8 +605,8 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
         if (i->is_parameter_property && !(my is_constructor && my has_body)) {
             error_ctx_error_d(errs, i->span, 2369, "A parameter property is only allowed in a constructor implementation.");
         }
-        if (is_this_parameter(i) && !my jsdoc_type) {
-            // (tsc's checkParameter)
+        if (is_this_parameter(i) && !my jsdoc_type && !i->jsdoc_this) {
+            // (tsc's checkParameter; a `@this` tag's parameter is checked by the parser)
             if (i_index != 0) error_ctx_error_d(errs, i->span, 2680, "A 'this' parameter must be the first parameter.");
             if (my is_constructor) error_ctx_error_d(errs, i->span, 2681, "A constructor cannot have a 'this' parameter.");
             if (span_valid(my arrow_span) && !is_type) {

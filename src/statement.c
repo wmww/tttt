@@ -1434,8 +1434,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 expr_lookup_names(&my expr, names, errs);
             } else {
                 // (tsc's checkReturnStatement stops there: nothing in the expression is reported)
-                ErrorCtx ignored = error_ctx_init();
-                ignored.phase = errs->phase;
+                ErrorCtx ignored = error_ctx_scratch(errs);
                 expr_lookup_names(&my expr, names, &ignored);
                 error_ctx_drop(&ignored);
             }

@@ -1401,8 +1401,7 @@ static void report_no_match(
     Checker* me, Candidate const* unfit, u32 unfit_count, u32 signature_count, Args* args, CallInfo const* info,
     Span call_span, ErrorCtx* errs
 ) {
-    ErrorCtx collected = error_ctx_init();
-    collected.phase = errs->phase;
+    ErrorCtx collected = error_ctx_scratch(errs);
     if (unfit_count == 1 || unfit_count > 3) {
         // The last candidate's errors (each with a chain of its own when there were many candidates)
         Candidate const* last = &unfit[unfit_count - 1];
@@ -2740,8 +2739,7 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, 
     DecoratorCall dc;
     Signature* sig = nullptr;
     // (tsc looks up the lib types the signature needs once the callee's type is known not to be an error)
-    ErrorCtx lib_errors = error_ctx_init();
-    lib_errors.phase = errs->phase;
+    ErrorCtx lib_errors = error_ctx_scratch(errs);
     bool has_call = decorator_call(me, site, &dc, &sig, &lib_errors);
     Ty const* callee = ty_check_expr(me, decorator, has_call ? ty_signature_type(me, sig) : nullptr);
     Ty const* apparent = ty_apparent_type(me, callee);
@@ -2770,8 +2768,7 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, 
     }
     CallExpr call = { .callable = *decorator, .args = vec_expr_init() };
     CallInfo info = { .call = &call, .decorator = &dc, .call_span = site.at };
-    ErrorCtx collected = error_ctx_init();
-    collected.phase = errs->phase;
+    ErrorCtx collected = error_ctx_scratch(errs);
     Ty const* ret = resolve_call(me, callee, &info, site.at, &collected);
     // Whatever resolving the call reports goes under TS1238-1241's head: its elaboration nested one deeper, its related
     // information (the sub-errors with a span) still related

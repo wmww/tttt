@@ -641,7 +641,14 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
         cstr_drop(&message);
         return nullptr;
     }
-    if (!span_valid(span) || !span.source || span.source->is_stdlib) {
+    // Lib files aren't checked (the harness's skipDefaultLibCheck), but names in them still resolve lazily: with a
+    // partial `@lib` some of them don't exist
+    if (span_valid(span) && span.source && span.source->is_stdlib) {
+        log_debug("Error in a lib file dropped: TS", ts_code, ": ", message);
+        cstr_drop(&message);
+        return nullptr;
+    }
+    if (!span_valid(span) || !span.source) {
         log_error("Error added with invalid span: TS", ts_code, ": ", message);
         cstr_drop(&message);
         return nullptr;

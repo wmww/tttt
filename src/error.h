@@ -67,6 +67,9 @@ typedef struct ErrorCtx {
 } ErrorCtx;
 
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
+// An empty context to collect errors in for a while (to merge into `like` or drop): the phase is `like`'s, or
+// @ts-expect-error/@ts-ignore would miss the errors merged back
+static inline ErrorCtx error_ctx_scratch(ErrorCtx const* like) { return (ErrorCtx){ .phase = like->phase }; }
 void error_ctx_drop(ErrorCtx* me);
 // tsc's formatDiagnosticsWithColorAndContext (`--pretty`) of one diagnostic, lines ending in nl, file_name naming the
 // files of the diagnostic and its related information

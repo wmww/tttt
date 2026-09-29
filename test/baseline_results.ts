@@ -11921,17 +11921,17 @@ const baselines = {
         types: true,
     },
     'es6ImportDefaultBindingFollowedWithNamedImport1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'es6ImportDefaultBindingFollowedWithNamedImport1InEs5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'es6ImportDefaultBindingFollowedWithNamedImport1WithExport': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11941,7 +11941,7 @@ const baselines = {
         types: true,
     },
     'es6ImportDefaultBindingFollowedWithNamedImportDts1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21301,7 +21301,7 @@ const baselines = {
         types: true,
     },
     'missingMemberErrorHasShortPath': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22446,12 +22446,12 @@ const baselines = {
         types: true,
     },
     'moduleVisibilityTest3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'moduleVisibilityTest4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42856,7 +42856,7 @@ const baselines = {
         types: true,
     },
     'exportSpellingSuggestion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

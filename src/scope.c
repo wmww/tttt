@@ -2018,7 +2018,9 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         Symbol* next = resolve_if_pure_alias(found);
         if (!next || (!last && !(symbol_resolved_flags(next) & SYMBOL_NAMESPACE) && !next->is_placeholder)) {
             cstr qualified = symbol_fully_qualified_name(container);
-            error_ctx_error_d(errs, name, 2694, "Namespace '", qualified, "' has no exported member '", name, "'.");
+            if (!scope_report_misspelled_export(container, name, cstr_sv(&qualified), errs)) {
+                error_ctx_error_d(errs, name, 2694, "Namespace '", qualified, "' has no exported member '", name, "'.");
+            }
             cstr_drop(&qualified);
             return nullptr;
         }
@@ -2156,8 +2158,54 @@ static void check_es_module_symbol(PortItem const* item, Symbol const* module, S
         "allowSyntheticDefaultImports" : "esModuleInterop", "' flag and referencing its default export.");
 }
 
+// tsc's getSuggestedSymbolForNonexistentModule: an export of container with a name close to name's, reported as
+// TS2724 (tsc's errorNoModuleMemberSymbol and resolveEntityName). False if there is none
+bool scope_report_misspelled_export(Symbol const* container, Span name, csview container_name, ErrorCtx* errs) {
+    u32 const module_member = SYMBOL_VARIABLE | SYMBOL_FUNCTION | SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM |
+        SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE | SYMBOL_TYPE_ALIAS | SYMBOL_ALIAS;
+    u32 count = 0;
+    SymbolEntry* entries = symbol_collect_exports(container, &count);
+    csview* names = malloc(sizeof(csview) * (count + 1));
+    panic_if(!names, "out of memory");
+    for (u32 i = 0; i < count; i++) {
+        Symbol* symbol = entries[i].symbol;
+        csview candidate = entries[i].name;
+        bool fits = candidate.size && candidate.buf[0] != '"' && !csview_equals(candidate, "export=") &&
+            !symbol->is_placeholder && ((symbol->flags & module_member) || (symbol_resolved_flags(symbol) & module_member));
+        names[i] = fits ? candidate : (csview){0};
+    }
+    isize best = spelling_suggestion(port_item_name(name), names, count);
+    free(names);
+    if (best >= 0) {
+        csview suggestion = entries[best].name;
+        Error* error = error_ctx_error_d(errs, name, 2724, "'", container_name, "' has no exported member named '",
+            name, "'. Did you mean '", suggestion, "'?");
+        // (Its valueDeclaration: an alias has one, an interface or a type alias not)
+        Symbol const* symbol = entries[best].symbol;
+        for (u32 i = 0; error && i < symbol->decl_count; i++) {
+            if (!(symbol->decls[i].flags & (SYMBOL_VALUE | SYMBOL_ALIAS)) || !span_valid(symbol->decls[i].name)) continue;
+            error_add_related_d(error, symbol->decls[i].name, 2728, "'", suggestion, "' is declared here.");
+            break;
+        }
+    }
+    free(entries);
+    return best >= 0;
+}
+
 void scope_report_non_exported_member(PortItem const* item, Symbol const* module, ErrorCtx* errs) {
     Span name = item->source_name;
+    // (tsc's errorNoModuleMemberSymbol: a close enough export (for an identifier), then a default export)
+    if (span_valid(name) && name.sv.size && name.sv.buf[0] != '"' && name.sv.buf[0] != '\'') {
+        cstr module_name = module_name_for_error(module, item->module_ref, true);
+        bool reported = scope_report_misspelled_export(module, name, cstr_sv(&module_name), errs);
+        if (!reported && symbol_get_export(module, c_sv("default"))) {
+            error_ctx_error_d(errs, name, 2614, "Module '", module_name, "' has no exported member '", name,
+                "'. Did you mean to use 'import ", name, " from ", module_name, "' instead?");
+            reported = true;
+        }
+        cstr_drop(&module_name);
+        if (reported) return;
+    }
     cstr module_name = module_name_for_error(module, item->module_ref, true);
     SourceFile const* file = module->is_module && module->module ? module->module->file : nullptr;
     Symbol* local = file && file->scope ? symbol_table_get(&file->scope->locals, port_item_name(name)) : nullptr;
@@ -2202,7 +2250,7 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
 }
 
 // tsc's getTargetofModuleDefault: `import d from "m"`, `import { default as d }`, `export { default } from "m"`
-static Symbol* resolve_default_target(Symbol* me, PortItem* item, Symbol* module, Symbol* assigned, ErrorCtx* errs) {
+static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* assigned, ErrorCtx* errs) {
     // In Node.js a CommonJS module imported into an ES module always has a synthetic default, which overrides a real
     // `default` export (tsc's canHaveSyntheticDefault, getTargetofModuleDefault)
     ModuleKind module_kind = compiler_options()->module;
@@ -2323,7 +2371,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
         case PORT_REEXPORT_SPECIFIC: {
             if (!item->source_name.sv.size) return nullptr; // A missing name (`import { "x" }`, the parser's TS1003)
             if (csview_equals(port_item_name(item->source_name), "default")) {
-                return resolve_default_target(me, item, module, assigned, errs);
+                return resolve_default_target(item, module, assigned, errs);
             }
             // (tsc's getExternalModuleMember: `{ default as x }` with allowSyntheticDefaultImports is fine)
             if (!item->value_only && !(csview_equals(port_item_name(item->source_name), "default") &&
@@ -2367,7 +2415,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
         }
 
         case PORT_IMPORT_DEFAULT:
-            return resolve_default_target(me, item, module, assigned, errs);
+            return resolve_default_target(item, module, assigned, errs);
 
         case PORT_EXPORT_SPECIFIC: {
             Symbol* found = scope_resolve(my alias->scope, item->source_name.sv, SYMBOL_ANY_MEANING);

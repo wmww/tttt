@@ -774,6 +774,7 @@ struct Checker {
     Ty const* array_target;
     Ty const* auto_array; // ty_auto_array(), made with array_target
     Ty const* readonly_array_target;
+    struct Signature** unknown_signature; // tsc's unknownSignature (no parameters, returning errorType) as a list of one
     Ty const* global_types[13]; // GlobalType in relate.c: String, Number... looked up on first use
     bool global_types_resolved[13];
     u32 instantiation_depth;

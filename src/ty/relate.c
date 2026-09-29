@@ -5361,13 +5361,15 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
         // `Function` is called through tsc's unknownSignature: no parameters, returning errorType
         // (resolveUnionTypeMembers)
         if (function_type && members.data[i] == function_type) {
-            Signature* unknown = arena_new(&my arena, Signature);
-            *unknown = (Signature){
-                .state = LAZY_STATE_DONE, .ret_state = LAZY_STATE_DONE, .ret = ty_intrinsic(me, TY_ERROR), .predicate_done = true,
-            };
-            Signature** list = arena_new_n(&my arena, Signature*, 1);
-            list[0] = unknown;
-            lists[i] = list;
+            if (!my unknown_signature) {
+                Signature* unknown = arena_new(&my arena, Signature);
+                *unknown = (Signature){
+                    .state = LAZY_STATE_DONE, .ret_state = LAZY_STATE_DONE, .ret = ty_intrinsic(me, TY_ERROR), .predicate_done = true,
+                };
+                my unknown_signature = arena_new_n(&my arena, Signature*, 1);
+                my unknown_signature[0] = unknown;
+            }
+            lists[i] = my unknown_signature;
             lens[i] = 1;
             continue;
         }

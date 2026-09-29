@@ -24,11 +24,13 @@ void identifier_type_drop(IdentifierType* me) {
     }
 }
 
-// Member of a namespace by meaning, TS2694 if there is none. *found is the member as declared (maybe an alias)
+// Member of a namespace by meaning, TS2694 if there is none (TS2724 with a close enough name, when `suggest`: not in
+// an import type). *found is the member as declared (maybe an alias)
 static Symbol const* get_symbol_from_namespace(
     Symbol const* namespace,
     Span item_name,
     u32 meaning,
+    bool suggest,
     Symbol const** found,
     ErrorCtx* errs
 ) {
@@ -39,8 +41,10 @@ static Symbol const* get_symbol_from_namespace(
     if (!decl && meaning == SYMBOL_TYPE) decl = symbol_for_meaning(member, SYMBOL_ANY_MEANING); // TS2749 below
     if (!decl) {
         cstr qualified = symbol_fully_qualified_name(namespace);
-        error_ctx_error_d(errs, item_name, 2694,
-            "Namespace '", qualified, "' has no exported member '", item_name, "'.");
+        if (!suggest || !scope_report_misspelled_export(namespace, item_name, cstr_sv(&qualified), errs)) {
+            error_ctx_error_d(errs, item_name, 2694,
+                "Namespace '", qualified, "' has no exported member '", item_name, "'.");
+        }
         cstr_drop(&qualified);
         return nullptr;
     }
@@ -153,11 +157,11 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     }
     for_each (i, vec_span, &my namespaces) {
         Symbol const* found;
-        container = get_symbol_from_namespace(container, *i, SYMBOL_NAMESPACE, &found, errs);
+        container = get_symbol_from_namespace(container, *i, SYMBOL_NAMESPACE, false, &found, errs);
         if (!container || container->is_placeholder) return;
         vec_symbol_cptr_push(&my namespace_symbols, found);
     }
-    my target = get_symbol_from_namespace(container, my name, my import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, &my symbol, errs);
+    my target = get_symbol_from_namespace(container, my name, my import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, false, &my symbol, errs);
 }
 
 // tsc's resolveNameHelper at a class: a static member can't see the class's type parameters (TS2302)
@@ -177,7 +181,7 @@ static void check_static_type_parameter_reference(IdentifierType* me, Scope cons
 
 // tsc's getIntendedTypeFromJSDocTypeReference: what some names mean in JSDoc whatever is in scope. False for a name
 // that is looked up as usual
-static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names, ErrorCtx* errs) {
+static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names) {
     static const struct { const char* name; JsDocIntrinsic intrinsic; } intrinsics[] = {
         {"String", JSDOC_INTRINSIC_STRING}, {"Number", JSDOC_INTRINSIC_NUMBER}, {"BigInt", JSDOC_INTRINSIC_BIGINT},
         {"Boolean", JSDOC_INTRINSIC_BOOLEAN}, {"Void", JSDOC_INTRINSIC_VOID}, {"Undefined", JSDOC_INTRINSIC_UNDEFINED},
@@ -287,7 +291,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                         "' in '", *i, "' with '", *i, "[\"", right, "\"]'?");
                     decl = nullptr;
                 } else {
-                    decl = get_symbol_from_namespace(namespace, *i, SYMBOL_NAMESPACE, &found, errs);
+                    decl = get_symbol_from_namespace(namespace, *i, SYMBOL_NAMESPACE, true, &found, errs);
                 }
             }
             // Everything looked up in a placeholder is any
@@ -298,9 +302,9 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             vec_symbol_cptr_push(&my namespace_symbols, found);
         }
         if (namespace) {
-            my target = get_symbol_from_namespace(namespace, my name, SYMBOL_TYPE, &my symbol, errs);
+            my target = get_symbol_from_namespace(namespace, my name, SYMBOL_TYPE, true, &my symbol, errs);
         }
-    } else if (my jsdoc && jsdoc_lookup_intended(me, names, errs)) {
+    } else if (my jsdoc && jsdoc_lookup_intended(me, names)) {
     } else if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
             ThisRef this_ref = scope_get_this(names, true);

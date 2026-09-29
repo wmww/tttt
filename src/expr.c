@@ -2097,8 +2097,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                     bool past_end = false;
                     if (array_like && !has_default) {
                         Value key = value_number(index);
-                        ErrorCtx found = error_ctx_init();
-                        found.phase = errs->phase;
+                        ErrorCtx found = error_ctx_scratch(errs);
                         ty_check_property_access(checker, source, ty_literal(checker, &key), span_null, i->outer_span, false,
                             false, &found);
                         past_end = !error_ctx_empty(&found);
@@ -3584,8 +3583,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             if (my property->method_call || my property->assignment_target) {
                 expr_type = ty_widened_objects(current_checker, ty_widened_nullable(current_checker, expr_type));
             }
-            ErrorCtx found = error_ctx_init();
-            found.phase = errs->phase;
+            ErrorCtx found = error_ctx_scratch(errs);
             ty_check_property_access(
                 current_checker,
                 expr_type,
