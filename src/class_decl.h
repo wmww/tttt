@@ -136,6 +136,10 @@ typedef struct ClassDecl {
     // JavaScript: the type of an `@augments`/`@extends` tag naming the class `extends` names, which stands for the clause
     // (tsc's getEffectiveBaseTypeNode): where its type arguments are checked
     Span jsdoc_extends;
+    // JavaScript: an `@augments`/`@extends` tag naming something else than `extends` does (TS8023), or nothing, is the
+    // base anyway (tsc's getEffectiveBaseTypeNode): the tag's name as an expression (owned, null without such a tag),
+    // which class_base() takes instead of the clause
+    Expr* jsdoc_base;
     VecSpannedType implements; // The first `implements` clause's entity names (`A.B<T>`)
     // Heritage tsc parses but doesn't check (the parser reports checkGrammarClassDeclarationHeritageClauses' TS1172-
     // TS1175 about it): the elements after the base (`extends A, B`, a second `extends` clause) and those of later

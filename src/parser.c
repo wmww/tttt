@@ -4438,6 +4438,14 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
         Span name = augments->type.identifier->name;
         jsdoc_error(p, name, 8023, "JSDoc '@", augments->tag_name.sv, " ", name.sv, "' does not match the 'extends ",
             extends_name.sv, "' clause.");
+        if (!csview_contains(name.sv, ".")) {
+            if (class_decl->jsdoc_base) {
+                expr_drop(class_decl->jsdoc_base);
+                free(class_decl->jsdoc_base);
+            }
+            class_decl->jsdoc_base = c_new(Expr, name.sv.size ? expr_identifier((IdentifierExpr){ .name = name }) :
+                expr_implicit_any(name));
+        }
     }
     // `@implements {I}` (tsc's getEffectiveImplementsTypeNodes: in JavaScript the tags, not the clause)
     for_each (i, vec_jsdoc_tag, tags) {

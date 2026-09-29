@@ -51881,9 +51881,9 @@ const baselines = {
         types: true,
     },
     'extendsTagEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag1': {
         errors: true,
@@ -52026,9 +52026,9 @@ const baselines = {
         types: true,
     },
     'jsdocAugmentsMissingType': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsdocAugments_errorInExtendsExpression': {
         errors: true,
@@ -52038,7 +52038,7 @@ const baselines = {
     'jsdocAugments_nameMismatch': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocAugments_noExtends': {
         errors: true,

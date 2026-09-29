@@ -174,6 +174,10 @@ void class_decl_drop(ClassDecl* me) {
     vec_expr_drop(&my decorators);
     generic_drop(&my generic);
     expr_drop(&my extends);
+    if (my jsdoc_base) {
+        expr_drop(my jsdoc_base);
+        free(my jsdoc_base);
+    }
     vec_spanned_type_drop(&my implements);
     vec_expr_drop(&my unchecked_extends);
     vec_type_drop(&my unchecked_implements);
@@ -523,6 +527,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     while (head->tag == EXPR_PROPERTY && head->property->form == PROPERTY_EXPR_DOT) head = &head->property->expr;
     if (head->tag == EXPR_IDENTIFIER && !head->identifier.keyword) head->identifier.extends_entity = base;
     expr_lookup_names(&my extends, names, errs);
+    if (my jsdoc_base) expr_lookup_names(my jsdoc_base, names, errs);
     for_each (i, vec_spanned_type, &my implements) {
         type_lookup_names(&i->type, names, errs);
     }
@@ -1815,6 +1820,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
     ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
 
+    // (The base an `@augments` tag names instead: tsc checks its expression, checkClassLikeDeclaration)
+    if (my jsdoc_base) expr_typecheck(my jsdoc_base, errs);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         expr_typecheck(&my extends, errs);
         Ty const* extends_type = ty_expr_type(current_checker, &my extends);

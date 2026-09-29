@@ -516,6 +516,9 @@ src` finds the code-side markers; every significant one has an entry here.
   tsc would count the read (its containing function is the nested one).
 
 ## JavaScript and JSDoc (plan 26)
+- `ClassDecl.jsdoc_base` (a mismatched or empty `@augments`, tsc's getEffectiveBaseTypeNode) is only what
+  `class_base()` resolves; the other readers of `ClassDecl.extends` (base constructor checks, arity, display) still
+  see the clause. Dotted tag names (`@augments {ns.A}`) keep the clause.
 - JSDoc is consumed at parse time, not stored: `jsdoc_before()` re-parses the last comment before the host into
   transient `JsDocTag`s; JSDoc parse errors dropped (no TS8032). `jsdoc_bind_comments()` parses every
   `@typedef`/`@callback`/`@import` comment again and claims it by innermost statement list (claims from failed attempts

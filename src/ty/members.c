@@ -614,6 +614,8 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     SourceFile const* file = extends->inner_span.source;
     bool js = file && file->is_js;
     VecSpannedType const* written_args = nullptr;
+    // (A JavaScript `@augments` tag that names another base, or none, is the base: see ClassDecl.jsdoc_base)
+    if (class_decl->jsdoc_base) extends = class_decl->jsdoc_base;
     if (extends->tag == EXPR_GENERIC_PARAMS) {
         written_args = &extends->generic_params->params;
         extends = &extends->generic_params->expr;
@@ -1686,6 +1688,8 @@ static bool has_unresolved_base(Checker* me, Ty const* ty, u32 depth) {
         ClassDecl const* class_decl = node->node;
         if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) continue;
         if (!class_decl_base_arity_fits(class_decl)) continue; // (errorType: no base at all, not an unknown one)
+        // (An `@augments` tag without a name: errorType too)
+        if (class_decl->jsdoc_base && class_decl->jsdoc_base->tag == EXPR_IMPLICIT_ANY) continue;
         Ty const* base = nullptr;
         Symbol const* base_decl = nullptr;
         if (!class_base(me, class_decl, ctx, &base, &base_decl)) return true;
