@@ -1088,7 +1088,8 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
             case ' ':
             case '\t':
             case '\r':
-                parent->pos++;
+                // (Indentation: runs of spaces, taken without going around the switch for each)
+                do parent->pos++; while (*parent->pos == ' ');
                 break;
 
             case '\n':
