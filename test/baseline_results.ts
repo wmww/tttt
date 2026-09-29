@@ -23191,7 +23191,7 @@ const baselines = {
         types: true,
     },
     'nestedUnaryExpressionHang': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33878,7 +33878,7 @@ const baselines = {
     'asyncFunctionDeclaration10_es2017': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration11_es2017': {
         errors: true,
@@ -34183,7 +34183,7 @@ const baselines = {
     'asyncFunctionDeclaration10_es5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration11_es5': {
         errors: true,
@@ -34518,7 +34518,7 @@ const baselines = {
     'asyncFunctionDeclaration10_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration11_es6': {
         errors: true,
@@ -47183,7 +47183,7 @@ const baselines = {
     'commaOperatorWithoutOperand': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commaOperatorsMultipleOperators': {
         errors: true,
@@ -48503,7 +48503,7 @@ const baselines = {
     'deleteOperatorInvalidOperations': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deleteOperatorWithAnyOtherType': {
         errors: true,
@@ -48663,7 +48663,7 @@ const baselines = {
     'typeofOperatorInvalidOperations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofOperatorWithAnyOtherType': {
         errors: true,
@@ -48693,7 +48693,7 @@ const baselines = {
     'voidOperatorInvalidOperations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'voidOperatorWithAnyOtherType': {
         errors: true,
@@ -56653,7 +56653,7 @@ const baselines = {
     'parserErrorRecovery_Block1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_Block2': {
         errors: true,
@@ -56758,7 +56758,7 @@ const baselines = {
     'parserErrorRecovery_LeftShift1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_ModuleElement1': {
         errors: false,
@@ -56828,7 +56828,7 @@ const baselines = {
     'parserErrorRecovery_SwitchStatement1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_SwitchStatement2': {
         errors: true,
@@ -57098,7 +57098,7 @@ const baselines = {
     'parserUnaryExpression5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserUnaryExpression6': {
         errors: true,
@@ -57313,12 +57313,12 @@ const baselines = {
     'parserGreaterThanTokenAmbiguity12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity14': {
         errors: true,
@@ -57338,12 +57338,12 @@ const baselines = {
     'parserGreaterThanTokenAmbiguity17': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity18': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity19': {
         errors: true,
@@ -57353,7 +57353,7 @@ const baselines = {
     'parserGreaterThanTokenAmbiguity2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity20': {
         errors: true,
@@ -57363,7 +57363,7 @@ const baselines = {
     'parserGreaterThanTokenAmbiguity3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity4': {
         errors: true,
@@ -57383,12 +57383,12 @@ const baselines = {
     'parserGreaterThanTokenAmbiguity7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity9': {
         errors: true,
@@ -57773,7 +57773,7 @@ const baselines = {
     'parserMissingToken1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserMissingToken2': {
         errors: true,

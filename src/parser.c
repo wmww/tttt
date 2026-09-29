@@ -98,6 +98,9 @@ typedef struct ParserShared {
     // The end of the file's last token (tsc's full start of the end-of-file token): where a missing expression at the
     // end of the file is reported. The smallest position trivia was skipped from up to the end
     const char* eof_full_start;
+    // The trivia hop_whitespace_slow() skipped last: token_full_start()
+    const char* last_trivia_start;
+    const char* last_trivia_end;
     u32 errors_attempted; // Every parse_error() call, the ones dropped too (a position that already has one)
     // The parse errors of JSDoc comments (tsc's jsDocDiagnostics): kept whether or not the attempt that parsed the
     // comment succeeds (a comment is parsed by every attempt that parses its host), deduplicated at the end, and only
@@ -1099,6 +1102,8 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
 
 ws_end:
     parent->whitespace_end = parent->pos;
+    parent->shared->last_trivia_start = start;
+    parent->shared->last_trivia_end = parent->pos;
     if (!*parent->pos && !parent->shared->in_jsdoc &&
         (!parent->shared->eof_full_start || start < parent->shared->eof_full_start)) {
         parent->shared->eof_full_start = start;
@@ -7348,7 +7353,9 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     }
     expr_mark_binary_operand(left_and_ret);
     expr_mark_binary_operand(&right);
-    *left_and_ret = expr_binary_op(span_between(left_and_ret->outer_span, right.outer_span), c_new(BinaryOpExpr, {
+    // (A missing right operand ends the expression where its token's trivia starts, see expect_expr())
+    Span right_end = right.missing ? span_from_pos(&p) : right.outer_span;
+    *left_and_ret = expr_binary_op(span_between(left_and_ret->outer_span, right_end), c_new(BinaryOpExpr, {
         .left = *left_and_ret,
         .op = op,
         .right = right,
@@ -9101,12 +9108,31 @@ static bool expr_ends_with_arrow(Expr const* e) {
     return false;
 }
 
+// The full start of the token at the parser's position (tsc's getTokenFullStart, where it puts missing nodes): the
+// start of the trivia just hopped
+static const char* token_full_start(Parser* me) {
+    if (my shared->last_trivia_end == my pos && my shared->last_trivia_start) return my shared->last_trivia_start;
+    return my pos;
+}
+
+// Moves the parser back to the full start of the token at its position, so what it parses ends at the previous token
+static void unhop_trivia(Parser* me) {
+    const char* start = token_full_start(me);
+    if (start == my pos) return;
+    my pos = start;
+    my whitespace = WHITESPACE_NONE;
+    my whitespace_end = nullptr;
+}
+
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     if (parse_expr(parent, ctx, ret)) {
         return true;
     }
     expected_expression_error(parent);
     *ret = expr_implicit_any(span_from_pos(parent));
+    // What a missing expression ends ends at the next token's full start (tsc's missing node is there, and the
+    // baselines show it at the token's start, where its span is)
+    unhop_trivia(parent);
     // (At a decorator tsc has a MissingDeclaration, which is no expression: parseDecoratedExpression)
     ret->missing = *parent->pos != '@';
     // tsc's isStartOfExpression takes a binary operator for a missing left operand and goes on with the binary
