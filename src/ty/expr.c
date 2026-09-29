@@ -1184,7 +1184,8 @@ static void assign_contextual_signature_as(
         if (i->initializer.value.tag != EXPR_IMPLICIT_ANY) {
             // An initializer that doesn't fit the contextual type but is wider than it wins (tsc's
             // assignContextualParameterTypes): `(max = 3) => {}` against `(max: 1 | 2) => void` takes a number
-            Ty const* initializer = ty_expr_type(me, &i->initializer.value);
+            // (Checked with that contextual type: tsc's checkDeclarationInitializer, getContextuallyTypedParameterType)
+            Ty const* initializer = ty_check_expr(me, &i->initializer.value, type);
             if (!ty_is_related(me, initializer, type, TY_RELATION_ASSIGNABLE)) {
                 Ty const* widened = ty_widened_for_declaration(me, initializer, true);
                 if (ty_is_related(me, type, widened, TY_RELATION_ASSIGNABLE)) type = widened;

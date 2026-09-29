@@ -9256,9 +9256,9 @@ const baselines = {
         types: true,
     },
     'defaultArgsInFunctionExpressions': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultArgsInOverloads': {
         errors: true,
