@@ -219,8 +219,8 @@ static void builder_add_interface_member(
                     name = ty_literal_name(me, key);
                     if (!name) break;
                 }
-                bool is_method = i->key.tag == INTERFACE_KEY_NAME && (i->is_method || i->key.name_is_member_function) &&
-                    i->type.tag == TYPE_CALLABLE;
+                bool is_method = (i->is_method || (i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_member_function)) &&
+                    i->type.tag == TYPE_CALLABLE && !i->computed_accessor;
                 if (is_method && builder->decl_group) set_decl_group(me, i->type.callable->function, builder->decl_group);
                 Prop* existing = builder_find_prop(builder, name);
                 if (existing && i->computed_accessor && i->key.tag == INTERFACE_KEY_EXPR) {

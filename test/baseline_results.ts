@@ -42396,9 +42396,9 @@ const baselines = {
         types: true,
     },
     'for-of29': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of3': {
         errors: true,
@@ -47073,7 +47073,7 @@ const baselines = {
     'instanceofOperatorWithInvalidOperands.es2015': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instanceofOperatorWithInvalidOperands': {
         errors: true,
@@ -48323,7 +48323,7 @@ const baselines = {
     'typeGuardsWithInstanceOfBySymbolHasInstance': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typePredicateASI': {
         errors: true,
@@ -59943,7 +59943,7 @@ const baselines = {
     'parserSymbolProperty8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserSymbolProperty9': {
         errors: true,
