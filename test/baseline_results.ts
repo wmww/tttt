@@ -41278,12 +41278,12 @@ const baselines = {
     'computedPropertyNamesContextualType6_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNamesContextualType6_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNamesContextualType7_ES5': {
         errors: true,

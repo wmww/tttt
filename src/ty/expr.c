@@ -3027,7 +3027,16 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
         if ((prop->flags & PROP_OPTIONAL) && (prop->flags & PROP_METHOD)) return ty_optional_prop_type(me, prop_type(me, prop));
         return prop_type(me, prop);
     }
-    // A computed key that made no property
+    // A computed key that made no property: its part of an index signature, as the literal checked it (tsc's
+    // checkPropertyAssignment, whose literal is kept by the contextual type: `[k]: true` for `T` inferred as boolean)
+    if (item->computed_key && (type->flags & TYF_OBJECT) && item->tag == OBJECT_ITEM_PROPERTY) {
+        Members const* members = ty_members(me, type);
+        for (u32 i = 0; i < members->index_count; i++) {
+            for (u32 j = 0; j < members->index[i].component_count; j++) {
+                if (members->index[i].components[j].name == item->computed_key) return members->index[i].components[j].type;
+            }
+        }
+    }
     Ty const* value = ty_expr_type(me, &item->value);
     if (item->tag == OBJECT_ITEM_GETTER || item->tag == OBJECT_ITEM_SETTER) {
         Signature const* sig = single_call_signature(me, value);
