@@ -2621,7 +2621,7 @@ const baselines = {
         types: true,
     },
     'booleanAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

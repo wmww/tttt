@@ -2712,8 +2712,9 @@ static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source,
 static Ternary object_related(
     Checker* me, RelationState* st, Ty const* original, Ty const* source, Ty const* target, bool report, bool source_is_apparent
 ) {
-    Ternary result = props_related(me, st, source, target, report, source_is_apparent);
+    // (A primitive's apparent type explains nothing: tsc's reportStructuralErrors)
     if (source_is_apparent) report = false;
+    Ternary result = props_related(me, st, source, target, report, source_is_apparent);
     if (result) result &= signatures_related(me, st, source, target, false, report);
     if (result) result &= signatures_related(me, st, source, target, true, report);
     bool primitive = source_is_apparent && !(original->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION | TYF_TYPE_PARAM |
