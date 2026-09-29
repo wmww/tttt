@@ -2860,6 +2860,11 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                     type = declared;
                     break;
                 }
+                // `{ x = 1 }` outside a destructuring target (TS1312) is typed by its default (tsc's checkObjectLiteral)
+                if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default && !expr->assignment_pattern) {
+                    type = check_for_mutable_location(me, i->shorthand_default, member_ctx);
+                    break;
+                }
                 type = check_for_mutable_location(me, &i->value, member_ctx);
                 break;
         }

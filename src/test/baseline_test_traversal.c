@@ -2103,8 +2103,14 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     bool method = i->value.tag == EXPR_FUNCTION && i->tag != OBJECT_ITEM_PROPERTY && i->tag != OBJECT_ITEM_SHORTHAND;
                     u32 saved = method ? baseline_test_case_enter_generic(ctx, &i->value.function->generic) : 0;
                     // (A method's symbol has its own type, whatever JSDoc `@type` the object literal gives the member)
-                    baseline_test_case_add_type(ctx, i->name_span, method && i->jsdoc_type ?
-                        ty_function_type(current_checker, i->value.function) : ty_object_literal_member_type(current_checker, me, i));
+                    // (`{ x = 1 }` outside a destructuring target: the name's symbol is typed by the name as an expression,
+                    // tsc's getTypeOfVariableOrParameterOrProperty, whatever the default made the literal's property)
+                    if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default && !my assignment_pattern) {
+                        baseline_test_case_add_type(ctx, i->name_span, ty_mutable_location_type(current_checker, &i->value, nullptr));
+                    } else {
+                        baseline_test_case_add_type(ctx, i->name_span, method && i->jsdoc_type ?
+                            ty_function_type(current_checker, i->value.function) : ty_object_literal_member_type(current_checker, me, i));
+                    }
                     if (method) baseline_test_case_leave_generic(ctx, saved);
                 }
                 if (i->computed_key) {

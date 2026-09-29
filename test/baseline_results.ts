@@ -28073,12 +28073,12 @@ const baselines = {
     'shorthandPropertyAssignmentsInDestructuring': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'shorthandPropertyAssignmentsInDestructuring_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'shorthandPropertyUndefined': {
         errors: true,
@@ -47658,7 +47658,7 @@ const baselines = {
     'objectLiteralErrors': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'objectLiteralGettersAndSetters': {
         errors: true,
