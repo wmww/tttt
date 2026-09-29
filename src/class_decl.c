@@ -434,6 +434,17 @@ u32 class_item_symbol_items(ClassItem const* me, VecClassItem const* items, Clas
 }
 
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
+    // tsc's setNodeLinksForPrivateIdentifierScope and checkWeakMapSetCollision: private members are emitted through
+    // WeakMap and WeakSet up to ES2021, which a runtime declaration of those names around the class would shadow
+    CompilerOptions const* options = compiler_options();
+    if (options->target <= SCRIPT_TARGET_ES2021 && !options->no_emit && !names->ambient) {
+        bool private_names = false;
+        for_each (i, vec_class_item, &my items) private_names |= span_valid(class_item_private_name(i));
+        if (private_names) {
+            report_emit_name_collisions(names, "WeakMap", true);
+            report_emit_name_collisions(names, "WeakSet", true);
+        }
+    }
     if (vec_expr_size(&my decorators)) {
         Scope* scope = scope_new(names, SCOPE_BLOCK);
         scope->decorator_of = me;

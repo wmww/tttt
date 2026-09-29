@@ -74,11 +74,18 @@ static bool reflect_decl_is_runtime(Scope const* scope, SymbolDecl const* decl) 
 static void check_reflect_collisions(Scope const* names) {
     CompilerOptions const* options = compiler_options();
     if (options->target < SCRIPT_TARGET_ES2015 || options->target > SCRIPT_TARGET_ES2021 || options->no_emit) return;
+    report_emit_name_collisions(names, "Reflect", false);
+}
+
+// The runtime declarations named `name` in the block scopes around `names` (tsc's needCollisionCheckForIdentifier
+// against a NodeCheckFlags set on every enclosing block scope container), in the scopes' own files: Reflect (TS2818,
+// not at a script's top level) or WeakMap/WeakSet (TS18027)
+void report_emit_name_collisions(Scope const* names, char const* name, bool private_names) {
     for (Scope const* scope = names; scope; scope = scope->parent) {
-        if (scope->kind == SCOPE_GLOBAL || scope->kind == SCOPE_SCRIPT) break;
-        Symbol const* found = symbol_table_get(&scope->locals, csview_from("Reflect"));
+        if (scope->kind == SCOPE_GLOBAL || (!private_names && scope->kind == SCOPE_SCRIPT)) break;
+        Symbol const* found = symbol_table_get(&scope->locals, csview_from(name));
         if (!found && (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE) && scope->container) {
-            found = symbol_table_get(scope->container->exports, csview_from("Reflect"));
+            found = symbol_table_get(scope->container->exports, csview_from(name));
         }
         if (!found) continue;
         for (u32 i = 0; i < found->decl_count; i++) {
@@ -98,8 +105,13 @@ static void check_reflect_collisions(Scope const* names) {
                     at = span_between(item->source_name, item->decl_name);
                 }
             }
-            error_ctx_error_d(scope->errs, at, 2818, "Duplicate identifier 'Reflect'. Compiler reserves name ",
-                "'Reflect' when emitting 'super' references in static initializers.");
+            if (private_names) {
+                error_ctx_error_d(scope->errs, at, 18027, "Compiler reserves name '", name,
+                    "' when emitting private identifier downlevel.");
+            } else {
+                error_ctx_error_d(scope->errs, at, 2818, "Duplicate identifier 'Reflect'. Compiler reserves name ",
+                    "'Reflect' when emitting 'super' references in static initializers.");
+            }
         }
     }
 }

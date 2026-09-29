@@ -323,6 +323,9 @@ void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs);
 typedef struct ForEachLoopStatement ForEachLoopStatement;
 void expr_flow_assign_for_each(Expr const* me, Scope* names, ForEachLoopStatement const* for_each);
 Ty const* expr_evaluate_type(Expr const* me); // Should only be used by LazyType
+// Emit collisions of runtime declarations named `name` around `names` (expr.c): TS2818 (Reflect) or, with
+// `private_names`, TS18027 (WeakMap/WeakSet)
+void report_emit_name_collisions(struct Scope const* names, char const* name, bool private_names);
 void expr_typecheck(Expr const* me, ErrorCtx* errs);
 // `[a, b]` or `{ a }` as the target of an assignment of `source` (for..of): each target gets what it destructures to
 void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx* errs);
