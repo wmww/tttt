@@ -10986,8 +10986,9 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                 parse_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(comma_span);
             } else if (vec_initialized_binding_is_empty(&ret->initializers)) {
-                if (ret->keyword == VAR_INIT_LET && !empty_for_of) {
-                    // let can also be a variable name, fail so we then attempt to parse it as such
+                if (ret->keyword == VAR_INIT_LET && !empty_for_of && !in_for) {
+                    // let can also be a variable name, fail so we then attempt to parse it as such (not in a `for`,
+                    // where tsc's parseForOrForInOrForOfStatement always takes `let` for a declaration list)
                     list_leave(&p, saved_context);
                     variable_statement_drop(ret);
                     return parse_fail(&p);

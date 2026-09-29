@@ -18621,14 +18621,14 @@ const baselines = {
         types: true,
     },
     'invalidLetInForOfAndForIn_ES5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'invalidLetInForOfAndForIn_ES6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'invalidOptionalChainFromNewExpression': {
         errors: true,
