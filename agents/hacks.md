@@ -315,6 +315,14 @@ src` finds the code-side markers; every significant one has an entry here.
 - `ty_unresolved`: unresolved type names are intrinsics with `TYF_ANY | TYF_ERROR` interned by name.
 
 ## Relations (`ty/relate.c`)
+- Distributive constraint of a conditional source (`structured_related`'s TY_CONDITIONAL case): tsc takes the check
+  type's immediate constraint (getConstraintOfType: `(any[] & T)[K]` -> `(any[] & T)[keyof T]`), tttt's
+  `distributive_constraint()` its base constraint. The relation tries the base one first, then the immediate one
+  (`distributive_constraint_as(.., true)`, cached per conditional) only when a base one exists (a stand-in for tsc's
+  hasNonCircularBaseConstraint: without that gate react-hook-form's Path types in bulletproof-react hit TS2589), and
+  reports through the immediate one like tsc. `base_constraint()` and the other users keep the base version: the
+  immediate one there stops at unions of conditional types (flow's constraint substitution showed them). Real fix:
+  tsc's constraint functions (getConstraintOfType vs getBaseConstraintOfType) as two separate, cached functions.
 - Error reporting (plan 34): `flush_incompatible()` reads the property name back out of its message; `headMessage`
   approximated by `RelationState.at_top`; `report_truncate()` doesn't restore `skipped_source/target`,
   `override_next_head`. `intersection_props_related`'s TS2741 member choice fitted to one probe

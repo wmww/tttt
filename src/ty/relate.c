@@ -2877,10 +2877,60 @@ static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
 // getConstraintOfDistributiveConditionalType): InstanceType<T> for `T extends typeof C` is C, `Extract<keyof T, string>`
 // is string. The root's check type parameter is what gets mapped, so an instantiated check type like `keyof T` has its
 // constraint distributed over. Null if that's no different
+// The conditional types a root instantiated to (one, or a distribution's union of them) as instances of the alias
+// `like` goes by (tsc keeps the alias on the root, so they print as `ReturnType<T[keyof T]>`). Only when the alias's
+// type parameters are what the root's mapper maps (checked on `like`)
+static Ty const* realias_conditional_instances(Checker* me, Ty const* ty, Ty const* like, Ty const* root) {
+    TyList params = ty_alias_type_params(me, like->alias);
+    if (params.len != like->alias_args.len || !params.len || params.len > 16) return ty;
+    for (u32 i = 0; i < params.len; i++) {
+        if (ty_instantiate(me, params.data[i], like->conditional.mapper) != like->alias_args.data[i]) return ty;
+    }
+    TyList members = ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
+    Ty const** realiased = malloc(sizeof(Ty const*) * members.len);
+    panic_if(!realiased, "out of memory");
+    bool changed = false;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        realiased[i] = member;
+        if (member->kind != TY_CONDITIONAL || member->alias || member->conditional.root != root) continue;
+        Ty const* args[16];
+        for (u32 j = 0; j < params.len; j++) args[j] = ty_instantiate(me, params.data[j], member->conditional.mapper);
+        realiased[i] = ty_realias(me, member, like->alias, (TyList){ .data = args, .len = params.len });
+        changed = true;
+    }
+    Ty const* ret = !changed ? ty : ty->kind == TY_UNION ? ty_union(me, realiased, members.len, nullptr, (TyList){0}) : realiased[0];
+    free(realiased);
+    return ret;
+}
+
+static Ty const* distributive_constraint_as(Checker* me, Ty const* conditional, u32 depth, bool immediate);
 static Ty const* distributive_constraint(Checker* me, Ty const* conditional, u32 depth) {
+    return distributive_constraint_as(me, conditional, depth, false);
+}
+
+// `immediate`: the check type's constraint is tsc's getConstraintOfType, one step (an indexed access's is
+// getConstraintFromIndexedAccess, which the relation goes on from: `(any[] & T)[K]` -> `(any[] & T)[keyof T]`). Else
+// its base constraint (HACK: what base_constraint() and the other users took before the relation did it tsc's way;
+// the immediate one there makes base_constraint() stop at a union of conditional types, see hacks.md)
+static Ty const* distributive_constraint_uncached(Checker* me, Ty const* conditional, u32 depth, bool immediate);
+static Ty const* distributive_constraint_as(Checker* me, Ty const* conditional, u32 depth, bool immediate) {
+    if (!conditional->conditional.distributive) return nullptr;
+    if (!immediate) return distributive_constraint_uncached(me, conditional, depth, false);
+    // (Cached like tsc's resolvedConstraintOfDistributive: the relation asks again and again)
+    u64 key[2] = { KEY_IMMEDIATE_DISTRIBUTIVE, conditional->id };
+    Ty const* cached = intern_get(&my links, key, 2);
+    if (cached) return cached == conditional ? nullptr : cached;
+    Ty const* ret = distributive_constraint_uncached(me, conditional, depth, true);
+    *intern_slot(me, &my links, key, 2) = ret ? ret : conditional;
+    return ret;
+}
+
+static Ty const* distributive_constraint_uncached(Checker* me, Ty const* conditional, u32 depth, bool immediate) {
     if (!conditional->conditional.distributive) return nullptr;
     Ty const* check = conditional->conditional.check;
     Ty const* check_constraint = check->kind == TY_TYPE_PARAM ? ty_param_constraint(me, check) :
+        immediate && check->kind == TY_INDEXED ? simplified_or_constraint(me, check) :
         (check->flags & TYF_DEFERRED) ? base_constraint(me, check, depth + 1) : nullptr;
     if (!check_constraint || check_constraint == check) return nullptr;
     Ty const* root = conditional->conditional.root ? conditional->conditional.root : conditional;
@@ -2902,6 +2952,7 @@ static Ty const* distributive_constraint(Checker* me, Ty const* conditional, u32
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
     free(sources);
     Ty const* instantiated = ty_instantiate(me, root, mapper);
+    if (conditional->alias && immediate) instantiated = realias_conditional_instances(me, instantiated, conditional, root);
     return instantiated != conditional && !(instantiated->flags & TYF_NEVER) ? instantiated : nullptr;
 }
 
@@ -4071,10 +4122,23 @@ static Ternary structured_related_members(
             if (related) return related;
             // Through the distributive constraint (not to another conditional type, like in tsc)
             if (target->kind != TY_CONDITIONAL) {
+                // tsc's is the immediate one (distributive_constraint_as()). HACK: the base constraint one first, which
+                // is cheaper when it works: the immediate one alone made react-hook-form's paths (bulletproof-react)
+                // TS2589, see hacks.md
                 Ty const* constraint = distributive_constraint(me, source, 0);
                 if (constraint) {
                     related = is_related_to_side(me, st, constraint, target, false, 2);
                     if (related) return related;
+                }
+                // (Only with a base constraint, like tsc's hasNonCircularBaseConstraint gate)
+                Ty const* immediate = constraint ? distributive_constraint_as(me, source, 0, true) : nullptr;
+                if (immediate && immediate != constraint) {
+                    related = is_related_to_side(me, st, immediate, target, false, 2);
+                    if (related) return related;
+                }
+                // (What tsc reports: the distributive constraint's failure replaces the default one's)
+                if (report && (immediate || constraint)) {
+                    return is_related_to_side(me, st, immediate ? immediate : constraint, target, report, 2);
                 }
             }
             related = is_related_to_side(me, st, true_branch, target, report, 2);

@@ -51,6 +51,7 @@ enum {
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE/TYPE_IDENTIFIER node, the pairs of the mapper it mentions) -> Ty
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
     KEY_SIMPLIFIED, // (indexed access type id, writing) -> ty_simplified() of it; itself while in flight (relate.c)
+    KEY_IMMEDIATE_DISTRIBUTIVE, // (conditional type id) -> distributive_constraint_as(immediate) of it, the conditional itself for none (relate.c)
     KEY_IMPLIED_CONSTRAINT, // TernaryType -> TyImplied of its (unary tuple-unwrapped) check and extends types (lower.c)
     KEY_RESTRICTIVE_PARAM, // type parameter id -> its unconstrained stand-in (conditional.c)
     KEY_TYPE_VARIABLE_REDUCTION, // (type variable id, primitive id) -> reduce_type_variable_intersection (checker.c)

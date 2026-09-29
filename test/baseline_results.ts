@@ -14881,7 +14881,7 @@ const baselines = {
         types: false,
     },
     'genericConditionalConstrainedToUnknownNotAssignableToConcreteObject': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
