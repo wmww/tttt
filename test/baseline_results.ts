@@ -41528,7 +41528,7 @@ const baselines = {
     'declarationsAndAssignments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringArrayBindingPatternAndAssignment1ES5': {
         errors: true,

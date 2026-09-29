@@ -3082,7 +3082,9 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* operand = ty_expr_type(me, i->spread);
             if (as_tuple) {
                 flags[count] = TUPLE_ELEMENT_REST;
-                if (expr->assignment_pattern && !ty_is_array(me, operand) && !ty_is_tuple(operand) && !(operand->flags & TYF_ANY)) {
+                if (expr->assignment_pattern && !ty_is_array(me, operand) && !ty_is_tuple(operand) && !(operand->flags & TYF_ANY) &&
+                    !(operand->kind == TY_DECLARED && operand->declared.kind == TY_DECLARED_TUPLE_TARGET)
+                ) {
                     // A rest target of a destructuring assignment: its number index signature, else what it iterates,
                     // else unknown (tsc's checkArrayLiteral with inDestructuringPattern)
                     Ty const* apparent = ty_apparent_type(me, operand);
@@ -3093,7 +3095,9 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
                     elements[count++] = ty_array(me, element, false);
                     continue;
                 }
-                elements[count++] = ty_is_array(me, operand) || ty_is_tuple(operand) ?
+                // (The empty tuple is the tuple target, which spreads nothing)
+                bool empty_tuple = operand->kind == TY_DECLARED && operand->declared.kind == TY_DECLARED_TUPLE_TARGET;
+                elements[count++] = ty_is_array(me, operand) || ty_is_tuple(operand) || empty_tuple ?
                     operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);
             } else {
                 elements[count++] = ty_expr_type(me, i);
