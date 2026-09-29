@@ -25361,9 +25361,9 @@ const baselines = {
         types: false,
     },
     'parseInvalidNames': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseInvalidNonNullableTypes': {
         errors: true,

@@ -5285,8 +5285,7 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
     list_leave(p, saved_clauses);
 }
 
-// modified: modifiers came first (they commit to a declaration)
-static bool parse_interface_decl(Parser* parent, bool modified, InterfaceDecl* ret) {
+static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -5296,7 +5295,7 @@ static bool parse_interface_decl(Parser* parent, bool modified, InterfaceDecl* r
     hop_whitespace(&p);
     // tsc's isStartOfDeclaration: `interface` followed by a name on the same line, else `interface` is an expression
     // (`interface { }`: TS1438 from parseErrorForMissingSemicolonAfter, `interface & {}` an expression)
-    if (!modified && (p.whitespace == WHITESPACE_NEWLINE || !tok_is_identifier(tok_peek(&p)))) {
+    if (p.whitespace == WHITESPACE_NEWLINE || !tok_is_identifier(tok_peek(&p))) {
         return parse_fail(&p);
     }
 
@@ -11732,12 +11731,10 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
         vec_span_drop(&names);
         Value val;
         Anchor name_anchor = anchor(&p);
-        if (is_module_keyword && *p.pos != '"' && *p.pos != '\'') {
-            // `module` is only a contextual keyword, tsc parses `module {}` as an expression followed by a block
+        if (*p.pos != '"' && *p.pos != '\'') {
+            // tsc's isStartOfDeclaration wants a name or a string: `namespace {}`, `module 100 {}` are expressions
+            // followed by a block (TS1437, TS2819: report_missing_semicolon_after_identifier())
             return parse_fail(&p);
-        } else if (*p.pos == '{') {
-            parse_error(&p, span_from_token(&p), 1437, "Namespace must be given a name.");
-            ret->name = span_from(name_anchor);
         } else if (parse_literal(&p, &val)) {
             bool is_string = val.tag == VALUE_STRING;
             if (is_string && is_module_keyword) {
@@ -11988,7 +11985,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .type = parsed.type_decl,
             },
         };
-    } else if (parse_interface_decl(&p, vec_spanned_modifier_size(&modifiers.spanned) > 0, &parsed.interface_decl)) {
+    } else if (parse_interface_decl(&p, &parsed.interface_decl)) {
         modified.kind = MODIFIED_INTERFACE;
         parsed.interface_decl.full_span = span_from(a);
         *ret = (Statement){
