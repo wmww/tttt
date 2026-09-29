@@ -110,7 +110,21 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Symbol const* member = table ? symbol_table_get(table, name.sv) : nullptr;
     // (Not when the class body declares it)
     ClassDecl const* class_decl = this->target ? symbol_find_node(this->target, SYMBOL_DECL_CLASS) : nullptr;
-    if (class_decl && class_decl_find_member(class_decl, name.sv, this->this_kind == THIS_CLASS_STATIC)) return;
+    ClassItem const* item = class_decl ? class_decl_find_member(class_decl, name.sv, this->this_kind == THIS_CLASS_STATIC) : nullptr;
+    if (item) {
+        // A method declared after it replaces the symbol the assignment declared (tsc's isReplaceableByMethod), which
+        // the name keeps, alone
+        if (item->tag == CLASS_ITEM_METHOD && item->span.source == left->outer_span.source &&
+            span_start_ptr(item->span) > span_start_ptr(left->outer_span) && member &&
+            ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)
+        ) {
+            ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+                .span = left->property->prop.outer_span, .text = symbol_text(ctx, member),
+                .declarations = vec_span_single(left->outer_span),
+            };
+        }
+        return;
+    }
     bool declares = false;
     for (u32 i = 0; member && i < member->decl_count; i++) declares |= span_eq(member->decls[i].full, left->outer_span);
     if (declares) add_symbol_override(ctx, left->property->prop.outer_span, member);
