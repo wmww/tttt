@@ -10686,6 +10686,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
             if (hop_char(&p, '(')) {
                 hop_whitespace(&p);
 
+                const char* binding_start = p.pos;
                 if (!parse_binding_content_or_private_name(&p, &try_catch.catch_var, 18029,
                         "Private identifiers are not allowed in variable declarations.")) {
                     parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
@@ -10693,6 +10694,12 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                 }
                 hop_whitespace(&p);
                 if (parse_binding_type(&p, &try_catch.catch_var)) hop_whitespace(&p);
+                if (p.shared->source->is_js && !try_catch.catch_var.has_explicit_type) {
+                    // `catch (/** @type {unknown} */ e)`: the declaration's JSDoc (a VariableDeclaration to tsc)
+                    VecJsDocTag tags = {0};
+                    if (jsdoc_before(&p, binding_start, &tags)) jsdoc_apply_type_to_binding(&tags, &try_catch.catch_var);
+                    vec_jsdoc_tag_drop(&tags);
+                }
                 if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
                     // tsc parses a variable declaration there, initializer included (checkGrammarCatchClause:
                     // TS1197 on it)
