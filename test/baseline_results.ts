@@ -10906,7 +10906,7 @@ const baselines = {
         types: true,
     },
     'emptyGenericParamList': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -405,6 +405,16 @@ Span identifier_type_span(IdentifierType const* me) {
         end = span_end_ptr(vec_spanned_type_at(&my generic_params, arg_count - 1)->span);
         while (end < limit && *end != '>') end++;
         if (end < limit) end++;
+    } else {
+        // An empty `<>` (TS1099) is still part of the reference
+        char const* limit = cstr_str(&my name.source->contents) + cstr_size(&my name.source->contents);
+        char const* q = end;
+        while (q < limit && (*q == ' ' || *q == '\t')) q++;
+        if (q < limit && *q == '<') {
+            q++;
+            while (q < limit && (*q == ' ' || *q == '\t')) q++;
+            if (q < limit && *q == '>') end = q + 1;
+        }
     }
     return span_make(my name.source, start, end);
 }
