@@ -1298,7 +1298,12 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         }
         bool is_abstract = !is_constructor && item->method.is_abstract;
         bool later = false;
-        for (isize j = i + 1; j < count && !later; j++) later = same_member(item, vec_class_item_at(&my items, j));
+        // (Of the same symbol: a static and an instance method of one name are two)
+        for (isize j = i + 1; j < count && !later; j++) {
+            ClassItem const* other = vec_class_item_at(&my items, j);
+            later = same_member(item, other) && (is_constructor || other->tag != CLASS_ITEM_METHOD ||
+                other->method.is_static == item->method.is_static);
+        }
         // A body missing its `{` (tsc's missing Block) is no body when another declaration of the member follows
         // (nodeIsPresent), but is one for the last declaration's check (`!lastSeenNonAmbientDeclaration.body`)
         if (func->body_missing && !later) continue;

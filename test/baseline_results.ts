@@ -34731,7 +34731,7 @@ const baselines = {
         types: true,
     },
     'classAbstractMixedWithModifiers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
