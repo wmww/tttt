@@ -33643,7 +33643,7 @@ const baselines = {
     'ambientShorthand': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientShorthand_declarationEmit': {
         errors: true,
@@ -52883,12 +52883,12 @@ const baselines = {
     'correctlyMarkAliasAsReferences1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'correctlyMarkAliasAsReferences2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'correctlyMarkAliasAsReferences3': {
         errors: true,
@@ -52898,7 +52898,7 @@ const baselines = {
     'correctlyMarkAliasAsReferences4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inlineJsxAndJsxFragPragma': {
         errors: true,
