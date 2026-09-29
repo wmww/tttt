@@ -2214,7 +2214,6 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
             bool exact = compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks;
             if (type && exact && (all.props[j].flags & PROP_OPTIONAL)) {
                 all.props[j].type = ty_remove_missing(me, type, true);
-                all.props[j].asserted = nullptr;
                 literal_builder_add(out, all.props[j]);
                 continue;
             }
@@ -2222,7 +2221,8 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
             if (type) {
                 all.props[j].type = (all.props[j].flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks ?
                     optional_type(me, type) : type;
-                all.props[j].asserted = nullptr;
+                // (`asserted` stays: the types baseline reuses it where it still says the same, like tsc does the
+                // annotation of the intersection property's first declaration)
             }
             literal_builder_add(out, all.props[j]);
         }
@@ -2287,8 +2287,10 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         if (l->type && (exact ? l->type : ty_without_undefined(me, l->type)) != right_type) {
             Ty const* both[2] = { l->type, right_type };
             merged.type = ty_union_subtype_reduced(me, both, 2);
-            merged.asserted = nullptr;
         }
+        // (tsc's merged symbol has both declarations: the types baseline reuses the first annotation that still says
+        // the same)
+        if (!merged.asserted) merged.asserted = r->asserted;
         u32 count = l->decl_span_count + r->decl_span_count;
         Span* spans = arena_new_n(&my arena, Span, count ? count : 1);
         for (u32 k = 0; k < l->decl_span_count; k++) spans[k] = l->decl_spans[k];

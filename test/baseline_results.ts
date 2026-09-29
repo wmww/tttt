@@ -28898,7 +28898,7 @@ const baselines = {
     'spreadIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadIntersectionJsx': {
         errors: true,
@@ -28923,7 +28923,7 @@ const baselines = {
     'spreadObjectPermutations(exactoptionalpropertytypes=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadObjectWithIndexDoesNotAddUndefinedToLocalIndex': {
         errors: true,
@@ -59958,7 +59958,7 @@ const baselines = {
     'noUncheckedIndexedAccessDestructuring': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'library-reference-1': {
         errors: true,
@@ -65343,7 +65343,7 @@ const baselines = {
     'spreadOverwritesProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadOverwritesPropertyStrict': {
         errors: true,
@@ -65373,7 +65373,7 @@ const baselines = {
     'spreadUnion4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralCheckedInIf01': {
         errors: true,

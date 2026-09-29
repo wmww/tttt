@@ -2052,6 +2052,14 @@ static bool pattern_names(Checker* me, Binding const* pattern, Atom const* name)
     return false;
 }
 
+// The annotation a property was declared with, which the types baseline reuses for a copy of it where it still says
+// the same (ObjectLiteralProp.asserted)
+static TypeNode const* prop_annotation(Prop const* prop) {
+    PropDecl const* decl = prop->decl;
+    if (decl->asserted) return decl->asserted;
+    return decl->node && decl->node->parsed && !decl->lazy && !decl->function && !decl->overload_count && !decl->symbol ? decl->node : nullptr;
+}
+
 // The rest of an intersection: the properties of all of its members, each of the intersection's type for it
 static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding const* pattern) {
     TyList parts = source->composite.types;
@@ -2085,6 +2093,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding c
                 .decl_span_count = origin ? origin->decl->decl_span_count : 0,
                 .name_is_value = origin && origin->decl->name_is_value,
                 .name_form = found.prop ? ty_prop_name_form_of(found.prop) : 0,
+                .asserted = origin ? prop_annotation(origin) : nullptr,
             };
         }
     }
@@ -2173,6 +2182,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
             .decl_spans = declared->decl->decl_spans,
             .decl_span_count = declared->decl->decl_span_count,
             .name_is_value = declared->decl->name_is_value,
+            .asserted = prop_annotation(declared),
         };
     }
     Ty const* ret = ty_object_literal(me, props, count, members->index, members->index_count, OBJECT_SYNTHETIC);
