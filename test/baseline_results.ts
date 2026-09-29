@@ -21586,14 +21586,14 @@ const baselines = {
         types: false,
     },
     'moduleAugmentationDoesInterfaceMergeOfReexport': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleAugmentationDoesNamespaceEnumMergeOfReexport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleAugmentationDoesNamespaceMergeOfReexport': {
         errors: true,

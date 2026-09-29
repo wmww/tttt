@@ -2781,8 +2781,10 @@ static void merge_symbol(Binder* binder, Symbol* target, Symbol* source, ErrorCt
 static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbol* source, ErrorCtx* errs) {
     u64 hash = symbol_name_hash(name);
     Symbol* existing = symbol_table_get_own(owner->exports, name, hash);
+    bool from_star = false;
     if (!existing && owner->is_module && owner->module->export_star_count) {
         existing = (Symbol*)symbol_table_lookup(module_resolved_exports(owner), name, hash);
+        from_star = existing != nullptr;
     }
     if (!existing) {
         symbol_table_insert(owner->exports, &binder->arena, name, hash, source);
@@ -2810,6 +2812,11 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
         }
     }
     merge_symbol(binder, existing, source, errs);
+    // (What `export *` brought is then the module's own export too, which the augmentation's blocks see: tsc's
+    // mergeModuleAugmentation merges into the resolved export, then the augmentation into the module)
+    if (from_star && existing->binder == binder && !(existing->flags & excluded_flags(source->flags))) {
+        symbol_table_insert(owner->exports, &binder->arena, name, hash, existing);
+    }
 }
 
 // Whether merging an augmentation's name needs aliases resolved: then it waits until the others are merged, so that
@@ -2855,6 +2862,9 @@ static void merge_augmentations(Binder* me) {
     }
     // First what merges without resolving anything, then (in the same order) what needs aliases or `export *`
     // resolved, and augmentations of an `export =` module, which go into what it assigns
+    // (Which entries wait is decided before anything merges: a merge can make a name an own export of the module)
+    bool** late_entries = calloc(my augmentation_count ? my augmentation_count : 1, sizeof(bool*));
+    panic_if(!late_entries, "out of memory");
     for (int pass = 0; pass < 2; pass++) {
         for (u32 i = 0; i < my augmentation_count; i++) {
             NamespaceDecl* decl = my augmentations[i];
@@ -2880,14 +2890,21 @@ static void merge_augmentations(Binder* me) {
             }
             u32 count;
             SymbolEntry* entries = symbol_table_collect(augmentation->exports, &count);
+            if (pass == 0) {
+                late_entries[i] = calloc(count ? count : 1, sizeof(bool));
+                panic_if(!late_entries[i], "out of memory");
+                for (u32 j = 0; j < count; j++) late_entries[i][j] = augmentation_entry_needs_resolving(module, entries[j].name);
+            }
             for (u32 j = 0; j < count; j++) {
-                bool late = export_equals || augmentation_entry_needs_resolving(module, entries[j].name);
+                bool late = export_equals || !late_entries[i] || late_entries[i][j];
                 if (late != (pass == 1)) continue;
                 merge_into_exports(me, module, entries[j].name, entries[j].symbol, errs);
             }
             free(entries);
         }
     }
+    for (u32 i = 0; i < my augmentation_count; i++) free(late_entries[i]);
+    free(late_entries);
     // Every block of an augmentation sees the module's exports, and `declare module "m"` is the module
     for (u32 i = 0; i < my augmentation_count; i++) {
         NamespaceDecl* decl = my augmentations[i];
