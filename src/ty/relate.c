@@ -558,15 +558,6 @@ static void flush_incompatible(RelationState* st);
 
 [[gnu::cold]] static void report_line(RelationState* st, unsigned ts_code, cstr message) {
     flush_incompatible(st);
-    // `boolean` is a union, whose member `false` reads as 'boolean' again once widened for display
-    TyReportLine const* last = nullptr;
-    for (isize_t i = vec_ty_report_line_size(&st->lines); i > 0 && !last; i--) {
-        if (!vec_ty_report_line_at(&st->lines, i - 1)->related) last = vec_ty_report_line_at(&st->lines, i - 1);
-    }
-    if (last && cstr_eq(&last->message, &message)) {
-        cstr_drop(&message);
-        return;
-    }
     vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message });
 }
 
@@ -2260,18 +2251,8 @@ static bool has_literal_length(Checker* me, Ty const* ty) {
 static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     TupleShape const* source_shape = is_empty_tuple(source) ? source->declared.tuple : source->reference.target->declared.tuple;
     TupleShape const* target_shape = is_empty_tuple(target) ? target->declared.tuple : target->reference.target->declared.tuple;
-    if (source_shape->readonly && !target_shape->readonly && st->relation != TY_RELATION_COMPARABLE) {
-        if (report) {
-            cstr source_str = display_for_report(me, source, false);
-            cstr target_str = display_for_report(me, target, false);
-            report_line(st, 4104, cstr_d(
-                "The type '", source_str, "' is 'readonly' and cannot be assigned to the mutable type '", target_str, "'."
-            ));
-            c_drop(cstr, &source_str, &target_str);
-            st->override_next_head++;
-        }
-        return TERNARY_FALSE;
-    }
+    // (TS4104 is report_relation_error()'s, tsc's propertiesRelatedTo says nothing)
+    if (source_shape->readonly && !target_shape->readonly && st->relation != TY_RELATION_COMPARABLE) return TERNARY_FALSE;
     TyList source_args = is_empty_tuple(source) ? (TyList){0} : ty_reference_args(me, source);
     TyList target_args = is_empty_tuple(target) ? (TyList){0} : ty_reference_args(me, target);
     u32 source_arity = source_shape->arity, target_arity = target_shape->arity;
@@ -3472,6 +3453,7 @@ static Ternary target_each_related(Checker* me, RelationState* st, Ty const* sou
 
 static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty) {
     if (ty->kind == TY_REFERENCE && ty->reference.target == my array_target) return true;
+    if (is_empty_tuple(ty)) return !ty->declared.tuple->readonly;
     return is_tuple(ty) && !ty->reference.target->declared.tuple->readonly;
 }
 

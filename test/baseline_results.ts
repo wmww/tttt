@@ -22596,7 +22596,7 @@ const baselines = {
         types: true,
     },
     'mutuallyRecursiveCallbacks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31191,7 +31191,7 @@ const baselines = {
         types: true,
     },
     'typeOfOperator1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
