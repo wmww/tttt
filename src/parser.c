@@ -4155,6 +4155,11 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
                     type = jsdoc_take_type(i, nullptr);
                     type.from_jsdoc = false;
                 } else {
+                    // (tsc's checkJSDocTypeAliasTag: no type expression, not even a literal of `@property` tags)
+                    if (!has_properties && !type_child) {
+                        jsdoc_error(parent, i->name, 8021, "JSDoc '@typedef' tag should either have a type annotation or be "
+                            "followed by '@property' or '@member' tags.");
+                    }
                     type = type_any;
                 }
             }
@@ -6003,8 +6008,26 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
     }
     if (item->tag == CLASS_ITEM_FIELD && (modifiers & JSDOC_MODIFIER_READONLY)) item->field.is_readonly = true;
     if (modifiers & JSDOC_MODIFIER_OVERRIDE) item->is_override = true;
+    if (span_valid(class_item_private_name(item))) {
+        // (tsc's checkJSDocAccessibilityModifiers: the whole tag, up to the next one or the end of the comment)
+        for_each (i, vec_jsdoc_tag, &tags) {
+            if (i->earlier || (i->kind != JSDOC_TAG_PUBLIC && i->kind != JSDOC_TAG_PRIVATE && i->kind != JSDOC_TAG_PROTECTED)) continue;
+            const char* at = i->tag_name.sv.buf - 1;
+            const char* end = i + 1 < tags.data + tags.size && i[1].comment == i->comment ? i[1].tag_name.sv.buf - 1 : strstr(at, "*/");
+            if (!end) continue;
+            jsdoc_error(p, span_make(p->shared->source, at, end), 18010,
+                "An accessibility modifier cannot be used with a private identifier.");
+        }
+    }
     switch (item->tag) {
-        case CLASS_ITEM_CONSTRUCTOR: jsdoc_apply_function(&tags, &item->constructor.func); break;
+        case CLASS_ITEM_CONSTRUCTOR: {
+            // (tsc's checkGrammarConstructorTypeAnnotation: the effective return type node)
+            JsDocTag* return_tag = jsdoc_find_typed(&tags, JSDOC_TAG_RETURNS);
+            if (return_tag && !item->constructor.func.ret_explicit) {
+                jsdoc_error(p, return_tag->type_span, 1093, "Type annotation cannot appear on a constructor declaration.");
+            }
+            jsdoc_apply_function(&tags, &item->constructor.func);
+        }   break;
         case CLASS_ITEM_METHOD:
             item->method.func.accessor = (uint8_t)item->method.accessor; // (Set again by the resolve walk)
             jsdoc_apply_function(&tags, &item->method.func);
