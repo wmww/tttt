@@ -323,6 +323,10 @@ static void apply_setting(BaselineTestCase* me, csview key, csview value) {
         program_options(my program)->capture_suggestions = tag_equals(value, "true");
         return;
     }
+    if (tag_equals(key, "usecasesensitivefilenames")) {
+        program_options(my program)->case_insensitive_file_names = tag_equals(value, "false");
+        return;
+    }
     if (tag_equals(key, "noimplicitreferences")) {
         my no_implicit_references = tag_equals(value, "true");
         return;

@@ -188,6 +188,8 @@ static cstr join(csview dir, csview rest) {
 
 // Of an option: relative to the tsconfig it came from, else to the current directory
 static cstr option_path(ModuleResolver const* me, csview path) {
+    // (A drive root is one of the current directory, see path_is_drive_rooted())
+    if (path_is_drive_rooted(path)) return absolute_path_of(cstr_sv(&my cwd), path);
     csview base = cstr_size(&my options->config_dir) ? cstr_sv(&my options->config_dir) : cstr_sv(&my cwd);
     cstr absolute_base = absolute_path_of(cstr_sv(&my cwd), base);
     cstr ret = absolute_path_of(cstr_sv(&absolute_base), path);
@@ -551,11 +553,18 @@ static ResolvedKind kind_of_extension(csview extension) {
 }
 
 // One substitution of a matched `paths` / `typesVersions` pattern
+// join() of a name that may be rooted to tsc as a DOS drive path (`import "c:/x"`, a `paths` substitution
+// `c:/shared/*`): tsc's combinePaths keeps it, and a drive root is one of the current directory (path_is_drive_rooted())
+static cstr join_rooted(State const* me, csview dir, csview rest) {
+    if (path_is_drive_rooted(rest)) return absolute_path_of(cstr_sv(&my resolver->cwd), rest);
+    return join(dir, rest);
+}
+
 static bool try_substitution(
     State* me, csview base, csview substitution, csview star, int extensions, Loader loader, Found* out
 ) {
     cstr path = replace_first_star(substitution, star);
-    cstr candidate = join(base, cstr_sv(&path));
+    cstr candidate = join_rooted(me, base, cstr_sv(&path));
     cstr_drop(&path);
     bool found = false;
     // A mapping may name a file with its extension, which an import shouldn't
@@ -1321,7 +1330,7 @@ static Search node_try_resolve(State* me, csview name, int extensions, Found* ou
         if (result == SEARCH_FOUND && !path_contains_node_modules(cstr_sv(&out->path))) *external = false;
         return result;
     }
-    cstr candidate = join(my containing_dir, name);
+    cstr candidate = join_rooted(me, my containing_dir, name);
     // "." and "./" mean the directory, never a file next to it
     bool is_directory = ends_with(name, "/") || csview_equals(name, ".") || csview_equals(name, "..") ||
         ends_with(name, "/.") || ends_with(name, "/..");

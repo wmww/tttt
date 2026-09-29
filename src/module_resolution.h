@@ -94,6 +94,15 @@ typedef struct FileFormat {
 } FileFormat;
 FileFormat module_resolver_file_format(ModuleResolver* me, csview file);
 
+// A DOS drive root, `c:/x` or `c:`: tsc's isRootedDiskPath knows it, POSIX paths don't. tttt (and its mock file
+// system) treat it as a directory named `c:` in the current directory, what a POSIX system does with it
+static inline bool path_is_drive_rooted(csview path) {
+    if (path.size < 2 || path.buf[1] != ':') return false;
+    char c0 = path.buf[0];
+    if (!((c0 >= 'a' && c0 <= 'z') || (c0 >= 'A' && c0 <= 'Z'))) return false;
+    return path.size == 2 || path.buf[2] == '/' || path.buf[2] == '\\';
+}
+
 static inline bool module_name_is_relative(csview name) {
     // tsc's isExternalModuleNameRelative(): "./", "../", ".", ".." (either slash), or rooted (isRootedDiskPath: POSIX or
     // UNC, a DOS drive `c:/` or `c:`, a URL `scheme://authority/`)

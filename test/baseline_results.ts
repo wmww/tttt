@@ -5171,7 +5171,7 @@ const baselines = {
         types: true,
     },
     'commonSourceDir2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5181,14 +5181,14 @@ const baselines = {
         types: true,
     },
     'commonSourceDir4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'commonSourceDir5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commonSourceDir6': {
         errors: true,
@@ -25571,14 +25571,14 @@ const baselines = {
         types: true,
     },
     'pathMappingBasedModuleResolution7_classic': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution7_node': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution8_classic': {
         errors: true,

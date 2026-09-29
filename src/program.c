@@ -1528,8 +1528,31 @@ static void program_verify_module_kind(Program* me) {
 }
 
 // The end of tsc's verifyCompilerOptions: no output file may overwrite an input file or another output file
+// The root of a file's name as tsc has it: `c:/` of a DOS drive path, else `/` (a relative name is in the current
+// directory)
+static csview path_root_of(csview path) {
+    if (!path_is_drive_rooted(path)) return c_sv("/");
+    return csview_slice(path, 0, path.size > 2 ? 3 : 2);
+}
+
 static void program_verify_emit_paths(Program* me) {
     CompilerOptions const* o = &my options;
+    // tsc's verifyCompilerOptions: with an outDir and no rootDir, files on different drives have no common source
+    // directory (getCommonSourceDirectory is "", which only another root than `/` can make)
+    if (cstr_size(&o->out_dir) && !cstr_size(&o->root_dir) && !(o->composite && cstr_size(&o->config_dir))) {
+        csview root = {0};
+        bool differ = false, drive = false;
+        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+            if (!emit_source_may_be_emitted(me, *i)) continue;
+            csview file_root = path_root_of(source_file_display_path(*i));
+            drive |= file_root.size > 1;
+            if (!root.buf) root = file_root;
+            else differ |= o->case_insensitive_file_names ? !csview_iequals_sv(root, file_root) : !csview_equals_sv(root, file_root);
+        }
+        if (differ && drive) {
+            option_error_d(me, "outDir", nullptr, true, 5009, "Cannot find the common subdirectory path for the input files.");
+        }
+    }
     if (o->no_emit || o->suppress_output_path_check) return;
     bool declarations = o->declaration || o->composite;
     hmap_source_file_ptr seen = {0};

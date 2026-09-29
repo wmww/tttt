@@ -553,6 +553,10 @@ src` finds the code-side markers; every significant one has an entry here.
   (`js_syntax_skip_since()`): every skipped construct needs its call. Node array spans run first to last element.
 
 ## Modules and program (`module_resolution.c`, `tsconfig.c`, `program.c`, `main.c`)
+- `path_is_drive_rooted` (`module_resolution.h`): a DOS drive path (`c:/x`) is a directory `c:` of the current
+  directory everywhere (the mock fs, canonical paths, `join_rooted`/`option_path` resolve it against the cwd), what
+  POSIX does with it; tsc treats it as a root of its own. Consistent enough for the harness's drive tests (and TS5009
+  compares roots by name, `path_root_of`); a real path type with roots would replace it if Windows ever matters.
 - `.js` files under allowJs are parsed as TypeScript; a `.js` root without allowJs (TS6504, `program_load`) and a
   refused import (`MODULE_REF_IS_JS`) are two paths.
 - `module_resolver_resolve` (HACK): node10 and export-map packages resolve in two passes (TypeScript extensions
