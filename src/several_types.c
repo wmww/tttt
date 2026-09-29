@@ -373,7 +373,7 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         if (arg_count) error_ctx_error_d(errs, span, 2315, "Type '", my name, "' is not generic.");
         return;
     }
-    if (!several_types_check_arity(symbol, arg_count, span, errs) && arg_count) {
+    if (!several_types_check_arity(symbol, arg_count, span, false, errs) && arg_count) {
         ty_check_type_reference_constraints(current_checker, symbol, &my generic_params, errs);
     }
 }
@@ -391,7 +391,7 @@ bool several_types_arity_fits(Symbol const* symbol, u32 arg_count, SourceFile co
     return (arg_count >= min && arg_count <= count) || js_implicit_any;
 }
 
-bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, ErrorCtx* errs) {
+bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, bool missing_extends, ErrorCtx* errs) {
     if (several_types_arity_fits(symbol, arg_count, span.source)) return false;
     bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
     u32 min = 0;
@@ -411,7 +411,12 @@ bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, E
         }
         cstr_append(&name, ">");
     }
-    if (min == count) {
+    if (missing_extends && min == count) {
+        error_ctx_error_d(errs, span, 8026, "Expected ", name, " type arguments; provide these with an '@extends' tag.");
+    } else if (missing_extends) {
+        // (tsc fills the message with the type and the minimum)
+        error_ctx_error_d(errs, span, 8027, "Expected ", name, "-", min, " type arguments; provide these with an '@extends' tag.");
+    } else if (min == count) {
         error_ctx_error_d(errs, span, 2314, "Generic type '", name, "' requires ", count, " type argument(s).");
     } else {
         error_ctx_error_d(errs, span, 2707, "Generic type '", name, "' requires between ", min, " and ", count, " type arguments.");

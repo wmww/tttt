@@ -1292,14 +1292,19 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
 static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
     Expr const* base = &my extends;
     u32 arg_count = 0;
+    // (tsc's getTypeFromClassOrInterfaceReference: the clause itself rather than an `@extends` tag's type)
+    bool missing_extends = my extends.outer_span.source && my extends.outer_span.source->is_js;
     if (base->tag == EXPR_GENERIC_PARAMS) {
+        SpannedType const* first = vec_spanned_type_size(&base->generic_params->params) ?
+            vec_spanned_type_at(&base->generic_params->params, 0) : nullptr;
+        if (first && first->type.from_jsdoc) missing_extends = false;
         arg_count = (u32)vec_spanned_type_size(&base->generic_params->params);
         base = &base->generic_params->expr;
     }
     if (base->tag != EXPR_IDENTIFIER || base->identifier.keyword || expr_is_perenthisized(base)) return;
     Symbol const* target = base->identifier.target;
     if (!target || target->is_placeholder || !(target->flags & SYMBOL_CLASS)) return;
-    several_types_check_arity(target, arg_count, my extends.outer_span, errs);
+    several_types_check_arity(target, arg_count, my extends.outer_span, missing_extends, errs);
 }
 
 // tsc's checkClassForStaticPropertyNameConflicts: a static member named like a property every function has (TS2699).
