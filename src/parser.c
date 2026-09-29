@@ -3205,8 +3205,23 @@ static const char* parse_jsdoc_param_like(Parser* parent, const char* c, const c
             c++;
         }
         if (c < end) c++;
+    } else if (c < end && *c == '`') {
+        // (tsc's parseBracketNameInPropertyAndParamTag: a name in backticks)
+        c = jsdoc_parse_name(c + 1, end, &tag->name, source);
+        if (c < end && *c == '`') c++;
     } else {
         c = jsdoc_parse_name(c, end, &tag->name, source);
+    }
+    if (!span_valid(tag->name)) {
+        // tsc's parseJSDocIdentifierName: TS1003 where the name should start (not again where an error is)
+        VecError const* errors = &parent->shared->jsdoc_errors;
+        bool reported = errors->size && span_start_ptr(errors->data[errors->size - 1].span) == c;
+        if (!reported) {
+            Parser e = parser(parent);
+            parse_error(&e, span_make(source, c, c), 1003, "Identifier expected.");
+            jsdoc_keep_errors(&e);
+            parse_fail(&e);
+        }
     }
     tag->name_first = !tag->has_type;
     if (!tag->has_type) {
