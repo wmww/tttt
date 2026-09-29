@@ -2998,6 +2998,9 @@ isize spelling_suggestion(csview name, csview const* names, isize count) {
 typedef struct Suggestion {
     csview name;
     Symbol const* symbol; // Null for a primitive (`string` for `String`)
+    // An export of the module or namespace suggested as a value: tsc finds its local (SymbolFlags.ExportValue), which
+    // has no value declaration to relate to
+    bool export_local;
 } Suggestion;
 
 // tsc's getSuggestionForSymbolNameLookup on one table
@@ -3032,7 +3035,7 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, csview name
         names[extra + i] = fits ? candidate : (csview){0};
     }
     isize best = spelling_suggestion(name, names, count + extra);
-    if (best >= 0) *out = (Suggestion){ names[best], best >= extra ? entries[best - extra].symbol : nullptr };
+    if (best >= 0) *out = (Suggestion){ .name = names[best], .symbol = best >= extra ? entries[best - extra].symbol : nullptr };
     free(names);
     free(entries);
     return best >= 0;
@@ -3047,6 +3050,7 @@ static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion*
         if (scope->container && scope->container->exports && scope->kind != SCOPE_GLOBAL &&
             suggest_in_table(scope->container->exports, false, name, meaning, out)
         ) {
+            out->export_local = (meaning & SYMBOL_VARIABLE) != 0; // (A value meaning: the type meaning has no variables)
             return true;
         }
     }
@@ -3119,7 +3123,7 @@ bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning,
     Suggestion suggestion = {0};
     if (my binder->suggestion_count++ >= 10 || !scope_suggest(me, name, meaning, &suggestion)) return false;
     Error* error = error_ctx_error_d(errs, at, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
-    Symbol const* symbol = suggestion.symbol;
+    Symbol const* symbol = suggestion.export_local ? nullptr : suggestion.symbol;
     for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
         if (!(symbol->decls[i].flags & SYMBOL_VALUE)) continue;
         error_add_related_d(error, symbol->decls[i].name, 2728, "'", suggestion.name, "' is declared here.");

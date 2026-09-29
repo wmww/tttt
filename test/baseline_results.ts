@@ -10051,7 +10051,7 @@ const baselines = {
         types: false,
     },
     'dottedModuleName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
