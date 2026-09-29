@@ -2255,8 +2255,9 @@ static Symbol* resolve_alias_target(Symbol* me) {
     if (item->tag != PORT_IMPORT_ALIAS && item->tag != PORT_EXPORT_SPECIFIC && item->tag != PORT_EXPORT_AS_NAMESPACE) {
         module = binder_module_of_ref(my binder, item->module_ref);
         if (!module) {
-            // No file: TS2307 comes from the statement
-            if (item->module_ref->file) {
+            // No file: TS2307 comes from the statement. (An `@import` tag's is only reported by a use of its names in
+            // tsc, whose checkJSDocImportTag doesn't resolve them: not at all here)
+            if (item->module_ref->file && !item->jsdoc) {
                 error_ctx_error_d(errs, item->module_ref->span, 2306,
                     "File '", source_file_display_path(item->module_ref->file), "' is not a module.");
             }
