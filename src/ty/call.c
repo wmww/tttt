@@ -1167,6 +1167,23 @@ static i32 first_unfit_argument(
     return -1;
 }
 
+// tsc's CheckMode.SkipContextSensitive checks a context-sensitive object or array literal argument too, its
+// context-sensitive functions as anyFunctionType: `{ start(c) {} }` doesn't fit a parameter that requires `type`, so
+// that overload isn't the one whose contextual types the functions get. Whether they fit (else -1 as in
+// first_unfit_argument()). HACK: only for the non-generic overloads of a call with several, see hacks.md
+static i32 first_unfit_skipped_literal(Checker* me, ParamShape const* shape, Args const* args, TyRelation relation) {
+    for (u32 i = 0; i < args->len; i++) {
+        Arg const* arg = &args->data[i];
+        if (!arg->context_sensitive || arg->spread || arg->part_of_spread) continue;
+        if (arg->expr->tag != EXPR_OBJECT && arg->expr->tag != EXPR_ARRAY) continue;
+        Ty const* target = i < shape->count ? shape->types[i] : shape->rest_element;
+        if (!target || (target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        Ty const* source = ty_check_expr_skipping_sensitive(me, arg->expr, target, false);
+        if (!ty_is_related(me, source, target, relation)) return (i32)i;
+    }
+    return -1;
+}
+
 // The parameters a call's arguments are checked against. A JSX element has one argument, its attributes, which any
 // signature takes (tsc's hasCorrectArity: a class's argumentless constructor too), as the props of the signature
 static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature const* sig, TyMapper const* mapper) {
@@ -1632,6 +1649,9 @@ static Resolution resolve_with_signatures(
             Ty const* arg_type;
             Ty const* param_type;
             bool fits = first_unfit_argument(me, &shape, args, rounds[round], skip_sensitive, &arg_type, &param_type) < 0;
+            if (fits && skip_sensitive && count > 1 && !sig->type_params.len) {
+                fits = first_unfit_skipped_literal(me, &shape, args, rounds[round]) < 0;
+            }
             if (fits && skip_sensitive) {
                 // Again with everything, for this candidate and the ones after it
                 skip_sensitive = false;

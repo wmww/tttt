@@ -221,6 +221,13 @@ src` finds the code-side markers; every significant one has an entry here.
   `ty_optional_param_type()`); tsc shows it in the signature too.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
+- `first_unfit_skipped_literal()` (`resolve_with_signatures`): tsc's SkipContextSensitive round still relates a
+  context-sensitive object/array literal argument (its sensitive functions as anyFunctionType) to the parameter; tttt
+  skips the whole argument in that round, and does the literal check only for non-generic overloads of a call with
+  several, against a parameter type without type variables. Doing it for every candidate (generic ones against the
+  skip-round instantiation) broke typeInferenceWithExcessProperties & co. and vue (47 -> 443): checking the literal
+  with another contextual type leaves memos of its members behind. Real fix: side-effect-free speculative checks
+  (plan 38 stage 3's resolve-once).
 - Repeated resolution stand-ins (plan 38 stage 3 would resolve once): tttt resolves a call several times (error pass,
   outer rounds, overloads). `KEY_ARG_FIXES`/`ArgFixes` replay what each argument fixed and to what;
   `LazyMemo.speculative` (`lazy_type_set_speculative()`) keeps an outer round's call from replacing the memo made
