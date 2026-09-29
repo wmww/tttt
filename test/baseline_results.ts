@@ -1356,7 +1356,7 @@ const baselines = {
         types: true,
     },
     'arrowFunctionErrorSpan': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

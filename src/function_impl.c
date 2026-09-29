@@ -754,12 +754,14 @@ Span function_error_span(FunctionImpl const* me) {
     if (span_valid(my name)) return my name;
     if (span_valid(my member_name)) return my member_name;
     if (span_valid(my arrow_span)) {
+        // tsc's getErrorSpanForArrowFunction: a block body that spans lines (from right after the `=>`) makes it the
+        // line of the `=>`
         Span ret = my full_span;
         if (!my expression_body) {
-            const char* start = span_start_ptr(ret);
-            const char* line_end = memchr(start, '\n', ret.sv.size);
-            if (line_end) ret.sv.size = line_end - start;
-            while (ret.sv.size && (ret.sv.buf[ret.sv.size - 1] == '\r')) ret.sv.size--;
+            char const* end = span_end_ptr(ret);
+            char const* line_end = span_end_ptr(my arrow_span);
+            while (line_end < end && *line_end != '\n' && *line_end != '\r') line_end++;
+            if (line_end < end) ret.sv.size = line_end - ret.sv.buf;
         }
         return ret;
     }
