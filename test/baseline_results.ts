@@ -16938,7 +16938,7 @@ const baselines = {
     'indexIntoEnum': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexSignatureAndMappedType': {
         errors: true,
@@ -48518,7 +48518,7 @@ const baselines = {
     'deleteOperatorWithEnumType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deleteOperatorWithNumberType': {
         errors: true,
@@ -48546,9 +48546,9 @@ const baselines = {
         types: true,
     },
     'incrementOperatorWithEnumTypeInvalidOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incrementOperatorWithNumberType': {
         errors: true,
@@ -48648,7 +48648,7 @@ const baselines = {
     'plusOperatorWithEnumType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'plusOperatorWithNumberType': {
         errors: true,
@@ -48678,7 +48678,7 @@ const baselines = {
     'typeofOperatorWithEnumType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofOperatorWithNumberType': {
         errors: true,
@@ -48708,7 +48708,7 @@ const baselines = {
     'voidOperatorWithEnumType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'voidOperatorWithNumberType': {
         errors: true,
