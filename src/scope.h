@@ -193,6 +193,9 @@ typedef struct SymbolAlias {
     PortItem const* type_only_star;
     // JavaScript `exports.C = class {}`: the class expression, whose symbol is the target (tsc's isAliasableExpression)
     struct ClassDecl* class_expr;
+    // `export = a.b.c` / `export default a.b.c` (tsc's exportAssignmentIsAlias: an entity name expression): resolved
+    // like tsc's resolveEntityName with every meaning, see resolve_entity_alias()
+    struct Expr* entity;
 } SymbolAlias;
 
 // What only modules (files and ambient modules) have

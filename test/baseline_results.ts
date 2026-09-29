@@ -5146,7 +5146,7 @@ const baselines = {
         types: true,
     },
     'commonJsImportClassExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5786,7 +5786,7 @@ const baselines = {
         types: true,
     },
     'constEnumNamespaceReferenceCausesNoImport2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12831,12 +12831,12 @@ const baselines = {
         types: true,
     },
     'exportDefaultProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportDefaultProperty2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -13031,12 +13031,12 @@ const baselines = {
         types: true,
     },
     'exportEqualsProperty': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportEqualsProperty2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -16082,7 +16082,7 @@ const baselines = {
     },
     'importDeclFromTypeNodeInJsSource': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importDeclRefereingExternalModuleWithNoResolve': {

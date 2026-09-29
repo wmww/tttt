@@ -1279,6 +1279,15 @@ void scope_add_port(Scope* me, PortItem* item) {
     }
 }
 
+// tsc's isEntityNameExpression, parentheses nowhere: `a.b.c`
+static bool is_unparenthesized_entity_name(Expr const* me) {
+    if (my tag != EXPR_PROPERTY || !expr_is_entity_name(me)) return false;
+    for (; my tag == EXPR_PROPERTY; me = &my property->expr) {
+        if (expr_is_perenthisized(me)) return false;
+    }
+    return !expr_is_perenthisized(me);
+}
+
 void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type, Span statement, bool export_equals) {
     // tsc's checkExportAssignment -> checkGrammarModuleElementContext: only in a file or a namespace body (on the
     // first token; nothing is exported)
@@ -1300,7 +1309,10 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
     // Everything the name means is exported, types included; other expressions are a value. Nothing else can be
     // exported under the name (tsc's bindExportAssignment: SymbolFlags.All)
     bool alias = expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword;
-    u32 includes = alias ? SYMBOL_ALIAS : SYMBOL_BLOCK_SCOPED_VARIABLE;
+    // (An entity name `a.b` or a class expression is an alias too: tsc's isAliasableExpression)
+    bool entity = !alias && !jsdoc_type && is_unparenthesized_entity_name(expr);
+    bool class_alias = !alias && !jsdoc_type && export_equals && expr->tag == EXPR_CLASS_DECL && !expr_is_perenthisized(expr);
+    u32 includes = alias || entity || class_alias ? SYMBOL_ALIAS : SYMBOL_BLOCK_SCOPED_VARIABLE;
     bool merged;
     statement = span_with_semicolon(statement); // (tsc's ExportAssignment has it)
     // tsc's checkExportAssignment: `export =` can't be emitted as an ES module. A declaration file is only an ES module
@@ -1345,6 +1357,22 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr->outer_span, .full = statement,
             .jsdoc_type = jsdoc_type,
+        });
+    } else if (entity || class_alias) {
+        if (!symbol->alias) symbol->alias = arena_new(&my binder->arena, SymbolAlias);
+        symbol->alias->scope = me;
+        if (entity) {
+            symbol->alias->entity = expr;
+        } else {
+            ClassDecl* class_decl = expr->class_decl;
+            if (!class_decl->name_scope) {
+                class_decl->name_scope = scope_new(me, SCOPE_BLOCK);
+                class_decl_add_names(class_decl, class_decl->name_scope, DECL_EXPORTED_NO, false);
+            }
+            symbol->alias->class_expr = class_decl;
+        }
+        symbol_add_decl(symbol, (SymbolDecl){
+            .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = statement, .full = statement,
         });
     } else {
         symbol_add_decl(symbol, (SymbolDecl){
@@ -1703,6 +1731,8 @@ Symbol* module_export_equals(Symbol* module) {
     if (!assigned) return module;
     Symbol* target = assigned->flags & SYMBOL_ALIAS ? symbol_resolve_alias(assigned) : assigned;
     if (!target) return module;
+    // (`export = C.B` of a static B and a namespace's interface B: the alias, which has both meanings)
+    if (assigned->flags & SYMBOL_ALIAS && assigned->alias->value_target) return assigned;
     if (target == module || target->is_placeholder || target->is_module || module->exports->parent ||
         module->exports->count < 2 || !module->module
     ) {
@@ -2329,10 +2359,57 @@ static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* as
     return resolve_if_pure_alias(found);
 }
 
+// `export = a.b.c`: the value the expression is, a symbol of its own like a non-alias `export =` (what tsc gets from
+// checking the expression when resolveEntityName finds nothing: the property)
+static Symbol* entity_value_symbol(Symbol* me) {
+    Symbol* ret = binder_new_symbol(my binder, my name, SYMBOL_BLOCK_SCOPED_VARIABLE);
+    ret->name_span = my name_span;
+    ret->parent = my parent;
+    ret->is_default_export = my is_default_export;
+    Span statement = my decls[0].full;
+    symbol_add_decl(ret, (SymbolDecl){
+        .kind = SYMBOL_DECL_EXPR, .flags = SYMBOL_BLOCK_SCOPED_VARIABLE, .node = my alias->entity,
+        .name = statement, .full = statement,
+    });
+    return ret;
+}
+
+// tsc's resolveEntityName(`a.b.c`, Value | Type | Namespace): each name but the last a namespace, the last anything.
+// A class's static members are its exports in tsc, merged with a namespace's: a static member of the class the last
+// name is looked up in is the value half (value_target) of what the namespace exports under that name
+static Symbol* resolve_entity_alias(Symbol* me) {
+    Expr const* names[32];
+    u32 count = 0;
+    Expr const* e = my alias->entity;
+    for (; e->tag == EXPR_PROPERTY && count < c_arraylen(names); e = &e->property->expr) names[count++] = e;
+    if (e->tag != EXPR_IDENTIFIER) return entity_value_symbol(me);
+    Symbol* target = scope_resolve(my alias->scope, e->identifier.name.sv, SYMBOL_NAMESPACE);
+    if (!target || target == me) return entity_value_symbol(me);
+    target = resolve_if_pure_alias(target);
+    for (u32 i = count; i-- > 0;) {
+        csview name = names[i]->property->prop.inner_span.sv;
+        Symbol const* container = symbol_for_meaning(target, SYMBOL_NAMESPACE);
+        if (!container || container->is_placeholder) return entity_value_symbol(me);
+        Symbol* found = symbol_get_export(container, name);
+        Symbol* next = resolve_if_pure_alias(found);
+        if (!next || next == me) return entity_value_symbol(me);
+        if (i > 0 && !(symbol_resolved_flags(next) & SYMBOL_NAMESPACE) && !next->is_placeholder) {
+            return entity_value_symbol(me);
+        }
+        if (i == 0 && !(symbol_resolved_flags(next) & SYMBOL_VALUE) && container->flags & SYMBOL_CLASS) {
+            ClassDecl const* class_decl = symbol_find_node(container, SYMBOL_DECL_CLASS);
+            if (class_decl && class_decl_find_member(class_decl, name, true)) my alias->value_target = entity_value_symbol(me);
+        }
+        target = next;
+    }
+    return target;
+}
+
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = my alias->scope->errs;
     if (my alias->class_expr) return my alias->class_expr->symbol;
+    if (my alias->entity) return resolve_entity_alias(me);
     if (!item) {
         // `export default x`, TS2304 comes from the expression
         Symbol* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);

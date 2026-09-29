@@ -93,7 +93,11 @@ static Symbol const* resolve_symbol(Symbol const* symbol) {
 
 // tsc's resolveAlias(): what an alias names
 static Symbol const* resolve_alias(Symbol const* symbol) {
-    return symbol->flags & SYMBOL_ALIAS ? symbol_resolve_alias((Symbol*)symbol) : symbol;
+    if (!(symbol->flags & SYMBOL_ALIAS)) return symbol;
+    Symbol const* ret = symbol_resolve_alias((Symbol*)symbol);
+    // (`export = C.B`, a static B and an interface B, which are one symbol in tsc: it stands for the interface here)
+    if (ret && ret->flags & SYMBOL_ALIAS && ret->alias->value_target) ret = symbol_resolve_alias((Symbol*)ret);
+    return ret;
 }
 
 // The identity of what a symbol stands for: a namespace import (`import * as ns`) is its module
