@@ -391,6 +391,8 @@ typedef struct Scope {
     // Everything of a class's field (decorators, computed name, initializer): not directly in a constructor it's
     // nested in (tsc's isThisContainerOrFunctionBlock has PropertyDeclaration)
     bool in_field;
+    // A class member's decorator: its `this` is the one outside the class (tsc's getThisContainer of a Decorator)
+    bool member_decorator;
     // The scope of a decorator of this class (for a member decorator, no_super is NO_SUPER_DECORATOR instead): an ES
     // decorator runs before the class is initialized (tsc's isBlockScopedNameDeclaredBeforeUse)
     struct ClassDecl const* decorator_of;

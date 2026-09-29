@@ -178,9 +178,15 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     if (my is_async) {
         my promise_decl = scope_get_type(names, c_sv("Promise"), nullptr);
     }
+    Scope* decorator_names = nullptr;
     for_each (i, vec_function_arg, &my args) {
         for_each (decorator, vec_expr, &i->decorators) {
-            expr_lookup_names(decorator, names, errs);
+            // (A class member's parameter decorators see the `this` outside the class, like the member's own)
+            if (!decorator_names) {
+                decorator_names = scope_new(names, SCOPE_BLOCK);
+                decorator_names->member_decorator = true;
+            }
+            expr_lookup_names(decorator, decorator_names, errs);
         }
     }
 

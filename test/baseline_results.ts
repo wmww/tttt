@@ -35617,7 +35617,7 @@ const baselines = {
     },
     'derivedClassSuperProperties': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'derivedClassSuperStatementPosition': {
@@ -38306,9 +38306,9 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethod11': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'decoratorOnClassMethod12': {
         errors: true,
@@ -45897,23 +45897,23 @@ const baselines = {
     },
     'esDecorators-classDeclaration-outerThisReference(target=es2015)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-outerThisReference(target=es2021)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-outerThisReference(target=es2022)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-outerThisReference(target=esnext)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-parameterDecorators(target=es2015)': {
         errors: true,
@@ -46622,8 +46622,8 @@ const baselines = {
     },
     'esDecorators-privateFieldAccess': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'esDecoratorsMetadata1(target=es2015)': {
         errors: true,

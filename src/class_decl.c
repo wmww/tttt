@@ -192,7 +192,9 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
         names->in_field = true;
     }
     for_each (i, vec_expr, &my decorators) {
-        lookup_names_without_super(i, names, NO_SUPER_DECORATOR, decorator_errs);
+        Scope* scope = scope_new(names, SCOPE_BLOCK);
+        scope->member_decorator = true;
+        lookup_names_without_super(i, scope, NO_SUPER_DECORATOR, decorator_errs);
     }
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:

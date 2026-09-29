@@ -3130,9 +3130,15 @@ Symbol const* scope_get_namespace(Scope const* me, csview name, Symbol const** f
 }
 
 ThisRef scope_get_this(Scope const* me, bool type_else_value) {
+    bool skip_class = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
+        skip_class |= scope->member_decorator && !type_else_value;
         ThisKind kind = scope->this_ref.kind;
         if (!kind) continue;
+        if (skip_class && scope->this_ref.class_decl) {
+            skip_class = false;
+            continue;
+        }
         bool is_class = kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC || kind == THIS_INTERFACE ||
             kind == THIS_TYPE_LITERAL;
         if (!type_else_value || is_class) return scope->this_ref;
