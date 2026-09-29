@@ -210,6 +210,9 @@ typedef enum InitializerContext : uint8_t {
     INITIALIZER_INSTANCE_FIELD,
     INITIALIZER_STATIC_FIELD,
     INITIALIZER_STATIC_BLOCK,
+    // The computed name of an object literal's method or accessor in a field's initializer: only reading that field
+    // is too early there
+    INITIALIZER_MEMBER_NAME,
 } InitializerContext;
 
 typedef enum FlowAssignmentKind {

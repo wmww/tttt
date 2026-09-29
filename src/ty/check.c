@@ -3109,7 +3109,11 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
         case INITIALIZER_STATIC_BLOCK: deferred = declared_at < used_at; break;
     }
     bool fine;
-    if (declared_at <= used_at && !(is_field && this_access && !initialized)) {
+    if (access->initializer_context == INITIALIZER_MEMBER_NAME) {
+        // A method's or accessor's name is deferred (a function), unless it is in the field it reads
+        // (isPropertyImmediatelyReferencedWithinDeclaration: no Block of a function in between)
+        fine = !(is_field && within_declaration);
+    } else if (declared_at <= used_at && !(is_field && this_access && !initialized)) {
         fine = is_field ? !within_declaration : parameter ? !(emit_standard && same_class && deferred) : true;
     } else if (deferred) {
         // With standard class fields the fields of the class are defined in order, the parameter properties after them

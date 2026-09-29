@@ -3996,7 +3996,7 @@ const baselines = {
         types: true,
     },
     'classUsedBeforeInitializedVariables': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

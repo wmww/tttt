@@ -1931,9 +1931,13 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     // (A scope of its own only for resolve_super())
                     Scope* key_scope = scope_new(names, SCOPE_BLOCK);
                     key_scope->no_super = NO_SUPER_LITERAL_COMPUTED_NAME;
-                    // The name of a method or accessor is in it, as far as a class initializer is concerned (TS2729)
+                    // The name of a method or accessor is deferred like it, as far as a class initializer is concerned
+                    // (TS2729), unless it reads the field it is in
                     uint8_t initializer_context = flow->initializer_context;
-                    if (i->tag != OBJECT_ITEM_PROPERTY) flow->initializer_context = INITIALIZER_NONE;
+                    if (i->tag != OBJECT_ITEM_PROPERTY) {
+                        bool in_field = initializer_context == INITIALIZER_INSTANCE_FIELD || initializer_context == INITIALIZER_STATIC_FIELD;
+                        flow->initializer_context = in_field ? INITIALIZER_MEMBER_NAME : INITIALIZER_NONE;
+                    }
                     expr_lookup_names(i->computed_key, key_scope, errs);
                     flow->initializer_context = initializer_context;
                 }
