@@ -21,8 +21,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    exhausted budget memoized like tsc), skipTrue (sharing was already there), `NonNullable<T>` (tsc's
    getNonNullableType), the `optional` marker for chains. Suite 12057 -> 12058, 0 lost, xstate 19 -> 18, drizzle
    8 -> 6, others unchanged, instructions -0.8..+0.2%.
-6. **Planning: plan 40** (declaration-emit diagnostics without emit: TS2742, TS4xxx, isolatedDeclarations; 45
-   failing tests, 41 fail only on these). Stub in `plans/40_declaration_diagnostics.md`.
+6. Done 2026-09-29: plan 40 planned (three stages: the walk + isolatedDeclarations, accessibility through the
+   printer's tracker, TS2742 with plan 41's specifiers). 41 tests; tsc's compiler, valibot, nest and drizzle enable
+   declarations and are its false-positive oracles. Execution is for the next insights to schedule.
 7. **Suite checker bugs 7** (four Opus sub-agents by failstats bucket, as entries 5 of the last window): the 237
    tests with the right codes at the right positions but other text first (`./errtextdiff.py`, plan 34), then
    single-code tests (`bugs/missing_checks.md`).

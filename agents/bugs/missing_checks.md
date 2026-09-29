@@ -19,6 +19,12 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   at the option (TS5xxx, paths validation, deprecations by version), TS6054.
 
 ## Known missing checks
+- TS4111 (`noPropertyAccessFromIndexSignature`: `obj.key` where `key` only comes from an index signature) is not
+  implemented at all: noPropertyAccessFromIndexSignature1 (3 errors). drizzle's corpus sets the option (clean under
+  tsc, so no false negative there today). Found by plan 40's planning, not declaration emit.
+- TS4105 (private/protected member accessed through an indexed access on a generic constraint:
+  indexedAccessPrivateMemberOfGenericConstraint, where tttt reports TS2536 instead) and TS4109/TS4110 (type arguments
+  circularly referencing themselves: circularlyReferentialInterfaceAccessNoCrash, see also `type_core.md`).
 - `interface I<C> { a: StateNode<C, any> }` where StateNode requires `C extends MachineContext`: tsc's TS2344 on the
   member's type argument is missing (xstate).
 - Missing TS2353 for `const x: Trans<E> = { NEXT: ... }` in a generic function with `Trans<E> = { [K in E['type'] |

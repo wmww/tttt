@@ -1,28 +1,136 @@
-# Plan 40: declaration-emit diagnostics without emit (planning stub)
-Brief by the insights of 2026-09-29. **A stub for a planning session**: investigate, decide, replace this file with
-the real plan (or delete it and route the items to `bugs/` if it isn't worth it).
+# Plan 40: declaration-emit diagnostics without emit
+Planned 2026-09-29 (todo entry 6 of the window). Three stages, one to two sessions each; stage 3 may wait for plan 41.
 
 ## Why
-Declaration emit (writing `.d.ts`) stays out of scope, but the *diagnostics* tsc's declaration emitter reports are
-checking, and real users see them: every library built with `declaration: true` gets TS2742 ("The inferred type of X
-cannot be named without a reference to ..."), TS4xxx (private name used in an exported declaration) and, with
-`isolatedDeclarations`, TS9xxx. tttt reports none of them. In the suite (failstats of 2026-09-29) **45 failing tests
-involve these codes, 41 of them fail only on them**: TS2742 10, TS9007 6, TS9010/9038/9011/9013 4 each, TS4023 3,
-TS9023 3, TS4094/4025/4109/2527 2...
+tttt never writes `.d.ts` (out of scope), but the diagnostics tsc's declaration transformer reports are checking, and
+every user with `declaration`/`composite` sees them: TS4xxx (an exported declaration names a private or unnameable
+symbol), TS2527/TS4094/TS5088/TS7056 (inferred types that can't be serialized), TS2742 (not portable) and, with
+`isolatedDeclarations`, TS9xxx. tttt has none of them.
 
-## What tsc does (to confirm)
-The declaration transformer walks every exported declaration and, where a type is inferred rather than written,
-serializes it through the checker's typeToTypeNode (the same machinery tttt's type printer and `symbol_chain.c`
-already approximate for the types baseline), asking isSymbolAccessible / isEntityNameVisible for each symbol it
-names; a failure is the TS4xxx diagnostic of the declaration kind, TS2742 when the symbol is reachable only through a
-module that isn't a direct dependency. isolatedDeclarations (TS9xxx) reports where an inference would be needed at
-all, mostly syntactic.
+**Suite** (failstats 2026-09-29): 38 failing tests fail *only* on these codes, 3 more also on them
+(isolatedDeclarationErrorsClasses/Objects have spurious TS7032/TS7010 besides; declarationFiles a TS2526 for TS2527).
+By stage: isolatedDeclarations 17 tests, accessibility 14, TS2742 10 (6 are the module=node16/18/nodenext copies of
+nodeModulesExportsBlocksSpecifierResolution and nodeModulesExportsSourceTs). Not this plan, routed to
+`bugs/missing_checks.md`: TS4111 (noPropertyAccessFromIndexSignature, unimplemented; drizzle sets the option),
+TS4105, TS4109/TS4110.
 
-## Questions for the planning session
-- Can a diagnostics-only walk (no text output) reuse `ty_display.c`/`symbol_chain.c`'s accessibility logic, or does
-  tsc's accessibility (isSymbolAccessible with its alias/export chains) need its own port? Size it.
-- isolatedDeclarations first? It is mostly syntactic and is 20+ of the 45 tests.
-- Does any pinned corpus build with `declaration: true` (zod, valibot, type-fest are libraries)? If so, it is also a
-  real-world oracle for TS2742 false positives: they must stay at 0.
-- Perf: the walk only runs with `declaration`/`isolatedDeclarations`; measure its cost on a corpus that enables it.
-- Validation: the tests above via `./failstats.py --code TS2742` etc., 0 lost, corpora unchanged.
+**Real-world oracles, and a perf fact.** tsc's CLI with `--noEmit` reports declaration diagnostics when there is no
+other error (watch.ts emitFilesAndReportErrors), so the corpora that enable declarations are clean for these codes
+too and must stay at 0: **tsc's `src/compiler` (declaration + composite + isolatedDeclarations: 193k lines where every
+exported thing must be recognised as syntactically typeable)**, valibot (declaration + isolatedDeclarations),
+nestjs-boilerplate and drizzle (declaration; drizzle's inferred types are huge). Vue's corpus turns them off. So on
+four of ten corpora tsc does work tttt skips today (`./bench.sh` passes `--declaration false` to tsc for the compiler
+corpus only): the perf numbers there flatter tttt until this lands. The suite has ~1490 test files with
+`declaration`/`composite`/`isolatedDeclarations`; the ones that pass now are the false-positive oracle.
+
+## What tsc does (confirmed from `transformers/declarations.ts`, `declarations/diagnostics.ts`,
+`expressionToTypeNode.ts`, checker.ts's isSymbolAccessible family)
+- `getDeclarationDiagnostics(file)` runs transformDeclarations on one file and keeps only its diagnostics. It runs when
+  `getEmitDeclarations(options)` (declaration || composite), for files getSourceFilesToEmit keeps: not `.d.ts`, not
+  JSON, not from an external library (node_modules), JS only when emitted (allowJs). The harness always includes them
+  (getPreEmitDiagnostics); the CLI with `noEmit` only if there's no other diagnostic, without noEmit always (emit).
+- The transformer visits the statements that are visible (everything in a script; in a module the exported ones plus
+  the non-exported ones something visible names: "late painted" statements), and inside them the members that are
+  emitted (not private members' types, not function bodies). For every **written** type it checks entity names:
+  checkEntityNameVisibility → isEntityNameVisible on each TypeReference / TypeQuery / heritage expression; for every
+  **missing** type (variable, parameter, property, accessor, return, `export default expr`, a class's non-entity
+  `extends` expression) it serializes the checker's type through the node builder (typeToTypeNode with
+  declarationEmitNodeBuilderFlags: NoTruncation, UseStructuralFallback, WriteClassExpressionAsTypeLiteral,
+  UseTypeOfFunction, GenerateNamesForShadowedTypeParams...), whose SymbolTracker reports:
+  - trackSymbol(symbol) for each symbol it names (lookupSymbolChain) → isSymbolAccessible(..., shouldComputeAliases
+    = true): Accessible, NotAccessible (TS4025-style "has or is using private name"), CannotBeNamed (TS4023-style
+    "from external module but cannot be named"). The message depends on the declaration kind being emitted:
+    `getSymbolAccessibilityDiagnostic` from createGetSymbolAccessibilityDiagnosticForNode (diagnostics.ts, ~60
+    messages keyed by node kind, static/public, parent kind; the node the error is on is the declaration's name);
+  - reportPrivateInBaseOfClassExpression (TS4094 + related TS9027-ish "Add a type annotation"),
+    reportInaccessibleUniqueSymbolError (TS2527), reportInaccessibleThisError, reportCyclicStructureError (TS5088),
+    reportTruncationError (TS7056), reportLikelyUnsafeImportRequiredError (TS2742: the `import("...")` specifier the
+    builder generates contains `/node_modules/`), reportNonSerializableProperty, reportNonlocalAugmentation.
+- isSymbolAccessible = isAnySymbolAccessible: an accessible chain (getAccessibleSymbolChain, which
+  `symbol_chain.c` already ports for the printer) whose first symbol hasVisibleDeclarations (isDeclarationVisible, with
+  the late-painting exceptions for unexported imports, variable statements and top-level statements), else recurse
+  into the containers, modules always accessible through `import()`; otherwise CannotBeNamed when the symbol lives in
+  another external module, else NotAccessible. Verified by probe: a namespace-private interface returned by an
+  exported namespace function and used through `export const h = N.mk()` gives TS4025 on `h`; a class local to an
+  exported function's body gives nothing (structural fallback); a non-exported top-level interface used in an
+  exported signature gives nothing (late painted).
+- isolatedDeclarations: the same walk, but the missing type first goes through the syntactic builder
+  (expressionToTypeNode.ts, createSyntacticTypeNodeBuilder): literals, `as`/`satisfies`/`as const`, object and array
+  literals it can type from syntax, functions with annotated returns, a single `return` of such an expression...
+  Where it can't, `reportInferenceFallback(node)` gives the TS9xxx from createGetIsolatedDeclarationErrors
+  (diagnostics.ts: the message by node kind plus the related "Add a type annotation to ..." TS9027-TS9036 the errors
+  baseline prints as `!!! related`). The transformer adds its own: TS9014/TS9038 (computed names), TS9020 (enum
+  initializers referencing other symbols: getEnumMemberValue.hasExternalReferences), TS9021 (heritage expression),
+  TS9023 (expando functions), TS9026 (augmentation import), TS9037 (default export). Checker questions it asks:
+  isLiteralConstDeclaration, isDefinitelyReferenceToGlobalSymbolObject, requiresAddingImplicitUndefined
+  (isolatedDeclarationsAddUndefined), isExpandoFunctionDeclaration, getPropertiesOfContainerFunction. Not in JS files.
+
+## Design
+- **One new file, `src/ty/declaration_diagnostics.c`** (header in `ty/`): `check_declaration_diagnostics(checker,
+  file)`, run by the checker that checks the file, after it (so the parallel checkers stay deterministic: same file,
+  same checker, `./threadcheck.sh` / `./checkerdiff.py` must stay byte-identical). It walks the file's AST the way
+  transformDeclarations does (visible statements, emitted members, where types are written or missing) and dispatches
+  to the three checks below. Gate: getEmitDeclarations and the file is emitted (see above). The CLI: with `noEmit` and
+  any earlier error, don't run it at all (tsc doesn't report them then; it also saves the time); the test harness
+  always runs it.
+- **Accessibility is a port, next to `symbol_chain.c`** (or in it): isDeclarationVisible (memoized per declaration),
+  hasVisibleDeclarations with the late-painting rules (no need to record aliases to make visible: nothing is emitted,
+  just treat them as visible), isSymbolAccessible, isEntityNameVisible (resolveName from the enclosing declaration's
+  scope: tttt's scope lookup). getAccessibleSymbolChain is already there; don't write a second one.
+- **Inferred types go through the existing printer.** `ty_display.c` already follows the node builder (tsc's types
+  baseline is printed by it: the `^^^` underline marks reused nodes, `symbol_chain_at` is lookupSymbolChain,
+  `shows_alias` is isTypeSymbolAccessible). Give `TyDisplay` a `DeclTracker*` (null everywhere else) that the printer
+  calls where tsc's builder calls its tracker: trackSymbol from `out_symbol_name()` (every symbol named through a
+  chain), class-expression privates, unique symbols, `this`, cycles, truncation, and later the `import()` specifier.
+  Print into a scratch cstr that's dropped (or a sink that doesn't append: measure). A second walk mirroring the
+  printer's alias/typeof/structure decisions would drift from it; don't. Declaration mode may need the builder flags
+  the types baseline doesn't use (NoTruncation: MAX_DISPLAY_DEPTH and `...` must not hide symbols; deep types only
+  lose diagnostics, not add them). If a printer decision differs from tsc's, that's a types-baseline bug too
+  (`./displaydiff.py`).
+- **Written types**: walk the type nodes of visible declarations and check each entity name with isEntityNameVisible;
+  typeof queries and heritage clauses included. This part is syntactic plus name resolution: low risk, do it first
+  in stage 2.
+- **isolatedDeclarations** is a port of the syntactic builder's *decision* only (can this be typed from syntax, and
+  where does it fall back), no nodes built, plus the transformer's own TS9xxx checks and diagnostics.ts's message and
+  related-info selection.
+
+## Stages
+### Stage 1: the walk and isolatedDeclarations (1 session)
+The file walk and gate, then TS9xxx. Tests: the 17 (`./failstats.py --code TS9007` etc.; isolatedDeclarationErrors*,
+isolatedDeclarationLazySymbols, isolatedDeclarationsAddUndefined/AllowJs, computedPropertiesNarrowed,
+declarationEmitIsolatedDeclarationErrorNotEmittedForNonEmittedFile whose spurious TS2536 is a separate bug,
+jsDeclarations* TS9005/TS9006 which are JS declaration-emit, maybe leave). Must stay 0: `./realworld.py` (tsc's
+compiler: the strongest oracle there is for this) and `--corpus valibot`. The spurious TS7032/TS7010 in
+isolatedDeclarationErrorsClasses/Objects are plain checker bugs, worth fixing on the way.
+### Stage 2: accessibility (1-2 sessions)
+The isSymbolAccessible family, the diagnostic-by-kind table, written types first, then the printer's tracker for
+inferred types (TS4023/4025/4032/4081/4118, TS4094, TS2527, TS5088, TS7056). Tests: declarationEmitComputedProperty
+NameSymbol1/2, declarationEmitReadonlyComputedProperty, declarationEmitVarInElidedBlock, globalThisDeclarationEmit,
+declarationEmitInvalidExport, declarationEmitMappedTypeTemplateTypeofSymbol, declarationEmitMixinPrivateProtected,
+emitClassExpressionInDeclarationFile2, declarationEmitExpandoPropertyPrivateName, declarationEmitExpressionWithNonlocal
+PrivateUniqueSymbol, declarationFiles. Must stay 0: nest, drizzle, tsc, valibot, and 0 lost among the ~1490 suite
+tests with declarations. Measure instructions on drizzle and nest before and after (`./instrcount.sh drizzle nest`):
+the walk prints every exported inferred type, and drizzle's are big. tsc pays the same; a cost well under the check
+phase is fine, a multiple of it means the printer's declaration mode is doing something tsc doesn't.
+### Stage 3: TS2742 (1 session; can wait for plan 41)
+The builder's `import("...")` specifier from moduleSpecifiers.ts (getModuleSpecifiers: relative path, the package
+name through node_modules, package.json `exports`/`typesVersions` blocking a subpath, symlinked packages and
+realpaths, the node16/nodenext mode swap retry), TS2742 when it contains `/node_modules/`. tttt has module resolution
+(`module_resolution.c`) but no reverse direction. The 10 tests; common in pnpm monorepos, which plan 41 is also about,
+so do it when plan 41's specifier needs are known. If both need specifier generation, build it once.
+
+## Validation (every stage)
+`./fasttest.sh --summary`: the stage's tests pass, 0 lost (the declaration tests that pass now are the false-positive
+oracle). `./realworld.py` for every pinned corpus: unchanged, tsc/valibot/nest/drizzle at their current counts with no
+TS4xxx/TS9xxx/TS2742/TS2527 among them. `./threadcheck.sh` and `./checkerdiff.py` byte-identical. `./instrcount.sh` on
+the four declaration corpora before and after, in `agents/measurements.md`; when stage 2 lands, `./bench.sh` compares
+like with like on nest/drizzle/valibot for the first time (say so in measurements.md).
+
+## Risks
+- A printer approximation that names a symbol tsc wouldn't (or through a chain tsc wouldn't take) becomes a spurious
+  TS4xxx. The corpora and the passing suite tests catch it; fix the printer, never special-case the diagnostic.
+- `symbol_chain.c`'s chain is written for the symbols baseline (no meaning, see its header) and the types printer;
+  isSymbolAccessible asks with a meaning and `useOnlyExternalAliasing` false. Check it answers correctly with a
+  meaning before relying on it.
+- Late painting is what makes non-exported top-level declarations fine in modules; getting it wrong would flood real
+  code with TS4xxx. The probe above (and tsc's compiler corpus) pins it.

@@ -20,7 +20,9 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Perf**: 4 checkers on up to 4 threads, output independent of the thread count, parallel loading (plan 36 stage 1).
   Last `./bench.sh` (09-28): tsc corpus 0.48 s (tsgo 1.26), zod 0.45 (2.92). **Instructions crept ~8% since** (tsc
   corpus 4.82 -> 5.21 G single-threaded) across ~20 sessions of fixes with no profile in between. Serial parts: load
-  (now pooled), name resolution; the check phase is bounded by the heaviest file.
+  (now pooled), name resolution; the check phase is bounded by the heaviest file. Caveat: tsc with `--noEmit` also
+  computes declaration diagnostics on nest, drizzle and valibot (their tsconfigs enable declarations), which tttt
+  doesn't do until plan 40: those comparisons flatter tttt a little.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, mapper instantiation, tsc's inference flow (lazy fixing, top-level contextual instantiation, intra-expression
