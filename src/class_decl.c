@@ -1080,7 +1080,7 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
         FunctionImpl const* func = overloadable(item);
-        if (!func || func->has_body || func->body_missing) continue;
+        if (!func || func->has_body) continue;
         bool is_constructor = item->tag == CLASS_ITEM_CONSTRUCTOR;
         if (!is_constructor && item->method.computed_key) continue;
         // (A missing name: tsc's reportImplementationExpectedError says nothing)
@@ -1098,6 +1098,9 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         bool is_abstract = !is_constructor && item->method.is_abstract;
         bool later = false;
         for (isize j = i + 1; j < count && !later; j++) later = same_member(item, vec_class_item_at(&my items, j));
+        // A body missing its `{` (tsc's missing Block) is no body when another declaration of the member follows
+        // (nodeIsPresent), but is one for the last declaration's check (`!lastSeenNonAmbientDeclaration.body`)
+        if (func->body_missing && !later) continue;
         // The last one without a body is only an error for what needs an implementation
         if (!later && (is_abstract || (!is_constructor && item->method.is_optional))) continue;
         if (next && overloadable(next)->has_body && next->tag == item->tag) {

@@ -7095,7 +7095,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         name_span = span_null;
         name_string = cstr_null;
         name_is_value = false;
-        if (function_flags.committed) {
+        if (function_flags.committed || ((is_getter || is_setter) && !is_type)) {
             // `*` then no name: tsc's parsePropertyName has a missing identifier (TS1003) and it's a method
             parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
             name_span = span_from_pos(&p);
@@ -7115,6 +7115,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         }
     }
     hop_whitespace(&p);
+    // (tsc's parseAccessorDeclaration: after `get`/`set` and a name the parameter list is committed)
+    if ((is_getter || is_setter) && !is_type) function_flags.committed = true;
 
     // (An accessor in a type may have a body: tsc's parseAccessorDeclaration, TS1183 from checkGrammarAccessor)
     bool (*parse_function_fn)(Parser* parent, FunctionFlags flags, FunctionImpl* ret) =
