@@ -11274,6 +11274,8 @@ static void parse_jump_target(Parser* parent, Span* ret) {
 // same line: `module {`, `type = 1`, `asynd function f()`...
 static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
     Tok t = tok_peek(p);
+    // (Unknown tokens have their scanner errors, tsc says nothing more)
+    bool unknown = invalid_char_size(t.start) != 0;
     Span token = span_make(p->shared->source, t.start, t.end);
     if (span_equals(name, "const") || span_equals(name, "let") || span_equals(name, "var")) {
         parse_error(p, name, 1440, "Variable declaration not allowed at this location.");
@@ -11320,7 +11322,7 @@ static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
                 return;
             }
         }
-        parse_error(p, name, 1434, "Unexpected keyword or identifier.");
+        if (!unknown) parse_error(p, name, 1434, "Unexpected keyword or identifier.");
     }
 }
 
