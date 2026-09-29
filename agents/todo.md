@@ -8,11 +8,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 
 1. Done 2026-09-29: drizzle-orm and vue core pinned (both 0 under tsc 5.8); drizzle 693 -> 8, vue 107 -> 0 with four
    Opus sub-agents, suite 12040 -> 12047, other corpora unchanged. Plan 19 has both sections and the leftovers.
-2. **Perf session.** Instructions have crept +8% on tsc's corpus since 2026-09-28 (4.82 -> 5.21 G, similar
-   elsewhere) over ~20 sessions of fixes with no profile. Callgrind the corpora against f0dd10eb's numbers, bisect
-   the biggest steps, fix or gate. Run `./bench.sh` on a quiet machine (owed since the load pool; check `uptime`
-   first). hacks.md "Relations" (the conditional-source and indexed-access nesting entries). `bugs/perf_leads.md`, which now
-   has drizzle (16.3 G, the heaviest corpus) and react's +4.6% from the corpus session's two relate.c ports.
+2. Done 2026-09-29: perf session. Instructions back under f0dd10eb's everywhere but webpack/valibot/zod (tsc 5.23 ->
+   4.61 G, react -29%, vue -17%; missing tsc caches, not reverts), quiet `./bench.sh` run recorded, `./instrcount.sh`.
+   Leads in `bugs/perf_leads.md` "Where the time goes now".
 3. **Planning: plan 39** (one resolution stack for circularity; stub in `plans/39_resolution_stack.md`). Prototype
    on its tests, measure the per-LazyType cost, decide.
 4. **Plan 39 execution** (or, if the planning session said no, a suite checker bugs session like entry 7).

@@ -8,15 +8,28 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
 (to attribute arena bytes, count `__builtin_return_address(0)` per call site in `arena_alloc` and `addr2line` the
 `/tmp/relg` binary run under `setarch -R`, as the 09-28 perf session did).
 
-## drizzle and react (2026-09-29 corpus session)
-- drizzle went 265 -> 16.3 G instructions once its TS2589 runaways were fixed (object literal instances), but it is
-  still the heaviest corpus (tsc's: 5.2 G) with 1.8 GB peak RSS at K=4: `./arenasites.sh -p
-  thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json`, then per file (pg select.ts and set-operators.ts
-  were the heaviest). tttt measures a base class's variances for the derived-to-base check (PgColumnBuilder ->
-  ColumnBuilder<..., TTypeConfig & {dialect}>) where tsc relates identical members structurally and measures nothing.
-- react +4.6% from two tsc ports in relate.c (generic-source constraints pushing only the source, the conditional
-  immediate constraint): react-hook-form's Path/FieldPathValue indexed-access chains are related level by level with
-  uncached Maybe results, each variant ~12 times (hacks.md "Relations"; relating whole chains as tsc does is the fix).
+## Where the time goes now (perf session 2026-09-29, after the fixes of that session)
+Measure with `./instrcount.sh` (all corpora, or `--bin` another build); bisect regressions by building old commits in
+a worktree (`git worktree add /tmp/wt-perf <commit>`, symlink `thirdparty/tsc` and `thirdparty/corpora`, `meson setup`
+once, then `git checkout -f X && ninja`) and running `./instrcount.sh --bin`. Keyed caches in `my links`
+(`intern_get`/`intern_slot` with a `KEY_*`) are the cheap fix for "the same computation again": the session's wins
+were mostly tsc caches tttt lacked (two-member unions, intersections by members, assignment-reduced types).
+- **drizzle** (15.7 G): variance measurements are 40% (207 of them, ~30 M instructions each, nested:
+  `*SelectBuilder` -> `Create*SelectFromBuilderMode` -> `*SelectBase`). Compared with tsc (`VARIANCES=1
+  ./tscinstcount.js`): the same flags, and tsc spends 100k-470k instantiations on the same ones. Not a tttt bug; making
+  each measurement cheaper is instantiation speed in general (`instantiate_inner` 19% self, `intern_get` 10%).
+- **vue** (8.2 G): `first_unfit_argument_skipping` (call.c) 13%: the conditional skipTrue hack (todo entry 5's
+  plan-sized hacks). `ty_union_subtype_reduced` 3.5%.
+- **valibot** (5.4 G): `identity_structured` 53% inclusive: expect-type's identity comparisons of schema types in
+  `*.test-d.ts`, most of it `prop_type` resolving instantiated property types (inherent) and nested relations.
+  `instantiate_inner` 12.6% self.
+- **react** (1.56 G): react-hook-form's Path/FieldPathValue chains (hacks.md "Relations", relating whole chains as
+  tsc does); `lower_node` of big literal unions.
+- **tsc corpus** (4.6 G): flow is the biggest block: `type_at_flow_node` ~4% self, `narrowed_type` misses (type
+  predicates like `isIdentifier(node)` over the `Node` union: 70k instructions each, cached per (type, candidate)),
+  `narrow_by_equality`; then `check_related`/`is_simple_related` setup.
+- **webpack** (3.7 G, +12% over f0dd10eb): flat profile; the growth is the JS features added since (expandos,
+  CommonJS, JSDoc), not one regression.
 
 ## Memory (the weak side now: every corpus is faster than single-threaded tsgo, several use more memory)
 - **Arena by call site**: `./arenasites.sh -p <corpus>` (a `-DTTTT_ARENA_SITES` build in /tmp). zod after the
@@ -54,11 +67,12 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
   keep the hash in `Symbol`). Declare + resolve are two AST walks.
 - **Flow** (~12% of webpack): `type_at_flow_node` follows tsc; each variable read asks once now (TS2454's check
   reused the walk until 09-28).
-- **Checker hot spots** (tsc corpus): `check_related` setup, `ty_union` rebuilding small unions (`access`,
-  `identifier_flow_type`), `intern_slot`, `checker_atom` (`ty_member_name` atomizes every member name of every
-  resolved declaration: ~3% of webpack; atomize at bind time instead).
-- **zod** (4.3 G): re-profile. valibot: `infer_from_returns` over schema objects' `~run`/
-  `~standard` members and `ty_conditional_resolve`'s `infer X` walks.
+- **Checker hot spots** (tsc corpus): `check_related` setup, `intern_slot`, `checker_atom` (`ty_member_name`
+  atomizes member names of resolved declarations: atomize at bind time instead; the override checks' quadratic
+  use of it is gone).
+- **zod** (4.4 G): flat after the props_by_name fix (`intern_get` 4%, `instantiate_inner` 3%, `arena_alloc` 3%);
+  generic call resolution is ~46% inclusive. valibot: `infer_from_returns` over schema objects' `~run`/`~standard`
+  members and `ty_conditional_resolve`'s `infer X` walks.
 - `find_prop`'s intersection memo caches whatever depth it was computed at (`depth > 8` gives "not found").
   `ty_intersection` distributes over non-primitive unions with no size limit (tsc: TS2590 at 100k).
 - **Stack depth**: the parser and checker recurse once per nesting level; binderBinaryExpressionStress needs 4-8 MB

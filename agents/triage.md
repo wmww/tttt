@@ -34,3 +34,10 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
 - Each checker (`--checkers 4`) measures variances and builds relation caches on its own, and a TS2589 count is charged
   to whichever node first needs them; tsc pays once. Harmless since drizzle's runaways are fixed, but a TS2589 near
   the 5M limit could depend on the checker count.
+
+- (perf session 2026-09-29) New per-checker caches assume the computation is a pure function of the type ids:
+  `ty_union` of two types (KEY_UNION_PAIR), `ty_intersection` without an alias (KEY_INTERSECTION_OF), flow's
+  `assignment_reduced_type` (KEY_ASSIGNMENT_REDUCED). tsc caches the same things, and the suite and corpora didn't
+  move, but a result computed while something it reads is still in flight (constraints in
+  `remove_constrained_type_variables`, members for empty-object checks) is pinned. If an order-dependent union or
+  narrowing bug shows up, disable these first.
