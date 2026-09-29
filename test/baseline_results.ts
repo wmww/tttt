@@ -3706,7 +3706,7 @@ const baselines = {
         types: true,
     },
     'classFieldSuperAccessibleJs1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60871,7 +60871,7 @@ const baselines = {
         types: true,
     },
     'typeFromPropertyAssignment36': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

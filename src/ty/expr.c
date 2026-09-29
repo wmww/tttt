@@ -1647,14 +1647,42 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
     return access->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
 }
 
+// The second case of tsc's assumeUninitialized: a JavaScript assignment declaration (`d.q = v`) read in the control
+// flow container that declares it (tsc's getControlFlowContainer), where it's undefined until assigned
+static bool is_read_in_declaring_container(Checker* me, PropertyExpr const* access) {
+    if (access->form != PROPERTY_EXPR_DOT || !span_valid(access->prop.inner_span) || access->private_class) return false;
+    Ty const* object = ty_expr_type(me, &access->expr);
+    if (object->kind == TY_UNION || (object->flags & (TYF_ANY | TYF_ERROR))) return false;
+    Ty const* apparent = ty_apparent_type(me, object);
+    if (!(apparent->flags & TYF_OBJECT)) return false;
+    Prop const* prop = ty_property_of_type(me, apparent, ty_literal_name(me, ty_access_key_type(me, access)));
+    Symbol const* symbol = prop && prop->decl ? prop->decl->symbol : nullptr;
+    if (!symbol || !symbol->decl_count) return false;
+    SymbolDecl const* decl = &symbol->decls[0];
+    return decl->kind == SYMBOL_DECL_ASSIGNMENT && decl->flow_container && decl->flow_container == access->flow_container;
+}
+
 // tsc's getFlowTypeOfAccessExpression with assumeUninitialized: `this.x` in the constructor of the class that declares
-// x without an initializer is undefined until assigned (TS2565)
+// x without an initializer is undefined until assigned (TS2565), and so is a JavaScript assignment declaration in the
+// container that assigns it
 void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
-    if (!options->strict_null_checks || !options->strict_property_initialization) return;
+    if (!options->strict_null_checks) return;
     PropertyExpr const* access = expr->property;
-    if (access->assignment_target == FLOW_TARGET_DEFINITE || !access->flow || !access->in_constructor_of) return;
+    if (access->assignment_target == FLOW_TARGET_DEFINITE || !access->flow) return;
     Expr const* object = &access->expr;
+    bool this_access = object->tag == EXPR_IDENTIFIER && object->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
+    // (`this.x` under strictPropertyInitialization is only the first case)
+    if (!(this_access && options->strict_property_initialization) && is_read_in_declaring_container(me, access)) {
+        Ty const* type = ty_expr_type(me, expr);
+        if (includes_undefined(type)) return;
+        Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+        Ty const* initial = ty_union(me, parts, 2, nullptr, (TyList){0});
+        if (!includes_undefined(ty_flow_type(me, expr, type, initial, access->flow))) return;
+        error_ctx_error_d(errs, access->prop.inner_span, 2565, "Property '", access->prop.inner_span, "' is used before being assigned.");
+        return;
+    }
+    if (!options->strict_property_initialization || !access->in_constructor_of) return;
     if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS ||
         object->identifier.this_kind != THIS_CLASS_INSTANCE || object->identifier.target != access->in_constructor_of
     ) {

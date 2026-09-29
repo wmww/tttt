@@ -142,6 +142,9 @@ typedef struct FlowBuilder {
     u32 contextual_depth;
     ErrorCtx* errs;
     FunctionImpl const* function; // The container if it is a function, for "assigned in a closure"
+    // What tsc's getControlFlowContainer is (a function that isn't an IIFE, a namespace body, a field's initializer, the
+    // file; not a static block), only compared by identity
+    void const* container;
     // The container is the constructor of this class, or an IIFE in one (tsc's getControlFlowContainer skips those)
     Symbol const* constructor_of;
     FlowNode* start; // Of the container (an inlined IIFE: of the flow around it)

@@ -200,6 +200,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     FlowBuilder flow;
     flow_builder_init(&flow, outer, names, me, errs);
     flow.constructor_of = is_iife ? outer->constructor_of : my constructed_class;
+    if (!is_iife) flow.container = me;
     if (is_iife) {
         // Part of the flow around it, a `return` is a jump to the end of the body
         flow.start = outer->start;

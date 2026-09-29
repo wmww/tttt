@@ -530,6 +530,7 @@ typedef struct PropertyExpr {
     Symbol const* this_parameter;
     FunctionImpl const* this_function;
     FunctionImpl const* containing_function; // The innermost function it is in, if any
+    void const* flow_container; // FlowBuilder.container
     // `this.x`/`C.x` evaluated with the class (see FlowBuilder.initializer_context): InitializerContext, and the field
     // whose initializer it is in
     uint8_t initializer_context;

@@ -164,6 +164,9 @@ typedef struct SymbolDecl {
     // The scope (block) it was declared in, when scope_init_declaration() declared it: the symbols baseline lists a
     // block's function declarations first, see symbol_declaration_spans()
     struct Scope const* block;
+    // SYMBOL_DECL_ASSIGNMENT of a dot access (`f.x = v`, `this.x = v`): the control flow container (FlowBuilder.container)
+    // the assignment is in, set by the resolve walk
+    void const* flow_container;
 } SymbolDecl;
 
 typedef enum AliasState {

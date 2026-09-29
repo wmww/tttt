@@ -1692,6 +1692,19 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 my property->initializer_field = flow->initializer_field;
             }
             my property->containing_function = names->function;
+            my property->flow_container = flow->container;
+            if (my property->declares && my property->form == PROPERTY_EXPR_DOT) {
+                // (The declaration this assignment made: tsc's getControlFlowContainer of a valueDeclaration)
+                Symbol* declared = (Symbol*)my property->declares;
+                for (u32 d = 0; d < declared->decl_count; d++) {
+                    SymbolDecl* decl = &declared->decls[d];
+                    if (decl->kind == SYMBOL_DECL_ASSIGNMENT && span_start_ptr(decl->name) == span_start_ptr(my outer_span) &&
+                        decl->name.source == my outer_span.source
+                    ) {
+                        decl->flow_container = flow->container;
+                    }
+                }
+            }
             if (my property->expr.tag == EXPR_IDENTIFIER) {
                 my property->expr.identifier.super_member = my property->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
             }

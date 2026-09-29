@@ -86,6 +86,7 @@ void block_lookup_names_container(Block const* me, bool is_block, csview kind, S
     FlowBuilder flow;
     flow_builder_init(&flow, outer, scope, nullptr, errs);
     flow.current = flow_new_start(&flow, nullptr, false);
+    flow.container = me;
     scope->flow = &flow;
     block_lookup_names_as(me, is_block, scope, errs);
     flow_builder_finish(&flow, kind, name);

@@ -6,6 +6,7 @@
 #include "../scope.h"
 #include "../compiler_options.h"
 #include "../program.h"
+#include "../source_file.h"
 
 // Queries on the control flow graph (flow.h, plan 05). The graph is read-only and may be shared by several checkers,
 // so everything that is remembered is remembered in the Checker.
@@ -998,6 +999,19 @@ static bool assign_contains(FlowQuery* q, FlowAssign const* assign) {
     return assign->target && contains_matching_reference(q->me, q->reference, assign->target);
 }
 
+// A JavaScript or const variable declared with a function expression, which assignments to its properties extend
+static bool is_expando_function_declaration(Binding const* binding) {
+    if (binding->tag != BINDING_IDENTIFIER || binding->parent || !binding->source || binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING) {
+        return false;
+    }
+    Symbol const* symbol = binding->symbol;
+    if (!symbol) return false;
+    bool js = binding->content_span.source && binding->content_span.source->is_js;
+    if (!js && !symbol->is_const) return false;
+    InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
+    return initialized->value.tag == EXPR_FUNCTION && !expr_is_perenthisized(&initialized->value);
+}
+
 static bool assign_is_compound(FlowAssign const* assign) {
     if (assign->kind == FLOW_ASSIGN_UPDATE) return true;
     if (assign->kind != FLOW_ASSIGN_EXPR) return false;
@@ -1071,6 +1085,12 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
         return true;
     }
     if (assign_contains(q, assign)) {
+        // `f.x` of a variable initialized with a function expression may be an expando of it: back to before the
+        // function (tsc's getTypeAtFlowAssignment with getDeclaredExpandoInitializer)
+        if (assign->kind == FLOW_ASSIGN_DECLARATION && is_expando_function_declaration(assign->binding)) {
+            *out = type_at_flow_node(q, flow->antecedent);
+            return true;
+        }
         if (ty_flow_reachability(me, flow) == FLOW_REACH_NO) {
             *out = (FlowType){ ty_intrinsic(me, TY_UNREACHABLE_NEVER), false };
             return true;
