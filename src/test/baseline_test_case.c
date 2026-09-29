@@ -1590,7 +1590,8 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol 
 void baseline_test_case_add_symbol_value(BaselineTestCase* me, Span span, Symbol const* symbol) {
     Symbol const* value = symbol_for_meaning(symbol, SYMBOL_VALUE);
     if (!value || value->is_placeholder) {
-        baseline_test_case_add_type_node(me, span, &type_any);
+        // (tsc's getTypeOfAlias: errorType, which shows as `error` where the harness doesn't keep any's underline)
+        baseline_test_case_add_type(me, span, ty_intrinsic(current_checker, TY_ERROR));
         return;
     }
     // (the alias itself: `import * as ns` of an `export =` module can be its own type, see namespace_import_type())

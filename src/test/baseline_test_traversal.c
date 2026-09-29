@@ -800,7 +800,9 @@ static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx, bool 
         .text = symbol_text(ctx, my symbol),
     });
     // tsc shows aliases of pure types as any
-    ctx->any_keeps_underline = true; // An import/export name
+    // An import/export name (the harness's isImportStatementName, isExportStatementName: not `* as ns`, whose errorType
+    // is `error`)
+    ctx->any_keeps_underline = !((my tag == PORT_IMPORT_GATHER && !my is_require) || my tag == PORT_REEXPORT_GATHER);
     if (type_declaration && my tag != PORT_IMPORT_GATHER && my tag != PORT_REEXPORT_GATHER) {
         Symbol const* type_symbol = symbol_for_meaning(my symbol, SYMBOL_TYPE);
         bool declared = type_symbol && !type_symbol->is_placeholder &&
