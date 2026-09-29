@@ -289,6 +289,17 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   `ty_member_name()` (duplicate checks) still evaluates every computed key, while members only come from literal and
   entity-name keys (`computed_key_may_name`).
 
+- `undefined` is parsed as a literal; `expr_lookup_names` rewrites it into an identifier when a non-global declaration
+  of the name is in scope (a module's `var undefined`, an import), and `Expr.undefined_assigned` marks the literal as
+  an assignment target (errorType). The parser should make it an identifier and the checker resolve it like tsc's
+  undefinedSymbol.
+- `is_for_in_numeric_variable` (`ty/expr.c`): without parent links, "the index is a for-in variable of the loop whose
+  body it is in" is approximated by position (the nearest declaration before the access is a for-in variable whose
+  iterable ends before it). Not checked to be inside the body.
+- `ty_binding_assigned_type`: a destructured element with a default takes the default's type before declaration
+  widening only when the element is all undefined; tsc replaces undefined first in general (`[null | undefined]`
+  elements still widen first).
+
 ## Control flow graph (`flow.c`, builders in `expr.c`/`statement.c`/`function_impl.c`)
 - Array mutation nodes (`flow_array_mutation`) only for objects that may be auto-typed variables (`may_evolve`: a
   binder-time look at the declaration), tsc makes them for every narrowable operand. `x.push` is an evolving array
