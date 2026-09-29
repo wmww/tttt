@@ -46806,7 +46806,7 @@ const baselines = {
         types: true,
     },
     'compoundAssignmentLHSIsValue': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

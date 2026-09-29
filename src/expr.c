@@ -3201,6 +3201,15 @@ static bool binary_op_typecheck(
         case BINARY_OP_OR_OR_EQUAL:
         case BINARY_OP_EH_EH_EQUAL: {
             BinaryOp without_assignment = binary_op_without_assignment(op);
+            // A compound assignment doesn't destructure: an array or object literal is no reference (TS2364)
+            Expr const* target = skip_outer_expressions(&expr->binary_op->left);
+            if (target->tag == EXPR_ARRAY || target->tag == EXPR_OBJECT) {
+                if (binary_op_typecheck(left, without_assignment, right, expr, errs)) {
+                    error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2364,
+                        "The left-hand side of an assignment expression must be a variable or a property access.");
+                }
+                break;
+            }
             // The expression's own type is what gets assigned
             if (binary_op_typecheck(left, without_assignment, right, expr, errs)) {
                 binary_op_typecheck(left, BINARY_OP_EQUAL, expr_get_type((Expr*)expr), expr, errs);
