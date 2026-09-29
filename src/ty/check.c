@@ -1969,7 +1969,7 @@ static int member_refs(Checker* me, Ty const* object, Atom const* name, MemberRe
             return index < shape->arity && !(shape->flags[index] & TUPLE_ELEMENT_REST) ? shape->readonly : -1;
         }
     }
-    Prop const* prop = ty_get_prop(me, object, name);
+    Prop const* prop = ty_get_object_prop(me, object, name); // (Function's and Object's too: tsc's getPropertyOfType)
     if (!prop) return -1;
     if (out->len < c_arraylen(out->props)) {
         out->props[out->len] = prop;

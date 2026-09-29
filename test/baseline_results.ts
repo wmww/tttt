@@ -9441,7 +9441,7 @@ const baselines = {
         types: true,
     },
     'deleteReadonlyInStrictNullChecks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
