@@ -482,6 +482,10 @@ src` finds the code-side markers; every significant one has an entry here.
 - `error_ctx_global_error_s`: file-less diagnostics have a null span, sorted first; `error_ctx_error_s` drops invalid
   spans; `error_cmp` orders by span only.
 
+- `member_value()` (enums.c) counts a reference to a string enum member as syntactically a string (TS18055 under
+  isolatedModules): tsc keeps the referenced member's own isSyntacticallyString, so a member initialized with a
+  non-syntactic string would be reported again where another member references it.
+
 ## JavaScript and JSDoc (plan 26)
 - JSDoc is consumed at parse time, not stored: `jsdoc_before()` re-parses the last comment before the host into
   transient `JsDocTag`s; JSDoc parse errors dropped (no TS8032). `jsdoc_bind_comments()` parses every

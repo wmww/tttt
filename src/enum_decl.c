@@ -120,7 +120,16 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
             }
             continue;
         }
-        if (member->flags & TYF_STRING_LITERAL) continue;
+        if (member->flags & TYF_STRING_LITERAL) {
+            // (tsc's computeConstantEnumMemberValue, getIsolatedModules)
+            if ((compiler_options()->isolated_modules || compiler_options()->verbatim_module_syntax) &&
+                !ty_enum_initializer_is_syntactic_string(current_checker, &i->value)
+            ) {
+                error_ctx_error_d(errs, at, 18055, "'", my name, ".", i->name, "' has a string type, but must have "
+                    "syntactically recognizable string syntax when 'isolatedModules' is enabled.");
+            }
+            continue;
+        }
         // A computed member: an enum literal type of neither
         bool ambient = i->symbol->is_ambient || (my symbol && my symbol->is_ambient) ||
             (my name.source && my name.source->is_declaration);

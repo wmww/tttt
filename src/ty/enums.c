@@ -14,6 +14,9 @@
 typedef struct EnumValue {
     bool known;
     bool is_string;
+    // Written as a string (a string literal, a template, `+` with one): what isolatedModules asks of a string member
+    // (tsc's isSyntacticallyString)
+    bool syntactic_string;
     double number;
     cstr string; // owned
 } EnumValue;
@@ -36,8 +39,10 @@ static EnumValue member_value(Checker* me, Symbol const* decl) {
     if (!decl || !(decl->flags & SYMBOL_ENUM_MEMBER)) return enum_value_unknown;
     Ty const* type = ty_declared_type_of(me, decl);
     if (type->kind != TY_LITERAL || !type->literal.enum_decl) return enum_value_unknown;
+    // (A string member was either written as one or reported, TS18055: counted as written. HACK)
     if (type->flags & TYF_STRING_LITERAL) {
-        return (EnumValue){ .known = true, .is_string = true, .string = cstr_from_sv(atom_sv(type->literal.string)) };
+        return (EnumValue){ .known = true, .is_string = true, .string = cstr_from_sv(atom_sv(type->literal.string)),
+            .syntactic_string = true };
     }
     if (type->flags & TYF_NUMBER_LITERAL) return enum_value_number(type->literal.value.number);
     return enum_value_unknown;
@@ -67,6 +72,7 @@ static EnumValue evaluate_binary(Checker* me, BinaryOpExpr const* op, u32 depth)
             default: break;
         }
     } else if (left.known && right.known && op->op == BINARY_OP_PLUS) {
+        bool syntactic = left.syntactic_string || right.syntactic_string;
         cstr joined = cstr_null;
         for (u32 i = 0; i < 2; i++) {
             EnumValue const* side = i ? &right : &left;
@@ -77,7 +83,7 @@ static EnumValue evaluate_binary(Checker* me, BinaryOpExpr const* op, u32 depth)
                 cstr_append_value_js(&joined, &number);
             }
         }
-        ret = (EnumValue){ .known = true, .is_string = true, .string = joined };
+        ret = (EnumValue){ .known = true, .is_string = true, .string = joined, .syntactic_string = syntactic };
     }
     cstr_drop(&left.string);
     cstr_drop(&right.string);
@@ -97,7 +103,10 @@ static EnumValue const_variable_value(Checker* me, Symbol const* symbol, Span us
         return enum_value_unknown;
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-    return evaluate(me, &initialized->value, depth);
+    EnumValue ret = evaluate(me, &initialized->value, depth);
+    // (From another file it isn't written here: tsc's evaluateEntityNameExpression)
+    if (symbol->name_span.source != use.source) ret.syntactic_string = false;
+    return ret;
 }
 
 // The symbol a name or a dotted name of namespaces refers to, null if it isn't one
@@ -119,7 +128,8 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
         case EXPR_LITERAL:
             if (expr->literal.tag == VALUE_NUMBER) return enum_value_number(expr->literal.number);
             if (expr->literal.tag == VALUE_STRING) {
-                return (EnumValue){ .known = true, .is_string = true, .string = cstr_clone(expr->literal.string) };
+                return (EnumValue){ .known = true, .is_string = true, .string = cstr_clone(expr->literal.string),
+                    .syntactic_string = true };
             }
             return enum_value_unknown;
 
@@ -171,7 +181,7 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
                 cstr_drop(&part.string);
                 cstr_append_sv(&joined, cstr_sv(vec_cstr_at(&template->texts, i_index + 1)));
             }
-            return (EnumValue){ .known = true, .is_string = true, .string = joined };
+            return (EnumValue){ .known = true, .is_string = true, .string = joined, .syntactic_string = true };
         }
 
         case EXPR_PROPERTY: {
@@ -233,6 +243,12 @@ void ty_check_enum_initializer_references(Checker* me, EnumCase const* member, E
 }
 
 // The value of a template literal expression whose parts are all constants (tsc's evaluate()), false if it has none
+bool ty_enum_initializer_is_syntactic_string(Checker* me, Expr const* expr) {
+    EnumValue value = evaluate(me, expr, 0);
+    cstr_drop(&value.string);
+    return !value.known || !value.is_string || value.syntactic_string;
+}
+
 bool ty_evaluate_number(Checker* me, Expr const* expr, double* out) {
     EnumValue value = evaluate(me, expr, 0);
     bool ret = value.known && !value.is_string;

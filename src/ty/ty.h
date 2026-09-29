@@ -1303,6 +1303,8 @@ typedef struct EnumCase EnumCase;
 void ty_check_enum_initializer_references(Checker* me, EnumCase const* member, Expr const* expr, ErrorCtx* errs);
 bool ty_evaluate_string(Checker* me, Expr const* expr, cstr* out); // enums.c, tsc's evaluate() of a constant string
 bool ty_evaluate_number(Checker* me, Expr const* expr, double* out); // enums.c, tsc's evaluate() of a constant number
+// Not a string, or written as one (tsc's isSyntacticallyString, TS18055 under isolatedModules), enums.c
+bool ty_enum_initializer_is_syntactic_string(Checker* me, Expr const* expr);
 Ty const* ty_enum_of_member(Checker* me, Ty const* member); // The enum type an enum literal belongs to
 bool ty_is_enum_union(Ty const* ty);
 

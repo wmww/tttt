@@ -5326,7 +5326,7 @@ const baselines = {
         types: true,
     },
     'computedEnumMemberSyntacticallyString2(isolatedmodules=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11156,7 +11156,7 @@ const baselines = {
         types: true,
     },
     'enumWithNonLiteralStringInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
