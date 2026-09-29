@@ -6253,7 +6253,7 @@ const baselines = {
     'contextualTypeIterableUnions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeLogicalOr': {
         errors: true,
@@ -6286,9 +6286,9 @@ const baselines = {
         types: false,
     },
     'contextualTypeShouldBeLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypesNegatedTypeLikeConstraintInGenericMappedType1': {
         errors: true,
@@ -12411,9 +12411,9 @@ const baselines = {
         types: true,
     },
     'excessPropertyCheckWithMultipleDiscriminants': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'excessPropertyCheckWithNestedArrayIntersection': {
         errors: true,
@@ -32126,9 +32126,9 @@ const baselines = {
         types: true,
     },
     'unionTypeWithIndexAndTuple': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeWithIndexedLiteralType': {
         errors: true,

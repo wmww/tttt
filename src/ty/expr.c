@@ -468,7 +468,8 @@ static Ty const* context_map(Checker* me, Ty const* contextual, ContextGetter ge
             else if (part) parts[len++] = part;
         }
         if (unknown && !len) parts[len++] = ty_intrinsic(me, TY_UNKNOWN_);
-        Ty const* ret = len ? ty_union(me, parts, len, nullptr, (TyList){0}) : nullptr;
+        // (Not literal-reduced either: `number | 1` has room for the literal 2)
+        Ty const* ret = len ? ty_union_unreduced(me, parts, len) : nullptr;
         free(parts);
         return ret;
     }
