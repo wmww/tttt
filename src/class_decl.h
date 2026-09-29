@@ -32,6 +32,7 @@ typedef struct ClassItem {
             bool is_static;
             bool is_optional;
             bool is_abstract;
+            bool is_declare; // `declare m()` (TS1031): ambient, no body expected (tsc's parser gives it NodeFlags.Ambient)
             cstr name_string; // For a computed key, its source text: what accessor pairs and overloads are matched by
             Span name_span;
             bool name_is_value;

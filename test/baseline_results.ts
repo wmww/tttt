@@ -36926,7 +36926,7 @@ const baselines = {
         types: true,
     },
     'privateNamesIncompatibleModifiers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -37071,7 +37071,7 @@ const baselines = {
         types: true,
     },
     'abstractPropertyInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37116,7 +37116,7 @@ const baselines = {
         types: true,
     },
     'accessorsOverrideProperty7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

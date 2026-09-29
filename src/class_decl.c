@@ -1083,6 +1083,7 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         if (!func || func->has_body) continue;
         bool is_constructor = item->tag == CLASS_ITEM_CONSTRUCTOR;
         if (!is_constructor && item->method.computed_key) continue;
+        if (!is_constructor && item->method.is_declare) continue; // (Ambient: tsc's checkFunctionOrConstructorSymbol)
         // (A missing name: tsc's reportImplementationExpectedError says nothing)
         if (!is_constructor && span_valid(item->method.name_span) && !item->method.name_span.sv.size) continue;
         ClassItem const* next = i + 1 < count ? vec_class_item_at(&my items, i + 1) : nullptr;
@@ -1604,8 +1605,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
             case CLASS_ITEM_METHOD:
                 if (i->method.computed_key) class_computed_key_typecheck(me, i, errs);
-                i->method.func.private_ambient = class_item_private_in_ambient(me, i);
-                if (i->method.accessor && !i->method.func.has_body && !i->method.is_abstract && !i->method.func.ambient) {
+                i->method.func.private_ambient = class_item_private_in_ambient(me, i) || i->method.is_declare;
+                if (i->method.accessor && !i->method.func.has_body && !i->method.is_abstract && !i->method.func.ambient &&
+                    !i->method.is_declare
+                ) {
                     // tsc's checkGrammarAccessor: at the accessor's last character (its `;` if it has one)
                     Span full = i->method.func.full_span;
                     while (full.sv.size && strchr(" \t\r\n", full.sv.buf[full.sv.size - 1])) full.sv.size--;
@@ -1624,6 +1627,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             case CLASS_ITEM_FIELD: {
                 if (i->field.computed_key) class_computed_key_typecheck(me, i, errs);
                 if (i->field.has_explicit_type) type_typecheck(&i->field.explicit_type, errs);
+                // (tsc's checkPropertyDeclaration)
+                if (i->field.is_abstract && i->field.value.tag != EXPR_IMPLICIT_ANY && span_valid(i->field.name_span)) {
+                    error_ctx_error_d(errs, i->field.name_span, 1267, "Property '", i->field.name_span,
+                        "' cannot have an initializer because it is marked abstract.");
+                }
                 // (tsc's checkGrammarTypeOperatorNode)
                 if (i->field.has_explicit_type && i->field.explicit_type.tag == TYPE_UNIQUE_SYMBOL &&
                     (!i->field.is_static || !i->field.is_readonly)

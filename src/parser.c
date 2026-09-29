@@ -7229,6 +7229,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 .method = {
                     .is_static = modifiers.includes[MODIFIER_STATIC],
                     .is_abstract = modifiers.includes[MODIFIER_ABSTRACT],
+                    .is_declare = modifiers.includes[MODIFIER_DECLARE],
                     .name_string = cstr_move(&name_string),
                     .name_span = name_span,
                     .is_optional = optional,
