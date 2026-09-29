@@ -715,6 +715,13 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 break;
             }
             Symbol const* shown = shown_declaration(my identifier->symbol, my identifier->target);
+            // A value used as a type (TS2749) is tsc's unresolved symbol, which has no declarations
+            if (!heritage && !my identifier->jsdoc && !my identifier->keyword && !span_valid(my identifier->import_span) &&
+                my identifier->target &&
+                !my identifier->target->is_placeholder && !(my identifier->target->flags & SYMBOL_TYPE)
+            ) {
+                shown = nullptr;
+            }
             if (!(heritage && !shown)) baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_clone(my identifier->namespaces),
                 .declarations = declaration_get_spans(shown),

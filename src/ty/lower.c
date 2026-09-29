@@ -378,6 +378,30 @@ static bool symbol_is_generic_alias(Symbol const* symbol) {
     return symbol->flags & SYMBOL_TYPE_ALIAS && !symbol->is_placeholder && symbol_type_generic(symbol);
 }
 
+// The type of a type reference whose name doesn't resolve: tsc's unresolvedType, which prints as written
+static Ty const* unresolved_reference(Checker* me, IdentifierType const* identifier) {
+    // (A missing name, `a.` at the end of a line: no node to reuse, errorType)
+    if (identifier->keyword || !span_valid(identifier->name) || !identifier->name.sv.size) return ty_intrinsic(me, TY_ERROR);
+    cstr name = cstr_null;
+    for_each (i, vec_span, &identifier->namespaces) {
+        cstr_append_sv(&name, i->sv);
+        cstr_append(&name, ".");
+    }
+    cstr_append_sv(&name, identifier->name.sv);
+    // (Printed as written, type arguments too: tsc reuses the reference's node, `Class<T>`)
+    if (vec_spanned_type_size(&identifier->generic_params)) {
+        cstr_append(&name, "<");
+        for_each (i, vec_spanned_type, &identifier->generic_params) {
+            if (i_index) cstr_append(&name, ", ");
+            cstr_append_sv(&name, i->span.sv);
+        }
+        cstr_append(&name, ">");
+    }
+    Ty const* ret = ty_unresolved(me, cstr_sv(&name));
+    cstr_drop(&name);
+    return ret;
+}
+
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
     switch ((JsDocIntrinsic)identifier->jsdoc_intrinsic) {
         case JSDOC_INTRINSIC_NONE: break;
@@ -434,27 +458,12 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             return ret;
         }
     }
-    if (!decl) {
-        // (A missing name, `a.` at the end of a line: no node to reuse, errorType)
-        if (identifier->keyword || !span_valid(identifier->name) || !identifier->name.sv.size) return ty_intrinsic(me, TY_ERROR);
-        cstr name = cstr_null;
-        for_each (i, vec_span, &identifier->namespaces) {
-            cstr_append_sv(&name, i->sv);
-            cstr_append(&name, ".");
-        }
-        cstr_append_sv(&name, identifier->name.sv);
-        // (Printed as written, type arguments too: tsc reuses the reference's node, `Class<T>`)
-        if (vec_spanned_type_size(&identifier->generic_params)) {
-            cstr_append(&name, "<");
-            for_each (i, vec_spanned_type, &identifier->generic_params) {
-                if (i_index) cstr_append(&name, ", ");
-                cstr_append_sv(&name, i->span.sv);
-            }
-            cstr_append(&name, ">");
-        }
-        Ty const* ret = ty_unresolved(me, cstr_sv(&name));
-        cstr_drop(&name);
-        return ret;
+    // A name that doesn't resolve to a type: an alias that doesn't resolve, a value outside JSDoc (TS2749) (tsc's
+    // resolveTypeReferenceName makes those unresolved symbols too)
+    if (!decl || (decl->is_placeholder && decl->is_unresolved) ||
+        (!identifier->jsdoc && !identifier->keyword && !(decl->flags & SYMBOL_TYPE) && !decl->is_placeholder)
+    ) {
+        return unresolved_reference(me, identifier);
     }
     Ty const* args_buf[MAX_TYPE_ARGS];
 

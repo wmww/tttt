@@ -492,8 +492,8 @@ const baselines = {
     },
     'allowImportClausesToMergeWithTypes': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'allowJsClassThisTypeCrash': {
         errors: true,
@@ -9002,7 +9002,7 @@ const baselines = {
     },
     'declareModifierOnImport1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declareModifierOnTypeAlias': {
@@ -9108,7 +9108,7 @@ const baselines = {
     'decoratorMetadataTypeOnlyImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorMetadataWithConstructorType': {
         errors: true,
@@ -12838,7 +12838,7 @@ const baselines = {
     'exportDefaultProperty2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportDefaultQualifiedNameNoError': {
         errors: true,
@@ -13038,7 +13038,7 @@ const baselines = {
     'exportEqualsProperty2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportEqualsUmd': {
         errors: true,
@@ -15042,13 +15042,13 @@ const baselines = {
     },
     'genericFunduleInModule': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'genericFunduleInModule2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'genericGetter': {
         errors: true,
@@ -16097,23 +16097,23 @@ const baselines = {
     },
     'importDeclWithClassModifiers': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importDeclWithDeclareModifier': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importDeclWithDeclareModifierInAmbientContext': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importDeclWithExportModifier': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeclWithExportModifierAndExportAssignment': {
         errors: true,
@@ -18608,7 +18608,7 @@ const baselines = {
     'intrinsics': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'invalidConstraint1': {
         errors: true,
@@ -33753,7 +33753,7 @@ const baselines = {
     'asyncAwaitIsolatedModules_es2017': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncAwait_es2017': {
         errors: true,
@@ -34028,7 +34028,7 @@ const baselines = {
     'asyncAwaitIsolatedModules_es5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncAwaitNestedClasses_es5': {
         errors: true,
@@ -34343,7 +34343,7 @@ const baselines = {
     'asyncAwaitIsolatedModules_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncAwait_es6': {
         errors: true,
@@ -38532,12 +38532,12 @@ const baselines = {
     },
     'decoratorOnImportEquals1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'decoratorOnImportEquals2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'decoratorOnInterface': {
@@ -42823,17 +42823,17 @@ const baselines = {
     'defaultExportsCannotMerge01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultExportsCannotMerge02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultExportsCannotMerge03': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultExportsCannotMerge04': {
         errors: true,
@@ -48022,8 +48022,8 @@ const baselines = {
     },
     'typeAssertions': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'TypeGuardWithArrayUnion': {
         errors: true,
@@ -49667,8 +49667,8 @@ const baselines = {
     },
     'exportNamespace9': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'exportNamespace_js': {
         errors: true,
@@ -49722,8 +49722,8 @@ const baselines = {
     },
     'importClause_namespaceImport': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importDefaultNamedType': {
         errors: false,
@@ -53007,7 +53007,7 @@ const baselines = {
     },
     'jsxUnclosedParserRecovery': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsxJsxsCjsTransformChildren(jsx=react-jsx)': {
@@ -57202,7 +57202,7 @@ const baselines = {
     },
     'parserAmbiguityWithBinaryOperator4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserCastVersusArrowFunction1': {
@@ -58112,8 +58112,8 @@ const baselines = {
     },
     'parserharness': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserindenter': {
         errors: false,

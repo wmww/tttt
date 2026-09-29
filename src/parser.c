@@ -12335,6 +12335,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 modified.kind = MODIFIED_IMPORT_EQUALS;
                 main->export_import |= modifiers.includes[MODIFIER_EXPORT];
                 main->declared |= modifiers.includes[MODIFIER_DECLARE];
+                main->full_span = span_from(a); // (The declaration starts at its modifiers)
             } else if (is_import) {
                 modified.kind = MODIFIED_IMPORT;
                 code = 1191;
