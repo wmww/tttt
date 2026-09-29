@@ -2874,7 +2874,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
         // After the dot any identifier name goes, keywords too (`AtRule.default`), but `a.` followed by two words on
         // the next line is missing its name, reported right after the dot (tsc's parseRightSideOfDot)
         Anchor member = anchor(&p);
-        Tok t = tok_peek(&p);
+        Tok t = p.whitespace == WHITESPACE_NEWLINE ? tok_peek(&p) : (Tok){0};
         if (t.newline_before && tok_is_word(t) && tok_is_word(tok_next(&p, t)) && !tok_next(&p, t).newline_before) {
             name = span_make(p.shared->source, after_dot, after_dot);
             parse_error(&p, name, 1003, "Identifier expected.");
@@ -3141,6 +3141,10 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
 // `this is T` and `asserts x (is T)` in any type position (tsc's parseNonArrayType; `x is T` is only a return type's):
 // a TYPE_PREDICATE, which the checker reports where a return type's predicate (FunctionImpl.predicate) isn't
 static bool parse_misplaced_type_predicate(Parser* parent, TypeNode* ret) {
+    // (Before the tokenizer: most types starting with `t` or `a` are `typeof`, `true` or names)
+    if (!starts_with_followed_by_word_break(parent, "this") && !starts_with_followed_by_word_break(parent, "asserts")) {
+        return false;
+    }
     Tok t = tok_peek(parent);
     Tok next = tok_next(parent, t);
     if (next.newline_before) return false;
@@ -5821,7 +5825,7 @@ static bool parse_function_args_inner(
                     hop_whitespace(&p);
                     Span comma = span_make(p.shared->source, p.pos, p.pos + 1);
                     // (tsc's parseDelimitedList: no ',' expected before what ends the list)
-                    ignore( list_is_terminator(PARSING_PARAMETERS, tok_peek(&p)) || expect_char(&p, ',') );
+                    ignore( (*p.pos != ',' && list_is_terminator(PARSING_PARAMETERS, tok_peek(&p))) || expect_char(&p, ',') );
                     Parser after = parser(&p);
                     hop_whitespace(&after);
                     bool closes = *after.pos == ')';
@@ -10058,8 +10062,9 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
     // tsc's parseDelimitedList(ImportOrExportSpecifiers)
     u32 saved_context = list_enter(&p, PARSING_IMPORT_OR_EXPORT_SPECIFIERS);
     while (true) {
-        Tok t = tok_peek(&p);
-        if (!list_is_element(&p, PARSING_IMPORT_OR_EXPORT_SPECIFIERS, t)) {
+        // (A word other than `from` is an element: most specifiers skip the tokenizer)
+        Tok t = identifier_char_size(p.pos, true) && *p.pos != 'f' ? (Tok){0} : tok_peek(&p);
+        if (t.start && !list_is_element(&p, PARSING_IMPORT_OR_EXPORT_SPECIFIERS, t)) {
             if (list_is_terminator(PARSING_IMPORT_OR_EXPORT_SPECIFIERS, t)) break;
             if (list_abort_or_skip(&p, PARSING_IMPORT_OR_EXPORT_SPECIFIERS)) break;
             continue;
@@ -10135,7 +10140,7 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
             hop_whitespace(&p);
             continue;
         }
-        if (list_is_terminator(PARSING_IMPORT_OR_EXPORT_SPECIFIERS, tok_peek(&p))) break;
+        if (*p.pos == '}' || list_is_terminator(PARSING_IMPORT_OR_EXPORT_SPECIFIERS, tok_peek(&p))) break;
         expect_char(&p, ',');
     }
     list_leave(&p, saved_context);
