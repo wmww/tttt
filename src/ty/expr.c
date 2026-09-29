@@ -1846,6 +1846,8 @@ static bool is_js_container_declaration(BinaryOpExpr const* binary) {
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
         value = &value->binary_op->right;
     }
+    // (`a.b = a.b || {}`: tsc's getDefaultedExpandoInitializer)
+    if (value->tag == EXPR_BINARY_OP && value->binary_op->defaulted_expando) value = &value->binary_op->right;
     if (value->tag != EXPR_OBJECT) return false;
     return !vec_object_expr_item_size(&value->object) || span_equals(expr_static_property_name(left), "prototype");
 }
