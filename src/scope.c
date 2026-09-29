@@ -3356,7 +3356,17 @@ static void add_prototype_property(Scope* me, Expr* constructor, Span name, Expr
     if (!file || !file->is_js) return;
     Expr* init;
     Symbol* host = expando_host(me, constructor, &init);
-    if (!host) return;
+    if (!host) {
+        // Any variable of this file gets the member (tsc's bindPotentiallyMissingNamespaces makes whatever has a value
+        // declaration a class: \`var g = f; g.prototype.m = v\`). Its type stays its initializer's, so it isn't made a
+        // class here
+        Symbol* found = lookup_for_property_access(me, constructor);
+        if (!found || found->is_placeholder || !(found->flags & SYMBOL_VARIABLE) || (found->flags & (SYMBOL_ALIAS | SYMBOL_CLASS))) return;
+        SymbolDecl const* variable = symbol_find_decl(found, SYMBOL_DECL_VARIABLE);
+        if (!variable || variable->full.source != file) return;
+        declare_assignment_member(me, &found->members, found, name, left, value, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, 0);
+        return;
+    }
     if (init && (init->tag != EXPR_FUNCTION || span_valid(init->function->arrow_span))) return;
     if (!init && !(host->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS))) return;
     if (init) init->function->class_symbol = host;
