@@ -1410,11 +1410,59 @@ static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
 
 // The parameters from `i` on as one type (tsc's getRestTypeAtPosition: a rest parameter there as it is, else the tuple
 // of them), any if that's an array of any (getRestOrAnyTypeAtPosition)
-static Ty const* rest_or_any_type_at(Checker* me, Signature const* sig, u32 i) {
-    Ty const* rest = sig->param_count && sig->params[sig->param_count - 1].rest && i + 1 == sig->param_count ?
-        sig->params[i].type : ty_signature_params_tuple(me, sig, i, nullptr);
-    Ty const* element = ty_is_array(me, rest) ? ty_reference_args(me, rest).data[0] : nullptr;
-    return element && (element->flags & TYF_ANY) ? ty_intrinsic(me, TY_ANY) : rest;
+[[gnu::noinline]] static Ty const* rest_or_any_type_at(Checker* me, Signature const* sig, u32 pos) {
+    // tsc's getEffectiveRestType: a rest parameter that isn't a tuple, else what the tuple has from its first rest or
+    // variadic element on (null if it has none)
+    Ty const* rest_param = sig->param_count && sig->params[sig->param_count - 1].rest ? sig->params[sig->param_count - 1].type : nullptr;
+    TupleShape const* rest_shape = rest_param ? ty_tuple_shape(rest_param) : nullptr;
+    Ty const* effective = rest_param && !rest_shape ? rest_param : nullptr;
+    if (rest_shape) {
+        u32 first = 0;
+        while (first < rest_shape->arity && !(rest_shape->flags[first] & TUPLE_ELEMENT_REST)) first++;
+        if (first < rest_shape->arity) {
+            TyList elements = ty_reference_args(me, rest_param);
+            if (first + 1 == rest_shape->arity) {
+                effective = elements.data[first]; // `...X[]` is X[], `...T` is T
+            } else {
+                Ty const** parts = arena_new_n(&my arena, Ty const*, rest_shape->arity - first);
+                for (u32 k = first; k < rest_shape->arity; k++) parts[k - first] = elements.data[k];
+                TupleShape shape = { .arity = rest_shape->arity - first, .flags = rest_shape->flags + first };
+                effective = ty_reference(me, ty_tuple_target(me, &shape), (TyList){ .data = parts, .len = shape.arity });
+            }
+        }
+    }
+    if (effective && (effective->flags & TYF_ANY)) effective = ty_array(me, ty_intrinsic(me, TY_ANY), false);
+    u32 count = ty_signature_param_count(sig);
+    Ty const* ret;
+    if (effective && pos + 1 >= count) {
+        ret = pos + 1 == count ? effective : ty_array(me, ty_indexed(me, effective, ty_intrinsic(me, TY_NUMBER)), false);
+    } else {
+        // (The tuple of the positions from here on, the effective rest last: tsc's createTupleType there)
+        u32 len = count > pos ? count - pos : 0;
+        u32 min = signature_min_args(sig);
+        Ty const** elements = arena_new_n(&my arena, Ty const*, len ? len : 1);
+        unsigned char* flags = arena_new_n(&my arena, unsigned char, len ? len : 1);
+        Atom const** names = arena_new_n(&my arena, Atom const*, len ? len : 1);
+        bool named = false;
+        u32 own = sig->param_count - (rest_param ? 1 : 0);
+        for (u32 i = pos; i < pos + len; i++) {
+            bool last = effective && i + 1 == count;
+            elements[i - pos] = last ? effective : param_type_at(me, sig, i);
+            flags[i - pos] = last ? TUPLE_ELEMENT_REST : i < min ? 0 : TUPLE_ELEMENT_OPTIONAL;
+            if (!elements[i - pos]) elements[i - pos] = ty_intrinsic(me, TY_UNKNOWN_);
+            // (Labelled like the parameters or tuple elements they are: tsc's getNameableDeclarationAtPosition)
+            SigParam const* param = i < own ? &sig->params[i] : rest_param && !rest_shape ? &sig->params[own] : nullptr;
+            names[i - pos] = param ? (param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER ? param->name : nullptr) :
+                rest_shape && rest_shape->names && i - own < rest_shape->arity ? rest_shape->names[i - own] : nullptr;
+            named |= names[i - pos] != nullptr;
+        }
+        TupleShape shape = { .arity = len, .flags = flags, .names = named ? names : nullptr };
+        Ty const* target = ty_tuple_target(me, &shape);
+        ret = len ? ty_reference(me, target, (TyList){ .data = elements, .len = len }) : target;
+    }
+    // (tsc's getRestOrAnyTypeAtPosition)
+    Ty const* element = ty_is_array(me, ret) ? ty_reference_args(me, ret).data[0] : nullptr;
+    return element && (element->flags & TYF_ANY) ? ty_intrinsic(me, TY_ANY) : ret;
 }
 
 static Ternary compare_signatures(
@@ -2288,12 +2336,22 @@ static bool has_literal_length(Checker* me, Ty const* ty) {
         (length->kind == TY_UNION && (length->composite.types.data[0]->flags & TYF_NUMBER_LITERAL)));
 }
 
+static Ternary tuple_shapes_related(
+    Checker* me, RelationState* st, TupleShape const* source_shape, TyList source_args, Ty const* target, bool report
+);
 static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     TupleShape const* source_shape = is_empty_tuple(source) ? source->declared.tuple : source->reference.target->declared.tuple;
+    TyList source_args = is_empty_tuple(source) ? (TyList){0} : ty_reference_args(me, source);
+    return tuple_shapes_related(me, st, source_shape, source_args, target, report);
+}
+
+// (An array source is one rest element: tsc's propertiesRelatedTo for isArrayOrTupleType(source))
+static Ternary tuple_shapes_related(
+    Checker* me, RelationState* st, TupleShape const* source_shape, TyList source_args, Ty const* target, bool report
+) {
     TupleShape const* target_shape = is_empty_tuple(target) ? target->declared.tuple : target->reference.target->declared.tuple;
     // (TS4104 is report_relation_error()'s, tsc's propertiesRelatedTo says nothing)
     if (source_shape->readonly && !target_shape->readonly && st->relation != TY_RELATION_COMPARABLE) return TERNARY_FALSE;
-    TyList source_args = is_empty_tuple(source) ? (TyList){0} : ty_reference_args(me, source);
     TyList target_args = is_empty_tuple(target) ? (TyList){0} : ty_reference_args(me, target);
     u32 source_arity = source_shape->arity, target_arity = target_shape->arity;
     // (A rest element of an array type is tsc's Rest, of anything else (a type variable) its Variadic)
@@ -4593,6 +4651,15 @@ static Ternary structured_related_members(
     if (target_is_tuple) {
         TupleShape const* shape = is_empty_tuple(target) ? target->declared.tuple : target->reference.target->declared.tuple;
         if (source->kind == TY_REFERENCE && is_array_target(me, source->reference.target)) {
+            // Against a tuple with a rest element, as the tuple `[...X[]]`, element by element (tsc's
+            // propertiesRelatedTo takes an array source as one rest element)
+            bool has_rest = false;
+            for (u32 i = 0; i < shape->arity; i++) has_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+            if (has_rest) {
+                unsigned char rest_flag = TUPLE_ELEMENT_REST;
+                TupleShape as_tuple = { .arity = 1, .flags = &rest_flag, .readonly = source->reference.target == my readonly_array_target };
+                return tuple_shapes_related(me, st, &as_tuple, (TyList){ .data = &source, .len = 1 }, target, report);
+            }
             u32 min = 0;
             for (u32 i = 0; i < shape->arity; i++) {
                 if (!(shape->flags[i] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) min = i + 1;

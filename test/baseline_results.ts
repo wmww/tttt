@@ -65096,7 +65096,7 @@ const baselines = {
         types: true,
     },
     'restTuplesFromContextualTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
