@@ -3794,8 +3794,11 @@ static Ternary structured_related_members(
     // Two instantiations of one generic type alias relate by their type arguments with the alias's variances (tsc
     // limits it to object and conditional types, whose aliases don't depend on what was checked first). If that
     // fails with an unreliable variance, structurally
+    // Not type references: tsc's getNormalizedType makes a deferred one a plain reference first, which has no alias
+    // (`type A<T> = Box<T extends string ? C<T> : never>`: A<symbol | string> is Box<C<string>>, which A<string> is too)
     if (((source->flags & TYF_OBJECT) || source->kind == TY_CONDITIONAL) && source->alias && source->alias_args.len &&
         source->alias == target->alias && source->alias_args.len == target->alias_args.len &&
+        source->kind != TY_REFERENCE && target->kind != TY_REFERENCE &&
         !is_alias_marker(me, source) && !is_alias_marker(me, target) && use_variances &&
         !(st->alias_fallback_source == source && st->alias_fallback_target == target)
     ) {
