@@ -200,8 +200,10 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
         // reachability knows about `never` calls and exhaustive switches
         FlowReachability end = ty_function_end_reachability(me, function);
         bool returns_nothing_somewhere = function->has_bare_return || end == FLOW_REACH_YES;
-        if (!returned.len && !function->has_bare_return && end == FLOW_REACH_NO && (function->is_expression || skipped)) {
-            // Function expressions that can't return don't (declarations are `void`)
+        if (!returned.len && !function->has_bare_return && end == FLOW_REACH_NO && (function->is_expression || skipped) &&
+            !function->accessor
+        ) {
+            // Function expressions that can't return don't (declarations are `void`, accessors too: tsc's mayReturnNever)
             ret = ty_intrinsic(me, TY_NEVER);
         } else if (!returned.len) {
             // `undefined` if that's what the context wants (tsc's getReturnTypeFromBody, TS 5.1)
