@@ -3287,7 +3287,12 @@ Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, JsxAttribut
     Ty const* type = ty_expr_type(me, attributes);
     Prop const* prop = type->flags & TYF_OBJECT ? ty_get_prop(me, type, checker_atom(me, attribute->name.sv)) : nullptr;
     // (Unless a later spread replaced it)
-    if (prop && prop->decl->decl_span_count == 1 && span_eq(prop->decl->decl_spans[0], attribute->span)) return prop_type(me, prop);
+    // (Not merged with a spread's optional property, which may have no declaration span of its own: `literal_own`)
+    if (prop && prop->decl->decl_span_count == 1 && span_eq(prop->decl->decl_spans[0], attribute->span) &&
+        prop->decl->literal_own
+    ) {
+        return prop_type(me, prop);
+    }
     u64 key[2] = { KEY_JSX_ATTRIBUTE, (u64)(uintptr_t)attribute };
     Ty const* checked = intern_get(&my links, key, 2);
     if (checked) return checked;

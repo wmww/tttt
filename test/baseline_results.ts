@@ -20248,7 +20248,7 @@ const baselines = {
     'jsxPartialSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxPreserveWithJsInput': {
         errors: true,
