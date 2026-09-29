@@ -4077,7 +4077,13 @@ static Ternary structured_related_members(
         case TY_TYPE_PARAM: {
             Ty const* constraint = ty_param_constraint(me, source);
             if (!constraint || constraint == source) {
-                if (target->kind == TY_TYPE_PARAM || (target->flags & TYF_DEFERRED)) return TERNARY_FALSE;
+                // (Comparable to a deferred type, as unknown is: `T` and `GetDecoderResult<D>`; to another type parameter
+                // not, the carve-out of tsc's structuredTypeRelatedToWorker for type parameter targets)
+                if (target->kind == TY_TYPE_PARAM ||
+                    ((target->flags & TYF_DEFERRED) && st->relation != TY_RELATION_COMPARABLE)
+                ) {
+                    return TERNARY_FALSE;
+                }
                 // As `unknown` (tsc's getConstraintOfType(source) || unknownType): comparable to anything, and without
                 // strictNullChecks its apparent type `{}` against object types (apparent_type()), though not as a `{}`
                 // that any mapped type with `?` takes
