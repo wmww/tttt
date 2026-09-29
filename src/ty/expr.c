@@ -61,9 +61,7 @@ static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* 
     }
     bool global_this = object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE &&
         object->declared.namespace_symbol && object->declared.namespace_symbol->is_global_this;
-    if (!(object->flags & TYF_OBJECT) || (object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object)) {
-        return any_type(me);
-    }
+    if ((object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object)) return any_type(me);
     // What a JavaScript object literal made has every property, except in a JavaScript file that isn't checked (tsc's
     // checkPropertyAccessExpressionOrQualifiedName: isUncheckedJSSuggestion makes it a suggestion and errorType)
     SourceFile const* file = expr->outer_span.source;
@@ -3761,6 +3759,16 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
             Ty const* key = ty_access_key_type(me, expr->property);
             if (expr->property->form == PROPERTY_EXPR_BRACKET) key = ty_string_index_only_key(me, object, key);
+            // `o[k]` with k any and no index signature that takes it is errorType (tsc's getPropertyTypeForIndexType
+            // finds nothing for an access expression)
+            if (expr->property->form == PROPERTY_EXPR_BRACKET && (key->flags & TYF_ANY) && !(object->flags & TYF_ANY)) {
+                Ty const* apparent = ty_apparent_type(me, object);
+                if ((apparent->flags & TYF_OBJECT) && !(apparent->flags & TYF_ANY) && !ty_is_js_literal_type(me, apparent) &&
+                    !ty_applicable_index_info(me, apparent, key)
+                ) {
+                    return ty_intrinsic(me, TY_ERROR);
+                }
+            }
             // (A compound assignment reads it too: tsc's AccessFlags.ExpressionPosition unless Definite)
             Ty const* ret = expr->property->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, key) :
                 ty_access_reading(me, object, key);

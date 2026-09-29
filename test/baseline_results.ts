@@ -36348,17 +36348,17 @@ const baselines = {
     'privateNameComputedPropertyName3(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameComputedPropertyName3(target=es2022)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameComputedPropertyName3(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameComputedPropertyName4(target=es2015)': {
         errors: true,
@@ -40113,12 +40113,12 @@ const baselines = {
     'symbolProperty56': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolProperty57': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolProperty58': {
         errors: true,
@@ -64518,7 +64518,7 @@ const baselines = {
     'nonPrimitiveIndexingWithForIn': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonPrimitiveIndexingWithForInNoImplicitAny': {
         errors: true,
@@ -67578,7 +67578,7 @@ const baselines = {
     'unionTypeIndexSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeMembers': {
         errors: true,
