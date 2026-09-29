@@ -97,7 +97,14 @@ static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
         };
     }
     add_symbol_override(ctx, left->property->expr.inner_span, member);
-    add_symbol_override(ctx, left->property->prop.outer_span, member);
+    if (left->property->form == PROPERTY_EXPR_BRACKET) {
+        // (`F.prototype["x"] = v`: the literal has no symbol)
+        ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+            .span = left->property->prop.outer_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
+        };
+    } else {
+        add_symbol_override(ctx, left->property->prop.outer_span, member);
+    }
 }
 
 // JavaScript `this.x = v` that declares x: the name `x` is the member it declares, whatever the access finds (a

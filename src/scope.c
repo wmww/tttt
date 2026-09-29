@@ -3388,6 +3388,17 @@ static void add_commonjs_export_namespace_decls(Scope* module, Expr const* entit
     });
 }
 
+// The name an assignment declaration `o.x = v` / `o["x"] = v` is written with: a string element access is named with
+// its quotes (tsc's getNameOfSymbolAsWritten takes the declaration's name), which the symbols baseline prints as `o["x"]`
+static Span written_member_name(Expr const* left, Span name) {
+    if (left->tag == EXPR_PROPERTY && left->property->form == PROPERTY_EXPR_BRACKET &&
+        left->property->prop.tag == EXPR_LITERAL && left->property->prop.literal.tag == VALUE_STRING
+    ) {
+        return left->property->prop.inner_span;
+    }
+    return name;
+}
+
 // JavaScript `F.prototype.x = v` declares an instance member x of F, which makes F a class (tsc's
 // bindPrototypePropertyAssignment)
 static void add_prototype_property(
@@ -3537,7 +3548,7 @@ static void add_expando_member(
     Symbol* member = declare_symbol(me, host->exports, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
     if (!merged) {
         member->name = name.sv;
-        member->name_span = name;
+        member->name_span = written_member_name(left, name);
         member->parent = host;
         member->exported = true;
     }
@@ -3683,13 +3694,7 @@ static void declare_assignment_member(
     Symbol* member = declare_symbol(me, *table, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
     if (!merged) {
         member->name = name.sv;
-        member->name_span = name;
-        // `o["x"] = v` is named as written, quotes included (tsc's getNameOfSymbolAsWritten: the declaration's name)
-        if (left->tag == EXPR_PROPERTY && left->property->form == PROPERTY_EXPR_BRACKET &&
-            left->property->prop.tag == EXPR_LITERAL && left->property->prop.literal.tag == VALUE_STRING
-        ) {
-            member->name_span = left->property->prop.inner_span;
-        }
+        member->name_span = written_member_name(left, name);
         member->parent = parent;
         member->exported = true;
     }
