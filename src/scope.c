@@ -1545,11 +1545,20 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
             // `var npm = module.exports = f`
             for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
                 Expr* assignment = &i->value;
+                Symbol* export_equals = module->container->exports ? symbol_table_get(module->container->exports, c_sv("export=")) : nullptr;
                 while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL &&
                     !expr_is_perenthisized(assignment)
                 ) {
                     add_commonjs_export(module, assignment, false, in_function);
                     assignment = &assignment->binary_op->right;
+                }
+                // `var m = module.exports = v`: the `export=` it declares first is named m (tsc's
+                // getNameOfSymbolAsWritten: a declaration whose parent is a variable declaration)
+                Symbol* declared = module->container->exports ? symbol_table_get(module->container->exports, c_sv("export=")) : nullptr;
+                if (!export_equals && declared && i->binding.tag == BINDING_IDENTIFIER && i->value.tag == EXPR_BINARY_OP &&
+                    expr_is_module_exports(&i->value.binary_op->left)
+                ) {
+                    declared->name_span = i->binding.content_span;
                 }
             }
             break;
