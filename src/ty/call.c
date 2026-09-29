@@ -1771,7 +1771,14 @@ static Resolution resolve_with_signatures(
                 check_type_argument_constraints(me, type_arg_candidate,
                     explicit_type_arguments(me, type_arg_candidate, info), info, errs);
             } else {
-                report_arity(me, signatures, count, args, info, nullptr, errs);
+                // (Of the signatures that take as many type arguments: tsc's signaturesWithCorrectTypeArgumentArity)
+                Signature** fitting = malloc(sizeof(Signature*) * count);
+                u32 fitting_count = 0;
+                for (u32 i = 0; i < count; i++) {
+                    if (has_correct_type_argument_arity(me, signatures[i], info)) fitting[fitting_count++] = signatures[i];
+                }
+                report_arity(me, fitting, fitting_count, args, info, nullptr, errs);
+                free(fitting);
             }
         }
         // What the call is taken to return anyway (tsc's getCandidateForOverloadFailure): of several non-generic

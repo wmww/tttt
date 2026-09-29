@@ -106,7 +106,7 @@ const baselines = {
         types: true,
     },
     'ClassDeclaration26': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13966,7 +13966,7 @@ const baselines = {
         types: true,
     },
     'functionCall18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64476,7 +64476,7 @@ const baselines = {
         types: true,
     },
     'nonPrimitiveAccessProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
