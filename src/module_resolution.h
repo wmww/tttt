@@ -95,10 +95,19 @@ typedef struct FileFormat {
 FileFormat module_resolver_file_format(ModuleResolver* me, csview file);
 
 static inline bool module_name_is_relative(csview name) {
-    // tsc's isExternalModuleNameRelative(): "./", "../", ".", "..", or rooted
+    // tsc's isExternalModuleNameRelative(): "./", "../", ".", ".." (either slash), or rooted (isRootedDiskPath: POSIX or
+    // UNC, a DOS drive `c:/` or `c:`, a URL `scheme://authority/`)
     if (!name.size) return false;
-    if (name.buf[0] == '/') return true;
-    if (name.buf[0] != '.') return false;
-    if (name.size == 1 || name.buf[1] == '/') return true;
-    return name.buf[1] == '.' && (name.size == 2 || name.buf[2] == '/');
+    char c0 = name.buf[0];
+    if (c0 == '/' || c0 == '\\') return true;
+    if (c0 == '.') {
+        if (name.size == 1 || name.buf[1] == '/' || name.buf[1] == '\\') return true;
+        return name.buf[1] == '.' && (name.size == 2 || name.buf[2] == '/' || name.buf[2] == '\\');
+    }
+    bool volume = (c0 >= 'a' && c0 <= 'z') || (c0 >= 'A' && c0 <= 'Z');
+    if (volume && name.size >= 2 && name.buf[1] == ':') {
+        if (name.size == 2 || name.buf[2] == '/' || name.buf[2] == '\\') return true;
+    }
+    isize scheme_end = csview_find_sv(name, c_sv("://"));
+    return scheme_end != c_NPOS && csview_find_sv(csview_slice(name, scheme_end + 3, name.size), c_sv("/")) != c_NPOS;
 }

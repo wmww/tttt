@@ -706,7 +706,7 @@ const baselines = {
         types: true,
     },
     'ambientExternalModuleWithRelativeModuleName': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -8601,7 +8601,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitRelativeModuleError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
