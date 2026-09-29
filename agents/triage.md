@@ -132,3 +132,7 @@ smaller leftovers to `bugs/*.md` and hacks.md.
     intersect to never).
   - derivedClassSuperProperties fails ERR on ai-main already (TS2376 at `(() => this)()` before super()) though the
     saved baseline had it passing.
+- (JS session 2026-09-29) `./fasttest.sh -f` with a long regex alternation crashes with "stack smashing detected" (C's
+  report; `-f @file` works): a fixed-size buffer in the harness's regex handling? `./realworld.py` always writes
+  `/tmp/realworld.txt`, so concurrent runs (sub-agents in worktrees) overwrite each other's: make it per-corpus or
+  per-cwd.

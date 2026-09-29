@@ -23,8 +23,10 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    and corpora unchanged. Size-based checker dealing tried and reverted (mixed; plan 36 "Later"). Not looked at: the
    2-5% instruction creep of the checker bugs sessions and hacks.md's "Generic source constraints push both nesting
    stacks" (+14% on react): the next perf session.
-7. **JS session** (plan 26, sub-agents): `./jsstats.py`: 579 / 1049 pass; only-CommonJS 65, only-JSDoc 59, other 52,
-   only-expandos 33, expandos+JSDoc 32.
+7. ~~JS session~~ done (four Opus sub-agents by bucket: CommonJS, expandos, JSDoc, syntax/other): JS 579 -> 885 /
+   1049, suite 10830 -> 11274 (0 lost), webpack 9 -> 6, the rest unchanged. Instructions +0.2-1.6%, nest +4.6%
+   (module resolution), webpack +5.1% (checks more): measurements.md, for the next perf session. Leftovers: plan 26
+   "Leftovers".
 8. **Parser session** (plan 27 stage 1 leftovers and `./syntaxstats.py` clusters): 225 tests have a spurious TS1xxx;
    many spurious TS2304/TS1005/TS1128 are downstream of recovery (constructorWithIncompleteTypeAnnotation alone: 22
    TS2304).

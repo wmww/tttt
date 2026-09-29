@@ -30,6 +30,15 @@ aliases and nested blocks, **the JS TS2339 gate is gone** (JS literal leniency i
 hacks.md "JavaScript"; the `0other` sample went to triage.md. Not done: dotted typedef names (`@callback NS.Inner`),
 the display items below, JSDoc parse errors, `@override` (no override checks exist at all), the JS-only grammar errors
 (plainJS* tests: mostly parser recovery, triage.md).
+**JS session** (2026-09-29, todo entry 7, four Opus sub-agents by bucket, ~190 commits): JS tests passing 579 -> 885,
+suite 10830 -> 11274 (0 lost), webpack 9 -> 6. Done: CommonJS (declarations by assignment expression, the `module`
+symbol, class expression aliases, `require("m").a.b` / `?.` aliases, `@type` on a `require` declaration, contextual
+typing of exports, IIFE exports, `Object.defineProperty` declarations, `maxNodeModuleJsDepth`, TS7016/TS2307 chains),
+expandos/JS classes (error vs any on missing properties, constructor functions' return flow node and `@class`, string
+element access names, defaulted containers, `this` symbols), JSDoc (parse errors, `@satisfies`, `@overload`,
+`@augments`, `@this`, `@template` on variable statements and its errors, `@type` on export default / catch variables /
+function declarations as their signature, TS8030, printer node reuse), plain JS files checked for plainJSErrors, JSON
+modules, many JS-only grammar checks. What is left is "Leftovers" at the end of this file.
 Stage 2 notes (kept for the leftovers): `Object.defineProperty(exports, ...)` is the rest of spurious TS2580; the symbols baseline already has
 an override hook for tsc's getSpecialPropertyAssignmentSymbol shapes (`commonjs_symbol_overrides()`), `this.x =` and
 expandos will need the same kinds of lines; `binary_commonjs_declaration()` is where assignment declaration kinds
@@ -241,18 +250,11 @@ plus webpack's residue):
   (`memoize.FunctionReturning<T>`, `MF.CompilationHooks`), tttt prints `import("memoize").FunctionReturning<T>`; a
   JSDoc type literal is printed by tsc with its newlines dropped (`{    a: string;}`); aliases of JSDoc function types
   (`@enum {function(number): number}` prints `Fs`).
-- JSDoc parse errors (TS8032 `o.a.b` without `o.a`, TS1003...): dropped.
 - webpack: 529 -> 169 (2026-09-27) -> 107 -> 32 (2026-09-28 corpus session); what is left is in plan 19 "webpack".
   JSDoc items among it:
-  - `@template` on a variable statement: `/** @template T @type {Record<string, (items: T[]) => X<T>>} */ const M`
-    declares T for the `@type` (tsc: a free type parameter, `M.a(x)` returns T); tttt has no Generic on variable
-    statements (TS2304). Needs one on VariableStatement/InitializedBinding, in scope for the JSDoc type's names.
   - Names in the JSDoc of `var f = function (str) {}` resolve from the variable statement (tsc's parent chain goes
     JSDoc -> VariableStatement, not through the function): `@param {str} str` is the outer `str`'s type. tttt copies
     the tags into the function, whose scope has its own `str` (TS2502).
-  - `/** @type {T} */ const x = require()` is a plain variable to tsc (no alias with a JSDoc type tag), tttt makes
-    it an alias and doesn't check it; a JSDoc comment on the same line as the previous token isn't leading trivia to
-    tsc for statements (getJSDocCommentRanges), tttt attaches it.
   - The display of `@type`-tagged functions: a tag written as a signature (`@type {<T>(m: T) => T}`) keeps the
     function's parameter names (tsc prints the tag's); `const k = /** @type {Fn} */ function (a, b = 1)` prints the
     return type inferred from the body where tsc prints the tag's (probe plan19/webpack/parameter_default_removes_undefined.ts).
@@ -299,42 +301,49 @@ is done).
   `Symbol(a, Decl(...))` of the property assignment. Match them per construct; don't guess.
 - `esModuleInterop` / `allowSyntheticDefaultImports` when a TS file default-imports a CommonJS JS module.
 
-## Leftovers collected by triage (2026-09-27)
-JS items that were in triage.md (statuses checked then); stage 4, the "Stage 3 leftovers" or the TS2339 gate session.
-- jsEnumCrossFileExport: `@param {!Host.UserMetrics.Action}` resolves to the expando value (its object type) where tsc
-  takes the `@enum` tag; `@typedef {string} Host.UserMetrics.Bargh` isn't declared.
-- The JS TS2339 gate is gone (2026-09-28); hacks.md "JavaScript" lists the binder pieces whose absence still shows as
-  spurious TS2339 (~15 tests: Object.defineProperty, class static expandos, chained containers...).
-- multipleDeclarations: `F.prototype.m = function` next to `this.m = v` is two symbols in tsc (Method excludes
-  Property), one member here.
-- `module.exports.x = v` after `module.exports = C` is a member of the export= type in tsc (members copied into a new
-  anonymous type, getInitializerTypeFromAssignmentDeclaration), symbols `wat.D` / `Symbol(C.x)`:
-  jsDeclarationsExportSubAssignments, moduleExportAlias4.
-- `@type` on `export default <expr>` (checkJsdocTypeTagOnExportAssignment1-8); on declaring assignments it's done.
-- TS6210 related info of an arrow function under a variable's `@type` points at the arrow's parameter; tsc points at
-  the JSDoc signature's (getSignatureOfTypeTag applies to the arrow). Same root: the arrow's return type is reused
-  from the `@type` in tsc's types baseline (jsdocTypeTagParameterType, jsdocTypeTagRequiredParameters). webpack's
-  examples/module-federation/webpack.config.js (TS2322): the returned array literal is checked elementwise against the
-  annotated `Configuration[]` in tsc, where tttt infers and widens the arrow's return type (normalized `{ app?:
-  undefined }`) and compares that; getReturnTypeFromAnnotation falls back to getReturnTypeOfTypeTag, and
-  getJSDocTypeTag of a variable's function initializer finds the variable statement's tag.
-- `expandoFunctionSymbolProperty(Js)`: `f[symb] = ...` with a unique symbol key is a late-bound expando (tsc's
-  hasDynamicName -> addLateBoundAssignmentDeclarationToSymbol); only static names are expandos so far (spurious TS2741).
-  webpack's cleverMerge.js `newFn[DYNAMIC_INFO] = [fn, second]` on a local arrow (TS2322 against DynamicFunction).
-- JSDoc attachment: tsc attaches a comment on the same line as the previous token only to parameters, type
-  parameters, function/arrow expressions, parenthesized expressions, variable declarations and export specifiers
-  (getJSDocCommentRanges: trailing + leading comments), not to statements; `jsdoc_before()` attaches any comment that
-  ends right before the host. `/** @type {T} */ const x = require("m")` isn't an alias to tsc (the type tag makes it a
-  variable, bindVariableDeclarationOrBindingElement): tttt makes it one and skips the check.
-- Printing through the CommonJS export= clone: from another file tsc prints a typedef of a module whose `export=` got
-  merged as `Cbs`, tttt `w.Cbs` (test/probes/plan19/webpack/export_equals_merge.ts); a `const X = require()` alias in a
-  function prints its class as `typeof import("X")` (the printer's accessibility walk skips function locals).
-- `requireOfJsonFileInJsFile` (JSON through `require` in JS); JS-only duplicate buckets (TS2323/TS2528/TS2451 in
-  `module.exports`/`@typedef` tests); TS8002/TS8006/TS8010 (stage 4); the displaydiff `tsc-typeof` bucket (expando
-  functions print `typeof f`).
-- (triage 2026-09-28) JS `0other` bucket (78 tests at the stage 4 sample): node16/nodenext package
-  `exports`/`imports` and self-name resolution in allowJs tests (TS2209/TS2210/TS2303, 15 tests: nodeModulesAllowJs*,
-  nodeAllowJsPackageSelfName); importNonExportedMember8-11 (TS2595-TS2598 + TS2497: named/default imports of an
-  `export =` module); TS18042/TS18043 (types in JS import/export: jsDeclarationsInterfaces, elidedJSImport1,
-  jsxCheckJsxNoTypeArgumentsAllowed); TS7029 (jsFileCompilationBindReachabilityErrors), TS2393 duplicate function
-  implementation in JS; ~25 are types-only (`./displaydiff.py -f` on them). Some may be done by suite checker bugs 4.
+## Leftovers (JS session 2026-09-29; 164 JS tests fail: only-CommonJS 31, only-JSDoc 19, other 15)
+From the four sub-agents' reports; test names are the ones to probe.
+- **Symbols for function expressions**: object-literal functions assigning `this.x` are classes of their own symbol in
+  tsc (`typeof fun`): objectPropertyAsClass, thisInObjectJs, constructorTagOnObjectLiteralMethod,
+  typeFromContextualThisType, allowJscheckJsTypeParameterNoCrash; `this.x` in object-literal methods
+  (checkObjectDefineProperty, checkExportsObjectAssignProperty).
+- **Member merging**: `this.x` with a later field (ambientPropertyDeclarationInJs), `this.m = null` beside
+  `F.prototype.m = function` is two symbols (multipleDeclarations), prototype literal accessors with `this.x`
+  (jsDeclarationsFunctionLikeClasses2), class static method expandos (jsDeclarationsClassStaticMethodAugmentation),
+  cross-file prototype + interface (prototypePropertyAssignmentMergeWithInterfaceMethod), JS `{}` with a `declare class`
+  (jsContainerMergeTsDeclaration3).
+- **export= merged in place**: tsc copies the exported value and merges the module's other exports into the copy
+  (typedefCrossModule3, moduleExportPropertyAssignmentDefault, moduleExportAliasImported; printing `w.Cbs` for `Cbs`,
+  test/probes/plan19/webpack/export_equals_merge.ts). `module.exports.x = v` after `module.exports = C`
+  (jsDeclarationsExportSubAssignments, moduleExportAlias4).
+- **`exports.x = a.b` aliases** (no symbol when `b` is a member of a type, e.g. `Math.min`): pushTypeGetTypeOfAlias,
+  resolveNameWithNamspace, moduleExportsAliasLoop1/2, commonJSImportNestedClassTypeReference, moduleExportDuplicateAlias*.
+- **`import * as ns` of CommonJS from ESM** needs a type of its own (nodeModulesAllowJs1 x3; a `symbol_chain.c` skip
+  cost 16 tests).
+- **Symbol chains** on circular namespace re-exports (getAccessibleSymbolChain/getContainersOfSymbol):
+  nodeModulesAllowJs{Conditional,}PackageExports, PackagePatternExports(Trailers), nodeAllowJsPackageSelfName2,
+  importDeclFromTypeNodeInJsSource (`n3.c` through an import alias). The printer's scopes are files and namespaces
+  only, not functions (propertiesOfGenericConstructorFunctions' computed keys; a `require()` alias in a function).
+- **JSDoc**: dotted typedef names (namespaces: callbackTagNamespace, misspelledJsDocTypedefTags,
+  jsDeclarationsImportNamespacedType, jsDeclarationsImportAliasExposedWithinNamespace, importTypeInJSDoc,
+  jsEnumCrossFileExport); `@augments` naming another class is the base (jsdocAugments_nameMismatch,
+  jsdocAugments_errorInExtendsExpression, extendsTagEmit, extendsTag2/4); a variable's `@type` return type read
+  syntactically even from a type literal with more members (getJSDocReturnType: propertyAssignmentUseParentType2,
+  jsdocFunctionType, checkJsdocTypeTagOnObjectProperty1; needs a borrowed return annotation on FunctionImpl); JSDoc
+  type parser recovery (jsdocFunctionTypeFalsePositive, jsdocParameterParsingInfiniteLoop); nested `@param` on arrays
+  (jsdocParamTagTypeLiteral, jsdocParamTag2); `{...T=}` (jsdocParseStarEquals); `typeof b` in `@param` sees the
+  function's own parameters (jsDeclarationsFunctions); jsdocTemplateClass, jsdocTemplateConstructorFunction2,
+  returnTagTypeGuard, jsdocTypeTagCast, overloadTag2.
+- **Late-bound expandos** (`f[symb] =`, `this[_symbol]`, `F.prototype[k]`): expandoFunctionSymbolPropertyJs,
+  lateBoundMethodNameAssigmentJS, lateBoundAssignmentDeclarationSupport4/5; webpack's cleverMerge.js TS2322.
+- **Checker**: TS1055/TS1065 (ES5 async return types, TS too: asyncFunctionDeclaration16_es5); isolatedDeclarations
+  (TS9010, none exist); TS7022 for a self-importing JS default export (selfReferentialDefaultNoStackOverflow);
+  TS7034/TS7005 for an evolving array read by `yield*` in a loop (yieldExpressionInControlFlow); binding-pattern
+  contextual types making defaulted members optional (classExpressionNames: a naive version broke objectRestParameter,
+  because tttt gives binding-pattern contexts through generic inference where tsc doesn't); `l = []` parameter
+  initializers (typeFromJSInitializer); `module` redeclared per block (moduleExportAssignment2).
+- webpack's remaining 6: module-federation's returned array checked elementwise against `Configuration[]` (the arrow's
+  return type from the variable's `@type`, see the JSDoc item), cleverMerge.js (late-bound expando),
+  PackFileCacheStrategy.js's LazyFunction chain (plan 19).
+- Can't pass: templateInsideCallback (pre/post-emit count line), jsDeclarationsDefault /
+  jsDeclarationsJSDocRedirectedLookups / jsdocOuterTypeParameters1 (baselines made after declaration emit).
