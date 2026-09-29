@@ -13321,7 +13321,7 @@ const baselines = {
         types: false,
     },
     'expressionsForbiddenInParameterInitializers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55846,17 +55846,17 @@ const baselines = {
         types: true,
     },
     'parser.asyncGenerators.classMethods.es2018': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parser.asyncGenerators.functionDeclarations.es2018': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parser.asyncGenerators.functionExpressions.es2018': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

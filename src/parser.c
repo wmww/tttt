@@ -8030,12 +8030,8 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     const char* op_end = p.pos;
     hop_whitespace(&p);
 
-    if (p.shared->in_parameters && (op == UNARY_OP_YIELD || op == UNARY_OP_YIELD_STAR)) {
-        parse_error(&p, op_span, 2523, "'yield' expressions cannot be used in a parameter initializer.");
-    } else if (p.shared->in_parameters && op == UNARY_OP_AWAIT) {
-        parse_error(&p, op_span, 2524, "'await' expressions cannot be used in a parameter initializer.");
-    }
-    AwaitPlace await_place = op == UNARY_OP_AWAIT && !p.shared->in_parameters ? parser_await_place(&p) : AWAIT_ALLOWED;
+    bool in_parameters = p.shared->in_parameters;
+    AwaitPlace await_place = op == UNARY_OP_AWAIT && !in_parameters ? parser_await_place(&p) : AWAIT_ALLOWED;
 
     Expr expr;
     ctx.min_precedence = unary_op_get_precedence(op);
@@ -8057,6 +8053,18 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         expr = expr_implicit_any_no_span;
     } else {
         expect_expr(&p, ctx, &expr);
+    }
+    if (in_parameters && (op == UNARY_OP_YIELD || op == UNARY_OP_YIELD_STAR)) {
+        // (tsc's error span for a yield expression is its keyword, without the `*`)
+        Span keyword = op_span;
+        keyword.sv.size = 5;
+        parse_error(&p, keyword, 2523, "'yield' expressions cannot be used in a parameter initializer.");
+    } else if (in_parameters && op == UNARY_OP_AWAIT) {
+        // (tsc's checkAwaitExpression: the whole expression, a missing operand being a zero-width node before the
+        // trivia)
+        bool operand = span_valid(expr.outer_span) && expr.outer_span.sv.size;
+        parse_error(&p, operand ? span_between(op_span, expr.outer_span) : op_span, 2524,
+            "'await' expressions cannot be used in a parameter initializer.");
     }
 
     // tsc's parseUnaryExpressionOrHigher: `-x ** 2` is ambiguous, so an error (still read as `(-x) ** 2`)
