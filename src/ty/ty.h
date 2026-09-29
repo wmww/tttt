@@ -1301,6 +1301,10 @@ bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation r
 // The explaining (reporting) pass of a relation, which can find it holds after all: tsc's checkTypeRelatedTo then
 // reports nothing (an invariant alias argument falls back to the structure). Returns whether it related
 bool ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out);
+// The same under a head of the caller's (tsc's headMessage), whose code some elaborations depend on
+bool ty_explain_unrelated_headed(
+    Checker* me, Ty const* source, Ty const* target, TyRelation relation, unsigned head_code, VecTyReportLine* out
+);
 // The member of a union target a failed relation is most likely about (tsc's getBestMatchingType), null if none
 Ty const* ty_best_matching_type(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_widened_literal(Checker* me, Ty const* ty);

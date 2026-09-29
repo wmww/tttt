@@ -93,6 +93,8 @@ typedef struct RelationState {
     Ty const* skipped_target;
     // The top-level relation's line is the error's head, which nothing stands in for (tsc's headMessage)
     bool at_top;
+    // The code of the head the caller puts over the explanation (tsc's headMessage), 0 if none
+    unsigned head_code;
     Checker* checker;
     struct RelationState* outer;
 } RelationState;
@@ -1699,7 +1701,8 @@ static Ternary props_related_impl(
                 cstr_drop(&names);
             }
             c_drop(cstr, &source_str, &target_str);
-            st->override_next_head++;
+            // (The relation's own line stays under a class's `implements` head: tsc's reportUnmatchedProperty)
+            if (st->head_code != 2420 && st->head_code != 2720) st->override_next_head++;
             return TERNARY_FALSE;
         }
     }
@@ -1855,6 +1858,19 @@ static SourceProp* source_props(Checker* me, Ty const* source, Members const* so
 }
 
 // `source_is_primitive`: `source` is a primitive's apparent type, which a string `any` index signature doesn't take as is
+// tsc's indexInfoRelatedTo: both keys when the source's signature is another key's
+static void report_index_incompatible(Checker* me, RelationState* st, IndexInfo const* source_info, IndexInfo const* target_info) {
+    cstr key_str = display_for_report(me, source_info->key, false);
+    if (source_info->key == target_info->key) {
+        report_line(st, 2634, cstr_d("'", key_str, "' index signatures are incompatible."));
+    } else {
+        cstr target_key_str = display_for_report(me, target_info->key, false);
+        report_line(st, 2330, cstr_d("'", key_str, "' and '", target_key_str, "' index signatures are incompatible."));
+        cstr_drop(&target_key_str);
+    }
+    cstr_drop(&key_str);
+}
+
 static TyMapper const* mapped_key_param_mapper(Checker* me, MappedInfo const* mapped);
 static Ternary index_signatures_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool source_is_primitive, bool report
@@ -1902,11 +1918,7 @@ static Ternary index_signatures_related(
         if (source_info) {
             Ternary related = is_related_to(me, st, source_info->value, target_info->value, report);
             if (!related) {
-                if (report) {
-                    cstr key_str = display_for_report(me, target_info->key, false);
-                    report_line(st, 2634, cstr_d("'", key_str, "' index signatures are incompatible."));
-                    cstr_drop(&key_str);
-                }
+                if (report) report_index_incompatible(me, st, source_info, target_info);
                 return TERNARY_FALSE;
             }
             result &= related;
@@ -1955,6 +1967,21 @@ static Ternary index_signatures_related(
                 result &= related;
             }
             free(props);
+            // And the source's own index signatures that apply to the key (tsc's membersRelatedToIndexInfo:
+            // `{ [x: number]: X }` against a string index signature)
+            for (u32 j = 0; j < source_members->index_count; j++) {
+                IndexInfo const* info = &source_members->index[j];
+                bool applies = info->key == target_info->key ||
+                    (target_info->key == ty_intrinsic(me, TY_STRING) && (info->key->flags & TYF_NUMBER)) ||
+                    ty_is_related(me, info->key, target_info->key, TY_RELATION_ASSIGNABLE);
+                if (!applies) continue;
+                Ternary related = is_related_to(me, st, info->value, target_info->value, report);
+                if (!related) {
+                    if (report) report_index_incompatible(me, st, info, target_info);
+                    return TERNARY_FALSE;
+                }
+                result &= related;
+            }
         } else {
             if (report) {
                 cstr key_str = display_for_report(me, target_info->key, false);
@@ -5145,7 +5172,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
 }
 
 static bool check_related(
-    Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* report_into
+    Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* report_into, unsigned head_code
 ) {
     // The error type is related to everything, in both directions: whatever made it was reported already
     if ((source->flags | target->flags) & TYF_ERROR) return true;
@@ -5181,6 +5208,7 @@ static bool check_related(
     st->head_reported = false;
     st->skipped_source = st->skipped_target = nullptr;
     st->at_top = true;
+    st->head_code = head_code;
     st->checker = me;
     st->outer = my relating;
     st->fresh_union = report_into ? fresh_union : nullptr;
@@ -5256,11 +5284,17 @@ bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target) {
 }
 
 bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation) {
-    return check_related(me, source, target, relation, nullptr);
+    return check_related(me, source, target, relation, nullptr, 0);
 }
 
 bool ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out) {
-    return check_related(me, source, target, relation, out);
+    return check_related(me, source, target, relation, out, 0);
+}
+
+bool ty_explain_unrelated_headed(
+    Checker* me, Ty const* source, Ty const* target, TyRelation relation, unsigned head_code, VecTyReportLine* out
+) {
+    return check_related(me, source, target, relation, out, head_code);
 }
 
 // Union signatures (tsc's getUnionSignatures): what a union of callables can be called with

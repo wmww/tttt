@@ -41306,12 +41306,12 @@ const baselines = {
         types: true,
     },
     'computedPropertyNamesContextualType9_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNamesContextualType9_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66876,7 +66876,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithNumericIndexer5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

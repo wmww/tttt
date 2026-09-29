@@ -639,7 +639,7 @@ static Error* report_unrelated_with_head(
     Span span, ErrorCtx* errs
 ) {
     VecTyReportLine lines = {0};
-    ty_explain_unrelated(me, source, target, relation, &lines);
+    ty_explain_unrelated_headed(me, source, target, relation, ts_code, &lines);
     span = relocated_span(&lines, span);
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
