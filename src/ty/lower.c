@@ -2522,6 +2522,13 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         for (u32 i = 0; shape && i < shape->arity; i++) has_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
         if (shape && !has_rest && binding->parent_index >= shape->arity) ret = ty_intrinsic(me, TY_UNDEFINED);
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
+    } else if (compiler_options()->strict_null_checks && !parent->parent && !parent->has_explicit_type &&
+        !binding_is_parameter(parent) && !(object->flags & TYF_ANY) && ty_can_be_nullish(me, object) &&
+        ty_non_nullable(me, object) != object
+    ) {
+        // `const { s } = t` with t possibly undefined: the property of the whole type, which undefined lacks (TS2339 by
+        // binding_typecheck(), tsc's getBindingElementTypeFromParentType keeps undefined when the initializer has it)
+        ret = ty_intrinsic(me, TY_ERROR);
     } else {
         ObjectBindingItem const* item = binding->parent_item;
         ret = ty_access_reading(me, object,
