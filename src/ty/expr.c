@@ -1244,6 +1244,8 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
     if (class_decl->extends.tag == EXPR_LITERAL && class_decl->extends.literal.tag == VALUE_NULL) {
         return identifier->super_member ? ty_intrinsic(me, TY_NULL_WIDENING) : ty_intrinsic(me, TY_ERROR);
     }
+    // (No base type, the base class got the wrong number of type arguments: tsc's checkSuperExpression)
+    if (!class_decl_base_arity_fits(class_decl)) return ty_intrinsic(me, TY_ERROR);
     if (!identifier->super_member) {
         Expr const* extends = &class_decl->extends;
         if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;

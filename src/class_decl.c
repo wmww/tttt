@@ -1388,21 +1388,39 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
 
 // tsc's resolveBaseTypesOfClass: a base constructor that is a class is referenced like a type (getTypeFromClassOrInterfaceReference),
 // which needs its type arguments
-static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
+// The class a base constructor that is a class names, and how many type arguments it gets (null: not a class)
+static Symbol const* class_base_reference(ClassDecl const* me, u32* arg_count, bool* missing_extends) {
     Expr const* base = &my extends;
-    u32 arg_count = 0;
+    *arg_count = 0;
     // (tsc's getTypeFromClassOrInterfaceReference: the clause itself rather than an `@extends` tag's type)
-    bool missing_extends = my extends.outer_span.source && my extends.outer_span.source->is_js;
+    *missing_extends = my extends.outer_span.source && my extends.outer_span.source->is_js;
     if (base->tag == EXPR_GENERIC_PARAMS) {
         SpannedType const* first = vec_spanned_type_size(&base->generic_params->params) ?
             vec_spanned_type_at(&base->generic_params->params, 0) : nullptr;
-        if (first && first->type.from_jsdoc) missing_extends = false;
-        arg_count = (u32)vec_spanned_type_size(&base->generic_params->params);
+        if (first && first->type.from_jsdoc) *missing_extends = false;
+        *arg_count = (u32)vec_spanned_type_size(&base->generic_params->params);
         base = &base->generic_params->expr;
     }
-    if (base->tag != EXPR_IDENTIFIER || base->identifier.keyword || expr_is_perenthisized(base)) return;
+    if (base->tag != EXPR_IDENTIFIER || base->identifier.keyword || expr_is_perenthisized(base)) return nullptr;
     Symbol const* target = base->identifier.target;
-    if (!target || target->is_placeholder || !(target->flags & SYMBOL_CLASS)) return;
+    if (!target || target->is_placeholder || !(target->flags & SYMBOL_CLASS)) return nullptr;
+    return target;
+}
+
+bool class_decl_base_arity_fits(ClassDecl const* me) {
+    u32 arg_count;
+    bool missing_extends;
+    Symbol const* target = class_base_reference(me, &arg_count, &missing_extends);
+    // (In JavaScript the reference is still made, the missing arguments any: tsc's getTypeFromClassOrInterfaceReference)
+    SourceFile const* source = my extends.outer_span.source;
+    return !target || (source && source->is_js) || several_types_arity_fits(target, arg_count, source);
+}
+
+static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
+    u32 arg_count;
+    bool missing_extends;
+    Symbol const* target = class_base_reference(me, &arg_count, &missing_extends);
+    if (!target) return;
     // (An `@augments` tag is the heritage clause: its type arguments, reported at it)
     if (span_valid(my jsdoc_extends)) missing_extends = false;
     several_types_check_arity(target, arg_count, span_valid(my jsdoc_extends) ? my jsdoc_extends : my extends.outer_span,

@@ -1298,6 +1298,9 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     if (instance && my symbol && ty_has_base_type(current_checker, instance, ty_declared_type_of(current_checker, my symbol))) {
         instance = nullptr;
     }
+    // (With the wrong number of type arguments the reference is errorType, which the harness replaces with the
+    // expression's type)
+    if (instance && !class_decl_base_arity_fits(me)) instance = nullptr;
     if (my extends.tag != EXPR_IMPLICIT_ANY) class_extends_compile_test_info(&my extends, instance, ctx);
     for_each (i, vec_spanned_type, &my implements) heritage_type_compile_test_info(&i->type, ctx);
     for_each (i, vec_expr, &my unchecked_extends) class_extends_compile_test_info(i, instance, ctx);

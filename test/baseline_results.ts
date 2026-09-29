@@ -15233,7 +15233,7 @@ const baselines = {
     'genericRecursiveImplicitConstructorErrors1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericRecursiveImplicitConstructorErrors2': {
         errors: true,
@@ -15243,7 +15243,7 @@ const baselines = {
     'genericRecursiveImplicitConstructorErrors3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericReduce': {
         errors: true,
@@ -26761,9 +26761,9 @@ const baselines = {
         types: true,
     },
     'recursiveBaseConstructorCreation3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'recursiveClassBaseType': {
         errors: true,
@@ -29542,18 +29542,18 @@ const baselines = {
     },
     'superCallFromClassThatDerivesFromGenericTypeButWithIncorrectNumberOfTypeArguments1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'superCallFromClassThatDerivesFromGenericTypeButWithNoTypeArguments1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'superCallFromClassThatDerivesNonGenericTypeButWithTypeArguments1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'superCallFromClassThatHasNoBaseType1': {
         errors: true,
@@ -32528,7 +32528,7 @@ const baselines = {
     'unusedInvalidTypeArguments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedLocalProperty': {
         errors: true,
@@ -65228,7 +65228,7 @@ const baselines = {
     'genericTypeReferenceWithoutTypeArgument.d': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericTypeReferenceWithoutTypeArgument': {
         errors: false,
@@ -65243,7 +65243,7 @@ const baselines = {
     'genericTypeReferenceWithoutTypeArgument3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonGenericTypeReferenceWithTypeArguments': {
         errors: true,

@@ -596,6 +596,8 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         *base_decl = nullptr;
         return true;
     }
+    // (The wrong number of type arguments makes the reference errorType, which is no base: tsc's resolveBaseTypesOfClass)
+    if (!class_decl_base_arity_fits(class_decl)) return false;
     Ty const* base = ty_declared_type_of(me, decl);
     if (base->kind != TY_DECLARED) return false;
     *base_decl = decl;
@@ -1525,6 +1527,7 @@ static bool has_unresolved_base(Checker* me, Ty const* ty, u32 depth) {
         if (node->kind != SYMBOL_DECL_CLASS) continue;
         ClassDecl const* class_decl = node->node;
         if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) continue;
+        if (!class_decl_base_arity_fits(class_decl)) continue; // (errorType: no base at all, not an unknown one)
         Ty const* base = nullptr;
         Symbol const* base_decl = nullptr;
         if (!class_base(me, class_decl, ctx, &base, &base_decl)) return true;
