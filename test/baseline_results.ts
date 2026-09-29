@@ -8743,7 +8743,7 @@ const baselines = {
     'declarationEmitTypeParameterNameInOuterScope': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeParameterNameReusedInOverloads': {
         errors: true,
@@ -16833,7 +16833,7 @@ const baselines = {
     'incompatibleAssignmentOfIdenticallyNamedTypes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incompatibleExports1': {
         errors: true,
@@ -32983,12 +32983,12 @@ const baselines = {
     'unusedTypeParametersCheckedByNoUnusedParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedTypeParametersNotCheckedByNoUnusedLocals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedTypeParametersWithUnderscore': {
         errors: true,
@@ -47498,12 +47498,12 @@ const baselines = {
     'newOperatorConformance': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newOperatorErrorCases': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newOperatorErrorCases_noImplicitAny': {
         errors: true,

@@ -76,6 +76,20 @@ static bool same_symbol(Checker* me, Symbol const* a, Symbol const* b) {
     return binder_redirect(binder, a) == binder_redirect(binder, b);
 }
 
+static bool global_shadowed_by_type_param(Checker* me, TyParamNames const* names, Symbol const* symbol) {
+    if (!(symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS | SYMBOL_ENUM))) return false;
+    Binder const* binder = program_get_binder(my program);
+    csview name = symbol->name;
+    if (binder_redirect(binder, symbol_table_get(&binder->globals, name)) != binder_redirect(binder, symbol)) return false;
+    for (u32 i = 0; i < names->in_scope.len; i++) {
+        if (csview_equals_sv(atom_sv(names->in_scope.data[i]->param.name), name)) return true;
+    }
+    for (u32 i = 0; i < names->len; i++) {
+        if (csview_equals_sv(atom_sv(names->given[i].name), name)) return true;
+    }
+    return false;
+}
+
 // With TyDisplay.enclosing, qualified as far as needed from there (symbol_chain.h), else bare or fully qualified (error
 // messages)
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
@@ -124,6 +138,11 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
             cstr_append(d.underline, d.reused ? "      " : "^^^^^^");
         }
         start = 1;
+    }
+    // A global whose name a type parameter in scope takes is reached through globalThis (tsc's getSymbolChain finds
+    // the type parameter first in the declaration's locals, then the global in globalThis's exports)
+    if (!start && chain.len && meaning == SYMBOL_TYPE && d.param_names && global_shadowed_by_type_param(me, d.param_names, chain.items[0])) {
+        out_lit(d, "globalThis.");
     }
     cstr text = cstr_init();
     SymbolChain rest = { .len = chain.len - start };
