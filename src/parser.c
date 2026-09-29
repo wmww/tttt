@@ -3911,9 +3911,66 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
 static bool parse_import_export_statement(Parser* parent, Statement* ret);
 
 // `@import { A } from "m"` (TS 5.5): a type-only import declaration, parsed by the statement parser from the tag's
-// name on (tsc's JSDocImportTag). Parse errors are dropped
+// name on (tsc's JSDocImportTag). Parse errors are JSDoc errors
 static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const char* end, VecStatement* out) {
     Parser p = parser(parent);
+    SourceFile const* source = p.shared->source;
+    // The statement parser doesn't stop at the `*/`: what tsc's parseImportTag says about a clause, `from` or module
+    // specifier that is missing comes first
+    const char* last = tag->tag_name.sv.buf + tag->tag_name.sv.size; // Past the last token
+    const char* c = jsdoc_skip_space(last, end);
+    bool clause = false;
+    if (c < end && (is_identifier_char(*c) || *c == '{' || *c == '*')) {
+        clause = true;
+        if (*c == '{') {
+            while (c < end && *c != '}') c++;
+            if (c < end) c++;
+        } else if (*c == '*') {
+            // `* as name`
+            for (int word = 0; word < 2; word++) {
+                c = jsdoc_skip_space(c + (word ? 0 : 1), end);
+                while (c < end && is_identifier_char(*c)) c++;
+            }
+        } else {
+            while (c < end && is_identifier_char(*c)) c++;
+            const char* comma = jsdoc_skip_space(c, end);
+            if (comma < end && *comma == ',') clause = false; // `x, { y }`: left to the statement parser
+        }
+        last = c;
+        c = jsdoc_skip_space(c, end);
+    }
+    bool bad = false;
+    if (clause) {
+        const char* word = c;
+        while (c < end && is_identifier_char(*c)) c++;
+        if (csview_equals(csview_from_range(word, c), "from")) {
+            last = c;
+            c = jsdoc_skip_space(c, end);
+        } else {
+            c = word;
+            const char* token_end = c;
+            while (token_end < end && is_identifier_char(*token_end)) token_end++;
+            if (token_end == c && c < end) token_end++;
+            parse_error(&p, span_make(source, c, token_end), 1005, "'from' expected.");
+            bad = true;
+        }
+    }
+    if (c >= end) {
+        // After the tag name, tsc's current token is the JSDoc scanner's whitespace or newline token there
+        const char* token_end = last;
+        if (!clause && token_end < end) {
+            if (*token_end == '\n') token_end++;
+            else if (token_end[0] == '\r' && token_end[1] == '\n') token_end += 2;
+            else while (token_end < end && (*token_end == ' ' || *token_end == '\t')) token_end++;
+        }
+        parse_error(&p, span_make(source, last, token_end), 1109, "Expression expected.");
+        bad = true;
+    }
+    if (bad) {
+        jsdoc_keep_errors(&p);
+        parse_fail(&p);
+        return;
+    }
     p.pos = tag->tag_name.sv.buf;
     p.whitespace_end = nullptr;
     bool outer_in_jsdoc = p.shared->in_jsdoc;
@@ -3939,6 +3996,7 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
     }
     p.shared->in_jsdoc = outer_in_jsdoc;
     p.shared->jsdoc_end = outer_end;
+    jsdoc_keep_errors(&p);
     parse_fail(&p);
 }
 
