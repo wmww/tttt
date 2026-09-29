@@ -19846,7 +19846,7 @@ const baselines = {
         types: true,
     },
     'jsxChildrenArrayWrongType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

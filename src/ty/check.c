@@ -418,6 +418,11 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
             if (!element_target) continue;
             bool text = child->tag == JSX_CHILD_TEXT;
             Ty const* child_type = text ? ty_intrinsic(me, TY_STRING) : ty_expr_type(me, &child->expr);
+            // (The child as the source's children have it, widened for a mutable location: tsc's elaborateElementwise
+            // takes the source's element type)
+            Ty const* source_children = text ? nullptr : ty_access(me, source, name_type);
+            Ty const* source_child = source_children && ty_tuple_shape(source_children) ? ty_access(me, source_children, child_name) : nullptr;
+            if (source_child) child_type = source_child;
             if (ty_is_related(me, child_type, element_target, TY_RELATION_ASSIGNABLE)) continue;
             reported = true;
             Expr const* inner = text ? nullptr : &child->expr;
