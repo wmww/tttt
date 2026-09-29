@@ -658,6 +658,22 @@ void ty_report_pair_cstr(Checker* me, Ty const* source, Ty const* target, cstr* 
     display_pair(me, widen ? ty_base_type_of_literal(me, source) : source, widen, target, source_out, target_out);
 }
 
+// Whether the base constraint of `ty`, were it the constraint of the type parameter, would need the type parameter's
+// own (tsc's hasNonCircularBaseConstraint of the synthetic parameter): it is the parameter, a union or intersection with
+// it, `P extends ...` over it, an indexed access into it
+static bool constraint_resolves_through(Ty const* ty, Ty const* source, Ty const* declared) {
+    if (ty == source || ty == declared) return true;
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (constraint_resolves_through(ty->composite.types.data[i], source, declared)) return true;
+        }
+        return false;
+    }
+    if (ty->kind == TY_CONDITIONAL) return ty->conditional.check == source || ty->conditional.check == declared;
+    if (ty->kind == TY_INDEXED) return ty->indexed.object == source || ty->indexed.object == declared;
+    return false;
+}
+
 // An unconstrained type parameter source could have been constrained to the target (tsc's reportRelationError: unless
 // that constraint would be circular)
 static void report_missing_constraint(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
@@ -671,10 +687,7 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     // (Nor when the source as constrained by the target would have a circular base constraint, tsc's
     // hasNonCircularBaseConstraint: `Extract<T, string>` as a constraint of T is resolved through T's. Another type
     // parameter is no such target: instantiating it leaves it, and its own constraint mentions the original)
-    Ty const* base = target;
-    if (base == source || base == declared) return;
-    if (base && base->kind == TY_CONDITIONAL && (base->conditional.check == source || base->conditional.check == declared)) return;
-    if (base && base->kind == TY_INDEXED && (base->indexed.object == source || base->indexed.object == declared)) return;
+    if (constraint_resolves_through(target, source, declared)) return;
     cstr target_str = display_for_report(me, target, false);
     report_related(st, 2208, cstr_d("This type parameter might need an `extends ", target_str, "` constraint."),
         item ? item->name : infer_symbol->decls[0].name);
