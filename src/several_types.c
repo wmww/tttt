@@ -1,4 +1,5 @@
 #include "several_types.h"
+#include "port_statement.h"
 #include "interface_decl.h"
 #include "flow.h"
 #include "source_file.h"
@@ -278,6 +279,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             if (i == my namespaces.data /* First namespaces */) {
                 decl = scope_get_namespace(names, i->sv, &found);
                 unused_mark_referenced(names, (Symbol*)found, SYMBOL_NAMESPACE);
+                if (decl && decl->is_placeholder) port_item_check_namespace_import_use(found, names);
                 if (!decl && my jsdoc) {
                     // (In JSDoc the left of a qualified name may be a value, whose members are looked in: tsc's
                     // resolveEntityName of a JSDoc type reference falls back to the value meaning)

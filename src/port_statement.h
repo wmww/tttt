@@ -86,6 +86,9 @@ static inline bool port_item_is_export(PortItem const* me) {
 }
 
 void port_item_drop(PortItem* me);
+// A use of an alias of an import of a module in a namespace (TS1147, whose statement resolves nothing): what resolves
+// it, TS2307 if its module isn't found (once, in the import's own file). Returns whether the alias is one
+bool port_item_check_namespace_import_use(struct Symbol const* alias, struct Scope const* names);
 
 // The name an import/export specifier stands for: `a`, or the contents of `"a"` (ES2022's arbitrary module namespace
 // identifiers). Spans keep the quotes, which is how the baselines show them

@@ -364,14 +364,7 @@ static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope 
     PortItem* item = symbol->alias->item;
     Scope const* scope = symbol->alias->scope;
     if (item->value_use_checked || !scope || scope->file != names->file) return;
-    // (An import of a module in a namespace, TS1147: its statement didn't resolve the module, this use does)
-    if (item->in_namespace && item->module_ref) {
-        item->value_use_checked = true;
-        if (!item->module_ref->file && !binder_module_of_ref(names->binder, item->module_ref)) {
-            module_ref_report_unresolved(item->module_ref, scope->errs);
-        }
-        return;
-    }
+    if (port_item_check_namespace_import_use(symbol, names)) return;
     if (item->tag != PORT_IMPORT_ALIAS || !vec_span_size(&item->alias_path)) return;
     item->value_use_checked = true;
     Span first = *vec_span_front(&item->alias_path);

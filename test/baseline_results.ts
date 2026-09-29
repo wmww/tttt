@@ -25931,8 +25931,8 @@ const baselines = {
         types: true,
     },
     'privacyGloImportParseErrors': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'privacyGloInterface': {
@@ -25951,8 +25951,8 @@ const baselines = {
         types: true,
     },
     'privacyImportParseErrors': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'privacyInterface': {

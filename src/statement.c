@@ -425,7 +425,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     // tsc's checkModuleDeclaration: where `declare global` and `declare module "m"` can be. Augmentations
     // (isModuleAugmentationExternal) are at the top level of a module or directly in an ambient module of a script,
     // an ambient module can also be at the top level of a script, not a global augmentation
-    bool invalid_global = false;
+    bool invalid_global = false, nested_ambient_module = false;
     if (my is_global || my is_ambient_module) {
         bool in_script_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container &&
             scope->container->is_module && scope->parent && scope->parent->kind == SCOPE_SCRIPT;
@@ -441,6 +441,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             error_ctx_error_d(errs, my name, 2436, "Ambient module declaration cannot specify relative module name.");
         } else if (!my is_global && scope->kind != SCOPE_SCRIPT && scope->kind != SCOPE_MODULE && !in_script_ambient_module) {
             error_ctx_error_d(errs, my name, 2435, "Ambient modules cannot be nested in other modules or namespaces.");
+            nested_ambient_module = true;
         }
     }
 
@@ -461,6 +462,15 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 module->exports = arena_new(&scope->binder->arena, SymbolTable);
                 module->is_augmentation = true;
                 binder_add_augmentation(scope->binder, me);
+            } else if (nested_ambient_module) {
+                // In a namespace it is a member of the namespace to tsc's binder (declareSymbolAndAddToSymbolTable),
+                // which no module name finds: a module of its own
+                module = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
+                module->name_span = my name;
+                module->is_module = true;
+                module->module = arena_new(&scope->binder->arena, SymbolModule);
+                module->exports = arena_new(&scope->binder->arena, SymbolTable);
+                binder_add_module_declaration(module, me);
             }
             if (!module) {
                 module = binder_ambient_module(scope->binder, cstr_sv(&my module_ref->path), my name);

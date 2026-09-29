@@ -6,6 +6,19 @@
 #include "scope.h"
 #include "ty/ty.h"
 
+bool port_item_check_namespace_import_use(Symbol const* alias, Scope const* names) {
+    if (!alias || !(alias->flags & SYMBOL_ALIAS) || !alias->alias || !alias->alias->item) return false;
+    PortItem* item = alias->alias->item;
+    Scope const* scope = alias->alias->scope;
+    if (!item->in_namespace || !item->module_ref) return false;
+    if (item->value_use_checked || !scope || scope->file != names->file) return true;
+    item->value_use_checked = true;
+    if (!item->module_ref->file && !binder_module_of_ref(names->binder, item->module_ref)) {
+        module_ref_report_unresolved(item->module_ref, scope->errs);
+    }
+    return true;
+}
+
 void port_item_drop(PortItem* me) {
     vec_span_drop(&my alias_path);
     vec_symbol_cptr_drop(&my alias_path_symbols);
