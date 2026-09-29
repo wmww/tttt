@@ -160,6 +160,40 @@ static void port_statement_check_emit_helpers(PortStatement const* me, Span span
     }
 }
 
+// tsc's checkAliasSymbol: a JavaScript file can't import or export what is only a type (TS18042, TS18043)
+static void port_item_check_js_type(PortStatement const* me, PortItem const* item, ErrorCtx* errs) {
+    switch (item->tag) {
+        case PORT_IMPORT_DEFAULT:
+        case PORT_IMPORT_SPECIFIC:
+        case PORT_EXPORT_SPECIFIC:
+        case PORT_REEXPORT_SPECIFIC:
+            break;
+        default:
+            return;
+    }
+    if (!item->symbol || !item->symbol->alias || item->jsdoc || item->value_only) return;
+    Symbol const* target = symbol_resolve_alias(item->symbol);
+    if (!target || target->is_placeholder || target->is_unresolved || symbol_resolved_flags(target) & SYMBOL_VALUE) return;
+    Span at = span_valid(item->source_name) ? item->source_name : item->decl_name;
+    if (!span_valid(at)) return;
+    if (port_item_is_export(item)) {
+        Error* error = error_ctx_error_d(errs, at, 18043, "Types cannot appear in export declarations in JavaScript files.");
+        // A JSDoc type the file exports by itself
+        for (u32 i = 0; i < target->decl_count; i++) {
+            SymbolDecl const* decl = &target->decls[i];
+            if (decl->kind != SYMBOL_DECL_TYPE_ALIAS || !((TypeDecl const*)decl->node)->jsdoc) continue;
+            if (decl->full.source != at.source) continue;
+            error_add_related_d(error, decl->full, 18044, "'", target->name, "' is automatically exported here.");
+            break;
+        }
+    } else {
+        csview name = port_item_name(at);
+        csview specifier = my module_ref ? cstr_sv(&my target_path) : c_sv("...");
+        error_ctx_error_d(errs, at, 18042, "'", name, "' is a type and cannot be imported in JavaScript files. Use 'import(\"",
+            specifier, "\").", name, "' in a JSDoc type annotation.");
+    }
+}
+
 void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs) {
     if (my in_namespace && !my jsdoc) {
         if (port_statement_is_export_declaration(me)) {
@@ -225,6 +259,10 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         if (!(ty_type_of_symbol(current_checker, target)->flags & TYF_ERROR)) continue;
         Symbol const* module = binder_module_of_ref(i->symbol->binder, i->module_ref);
         if (module) scope_report_non_exported_member(i, module, errs);
+    }
+    if (span.source && span.source->is_js && !my jsdoc) {
+        port_item_check_js_type(me, &my main, errs);
+        for_each (i, vec_port_item, &my items) port_item_check_js_type(me, i, errs);
     }
     // tsc's checkImportAttributes()
     ImportAttributes const* node = my attributes;
