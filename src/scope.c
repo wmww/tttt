@@ -956,7 +956,10 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         symbol->is_const = props.is_const;
         symbol->is_parameter = props.is_parameter;
     }
-    if (props.kind == SYMBOL_DECL_VARIABLE || props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM) {
+    // (A function too: an ambient `require` function is CommonJS's, expr_symbol_is_commonjs_require())
+    if (props.kind == SYMBOL_DECL_VARIABLE || props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM ||
+        props.kind == SYMBOL_DECL_FUNCTION
+    ) {
         symbol->is_ambient |= scope->ambient || props.is_ambient;
     }
     if (!merged && props.default_export) {
