@@ -2410,6 +2410,8 @@ Span ty_prop_decl_span(Prop const* prop) {
     ) {
         return symbol->decls[0].name;
     }
+    // A JSDoc `@property` is the whole tag (tsc's getErrorSpanForNode of a JSDocPropertyTag)
+    if (prop->decl->decl_span_count && span_is_jsdoc_tag(prop->decl->decl_spans[0])) return prop->decl->decl_spans[0];
     return prop->decl->name_span;
 }
 

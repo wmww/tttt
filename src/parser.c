@@ -3286,6 +3286,34 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
             if (after < end && *after == '{') {
                 parse_jsdoc_type_expression(parent, &after, end, &tag);
                 c = after;
+            } else if (tag.kind == JSDOC_TAG_SATISFIES) {
+                // Braces are required (tsc's parseSatisfiesTag: parseJSDocTypeExpression(mayOmitBraces: false))
+                Parser e = parser(parent);
+                e.pos = after;
+                e.whitespace_end = nullptr;
+                const char* token_end = after;
+                while (token_end < end && (is_identifier_char(*token_end) || (uint8_t)*token_end >= 0x80)) token_end++;
+                if (token_end == after && after < end) token_end++;
+                parse_error(&e, span_make(source, after, token_end), 1005, "'{' expected.");
+                const char* type_start = after;
+                TypeNode type;
+                if (after < end && parse_jsdoc_bare_type(parent, &after, end, &type)) {
+                    tag.has_type = true;
+                    tag.type = type;
+                    tag.type_span = span_make(source, type_start, after);
+                    c = after;
+                }
+                after = jsdoc_skip_space(after, end);
+                if (after < end && *after == '}') {
+                    c = after + 1;
+                } else {
+                    token_end = after;
+                    while (token_end < end && (is_identifier_char(*token_end) || (uint8_t)*token_end >= 0x80)) token_end++;
+                    if (token_end == after && after < end) token_end++;
+                    parse_error(&e, span_make(source, after, token_end), 1005, "'}' expected.");
+                }
+                jsdoc_keep_errors(&e);
+                parse_fail(&e);
             } else if ((tag.kind == JSDOC_TAG_TYPE || tag.kind == JSDOC_TAG_ENUM || tag.kind == JSDOC_TAG_EXTENDS ||
                     tag.kind == JSDOC_TAG_IMPLEMENTS) && after < end && after > c &&
                 !memchr(c, '\n', (size_t)(after - c)) && *after != '@'
@@ -8241,7 +8269,8 @@ static void jsdoc_apply_parenthesized(Parser* p, const char* start, Span span, E
         inner.outer_span = inner.inner_span;
         *ret = expr_as_type(span, c_new(AsTypeExpr, {
             .expr = inner,
-            .keyword_span = tag->type_span, // (Where tsc reports what's wrong with a JSDoc assertion: its type)
+            // (Where tsc reports what's wrong with a JSDoc assertion: its type; a `@satisfies` its tag)
+            .keyword_span = is_satisfies ? tag->tag_name : tag->type_span,
             .type = jsdoc_take_type(tag, nullptr),
             .is_satisfies = is_satisfies,
             .is_jsdoc = true,

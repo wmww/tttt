@@ -102,6 +102,14 @@ void cstr_append_span(cstr* target, Span me) {
     cstr_append_sv(target, me.sv);
 }
 
+bool span_is_jsdoc_tag(Span me) {
+    if (!span_is_written(me) || !me.source->is_js || *me.sv.buf != '@') return false;
+    const char* file_start = source_file_start(me.source);
+    const char* c = me.sv.buf;
+    while (c > file_start && (c[-1] == ' ' || c[-1] == '\t')) c--;
+    return c > file_start && c[-1] == '*';
+}
+
 bool span_is_written(Span me) {
     SourceFile const* file = me.source;
     char const* start = file ? source_file_start(file) : nullptr;

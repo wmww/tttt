@@ -48,6 +48,8 @@ static inline const char* span_end_ptr(Span me) {
 // Whether the span is text of its file (not a name made up for something that isn't written: the `argN` parameters
 // of a JSDoc function type)
 bool span_is_written(Span me);
+// Starts at the `@` of a JSDoc tag (a declaration a tag makes: `@typedef`, `@property`...), sniffed from the text
+bool span_is_jsdoc_tag(Span me);
 unsigned span_line_index(Span me);
 unsigned span_col_index(Span me);
 // The UTF-16 code units (tsc's positions) the UTF-8 byte at c ends: 1 for a lead byte, and a 4-byte character's
