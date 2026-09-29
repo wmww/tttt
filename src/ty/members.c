@@ -2080,7 +2080,9 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     if (ty_is_generic_index(constraint)) {
         if (mapped->keyof_constraint) return expand_generic_homomorphic(me, members);
         Ty const* lower = lower_bound_of_key_type(me, constraint, 0);
-        if (lower == constraint) return members;
+        // (A union's literal members are keys even when its other members stay generic: `"x" | (T extends U ? "y" :
+        // never)` has x, tsc's forEachType over the lower bound)
+        if (lower == constraint && constraint->kind != TY_UNION) return members;
         constraint = lower;
         generic = true;
     }

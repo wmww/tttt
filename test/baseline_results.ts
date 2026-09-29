@@ -63852,7 +63852,7 @@ const baselines = {
     },
     'keyofAndIndexedAccess': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'keyofAndIndexedAccess2': {
