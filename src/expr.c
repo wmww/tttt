@@ -2149,7 +2149,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                 if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
                     Ty const* key = ty_string_literal(checker, cstr_sv(&i->name_string));
                     property = ty_access_reading(checker, source, key);
-                    ty_mark_destructured_member(checker, source, cstr_sv(&i->name_string));
+                    ty_check_destructured_member(checker, source, key, i->name_span, errs);
                     // What the source lacks is TS2339, on the source as it is: null and undefined too (tsc's
                     // checkObjectLiteralDestructuringPropertyAssignment). An object literal source may lack a property
                     // that has a default (AccessFlags.AllowMissing)
@@ -2170,6 +2170,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                     if (!(has_default && source->kind == TY_ANONYMOUS && source->anonymous.object_literal)) {
                         ty_check_indexed_access_type(checker, source, key, key_span, key_span, errs);
                     }
+                    ty_check_destructured_member(checker, source, key, i->name_span, errs);
                     property = ty_access_reading(checker, source, key);
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD && i_index + 1 < vec_object_expr_item_size(&target->object)) {

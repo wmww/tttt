@@ -2952,11 +2952,28 @@ static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr c
     for (u32 i = 0; i < prop->decl->decl_span_count; i++) ty_mark_member_referenced(me, prop->decl->decl_spans[i]);
 }
 
-void ty_mark_destructured_member(Checker* me, Ty const* object, csview name) {
-    if (!unused_enabled() || (object->flags & TYF_ANY)) return;
+void ty_check_destructured_member(Checker* me, Ty const* object, Ty const* key, Span span, ErrorCtx* errs) {
+    if (object->flags & TYF_ANY) return;
+    Atom const* name = ty_literal_name(me, key);
     MemberRefs refs = {0};
-    if (member_refs(me, object, checker_atom(me, name), &refs, 0) < 0) return;
-    for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, refs.props[i], nullptr);
+    if (!name || member_refs(me, object, name, &refs, 0) < 0) return;
+    if (unused_enabled()) {
+        for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, refs.props[i], nullptr);
+    }
+    // tsc's checkPropertyAccessibility of a binding element or destructuring assignment property: a private member
+    // outside its class. TODO: protected members (the classes around the pattern aren't known here)
+    for (u32 i = 0; i < refs.len; i++) {
+        Prop const* prop = refs.props[i];
+        if (!(prop->flags & PROP_PRIVATE) || !prop->parent) continue;
+        ClassDecl const* declaring = class_decl_of(prop->parent);
+        if (!declaring || !span_valid(span) || (declaring->full_span.source == span.source &&
+            span_contains(declaring->full_span, span_start_ptr(span)))) continue;
+        cstr class_str = ty_to_cstr(me, ty_declared_type_of(me, prop->parent));
+        error_ctx_error_d(errs, span, 2341,
+            "Property '", atom_sv(prop->name), "' is private and only accessible within class '", class_str, "'.");
+        cstr_drop(&class_str);
+        return;
+    }
 }
 
 // tsc's isPropertyDeclaredInAncestorClass: a base class declares it too, and gives it its value first

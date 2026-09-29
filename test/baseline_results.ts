@@ -9541,7 +9541,7 @@ const baselines = {
         types: true,
     },
     'destructureComputedProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -9596,7 +9596,7 @@ const baselines = {
         types: true,
     },
     'destructuringAssignment_private': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

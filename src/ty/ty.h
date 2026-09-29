@@ -879,7 +879,9 @@ void ty_mark_member_referenced(Checker* me, Span declaration);
 // the statement walk and by the expression walk)
 bool ty_first_check(Checker* me, void const* node);
 // `const { name } = object` reads the member (check.c)
-void ty_mark_destructured_member(Checker* me, Ty const* object, csview name);
+// A property a destructuring pattern reads (`key` a literal type, else nothing is checked): marked referenced, and
+// TS2341 at span when it is private outside its class
+void ty_check_destructured_member(Checker* me, Ty const* object, Ty const* key, Span span, ErrorCtx* errs);
 Atom const* checker_atom(Checker* me, csview sv);
 static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return my intrinsics[i]; }
 
