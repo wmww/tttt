@@ -3723,8 +3723,26 @@ static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
 
 // A class's JSDoc: `@template`s, and the type arguments of `@extends {Base<T>}` (tsc's getEffectiveBaseTypeNode: the
 // tag's ExpressionWithTypeArguments stands for the heritage clause's)
-static void jsdoc_apply_class(VecJsDocTag* tags, ClassDecl* class_decl) {
+// The rightmost name of an entity name expression (tsc's getIdentifierFromEntityNameExpression), null if it isn't one
+static Span jsdoc_entity_name_last(Expr const* expr) {
+    if (expr->tag == EXPR_GENERIC_PARAMS) expr = &expr->generic_params->expr;
+    if (expr->tag == EXPR_IDENTIFIER) return expr->identifier.name;
+    if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) return expr->property->prop.inner_span;
+    return span_null;
+}
+
+static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_decl) {
     jsdoc_apply_template(tags, &class_decl->generic);
+    // `@augments A` on `class C extends B` (tsc's checkJSDocAugmentsTag)
+    JsDocTag* augments = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
+    Span extends_name = jsdoc_entity_name_last(&class_decl->extends);
+    if (augments && augments->type.tag == TYPE_IDENTIFIER && span_valid(extends_name) &&
+        !csview_equals_sv(augments->type.identifier->name.sv, extends_name.sv)
+    ) {
+        Span name = augments->type.identifier->name;
+        jsdoc_error(p, name, 8023, "JSDoc '@", augments->tag_name.sv, " ", name.sv, "' does not match the 'extends ",
+            extends_name.sv, "' clause.");
+    }
     // `@implements {I}` (tsc's getEffectiveImplementsTypeNodes: in JavaScript the tags, not the clause)
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_IMPLEMENTS || !i->has_type || i->earlier) continue;
@@ -10877,13 +10895,19 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 if (signature && signature->ret_explicit) function->jsdoc_tag_ret = &signature->ret;
             }
             if (function) jsdoc_apply_function(&tags, function);
-            if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_class(&tags, initializer->value.class_decl);
+            if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initializer->value.class_decl);
         }   break;
-        case STATEMENT_DECL_FUNCTION:
+        case STATEMENT_DECL_FUNCTION: {
+            // (tsc's checkJSDocAugmentsTag)
+            FunctionImpl const* function = statement->decl.function.impl;
+            for_each (i, vec_jsdoc_tag, &tags) {
+                if (i->kind != JSDOC_TAG_EXTENDS || i->earlier || i->nested || !span_valid(function->name)) continue;
+                jsdoc_error(p, function->name, 8022, "JSDoc '@", i->tag_name.sv, "' is not attached to a class.");
+            }
             jsdoc_apply_function(&tags, statement->decl.function.impl);
-            break;
+        }   break;
         case STATEMENT_DECL_CLASS:
-            jsdoc_apply_class(&tags, statement->decl.class);
+            jsdoc_apply_class(p, &tags, statement->decl.class);
             break;
         case STATEMENT_EXPR:
             if (statement->expr.tag == EXPR_PROPERTY && !expr_is_perenthisized(&statement->expr)) {
@@ -10902,7 +10926,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 if (function) {
                     jsdoc_apply_function(&tags, function);
                 } else if (assignment->right.tag == EXPR_CLASS_DECL && !expr_is_perenthisized(&assignment->right)) {
-                    jsdoc_apply_class(&tags, assignment->right.class_decl);
+                    jsdoc_apply_class(p, &tags, assignment->right.class_decl);
                 } else {
                     // The declared type of what the assignment declares (`this.x`, `exports.x`, `module.exports`)
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
