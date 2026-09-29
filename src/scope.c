@@ -596,6 +596,14 @@ static void report_multiple_defaults(ErrorCtx* errs, Symbol const* existing, Spa
 }
 
 static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, u32 includes, bool related) {
+    if (existing->is_global_this) {
+        // tsc's mergeSymbol is silent about the built-in `globalThis`: what a script declares by that name is
+        // initializeTypeChecker's error (a module's `declare global` declarations aren't)
+        if (span_valid(name) && name.source && !name.source->is_stdlib && !name.source->is_module) {
+            error_ctx_error_d(errs, name, 2397, "Declaration name conflicts with built-in global identifier 'globalThis'.");
+        }
+        return;
+    }
     bool same_file = existing->decl_count && existing->decls[0].name.source == name.source;
     if (!same_file && existing->flags & SYMBOL_NAMESPACE_MODULE && !existing->is_global_this) {
         // Across files symbols are merged by the checker in tsc, whose mergeSymbol says this into a namespace
