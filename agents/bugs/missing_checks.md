@@ -7,7 +7,7 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
 ## Buckets (tests whose errors fail on this one code, 2026-09-28, after suite checker bugs 6, suite 10830)
 - Single-code tests: missing TS2322 12 (relation-engine leftovers), missing TS2742 10 (declaration emit: needs a
   simulation of emit's type serialization and module specifiers, plan-sized), spurious TS2339 8, spurious TS1005 7
-  (parser), missing/spurious TS2304 5+5 (escaped identifiers, `bugs/escaped_identifiers.md`), missing TS2345 5,
+  (parser), missing/spurious TS2304 5+5 (escaped identifiers were some, fixed 2026-09-29), missing TS2345 5,
   missing TS2300 5, missing TS7023 4, spurious TS2749 4 (`export =` of a dotted name, triage), misplaced TS2322 5 and
   TS2769 4, spurious TS2741 4. `./unimplemented_codes.sh` is now syntax and isolatedDeclarations (TS90xx) at the top;
   TS2744 (type parameter defaults referencing later ones: needs a type-node walker) 15 in 4 tests.

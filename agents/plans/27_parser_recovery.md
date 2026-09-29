@@ -17,8 +17,8 @@ sections below are history.
 **Stage 3 done (2026-09-28, todo entry 6, one session + one sub-agent for the regex port)**: 402 -> 263 tests whose
 parser diagnostics differ (lexical clusters 92 -> 11; M 78 -> 31 with a sweep of `other:M`), suite 9729 -> 9833,
 corpora unchanged, parse time on the tsc corpus 104 -> 109 ms (after clawing back a 116 ms regression, see
-measurements.md). What's left of stage 3 is escaped identifier *names* (`bugs/escaped_identifiers.md`, with TS1260)
-and NUL characters in source (hacks.md "Parser"); the stage 3 section says what was built. Tagged templates aren't
+measurements.md). Escaped identifier names resolve by value now (`bugs/escaped_identifiers.md` has the leftovers); what's left of
+stage 3 is NUL characters in source (hacks.md "Parser"); the stage 3 section says what was built. Tagged templates aren't
 checked as calls (triage.md), which is what several template tests still need.
 **Stage 2 mostly done (2026-09-27, todo entry 8, one session with four sub-agents)**: 544 -> 402 tests whose parser
 diagnostics differ (TS: A 175 -> 83, B 36 -> 25, C 58 -> 40, M 87 -> 78); permissive clusters 172 -> 44 (modifiers
@@ -197,8 +197,8 @@ What was built, for whoever touches the scanner-level code next:
   TS1177/1178/1125 for empty `0b`/`0o`/`0x`, TS1124 after the exponent sign, legacy octal TS1121, leading zeros
   TS1489); the value is strtod of the separator-free digits.
 - Identifiers: `identifier_char_size()` (ASCII table first, then `unicode_identifiers.c`, generated from scanner.ts'
-  tables by `unicode_identifiers.py`, by target; unicode escapes of either). Escaped names stay raw
-  (`bugs/escaped_identifiers.md`). Columns count UTF-16 code units (`utf8_byte_utf16_units()`, `span_col_index`).
+  tables by `unicode_identifiers.py`, by target; unicode escapes of either). Escaped names are keyed by
+  their value (`name_cooked()`, `bugs/escaped_identifiers.md`). Columns count UTF-16 code units (`utf8_byte_utf16_units()`, `span_col_index`).
 - Files: `text_decode()` at load (program.c and the harness): UTF-16 BOM files decoded, bytes that aren't UTF-8
   replaced by U+FFFD like node; a U+FFFD at a token start is TS1490 and the rest of the file trivia.
 - Strings/templates: TS1160 unterminated templates, templates commit at `${` (a missing `}` ends them like tsc's
@@ -230,8 +230,7 @@ it's paying off unusually well.
 - Not the parser: duplicatePackage(_withErrors) (tsc redirects a duplicate package's file and never parses it: program
   level); parseErrorIncorrectReturnToken and templateInsideCallback expect the harness's "TS-1 Pre-emit/post-emit"
   line (an excess emit-resolver diagnostic), which the harness can't produce; objectCreationOfElementAccessExpression.
-- Escaped identifier *names* (`bugs/escaped_identifiers.md`; keywords are done): unicodeEscapesInNames02,
-  constructorWithIncompleteTypeAnnotation's `\u0066`, scannerUnicodeEscapeInKeyword2 (types).
+- Escaped identifier names: done but for unicodeEscapesInNames02(target=es5) (`bugs/escaped_identifiers.md`).
 - NUL bytes: the parser treats `\0` as end of file everywhere (scannerUnexpectedNullCharacter1,
   scannerStringLiteralWithContainingNullCharacter1); TransportStream (binary file, TS1128 span).
 - Decorators with no declaration after them: tsc makes a MissingDeclaration node the baselines walk but the checker

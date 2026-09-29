@@ -1,33 +1,20 @@
-# Escaped identifiers are named by their raw text
+# Escaped identifiers: what's left
 
-Found at plan 27 stage 3 (2026-09-28). The parser scans unicode escapes in identifiers (`identifier_char_size()`:
-`var a = 1`, `class C2 {}`, `a\u{62}`), so they no longer give parse errors, but an identifier's name *is*
-its span's text everywhere (`Span.sv`: scope lookups, symbol names, property names, `checker_atom`). So `a` and
-`a` are different names, and `var` is an identifier rather than the keyword `var` spelled with an escape.
+Names with unicode escapes (`a`, `a\u{62}`) resolve by their cooked value (2026-09-29): `name_cooked()`
+(`span.h`) decodes a view of a registered file's text (files with a `\u`, registered by `parse_file()`, cooked
+strings cached per file until it's dropped), and it's applied where names become keys: symbol tables (hash, lookup,
+insert), `checker_atom()`, `ty_string_literal()`, and the identifier comparisons that decide meaning (`name_equals()`:
+labels, private names, type parameter lookups, overload runs...). The parser decodes escapes into the values it makes
+from names (`identifier_name_value()`: dot property names, `name_string` of members, object binding keys).
+`Symbol.name` stays raw, which is what tsc prints (`Symbol(a, ...)`, `classType2` in types); messages quote
+the source as written.
 
-What tsc does: the scanner cooks the identifier (`tokenValue`/`escapedText`) and keeps the position; names resolve by
-the cooked text; `.symbols` print cooked names (`Symbol(a, ...)`), but messages that quote the source
-(`Cannot find name '_01234'`, TS2304 uses the node's text) print the raw text. An escaped keyword is the keyword
-with TS1260 "Keywords cannot contain escape characters." where it's used as one (`var x`), and an ordinary
-identifier where a keyword isn't expected (`var await = 12` is fine outside async code).
-
-Escaped *keywords* are done (2026-09-29): the keyword probe `hop_start_if_ends_on_word_break()` falls back to
-`hop_escaped_keyword()` when it mismatches at a `\`, which decodes the word and reports TS1260
-(scannerUnicodeEscapeInKeyword1, switchStatementsWithMultipleDefaults pass). What's left is the names.
-
-Tests (~10): escapedIdentifiers, parserUnicode1, parserS7.6_A4.2_T1, scannerS7.6_A4.2_T1,
-extendedUnicodeEscapeSequenceIdentifiers, duplicateObjectLiteralProperty, parserClassDeclaration23 (passes, no
-cross-reference), scannerUnicodeEscapeInKeyword2 (types: `var \u0061wait` is named `await`),
-unicodeEscapesInNames01/02, invalidUnicodeEscapeSequance3.
-Real code essentially never escapes identifiers, so this is a fidelity item, not a user-facing one.
-
-Why it isn't a local fix: a `Span` is both the position and the name. Options considered:
-- Cook into a side buffer and point the span there: breaks every position computation and the source-order comparisons
-  (`span_start_ptr(a) < span_start_ptr(b)`, used-before-declaration) that assume spans point into the file.
-- Rewrite the file text in place (`a` -> `a` + padding): the padding ends up in the name, or the span is shorter
-  than the source (underlines, parent spans, TS2304's raw text all change).
-- Cook at the chokepoints where names become keys: the binder's symbol tables and scope lookups, `checker_atom()`,
-  property-name strings (`name_string` is already a separate cooked `cstr` for object literal keys). Names with a `\`
-  are rare, so a check for `memchr(sv, '\\')` before cooking into an interned string (per `Program`) costs nothing on
-  normal names. This is the plausible route; the work is finding every place a name is compared by its span text
-  (`span_equals`, `csview_equals` on `.sv`) that matters for resolution. (TS1260 is done without it, see above.)
+Left:
+- Comparisons of names against literals (`span_equals(name, "constructor")`, `"prototype"`, `"__proto__"`...) are by
+  raw text: `constructor` isn't a constructor. tsc compares escapedText there. No test needs it.
+- Computed keys compare by source text, JSX attribute names stay raw (TS17021 there anyway).
+- unicodeEscapesInNames02(target=es5): errors need tsc's `TS-1` pre/post-emit count mismatch line (not
+  reproducible); types print `this.𐊧` for a property access whose name is an invalid character (tsc's node text
+  includes it, ours is empty).
+- unicodeEscapesInJsxtags: symbols list the merged global `JSX` namespace's declarations file-first, tsc lists
+  react.d.ts (a `@libFiles` file) first. Declaration order across files, not escapes.

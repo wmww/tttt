@@ -44,7 +44,7 @@ This list is not exhaustive as there are other structs owned by these. Each of t
 There is no AST node struct or interface (`ast_walk.h` is a read-only walk over every expression under a statement or expression, like tsc's forEachChild recursion, for checks that search a subtree). The AST is simply a *concept* that includes these structs, and is relevant for reasoning about the architecture.
 
 ### Span
-A span is a reference to a section of source code, often used for error messages. Spans don't own anything, and don't need to be dropped. Identifier names are generally stores as spans.
+A span is a reference to a section of source code, often used for error messages. Spans don't own anything, and don't need to be dropped. Identifier names are generally stores as spans. A name written with unicode escapes (`\u0061`) is keyed by its value: symbol tables, `checker_atom()` and `name_equals()` go through `name_cooked()` (`span.h`), which decodes views of a file's text (a memchr for `\` on everything else); what's printed stays the raw text.
 
 ### Display
 tttt has its own rendering pass for AST nodes in [src/display.c](src/display.c), driven by a `Display` struct (`display_type()`, `display_expr()`, ...). It stays separate from [cleat's display system](thirdparty/cleat/docs/display.md) because it's on the typechecker's hot path (every failed type comparison renders both types into a message) and because it has rendering modes cleat knows nothing about: `debug` (the developer-facing tree), `brief` (the same, truncated), `parsed` and `underline` (used by the test runner to underline a type within its rendering).
