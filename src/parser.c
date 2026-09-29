@@ -3852,6 +3852,7 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
     bool in_tag = false;
     JsDocTagKind owner = JSDOC_TAG_OTHER; // The @typedef or @callback the tags are part of, if any
     bool typedef_children = false; // The @typedef has no type or `{Object}`: it takes an `@type` child
+    bool typedef_typed = false; // It took one
     while (c < end) {
         char ch = *c;
         if (ch == '\n') {
@@ -3876,9 +3877,30 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
                 owner = tag->kind;
                 bool array;
                 typedef_children = tag->kind == JSDOC_TAG_TYPEDEF && jsdoc_is_object_type(tag, &array);
+                typedef_typed = false;
+            } else if (owner == JSDOC_TAG_TYPEDEF && tag->kind == JSDOC_TAG_TYPE && typedef_children && typedef_typed) {
+                // A second `@type` child: tsc's parseTypedefTag reports it at the token after it (with the file's
+                // start as the first one's place, a detached diagnostic) and the typedef ends; the tag is lost
+                const char* after = span_valid(tag->type_span) ? span_end_ptr(tag->type_span) : c;
+                while (after < end && (*after == '}' || *after == ' ' || *after == '\t')) after++;
+                SourceFile const* source = parent->shared->source;
+                Error error = {
+                    .message = cstr_lit("A JSDoc '@typedef' comment may not contain multiple '@type' tags."),
+                    // (the newline token after the tag)
+                    .span = span_make(source, after, after + (*after == '\n' ? 1 : after[0] == '\r' && after[1] == '\n' ? 2 : 0)),
+                    .ts_code = 8033,
+                    .phase = ERROR_PHASE_RESOLVE_NAMES,
+                };
+                const char* file_start = source_file_start(source);
+                error_add_related_d(&error, span_make(source, file_start, file_start), 8034, "The tag was first specified here.");
+                vec_error_push(&parent->shared->jsdoc_errors, error);
+                jsdoc_tag_drop(vec_jsdoc_tag_back_mut(tags));
+                vec_jsdoc_tag_pop(tags);
+                owner = JSDOC_TAG_OTHER;
             } else if (owner == JSDOC_TAG_TYPEDEF && tag->kind == JSDOC_TAG_TYPE && typedef_children) {
                 // (tsc's parseTypedefTag: an `@type` child of an untyped or `{Object}` typedef is its type)
                 tag->nested = true;
+                typedef_typed = true;
             } else if (owner == JSDOC_TAG_CALLBACK && (tag->kind == JSDOC_TAG_PARAM || tag->kind == JSDOC_TAG_RETURNS ||
                 tag->kind == JSDOC_TAG_TEMPLATE)
             ) {

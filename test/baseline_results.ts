@@ -52716,7 +52716,7 @@ const baselines = {
         types: true,
     },
     'typedefDuplicateTypeDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
