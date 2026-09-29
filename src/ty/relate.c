@@ -2480,6 +2480,21 @@ static Ternary type_args_related(
     return result;
 }
 
+// A covariant `void` type argument of the target (`B<number>` to `B<void>`): a failed comparison by variances falls
+// back to comparing structurally, where a `void` return takes anything (tsc's hasCovariantVoidArgument). Unlike an
+// unreliable variance, the variance error stays, and the structural comparison doesn't report (tsc's
+// reportStructuralErrors: only if nothing was reported yet)
+static bool covariant_void_argument(Variances const* variances, TyList target_args) {
+    for (u32 i = 0; i < target_args.len && i < variances->len; i++) {
+        if ((variances->data[i] & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT)) == VARIANCE_COVARIANT &&
+            (target_args.data[i]->flags & TYF_VOID)
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Structured relation
 
 // A relation that pushes only one side on the deep nesting stacks: `skip` 1 leaves the source (a member of a union or
@@ -3948,16 +3963,8 @@ static Ternary structured_related_members(
         bool unreliable;
         isize_t saved = vec_ty_report_line_size(&st->lines);
         Ternary related = type_args_related(me, st, variances, source->alias_args, target->alias_args, false, &unreliable);
-        if (!related) {
-            for (u32 i = 0; i < target->alias_args.len && i < variances->len; i++) {
-                if ((variances->data[i] & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT)) == VARIANCE_COVARIANT &&
-                    (target->alias_args.data[i]->flags & TYF_VOID)
-                ) {
-                    unreliable = true;
-                }
-            }
-        }
-        if (!related && report && !unreliable) {
+        bool void_fallback = !related && !unreliable && covariant_void_argument(variances, target->alias_args);
+        if (!related && report && !unreliable && !void_fallback) {
             report_truncate(st, saved);
             related = type_args_related(me, st, variances, source->alias_args, target->alias_args, true, &unreliable);
             bool invariant = false;
@@ -3996,8 +4003,12 @@ static Ternary structured_related_members(
                 return TERNARY_FALSE;
             }
         }
-        if (related || !unreliable) return related;
+        if (related || (!unreliable && !void_fallback)) return related;
         report_truncate(st, saved);
+        if (void_fallback && report) {
+            type_args_related(me, st, variances, source->alias_args, target->alias_args, true, &unreliable);
+            report = false;
+        }
     }
     // `[...T]` is T
     if (is_single_generic_tuple(me, source) && !source->reference.target->declared.tuple->readonly) {
@@ -4428,16 +4439,8 @@ static Ternary structured_related_members(
                 Ternary related = type_args_related(me, st, variances, source_args, target_args, false, &unreliable);
                 // A covariant `void` type argument of the target (`B<number>` to `B<void>`) falls back to comparing
                 // structurally, where a `void` return takes anything (tsc's hasCovariantVoidArgument)
-                if (!related) {
-                    for (u32 i = 0; i < target_args.len && i < variances->len; i++) {
-                        if ((variances->data[i] & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT)) == VARIANCE_COVARIANT &&
-                            (target_args.data[i]->flags & TYF_VOID)
-                        ) {
-                            unreliable = true;
-                        }
-                    }
-                }
-                if (!related && report && !unreliable) {
+                bool void_fallback = !related && !unreliable && covariant_void_argument(variances, target_args);
+                if (!related && report && !unreliable && !void_fallback) {
                     report_truncate(st, args_saved);
                     related = type_args_related(me, st, variances, source_args, target_args, true, &unreliable);
                     bool invariant = false;
@@ -4473,8 +4476,12 @@ static Ternary structured_related_members(
                 ) {
                     related &= is_related_to(me, st, source_this, target_this, report);
                 }
-                if (related || !unreliable) return related;
+                if (related || (!unreliable && !void_fallback)) return related;
                 report_truncate(st, saved);
+                if (void_fallback && report) {
+                    type_args_related(me, st, variances, source_args, target_args, true, &unreliable);
+                    report = false;
+                }
             }
         } else if (is_array_target(me, source_target) && is_array_target(me, target_target)) {
             // HACK: Array<S> and ReadonlyArray<T> relate like their element types. It's what comparing the two
