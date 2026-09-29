@@ -48,6 +48,10 @@ static Ty const* any_type(Checker* me) { return ty_intrinsic(me, TY_ANY); }
 // bases and whatever else tttt doesn't know the members of stay any)
 static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* object) {
     if (object->kind == TY_TYPE_PARAM && object->param.state->is_this) object = ty_apparent_type(me, object);
+    // Nothing but null and undefined: an error of its own and the error type (tsc's checkNonNullType)
+    if ((object->flags & TYF_NULLABLE) && (ty_non_nullable(me, object)->flags & (TYF_NULLABLE | TYF_NEVER))) {
+        return ty_intrinsic(me, TY_ERROR);
+    }
     bool global_this = object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE &&
         object->declared.namespace_symbol && object->declared.namespace_symbol->is_global_this;
     if (!(object->flags & TYF_OBJECT) || (object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object)) {
