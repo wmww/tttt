@@ -978,3 +978,7 @@ quickinfoTypeAtReturnPositionsInaccurate types), reverted the same session: deep
 bulletproof-react took +14% instructions (2.01 -> 2.30 G, +3000 types, check 196 -> 231 ms), valibot +1%. tsc does the
 same walk, so tttt is probably missing a cache there (Maybe results of deep relations not memoized, or
 instantiations redone). The port is `is_related_to_side(me, st, ..., 2)` in those cases; redo it with a profile.
+- `index_components_printed()` (ty_display.c): tsc's isEntityNameVisible for `{ [k]: T }` members is approximated: a
+  function body's locals and function expressions' parameters aren't visible, any other parameter is (a parameter of a
+  function declaration nested in another function too), and parameters skip the shadowing check since
+  `TyDisplay.enclosing` doesn't see the enclosing function's parameters.

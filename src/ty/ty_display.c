@@ -1708,6 +1708,17 @@ static bool index_components_printed(Checker* me, TyDisplay d, IndexInfo const* 
         if (!expr_is_entity_name(name)) return false;
         Expr const* leftmost = entity_leftmost(name);
         if (leftmost->tag != EXPR_IDENTIFIER || leftmost->identifier.keyword || !leftmost->identifier.symbol) return false;
+        // (A visible declaration, tsc's isEntityNameVisible: not a local of a function body, not a parameter of a
+        // function expression or arrow. HACK: a parameter of a function declaration nested in another function
+        // counts as visible, and TyDisplay.enclosing, the scope of the statement, doesn't see the parameters of the
+        // function around it: those aren't checked for shadowing)
+        Symbol const* symbol = leftmost->identifier.symbol;
+        if (symbol->is_local && symbol->function && (symbol->flags & SYMBOL_VARIABLE) &&
+            (!symbol->is_parameter || symbol->function->is_expression)
+        ) {
+            return false;
+        }
+        if (symbol->is_parameter && symbol->function) continue;
         Symbol const* found = scope_resolve(d.enclosing, leftmost->identifier.name.sv, SYMBOL_VALUE);
         if (!found || !same_symbol(me, found, leftmost->identifier.symbol)) return false;
     }

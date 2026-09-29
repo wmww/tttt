@@ -3003,7 +3003,7 @@ const baselines = {
     'capturedParametersInInitializers1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'capturedParametersInInitializers2': {
         errors: true,
@@ -4538,7 +4538,7 @@ const baselines = {
     'commaOperatorInConditionalExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commaOperatorLeftSideUnused': {
         errors: true,
@@ -10418,7 +10418,7 @@ const baselines = {
     'duplicateObjectLiteralProperty_computedNameNegative1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicateOverloadInTypeAugmentation1': {
         errors: true,
