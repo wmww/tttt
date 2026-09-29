@@ -14,3 +14,16 @@ generatorImplicitAny). Their perf cost was bisected and gated (tsc corpus +0.6% 
 (checkerdiff: identical at K=1 and 4), derivedClassSuperProperties, `<T extends any>` display, blockScopedBindingUsedBeforeDef,
 asyncFunctionNoReturnType, jsdocCallbackAndType, unionTypeWithIndexAndTuple. Routed: circularity to plan 39 (a
 planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboration" section) and plan 26 "Leftovers".
+
+- (vue dts-test session) Overload failure fallback: tsc's pickLongestCandidateSignature takes the first candidate with
+  enough parameters (getLongestCandidateIndex over all overloads), `resolve_with_signatures` the last unfit one; the
+  failed call's type differs (probe `plan19/vue/overload_first_check_skips_generic_functions.ts`, types only).
+- SkipGenericFunctions for generic functions nested in literal arguments (`nested_generic`) isn't done: leaving them out
+  of the first round lost zod `pick([z.object, ...])` and xstate inferences, because tttt marks literals nested_generic
+  where tsc has no contextual signature to skip for (see `infer_type_arguments`).
+- Relating nested indexed-access sources (`T[a][b]...[k]`, react-hook-form Path/FieldPathValue) steps one index
+  constraint per relation and recomputes each variant ~12 times (Maybe results inside aren't cached): 4% of the react
+  corpus. tsc computes the constraint of the whole chain in one getConstraintOfType; see hacks.md (Relations).
+- Symbols: a property of `Readonly<LooseRequired<T>> & {...}` (vue's DefineProps) lists its declaration once where tsc
+  lists it twice (the intersection modifiers type `T & Required<T>` of LooseRequired); `this` of a ThisType marker
+  prints no Symbol line (probes in `plan19/vue/`).
