@@ -4086,6 +4086,26 @@ static Ternary structured_related_members(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
 );
 
+// An intersection with its instantiable members replaced by their base constraints (unknown if none), null if it has none
+[[gnu::cold]] static Ty const* hoisted_constraints(Checker* me, Ty const* intersection) {
+    TyList types = intersection->composite.types;
+    Ty const** parts = malloc(sizeof(Ty const*) * types.len);
+    panic_if(!parts, "out of memory");
+    bool changed = false;
+    for (u32 i = 0; i < types.len; i++) {
+        Ty const* t = types.data[i];
+        parts[i] = t;
+        if (t->kind == TY_TYPE_PARAM || (t->flags & TYF_DEFERRED)) {
+            Ty const* constraint = base_constraint(me, t, 0);
+            parts[i] = constraint ? constraint : ty_intrinsic(me, TY_UNKNOWN_);
+            changed = true;
+        }
+    }
+    Ty const* ret = changed ? ty_intersection(me, parts, types.len, nullptr, (TyList){0}) : nullptr;
+    free(parts);
+    return ret;
+}
+
 // `use_variances` false: two instantiations of the same generic are compared by their members, as for an explanation
 static Ternary structured_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
@@ -4183,6 +4203,21 @@ static Ternary structured_related_members(
             }
         }
         return result;
+    }
+    if (source->kind == TY_INTERSECTION && comparable && (target->flags & (TYF_STRING_LIKE | TYF_NUMBER | TYF_BIGINT | TYF_BOOLEAN |
+        TYF_LITERAL | TYF_ENUM | TYF_ENUM_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_NULLABLE))
+    ) {
+        // Comparing with a primitive, the members' constraints take their place (tsc's unionOrIntersectionRelatedTo:
+        // `T & number` with `T extends string | number` is number, which "hello" isn't comparable to)
+        Ty const* reduced = hoisted_constraints(me, source);
+        if (reduced) {
+            if (reduced->flags & TYF_NEVER) return TERNARY_FALSE;
+            if (reduced->kind != TY_INTERSECTION) {
+                Ternary related = is_related_to_side(me, st, reduced, target, false, 2);
+                return related ? related : is_related_to_side(me, st, target, reduced, false, 2);
+            }
+            source = reduced;
+        }
     }
     if (source->kind == TY_INTERSECTION) {
         bool saved_source = st->intersection_source;

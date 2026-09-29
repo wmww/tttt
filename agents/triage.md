@@ -98,3 +98,8 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
     property a reverse mapped type inferred from (tsc links declarations), and the inferred types differ too.
   - JS: TS2303 (pushTypeGetTypeOfAlias, `exports.a = exports.b` circular), TS8022 for an `@extends` attached to
     nothing (extendsTag2/4, reported without a position). APILibCheck needs the built tsserverlibrary.d.ts files.
+- Names inside a module lib file's `declare global {}` resolve to the file's module-level locals before the globals:
+  lib.esnext.iterator.d.ts's `from(value: Iterator<T, ...>)` gets the local `abstract class Iterator` (with
+  IteratorObject's members), so `Iterator.from(i)` with a plain `Iterator<string>` is TS2345. In tsc the augmentation's
+  own `var Iterator` makes the name resolve (getMergedSymbol of the augmentation's exports) to the merged global symbol,
+  interface included, before the file's locals. (await)usingDeclarationsWithIteratorObject.

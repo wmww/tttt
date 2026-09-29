@@ -63746,7 +63746,7 @@ const baselines = {
         types: true,
     },
     'intersectionNarrowing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
