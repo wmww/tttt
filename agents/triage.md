@@ -54,3 +54,25 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
   in `ty_resolve_enum()` (its TODO); tsc makes them computed (unknown values), which is what TS4126 "One value of
   'E.A' is the string ..., and the other is assumed to be an unknown numeric value" reports (enumAssignmentCompat6,
   which also needs `import("f")` qualification in the header). Changes what number literals such members accept.
+
+- (error-header session, plan 34 bucket B) Left from the header/name queues, each needs more than a message fix:
+  - Pattern ambient module augmentations (`declare module "a.foo"` in a module file against `declare module "*.foo"`):
+    tsc merges a per-name clone (patternAmbientModuleAugmentations); tttt makes an unrelated ambient module and imports
+    memoised earlier still see the pattern (ambientDeclarationsPatterns_merging1/2).
+  - TS2395 for `import x = a.b` next to an exported declaration needs the alias's target spaces; resolving it in
+    `scope_check_export_merges()` (during declaration) memoised node module refs as missing on webpack (reverted,
+    importedEnumMemberMergedWithExportedAliasIsError). Do it after binder_link.
+  - An `import x = From` alias used as a value makes tsc check `From` as an expression (markAliasSymbolAsReferenced:
+    TS2304 next to TS2503), declarationEmitUnknownImport2.
+  - Paths in messages: a deduplicated package file keeps its own name in TS2306 (duplicatePackage_globalMerge), TS6053
+    shows the reference as written ('../x.ts', selfReferencingFile2), `import("/app/...")` absolute in
+    moduleResolutionWithSymlinks_preserveSymlinks: the harness/canonical path vs tsc's file names.
+  - Property access on a generic mapped type (`Omit<this, K>`) is never checked (hacks.md: check_access returns); tsc
+    resolves its members from getLowerBoundOfKeyType of the constraint (destructuringUnspreadableIntoRest).
+  - A destructured property of a generic parent (`T extends number`, `var {r} = t`) is TS2339 on 'T' in tttt, nothing in
+    tsc (the indexed access is deferred).
+  - JS: `var G = m.G = {}` makes one expando symbol of both hosts in tsc (the initializer's symbol,
+    typeFromPropertyAssignment18); `class D extends getSomething()<number>` TS2315 (declarationEmitExpressionInExtends4).
+  - Inference: K of `setState<K extends keyof S>(s: Pick<S, K>)` from `{ a }` with a generic `S & State<T>` comes out as
+    the constraint `"a" | keyof S` (indexedAccessRelation); `(n: Object) => 1` keeps its literal return
+    in tsc when inferred for U (genericCallWithGenericSignatureArguments3).
