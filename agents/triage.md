@@ -81,3 +81,22 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
   2: number }` (tsc: its sort returns the tuple). Relations also turn a tuple into its array against any declared
   interface without a literal `length` (structured_related_members, before the reference case), which loses `2`.
   destructuringArrayBindingPatternAndAssignment2.
+- (error text session A, plan 34 related info/underlines + single codes) Left over, each small or blocked:
+  - Decorators on a non-class declaration (`@dec var x`, decoratorOnVar & 5 more): TS1206 is right, but the parser
+    drops the decorator expressions, so their names are neither resolved nor typed (symbols/types components).
+  - The mock fs treats DOS-drive names (`A:/x.ts`, `c:/root/...`) as relative: commonSourceDir2/4 (TS5009),
+    commonSourceDir5 and pathMappingBasedModuleResolution7_* (spurious TS2307/TS2792). module_name_is_relative()
+    now knows drives; join() and the harness don't.
+  - TS4109 (circularTypeArgumentsLocalAndOuterNoCrash1): a deferred reference's arguments are never resolved when
+    its alias is only related to `{}` (tsc resolves the source's members there, and the cycle shows).
+  - conditionalTypes1: tsc suggests `extends NonNullable<T>` (TS2208) for `T` to `T & {}`, but not `extends T & U`
+    for `T` to `T & U` (intersectionTypeInference); constraint_resolves_through() treats both as circular.
+  - TS2307 for a namespace-internal import (TS1147) is only reported on a value use of its alias, not a type use.
+  - unusedLocalsAndParameters: `for (let x: y) { z(x); }` recovers `z` as a declaration that tsc doesn't report
+    unused (TS6133).
+  - variableDeclarationInStrictMode1: tsc's TS2300 on the lib side (`lib.es5.d.ts(--,--)`), dropped with every
+    lib-file error.
+  - mappedTypeInferenceErrors, reverseMappedTypeContextualTypeNotCircular: TS6500 should point at the object literal
+    property a reverse mapped type inferred from (tsc links declarations), and the inferred types differ too.
+  - JS: TS2303 (pushTypeGetTypeOfAlias, `exports.a = exports.b` circular), TS8022 for an `@extends` attached to
+    nothing (extendsTag2/4, reported without a position). APILibCheck needs the built tsserverlibrary.d.ts files.
