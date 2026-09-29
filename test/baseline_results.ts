@@ -10566,7 +10566,7 @@ const baselines = {
         types: false,
     },
     'dynamicNamesErrors': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

@@ -2741,19 +2741,38 @@ void ty_check_property_modifiers(Checker* me, Symbol const* symbol, ClassDecl co
     vec_property_decl_entry_drop(&decls);
 }
 
+// The name a type member binds: written, or what a computed key's type names (late bound, an entity name). Null if none
+static Atom const* type_member_name(Checker* me, InterfaceMember const* member) {
+    if (member->key.tag == INTERFACE_KEY_NAME) return checker_atom(me, cstr_sv(&member->key.name_string));
+    if (member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr.ref) return nullptr;
+    Expr const* key = member->key.expr.ref;
+    if (key->tag != EXPR_LITERAL && !expr_is_entity_name(key)) return nullptr;
+    return ty_literal_name(me, ty_expr_type(me, key));
+}
+
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs) {
     MemberTables* tables = malloc(sizeof(MemberTables)); // Big, and only read below count
     panic_if(!tables, "out of memory");
     tables->count = 0;
-    // A property signature after another member of its name (in any declaration)
+    // A property signature after another member of its name (in any declaration), computed names included
     for (u32 l = 0; l < list_count; l++) {
         for_each (i, vec_interface_member, lists[l]) {
-            if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function) continue;
+            if (i->key.tag == INTERFACE_KEY_EXPR) {
+                if (i->is_method || i->computed_accessor) continue;
+            } else if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function) {
+                continue;
+            }
+            Atom const* name = i->key.tag == INTERFACE_KEY_EXPR ? type_member_name(me, i) : nullptr;
+            if (i->key.tag == INTERFACE_KEY_EXPR && !name) continue;
             InterfaceMember const* first = nullptr;
             for (u32 k = 0; k <= l && !first; k++) {
                 for_each (other, vec_interface_member, lists[k]) {
                     if (other == i) break;
-                    if (other->key.tag == INTERFACE_KEY_NAME && cstr_eq(&other->key.name_string, &i->key.name_string)) {
+                    bool same = name || other->key.tag == INTERFACE_KEY_EXPR ?
+                        (other->key.tag == INTERFACE_KEY_NAME || other->key.tag == INTERFACE_KEY_EXPR) &&
+                            type_member_name(me, other) == (name ? name : type_member_name(me, i)) :
+                        other->key.tag == INTERFACE_KEY_NAME && cstr_eq(&other->key.name_string, &i->key.name_string);
+                    if (same) {
                         first = other;
                         break;
                     }
