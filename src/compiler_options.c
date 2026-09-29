@@ -309,7 +309,6 @@ void compiler_options_resolve(CompilerOptions* me) {
     DEFAULT(resolve_package_json_exports, modern_resolution);
     DEFAULT(resolve_package_json_imports, modern_resolution);
     DEFAULT(preserve_const_enums, my isolated_modules);
-    DEFAULT(declaration, my isolated_declarations);
 #undef DEFAULT
 }
 
