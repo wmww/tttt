@@ -18,6 +18,11 @@ Corpus notes worth keeping:
   reduction doesn't reproduce (webpack's `any`s from JSDoc fixing were found that way).
 - Grep `./filetest.sh` output for diffs only with `-d` (`FAST=1 ./filetest.sh f.ts -d`): without it no diff is
   printed and "no `^[-+]` lines" means nothing.
+- `./tscinstcount.js TSCONFIG FILE` prints what tsc's TS2589 counter (instantiationCount, reset per checked node)
+  reaches per node of a file, and `VARIANCES=1` each variance measurement's cost: the budget a TS2589 runaway in tttt
+  should be measured against. A probe project for a corpus: a tsconfig outside it that `extends` the corpus's with
+  absolute `baseUrl`/`paths` (plus `"*": ["node_modules/*"]`) and `typeRoots`, `files: [p.ts]`: tttt doesn't type check
+  a file whose imports don't resolve.
 - expect-type's `toEqualTypeOf` (valibot, zod test-d files) checks tttt's identity relation: a jump there is real.
 - nest: nestjs-i18n's shipped `.d.ts` imports `Path`/`PathValue`/`IfAnyOrNever` from a module that doesn't export
   them (hidden by skipLibCheck), so those are error types; a regression there would look like an i18n bug. A clean
@@ -81,6 +86,14 @@ ranges gave tsc 40 errors). noUncheckedIndexedAccess, noPropertyAccessFromIndexS
 methods returning `this & {...}` grew intersections without bound (probe `drizzle/this_intersection_nesting.ts`).
 Then 693 in 115 files: type-tests 265 (TS2344 213 = `Expect<Equal<>>` mismatches, TS2589 67), src 428 (TS2345, TS2339,
 TS7053, TS2322, TS2352, TS18048, TS2862...). The heaviest corpus by far: 265 G instructions (perf_leads.md).
+type-tests (sub-agent, 2026-09-29): a method's `this` through an alias of a class reference (`.notNull().references()`
+lost notNull), a base class's defaults instantiated with the arguments before them (`db.query.users`), contextual
+types for arguments of a union-of-tuples rest parameter, and object literal types instantiated by mappers their
+members don't mention staying themselves: every generic query-builder step had made equal copies of the tables'
+columns literals and everything built on them, 5M instantiations for one `.rightJoin()` (tsc: 37k at most per node),
+so TS2589 x59 and 257 G -> 15 G instructions. Left in type-tests (48 at that point): `Expect<Equal<>>` mismatches
+(TS2344 x31: `Omit<any, any>` for select results, `.$dynamic()` query builders inferred as their constraint, pg/with.ts
+subquery selections) and TS2345 on set operators / `.where()` of dynamic builders.
 
 `src/` went 428 -> 14 the same day (probes `test/probes/plan19/drizzle/`, one commit each, with the type-tests agent's
 fixes merged in between): keyof/Partial skipping private members, a type assertion in a mutable location keeping

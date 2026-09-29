@@ -358,6 +358,33 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     return ty_reference(me, target, (TyList){ .data = mapped_elements, .len = shape->arity });
 }
 
+// An object literal's type (ty_object_literal_of()) has its members already, and doesn't know which type parameters
+// they mention (free_params_unknown): an instantiation whose members all come out as they are is the type itself.
+// tsc gets there through the literal's outer type parameters, none of which it possibly references
+// (getObjectTypeInstantiation). Otherwise every mapper made a new, equal instance, and everything built on it (a
+// table type from a columns literal) was made again too: drizzle's query builders ran into TS2589 on those copies
+static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper const* mapper) {
+    if (!target->anonymous.free_params_unknown || target->anonymous.node || target->anonymous.function ||
+        target->anonymous.overload_count || target->anonymous.merged_value || target->anonymous.applies_type_args) {
+        return false;
+    }
+    TyObjectState const* state = target->anonymous.state;
+    if (!state || state->members_state != LAZY_STATE_DONE) return false;
+    Members const* members = state->members;
+    if (members->call_count || members->construct_count || members->mapped || members->base_count) return false;
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        if (prop->type_state != LAZY_STATE_DONE || !prop->type) return false;
+        if (prop->write_type && prop->write_type != prop->type) return false;
+        if (ty_instantiate(me, prop->type, mapper) != prop->type) return false;
+    }
+    for (u32 i = 0; i < members->index_count; i++) {
+        IndexInfo const* index = &members->index[i];
+        if (ty_instantiate(me, index->key, mapper) != index->key || ty_instantiate(me, index->value, mapper) != index->value) return false;
+    }
+    return true;
+}
+
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
     if (ty->anonymous.applies_type_args) {
         // An instantiation expression whose type arguments mention the type parameters: `typeof C<O>` in `type R<O>`
@@ -493,6 +520,12 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
             // Instantiating the alias arguments may have grown the table, so the slot is looked up again
             *intern_slot(me, &my types, key, count) = fresh;
             ret = fresh;
+            // (Checked with the instance in place: a literal whose members lead back to it gets that instance, so
+            // it's a new one)
+            if (!inner && literal_instance_is_itself(me, target, composed)) {
+                *intern_slot(me, &my types, key, count) = target;
+                ret = target;
+            }
         }
         if (key != stack_key) free(key);
     }
