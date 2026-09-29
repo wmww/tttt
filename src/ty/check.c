@@ -3154,7 +3154,13 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
         Prop const* prop = members->props[i];
         if (ty_private_name_class(me, prop->name) && csview_equals_sv(atom_sv(prop->name), name.sv)) other = prop;
     }
-    if (!other) return false;
+    if (!other) {
+        // (In a plain JavaScript file the TS2339 that follows isn't reported, this is)
+        if (access->enclosing_class && name.source && name.source->plain_js) {
+            error_ctx_grammar_error_d(errs, name, 1111, "Private field '", name, "' must be declared in an enclosing class.");
+        }
+        return false;
+    }
     ClassDecl const* other_class = class_decl_of(ty_private_name_class(me, other->name));
     if (lexical_item && other_class && is_within_class(lexical, other_class)) {
         cstr type_str = ty_to_cstr(me, object);
