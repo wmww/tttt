@@ -2141,18 +2141,19 @@ static bool span_contains(Span outer, char const* at) {
     return at >= span_start_ptr(outer) && at < span_end_ptr(outer);
 }
 
-// The class that declares prop as an abstract property or accessor (not a method: tsc's symbolHasNonMethodDeclaration),
-// null if it isn't one
-static ClassDecl const* abstract_property_class(Prop const* prop) {
+// The class that declares prop abstract, null if it isn't (methods only if `methods`, else properties and accessors:
+// tsc's symbolHasNonMethodDeclaration)
+static ClassDecl const* abstract_member_class(Prop const* prop, bool methods) {
     while (prop->target) prop = prop->target;
-    if ((prop->flags & PROP_METHOD) || !prop->parent || !span_valid(prop->decl->name_span)) return nullptr;
+    if (!methods && (prop->flags & PROP_METHOD)) return nullptr;
+    if (!prop->parent || !span_valid(prop->decl->name_span)) return nullptr;
     ClassDecl const* class_decl = class_decl_of(prop->parent);
-    if (!class_decl) return nullptr;
+    if (!class_decl || !class_decl->is_abstract) return nullptr; // (only an abstract class has abstract members)
     char const* name_at = span_start_ptr(prop->decl->name_span);
     for_each (i, vec_class_item, &class_decl->items) {
         if (!span_contains(i->span, name_at)) continue;
         bool is_abstract = i->tag == CLASS_ITEM_FIELD ? i->field.is_abstract :
-            i->tag == CLASS_ITEM_METHOD && i->method.accessor ? i->method.is_abstract : false;
+            i->tag == CLASS_ITEM_METHOD && (methods || i->method.accessor) ? i->method.is_abstract : false;
         return is_abstract ? class_decl : nullptr;
     }
     return nullptr;
@@ -2170,6 +2171,13 @@ static bool check_accessibility(
                     "Only public and protected methods of the base class are accessible via the 'super' keyword.");
                 return false;
             }
+        }
+        if (abstract_member_class(prop, true)) {
+            cstr class_str = ty_to_cstr(me, ty_declared_type_of(me, prop->parent));
+            error_ctx_error_d(errs, span, 2513, "Abstract method '", atom_sv(prop->name), "' in class '", class_str,
+                "' cannot be accessed via super expression.");
+            cstr_drop(&class_str);
+            return false;
         }
         if (!(prop->flags & PROP_STATIC) && (prop->flags & PROP_FIELD)) {
             // (Named as written: `this['x']` is `'x'`)
@@ -2193,7 +2201,7 @@ static bool check_accessibility(
         site->containing_function->constructed_class) || site->initializer_context == INITIALIZER_INSTANCE_FIELD ||
         site->initializer_context == INITIALIZER_STATIC_FIELD)
     ) {
-        ClassDecl const* abstract_class = abstract_property_class(prop);
+        ClassDecl const* abstract_class = abstract_member_class(prop, false);
         if (abstract_class && span_valid(abstract_class->name)) {
             error_ctx_error_d(errs, span, 2715, "Abstract property '", atom_sv(prop->name), "' in class '",
                 abstract_class->name, "' cannot be accessed in the constructor.");

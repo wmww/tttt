@@ -34756,7 +34756,7 @@ const baselines = {
         types: false,
     },
     'classAbstractSuperCalls': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
