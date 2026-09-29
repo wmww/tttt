@@ -9836,6 +9836,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
     // tsc's parseDelimitedList for the declarators, but with the terminators checked after each (below)
     u32 saved_context = list_enter(&p, PARSING_VARIABLE_DECLARATIONS);
     while (true) {
+        const char* declaration_start = p.pos;
         if (empty_for_of || !parse_binding_content_or_private_name(&p, &initializer.binding, 18029,
                 "Private identifiers are not allowed in variable declarations.")) {
             if (span_valid(comma_span)) {
@@ -9908,6 +9909,12 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         }
 
         if (p.shared->source->is_js) {
+            // A declaration's own JSDoc (`var /** @type {T} */ x`: tsc's VariableDeclaration is a JSDoc host)
+            if (!initializer.binding.has_explicit_type) {
+                VecJsDocTag tags = {0};
+                if (jsdoc_before(&p, declaration_start, &tags)) jsdoc_apply_type_to_binding(&tags, &initializer.binding);
+                vec_jsdoc_tag_drop(&tags);
+            }
             note_require_declaration(&initializer);
             note_exports_alias(&p, &initializer);
         }
