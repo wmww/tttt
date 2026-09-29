@@ -46,6 +46,8 @@ typedef enum WhitespaceType {
 
 typedef struct ParserShared {
     SourceFile const* source;
+    // A `/*` without its `*/` was hopped (the comment goes to the end of the file): TS1010 at the end, once
+    bool unterminated_comment;
     const char* fail_cache_start;
     VecU8 fail_cache;
     VecError errors;
@@ -885,8 +887,11 @@ static inline bool hop_comment(Parser* parent) {
             while (true) {
                 slash = strchr(pos, '/');
                 if (!slash) {
+                    // (tsc's scanner: the comment goes to the end of the file, '*/' expected there)
                     if (strchr(start, '\n')) parent->whitespace = WHITESPACE_NEWLINE;
-                    return false;
+                    parent->pos = start + 2 + strlen(start + 2);
+                    parent->shared->unterminated_comment = true;
+                    return true;
                 }
                 if (slash[-1] == '*' && slash - 1 >= start + 2) break;
                 pos = slash + 1;
@@ -6123,10 +6128,8 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         }
         parse_computed_key_comma(&p, &key);
         hop_whitespace(&p);
-        if (!hop_char(&p, ']')) {
-            expr_drop(&key);
-            return parse_fail(&p);
-        }
+        // (tsc's parseComputedPropertyName: `{ [s: symbol]: 1 }` is missing its `]`)
+        expect_char(&p, ']');
         item.computed_key = c_new(Expr, key);
         item.name_span = span_from(key_anchor);
     } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
@@ -11696,6 +11699,14 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         vec_expr_drop(&decorators);
         return parse_fail(&p);
     }
+    if (vec_expr_is_empty(&decorators) && vec_spanned_modifier_size(&modifiers.spanned) &&
+        vec_spanned_modifier_front(&modifiers.spanned)->tag == MODIFIER_EXPORT_DEFAULT
+    ) {
+        // A statement doesn't start with `default` (tsc's isDeclaration; after decorators it's a modifier, TS1029):
+        // the list's 'export' expected
+        modifier_list_drop(&modifiers);
+        return parse_fail(&p);
+    }
     hop_whitespace(&p);
     const char* keyword = p.pos;
     DeclStatementProps decl_props = {
@@ -12353,6 +12364,10 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         parse_source_directives(&p, &source->ast.statements);
         hop_whitespace(&p);
         parse_append_statement_sequence(&p, true, PARSING_SOURCE_ELEMENTS, source_file_start(source), &source->ast.statements);
+    }
+    if (shared.unterminated_comment) {
+        const char* end = source_file_start(source) + cstr_size(&source->contents);
+        parse_error(&p, span_make(source, end, end), 1010, "'*/' expected.");
     }
 
     // Grammar errors tsc's checker reports (checkGrammarModifiers, checkGrammarIndexSignatureParameters,

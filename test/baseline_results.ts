@@ -9306,7 +9306,7 @@ const baselines = {
         types: true,
     },
     'defaultKeywordWithoutExport2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35651,9 +35651,9 @@ const baselines = {
         types: true,
     },
     'privateIndexer2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'publicIndexer': {
         errors: true,
@@ -59311,9 +59311,9 @@ const baselines = {
         types: true,
     },
     'parserKeywordsAsIdentifierName2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserNoASIOnCallAfterFunctionExpression1': {
         errors: true,
@@ -59901,9 +59901,9 @@ const baselines = {
         types: true,
     },
     'parserSymbolIndexer5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserSymbolProperty1': {
         errors: true,
@@ -61111,9 +61111,9 @@ const baselines = {
         types: true,
     },
     'scannerS7.4_A2_T2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerS7.6_A4.2_T1': {
         errors: false,
