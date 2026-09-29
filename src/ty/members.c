@@ -1300,7 +1300,7 @@ Prop const* ty_namespace_type_only_prop(Checker* me, Ty const* object, Atom cons
 static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     Symbol const* symbol = entry->symbol;
     Symbol const* member = symbol_for_meaning(symbol, SYMBOL_VALUE);
-    if (!member || member->is_placeholder) return nullptr;
+    if (!member) return nullptr;
     Atom const* name = checker_atom(me, entry->name);
     if (symbol->late_bound_key) {
         // `f[k] = v` (What the key's type names: a literal or unique symbol, else nothing)

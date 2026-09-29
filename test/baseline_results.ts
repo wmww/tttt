@@ -20721,7 +20721,7 @@ const baselines = {
         types: true,
     },
     'literalTypeNameAssertionNotTriggered': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
