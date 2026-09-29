@@ -187,6 +187,24 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     if (declares) add_symbol_override(ctx, left->property->prop.outer_span, member);
 }
 
+// JavaScript `module.exports.a.x = v` / `exports.a.x = v` declaring x (tsc's AssignmentDeclarationKind.ExportsProperty
+// for an entity name rooted at exports): the access `module.exports.a` is x too, not what it names (tsc's
+// getSpecialPropertyAssignmentSymbolFromEntityName)
+static void nested_expando_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
+    if (left->tag != EXPR_PROPERTY || !left->property->declares || left->property->form != PROPERTY_EXPR_DOT) return;
+    Expr const* entity = &left->property->expr;
+    if (entity->tag != EXPR_PROPERTY || expr_is_perenthisized(entity) || !expr_is_entity_name(entity)) return;
+    if (expr_prototype_object((Expr*)entity) || expr_commonjs_target(left, nullptr) != COMMONJS_TARGET_NONE) return;
+    Expr const* next_to_last = entity;
+    while (next_to_last->property->expr.tag == EXPR_PROPERTY) next_to_last = &next_to_last->property->expr;
+    Expr const* root = &next_to_last->property->expr;
+    bool exports_rooted = root->tag == EXPR_IDENTIFIER && (span_equals(root->identifier.name, "exports") ||
+        (span_equals(root->identifier.name, "module") && span_equals(expr_static_property_name(next_to_last), "exports")));
+    if (!exports_rooted) return;
+    if (has_symbol_override(ctx, entity->inner_span)) return;
+    add_symbol_override(ctx, entity->inner_span, left->property->declares);
+}
+
 // `A.B.C` as spans
 // What the symbols baseline says about a property access, gathered over the members of a union or intersection
 typedef struct PropSymbolInfo {
@@ -1775,6 +1793,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             ) {
                 prototype_symbol_overrides(&my binary_op->left, ctx);
                 this_property_symbol_overrides(&my binary_op->left, ctx);
+                nested_expando_symbol_overrides(&my binary_op->left, ctx);
             }
             expr_compile_test_info(&my binary_op->left, ctx);
             while (ctx->symbol_override_count > overrides) {
