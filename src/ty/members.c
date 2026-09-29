@@ -3070,6 +3070,7 @@ Ty const* ty_object_literal_of(
             prop->decl->name_is_value = props[i].name_is_value;
             prop->decl->literal_own = props[i].own;
             prop->decl->name_form = props[i].name_form;
+            prop->decl->name_type = props[i].name_type;
             prop->decl->asserted = props[i].asserted;
             prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
@@ -3213,6 +3214,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .asserted = prop->decl->asserted,
             .own = prop->decl->literal_own,
             .name_form = ty_prop_name_form_of(prop),
+            .name_type = prop->decl->name_type,
         };
     }
     u32 count = members->prop_count;
@@ -3232,6 +3234,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .type = ty_intrinsic(me, exact ? TY_NEVER : TY_UNDEFINED),
             .name_span = prop->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
+            .name_type = prop->decl->name_type,
             .decl_spans = prop->decl->decl_spans,
             .decl_span_count = prop->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
@@ -3370,6 +3373,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
                 .asserted = prop->decl->asserted,
                 .own = prop->decl->literal_own,
                 .name_form = ty_prop_name_form_of(prop),
+                .name_type = prop->decl->name_type,
             };
         }
         IndexInfo index[8] = {0};
@@ -3442,6 +3446,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
             .asserted = prop->decl->asserted,
             .own = prop->decl->literal_own,
             .name_form = ty_prop_name_form_of(prop),
+            .name_type = prop->decl->name_type,
         };
     }
     IndexInfo index[8] = {0};

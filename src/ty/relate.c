@@ -54,6 +54,9 @@ typedef enum GlobalType {
 typedef struct RelationState {
     TyRelation relation;
     bool reporting;
+    // Reporting, the source as given when a union of fresh literals: its members are related in its order, not the
+    // regular union's (tsc relates the fresh union: `1 | ""` fails on `1` first even though `""` has the lower id)
+    Ty const* fresh_union;
     VecTyReportLine lines; // innermost first while being collected
     u32 override_next_head; // A more specific message stands in for the next "Type S is not assignable to type T"
     // Relating to the members of an intersection target (tsc's IntersectionState.Target): no excess property checks,
@@ -2337,8 +2340,15 @@ static Ternary is_related_to_side(Checker* me, RelationState* st, Ty const* sour
 
 static Ternary each_related(Checker* me, RelationState* st, TyList sources, Ty const* target, bool report) {
     Ternary result = TERNARY_TRUE;
+    TyList fresh = {0};
+    if (report && st->fresh_union && ty_regular(st->checker, st->fresh_union)->composite.types.data == sources.data &&
+        st->fresh_union->composite.types.len == sources.len
+    ) {
+        fresh = st->fresh_union->composite.types;
+    }
     for (u32 i = 0; i < sources.len; i++) {
-        Ternary related = is_related_to_side(me, st, sources.data[i], target, report, 2);
+        Ty const* member = fresh.len ? ty_regular(me, fresh.data[i]) : sources.data[i];
+        Ternary related = is_related_to_side(me, st, member, target, report, 2);
         if (!related) return TERNARY_FALSE;
         result &= related;
     }
@@ -4941,6 +4951,7 @@ static bool check_related(
 ) {
     // The error type is related to everything, in both directions: whatever made it was reported already
     if ((source->flags | target->flags) & TYF_ERROR) return true;
+    Ty const* fresh_union = source->kind == TY_UNION && (source->flags & TYF_FRESH_LITERAL) ? source : nullptr;
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return true;
@@ -4974,6 +4985,7 @@ static bool check_related(
     st->at_top = true;
     st->checker = me;
     st->outer = my relating;
+    st->fresh_union = report_into ? fresh_union : nullptr;
     if (source == target) return true;
     if (relation != TY_RELATION_IDENTITY && !st->reporting && is_simple_related(me, st, source, target)) return true;
     if (relation != TY_RELATION_IDENTITY && !st->reporting && !is_structured(source) && !is_structured(target)) {

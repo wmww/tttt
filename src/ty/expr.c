@@ -1819,9 +1819,14 @@ static Ty const* binary_result(Checker* me, Ty const* left, BinaryOp op, Ty cons
             return ty_intrinsic(me, TY_BOOLEAN);
 
         case BINARY_OP_AND_AND:
+        {
             if (!ty_can_be_truthy(me, left)) return left;
-            if (!compiler_options()->strict_null_checks) return right;
-            return union_of_two(me, definitely_falsy_part(me, left), right);
+            // (Literal reduction only, `void | undefined` stays. Without strictNullChecks the falsy part is the right
+            // operand's base type's: `"a" && "b"` is `"" | "b"`)
+            Ty const* falsy = definitely_falsy_part(me, compiler_options()->strict_null_checks ? left : ty_base_type_of_literal(me, right));
+            Ty const* parts[2] = { falsy, right };
+            return ty_union(me, parts, 2, nullptr, (TyList){0});
+        }
 
         case BINARY_OP_OR_OR: {
             if (!ty_can_be_falsy(me, left)) return left;
@@ -2250,6 +2255,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
             .asserted = annotation,
             .name_span = origin->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
+            .name_type = prop->decl->name_type,
             .decl_spans = origin->decl->decl_spans,
             .decl_span_count = origin->decl->decl_span_count,
             .name_is_value = origin->decl->name_is_value,
@@ -2917,6 +2923,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .asserted = asserted,
             .own = true,
             .name_form = name_form,
+            .name_type = i->computed_key && (key_type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) ? key_type : nullptr,
         });
     }
     free(accessor_spans);

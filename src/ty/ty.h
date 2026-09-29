@@ -470,6 +470,7 @@ typedef struct PropDecl {
     bool name_is_value; // The name was written as a string or number literal
     bool literal_own; // A property of an object literal written in it (not spread): see ObjectLiteralProp.own
     uint8_t name_form; // PropNameForm: how the name prints
+    Ty const* name_type; // An object literal's computed literal name's type, as it was (fresh): what keyof gives
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
     TypeNode const* asserted;
     struct MappedInfo const* template_of; // The template of this mapped type, as a property its properties instantiate
@@ -1433,6 +1434,7 @@ typedef struct ObjectLiteralProp {
     TypeNode const* asserted; // See Prop.asserted
     bool own; // Written in the literal itself, not spread into it: only those get excess property checks
     uint8_t name_form; // See PropDecl.name_form
+    Ty const* name_type; // See PropDecl.name_type
     Prop const* reuse; // The property is this one as it is (tsc: the same symbol), the other fields are ignored
 } ObjectLiteralProp;
 typedef enum ObjectLiteralKind {

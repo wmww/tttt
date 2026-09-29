@@ -288,6 +288,14 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_UNREACHABLE_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_NON_PRIMITIVE] = make_intrinsic(me, "object", TYF_NON_PRIMITIVE);
     {
+        // tsc's emptyStringType, zeroType and zeroBigIntType come first (`"" | "a"` prints in that order)
+        ty_string_literal(me, c_sv(""));
+        Value zero = { .tag = VALUE_NUMBER, .number = 0 };
+        ty_literal(me, &zero);
+        Value zero_bigint = { .tag = VALUE_BIGINT, .bigint = 0 };
+        ty_literal(me, &zero_bigint);
+    }
+    {
         // tsc's typeofType (createTypeofType) is made with the checker's global types, before any written literal
         static char const* const names[] = { "string", "number", "bigint", "boolean", "symbol", "undefined", "object", "function" };
         Ty const* types[c_arraylen(names)];
@@ -1907,6 +1915,7 @@ static Ty const* intern_deferred(Checker* me, u64 const* key, u32 count, TyKind 
 Ty const* ty_prop_key_literal(Checker* me, Prop const* prop) {
     Prop const* declared = prop;
     while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
+    if (declared->decl->name_type) return declared->decl->name_type; // (tsc's nameType, fresh if it was)
     csview text = declared->decl->name_span.sv;
     if (declared->decl->name_is_value && span_valid(declared->decl->name_span) && text.size &&
         ((text.buf[0] >= '0' && text.buf[0] <= '9') || text.buf[0] == '.' || text.buf[0] == '[')

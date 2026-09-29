@@ -5408,7 +5408,7 @@ const baselines = {
     'conditionalAnyCheckTypePicksBothBranches': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalDoesntLeakUninstantiatedTypeParameter': {
         errors: true,
@@ -5428,7 +5428,7 @@ const baselines = {
     'conditionalExpression1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine1': {
         errors: true,
@@ -5483,7 +5483,7 @@ const baselines = {
     'conditionalExpressions2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalReturnExpression': {
         errors: true,
@@ -7443,7 +7443,7 @@ const baselines = {
     'declFileTypeAnnotationParenType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileTypeAnnotationStringLiteral': {
         errors: true,
@@ -9768,7 +9768,7 @@ const baselines = {
     'discriminantPropertyCheck': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminantPropertyInference': {
         errors: true,
@@ -13308,7 +13308,7 @@ const baselines = {
     'expr': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expressionTypeNodeShouldError': {
         errors: true,
@@ -22968,7 +22968,7 @@ const baselines = {
     'narrowingUnionToUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingUnionWithBang': {
         errors: true,
@@ -24173,7 +24173,7 @@ const baselines = {
     'numberVsBigIntOperations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericClassMembers1': {
         errors: true,
@@ -25708,7 +25708,7 @@ const baselines = {
     'predicateSemantics': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'prefixIncrementAsOperandOfPlusExpression': {
         errors: true,
@@ -26548,7 +26548,7 @@ const baselines = {
     'reachabilityChecks4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reachabilityChecks5': {
         errors: true,
@@ -30633,7 +30633,7 @@ const baselines = {
     'truthinessCallExpressionCoercion2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'truthinessCallExpressionCoercion3': {
         errors: true,
@@ -37943,7 +37943,7 @@ const baselines = {
     'controlFlowSuperPropertyAccess': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowTruthiness': {
         errors: true,
@@ -39478,22 +39478,22 @@ const baselines = {
     'logicalAssignment1(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment1(target=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment1(target=es2021)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment1(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment10(target=es2015)': {
         errors: true,
@@ -39518,42 +39518,42 @@ const baselines = {
     'logicalAssignment2(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment2(target=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment2(target=es2021)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment2(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment3(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment3(target=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment3(target=es2021)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment3(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment4(target=es2015)': {
         errors: true,
@@ -47113,7 +47113,7 @@ const baselines = {
     'logicalAndOperatorWithEveryType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAndOperatorWithTypeParameters': {
         errors: true,
@@ -47523,7 +47523,7 @@ const baselines = {
     'nullishCoalescingOperator11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator12': {
         errors: true,
@@ -47538,7 +47538,7 @@ const baselines = {
     'nullishCoalescingOperator3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator4': {
         errors: true,
@@ -48233,7 +48233,7 @@ const baselines = {
     'typeGuardsInConditionalExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardsInDoStatement': {
         errors: true,
@@ -48283,7 +48283,7 @@ const baselines = {
     'typeGuardsInRightOperandOfAndAndOperator': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardsInRightOperandOfOrOrOperator': {
         errors: true,
@@ -59263,7 +59263,7 @@ const baselines = {
     'parserArgumentList1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserAstSpans1': {
         errors: true,
@@ -59428,7 +59428,7 @@ const baselines = {
     'parserRealSource7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource8': {
         errors: true,
@@ -63913,7 +63913,7 @@ const baselines = {
     'literalTypes3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'literalTypesAndDestructuring': {
         errors: true,
@@ -63933,17 +63933,17 @@ const baselines = {
     'numericLiteralTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericLiteralTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericLiteralTypes3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericStringLiteralTypes': {
         errors: true,
@@ -64018,7 +64018,7 @@ const baselines = {
     'stringLiteralsWithSwitchStatements04': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralsWithTypeAssertions01': {
         errors: true,
@@ -64283,7 +64283,7 @@ const baselines = {
     'indexSignatures1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypeHidingMembersOfExtendedObject': {
         errors: false,
@@ -65753,7 +65753,7 @@ const baselines = {
     'optionalTupleElements1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'readonlyArraysAndTuples': {
         errors: false,
@@ -66538,7 +66538,7 @@ const baselines = {
     'bestCommonTypeOfConditionalExpressions2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bestCommonTypeOfTuple': {
         errors: true,
@@ -66743,7 +66743,7 @@ const baselines = {
     'subtypesOfTypeParameterWithConstraints2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypesOfTypeParameterWithConstraints3': {
         errors: true,
