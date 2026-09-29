@@ -1732,6 +1732,32 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 }
             }
         }
+        // tsc's getTypeOfAccessors: no annotation on either accessor and no getter body to infer from is implicitly any,
+        // reported at the setter if there is one (TS7032), else at the getter (TS7033)
+        if (i->tag == CLASS_ITEM_METHOD && i->method.accessor && compiler_options()->no_implicit_any &&
+            !(my is_ambient && i->access == ACCESS_MODIFIER_PRIVATE) && span_valid(i->method.name_span) &&
+            i->method.name_span.source && !i->method.name_span.source->is_js
+        ) {
+            FunctionImpl const* func = &i->method.func;
+            if (i->method.accessor == CLASS_ACCESSOR_SET) {
+                ClassItem const* getter = i->method.accessor_getter;
+                bool typed = vec_function_arg_size(&func->args) &&
+                    vec_function_arg_at(&func->args, 0)->initializer.binding.has_explicit_type;
+                if (!typed && (!getter || (!getter->method.func.ret_explicit && !getter->method.func.has_body))) {
+                    error_ctx_error_d(errs, i->method.name_span, 7032, "Property '", i->method.name_span,
+                        "' implicitly has type 'any', because its set accessor lacks a parameter type annotation.");
+                }
+            } else if (!func->ret_explicit && !func->has_body) {
+                bool has_setter = false;
+                for_each (j, vec_class_item, &my items) {
+                    has_setter |= j->tag == CLASS_ITEM_METHOD && j->method.accessor == CLASS_ACCESSOR_SET && j->method.accessor_getter == i;
+                }
+                if (!has_setter) {
+                    error_ctx_error_d(errs, i->method.name_span, 7033, "Property '", i->method.name_span,
+                        "' implicitly has type 'any', because its get accessor lacks a return type annotation.");
+                }
+            }
+        }
         // Parameters: only legacy decorators, of methods, setters and constructors with a body in a class declaration
         FunctionImpl const* function = i->tag == CLASS_ITEM_METHOD ? &i->method.func :
             i->tag == CLASS_ITEM_CONSTRUCTOR ? &i->constructor.func : nullptr;

@@ -23556,12 +23556,12 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyMissingGetAccessor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'noImplicitAnyMissingSetAccessor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
