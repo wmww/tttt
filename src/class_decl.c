@@ -1766,14 +1766,18 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 }
                 if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY) {
                     // The initializer has the annotation as its contextual type (like a variable's)
+                    // (An optional field's declared type has undefined: tsc's getTypeOfSymbol, addOptionality)
                     Ty const* contextual = ty_from_node(current_checker, &i->field.explicit_type, (LowerCtx){ .generic = true });
+                    if (i->field.is_optional) contextual = ty_optional_prop_type(current_checker, contextual);
                     ty_check_expr(current_checker, &i->field.value, contextual->flags & TYF_ANY ? nullptr : contextual);
                 }
                 expr_typecheck(&i->field.value, errs);
                 class_field_check_implicit_any(me, i, errs);
                 if (i->field.has_explicit_type) {
+                    Ty const* declared = ty_of_node(&i->field.explicit_type);
+                    if (i->field.is_optional) declared = ty_optional_prop_type(current_checker, declared);
                     ty_check_assignable_expr(
-                        current_checker, expr_get_type(&i->field.value), ty_of_node(&i->field.explicit_type),
+                        current_checker, expr_get_type(&i->field.value), declared,
                         i->field.name_span, i->field.value.tag == EXPR_IMPLICIT_ANY ? nullptr : &i->field.value, errs
                     );
                 }
