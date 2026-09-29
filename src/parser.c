@@ -5515,9 +5515,11 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             Anchor key_anchor = anchor(&p);
             Expr key;
             bool literal = false;
+            Expr* kept_key = nullptr;
             if (expect_expr(&p, expr_ctx_null, &key)) {
                 if (key.tag == EXPR_LITERAL && (key.literal.tag == VALUE_STRING || key.literal.tag == VALUE_NUMBER)) literal = true;
-                expr_drop(&key);
+                if (literal) expr_drop(&key);
+                else kept_key = c_new(Expr, key);
             }
             Span key_span = span_from(key_anchor);
             hop_whitespace(&p);
@@ -5531,6 +5533,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             } else {
                 enum_case.name = enum_case.full_name;
                 enum_case.computed_name = true;
+                enum_case.computed_key = kept_key;
             }
         } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
             // A private name (tsc's parsePropertyName): TS18024 from the checker

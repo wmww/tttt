@@ -262,6 +262,13 @@ Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
                 value = evaluate(me, &i->value, 0);
             }
             Symbol const* member = i->symbol;
+            // (A member without a bindable name is none of the enum's literal types: its type is the enum's, below.
+            // tsc's getDeclaredTypeOfEnum and getDeclaredTypeOfEnumMember)
+            if (i->computed_name) {
+                cstr_drop(&previous.string);
+                previous = value;
+                continue;
+            }
             Ty const* type;
             if (!member) {
                 type = ty_intrinsic(me, TY_ERROR);
@@ -290,6 +297,13 @@ Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
         ty_union(me, members, count, decl, (TyList){0}) :
         ty_enum_computed_member(me, decl, decl);
     free(members);
+    for (u32 decl_index = 0; decl_index < decl->decl_count; decl_index++) {
+        if (decl->decls[decl_index].kind != SYMBOL_DECL_ENUM) continue;
+        EnumDecl const* enum_decl = decl->decls[decl_index].node;
+        for_each (i, vec_enum_case, &enum_decl->cases) {
+            if (i->computed_name && i->symbol) ty_set_declared_type(me, i->symbol, ret);
+        }
+    }
     return ret;
 }
 

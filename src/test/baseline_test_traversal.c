@@ -1083,6 +1083,8 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
             .text = member_text(ctx, my symbol, my name, (i->name_is_value ? i->full_name : declaration->name_span).sv, true),
         });
         baseline_test_case_add_symbol_value(ctx, span, declaration);
+        // (A computed name isn't checked, its expression is any: tsc's isComputedNonLiteralName)
+        if (i->computed_key) baseline_test_case_add_type_node(ctx, i->computed_key->outer_span, &type_any);
         if (i->value.tag != EXPR_IMPLICIT_ANY) {
             expr_compile_test_info(&i->value, ctx);
         }

@@ -9,6 +9,10 @@
 
 void enum_case_drop(EnumCase* me) {
     expr_drop(&my value);
+    if (my computed_key) {
+        expr_drop(my computed_key);
+        free(my computed_key);
+    }
 }
 
 void enum_decl_drop(EnumDecl* me) {

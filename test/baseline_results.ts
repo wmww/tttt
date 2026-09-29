@@ -56368,7 +56368,7 @@ const baselines = {
     'parserES5ComputedPropertyName6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserES5ComputedPropertyName7': {
         errors: true,
@@ -59563,7 +59563,7 @@ const baselines = {
     'parserComputedPropertyName16': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName17': {
         errors: true,
@@ -59618,7 +59618,7 @@ const baselines = {
     'parserComputedPropertyName26': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName27': {
         errors: true,
@@ -59643,7 +59643,7 @@ const baselines = {
     'parserComputedPropertyName30': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName31': {
         errors: true,
@@ -59663,7 +59663,7 @@ const baselines = {
     'parserComputedPropertyName34': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName35': {
         errors: true,
