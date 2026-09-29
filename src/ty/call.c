@@ -288,7 +288,16 @@ static Ty const* shape_type_at(ParamShape const* shape, u32 i) {
 static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
     Arg* arg = &args->data[i];
     if (arg->spread || arg->part_of_spread) return;
-    arg->type = ty_check_expr(me, arg->expr, shape_type_at(shape, i));
+    Ty const* contextual = shape_type_at(shape, i);
+    // An argument for a rest parameter that is a union of tuples: the element types at its position (tsc's
+    // getContextualTypeForArgumentAtIndex, an indexed access with AccessFlags.Contextual). A generic one is typed by
+    // infer_rest_variadic()
+    if (!contextual && i >= shape->count && shape->rest_variadic && args->spread_index < 0 &&
+        !(shape->rest_variadic->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
+    ) {
+        contextual = ty_contextual_element_type(me, shape->rest_variadic, i - shape->count);
+    }
+    arg->type = ty_check_expr(me, arg->expr, contextual);
 }
 
 // What a round without the context-sensitive arguments leaves out: them, and the generic calls that should see what
