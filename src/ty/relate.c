@@ -4132,8 +4132,11 @@ static Ternary structured_related_members(
             else if (false_branch->flags & TYF_ANY) false_branch = ty_intrinsic(me, TY_NEVER);
             // HACK: tsc relates the default constraint with RecursionFlags.Source; pushing the target too (a deep-nesting
             // cut-off tsc doesn't have) saves react-hook-form's Path/FieldPathValue chains 10% of the react corpus
+            // (A union source: some member for the comparable relation, each one otherwise)
+            bool some = st->relation == TY_RELATION_COMPARABLE;
             Ternary related = is_related_to(me, st, true_branch, target, false);
-            if (related) related &= is_related_to(me, st, false_branch, target, false);
+            if (some && !related) related = is_related_to(me, st, false_branch, target, false);
+            else if (related && !some) related &= is_related_to(me, st, false_branch, target, false);
             if (related) return related;
             // Through the distributive constraint (not to another conditional type, like in tsc)
             if (target->kind != TY_CONDITIONAL) {
@@ -4161,8 +4164,9 @@ static Ternary structured_related_members(
                     return is_related_to_side(me, st, immediate ? immediate : constraint, target, report, 2);
                 }
             }
-            related = is_related_to_side(me, st, true_branch, target, report, 2);
-            if (related) related &= is_related_to_side(me, st, false_branch, target, report, 2);
+            related = is_related_to_side(me, st, true_branch, target, report && !some, 2);
+            if (some && !related) related = is_related_to_side(me, st, false_branch, target, report, 2);
+            else if (related && !some) related &= is_related_to_side(me, st, false_branch, target, report, 2);
             return related;
         }
 
