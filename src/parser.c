@@ -10945,6 +10945,13 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 while (assigned->tag == EXPR_BINARY_OP && assigned->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(assigned)) {
                     assigned = &assigned->binary_op->right;
                 }
+                // (`a.b = a.b || function () {}`: tsc's getSourceOfDefaultedAssignment)
+                if (assigned == &assignment->right && assigned->tag == EXPR_BINARY_OP && !expr_is_perenthisized(assigned) &&
+                    (assigned->binary_op->op == BINARY_OP_OR_OR || assigned->binary_op->op == BINARY_OP_EH_EH) &&
+                    assignment->left.tag == EXPR_PROPERTY
+                ) {
+                    assigned = &assigned->binary_op->right;
+                }
                 FunctionImpl* function = jsdoc_function_of(assigned);
                 if (function) {
                     jsdoc_apply_function(&tags, function);
