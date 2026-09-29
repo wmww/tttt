@@ -96,6 +96,11 @@ typedef struct FunctionImpl {
     // A function expression initializing a variable that a JSDoc `@type` annotates (not owned): the return type of that
     // type's one call signature is the function's (tsc's getReturnTypeOfTypeTag walks up to the variable's tag)
     struct TypeNode const* jsdoc_host_type;
+    // The type of its JSDoc `@type` tag (TS8030 for a declaration whose type has no call signature that takes as many
+    // arguments as it needs: tsc's getContextualCallSignature in checkFunctionOrMethodDeclaration). The mismatch of a
+    // written signature, which the parser moves into the function, is found by the parser
+    Span jsdoc_signature_span;
+    bool jsdoc_signature_mismatch;
     // JavaScript: its JSDoc has `@param` or `@type` tags (tsc's hasJSDocParameterTags || getJSDocType), so it isn't an
     // untyped signature whose arguments are all optional
     bool jsdoc_typed;

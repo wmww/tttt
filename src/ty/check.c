@@ -2629,6 +2629,30 @@ void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_typ
     error_ctx_error_d(errs, span, 2464, "A computed property name must be of type 'string', 'number', 'symbol', or 'any'.");
 }
 
+// Whether the type has a call signature a function with that many required parameters fits (tsc's
+// getContextualCallSignature: not isAritySmaller)
+bool ty_has_call_signature_for_arity(Checker* me, Ty const* type, u32 required) {
+    if (!(type->flags & TYF_OBJECT)) return type->flags & TYF_ANY;
+    Members const* members = ty_members(me, type);
+    // (Several that fit: only if they have the same parameters, getIntersectedSignatures, which overloads don't)
+    Signature const* applicable = nullptr;
+    for (u32 i = 0; i < members->call_count; i++) {
+        Signature const* sig = members->call[i];
+        signature_resolve(me, sig);
+        bool rest = sig->param_count && sig->params[sig->param_count - 1].rest;
+        if (!rest && sig->param_count < required) continue;
+        if (!applicable) {
+            applicable = sig;
+            continue;
+        }
+        if (applicable->param_count != sig->param_count) return false;
+        for (u32 p = 0; p < sig->param_count; p++) {
+            if (applicable->params[p].type != sig->params[p].type) return false;
+        }
+    }
+    return applicable != nullptr;
+}
+
 Signature const* ty_function_signature(Checker* me, FunctionImpl const* function) {
     Members const* members = ty_members(me, ty_function_type(me, function));
     if (members->call_count) return members->call[0];

@@ -725,6 +725,18 @@ static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs
     cstr_drop(&type);
 }
 
+// The parameters a call has to pass (tsc's isAritySmaller of the target): up to the first optional one, `this` aside
+static u32 jsdoc_required_params(FunctionImpl const* me) {
+    u32 count = 0;
+    for_each (i, vec_function_arg, &my args) {
+        Binding const* binding = &i->initializer.binding;
+        if (i->jsdoc_this || (!i_index && binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this"))) continue;
+        if (i->rest || i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY) break;
+        count++;
+    }
+    return count;
+}
+
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_check_emit_helpers(me, errs);
     function_impl_check_implicit_any_parameters(me, errs);
@@ -753,6 +765,17 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     ty_check_async_return_annotation(current_checker, me, errs);
     function_check_arguments_collision(me, errs);
     for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_typecheck(&my jsdoc_unmatched[i].type, errs);
+    // A declaration's `@type` needs a call signature that takes its parameters (not a function expression's, which is
+    // checked as a value against it)
+    if (span_valid(my jsdoc_signature_span) && !my is_expression && my has_body) {
+        bool mismatch = my jsdoc_signature_mismatch;
+        if (!mismatch && my jsdoc_signature_type) {
+            mismatch = !ty_has_call_signature_for_arity(current_checker, ty_of_node(my jsdoc_signature_type), jsdoc_required_params(me));
+        }
+        if (mismatch) {
+            error_ctx_error_d(errs, my jsdoc_signature_span, 8030, "The type of a function declaration must match the function's signature.");
+        }
+    }
     // JSDoc `@overload`s: an overload without `@returns` implicitly returns any (TS7012, tsc's reportImplicitAny of a
     // JSDocSignature), and each has to fit the implementation (TS2394): both at the tag's name
     if (my jsdoc_overload_count && my has_body) {

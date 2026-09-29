@@ -1113,6 +1113,7 @@ bool ty_emits_commonjs_like(struct SourceFile const* file);
 Signature const* ty_function_signature(Checker* me, FunctionImpl const* function);
 // TS2394 on the first of the overloads (with their names) that the implementation isn't compatible with
 Signature const* ty_implementation_signature(Checker* me, FunctionImpl const* function);
+bool ty_has_call_signature_for_arity(Checker* me, Ty const* type, u32 required);
 void ty_check_overloads_compatible(
     Checker* me, FunctionImpl const* implementation, Span implementation_name, FunctionImpl const* const* overloads,
     Span const* names, u32 count, ErrorCtx* errs

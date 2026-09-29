@@ -3715,10 +3715,44 @@ static FunctionImpl* jsdoc_single_signature(TypeNode* type) {
     return nullptr;
 }
 
+// The parameters a call has to pass (tsc's isAritySmaller of the target): up to the first optional one, `this` aside
+static u32 jsdoc_required_param_count(FunctionImpl const* function) {
+    u32 count = 0;
+    for_each (i, vec_function_arg, &function->args) {
+        Binding const* binding = &i->initializer.binding;
+        if (!i_index && binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+        if (i->rest || i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY ||
+            (binding->has_explicit_type && binding->explicit_type.jsdoc_optional)
+        ) {
+            break;
+        }
+        count++;
+    }
+    return count;
+}
+
 static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
     if (!tag) return;
+    function->jsdoc_signature_span = tag->type_span;
     FunctionImpl* signature = jsdoc_single_signature(&tag->type);
+    if (!signature && tag->type.tag == TYPE_INTERFACE) {
+        // (A type literal without a call signature)
+        bool callable = false;
+        for_each (i, vec_interface_member, &tag->type.interface.members) callable |= i->key.tag == INTERFACE_KEY_CALLABLE;
+        function->jsdoc_signature_mismatch = !callable;
+    }
+    if (signature && !signature->is_constructor) {
+        u32 count = 0;
+        bool rest = false;
+        for_each (i, vec_function_arg, &signature->args) {
+            Binding const* binding = &i->initializer.binding;
+            if (!i_index && binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+            rest |= i->rest;
+            count++;
+        }
+        function->jsdoc_signature_mismatch = !rest && count < jsdoc_required_param_count(function);
+    }
     if (!signature || signature->is_constructor) return;
     // `(this: T) => R`: the function's `this` parameter, unless it has one (or is an arrow function), and not a
     // position to match the parameters by
@@ -4131,6 +4165,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     }
     // A `@type` that isn't a written signature: its signature is resolved by the checker
     if (type_tag && type_tag->type.tag != TYPE_CALLABLE && type_tag->type.tag != TYPE_INTERFACE && !function->jsdoc_signature_type) {
+        function->jsdoc_signature_span = type_tag->type_span;
         function->jsdoc_signature_type = c_new(TypeNode, jsdoc_take_type(type_tag, nullptr));
     }
     if (!function->ret_explicit && !function->is_constructor) {
