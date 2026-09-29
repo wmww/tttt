@@ -5205,7 +5205,16 @@ static bool parse_function_args_inner(
                     }
                 } else {
                     hop_whitespace(&p);
+                    Span comma = span_make(p.shared->source, p.pos, p.pos + 1);
                     ignore( *p.pos == ')' || expect_char(&p, ',') );
+                    Parser after = parser(&p);
+                    hop_whitespace(&after);
+                    bool closes = *after.pos == ')';
+                    parse_fail(&after);
+                    // tsc's checkGrammarParameterList: checkGrammarForDisallowedTrailingComma after a rest parameter
+                    if (rest && closes && *comma.sv.buf == ',') {
+                        parse_error(&p, comma, 1013, "A rest parameter or binding pattern may not have a trailing comma.");
+                    }
                 }
             }
 
@@ -6455,6 +6464,12 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             if (!modifier_reported && modifiers.includes[MODIFIER_ACCESSOR] && optional) {
                 // (tsc's checkGrammarProperty)
                 parse_error(&p, question, 1276, "An 'accessor' property cannot be declared optional.");
+            }
+            // (tsc's checkGrammarProperty: a class field named by the string "constructor")
+            if (!is_type && !computed_key && name_span.sv.size == 13 && (name_span.sv.buf[0] == '"' || name_span.sv.buf[0] == '\'') &&
+                !memcmp(name_span.sv.buf + 1, "constructor", 11)
+            ) {
+                parse_error(&p, name_span, 18006, "Classes may not have a field named 'constructor'.");
             }
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_FIELD,
@@ -10094,6 +10109,12 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         (hop_start_if_ends_on_word_break(&p, "in") && (keyword_is_in = true)) // control flow is my passion
     )) {
         is_for_each = true;
+        // tsc's checkGrammarForInOrForOfStatement: `for (async of x)` reads like the start of an async arrow function
+        if (!keyword_is_in && !is_await && statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER &&
+            !expr_is_perenthisized(&statement.expr) && span_equals(statement.expr.identifier.name, "async")
+        ) {
+            parse_error(&p, statement.expr.identifier.name, 1106, "The left-hand side of a 'for...of' statement may not be 'async'.");
+        }
         if (is_await && keyword_is_in) {
             // `for await (x in y)`: still a for-in loop
             Span in = { .source = p.shared->source, .sv = csview_from_n(p.pos - 2, 2) };
@@ -11001,6 +11022,12 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     } else if (parse_class_decl(&p, modifiers.includes[MODIFIER_ABSTRACT], &parsed.class)) {
         modified.kind = MODIFIED_CLASS;
         parsed.class.full_span = span_from(a);
+        if (!span_valid(parsed.class.name) && decl_props.exported != DECL_EXPORTED_YES_DEFAULT) {
+            // tsc's checkClassDeclaration, on the declaration's first token
+            Tok first = tok_at(&p, a.start, false);
+            parse_error(&p, span_make(p.shared->source, first.start, first.end), 1211,
+                "A class declaration without the 'default' modifier must have a name.");
+        }
         *ret = (Statement){
             .tag = STATEMENT_DECL_CLASS,
             .decl = {
@@ -11462,7 +11489,7 @@ static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
         1079, 1089, 1090, 1096, 1097, 1120, 1123, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
-        1171, 1197, 1248, 1253, 1358, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019,
+        1013, 1106, 1171, 1197, 1211, 1248, 1253, 1358, 18006, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;
