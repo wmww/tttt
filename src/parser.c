@@ -9690,12 +9690,14 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     // expression (`{ ...*o }`, `x = * y`). Not `<` (a type assertion) or `/` (a regex). The missing name is a
     // left-hand side, so an assignment goes on too (`if (x ^= {})` missing its `)`: `<missing> ^= {}`)
     Tok t = tok_peek(parent);
-    if ((tok_is_binary_operator(t) && !tok_is(t, "<") && !tok_is(t, "/")) || tok_is_assignment_operator(t) ||
-        tok_is(t, ".")
+    // (In a JSX file a `<` that starts no element is that binary operator too: `<:a` is `<missing> < <missing>`)
+    if ((tok_is_binary_operator(t) && !tok_is(t, "/") && (!tok_is(t, "<") || (parent->shared->source->is_jsx && t.start[1] != '/'))) ||
+        tok_is_assignment_operator(t) || tok_is(t, ".")
     ) {
         while (parse_expr_right_side(parent, ctx, ret)) {}
     }
-    return false;
+    // (An expression was made of the missing operand after all: callers treat false as nothing to drop)
+    return ret->tag != EXPR_IMPLICIT_ANY;
 }
 
 static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret, bool* amd_module_name) {

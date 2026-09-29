@@ -20216,13 +20216,13 @@ const baselines = {
         types: true,
     },
     'jsxNamespacePrefixInName': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsxNamespacePrefixInNameReact': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsxNamespacePrefixIntrinsics': {
