@@ -1968,6 +1968,25 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
         }
     }
 
+    // A JavaScript function tagged `@class` isn't called without `new` (tsc's resolveCallExpression: a call signature
+    // whose declaration has getJSDocClassTag)
+    if (!construct && !call->uses_new && !info->tagged_template && !info->decorator) {
+        for (u32 i = 0; i < count; i++) {
+            Signature const* root = signatures[i];
+            while (root && !root->function && root->target) root = root->target;
+            FunctionImpl const* function = root ? root->function : nullptr;
+            if (!function || !function->jsdoc_class || !function->full_span.source || !function->full_span.source->is_js) continue;
+            mark_would_report(info);
+            if (errs) {
+                cstr rendered = ty_to_cstr(me, callee);
+                error_ctx_error_d(errs, call_span, 2348, "Value of type '", rendered, "' is not callable. Did you mean to include 'new'?");
+                cstr_drop(&rendered);
+            }
+            free(signatures);
+            return ty_intrinsic(me, TY_ERROR);
+        }
+    }
+
     CallInfo with_this = *info;
     // (tsc's getSignatureApplicabilityError doesn't check `this` of a new expression)
     if (!construct && !info->new_as_call) {
