@@ -2537,8 +2537,16 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         if (!ret) ret = ty_intrinsic(me, TY_ERROR);
     }
     if (!ret) ret = ty_intrinsic(me, TY_ANY);
-    // (An element of an unannotated pattern is widened itself: the pattern's source isn't, see initialized_binding's)
-    if (!parent->has_explicit_type && !binding_is_parameter(parent)) ret = ty_widened_for_declaration(me, ret, false);
+    // (An element of an unannotated pattern is widened itself: the pattern's source isn't, see initialized_binding's.
+    // With a default, after undefined is replaced by it: `let [y = true] = [undefined]` is boolean without
+    // strictNullChecks, not any)
+    bool widens = !parent->has_explicit_type && !binding_is_parameter(parent);
+    Ty const* raw = ret;
+    if (widens) ret = ty_widened_for_declaration(me, ret, false);
+    if (binding->default_value && widens && !(raw->flags & TYF_ANY)) {
+        Ty const* stripped = non_undefined_type(me, raw);
+        if (stripped->flags & TYF_NEVER) ret = stripped;
+    }
     if (binding->default_value) {
         // `[x = 1]`: undefined is replaced by the default. Under a written type, the default only removes undefined
         // (unless it can be undefined itself), else the two are a subtype-reduced union (tsc's getTypeForBindingElement)

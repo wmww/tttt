@@ -41833,17 +41833,17 @@ const baselines = {
     'destructuringVariableDeclaration1ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringVariableDeclaration1ES5iterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringVariableDeclaration1ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringVariableDeclaration2': {
         errors: true,
@@ -59818,7 +59818,7 @@ const baselines = {
     'parserForOfStatement25': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForOfStatement3': {
         errors: true,
