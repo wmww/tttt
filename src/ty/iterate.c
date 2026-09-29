@@ -374,9 +374,11 @@ TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty
 
 // Iterables
 
+// (tsc's asyncIterationTypesResolver.resolveIterationType and getAsyncFromSyncIterationTypes: getAwaitedType, which
+// makes Awaited<T> of a generic T)
 static TyIterationTypes const* resolve_types(Checker* me, TyIterationTypes const* types, bool async) {
     if (!async) return types;
-    return make_types(me, ty_awaited_no_alias(me, types->yield_type), ty_awaited_no_alias(me, types->return_type), types->next_type);
+    return make_types(me, ty_awaited(me, types->yield_type), ty_awaited(me, types->return_type), types->next_type);
 }
 
 // tsc's getIterationTypesOfIterableFast + Slow for one of the resolvers
@@ -616,7 +618,8 @@ Ty const* ty_unwrap_return_type(Checker* me, FunctionImpl const* function, Ty co
         if (ret->flags & TYF_ANY) return nullptr;
         TyIterationTypes const* types = ty_generator_return_iteration_types(me, ret, function->is_async);
         if (!types || !types->return_type) return nullptr;
-        return function->is_async ? ty_awaited_no_alias(me, types->return_type) : types->return_type;
+        // (tsc's getAwaitedTypeNoAlias(unwrapAwaitedType(...)): an async generator's return type is Awaited<T>)
+        return function->is_async ? ty_awaited_returned(me, types->return_type) : types->return_type;
     }
     return ty_awaited_no_alias(me, ret);
 }

@@ -13738,7 +13738,7 @@ const baselines = {
     'forAwaitForUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forIn': {
         errors: true,

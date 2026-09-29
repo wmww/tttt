@@ -466,8 +466,9 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   `unknown`). A non-iterable `yield*` prints its type while the return type is in progress (function.c HACK: makes
   `yield* foo` inside `foo` any, YieldExpression6_es6), a side effect of printing.
 - Async (`promise_decl`, `promised_context` in function.c): `Promise<T>` from the global looked up by name (`any` if the
-  lib has none). `ty_awaited()` wraps a generic result in the lib's `Awaited<T>`, but iteration/generator types use
-  `ty_awaited_no_alias()` and async returns `ty_awaited_returned()` (strips `Awaited<X>`), because tttt can't relate
+  lib has none). `ty_awaited()` wraps a generic result in the lib's `Awaited<T>` (so do async iteration types,
+  `resolve_types()` in iterate.c, like tsc), but generator types use `ty_awaited_no_alias()` and async returns (an
+  async generator's too) `ty_awaited_returned()` (strips `Awaited<X>`), because tttt can't relate
   `Awaited<T>` to T through the conditional's default constraint; once it can, use ty_awaited() everywhere. Unwrapping
   is by name (`Promise`/`PromiseLike`), not any thenable.
 - Contextual `this` (`ty_contextual_this_type`): the literal's contextual type and enclosing literal are remembered
