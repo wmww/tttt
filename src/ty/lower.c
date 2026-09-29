@@ -2117,18 +2117,28 @@ static bool computed_key_names(Checker* me, Ty const* key, Atom const* name) {
     return key->kind == TY_INTRINSIC && (key->flags & TYF_STRING) && !ty_unique_symbol_of_name(me, name);
 }
 
-// Whether the object pattern takes the property `name` out of its rest
-static bool pattern_names(Checker* me, Binding const* pattern, Atom const* name) {
-    for_each (item, vec_object_binding_item, &pattern->object) {
-        if (item->target.rest) continue;
-        if (item->computed_key) {
-            if (computed_key_names(me, ty_expr_type(me, item->computed_key), name)) return true;
-            continue;
-        }
-        bool is_number = false;
-        if (ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number) == name) return true;
+static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern);
+Ty const* ty_object_rest_type(Checker* me, Ty const* source, TyList keys) { return object_rest_type(me, source, keys); }
+
+// Whether the keys a pattern names take the property `name` out of its rest
+static bool pattern_names(Checker* me, TyList keys, Atom const* name) {
+    for (u32 i = 0; i < keys.len; i++) {
+        if (computed_key_names(me, keys.data[i], name)) return true;
     }
     return false;
+}
+
+// The keys an object pattern names before its rest: literal types of its names, the types of its computed ones
+static TyList pattern_keys(Checker* me, Binding const* pattern) {
+    u32 count = 0;
+    for_each (item, vec_object_binding_item, &pattern->object) count += !item->target.rest;
+    Ty const** keys = arena_new_n(&my arena, Ty const*, count ? count : 1);
+    u32 len = 0;
+    for_each (item, vec_object_binding_item, &pattern->object) {
+        if (item->target.rest) continue;
+        keys[len++] = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
+    }
+    return (TyList){ .data = keys, .len = len };
 }
 
 // The annotation a property was declared with, which the types baseline reuses for a copy of it where it still says
@@ -2140,7 +2150,7 @@ static TypeNode const* prop_annotation(Prop const* prop) {
 }
 
 // The rest of an intersection: the properties of all of its members, each of the intersection's type for it
-static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding const* pattern) {
+static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pattern) {
     TyList parts = source->composite.types;
     for (u32 i = 0; i < parts.len; i++) {
         Ty const* part = ty_apparent_type(me, parts.data[i]);
@@ -2186,12 +2196,9 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding c
 // The rest of a generic object (or of a pattern with a generic computed name): `Omit<T, names>`, the names being those
 // the pattern takes and those of the properties a rest leaves out anyway (private, protected, class methods). T itself
 // if that's no names (tsc's getRestType)
-static Ty const* generic_rest_type(Checker* me, Ty const* source, Binding const* pattern) {
+static Ty const* generic_rest_type(Checker* me, Ty const* source, TyList pattern) {
     TyBuf keys = {0};
-    for_each (item, vec_object_binding_item, &pattern->object) {
-        if (item->target.rest) continue;
-        ty_buf_push(&keys, item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));
-    }
+    for (u32 i = 0; i < pattern.len; i++) ty_buf_push(&keys, pattern.data[i]);
     Ty const* apparent = ty_apparent_type(me, source);
     if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
         Members const* members = ty_members(me, apparent);
@@ -2209,16 +2216,17 @@ static Ty const* generic_rest_type(Checker* me, Ty const* source, Binding const*
     return ty_alias_instance(me, omit, (TyList){ .data = args, .len = 2 });
 }
 
-static bool pattern_has_generic_key(Checker* me, Binding const* pattern) {
-    for_each (item, vec_object_binding_item, &pattern->object) {
-        if (item->computed_key && !item->target.rest && ty_is_generic_index(ty_expr_type(me, item->computed_key))) return true;
+static bool pattern_has_generic_key(Checker* me, TyList pattern) {
+    (void)me;
+    for (u32 i = 0; i < pattern.len; i++) {
+        if (ty_is_generic_index(pattern.data[i])) return true;
     }
     return false;
 }
 
 // tsc's getRestType: `...rest` of an object pattern, without the properties the pattern names, private and protected
 // members and class methods, and with nothing readonly
-static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* pattern) {
+static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern) {
     if (source->kind == TY_UNION) {
         Ty const* stack[16];
         TyList types = source->composite.types;
@@ -2598,7 +2606,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         if (!ret) ret = ty_is_array(me, object) && object->reference.target != ty_readonly_array_target(me) ? object :
             ty_array(me, ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr), false);
     } else if (binding->rest) {
-        ret = object_rest_type(me, object, parent);
+        ret = object_rest_type(me, object, pattern_keys(me, parent));
     } else if (in_array) {
         Value index = value_number(binding->parent_index);
         // (Read like an expression: noUncheckedIndexedAccess's undefined, tsc's AccessFlags.ExpressionPosition)

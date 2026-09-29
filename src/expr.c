@@ -2309,7 +2309,23 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                     if (expr_check_reference_not_optional(&i->value, 2778,
                         "The target of an object rest assignment may not be an optional property access.", errs)
                     ) {
-                        assignment_target_typecheck(&i->value, nullptr, nullptr, errs); // TODO: the rest of the object
+                        // The rest of the source, without what the other properties name (tsc's
+                        // checkObjectLiteralDestructuringPropertyAssignment with getRestType)
+                        Ty const* rest = nullptr;
+                        if (source) {
+                            u32 count = (u32)vec_object_expr_item_size(&target->object);
+                            Ty const** keys = malloc(sizeof(Ty const*) * (count ? count : 1));
+                            panic_if(!keys, "out of memory");
+                            u32 len = 0;
+                            for_each (other, vec_object_expr_item, &target->object) {
+                                if (other->tag == OBJECT_ITEM_SPREAD) continue;
+                                keys[len++] = other->computed_key ? ty_regular(checker, ty_expr_type(checker, other->computed_key)) :
+                                    ty_string_literal(checker, cstr_sv(&other->name_string));
+                            }
+                            rest = ty_object_rest_type(checker, source, (TyList){ .data = keys, .len = len });
+                            free(keys);
+                        }
+                        assignment_target_typecheck(&i->value, rest, nullptr, errs);
                     }
                 } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
                     // `{ a = 1 } = o`: the default is assigned to `a` (checked with a's type as its contextual type),

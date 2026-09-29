@@ -65041,7 +65041,7 @@ const baselines = {
         types: true,
     },
     'objectRest': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
