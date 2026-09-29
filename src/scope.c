@@ -3602,6 +3602,8 @@ static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, 
         case SYMBOL_DECL_VARIABLE: {
             Binding const* binding = value->node;
             if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
+            // (In TypeScript only a const is: tsc's isVarConstLike in getExpandoSymbol)
+            if (!js && !found->is_const) return false;
             InitializedBinding* initialized = (InitializedBinding*)binding;
             Expr* init = expando_initializer(&initialized->value, binding->content_span, js);
             if (!init) return false;
