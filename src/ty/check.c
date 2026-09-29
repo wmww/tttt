@@ -1276,7 +1276,8 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     } else {
         error = error_ctx_error_d(errs, span, ts_code, "Property '", name, "' does not exist on type '", object_str, "'.");
     }
-    if (error && !destructured && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
+    // (Not of an enum: a primitive, tsc's reportNonexistentProperty)
+    if (error && !destructured && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN) && !ty_is_enum_union(object)) {
         // Which member it is that lacks it
         for (u32 i = 0; i < object->composite.types.len; i++) {
             Ty const* member = object->composite.types.data[i];

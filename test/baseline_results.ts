@@ -11116,7 +11116,7 @@ const baselines = {
         types: true,
     },
     'enumPropertyAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
