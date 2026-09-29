@@ -5147,8 +5147,8 @@ const baselines = {
     },
     'commonJsImportClassExpression': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'commonJsIsolatedModules': {
         errors: true,
