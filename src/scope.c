@@ -1375,7 +1375,7 @@ static void declare_commonjs_export(
     // (A class expression is an alias of its class, tsc's isAliasableExpression: at the top level, where the declare
     // step can make the class's symbol in the scope the resolve walk would)
     bool class_alias = value->tag == EXPR_CLASS_DECL && !expr_is_perenthisized(value) && top_level &&
-        kind == ASSIGNMENT_DECL_PROPERTY && !jsdoc_type;
+        (kind == ASSIGNMENT_DECL_PROPERTY || kind == ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY) && !jsdoc_type;
     bool alias = (value->tag == EXPR_IDENTIFIER && !value->identifier.keyword) || class_alias;
     u32 includes = alias ? SYMBOL_ALIAS : SYMBOL_PROPERTY;
     bool merged;
@@ -1488,7 +1488,7 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, boo
             if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || !is_exports_alias(me, object)) break;
             if (span_equals(object->identifier.name, "exports")) break; // (binary_commonjs_declaration()'s)
             left->property->commonjs_export_alias = true;
-            declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, left->outer_span, statement, ASSIGNMENT_DECL_PROPERTY, top_level);
+            declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, left->outer_span, statement, ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY, top_level);
         }   break;
         case COMMONJS_TARGET_EXPORTS_PROPERTY:
             declare_commonjs_export(me, name.sv, name, &op->right, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY, top_level);

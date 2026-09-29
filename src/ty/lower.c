@@ -1106,8 +1106,10 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)decl->node }, 2) = decl->node;
         return ty_array(me, ty_intrinsic(me, TY_ANY), false);
     }
-    // (A direct export keeps its literal type, tsc's isDirectExport; a global declared by `this.x = v` doesn't)
-    return !symbol->parent || !symbol->parent->is_module ? ty_widened_literal(me, type) : ty_regular(me, type);
+    // (A direct export keeps its literal type, tsc's isDirectExport; a global declared by `this.x = v` doesn't, nor an
+    // export through another name of `module.exports`)
+    bool direct = symbol->parent && symbol->parent->is_module && decl->assignment != ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY;
+    return direct ? ty_regular(me, type) : ty_widened_literal(me, type);
 }
 
 // JavaScript `var ns = {}` or `ns.a = {}` with expandos (`ns.x = 1`): the members they declare (tsc's
