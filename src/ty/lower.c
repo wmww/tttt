@@ -2230,6 +2230,29 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
     return ret;
 }
 
+// An object literal contextually typed by a binding pattern's implied type also has the pattern's properties it
+// leaves out (tsc's checkObjectLiteral with contextualTypeHasPattern): `{ a: { b = 1 } = {} }` makes the default a
+// `{ b?: number }`. Only where the default makes the element's type: the literal itself prints as written.
+// TODO: TS2525 for a property without a default
+static Ty const* with_pattern_props(Checker* me, Ty const* type, Ty const* pattern) {
+    if (type->kind != TY_ANONYMOUS || !(type->flags & TYF_OBJECT) || !(pattern->flags & TYF_OBJECT)) return type;
+    Members const* have = ty_members(me, type);
+    Members const* implied = ty_members(me, pattern);
+    ObjectLiteralProp* props = malloc(sizeof(ObjectLiteralProp) * (have->prop_count + implied->prop_count + 1));
+    panic_if(!props, "out of memory");
+    u32 count = 0;
+    for (u32 i = 0; i < have->prop_count; i++) props[count++] = (ObjectLiteralProp){ .reuse = have->props[i] };
+    bool added = false;
+    for (u32 i = 0; i < implied->prop_count; i++) {
+        if (ty_get_object_prop(me, type, implied->props[i]->name)) continue;
+        props[count++] = (ObjectLiteralProp){ .reuse = implied->props[i] };
+        added = true;
+    }
+    Ty const* ret = added ? ty_object_literal(me, props, count, have->index, have->index_count, OBJECT_LITERAL_FRESH) : type;
+    free(props);
+    return ret;
+}
+
 // tsc's getTypeFromBindingElement: a default's type widened (and optional), a nested pattern's own type, else any
 static Ty const* binding_element_implied_type(Checker* me, Binding const* element, bool include_pattern) {
     if (element->default_value) {
@@ -2237,9 +2260,16 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
         if (include_pattern) my flow_uncached++;
         bool nested = (element->tag == BINDING_OBJECT && vec_object_binding_item_size(&element->object)) ||
             (element->tag == BINDING_ARRAY && vec_binding_size(&element->array));
-        Ty const* type = nested ?
-            ty_check_expr(me, element->default_value, ty_binding_pattern_type(me, element, true)) :
-            ty_expr_type(me, element->default_value);
+        Ty const* type;
+        if (nested) {
+            Ty const* pattern = ty_binding_pattern_type(me, element, true);
+            type = ty_check_expr(me, element->default_value, pattern);
+            if (element->tag == BINDING_OBJECT && element->default_value->tag == EXPR_OBJECT) {
+                type = with_pattern_props(me, type, pattern);
+            }
+        } else {
+            type = ty_expr_type(me, element->default_value);
+        }
         type = ty_widened_for_declaration(me, type, true);
         if (include_pattern) my flow_uncached--;
         if (!compiler_options()->strict_null_checks) return type;

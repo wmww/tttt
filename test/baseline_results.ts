@@ -41678,7 +41678,7 @@ const baselines = {
     'destructuringParameterDeclaration10(strict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration1ES5': {
         errors: true,
