@@ -2395,9 +2395,16 @@ static Ternary tuple_shapes_related(
         return TERNARY_FALSE;
     }
     // The target's elements before its first rest one and after its last (tsc's getStartElementCount/getEndElementCount)
+    // (ElementFlags.NonRest: a variadic element counts, only an array rest one ends them)
     u32 target_start = 0, target_end = 0;
-    while (target_start < target_arity && !(target_shape->flags[target_start] & TUPLE_ELEMENT_REST)) target_start++;
-    while (target_end < target_arity && !(target_shape->flags[target_arity - 1 - target_end] & TUPLE_ELEMENT_REST)) target_end++;
+    while (target_start < target_arity && !((target_shape->flags[target_start] & TUPLE_ELEMENT_REST) &&
+        is_rest_array(me, target_args.data[target_start]))) {
+        target_start++;
+    }
+    while (target_end < target_arity && !((target_shape->flags[target_arity - 1 - target_end] & TUPLE_ELEMENT_REST) &&
+        is_rest_array(me, target_args.data[target_arity - 1 - target_end]))) {
+        target_end++;
+    }
     Ternary result = TERNARY_TRUE;
     for (u32 i = 0; i < source_arity; i++) {
         u32 from_end = source_arity - 1 - i;

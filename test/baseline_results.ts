@@ -65821,7 +65821,7 @@ const baselines = {
         types: false,
     },
     'variadicTuples3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
