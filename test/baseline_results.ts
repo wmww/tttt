@@ -52106,7 +52106,7 @@ const baselines = {
         types: true,
     },
     'jsdocImplements_missingType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

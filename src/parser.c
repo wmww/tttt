@@ -3803,6 +3803,25 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                     c = after;
                 }
             }
+            if ((tag.kind == JSDOC_TAG_EXTENDS || tag.kind == JSDOC_TAG_IMPLEMENTS) && !tag.has_type &&
+                (after >= end || *after == '@' || memchr(c, '\n', (size_t)(after - c)))
+            ) {
+                // Nothing after the tag: tsc's parseExpressionWithTypeArgumentsForAugments has a missing name, TS1003
+                // right after the tag name (reportAtCurrentPosition). `@augments`'s is compared with the class's
+                // `extends` (TS8023)
+                Parser e = parser(parent);
+                e.pos = c;
+                e.whitespace_end = nullptr;
+                Span missing = span_make(source, c, c);
+                parse_error(&e, missing, 1003, "Identifier expected.");
+                jsdoc_keep_errors(&e);
+                parse_fail(&e);
+                if (tag.kind == JSDOC_TAG_EXTENDS) {
+                    tag.has_type = true;
+                    tag.type = type_identifier(c_new(IdentifierType, { .name = missing }));
+                    tag.type_span = missing;
+                }
+            }
         }   break;
         default:
             break;
