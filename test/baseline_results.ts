@@ -14416,9 +14416,9 @@ const baselines = {
         types: true,
     },
     'functionTypesLackingReturnTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionVariableInReturnTypeAnnotation': {
         errors: true,
@@ -55896,7 +55896,7 @@ const baselines = {
         types: true,
     },
     'parser.numericSeparators.decmialNegative': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

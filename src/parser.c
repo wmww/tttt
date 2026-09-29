@@ -5476,6 +5476,7 @@ static bool parse_function_args_inner(
     if (!parse_abstract_and_new && *parent->pos != '(' && *parent->pos != '<') return false;
     Parser p = parser(parent);
     bool is_definitely_function = false;
+    bool unambiguous_function_type = false;
 
     *ret = (FunctionImpl){0};
 
@@ -5505,6 +5506,11 @@ static bool parse_function_args_inner(
     if (hop_char(&p, '(')) {
         hop_whitespace(&p);
         is_definitely_function |= commit_on_paren;
+        // (tsc's isUnambiguouslyStartOfFunctionType: `()` and `(...` in a type)
+        if (parse_type_return_syntax && (*p.pos == ')' || (p.pos[0] == '.' && p.pos[1] == '.' && p.pos[2] == '.'))) {
+            is_definitely_function = true;
+            unambiguous_function_type = true;
+        }
 
         while (*p.pos && *p.pos != ')') {
             if (hop_char(&p, ',')) {
@@ -5697,9 +5703,12 @@ static bool parse_function_args_inner(
             ret->ret_span = span_from(ret_a);
             ret->ret_explicit = true;
             hop_whitespace(&p);
-        } else if (is_definitely_function && parse_type_return_syntax && *args_start.start == '(') {
-            // A function type is committed (tsc's parseFunctionOrConstructorType): its return type is missing
-            parse_error(&p, span_from_token_or_eof(&p), 1110, "Type expected.");
+        } else if (unambiguous_function_type || (is_definitely_function && parse_type_return_syntax && *args_start.start == '(')) {
+            // A function type is committed (tsc's parseFunctionOrConstructorType): missing its return type, tsc's
+            // parseTypeOrTypePredicate reports it, any
+            expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret);
+            ret->ret_span = span_from(ret_a);
+            ret->ret_explicit = true;
         } else {
             goto drop_and_fail;
         }
@@ -7879,6 +7888,8 @@ static double digits_value(csview digits, int base) {
 // After a numeric literal that ends at c (tsc's checkForIdentifierStartAfterNumericLiteral): an identifier right
 // after it is TS1351 and a token of its own, but a lone `n` is a bigint suffix in the wrong place (consumed)
 static const char* check_identifier_after_number(Parser* p, const char* start, const char* c, bool scientific) {
+    // (tsc looks at the code point there: a `\` is no identifier start, even if an escape starts one)
+    if (*c == '\\') return c;
     int size = identifier_char_size(c, true);
     if (!size) return c;
     const char* id_end = c + size;
