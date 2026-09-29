@@ -2376,7 +2376,7 @@ const baselines = {
         types: false,
     },
     'bigintIndex': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
