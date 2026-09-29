@@ -1622,6 +1622,7 @@ typedef enum ParsingContext {
 } ParsingContext;
 
 static bool parse_list_member(Parser* parent, ParsingContext ctx, bool is_type, bool is_abstract, ClassItem* ret);
+static bool parse_append_statement_sequence(Parser* parent, bool toplevel, ParsingContext ctx, const char* list_start, VecStatement* ret);
 
 // tsc's isStartOfType(inStartOfParameter = true)
 static bool tok_is_start_of_parameter_type(Tok t) {
@@ -5658,7 +5659,19 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
     }
     hop_whitespace(&p);
 
-    if (!parse_block(&p, false, &ret->body)) {
+    Tok body_start = tok_peek(&p);
+    if (*p.pos != '{' && !tok_is(body_start, ";") && !tok_is(body_start, "function") && !tok_is(body_start, "class") &&
+        tok_is_start_of_statement(&p, body_start) && !tok_is_start_of_expression(&p, body_start)
+    ) {
+        // A statement that is no expression: a block missing its `{` (tsc's parseArrowFunctionExpressionBody,
+        // `() => var k = 10; }`)
+        expected_token_error(&p, "{");
+        ret->body = (Block){0};
+        const char* list_start = p.pos;
+        parse_append_statement_sequence(&p, false, PARSING_BLOCK_STATEMENTS, list_start, &ret->body.statements);
+        hop_whitespace(&p);
+        expect_char(&p, '}');
+    } else if (!parse_block(&p, false, &ret->body)) {
         Expr expr;
         if (!expect_expr(&p, ctx, &expr)) {
             p.pos = span_end_ptr(ret->arrow_span);

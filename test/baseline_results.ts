@@ -1426,9 +1426,9 @@ const baselines = {
         types: true,
     },
     'arrowFunctionsMissingTokens': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'asiAbstract': {
         errors: false,
@@ -56926,8 +56926,8 @@ const baselines = {
         types: true,
     },
     'parserMissingLambdaOpenBrace1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserModifierOnPropertySignature1': {
