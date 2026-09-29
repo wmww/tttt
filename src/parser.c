@@ -754,6 +754,8 @@ static inline bool is_reserved_identifier(const char* word, intptr_t len) {
         case 'i': return WORD_IS("in");
         case 's': return WORD_IS("super");
         case 'd': return WORD_IS("default");
+        // (tsc's reserved words that start no expression: `export default var a` is missing its expression)
+        case 'v': return WORD_IS("var");
         default: return false;
     }
 #undef WORD_IS
@@ -10914,9 +10916,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (decl_props.exported == DECL_EXPORTED_YES_DEFAULT && (parse_expr(&p, expr_ctx_null, &parsed.expr) ||
-        // (`export default;`: TS1109 at the `;` and an export of nothing, like tsc)
-        ((tok_is(tok_peek(&p), ";") || tok_is(tok_peek(&p), "}") || tok_is_eof(tok_peek(&p))) &&
-            (expect_expr(&p, expr_ctx_null, &parsed.expr), true)))
+        // (`export default;`, `export default var a`: TS1109 and an export of nothing, like tsc's
+        // parseExportAssignment. The rest of the line is a statement of its own)
+        (expect_expr(&p, expr_ctx_null, &parsed.expr), true))
     ) {
         modified.kind = MODIFIED_EXPORT_ASSIGNMENT;
         mark_named_evaluation(&parsed.expr, false);

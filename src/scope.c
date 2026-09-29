@@ -1299,6 +1299,13 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         my container->module->has_export_assignment = true;
     }
     Span name = alias ? expr->outer_span : statement;
+    if (expr->tag == EXPR_IMPLICIT_ANY && span_valid(expr->outer_span) && !expr->outer_span.sv.size) {
+        // A missing expression is a missing identifier to tsc, at its full start (the end of `default`)
+        char const* at = span_start_ptr(expr->outer_span);
+        char const* file_start = span_start_ptr(statement);
+        while (at > file_start && (at[-1] == ' ' || at[-1] == '\t')) at--;
+        name = span_make(expr->outer_span.source, at, at);
+    }
     Symbol* symbol = declare_symbol(
         me, my container->exports, export_name, name, includes, SYMBOL_ANY_MEANING | SYMBOL_ALIAS, !export_equals, &merged
     );
