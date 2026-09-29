@@ -243,6 +243,9 @@ typedef struct Symbol {
     SymbolModule* module; // Every is_module symbol has one
 
     bool is_module;
+    // The symbol of a module augmentation's block (`declare module "./a" {}` in a module), which binder_link() merges
+    // into the module: declares like a module (`export default`)
+    bool is_augmentation;
     bool is_global_this;
     // JavaScript `F.prototype = { m() { this.x = v } }`: x belongs to the literal in tsc (its symbol has no namable
     // parent), and is F's instance member through it. Set while only such assignments declare it

@@ -21756,9 +21756,9 @@ const baselines = {
         types: true,
     },
     'moduleAugmentationOfAlias': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleAugmentationWithNonExistentNamedImport': {
         errors: true,

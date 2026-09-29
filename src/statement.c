@@ -444,6 +444,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 module = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
                 module->name_span = my name;
                 module->exports = arena_new(&scope->binder->arena, SymbolTable);
+                module->is_augmentation = true;
                 binder_add_augmentation(scope->binder, me);
             }
             if (!module) {

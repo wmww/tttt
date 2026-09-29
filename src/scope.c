@@ -950,7 +950,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     }
     u32 includes, excludes;
     symbol_flags_of_props(&props, &includes, &excludes);
-    if (props.default_export && !(scope->container && scope->container->is_module)) {
+    if (props.default_export && !(scope->container && (scope->container->is_module || scope->container->is_augmentation))) {
         props.default_export = false; // TODO: TS1319 and friends
     }
     SymbolTable* table;
@@ -1303,7 +1303,10 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         }
         return;
     }
-    if (!my container || !my container->is_module) return; // TODO: TS1319 and friends
+    // (`export default x` in an augmentation merges into the module's default)
+    if (!my container || !(my container->is_module || (my container->is_augmentation && !export_equals))) {
+        return; // TODO: TS1319 and friends
+    }
     symbol_ensure_exports(my container);
     csview export_name = export_equals ? c_sv("export=") : c_sv("default");
     // Everything the name means is exported, types included; other expressions are a value. Nothing else can be
