@@ -53296,7 +53296,7 @@ const baselines = {
         types: true,
     },
     'tsxElementResolution15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

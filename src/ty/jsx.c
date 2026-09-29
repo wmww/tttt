@@ -277,7 +277,18 @@ static void check_string_literal_tag(Checker* me, JsxElement const* element, Ty 
 // tsc's getJsxPropsTypeFromClassType: JSX.ElementAttributesProperty names a property the instance type doesn't have
 // (TS2607, only when there are attributes)
 static void check_class_component_props(Checker* me, JsxElement const* element, JsxResolution const* resolution, ErrorCtx* errs) {
-    if (!resolution->class_component || !resolution->sig || vec_jsx_attribute_is_empty(&element->attributes.jsx_attributes)) return;
+    if (!resolution->class_component) return;
+    // (tsc's getNameFromJsxElementAttributesContainer: more than one property is TS2608 at its declaration)
+    Ty const* container = ty_jsx_type(me, element, c_sv("ElementAttributesProperty"));
+    if (container && (container->flags & TYF_OBJECT) && ty_members(me, container)->prop_count > 1) {
+        Ty const* declared = container->kind == TY_REFERENCE ? container->reference.target : container;
+        Symbol const* symbol = declared->kind == TY_DECLARED ? declared->declared.symbol : nullptr;
+        if (symbol && symbol->decl_count && span_valid(symbol->decls[0].name)) {
+            error_ctx_error_d(errs, symbol->decls[0].name, 2608,
+                "The global type 'JSX.ElementAttributesProperty' may not have more than one property.");
+        }
+    }
+    if (!resolution->sig || vec_jsx_attribute_is_empty(&element->attributes.jsx_attributes)) return;
     Atom const* location = container_prop_name(me, element, c_sv("ElementAttributesProperty"));
     if (!location || !atom_sv(location).size) return;
     Ty const* instance = ty_instantiate(me, signature_return_type(me, resolution->sig), resolution->mapper);
