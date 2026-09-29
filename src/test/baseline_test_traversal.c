@@ -631,6 +631,11 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_IDENTIFIER:
+            if (my identifier->import_argument) { // (Nothing after an invalid argument is resolved)
+                type_compile_test_info(my identifier->import_argument, ctx);
+                for_each (i, vec_spanned_type, &my identifier->generic_params) type_compile_test_info(&i->type, ctx);
+                break;
+            }
             if (span_equals(my identifier->name, "object")) {
                 break;
             }

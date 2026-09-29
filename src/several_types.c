@@ -18,6 +18,10 @@ void identifier_type_drop(IdentifierType* me) {
     vec_symbol_cptr_drop(&my namespace_symbols);
     vec_spanned_type_drop(&my generic_params);
     import_attributes_free(my import_attributes);
+    if (my import_argument) {
+        type_drop(my import_argument);
+        free(my import_argument);
+    }
 }
 
 // Member of a namespace by meaning, TS2694 if there is none. *found is the member as declared (maybe an alias)
@@ -57,6 +61,11 @@ static cstr identifier_type_make_name_str(IdentifierType const* me) {
 // `import("./a").A.B`, `typeof import("./a")`: the names are members of the module
 static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     my import_prop_start = -1;
+    if (my import_argument) {
+        // (tsc's checkImportType)
+        type_lookup_names(my import_argument, names, errs);
+        error_ctx_error_d(errs, my import_argument_span, 1141, "String literal expected.");
+    }
     if (!my import_ref) return; // The parser complained
     Symbol* module = binder_module_of_ref(names->binder, my import_ref);
     if (!module) {

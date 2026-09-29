@@ -25442,7 +25442,7 @@ const baselines = {
     },
     'parseUnmatchedTypeAssertion': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserConstructorDeclaration12': {
@@ -63676,9 +63676,9 @@ const baselines = {
         types: true,
     },
     'importTypeGeneric': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importTypeGenericTypes': {
         errors: true,
@@ -63701,19 +63701,19 @@ const baselines = {
         types: true,
     },
     'importTypeNested': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importTypeNestedNoRef': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importTypeNonString': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importWithTypeArguments': {
         errors: false,

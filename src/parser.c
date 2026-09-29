@@ -2849,7 +2849,14 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     bool has_path = parse_string(&p, &path);
     Span path_span = span_from(path_anchor);
     if (!has_path) {
-        parse_error(&p, span_from_token(&p), 1141, "String literal expected.");
+        // Any type goes, the checker says TS1141 (tsc's parseImportType, checkImportType)
+        TypeNode argument;
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &argument)) {
+            identifier.import_argument = c_new(TypeNode, argument);
+            identifier.import_argument_span = span_from(path_anchor);
+        } else {
+            parse_error(&p, span_from_token(&p), 1141, "String literal expected.");
+        }
     }
     hop_whitespace(&p);
     if (hop_char(&p, ',')) {

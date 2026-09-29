@@ -26,6 +26,8 @@ typedef struct IdentifierType {
     // bare `import("./a")`. With import_typeof it is a value (`typeof import("./a").x`)
     ModuleRef* import_ref;
     ImportAttributes* import_attributes; // Owned, `import("./a", { with: { ... } })`
+    struct TypeNode* import_argument; // Owned: `import(T)`, an argument that isn't a string (TS1141, no module)
+    Span import_argument_span;
     bool import_typeof;
     Span import_span;
     // `typeof import("./a").A.foo`: from this index on (namespaces, then name) the names are properties of the type of

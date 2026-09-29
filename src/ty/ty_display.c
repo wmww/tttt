@@ -542,10 +542,11 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         display_node_fallback(me, d, node);
         return;
     }
-    if (identifier->import_ref) {
+    if (identifier->import_ref || identifier->import_argument) {
         if (identifier->import_typeof) out_lit(d, "typeof ");
         out_lit(d, "import(");
-        display_string_literal(d, cstr_sv(&identifier->import_ref->path));
+        if (identifier->import_ref) display_string_literal(d, cstr_sv(&identifier->import_ref->path));
+        else display_node(me, d, identifier->import_argument);
         out_lit(d, ")");
         for_each (i, vec_span, &identifier->namespaces) {
             out_lit(d, ".");
