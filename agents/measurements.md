@@ -10,14 +10,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## New corpora (2026-09-29, seventh window's corpus session, 64969dde)
-drizzle (1567 files incl. deps and libs, 577 of its own, 93k lines) and vue (759 files, 511 of its own, 192k lines),
-both 0 under tsc 5.8. At pinning (after the OOM fix): drizzle **693**, vue **107**. Instructions (`perf stat -e
-instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q --keep-going`): **drizzle 264.8 G**, vue 9.64 G. Walls
-under load (four agents running, not bench.sh): drizzle tttt ~10 s / 3.8 GB (checkers 4.1-8.4 s, 4.2M types),
-tsc 5.8 12.7 s (measured quiet), tsgo 7.2 s / 1.9 GB; vue tttt 0.7 s / 680 MB, tsc 11.6 s, tsgo 5.2 s / 865 MB (tsgo
-through bench.sh's tsconfig.tsgo.json, with 16 / 8 TS 7 errors of its own). drizzle is the first corpus where tttt is
-slower than tsgo (perf_leads.md).
+## Corpus session (2026-09-29, seventh window's todo entry 1, end of session)
+Two corpora pinned, both 0 under tsc 5.8: drizzle (1567 files incl. deps and libs, 577 of its own, 93k lines) and vue
+(759 files, 511 of its own, 192k lines). Diagnostics at pinning -> session end: **drizzle 693 -> 8**, **vue 107 -> 0**
+(four Opus sub-agents); the others unchanged (tsc, type-fest, valibot, react, nest, zod 0, webpack 6, xstate 19),
+output identical at 1 and 4 threads for both. Suite **12040 -> 12047** (0 components lost). Instructions (`perf stat -e
+instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q --keep-going`), session start (cb303b2b) -> end: tsc
+5.208 -> 5.225 G (+0.3%), type-fest 3.468 -> 3.470, valibot 5.639 -> 5.720 (+1.4%), **react 2.094 -> 2.190 (+4.6%**:
+two deep-nesting ports, hacks.md "Relations", already cut down from +29%), nest 1.259 -> 1.261, webpack 4.032 ->
+4.044, zod 4.651 -> 4.669, xstate 2.981 -> 2.958 (-0.8%), vue 9.640 -> 9.630, **drizzle 264.8 -> 16.3 G** (TS2589
+runaways fixed: object literal instances). Walls under load (agents running, not bench.sh): drizzle tttt 1.4 s / 1.8
+GB (at K=4), tsc 5.8 12.7 s (quiet), tsgo 7.2 s / 1.9 GB; vue tttt 0.7 s / 680 MB, tsc 11.6 s, tsgo 5.2 s / 865 MB (tsgo
+through bench.sh's tsconfig.tsgo.json, 16 / 8 TS 7 errors of its own). The quiet `./bench.sh` run is owed.
 
 ## Triage (2026-09-29, todo entry 10, 82c3cac9)
 Suite **12040 / 13540** (errors 12730, symbols 13003, types 12768; 0 lost), JS 898 / 1049, `./failstats.py` errors

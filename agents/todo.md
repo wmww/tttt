@@ -6,18 +6,13 @@ since this file was written), the next session is insights, whatever is left her
 triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the corpus numbers
 (`./realworld.py --corpus X` for every pinned corpus) and a commit.
 
-1. **Corpora: pin two new ones** (the pinned ones are out of signal: 0 everywhere but webpack 6, xstate 19). Pick
-   for features the current set doesn't exercise, each clean under tsc 5.8 with its own tsconfig: (a) a type-level
-   heavy library of a kind not yet pinned (drizzle-orm, @tanstack/router, effect, tRPC: SQL/route builders, deep
-   template literal and conditional chains), (b) a large application-style package with lots of classes and
-   overloads (vue core's packages, or TypeScript's own `src/services` through an overlay tsconfig: it is already
-   vendored). Add to `thirdparty/ensure-corpora.sh` like xstate, then work the new diagnostics down by root cause with
-   Opus sub-agents in worktrees (plan 19 gets a section per corpus). Record instructions and `./bench.sh` numbers for
-   them in measurements.md.
+1. Done 2026-09-29: drizzle-orm and vue core pinned (both 0 under tsc 5.8); drizzle 693 -> 8, vue 107 -> 0 with four
+   Opus sub-agents, suite 12040 -> 12047, other corpora unchanged. Plan 19 has both sections and the leftovers.
 2. **Perf session.** Instructions have crept +8% on tsc's corpus since 2026-09-28 (4.82 -> 5.21 G, similar
    elsewhere) over ~20 sessions of fixes with no profile. Callgrind the corpora against f0dd10eb's numbers, bisect
    the biggest steps, fix or gate. Run `./bench.sh` on a quiet machine (owed since the load pool; check `uptime`
-   first). hacks.md "Generic source constraints push both nesting stacks" (+14% on react). `bugs/perf_leads.md`.
+   first). hacks.md "Relations" (the conditional-source and indexed-access nesting entries). `bugs/perf_leads.md`, which now
+   has drizzle (16.3 G, the heaviest corpus) and react's +4.6% from the corpus session's two relate.c ports.
 3. **Planning: plan 39** (one resolution stack for circularity; stub in `plans/39_resolution_stack.md`). Prototype
    on its tests, measure the per-LazyType cost, decide.
 4. **Plan 39 execution** (or, if the planning session said no, a suite checker bugs session like entry 7).

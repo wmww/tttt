@@ -8,14 +8,15 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
 (to attribute arena bytes, count `__builtin_return_address(0)` per call site in `arena_alloc` and `addr2line` the
 `/tmp/relg` binary run under `setarch -R`, as the 09-28 perf session did).
 
-## drizzle (pinned 2026-09-29): the heaviest corpus by far
-**265 G instructions** at `--checkers 1` (tsc's corpus: 5.2 G, zod 4.6 G), 4.2M types over 4 checkers (checker 1:
-1.5M types, 1.1 GB arena), 3.8 GB peak RSS, ~10 s wall where tsc 5.8 takes 12.7 s and tsgo ~6-7 s. tttt is
-*slower than tsgo* here, and it still reports 693 wrong diagnostics (some are TS2589: runaway instantiation, whose
-cost may drop as they're fixed). Start with `./arenasites.sh -p thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json`
-and a per-file breakdown (which test files dominate). Known structural difference: tttt measures a base class's
-variances for the derived-to-base check (PgColumnBuilder -> ColumnBuilder<..., TTypeConfig & {dialect}>) where tsc
-relates identical members structurally and measures nothing.
+## drizzle and react (2026-09-29 corpus session)
+- drizzle went 265 -> 16.3 G instructions once its TS2589 runaways were fixed (object literal instances), but it is
+  still the heaviest corpus (tsc's: 5.2 G) with 1.8 GB peak RSS at K=4: `./arenasites.sh -p
+  thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json`, then per file (pg select.ts and set-operators.ts
+  were the heaviest). tttt measures a base class's variances for the derived-to-base check (PgColumnBuilder ->
+  ColumnBuilder<..., TTypeConfig & {dialect}>) where tsc relates identical members structurally and measures nothing.
+- react +4.6% from two tsc ports in relate.c (generic-source constraints pushing only the source, the conditional
+  immediate constraint): react-hook-form's Path/FieldPathValue indexed-access chains are related level by level with
+  uncached Maybe results, each variant ~12 times (hacks.md "Relations"; relating whole chains as tsc does is the fix).
 
 ## Memory (the weak side now: every corpus is faster than single-threaded tsgo, several use more memory)
 - **Arena by call site**: `./arenasites.sh -p <corpus>` (a `-DTTTT_ARENA_SITES` build in /tmp). zod after the

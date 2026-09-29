@@ -1,8 +1,8 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
 **Status 2026-09-29 (seventh window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
-zod 0, zod-root = tsc's own 55, webpack 6, xstate 19, and two new corpora: **vue** (107 at pinning) and **drizzle** (693
-at pinning, after an OOM fix), see their sections. The history of R1-R21 (identity relation, homomorphic mapped
+zod 0, zod-root = tsc's own 55, webpack 6, xstate 19, and two new corpora pinned and worked down the same day: **vue 0**
+(107 at pinning) and **drizzle 8** (693 at pinning, after an OOM fix), see their sections. The history of R1-R21 (identity relation, homomorphic mapped
 modifiers, const type parameters, skip-sensitive inference, the permissive instantiation, ...) and of the zod and
 type-fest items is in git (this file before the corpus sessions) and in the commits.
 
@@ -77,7 +77,7 @@ reports in the commit messages; repros in `plans/38_prototypes/xstate_*.ts`):
   (deferred conditional rest parameter).
 - Determinism: 5 diagnostics only at `--checkers 1` (triage).
 
-### drizzle (693 at pinning)
+### drizzle (8; 693 at pinning)
 Pinned 2026-09-29 (seventh window, todo entry 1): drizzle-orm at 15454dbe, the package's src and type-tests through
 `corpora-locks/drizzle.overlay/drizzle-orm/tsconfig.corpus.json` (upstream's type-tests tsconfig minus src/prisma,
 which needs a generated @prisma/client); devDependencies at pnpm-lock.yaml's versions (npm's own resolution of the
@@ -93,17 +93,10 @@ members don't mention staying themselves: every generic query-builder step had m
 columns literals and everything built on them, 5M instantiations for one `.rightJoin()` (tsc: 37k at most per node),
 so TS2589 x59 and 257 G -> 15 G instructions. Then an inferred type argument checked against its constraint with
 itself as `this`, and an instantiable type's apparent type with itself as its class constraint's `this`
-(`qb.leftJoin(a).leftJoin(b)` on `T extends PgSelect`). Left in type-tests (24):
-- mysql/singlestore select.ts + set-operators.ts (TS2345 + the TS2344 after it, 16): `$dynamic()` builders aren't
-  assignable to `MySqlSelect` even with `this` = the builder, because tttt measures every type parameter of
-  `MySqlSelectBase` (and SingleStore's) invariant, where tsc gets covariant for most (`VARIANCES=1 ./tscinstcount.js`;
-  `TTTT_DUMP_VARIANCES=1`). pg/gel's builders measure fine; the mysql ones have a `TPreparedQueryHKT` parameter and
-  `MySqlSelectPrepare<this>` = `PreparedQueryKind<..., true>` (`Equal<TAssume, true> extends true ? Assume<(TKind &
-  { config })['type'], MySqlPreparedQuery<TConfig>> : ...`). The failing leaves in `TTTT_DEBUG_RELATE_NESTED` during
-  the measurement are `{ execute: sub-T["_"]["result"]; iterator: sub-T["_"]["result"][number] } ->
-  MySqlPreparedQueryConfig` and `sub-T["_"]["preparedQueryHKT"]["type"]` (constraint unknown) against
-  `MySqlPreparedQuery<...>`: start there. Probe project: a p.ts with `declare function withFriends<T extends
-  MySqlSelect>(qb: T): T; withFriends<typeof qb>(qb)` over `db.select().from(users).$dynamic()`.
+(`qb.leftJoin(a).leftJoin(b)` on `T extends PgSelect`). Left in type-tests (8, after the src pass's alias fix
+below took the 16 of mysql/singlestore select.ts + set-operators.ts, whose `$dynamic()` builders measured
+`MySqlSelectBase` invariant through `MySqlSelectPrepare<this>`; `VARIANCES=1 ./tscinstcount.js` and
+`TTTT_DUMP_VARIANCES=1` compare variance measurements if that comes back):
 - mysql/generated-columns.ts 102/122 (TS2345): `drizzle(pool, { schema: { users }, mode })` with an `any` client.
 - pg/with.ts 215-230 (6): `WithSubqueryWithSelection` of a `$with(...).as(select ... innerJoin)` selection, the mapped
   `{ [K in ... as ...] }` over the joins tuple.
@@ -123,7 +116,7 @@ non-generic variant of the last one still reports TS7023 where tsc doesn't (`pro
 the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
 ordering avoids the cycle wasn't worked out).
 
-### vue (107 at pinning)
+### vue (0; 107 at pinning)
 Pinned 2026-09-29 (same session): vue core at b5f85183 (the last commit before TypeScript 6), every package's src and
 __tests__ plus packages-private/dts-test, through `corpora-locks/vue.overlay/tsconfig.corpus.json` (the root tsconfig
 without composite/isolatedDeclarations/noUnusedLocals; dts-test's built.test-d.ts needs a build, excluded). tsc 5.8: 0
