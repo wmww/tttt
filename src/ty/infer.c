@@ -156,8 +156,12 @@ Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from,
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
     for (u32 j = 0; j < (rest_shape ? count - 1 : count); j++) {
         SigParam const* param = &sig->params[from + j];
-        flags[j] = (param->optional ? TUPLE_ELEMENT_OPTIONAL : 0) | (param->rest ? TUPLE_ELEMENT_REST : 0);
-        names[j] = param->name;
+        // Optional past the minimum argument count (an untyped JS function's parameters all are); labelled by
+        // parameter declarations with a plain name (getNameableDeclarationAtPosition: not a JS function's
+        // synthetic `args`, nor a destructuring)
+        bool optional = param->optional || from + j >= sig->min_args;
+        flags[j] = param->rest ? TUPLE_ELEMENT_REST : optional ? TUPLE_ELEMENT_OPTIONAL : 0;
+        names[j] = param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER ? param->name : nullptr;
         elements[j] = ty_instantiate(me, param->optional ? ty_optional_param_type(me, param->type) : param->type, mapper);
     }
     if (rest_shape) {
