@@ -147,6 +147,14 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
     if (my method.accessor == CLASS_ACCESSOR_GET) {
         return ty_widened_for_declaration(checker, signature_return_type(checker, sig), true);
     }
+    // A setter without a getter: its parameter's annotation, else any (tsc's getTypeOfAccessors; not what an
+    // initializer or a rest parameter would make of it)
+    for_each (i, vec_function_arg, &my method.func.args) {
+        Binding const* binding = &i->initializer.binding;
+        if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+        if (!binding->has_explicit_type) return ty_intrinsic(checker, TY_ANY);
+        break;
+    }
     return sig->param_count ? sig->params[0].type : ty_intrinsic(checker, TY_ANY);
 }
 

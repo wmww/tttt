@@ -318,7 +318,7 @@ const baselines = {
     'accessorWithInitializer': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'accessorWithLineTerminator': {
         errors: true,
@@ -328,7 +328,7 @@ const baselines = {
     'accessorWithRestParam': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'accessorWithoutBody1': {
         errors: true,
@@ -57603,7 +57603,7 @@ const baselines = {
     'parserMemberAccessorDeclaration16': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserMemberAccessorDeclaration17': {
         errors: true,
@@ -57613,7 +57613,7 @@ const baselines = {
     'parserMemberAccessorDeclaration18': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserMemberAccessorDeclaration2': {
         errors: true,
