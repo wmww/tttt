@@ -13586,9 +13586,9 @@ const baselines = {
         types: true,
     },
     'fatarrowfunctionsErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fatarrowfunctionsInFunctionParameterDefaults': {
         errors: true,
@@ -13611,7 +13611,7 @@ const baselines = {
         types: true,
     },
     'fatarrowfunctionsOptionalArgsErrors2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56896,7 +56896,7 @@ const baselines = {
         types: false,
     },
     'parserEqualsGreaterThanAfterFunction2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -58191,7 +58191,7 @@ const baselines = {
         types: true,
     },
     'parser512325': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

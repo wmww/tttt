@@ -9828,7 +9828,8 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
 }
 
 static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret) {
-    if (!hop_char(parent, '=')) {
+    // (the `=` token, not `==` or `=>`)
+    if (*parent->pos != '=' || parent->pos[1] == '=' || parent->pos[1] == '>' || !hop_char(parent, '=')) {
         return false;
     }
     hop_whitespace(parent);
@@ -10120,6 +10121,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
             *p.pos == ')' ||
             *p.pos == '}' ||
             *p.pos == '\0' ||
+            (*p.pos == '=' && p.pos[1] == '>') || // (tsc's isVariableDeclaratorListTerminator)
             hop_start_if_ends_on_word_break(&p, "in") ||
             hop_start_if_ends_on_word_break(&p, "of")
         ) {
