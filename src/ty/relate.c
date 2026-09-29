@@ -1094,10 +1094,10 @@ static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
     }
     if (sig->param_count && sig->params[sig->param_count - 1].rest && i + 1 >= sig->param_count) {
         Ty const* rest = sig->params[sig->param_count - 1].type;
-        if (ty_is_tuple(rest)) {
+        TupleShape const* shape = ty_tuple_shape(rest); // (`[]` too, which is no reference)
+        if (shape) {
             // `...args: [a: A, b?: B, ...c: C[]]` is parameters of their own
-            TupleShape const* shape = rest->reference.target->declared.tuple;
-            TyList elements = ty_reference_args(me, rest);
+            TyList elements = shape->arity ? ty_reference_args(me, rest) : (TyList){0};
             u32 j = i + 1 - sig->param_count;
             bool ends_in_rest = shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
             if (j >= shape->arity) return ends_in_rest ? rest_element_type(me, elements.data[shape->arity - 1]) : nullptr;
@@ -1121,18 +1121,17 @@ static bool past_empty_rest(Signature const* sig, u32 i) {
 // How many parameters a signature has, with a rest tuple of fixed length counted as its elements
 u32 ty_signature_param_count(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return sig->param_count;
-    Ty const* rest = sig->params[sig->param_count - 1].type;
-    if (!ty_is_tuple(rest)) return sig->param_count;
-    return sig->param_count - 1 + rest->reference.target->declared.tuple->arity;
+    TupleShape const* shape = ty_tuple_shape(sig->params[sig->param_count - 1].type);
+    if (!shape) return sig->param_count;
+    return sig->param_count - 1 + shape->arity;
 }
 
 // The arguments a signature needs, the required elements of a rest tuple included (tsc's getMinArgumentCount, less
 // its trailing void parameters)
 static u32 signature_min_args(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return sig->min_args;
-    Ty const* rest = sig->params[sig->param_count - 1].type;
-    if (!ty_is_tuple(rest)) return sig->min_args;
-    TupleShape const* shape = rest->reference.target->declared.tuple;
+    TupleShape const* shape = ty_tuple_shape(sig->params[sig->param_count - 1].type);
+    if (!shape) return sig->min_args;
     u32 required = 0;
     while (required < shape->arity && !(shape->flags[required] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) required++;
     return required ? sig->param_count - 1 + required : sig->min_args;
@@ -1141,9 +1140,8 @@ static u32 signature_min_args(Signature const* sig) {
 // Takes any number of arguments: a rest parameter that isn't a tuple of fixed length
 bool ty_signature_has_rest(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return false;
-    Ty const* rest = sig->params[sig->param_count - 1].type;
-    if (!ty_is_tuple(rest)) return true;
-    TupleShape const* shape = rest->reference.target->declared.tuple;
+    TupleShape const* shape = ty_tuple_shape(sig->params[sig->param_count - 1].type);
+    if (!shape) return true;
     return shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
 }
 
@@ -5288,7 +5286,7 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
         Ty const* both[2] = { longest_type, shorter_type };
         Ty const* type = intersection ? ty_union(me, both, 2, nullptr, (TyList){0}) : ty_intersection(me, both, 2, nullptr, (TyList){0});
         bool is_rest = either_rest && !extra_rest && i == longest_count - 1;
-        bool optional = i >= longest->min_args && i >= shorter->min_args;
+        bool optional = i >= signature_min_args(longest) && i >= signature_min_args(shorter); // (tsc's getMinArgumentCount)
         Atom const* left_name = i < left->param_count && !left->params[i].rest ? left->params[i].name : nullptr;
         Atom const* right_name = i < right->param_count && !right->params[i].rest ? right->params[i].name : nullptr;
         Atom const* name = left_name == right_name || !right_name ? left_name : !left_name ? right_name : nullptr;

@@ -586,12 +586,22 @@ static bool elaborate_error(
 }
 
 // tsc's checkTypeRelatedToAndOptionallyElaborate: `expr` (may be null) is what the source came from
+static bool check_assignable_in(
+    Checker* me, AssignHead head, Ty const* source, Ty const* target, Span span, Expr const* expr, bool any_fits, ErrorCtx* errs
+);
+
 static bool check_assignable(
     Checker* me, AssignHead head, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs
 ) {
+    return check_assignable_in(me, head, source, target, span, expr, true, errs);
+}
+
+static bool check_assignable_in(
+    Checker* me, AssignHead head, Ty const* source, Ty const* target, Span span, Expr const* expr, bool any_fits, ErrorCtx* errs
+) {
     // HACK: `any` stands for whatever couldn't be typed (no initializer, failed inference...), and is let through even
-    // to `never`
-    if (source->flags & TYF_ANY) return true;
+    // to `never` (not for an argument: overload resolution already found that it doesn't fit)
+    if (any_fits && (source->flags & TYF_ANY)) return true;
     u32 limit_hits = my instantiation_limit_hits;
     u32 complexity_hits = my relation_complexity_hits;
     if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return true;
@@ -989,7 +999,7 @@ void ty_check_using_initializer(Checker* me, Ty const* source, bool is_await, Sp
 void ty_report_unfit_argument(
     Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs
 ) {
-    check_assignable(me, HEAD_ARGUMENT, source, target, span, expr, errs);
+    check_assignable_in(me, HEAD_ARGUMENT, source, target, span, expr, false, errs);
 }
 
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {

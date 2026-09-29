@@ -28186,7 +28186,7 @@ const baselines = {
         types: true,
     },
     'signatureCombiningRestParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28206,7 +28206,7 @@ const baselines = {
         types: true,
     },
     'signatureCombiningRestParameters5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
