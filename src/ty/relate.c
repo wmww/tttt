@@ -603,6 +603,22 @@ static Ty const* normalized_reference(Checker* me, Ty const* ty) {
     return ty_reference(me, ty->reference.target, ty_reference_args(me, ty));
 }
 
+// The apparent type of an intersection as tsc's getApparentTypeOfIntersectionType makes it: each member's apparent
+// type (`Number & { a: 1 }`), a new intersection without alias. Only for messages, the relation looks at the members
+static Ty const* apparent_intersection(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_INTERSECTION) return ty;
+    TyList types = ty->composite.types;
+    bool primitive = false;
+    for (u32 i = 0; i < types.len && !primitive; i++) primitive = !(types.data[i]->flags & (TYF_OBJECT | TYF_TYPE_PARAM | TYF_DEFERRED));
+    if (!primitive) return ty;
+    Ty const** apparent = malloc(sizeof(Ty const*) * types.len);
+    panic_if(!apparent, "out of memory");
+    for (u32 i = 0; i < types.len; i++) apparent[i] = ty_apparent_type(me, types.data[i]);
+    Ty const* ret = ty_intersection(me, apparent, types.len, nullptr, (TyList){0});
+    free(apparent);
+    return ret;
+}
+
 static void display_pair(Checker* me, Ty const* source, bool widen, Ty const* target, cstr* source_out, cstr* target_out) {
     *source_out = display_for_report(me, source, widen);
     *target_out = display_for_report(me, target, false);
@@ -1778,8 +1794,8 @@ static Ternary props_related_impl(
         }
         if (missing_count) {
             cstr source_str, target_str;
-            display_pair(me, normalized_reference(me, source), true, normalized_reference(me, target), &source_str,
-                &target_str);
+            display_pair(me, apparent_intersection(me, normalized_reference(me, source)), true,
+                normalized_reference(me, target), &source_str, &target_str);
             if (missing_count == 1) {
                 cstr name = ty_prop_written_name(me, missing_prop);
                 report_line(st, 2741, cstr_d(

@@ -63736,7 +63736,7 @@ const baselines = {
         types: true,
     },
     'intersectionAsWeakTypeSource': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
