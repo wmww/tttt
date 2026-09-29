@@ -2196,7 +2196,7 @@ const baselines = {
         types: true,
     },
     'awaitInClassInAsyncFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34621,7 +34621,7 @@ const baselines = {
         types: true,
     },
     'awaitAndYieldInProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38416,7 +38416,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethodParameter3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1340,7 +1340,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 
         case STATEMENT_FOR_EACH_LOOP: {
             ForEachLoopStatement* loop = my for_each_loop;
-            await_check_grammar(loop->await_place, AWAIT_KIND_FOR, loop->await_span, names->function, errs);
+            await_check_grammar(loop->await_place, AWAIT_KIND_FOR, loop->await_span, scope_containing_function(names), errs);
             lazy_type_bind(&loop->var_type, LAZY_TYPE_FOR_EACH_LOOP_VAR);
             Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
             bool is_declaration = loop->variable.tag == FOR_EACH_LOOP_STATEMENT;

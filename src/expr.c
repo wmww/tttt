@@ -955,7 +955,8 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
     if (place == AWAIT_IN_FUNCTION) {
         Error* e = error_ctx_grammar_error_d(errs, at, kind == AWAIT_KIND_EXPR ? 1308 : kind == AWAIT_KIND_FOR ? 1103 : 2852,
             what[kind], " are only allowed within async functions and at the top levels of modules.");
-        if (e && function && !function->is_constructor) {
+        // (tsc's checkAwaitGrammar: the containing function, if it isn't async already)
+        if (e && function && !function->is_constructor && !function->is_async) {
             error_add_related_d(e, function_error_span(function), 1356, "Did you mean to mark this function as 'async'?");
         }
         return;
@@ -1635,7 +1636,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         error_ctx_error_d(errs, my inner_span, 18037, "'await' expression cannot be used inside a class static block.");
                     }
                     await_check_grammar(my unary_op->await_place, AWAIT_KIND_EXPR,
-                        (Span){ .source = my inner_span.source, .sv = csview_from_n(my inner_span.sv.buf, 5) }, names->function, errs);
+                        (Span){ .source = my inner_span.source, .sv = csview_from_n(my inner_span.sv.buf, 5) },
+                        scope_containing_function(names), errs);
                     expr_lookup_names(operand, names, errs);
                     break;
 

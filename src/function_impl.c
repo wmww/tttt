@@ -185,6 +185,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             if (!decorator_names) {
                 decorator_names = scope_new(names, SCOPE_BLOCK);
                 decorator_names->member_decorator = true;
+                decorator_names->decorated_function = me;
             }
             expr_lookup_names(decorator, decorator_names, errs);
         }

@@ -302,6 +302,13 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
 
 // Scopes
 
+struct FunctionImpl const* scope_containing_function(Scope const* me) {
+    for (Scope const* scope = me; scope && scope->kind != SCOPE_FUNCTION; scope = scope->parent) {
+        if (scope->decorated_function) return scope->decorated_function;
+    }
+    return my function;
+}
+
 Scope* scope_new(Scope* parent, ScopeKind kind) {
     Scope* ret = arena_new(&parent->binder->arena, Scope);
     ret->parent = parent;

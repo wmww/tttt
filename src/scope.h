@@ -408,6 +408,9 @@ typedef struct Scope {
     bool in_field;
     // A class member's decorator: its `this` is the one outside the class (tsc's getThisContainer of a Decorator)
     bool member_decorator;
+    // A parameter decorator's scope: the function whose parameter it decorates, what tsc's getContainingFunction finds
+    // for the decorator (TS1356 suggests making that one async)
+    struct FunctionImpl const* decorated_function;
     // The scope of a decorator of this class (for a member decorator, no_super is NO_SUPER_DECORATOR instead): an ES
     // decorator runs before the class is initialized (tsc's isBlockScopedNameDeclaredBeforeUse)
     struct ClassDecl const* decorator_of;
@@ -537,6 +540,9 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
 cstr symbol_fully_qualified_name(Symbol const* symbol);
 
 Scope* scope_new(Scope* parent, ScopeKind kind);
+// What tsc's getContainingFunction finds for a node in this scope: Scope.function, or the function whose parameter a
+// decorator is of
+struct FunctionImpl const* scope_containing_function(Scope const* me);
 // A scope made ahead of the resolve walk (ClassDecl.name_scope) takes what scope_new() inherits from where the walk
 // reaches it
 void scope_reparent(Scope* me, Scope* parent);
