@@ -703,6 +703,8 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
     // tsc's skipTypeChecking: declaration files aren't checked with skipLibCheck
     if (source_file->is_declaration && my options.skip_lib_check) source_file->unchecked = true;
     if (my options.no_check) source_file->unchecked = true; // (tsc's skipTypeChecking: no semantic diagnostics at all)
+    // (tsc's canIncludeBindAndCheckDiagnostics: a JSON file has none, only convertToJson's syntax errors)
+    if (source_file->is_json) source_file->unchecked = true;
     source_file->plain_js = source_file->is_js && !check_directive && !my options.is_set[COMPILER_OPTION_check_js] &&
         !my options.no_check;
 

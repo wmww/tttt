@@ -11214,6 +11214,52 @@ static bool is_grammar_code(unsigned code) {
     return false;
 }
 
+// tsc's convertToJson over a JSON file's value (parseSourceFile adds its errors to the parse diagnostics): only
+// double-quoted strings, numbers (maybe negated), true, false, null, objects of property assignments and arrays
+static void json_check_value(Parser* p, Expr const* value) {
+    Span span = value->outer_span;
+    bool plain = !expr_is_perenthisized(value);
+    if (plain && value->tag == EXPR_LITERAL) {
+        switch (value->literal.tag) {
+            case VALUE_NULL:
+            case VALUE_BOOLEAN:
+            case VALUE_NUMBER:
+                return;
+            case VALUE_STRING:
+                if (!span.sv.size || span.sv.buf[0] != '"') {
+                    // (A template isn't a string literal)
+                    if (span.sv.size && span.sv.buf[0] == '`') break;
+                    parse_error(p, span, 1327, "String literal with double quotes expected.");
+                }
+                return;
+            default:
+                break;
+        }
+    } else if (plain && value->tag == EXPR_UNARY_OP && value->unary_op->op == UNARY_OP_MINUS &&
+        value->unary_op->expr.tag == EXPR_LITERAL && value->unary_op->expr.literal.tag == VALUE_NUMBER &&
+        !expr_is_perenthisized(&value->unary_op->expr)
+    ) {
+        return;
+    } else if (plain && value->tag == EXPR_OBJECT) {
+        for_each (i, vec_object_expr_item, &value->object) {
+            if (i->tag != OBJECT_ITEM_PROPERTY) {
+                parse_error(p, i->span, 1136, "Property assignment expected.");
+                continue;
+            }
+            if (i->computed_key || !i->name_span.sv.size || i->name_span.sv.buf[0] != '"') {
+                parse_error(p, i->name_span, 1327, "String literal with double quotes expected.");
+            }
+            json_check_value(p, &i->value);
+        }
+        return;
+    } else if (plain && value->tag == EXPR_ARRAY) {
+        for_each (i, vec_expr, &value->array) json_check_value(p, i);
+        return;
+    }
+    parse_error(p, span, 1328,
+        "Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.");
+}
+
 void parse_file(SourceFile* source, ErrorCtx* errs) {
     ParserShared shared = {
         .source = source,
@@ -11241,6 +11287,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         Anchor a = anchor(&p);
         Expr value;
         if (parse_expr(&p, expr_ctx_null, &value)) {
+            json_check_value(&p, &value);
             Statement statement = { .tag = STATEMENT_EXPORT_DEFAULT_EXPR, .expr = value, .export_equals = true };
             statement.span = span_from(a);
             vec_statement_push(&source->ast.statements, statement);
