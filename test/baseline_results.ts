@@ -32017,7 +32017,7 @@ const baselines = {
     },
     'unicodeEscapesInNames02(target=es5)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unicodeIdentifierName2': {

@@ -416,6 +416,7 @@ static void note_top_level_await_identifier(Parser* p, csview name);
 static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, u32 code, char const* message);
 static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
 static bool parse_binding_element(Parser* parent, Binding* ret);
+static bool object_binding_name_follows(Parser* parent);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
 static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js);
 static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret);
@@ -10743,6 +10744,10 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                     }
                     binding = (Binding){ .tag = BINDING_NOOP, .content_span = span_from_pos(&p) };
                 }
+            } else if (!shorthand_allowed && object_binding_name_follows(&p)) {
+                // `{ 102 A7 }`: tsc's parseObjectBindingElement expects the `:` and parses the name anyway
+                expected_token_error(&p, ":");
+                check(parse_binding_element(&p, &binding));
             } else {
                 if (!shorthand_allowed) {
                     expected_token_error(&p, ":");
@@ -10781,6 +10786,17 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
 
     ret->content_span = span_from(a);
     return parse_success(&p);
+}
+
+// After an object binding element's key that isn't a shorthand, without its `:`: whether a name or pattern follows (tsc's
+// parseIdentifierOrPattern takes it: a binding identifier, `{` or `[`)
+static bool object_binding_name_follows(Parser* parent) {
+    if (*parent->pos == '{' || *parent->pos == '[') return true;
+    Parser probe = parser(parent);
+    Span word;
+    bool ret = parse_identifier_or_keyword(&probe, &word) && !is_reserved_word(word.sv);
+    parse_fail(&probe);
+    return ret;
 }
 
 // A variable's, parameter's or catch variable's binding: tsc's parseIdentifierOrPattern also takes a private name as an
