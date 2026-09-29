@@ -5999,7 +5999,10 @@ static bool parse_function_keyword_function(Parser* parent, bool is_async, bool 
     Span name;
     if (!parse_identifier(&p, &name)) {
         name = span_null;
-        if (name_required) parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+        if (name_required) {
+            parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+            name = span_from_pos(&p); // (A missing name, which tsc still declares)
+        }
     }
     hop_whitespace(&p);
 

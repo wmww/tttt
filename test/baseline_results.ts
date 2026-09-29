@@ -56892,13 +56892,13 @@ const baselines = {
     },
     'parserEqualsGreaterThanAfterFunction1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserEqualsGreaterThanAfterFunction2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserErrantAccessibilityModifierInModule1': {
         errors: true,
