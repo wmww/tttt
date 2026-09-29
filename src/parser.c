@@ -370,6 +370,7 @@ static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_template_type(Parser* parent, TypeNode* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
+static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret);
 static bool expr_ends_with_arrow(Expr const* e);
 static bool jsx_generic_arrow_start(Parser* parent);
 static bool parse_binding_content(Parser* parent, Binding* ret);
@@ -2975,7 +2976,18 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
             .reject_operators = true,
             .entity_name = true,
         };
-        if (!parse_expr(&p, expr_ctx, &expr)) {
+        // tsc's parseTypeQuery: an entity name whose first name may be a reserved word (`typeof null` looks up
+        // `null`), then type arguments
+        Tok t = tok_peek(&p);
+        Anchor expr_a = anchor(&p);
+        Span name;
+        if (tok_is_word(t) && *t.start != '#' && !tok_is(t, "this") && is_reserved_word((csview){ t.start, t.end - t.start }) &&
+            parse_identifier_or_keyword(&p, &name)
+        ) {
+            expr = expr_identifier((IdentifierExpr){ .name = name });
+            expr.inner_span = expr.outer_span = span_from(expr_a);
+            while (parse_expr_right_side(&p, expr_ctx, &expr)) {}
+        } else if (!tok_is_word(t) || *t.start == '#' || !parse_expr(&p, expr_ctx, &expr)) {
             parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
             expr = expr_implicit_any(span_from_pos(&p));
         }
@@ -7073,8 +7085,17 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
         hop_private_name(&p);
         prop = span_from(name_anchor);
     } else if (!parse_identifier_or_keyword(&p, &prop)) {
-        parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+        parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
+        // (At the end of the file the missing name is right after the dot, tsc's reportAtCurrentPosition)
         prop = span_from_pos(&p);
+        if (!*p.pos) {
+            // (At the end of the file the missing name is right after the dot, tsc's reportAtCurrentPosition, and so
+            // is the end of the property access)
+            p.pos = after_dot;
+            p.whitespace = WHITESPACE_NONE;
+            p.whitespace_end = nullptr;
+            prop = span_from_pos(&p);
+        }
     }
 
     *ret = expr_literal(prop, value_string(cstr_from_span(prop)));
@@ -10921,7 +10942,11 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
 
     if (!hop_start_if_ends_on_word_break(&p, "try")) {
-        return parse_fail(&p);
+        // tsc's parseStatement parses a try statement at `catch` and `finally` too, missing its `try` and block
+        if (!starts_with_followed_by_word_break(&p, "catch") && !starts_with_followed_by_word_break(&p, "finally")) {
+            return parse_fail(&p);
+        }
+        expected_token_error(&p, "try");
     }
     hop_whitespace(&p);
 
@@ -10929,7 +10954,12 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
     bool has_catch = false;
     bool has_finally = false;
 
-    if (parse_block(&p, false, &try_catch.try_block)) {
+    bool has_try_block = parse_block(&p, false, &try_catch.try_block);
+    if (!has_try_block) {
+        expected_token_error(&p, "{");
+        try_catch.try_block = (Block){0};
+    }
+    {
         hop_whitespace(&p);
 
         if (hop_start_if_ends_on_word_break(&p, "catch")) {
@@ -10942,7 +10972,9 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                 if (!parse_binding_content_or_private_name(&p, &try_catch.catch_var, 18029,
                         "Private identifiers are not allowed in variable declarations.")) {
                     parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
-                    try_catch.catch_var = (Binding){0};
+                    // (A missing name, which tsc still declares)
+                    try_catch.catch_var = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_from_pos(&p) };
+                    try_catch.catch_var.element_span = try_catch.catch_var.content_span;
                 }
                 hop_whitespace(&p);
                 if (parse_binding_type(&p, &try_catch.catch_var)) hop_whitespace(&p);
@@ -10991,9 +11023,6 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
         if (!has_catch && !has_finally) {
             parse_error(&p, span_from_token(&p), 1472, "'catch' or 'finally' expected.");
         }
-    } else {
-        expected_token_error(&p, "{");
-        try_catch.try_block = (Block){0};
     }
 
     try_catch.has_catch = has_catch;
@@ -11710,7 +11739,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     } else if (c == 'w' && parse_with_statement(&p, ret)) {
     } else if (c == 'd' && parse_do_while_loop_statement(&p, ret)) {
     } else if (c == 's' && parse_switch_statement(&p, ret)) {
-    } else if (c == 't' && parse_try_catch_statement(&p, ret)) {
+    } else if ((c == 't' || c == 'c' || c == 'f') && parse_try_catch_statement(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
         ret->keyword_span = span_from(a);

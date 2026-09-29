@@ -511,7 +511,9 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         }
         return;
     }
-    my target = scope_get_value(names, my name.sv, &my symbol);
+    // (`default` is a reserved word, which only `typeof default` looks up: never the module's default export, which
+    // tsc keeps in the module's exports only)
+    my target = csview_equals(my name.sv, "default") ? nullptr : scope_get_value(names, my name.sv, &my symbol);
     if (my target && names->file && names->file->is_commonjs && span_equals(my name, "exports") &&
         my symbol == symbol_table_get(&names->binder->globals, my name.sv)
     ) {

@@ -9296,9 +9296,9 @@ const baselines = {
         types: true,
     },
     'defaultIsNotVisibleInLocalScope': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultKeywordWithoutExport1': {
         errors: true,
@@ -16856,9 +16856,9 @@ const baselines = {
         types: true,
     },
     'incompleteDottedExpressionAtEOF': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incompleteObjectLiteral1': {
         errors: true,
@@ -35691,9 +35691,9 @@ const baselines = {
         types: false,
     },
     'privateInstanceMemberAccessibility': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateProtectedMembersAreNotAccessibleDestructuring': {
         errors: false,
@@ -63431,9 +63431,9 @@ const baselines = {
         types: true,
     },
     'invalidTryStatements': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'tryStatements': {
         errors: true,
@@ -65166,9 +65166,9 @@ const baselines = {
         types: true,
     },
     'invalidTypeOfTarget': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'recursiveTypesWithTypeof': {
         errors: false,
