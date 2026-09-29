@@ -42321,7 +42321,7 @@ const baselines = {
         types: true,
     },
     'for-of15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42406,7 +42406,7 @@ const baselines = {
         types: true,
     },
     'for-of30': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

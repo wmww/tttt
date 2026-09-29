@@ -584,6 +584,73 @@ static void report_not_iterable(Checker* me, u32 use, Ty const* input, Span span
     explain_not_iterable(me, use, input, span, e);
 }
 
+// tsc's getIterationTypesOfMethod errors for an iterable's own (not global) iterator: `return`/`throw` that aren't
+// methods (TS2767) and methods whose results have no `value` (TS2490). tsc says them the first time the iterable's
+// types are worked out with an error node: once per iterable type here
+static void report_iterator_methods(Checker* me, Ty const* iterable, bool async, Span span, ErrorCtx* errs) {
+    if (iterable->kind == TY_UNION || !(iterable->flags & TYF_OBJECT)) return;
+    IterationState const* state = iteration_state(me);
+    for (u32 g = 0; g < IG_COUNT; g++) {
+        if (is_reference_to(state, iterable, (IterationGlobal)g)) return;
+    }
+    u64 key[3] = { KEY_ITERATOR_REPORTED, iterable->id, async };
+    void const** slot = intern_slot(me, &my links, key, 3);
+    if (*slot) return;
+    *slot = iterable;
+    bool optional;
+    Ty const* method = property_type(me, iterable, async ? state->async_iterator_name : state->iterator_name, &optional, nullptr);
+    if (!method || optional || (method->flags & TYF_ANY)) return;
+    SigList sigs = {0};
+    call_signatures(me, method, &sigs);
+    TyBuf iterators = {0};
+    for (u32 i = 0; i < sigs.len; i++) {
+        signature_resolve(me, sigs.data[i]);
+        if (sigs.data[i]->min_args == 0) ty_buf_push(&iterators, signature_return_type(me, sigs.data[i]));
+    }
+    sig_list_drop(&sigs);
+    Ty const* iterator = iterators.len ? ty_intersection(me, iterators.data, iterators.len, nullptr, (TyList){0}) : nullptr;
+    ty_buf_drop(&iterators);
+    if (!iterator || (iterator->flags & TYF_ANY)) return;
+    for (u32 g = 0; g < IG_COUNT; g++) {
+        if (is_reference_to(state, iterator, (IterationGlobal)g)) return;
+    }
+    static char const* const names[] = { "next", "return", "throw" };
+    for (u32 which = 0; which < 3; which++) {
+        Prop const* prop;
+        Ty const* type = property_type(me, iterator, checker_atom(me, csview_from(names[which])), &optional, &prop);
+        if (!type || (which == METHOD_NEXT && optional)) continue; // (a missing next() is TS2488's related info)
+        if (which != METHOD_NEXT) type = ty_non_nullable(me, type);
+        if (type->flags & TYF_ANY) continue;
+        sigs = (SigList){0};
+        call_signatures(me, type, &sigs);
+        if (!sigs.len) {
+            sig_list_drop(&sigs);
+            if (which != METHOD_NEXT) {
+                error_ctx_error_d(errs, span, async ? 2768 : 2767, "The '", names[which], "' property of an ",
+                    async ? "async " : "", "iterator must be a method.");
+            }
+            continue;
+        }
+        TyBuf results = {0};
+        for (u32 i = 0; i < sigs.len; i++) {
+            signature_resolve(me, sigs.data[i]);
+            ty_buf_push(&results, signature_return_type(me, sigs.data[i]));
+        }
+        sig_list_drop(&sigs);
+        Ty const* result = ty_intersection(me, results.data, results.len, nullptr, (TyList){0});
+        ty_buf_drop(&results);
+        if (async) result = ty_awaited_no_alias(me, result);
+        if (iteration_types_of_result(me, result) != &no_iteration_types) continue;
+        if (async) {
+            error_ctx_error_d(errs, span, 2547, "The type returned by the '", names[which], "()' method of an async iterator "
+                "must be a promise for a type with a 'value' property.");
+        } else {
+            error_ctx_error_d(errs, span, 2490, "The type returned by the '", names[which],
+                "()' method of an iterator must have a 'value' property.");
+        }
+    }
+}
+
 Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* input, Span span, ErrorCtx* errs) {
     if (input->flags & TYF_ANY) return input;
     bool async = (use & ITERATION_ALLOWS_ASYNC) != 0;
@@ -597,6 +664,7 @@ Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* input, Span span, Err
     if (uplevel || downlevel || async) {
         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, input, use);
         if (!types && uplevel && errs) report_not_iterable(me, use, input, span, errs);
+        if (types && errs) report_iterator_methods(me, input, async, span, errs);
         if (types) return types->yield_type;
         if (uplevel) return ty_intrinsic(me, TY_ANY);
     }
