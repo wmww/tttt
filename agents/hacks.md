@@ -420,8 +420,10 @@ src` finds the code-side markers; every significant one has an entry here.
   Real fix: a lazy reduced view.
 - `resolve_call` (call.c HACK): every resolution of a call starts a new region of the resolution stack; tsc's only
   the first (a nested one gets `resolvingSignature` and sees the whole stack). Doing it tsc's way marks zod's recursive
-  getter schemas circular (TS7023) because tttt re-resolves a call inside itself; costs `circularReferenceInReturnType`'s
-  `res1` TS7022. Goes with plan 38 stage 3 (resolve once).
+  getter schemas circular (TS7023) because tttt re-resolves a call inside itself, and (retried in stage 2, with the
+  chosen signature's return type already resolved outside the barrier like tsc) `s = foo(this)` in
+  implicitAnyFromCircularInference and `res3`; returning any from a nested resolution of the same call instead lost 12
+  tests. Costs `res1`'s TS7022 and circularReferenceInReturnType2's `A`/`fields`. Goes with plan 38 stage 3.
 - `reduce_type_variable_intersection` (checker.c HACKs): type parameters only, not indexed accesses (valibot's
   `NonNullable<TSchema['~types']>` became never via a premature `undefined` base constraint); constraints with a
   deferred type aren't reduced (cost valibot 5%, `primitive_constraint_of`). Real fix: cheaper conditional base

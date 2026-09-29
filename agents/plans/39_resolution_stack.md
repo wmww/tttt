@@ -1,6 +1,8 @@
 # Plan 39: one resolution stack for circularity
 Stub by the 2026-09-29 triage; planned and **stage 1 landed** by the planning session of 2026-09-29 (the prototype
-was small, 0 lost and corpora-neutral, so it went in instead of a paper plan). Stage 2 is todo entry 4.
+was small, 0 lost and corpora-neutral, so it went in instead of a paper plan). **Stage 2 landed** the same day (todo
+entry 4). What is left is listed under "Stage 3": mostly blocked on plan 38 stage 3 or on tttt's eager member
+resolution, not on the stack.
 
 ## Decision
 Worth it, and cheap. tsc detects circularity with one stack (`pushTypeResolution`/`popTypeResolution`,
@@ -29,44 +31,41 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
   - The eager intersection reduction (hacks.md `has_conflicting_discriminants`) asks prop types tsc asks lazily; a
     cycle found there marked arktype's mapped `sequence` prop (4 TS2615 in zod-root).
 
-## Stage 2 (todo entry 4)
-Each item is a push point or a report tsc has and tttt doesn't. Before guessing at tsc's nesting, log it: patch a copy
-of `_tsc.js`'s `pushTypeResolution` to print the stack when it finds a cycle (the 2026-09-29 session did this in
-`/tmp/tsclog`, 3 lines, see memory note "instrument a tsc copy"); tttt's side is `ty_resolving_cycle()` (a
-`log_warn` of the marked entries, with prop names via `ty_prop_name_cstr`, was the whole debugging tool).
-1. **Annotated declarations don't push**: `var d: Array<typeof d>` (implicitAnyFromCircularInference),
-   `var f: Array<typeof f>` & co (recursiveTypesWithTypeof: TS2502 instead of TS2403, the declared type becomes any),
-   `var v: Alias` where `type Alias = typeof v` (circularTypeofWithVarOrFunc). tsc pushes `(symbol, Type)` for every
-   variable/parameter/property, annotated or not; tttt lowers an annotation through `ty_binding_type()` ->
-   `ty_from_node()` without the binding's LazyType. Find where `ty_type_of_symbol()` reaches an annotated binding
-   (`value_entry_type()`) and push there (or route annotated bindings through the LazyType); the existing
-   `binding.c` TS2502 check then fires. Watch `check_subsequent_declaration()` (TS2403 must see the any).
-2. **Signature return types don't push**: TS2577 "Return type annotation circularly references itself"
-   (circularTypeofWithVarOrFunc, 3 of them) needs `signature_return_type()` (members.c) to push for an annotated
-   return too, and report 2577 at the annotation on a failed pop. thisConditionalOnMethodReturnOfGenericInstance
-   (spurious TS2417: tsc's `method()` return requested while it resolves is errorType) is the same push point; an
-   instantiated signature should ask its target like instantiated props do in stage 1.
-3. **Which function of a nested cycle reports**: implicitAnyFromCircularInference now reports TS7023 at `foo` in
-   `function h() { return foo(); function foo() { return h() || "hello"; } }` (tsc: only `h`); circularReferenceInReturnType2
-   reports TS7022 at `A` and TS7023 at `fields` where tsc has one TS7024 at the arrow. Both are about the call
-   barrier: tsc re-resolves under the barrier and the cycle is found at a nested copy. Log tsc's stack first.
-4. **Relation reads a return type tsc skips**: circularReferenceInReturnType `res3` (spurious TS7022 + TS7024): tsc's
-   `compareSignaturesRelated` doesn't look at the source's return type when the target's is `any` or `void`. Not a
-   stack issue; fix in relate.c if it's that simple.
-5. **Accessors / object literal methods**: TS7023 tsc reports while *printing* a type whose return type is in flight
-   (thisInObjectLiterals, accessorInferredReturnTypeErrorInReturnStatement, trivialSubtypeReductionNoStructuralCheck,
-   checkingObjectWithThisInNamePositionNoCrash, conflictingDeclarationsImportFromNamespace1/2) and tttt reports too
-   early/elsewhere (thisInObjectLiterals has a spurious one at `f`). Probably out of scope; take only what falls out.
-6. **Base types and constraints (TS2310, TS2313)**: circularBaseTypes, recursiveMappedTypes,
-   incorrectRecursiveMappedTypeConstraint: base type resolution (`members.c` `base_state`) and type parameter
-   constraints (`constraint_state`) are in-flight states that don't push. tsc pushes `ResolvedBaseTypes`,
-   `ImmediateBaseConstraint`. Add them as kinds and see what moves; stop at 0 lost.
-7. dependentDestructuredVariables: TS7022 on every `testN` of `function foo({ value1, test1 = value1.test1, ... })`
-   (tsc: once, TS7031 at `value1`); the defaults go through `defaults_in_flight`, not the stack. Then the file's 20
-   TS2339 are narrowing destructured variables by each other, a separate feature: don't chase them here.
-8. Cleanup once the above are in: `aliases`-style special cases that the stack subsumes (`defaults_in_flight`,
-   `jsdoc_values_in_flight`, `ty_node_reaches_alias_in_flight`/`members_judgeable` in the eager intersection
-   reduction) — only where replacing them is 0 lost.
+## Stage 2 (done, 2026-09-29): suite 12052 -> 12057, 0 lost, corpora unchanged, zod-root identical, +0.0..0.4% instr
+- Annotated bindings and the names in patterns push `(RESOLVING_BINDING, binding)` in `ty_binding_type()` (no memo of
+  their own: the stack is scanned above the barrier, `ty_resolving_find()`, and a circular result is remembered under
+  `KEY_CIRCULAR_BINDING`). Scanning below the barrier too was wrong (Window & typeof globalThis). A root pattern's
+  LazyType pushes `RESOLVING_PATTERN`, and re-entered marks from the first of its names above it, or nothing: tsc
+  doesn't push a pattern (dependentDestructuredVariables: TS7022 only on `value1`). This subsumed `defaults_in_flight`
+  and `jsdoc_values_in_flight` (removed).
+- `signature_return_type()` pushes; a failed pop is any plus TS2577 at a written return type (not an accessor's). The
+  chosen signature's return type is taken outside the call's barrier (`resolved_return_type`, `resolving_call_start`:
+  tsc asks getReturnTypeOfSignature after getResolvedSignature). The printer reuses an annotation whose type is the
+  error type (tsc's canReuseTypeNodeAnnotation), so `() => typeAlias3` prints as tsc's.
+- An inferred return type is circular only by a failed pop, not by any re-entry (a re-entry from under a barrier isn't
+  a cycle: `res3`). A function expression that is a property's value is named by it (TS7023 `'fields'`).
+- Interface bases push `(RESOLVING_BASES, declared)` while the extends clauses are lowered; members asked for meanwhile
+  mark it; a failed pop drops the bases and records the base cycle (TS2310 for circularBaseTypes' `M2`). The
+  base-constraint walk runs on the stack (`RESOLVING_CONSTRAINT`) instead of its own array.
+
+## Stage 3 (leftovers, not scheduled)
+1. **Nested call resolution** (res1 in circularReferenceInReturnType, `A`/`fields` in circularReferenceInReturnType2):
+   tsc finds these cycles through a nested resolution of the same call, which has no barrier and returns
+   `resolvingSignature` (any) at once. tsc's first-resolution-only barrier alone (tried: track calls in flight) made
+   `s = foo(this)` and `res3` circular; any from a nested resolution lost 12 tests. Needs plan 38 stage 3.
+2. **Constraint lowering under the push** (TS2313 in recursiveMappedTypes, incorrectRecursiveMappedTypeConstraint,
+   circularBaseTypes' `K`/`Y`): tsc's getResolvedBaseConstraint lowers the declared constraint while `(K,
+   ImmediateBaseConstraint)` is pushed, and getTypeFromMappedTypeNode resolves the key constraint eagerly. Moving
+   `declared_param_constraint()`'s lowering under the walk's push (ty_param_constraint walking first) made
+   mappedTypeWithAny report TS2313 twice: tttt resolves members eagerly while lowering (`homomorphic_variable` ->
+   `ty_members` in instantiation, `ty_keyof`) where tsc doesn't. Y's cycle also goes through the eager intersection
+   reduction (tsc: getReducedType in getBaseTypes), which runs under a barrier in tttt.
+3. **Accessors / object literal methods** (old item 5): TS7023 tsc reports while printing a type whose return type is
+   in flight (thisInObjectLiterals and friends). Untouched.
+4. thisConditionalOnMethodReturnOfGenericInstance (spurious TS2417) is unchanged by the signature push; not
+   investigated further.
+5. `ty_node_reaches_alias_in_flight`/`members_judgeable` stay: they keep the eager intersection reduction from caching
+   prop types lowered against an alias in flight, which a barrier doesn't prevent.
 
 ## Validation (every stage)
 The tests above; `./fasttest.sh --summary` 0 lost; `./realworld.py` on every corpus unchanged (tsc, type-fest,

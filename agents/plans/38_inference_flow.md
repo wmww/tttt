@@ -128,6 +128,9 @@ them means caching a call's resolution per node and making the error pass, outer
 it: it touches every nested-call path (`generic_call`/`nested_generic` arguments, `ty_call_typecheck`'s
 KEY_CALL_RESOLUTION, the types baseline printing the last check), so it needs its own planning session (prototype
 first, measure what the suite and xstate lose). Not urgent: both stand-ins are exact on everything measured.
+Circularity also wants it (plan 39 "Stage 3" item 1): a nested resolution of a call already being resolved should
+return any at once like tsc's `resolvingSignature`, and then the call barrier can be tsc's (first resolution only),
+which reports `res1` in circularReferenceInReturnType and `A` in circularReferenceInReturnType2 (the `resolve_call` HACK).
 
 xstate's 19 left (none is known to be an inference-flow bug; plan 19 "xstate" has them by cause): spawnChild.test.ts:107
 TS7031 (`spawnChild(child, { id: ({ context }) => ... })` nested in `entry: [...]`, the nested-generic-call path),

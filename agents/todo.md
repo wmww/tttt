@@ -13,8 +13,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    Leads in `bugs/perf_leads.md` "Where the time goes now".
 3. Done 2026-09-29: plan 39 planned and stage 1 landed (the stack beside the memos, declarations bail at once,
    call and eager-intersection barriers): suite 12047 -> 12052, 0 lost, corpora and zod-root unchanged, +0.1% instr.
-4. **Plan 39 stage 2** (`plans/39_resolution_stack.md`: annotated declarations and signature returns push, TS2577,
-   base types/constraints, which function of a nested cycle reports). Log tsc's stack before guessing.
+4. Done 2026-09-29: plan 39 stage 2 (annotated bindings, pattern names, signature returns, interface bases on the
+   stack; TS2502/TS2577/TS2310; defaults_in_flight and jsdoc_values_in_flight gone): suite 12052 -> 12057, 0 lost,
+   corpora unchanged, +0.0..0.4% instr. Leftovers in plan 39 "Stage 3" (mostly wait on plan 38 stage 3).
 5. **Plan-sized hacks** (Opus sub-agents in worktrees, one each; they are listed in hacks.md): instantiation-limit
    poisoning (signatures/members/variances memoized past `ty_instantiation_limit_reached`), `check_assignable`
    letting `any` through to `never` (25 tests depend on flow typing yielding `any` where tsc has `never`), conditional

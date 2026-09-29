@@ -10,10 +10,12 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Plan 39 stage 1 (2026-09-29, after 45c4b056)
-Instructions (`./instrcount.sh`) 45c4b056 -> stage 1: tsc 4.607 -> 4.613, type-fest 3.168 -> 3.171, valibot 5.389 ->
-5.395, react 1.557 -> 1.558, nest 1.143 -> 1.144, webpack 3.741 -> 3.747, zod 4.401 -> 4.405, xstate 2.776 -> 2.776,
-drizzle 15.709 -> 15.744, vue 7.964 -> 7.969 G (+0.0..0.2%: the resolution stack's push/pop).
+## Plan 39 stages 1-2 (2026-09-29)
+Instructions (`./instrcount.sh`) 45c4b056 -> stage 1 (8504fc44) -> stage 2: tsc 4.607 -> 4.612 -> 4.631, type-fest
+3.168 -> 3.170 -> 3.171, valibot 5.389 -> 5.394 -> 5.403, react 1.557 -> 1.558 -> 1.561, nest 1.143 -> 1.144 -> 1.145,
+webpack 3.741 -> 3.746 -> 3.758, zod 4.401 -> 4.406 -> 4.421, xstate 2.776 -> 2.778 -> 2.783, drizzle 15.709 -> 15.732
+-> 15.727, vue 7.964 -> 7.967 -> 7.993 G (stage 2 +0.0..0.4%: annotated bindings and pattern names push on every
+read, `ty_binding_type` has no memo; skipping the stack scan when no binding is on it saved nothing).
 
 ## Perf session (2026-09-29, todo entry 2, d9bea66d)
 Instructions (`./instrcount.sh`: `perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q
