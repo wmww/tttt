@@ -89,22 +89,13 @@ mapped type over the wildcard being the wildcard (Equal<> deferred, view.ts), ar
 declarations homomorphic over a type parameter, arrays not relating to generic mapped types, base-class defaults
 instantiated, the array-method union fallback through interfaces extending Array, valid spread of an indexed access
 without base constraint, comparable conditional sources through either branch, unconstrained type parameters
-comparable to deferred types, `object` without inferable index, no alias variances for type references. Left in src/:
-- **mysql/singlestore db.ts TS2394 x8**: `MySqlSelectBuilder<undefined, H>` isn't assignable to
-  `<SelectedFields | undefined, H>` (variance 0, invariant) through `from().prepare()`: PreparedQueryKind's
-  `Assume<(TKind & { config: C })['type'], MySqlPreparedQuery<C>>`. tsc *resolves* that (probe `hkt_assume.ts`: tsc
-  prints `PQ<C> | (PQ<C> & PQ<Cfg>)`, tttt keeps `Kind<H, ..., true>` / `H["type"] extends ... ? ...`): find how tsc
-  gets a non-generic check type out of `(H & { config: C })['type']` (the `this`-instantiated property of H's
-  constraint?), then recheck the variance. Corpus probe setup in the commit messages (a tsconfig extending the corpus
-  one with `files: [probe]`, typeRoots at drizzle-orm/node_modules/@types).
-- **select.types.ts TS2344 x5** (every dialect's BuildAliasTable): `{ name; columns: MapColumnsToTableAlias<TTable['_']
-  ['columns'], ...> }` against `Partial<TableConfig>`: tttt relates the template's false branch
-  `TTable['_']['columns'][Key]` through `T[keyof T]` -> `T[string] | T[number] | T[symbol]` and fails at `[symbol]`.
-  Not reproduced standalone (`map_columns_alias.ts` passes: needs TTable's `PgTable | View` constraint and the `TTable
-  extends Table` true-branch substitution).
-- neon-http/driver.ts:60 TS7023: `wrap()` returns `new Proxy(target, { get(target, p) { ... return wrap(...) } })`;
-  some part of the call resolution needs `get`'s return type while wrap's is in flight (compare_signatures already
-  skips an `any` target return).
+comparable to deferred types, `object` without inferable index, no alias variances for type references; then
+(second pass, to 0): a conditional resolving to another alias's conditional keeps that alias (Assume, not
+MySqlSelectPrepare: db.ts TS2394), a symbol reading an intersection's string index (select.types.ts TS2344), a
+function argument's return type not re-decided while in flight (neon-http TS7023). Seen, not corpus-visible: the
+non-generic variant of the last one still reports TS7023 where tsc doesn't (`proxy_recursive_wrap2.ts`, `wrap2`:
+the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
+ordering avoids the cycle wasn't worked out).
 
 ### vue (107 at pinning)
 Pinned 2026-09-29 (same session): vue core at b5f85183 (the last commit before TypeScript 6), every package's src and

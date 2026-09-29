@@ -4057,8 +4057,11 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 }
                 // Its return type is decided at its first check with a contextual signature, which may be now, while the
                 // call it is an argument of infers (tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod)
+                // (Not again while it is being decided further up: tsc's ContextChecked flag is set by then, so a call
+                // re-entered from its own body, `wrap()` returning `new Proxy(t, { get() { return wrap(...) } })`,
+                // doesn't make it circular)
                 if (my outer_inference && !expr->function->ret_explicit &&
-                    intern_get(&my links, done_key, 2)) {
+                    intern_get(&my links, done_key, 2) && !ty_function_return_in_flight(me, expr->function)) {
                     ty_argument_return_type(me, expr->function);
                 }
             }
