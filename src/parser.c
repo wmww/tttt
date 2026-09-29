@@ -2542,8 +2542,14 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
         }
         TypeNode type;
         if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-            vec_function_arg_drop(&function.args);
-            return parse_fail(&p);
+            // tsc's isStartOfParameter(isJSDocParameter) takes a decorator or modifier: then the type is missing
+            // (parseJSDocParameter), and the list skips what it couldn't parse
+            Tok t = tok_peek(&p);
+            if (!tok_is(t, "@") && !tok_is_modifier(t)) {
+                vec_function_arg_drop(&function.args);
+                return parse_fail(&p);
+            }
+            expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
         }
         if (!is_new) hop_jsdoc_optional(&p, &type);
         if (is_new) {
@@ -2566,7 +2572,14 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
         }
         index++;
         hop_whitespace(&p);
-        if (!hop_char(&p, ',')) break;
+        if (!hop_char(&p, ',')) {
+            if (*p.pos == ')' || p.pos != arg_start.start) break;
+            // (tsc's parseDelimitedList: an element that consumed nothing, skip a token)
+            expected_token_error(&p, ",");
+            hop_token(&p);
+            hop_whitespace(&p);
+            continue;
+        }
         hop_whitespace(&p);
     }
     if (!hop_char(&p, ')')) {
@@ -3444,8 +3457,19 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
         }
         tag->predicate = predicate.predicate;
         tag->predicate->jsdoc = true;
+    } else if (tag->kind != JSDOC_TAG_RETURNS && tok_is_identifier(tok_peek(&p)) &&
+        tok_is(tok_next(&p, tok_peek(&p)), "is") && parse_type_predicate(&p, &predicate)
+    ) {
+        // tsc's parseJSDocType is parseTypeOrTypePredicate: `@type {x is T}` is a misplaced predicate (TS1228)
+        TypePredicateNode* node = predicate.predicate;
+        node->span = span_from(a);
+        while (node->span.sv.size && is_js_ascii_space(node->span.sv.buf[node->span.sv.size - 1])) node->span.sv.size--;
+        type = (TypeNode){ .tag = TYPE_PREDICATE, .predicate = node };
+        predicate.predicate = nullptr;
+        goto parsed;
     }
     if (tag->predicate || parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+    parsed:
         if (!tag->predicate) hop_jsdoc_optional(&p, &type);
         Span type_span = span_from(a);
         hop_whitespace(&p);

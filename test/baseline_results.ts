@@ -19726,7 +19726,7 @@ const baselines = {
         types: true,
     },
     'jsdocParameterParsingInfiniteLoop': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52456,9 +52456,9 @@ const baselines = {
         types: true,
     },
     'jsdocTypeTagCast': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeTagParameterType': {
         errors: true,
