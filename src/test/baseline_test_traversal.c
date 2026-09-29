@@ -2044,14 +2044,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 if (i->tag != OBJECT_ITEM_SPREAD) {
                     VecSpan declarations = {0};
                     if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) && !i->computed_key) {
-                        for_each (other, vec_object_expr_item, &my object) {
-                            if ((other->tag == OBJECT_ITEM_GETTER || other->tag == OBJECT_ITEM_SETTER) &&
-                                !other->computed_key &&
-                                cstr_eq(&other->name_string, &i->name_string)
-                            ) {
-                                vec_span_push(&declarations, other->span);
-                            }
-                        }
+                        // (Its symbol: with the other accessor, alone if it conflicts with what came first)
+                        ObjectExprItem const* accessor_first = nullptr;
+                        declarations = object_member_symbol_decls(&my object, i, &accessor_first);
                     } else {
                         vec_span_push(&declarations, i->span);
                     }

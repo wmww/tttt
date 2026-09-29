@@ -37647,7 +37647,7 @@ const baselines = {
     },
     'twoAccessorsWithSameName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'twoAccessorsWithSameName2': {
@@ -41117,12 +41117,12 @@ const baselines = {
     },
     'computedPropertyNames49_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames49_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames4_ES5': {
@@ -41137,12 +41137,12 @@ const baselines = {
     },
     'computedPropertyNames50_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames50_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames51_ES5': {
