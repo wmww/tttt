@@ -154,6 +154,10 @@ Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual) {
     return ret;
 }
 
+Ty const* ty_element_before_widening(Checker* me, Binding const* element) {
+    return intern_get(&my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)element }, 2);
+}
+
 Ty const* ty_function_return_before_widening(Checker* me, FunctionImpl const* function) {
     ty_function_return_type(me, function);
     return intern_get(&my links, (u64[]){ function->is_generator ? KEY_YIELD_WIDENED_ANY : KEY_RETURN_WIDENED_ANY,

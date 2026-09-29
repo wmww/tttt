@@ -1534,6 +1534,8 @@ Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
 // The inferred return type before widening if widening makes null or undefined in it any (without strictNullChecks), else
 // null (tsc's reportErrorsFromWidening with WideningKind.FunctionReturn)
 Ty const* ty_function_return_before_widening(Checker* me, FunctionImpl const* function);
+// A pattern element's type before widening, if its null/undefined widened to any (after its type was asked for)
+Ty const* ty_element_before_widening(Checker* me, struct Binding const* element);
 // The return type of a function expression that is an argument of the generic call inferring now: the calls it returns
 // see what that call has inferred so far (tsc's getInferenceContext finds the call through the argument)
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function);

@@ -440,6 +440,13 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     error_ctx_error_d(errs, my content_span, 7022,
                         "'", my content_span, "' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in "
                         "its own initializer.");
+                } else if (my parent && compiler_options()->no_implicit_any) {
+                    // (tsc's reportErrorsFromWidening of a binding element)
+                    Ty const* raw = ty_element_before_widening(current_checker, me);
+                    if (raw && !binding_report_widening_errors_in_type(raw, errs)) {
+                        error_ctx_error_d(errs, my content_span, 7031, "Binding element '", my content_span,
+                            "' implicitly has an '", type, "' type.");
+                    }
                 }
             }
             break;

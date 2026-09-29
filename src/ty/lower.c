@@ -2665,6 +2665,12 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     bool widens = !parent->has_explicit_type && !binding_is_parameter(parent);
     Ty const* raw = ret;
     if (widens) ret = ty_widened_for_declaration(me, ret, false);
+    if (widens && !binding->default_value && binding->tag == BINDING_IDENTIFIER && (raw->xflags & TYX_CONTAINS_WIDENING) &&
+        !compiler_options()->strict_null_checks
+    ) {
+        // Its null and undefined widen to any (tsc's reportErrorsFromWidening of the element, TS7031)
+        *intern_slot(me, &my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)binding }, 2) = raw;
+    }
     if (binding->default_value && widens && !(raw->flags & TYF_ANY)) {
         Ty const* stripped = non_undefined_type(me, raw);
         if (stripped->flags & TYF_NEVER) ret = stripped;
