@@ -93,7 +93,6 @@ static bool kind_uses_context(Expr const* expr) {
         case EXPR_ARRAY:
         case EXPR_FUNCTION:
         case EXPR_TERNARY:
-        case EXPR_CALL:
         case EXPR_AS_TYPE:
         case EXPR_TEMPLATE:
         case EXPR_JSX_ATTRIBUTES:

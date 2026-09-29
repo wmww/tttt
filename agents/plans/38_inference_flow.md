@@ -152,8 +152,8 @@ Not done (each tried, measured, left):
 2. `ty_call_effects()` (flow.c's getEffectsSignature) still resolves the call on its own, without contextual type, in
    uncached mode; tsc takes getResolvedSignature. Would need the chosen signature in `CallResolution`; untried.
 3. JSX elements (`ty_resolve_jsx_element`) aren't remembered per node: resolved per request as before. Untried.
-4. The call's memo in `check_with()` is still keyed by contextual type although a call's type no longer depends on it
-   (perf only, untried).
+4. (Done in a follow-up commit: a call's memo in `check_with()` is no longer keyed by contextual type,
+   `kind_uses_context()`; nothing changed, -0.0..0.2% instructions.)
 5. hacks.md `first_unfit_skipped_literal` named resolve-once as its real fix; it isn't: that is about a literal
    argument's member memos under another contextual type (side-effect-free speculative checks), not calls.
 
