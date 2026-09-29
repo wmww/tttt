@@ -10483,7 +10483,7 @@ const baselines = {
     'duplicateTypeParameters1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicateTypeParameters2': {
         errors: true,
@@ -15508,7 +15508,7 @@ const baselines = {
     'genericsWithDuplicateTypeParameters1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericsWithoutTypeParameters1': {
         errors: true,
@@ -66153,7 +66153,7 @@ const baselines = {
     'typesWithDuplicateTypeParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'varianceAnnotations': {
         errors: true,

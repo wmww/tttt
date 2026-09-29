@@ -40,14 +40,18 @@ TyList ty_type_params_of(Checker* me, Generic const* generic) {
     TyList const* existing = intern_get(&my links, key, 2);
     if (existing) return *existing;
 
-    u32 len = (u32)vec_generic_item_size(&generic->items);
-    Ty const** params = arena_new_n(&my arena, Ty const*, len);
+    u32 len = 0;
+    Ty const** params = arena_new_n(&my arena, Ty const*, vec_generic_item_size(&generic->items));
     for_each (i, vec_generic_item, &generic->items) {
         Ty const* param = i->symbol_ref ?
             ty_type_param(me, i->symbol_ref) :
             ty_synthetic_type_param(me, i->name.sv);
         if (!param->param.state->item) param->param.state->item = i;
-        params[i_index] = param;
+        // (Two of the same name are one symbol, one type parameter: tsc's appendIfUnique in
+        // getTypeParametersFromDeclaration)
+        bool seen = false;
+        for (u32 j = 0; j < len && !seen; j++) seen = params[j] == param;
+        if (!seen) params[len++] = param;
     }
     TyList* list = arena_new(&my arena, TyList);
     *list = (TyList){ .data = params, .len = len };
