@@ -2707,6 +2707,17 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
             return types[0];
         }
         types[1] = ty_widened_for_declaration(me, default_type, true);
+        if (widens && binding->tag == BINDING_IDENTIFIER && !compiler_options()->strict_null_checks &&
+            compiler_options()->no_implicit_any && ((raw->xflags | default_type->xflags) & TYX_CONTAINS_WIDENING)
+        ) {
+            // tsc widens the union of the element and its default as a whole: `[a = undefined] = []` is undefined
+            // before that, which widens to any (reportErrorsFromWidening of the element, TS7031)
+            Ty const* unwidened[2] = { non_undefined_type(me, raw), default_type };
+            Ty const* pre = ty_union_subtype_reduced(me, unwidened, 2);
+            if (pre->xflags & TYX_CONTAINS_WIDENING) {
+                *intern_slot(me, &my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)binding }, 2) = pre;
+            }
+        }
         ret = ret->flags & TYF_ANY ? ret : ty_union_subtype_reduced(me, types, 2);
     }
     return ret;

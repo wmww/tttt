@@ -367,6 +367,34 @@ static bool is_js_expando_object_initializer(Binding const* me, Expr const* init
 }
 
 // `span`: where the initializer's check reports (a parameter's is the whole parameter, tsc's getErrorSpanForNode).
+// An element of a parameter's pattern in the parameter's default as it is, not widened: tsc's
+// getTypeForBindingElementParent reads the parameter's resolved type when there is one, else its unwidened declared
+// type, which is what the usual order (the parameter checked before anything resolves its type) sees. So
+// `function f([a] = [undefined])` has an `a` of undefined, which widens to any (reportErrorsFromWidening, TS7031).
+// Only the pattern's own elements without a default of their own: nothing else needs it yet
+static Ty const* parameter_element_before_widening(Binding const* me) {
+    Binding const* pattern = my parent;
+    if (pattern->parent || pattern->has_explicit_type || my default_value || compiler_options()->strict_null_checks ||
+        !pattern->source || pattern->source->tag != LAZY_TYPE_INITIALIZED_BINDING || !binding_is_parameter(pattern)
+    ) {
+        return nullptr;
+    }
+    Expr const* initializer = &c_container_of(pattern, InitializedBinding, binding)->value;
+    if (initializer->tag == EXPR_IMPLICIT_ANY) return nullptr;
+    Checker* checker = current_checker;
+    Ty const* object = ty_expr_type(checker, initializer);
+    Ty const* key;
+    if (pattern->tag == BINDING_ARRAY) {
+        Value index = value_number(my parent_index);
+        key = ty_literal(checker, &index);
+    } else {
+        if (my parent_item->computed_key) return nullptr;
+        key = ty_literal(checker, &my parent_item->source);
+    }
+    Ty const* ret = ty_access_reading(checker, object, key);
+    return ret && (ret->xflags & TYX_CONTAINS_WIDENING) ? ret : nullptr;
+}
+
 // `assigned`: whether the root is assigned anything (not a variable or parameter without initializer)
 static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, ErrorCtx* errs) {
     if (my has_explicit_type) type_typecheck(&my explicit_type, errs);
@@ -443,6 +471,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 } else if (my parent && compiler_options()->no_implicit_any) {
                     // (tsc's reportErrorsFromWidening of a binding element)
                     Ty const* raw = ty_element_before_widening(current_checker, me);
+                    if (!raw) raw = parameter_element_before_widening(me);
                     if (raw && !binding_report_widening_errors_in_type(raw, errs)) {
                         error_ctx_error_d(errs, my content_span, 7031, "Binding element '", my content_span,
                             "' implicitly has an '", type, "' type.");

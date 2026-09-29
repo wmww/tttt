@@ -23486,12 +23486,12 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyDestructuringParameterDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'noImplicitAnyDestructuringVarDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

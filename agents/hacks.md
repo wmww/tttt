@@ -215,6 +215,9 @@ src` finds the code-side markers; every significant one has an entry here.
   doesn't).
 - Array pattern rest (`ty_binding_type`): the parent type is widened, so "any parent is any" peeks at the root
   initializer's expression type.
+- TS7031 from widening a parameter pattern's element (`parameter_element_before_widening`, binding.c): tttt widens
+  the parameter first, tsc reads its unwidened declared type unless something resolved the parameter already (order
+  dependent in tsc). Re-reads the element from the default's expression type, one level deep, only for that error.
 - `binding_add_padded_implicit_any_errors` (TS7031) only for unannotated parameters and nested defaults;
   `binding_rest_elements` loses `readonly`; `binding_add_names` doesn't widen literals of exported bindings.
 - AST written by walks: `FunctionImpl.constructed_class` in `class_decl_lookup_names` (also TS1093),
